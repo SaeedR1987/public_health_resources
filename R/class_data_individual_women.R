@@ -1,0 +1,261 @@
+#' IPHRA Women Individual Data Class
+#'
+#' Extends IndividualData by adding a comprehensive schema for
+#' women's individual-level maternal health data including:
+#' reproductive health indicators, antenatal care, delivery care,
+#' postnatal care, family planning, and maternal nutrition.
+#'
+#' This class provides data quality checks and visualization capabilities
+#' specific to maternal health assessments.
+#'
+#' @export
+WomenIndividualData <- R6::R6Class(
+  classname = "WomenIndividualData",
+  inherit   = IndividualData,
+
+  public = list(
+
+    #' @description
+    #' Initialize a new WomenIndividualData object
+    #'
+    #' @param data A data frame containing women's maternal health records
+    #' @param dataset_name A name for this dataset
+    #' @param metadata Optional list of metadata
+    #' @param variable_map Optional named list mapping standard variable names to data columns
+    #' @return A new WomenIndividualData object
+    initialize = function(data,
+                          dataset_name = "WomenIndividualData",
+                          metadata = NULL,
+                          variable_map = NULL) {
+
+      iphra_try({
+
+        women_map <- list(
+          # Demographics (use generic names that map to data columns)
+          uuid      = "person_id",
+          hh_uuid    = "hh_uuid"
+        )
+
+        variable_map <- modifyList(women_map, variable_map %||% list())
+
+        # Call parent
+        super$initialize(
+          data         = data,
+          dataset_name = dataset_name,
+          metadata     = metadata,
+          variable_map = variable_map
+        )
+
+        # Extend optional columns
+        self$optional_columns <- c(self$optional_columns, unlist(women_map))
+
+        # Load and merge schema
+        self$set_variable_schema(self$default_women_schema())
+
+        # Load default indicator schema
+        default_ind_schema <- self$default_indicator_schema()
+        if (length(default_ind_schema) > 0) {
+          self$set_indicator_schema(default_ind_schema)
+          iphra_message(
+            iphra_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+          )
+        }
+
+        # Load default dependency schema
+        default_dep_schema <- self$default_dependency_schema()
+        if (length(default_dep_schema$dependencies) > 0) {
+          self$set_dependency_schema(default_dep_schema)
+          iphra_message(
+            iphra_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+          )
+        }
+
+        iphra_message(
+          iphra_txt("{dataset_name} initialized as WomenIndividualData object.")
+        )
+
+      }, on_error = "abort", origin = "WomenIndividualData$initialize")
+    },
+
+
+    #' @description
+    #' Load the default variable schema for women's maternal health data
+    #'
+    #' Reads the variable_schema_data_individual_maternalhealth_template.xlsx file from package resources
+    #' and converts it to a nested list of variable definitions for maternal health indicators.
+    #'
+    #' @return A list containing the women's maternal health variable schema
+    default_women_schema = function() {
+
+      file <- system.file(
+        "resources",
+        "variable_schema_data_individual_maternalhealth_template.xlsx",
+        package = "iphRa"
+      )
+
+      if (!file.exists(file)) {
+        iphra_error(
+          origin  = "WomenIndividualData$default_women_schema",
+          message = iphra_txt("variable_schema_data_individual_maternalhealth_template.xlsx not found in package resources."),
+          hint    = iphra_txt("Place the schema file under inst/resources/ before building the package.")
+        )
+      }
+
+      # Read the Excel table (first sheet)
+      df <- tryCatch(
+        readxl::read_xlsx(file),
+        error = function(e) {
+          iphra_error(
+            origin  = "WomenIndividualData$default_women_schema",
+            message = iphra_txt("Failed to read variable_schema_data_individual_maternalhealth_template.xlsx"),
+            hint    = e$message
+          )
+        }
+      )
+
+      # Convert table → canonical nested schema list
+      schema <- data_table_to_schema(df)
+
+      return(schema)
+    },
+
+    #' @description
+    #' Load the default indicator schema for women's maternal health data
+    #'
+    #' Reads the indicator_schema_data_individual_maternalhealth_template.xlsx file from package resources
+    #' and converts it to a nested list of indicator definitions (e.g., ANC coverage).
+    #'
+    #' @return A list containing the maternal health indicator schema
+    default_indicator_schema = function() {
+
+      file <- system.file(
+        "resources",
+        "indicator_schema_data_individual_maternalhealth_template.xlsx",
+        package = "iphRa"
+      )
+
+      if (!file.exists(file)) {
+        iphra_warning(
+          origin  = "WomenIndividualData$default_indicator_schema",
+          message = iphra_txt("indicator_schema_data_individual_maternalhealth_template.xlsx not found in package resources. Continuing without default indicator schema.")
+        )
+        return(list())
+      }
+
+      # Read the Excel table (first sheet)
+      df <- tryCatch(
+        readxl::read_xlsx(file),
+        error = function(e) {
+          iphra_warning(
+            origin  = "WomenIndividualData$default_indicator_schema",
+            message = iphra_txt("Failed to read indicator_schema_data_individual_maternalhealth_template.xlsx: {e$message}")
+          )
+          return(NULL)
+        }
+      )
+
+      if (is.null(df)) return(list())
+
+      # Convert table → canonical nested indicator schema list
+      indicator_schema <- indicator_table_to_schema(df)
+
+      return(indicator_schema)
+    },
+
+    #' @description
+    #' Load the default dependency schema for women's maternal health data
+    #'
+    #' Reads the dependency_schema_data_individual_maternalhealth_template.xlsx file from package resources
+    #' and converts it to a nested list of variable dependency rules.
+    #'
+    #' @return A list containing the maternal health dependency schema
+    default_dependency_schema = function() {
+
+      file <- system.file(
+        "resources",
+        "dependency_schema_data_individual_maternalhealth_template.xlsx",
+        package = "iphRa"
+      )
+
+      if (!file.exists(file)) {
+        iphra_warning(
+          origin  = "WomenIndividualData$default_dependency_schema",
+          message = iphra_txt("dependency_schema_data_individual_maternalhealth_template.xlsx not found in package resources. Continuing without default dependency schema.")
+        )
+        return(list(dependencies = list()))
+      }
+
+      # Read the Excel table (first sheet)
+      df <- tryCatch(
+        readxl::read_xlsx(file),
+        error = function(e) {
+          iphra_warning(
+            origin  = "WomenIndividualData$default_dependency_schema",
+            message = iphra_txt("Failed to read dependency_schema_data_individual_maternalhealth_template.xlsx: {e$message}")
+          )
+          return(NULL)
+        }
+      )
+
+      if (is.null(df)) return(list(dependencies = list()))
+
+      # Convert table → canonical nested dependency schema list
+      dependency_schema <- dependency_table_to_schema(df)
+
+      return(dependency_schema)
+    },
+
+
+    #' @description
+    #' Generate a DataAnalytics object for women individual data.
+    #' Combines quality checks and quantitative analysis in one object.
+    #'
+    #' @param stage The data stage to use ("standardized" or "clean")
+    #' @param analysis_config Optional data analysis plan (tibble)
+    #' @return A DataAnalytics object or NULL
+    generate_data_analytics = function(stage = c("standardized", "clean"),
+                                       analysis_config = NULL) {
+
+      stage <- match.arg(stage)
+
+      iphra_try({
+
+        df <- self$get_data(stage)
+
+        if (is.null(df)) {
+          iphra_warning(
+            self$dataset_name,
+            iphra_txt("No {stage} data available for DataAnalytics generation.")
+          )
+          return(NULL)
+        }
+
+        data_hash    <- self$get_hash(stage)
+        variable_map <- self$variable_map
+        value_map    <- self$value_map
+
+        analytics <- DataAnalytics$new(
+          data               = df,
+          dap                = analysis_config,
+          parent_data_object = self,
+          dataset_name       = paste0(self$dataset_name, "_DataAnalytics"),
+          data_stage_name    = stage,
+          data_hash          = data_hash,
+          variable_map       = variable_map,
+          value_map          = value_map,
+          variable_label     = self$variable_label,
+          value_label        = self$value_label
+        )
+
+        iphra_message(
+          iphra_txt("Generated DataAnalytics object for {self$dataset_name}.")
+        )
+
+        return(analytics)
+
+      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analytics"))
+    }
+
+
+  )
+)

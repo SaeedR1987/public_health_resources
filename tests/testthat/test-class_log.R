@@ -1,0 +1,243 @@
+# ---------------------------
+# LOG CLASS TEST SUITE
+# ---------------------------
+
+library(testthat)
+library(tibble)
+
+# ============================================================
+# 1. INITIALIZATION TESTS
+# ============================================================
+
+test_that("Log initializes with empty df when log_df is NULL", {
+  log <- Log$new(
+    log_df = NULL,
+    log_name = "TestLog",
+    required_columns = c("uuid", "issue")
+  )
+
+  expect_true(is.data.frame(log$log_df))
+  expect_equal(names(log$log_df), c("uuid", "issue"))
+  expect_equal(nrow(log$log_df), 0)
+})
+
+test_that("Log rejects non-dataframe input on initialize", {
+  expect_error(
+    Log$new(log_df = "not a df", required_columns = "uuid"),
+    regexp = "data frame"
+  )
+})
+
+test_that("Log fills missing required columns instead of erroring", {
+
+  df <- tibble(a = 1)   # missing required 'uuid'
+
+  log <- Log$new(
+    log_df = df,
+    required_columns = "uuid"
+  )
+
+  # Should construct a Log object without error
+  expect_s3_class(log, "Log")
+
+  # Should now include all required columns
+  expect_true("uuid" %in% names(log$log_df))
+
+  # Newly added required column should be filled with NA
+  expect_true(all(is.na(log$log_df$uuid)))
+})
+
+test_that("Log stores metadata correctly", {
+  log <- Log$new(
+    log_df = NULL,
+    log_name = "MetaTest",
+    required_columns = c("uuid")
+  )
+  expect_true("updated" %in% names(log$metadata))
+})
+
+# ============================================================
+# 2. SCHEMA & VALIDATION TESTS
+# ============================================================
+
+test_that("Log attaches schema using set_schema()", {
+  log <- Log$new(NULL, "SchemaLog", required_columns = "uuid")
+  log$set_schema(list(types = list(uuid = "character")))
+  expect_true(is.list(log$schema))
+})
+
+test_that("validate() passes when schema matches types", {
+  df <- tibble(uuid = c("A", "B"))
+  log <- Log$new(df, required_columns = "uuid")
+
+  log$set_schema(list(types = list(uuid = "character")))
+
+  expect_silent(log$validate())
+})
+
+test_that("validate() coerces safely coercible types", {
+  df <- tibble(uuid = 1:3)   # numeric → character coercible
+  log <- Log$new(df, required_columns = "uuid")
+
+  log$set_schema(list(types = list(uuid = "character")))
+
+  log$validate()
+
+  expect_true(is.character(log$log_df$uuid))
+})
+
+test_that("validate() flags type mismatches", {
+  df <- tibble(uuid = c("A", "B"))
+  log <- Log$new(df, required_columns = "uuid")
+
+  log$set_schema(list(types = list(uuid = "numeric")))
+
+  issues <- log$validate()
+  expect_true("type_mismatch" %in% names(issues))
+})
+
+test_that("validate() flags disallowed values", {
+  df <- tibble(uuid = c("A", "BAD"))
+  log <- Log$new(df, required_columns = "uuid")
+
+  log$set_schema(list(allowed_values = list(uuid = c("A", "B"))))
+
+  issues <- log$validate()
+  expect_true("disallowed_values" %in% names(issues))
+})
+
+test_that("validate() supports schema_override", {
+  df <- tibble(uuid = 1:3)
+  log <- Log$new(df, required_columns = "uuid")
+
+  override <- list(types = list(uuid = "character"))
+
+  expect_no_error(log$validate(schema_override = override))
+  expect_true(is.character(log$log_df$uuid))
+})
+
+# ============================================================
+# 3. APPEND ENTRY TESTS
+# ============================================================
+
+test_that("append_entry() adds a row to the log", {
+  log <- Log$new(NULL, required_columns = c("uuid", "issue"))
+
+  log$append_entry(list(uuid = "1", issue = "test"))
+
+  expect_equal(nrow(log$log_df), 1)
+})
+
+test_that("append_entry() errors when required fields missing", {
+  log <- Log$new(NULL, required_columns = c("uuid", "issue"))
+
+  expect_error(
+    log$append_entry(list(uuid = "1")),
+    regexp = "Missing required fields"
+  )
+})
+
+test_that("append_entry() updates metadata timestamp", {
+  log <- Log$new(NULL, required_columns = c("uuid", "issue"))
+
+  old_time <- log$metadata$updated
+  Sys.sleep(0.01)
+
+  log$append_entry(list(uuid = "1", issue = "x"))
+
+  expect_true(log$metadata$updated > old_time)
+})
+
+# ============================================================
+# 4. CLEAR TESTS
+# ============================================================
+
+test_that("clear() empties the log", {
+  log <- Log$new(
+    log_df = tibble(uuid = "1", issue = "a"),
+    required_columns = c("uuid", "issue")
+  )
+
+  log$clear()
+  expect_equal(nrow(log$log_df), 0)
+})
+
+# ============================================================
+# 5. EXPORT TESTS
+# ============================================================
+
+test_that("export() writes CSV", {
+  tmp <- tempfile(fileext = ".csv")
+  log <- Log$new(NULL, required_columns = "uuid")
+
+  log$append_entry(list(uuid = "x"))
+
+  expect_no_error(log$export(tmp, "csv"))
+  expect_true(file.exists(tmp))
+})
+
+test_that("export() writes RDS", {
+  tmp <- tempfile(fileext = ".rds")
+  log <- Log$new(NULL, required_columns = "uuid")
+
+  log$append_entry(list(uuid = "x"))
+
+  expect_no_error(log$export(tmp, "rds"))
+  expect_true(file.exists(tmp))
+})
+
+test_that("export() errors for invalid format", {
+  log <- Log$new(NULL, required_columns = "uuid")
+  expect_error(log$export("file.invalid", "badformat"))
+})
+
+# ============================================================
+# 6. HASH TESTS
+# ============================================================
+
+test_that("get_hash() returns a hash string", {
+  log <- Log$new(NULL, required_columns = "uuid")
+  log$append_entry(list(uuid = "X"))
+
+  h <- log$get_hash()
+  expect_true(is.character(h))
+})
+
+# ============================================================
+# 7. SUMMARY TESTS
+# ============================================================
+
+test_that("summary() returns expected structure", {
+  log <- Log$new(NULL, required_columns = "uuid")
+
+  s <- log$summary()
+
+  expect_true(is.list(s))
+  expect_true("log_name" %in% names(s))
+  expect_true("n_entries" %in% names(s))
+  expect_true("validated" %in% names(s))
+})
+
+# ============================================================
+# 8. EDGE CASE TESTS
+# ============================================================
+
+test_that("validate() handles empty logs without error", {
+  log <- Log$new(NULL, required_columns = "uuid")
+  expect_silent(log$validate())
+})
+
+test_that("validate() allows schema with no types section", {
+  log <- Log$new(NULL, required_columns = "uuid")
+  log$set_schema(list())
+  expect_silent(log$validate())
+})
+
+test_that("Log accepts extra non-schema columns", {
+  df <- tibble(uuid = "1", extra = "x")
+  log <- Log$new(df, required_columns = "uuid")
+
+  expect_silent(log$validate())
+  expect_true("extra" %in% names(log$log_df))
+})
+

@@ -1,0 +1,38 @@
+# Build Docker image and upload as artifact (build-only — does NOT push to any registry)
+name: "Docker: build and archive"
+
+on:
+  workflow_dispatch: {}         # manual trigger
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (for multi-arch if needed)
+        uses: docker/setup-qemu-action@v2
+        with:
+          qemu-version: 'v6.1.0-5'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          IMAGE_NAME=iphra:${{ github.ref_name }}
+          docker build -t $IMAGE_NAME .
+          # Save image as tar
+          mkdir -p tmp
+          docker save $IMAGE_NAME -o tmp/iphra-${{ github.ref_name }}.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iphra-image-${{ github.ref_name }}
+          path: tmp/iphra-${{ github.ref_name }}.tar
+
+      - name: Cleanup
+        run: |
+          docker image rm iphra:${{ github.ref_name }} || true

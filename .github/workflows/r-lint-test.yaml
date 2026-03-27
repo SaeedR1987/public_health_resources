@@ -1,0 +1,52 @@
+# Run lintr and tests on push and pull_request
+name: "R: lint & check"
+
+on:
+  workflow_dispatch: {}         # manual trigger
+
+jobs:
+  lint-and-check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        r: [ '4.2', '4.3', '4.4' ]  # adjust R versions as desired
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+
+      - name: Cache R package libraries
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-r-${{ matrix.r }}-packages
+          restore-keys: |
+            ${{ runner.os }}-r-${{ matrix.r }}-packages
+
+      - name: Install system dependencies and pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install package dependencies
+        run: |
+          Rscript -e 'install.packages("remotes", repos = "https://cloud.r-project.org")'
+          Rscript -e 'remotes::install_deps(dependencies = TRUE)'
+
+      - name: Install lintr and testthat (explicit)
+        run: |
+          Rscript -e 'if (!requireNamespace("lintr", quietly=TRUE)) install.packages("lintr")'
+          Rscript -e 'if (!requireNamespace("testthat", quietly=TRUE)) install.packages("testthat")'
+
+      - name: Run lintr
+        # Exit non-zero if lintr finds issues; change to lint_package(args = list()) for customization
+        run: Rscript -e 'lintr::lint_package()'
+
+      - name: Run package checks (R CMD check)
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          # --no-manual avoids building the PDF manual (faster). Remove if you want manual built.
+          args: --no-manual
