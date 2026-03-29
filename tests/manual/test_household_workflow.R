@@ -180,7 +180,8 @@ good_deaths <- DeathIndividualData$new(
   # TEST CLEAN()
   good_hh$clean()
 
-
+  cleaneddata <- good_hh$get_data("clean")
+  View(cleaneddata)
   # table_schema <- good_hh$get_variable_schema() %>% data_schema_to_table()
 
 
@@ -191,7 +192,7 @@ good_deaths <- DeathIndividualData$new(
   good_hh$cleaned
   is.null(good_hh$clean_data)
 
-  cleaneddata <- good_hh$get_data("clean")
+
 
   standardizeddata <- good_hh$get_data("standardized")
 
