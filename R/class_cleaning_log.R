@@ -125,18 +125,29 @@ CleaningLog <- R6::R6Class(
 
 
         # 2. Cleaning-log specific completeness
+        #    Always require uuid, question.name, and changed to be present.
+        #    Require old.value only for rows where changed == "yes" — we need to
+        #    know the current value to apply a correction.
+        #    Do NOT require new.value: it is legitimately blank/NA at log-generation
+        #    time while awaiting human review.
 
-        required_nonempty <- c("uuid", "question.name", "changed", "old.value", "new.value")
+        required_always <- c("uuid", "question.name", "changed")
 
-        incomplete_cols <- vapply(
-          required_nonempty,
+        incomplete_always <- vapply(
+          required_always,
           function(col) any(is.na(df[[col]]) | trimws(df[[col]]) == ""),
           logical(1)
         )
 
-        if (any(incomplete_cols)) {
-          bad_cols <- required_nonempty[incomplete_cols]
+        bad_cols <- required_always[incomplete_always]
 
+        # For old.value, only flag rows where changed == "yes"
+        changed_yes <- !is.na(df$changed) & df$changed == "yes"
+        if (any(changed_yes) && any(is.na(df$old.value[changed_yes]) | trimws(df$old.value[changed_yes]) == "")) {
+          bad_cols <- c(bad_cols, "old.value")
+        }
+
+        if (length(bad_cols) > 0) {
           super_issues$missing_or_empty <- bad_cols
 
           iphra_warning(

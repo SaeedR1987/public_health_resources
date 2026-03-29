@@ -2384,6 +2384,13 @@ Data <- R6::R6Class(
             join_col <- self$uuid
             if (join_col %in% names(flag_df)) {
 
+              # Remove columns from std that already exist in flag_df (excluding
+              # the join key) to prevent dplyr from creating .x/.y duplicates.
+              overlapping_cols <- setdiff(intersect(names(std), names(flag_df)), join_col)
+              if (length(overlapping_cols) > 0) {
+                std <- std[, !names(std) %in% overlapping_cols, drop = FALSE]
+              }
+
               std <- dplyr::left_join(std, flag_df, by = join_col)
               self$standardized_data <- std
 
@@ -2607,6 +2614,47 @@ Data <- R6::R6Class(
               variables_to_log <- var_name
             }
 
+            # Pre-resolve canonical variable names to actual column names and filter
+            # out variables that should not produce cleaning log entries:
+            #   - Self-referential: variable is the quality flag column itself
+            #     (derived indicator, not a raw survey field to be corrected).
+            #   - Missing: variable column is absent from the dataset at this stage.
+            # Both checks are done once here, before the per-row loop, to avoid
+            # emitting repeated log messages for every flagged row.
+            filtered_variables  <- character(0)   # actual column names to log
+            skipped_self_ref    <- character(0)
+            skipped_missing_cols <- character(0)
+
+            for (var_canonical in variables_to_log) {
+              var_actual_col <- self$resolve_column(var_canonical, stage = stage)
+              if (is.null(var_actual_col)) var_actual_col <- var_canonical
+
+              if (var_actual_col == col) {
+                skipped_self_ref <- c(skipped_self_ref, var_actual_col)
+                next
+              }
+              if (!var_actual_col %in% names(df)) {
+                skipped_missing_cols <- c(skipped_missing_cols, var_actual_col)
+                next
+              }
+              filtered_variables <- c(filtered_variables, var_actual_col)
+            }
+
+            if (length(skipped_self_ref) > 0) {
+              iphra_message(
+                iphra_txt(
+                  "Skipping self-referential cleaning log variable(s) for flag '{col}': {paste(skipped_self_ref, collapse=', ')}."
+                )
+              )
+            }
+            if (length(skipped_missing_cols) > 0) {
+              iphra_message(
+                iphra_txt(
+                  "Skipping cleaning log variable(s) for flag '{col}' not found in dataset at stage '{stage}': {paste(skipped_missing_cols, collapse=', ')}."
+                )
+              )
+            }
+
             # Add entries to cleaning log for each affected variable
             for (idx in bad_rows) {
               uuid_val <- df[[self$uuid]][idx]
@@ -2623,19 +2671,11 @@ Data <- R6::R6Class(
                 device_id_val <- as.character(df[[device_id_col]][idx])
               }
 
-              # Create one log entry for each variable involved
-              for (var_canonical in variables_to_log) {
-                # Resolve canonical variable name to actual column name in dataset
-                # Use resolve_column which checks variable_map
-                var_actual_col <- self$resolve_column(var_canonical, stage = stage)
-
-                # If resolve_column returns NULL, fall back to canonical name
-                if (is.null(var_actual_col)) {
-                  var_actual_col <- var_canonical
-                }
+              # Create one log entry for each filtered variable
+              for (var_actual_col in filtered_variables) {
 
                 # Get old value from dataset using the actual column name
-                old_val <- if (var_actual_col %in% names(df)) as.character(df[[var_actual_col]][idx]) else NA_character_
+                old_val <- as.character(df[[var_actual_col]][idx])
 
                 self$cleaning_log$add_change(
                   uuid = uuid_val,
