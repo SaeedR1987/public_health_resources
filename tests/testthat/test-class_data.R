@@ -2964,3 +2964,87 @@ test_that("Full integration: value_map is used during quality checks", {
 })
 
 
+# clean() respects the changed field ####
+
+
+test_that("clean() does not apply cleaning log entries with changed = 'no'", {
+  df <- tibble::tibble(id = 1:3, x = c("a", "b", "c"))
+  d <- Data$new(data = df, uuid = "id")
+  d$validate()
+  d$standardize()
+
+  # Add entry with changed = "no" — should NOT be applied
+  d$cleaning_log$add_change(
+    uuid = 1,
+    enum_id = NA_character_,
+    device_id = NA_character_,
+    question.name = "x",
+    issue = "test_flag",
+    feedback = "Flagged but not corrected",
+    changed = "no",
+    old.value = "a",
+    new.value = "REPLACED"
+  )
+
+  d$clean()
+
+  # Value should remain unchanged because changed = "no"
+  expect_equal(d$clean_data$x[1], "a")
+})
+
+
+test_that("clean() applies cleaning log entries with changed = 'yes'", {
+  df <- tibble::tibble(id = 1:3, x = c("a", "b", "c"))
+  d <- Data$new(data = df, uuid = "id")
+  d$validate()
+  d$standardize()
+
+  # Add entry with changed = "yes" — SHOULD be applied
+  d$cleaning_log$add_change(
+    uuid = 1,
+    enum_id = NA_character_,
+    device_id = NA_character_,
+    question.name = "x",
+    issue = "test_flag",
+    feedback = "Corrected value",
+    changed = "yes",
+    old.value = "a",
+    new.value = "CORRECTED"
+  )
+
+  d$clean()
+
+  # Value should be updated because changed = "yes"
+  expect_equal(d$clean_data$x[1], "CORRECTED")
+  # Other values should remain unchanged
+  expect_equal(d$clean_data$x[2], "b")
+  expect_equal(d$clean_data$x[3], "c")
+})
+
+
+test_that("clean() does not apply autoclean entries with new.value = NA when changed = 'no'", {
+  df <- tibble::tibble(id = 1:3, score = c(10, 20, 30))
+  d <- Data$new(data = df, uuid = "id")
+  d$validate()
+  d$standardize()
+
+  # Simulate what generate_cleaning_log creates for flag_warning (changed = "no", new.value = NA)
+  d$cleaning_log$add_change(
+    uuid = 2,
+    enum_id = NA_character_,
+    device_id = NA_character_,
+    question.name = "score",
+    issue = "flag_warning_test",
+    feedback = "Flagged as warning",
+    changed = "no",
+    old.value = "20",
+    new.value = NA_character_
+  )
+
+  d$clean()
+
+  # The score value should NOT be set to NA since changed = "no"
+  expect_equal(d$clean_data$score[2], 20)
+})
+
+
