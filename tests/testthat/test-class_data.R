@@ -2656,7 +2656,9 @@ test_that("generate_cleaning_log skips unique variable not present in dataset", 
 })
 
 
-# INTEGRATION TESTS: validate → standardize → clean ####test_that("Full integration: validate, standardize, clean with no issues", {
+# INTEGRATION TESTS: validate → standardize → clean ####
+
+test_that("Full integration: validate, standardize, clean with no issues", {
   df <- tibble(
     id = 1:5,
     age = c(20, 25, 30, 35, 40),

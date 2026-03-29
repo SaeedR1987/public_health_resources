@@ -223,7 +223,7 @@ DeletionLog <- R6::R6Class(
         }
 
         # ---- Check missing UUIDs
-        missing_uuid <- setdiff(df$uuid, unique(data_df[[data_obj$uuid]]))
+        missing_uuid <- setdiff(df$uuid, unique(as.character(data_df[[data_obj$uuid]])))
         if (length(missing_uuid) > 0) {
           out$missing_uuid <- missing_uuid
 
