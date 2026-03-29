@@ -2219,6 +2219,10 @@ Data <- R6::R6Class(
                   }
 
                   if (!skip_dependency) {
+                    # Read the action field before checking required fields, since
+                    # flag_delete dependencies may omit the 'then' clause
+                    rule_action <- rule[["action"]] %||% ""
+
                     rule_if   <- rule[["if"]]           %||%
                       rule[["condition_if"]] %||%
                       rule[["condition"]]
@@ -2226,10 +2230,18 @@ Data <- R6::R6Class(
                     rule_then <- rule[["then"]]         %||%
                       rule[["require"]]
 
-                    if (is.null(rule_if) || is.null(rule_then)) {
+                    if (is.null(rule_if)) {
                       iphra_warning(
                         self$dataset_name,
-                        iphra_txt("Invalid dependency rule structure for '{flag_name}': missing 'if/then'.")
+                        iphra_txt("Invalid dependency rule structure for '{flag_name}': missing 'if/condition_if'.")
+                      )
+                      skip_dependency <- TRUE
+                    } else if (is.null(rule_then) && rule_action != "flag_delete") {
+                      # 'then' is required for all actions except flag_delete,
+                      # which may use condition_if alone to identify rows for deletion
+                      iphra_warning(
+                        self$dataset_name,
+                        iphra_txt("Invalid dependency rule structure for '{flag_name}': missing 'then'.")
                       )
                       skip_dependency <- TRUE
                     }
@@ -2257,7 +2269,6 @@ Data <- R6::R6Class(
                     # docs/variable_value_mapping_guide.md
 
                     rule_if_translated <- self$.translate_expression(rule_if, stage = stage)
-                    rule_then_translated <- self$.translate_expression(rule_then, stage = stage)
 
                     cond_if <- iphra_try(
                       {
@@ -2285,42 +2296,50 @@ Data <- R6::R6Class(
                       })
                     )
 
-                    cond_then <- iphra_try(
-                      {
-                        out <- with(df, eval(parse(text = rule_then_translated)))
-                        if (!is.logical(out)) {
-                          rep(FALSE, nrow(df))
-                        } else if (length(out) == 1) {
-                          # Scalar logical value (e.g., TRUE or FALSE) - replicate to all rows
-                          rep(out, nrow(df))
-                        } else if (length(out) != nrow(df)) {
-                          # Length mismatch - default to FALSE
-                          rep(FALSE, nrow(df))
-                        } else {
-                          out
-                        }
-                      },
-                      on_error = "warn",
-                      origin   = paste0(self$dataset_name, "_DQ_then_", flag_name),
-                      hint     = tryCatch({
-                        # Try to parse to get specific error
-                        parse(text = rule_then_translated)
-                        NULL  # If parse succeeds, no special hint needed
-                      }, error = function(e) {
-                        self$.get_expression_parse_hint(rule_then_translated, conditionMessage(e))
-                      })
-                    )
+                    # Evaluate 'then' only when present
+                    cond_then <- NULL
+                    if (!is.null(rule_then)) {
+                      rule_then_translated <- self$.translate_expression(rule_then, stage = stage)
 
-                    # Calculate flag for this rule
-                    # Logic: flag rows where cond_if is TRUE but cond_then is FALSE
-                    # Note: When either cond_if or cond_then contains NA values, the logical
-                    # operation (cond_if & !cond_then) will produce NA at those positions.
-                    # Using NA as an index in R assignment causes those positions in flag_vec
-                    # to become NA, which we then convert to 1 (flagged) since we can't
-                    # confirm the requirement is met when the condition evaluates to NA.
+                      cond_then <- iphra_try(
+                        {
+                          out <- with(df, eval(parse(text = rule_then_translated)))
+                          if (!is.logical(out)) {
+                            rep(FALSE, nrow(df))
+                          } else if (length(out) == 1) {
+                            # Scalar logical value (e.g., TRUE or FALSE) - replicate to all rows
+                            rep(out, nrow(df))
+                          } else if (length(out) != nrow(df)) {
+                            # Length mismatch - default to FALSE
+                            rep(FALSE, nrow(df))
+                          } else {
+                            out
+                          }
+                        },
+                        on_error = "warn",
+                        origin   = paste0(self$dataset_name, "_DQ_then_", flag_name),
+                        hint     = tryCatch({
+                          # Try to parse to get specific error
+                          parse(text = rule_then_translated)
+                          NULL  # If parse succeeds, no special hint needed
+                        }, error = function(e) {
+                          self$.get_expression_parse_hint(rule_then_translated, conditionMessage(e))
+                        })
+                      )
+                    }
+
+                    # Calculate flag for this rule.
+                    # When 'then' is present: flag rows where cond_if is TRUE but cond_then is FALSE.
+                    # When 'then' is absent (flag_delete with condition_if only): flag rows where
+                    # cond_if is TRUE — those rows are the ones to be deleted.
+                    # Note: NA positions in flag_vec are converted to 1 (flagged) since we cannot
+                    # confirm the condition is met when the evaluation result is NA.
                     flag_vec <- rep(0, nrow(df))
-                    flag_vec[cond_if & !cond_then] <- 1
-                    # Convert any NA results to 1 (flagged) - NA means we can't confirm requirement is met
+                    if (!is.null(cond_then)) {
+                      flag_vec[cond_if & !cond_then] <- 1
+                    } else {
+                      flag_vec[cond_if] <- 1
+                    }
                     flag_vec[is.na(flag_vec)] <- 1
 
                     # Add flag with consistent "flag_" prefix
@@ -2472,9 +2491,11 @@ Data <- R6::R6Class(
     },
 
     #' @description
-    #' Generate cleaning log entries from data quality flags.
+    #' Generate cleaning and deletion log entries from data quality flags.
     #'
     #' Populates the existing CleaningLog with entries for each quality flag violation.
+    #' Populates the DeletionLog for flags with action "flag_delete" and for duplicate
+    #' values in variables marked as unique in the variable schema.
     #' Must be called after run_quality_checks() has been executed.
     #'
     #' @param stage Data stage to use ("standardized" or "clean")
@@ -2736,96 +2757,75 @@ Data <- R6::R6Class(
           }
         }
 
+        # PROCESS UNIQUE VARIABLE CONSTRAINTS
+        #
+        # For each variable in variable_schema$unique, check for duplicate values
+        # in the dataset. Any row whose value for that variable is a duplicate of an
+        # earlier row (past the 1st occurrence) is added to the deletion log.
+
+        unique_deletions_added <- 0
+
+        if (!is.null(self$variable_schema) &&
+            !is.null(self$variable_schema$unique) &&
+            length(self$variable_schema$unique) > 0) {
+
+          for (var_canonical in self$variable_schema$unique) {
+
+            # Resolve canonical variable name to the actual dataset column name
+            # using the variable_map (same approach as the rest of generate_cleaning_log)
+            var_col <- suppressWarnings(self$resolve_column(var_canonical, stage = stage))
+
+            # Skip if column not found in dataset
+            if (is.null(var_col) || !var_col %in% names(df)) next
+
+            vals <- df[[var_col]]
+
+            # Flag rows that are duplicates (not the first occurrence) and not NA
+            dup_idx <- which(duplicated(vals) & !is.na(vals))
+
+            if (length(dup_idx) > 0) {
+              for (idx in dup_idx) {
+                uuid_val <- df[[self$uuid]][idx]
+
+                dup_enum_id_val <- NA_character_
+                dup_device_id_val <- NA_character_
+
+                if (!is.na(enum_id_col) && enum_id_col %in% names(df)) {
+                  dup_enum_id_val <- as.character(df[[enum_id_col]][idx])
+                }
+
+                if (!is.na(device_id_col) && device_id_col %in% names(df)) {
+                  dup_device_id_val <- as.character(df[[device_id_col]][idx])
+                }
+
+                self$deletion_log$add_deletion(
+                  uuid = uuid_val,
+                  enum_id = dup_enum_id_val,
+                  device_id = dup_device_id_val,
+                  issue = paste0("duplicate_", var_col),
+                  feedback = paste0(
+                    "Duplicate value in unique variable '", var_col, "': ",
+                    as.character(vals[idx])
+                  )
+                )
+
+                unique_deletions_added <- unique_deletions_added + 1
+              }
+            }
+          }
+
+          if (unique_deletions_added > 0) {
+            iphra_message(
+              iphra_txt(
+                "Generated {unique_deletions_added} deletion log entries from unique variable constraint checks."
+              )
+            )
+          }
+        }
+
         invisible(self$cleaning_log)
 
       }, on_error = "abort", origin = paste0(self$dataset_name, "$generate_cleaning_log"))
-    },
-
-    #' @description
-    #' Generate deletion log entries from critical data quality flags.
-    #'
-    #' Populates the existing DeletionLog with entries for rows that have critical issues.
-    #' By default, only duplicate UUIDs trigger deletion, but custom flags can be specified.
-    #'
-    #' @param stage Data stage to use ("standardized" or "clean")
-    #' @param critical_flags Vector of flag column names that warrant deletion
-    #' @param overwrite If TRUE, clears existing log before adding new entries
-    #' @return Invisible self$deletion_log
-    generate_deletion_log = function(stage = "standardized",
-                                      critical_flags = NULL,
-                                      overwrite = FALSE) {
-      iphra_try({
-
-        df <- self$get_data(stage)
-        if (is.null(df)) {
-          iphra_error(
-            self$dataset_name,
-            iphra_txt("No data available at stage '{stage}'.")
-          )
-        }
-
-        # Must have quality flags
-        if (is.null(self$data_quality_flags)) {
-          iphra_warning(
-            self$dataset_name,
-            "No data quality flags available. Run run_quality_checks() first."
-          )
-          return(invisible(self$deletion_log))
-        }
-
-        # Define default critical flags that warrant deletion
-        if (is.null(critical_flags)) {
-          critical_flags <- c(
-            paste0("flag_", self$uuid, "_unique")  # duplicate UUIDs
-          )
-        }
-
-        # Clear log if requested
-        if (overwrite) {
-          self$deletion_log$clear()
-        }
-
-        flag_df <- self$data_quality_flags
-        entries_added <- 0
-
-        # For each critical flag, mark rows for deletion
-        for (flag_col in critical_flags) {
-          if (!flag_col %in% names(flag_df)) {
-            iphra_warning(
-              self$dataset_name,
-              iphra_txt("Critical flag '{flag_col}' not found in quality flags.")
-            )
-            next
-          }
-
-          bad_rows <- which(flag_df[[flag_col]] == 1)
-
-          if (length(bad_rows) > 0) {
-            for (idx in bad_rows) {
-              uuid_val <- df[[self$uuid]][idx]
-
-              self$deletion_log$add_deletion(
-                uuid = uuid_val,
-                enum_id = NA_character_,
-                device_id = NA_character_,
-                issue = flag_col,
-                feedback = paste0("Critical quality issue: ", flag_col)
-              )
-
-              entries_added <- entries_added + 1
-            }
-          }
-        }
-
-        iphra_message(
-          iphra_txt(
-            "Generated {entries_added} deletion log entries from critical flags."
-          )
-        )
-
-        invisible(self$deletion_log)
-
-      }, on_error = "abort", origin = paste0(self$dataset_name, "$generate_deletion_log"))
     },
 
     #' INTERNAL HELPER — apply cleaning log changes (option A authoritative mode)
