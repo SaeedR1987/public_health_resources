@@ -151,6 +151,15 @@ good_deaths <- DeathIndividualData$new(
   good_hh$variable_label
   good_hh$value_label
 
+  variable_schema <- good_hh$export_variable_schema()
+  View(variable_schema)
+
+  dependency_schema <- good_hh$export_dependency_schema()
+  View(dependency_schema)
+
+  indicator_schema <- good_hh$export_indicator_schema()
+  head(indicator_schema)
+
   # CHECK VALIDATE
   good_hh$validated
   good_hh$validate()
@@ -160,62 +169,21 @@ good_deaths <- DeathIndividualData$new(
   good_hh$standardize()
   good_hh$standardized
 
-  # Checking are other columns updating
-
-  good_hh$variable_schema$is_other
-
-  other_cols <- good_hh$other_columns
-  other_cols
-
   # Testing Cleaning Logs
-  good_hh$generate_deletion_log(stage = "standardized", overwrite = TRUE)
   good_hh$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
   log_cl <- good_hh$cleaning_log$log_df
-
   head(log_cl, 10)
-
-  View(log_cl)
-
-  table(log_cl$issue)
-
-  good_hh$variable_map$original_hh_size
-  good_hh$variable_map$linked_hh_size
-
-  good_hh$clean()
-
-  # View(log_cl dplyr::filter())
-
-  # Testing Deletion Log
-
-  !is.null(good_hh$deletion_log)
-  nrow(good_hh$deletion_log$log_df)
-  good_hh$generate_deletion_log()
-
   log_dl <- good_hh$deletion_log$log_df
-
   head(log_dl, 10)
 
-  View(log_dl)
+  # TEST CLEAN()
+  good_hh$clean()
 
-
-  col_info <- good_hh$get_column_info()
-  print(head(col_info, 10))
-
-  nrow(good_hh$raw_data)
-  ncol(good_hh$raw_data)
-  good_hh$required_columns
 
   # table_schema <- good_hh$get_variable_schema() %>% data_schema_to_table()
 
-  variable_schema <- good_hh$export_variable_schema()
-  View(variable_schema)
 
-  dependency_schema <- good_hh$export_dependency_schema()
-  View(dependency_schema)
-
-  indicator_schema <- good_hh$export_indicator_schema()
-  head(indicator_schema)
 
   # CLEAN
 
