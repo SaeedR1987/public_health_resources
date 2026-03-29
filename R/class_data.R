@@ -2850,7 +2850,7 @@ Data <- R6::R6Class(
 
         idx <- which(df[[uuid_col]] == u)
 
-        if (length(idx) == 1 && col %in% names(df)) {
+        if (length(idx) == 1 && col %in% names(df) && isTRUE(row$changed == "yes")) {
           df[[col]][idx] <- new_val
         }
       }
