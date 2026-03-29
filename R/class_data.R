@@ -1081,9 +1081,9 @@ Data <- R6::R6Class(
         self$validate()
 
         if (!self$validated) {
-          iphra_error(
+          iphra_warning(
             self$dataset_name,
-            iphra_txt("Data validation failed. Cannot proceed with cleaning.")
+            iphra_txt("Data validation failed. Proceeding with cleaning with caution.")
           )
         }
 
@@ -1154,8 +1154,8 @@ Data <- R6::R6Class(
 
           # apply deletions
           if (nrow(self$deletion_log$log_df) > 0) {
-            delete_ids <- self$deletion_log$log_df$uuid
-            self$clean_data <- self$clean_data[!self$clean_data[[self$uuid]] %in% delete_ids, ]
+            delete_ids <- as.character(self$deletion_log$log_df$uuid)
+            self$clean_data <- self$clean_data[!as.character(self$clean_data[[self$uuid]]) %in% delete_ids, ]
           }
         }
 
@@ -2848,7 +2848,7 @@ Data <- R6::R6Class(
         col <- row$question.name
         new_val <- row$new.value
 
-        idx <- which(df[[uuid_col]] == u)
+        idx <- which(as.character(df[[uuid_col]]) == as.character(u))
 
         if (length(idx) == 1 && col %in% names(df) && isTRUE(row$changed == "yes")) {
           df[[col]][idx] <- new_val

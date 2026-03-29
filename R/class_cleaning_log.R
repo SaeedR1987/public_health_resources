@@ -221,7 +221,7 @@ CleaningLog <- R6::R6Class(
         )
       }
 
-      missing_uuid <- setdiff(df_log$uuid, df[[uuid_col]])
+      missing_uuid <- setdiff(df_log$uuid, as.character(df[[uuid_col]]))
       if (length(missing_uuid) > 0) {
         issues$uuid_not_found <- missing_uuid
         iphra_warning(
