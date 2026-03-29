@@ -168,6 +168,7 @@ good_deaths <- DeathIndividualData$new(
   other_cols
 
   # Testing Cleaning Logs
+  good_hh$generate_deletion_log(stage = "standardized", overwrite = TRUE)
   good_hh$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
   log_cl <- good_hh$cleaning_log$log_df

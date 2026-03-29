@@ -19,10 +19,21 @@ generate_household_dataset <- function(n) {
   uuid <- paste0("HH-", sprintf("%05d", 1:n))
 
   # Dates - ensure end > start, both in past
-  start_dates <- seq(as.Date("2024-01-01"), as.Date("2024-12-01"), length.out = n)
+  start_dates <- seq.POSIXt(
+    from = as.POSIXct("2024-01-01 00:00:00", tz = "UTC"),
+    to   = as.POSIXct("2024-12-01 23:59:59", tz = "UTC"),
+    length.out = n
+  )
 
-  start <- as.character(start_dates)
-  end <- as.character(start_dates + sample(1:5, n, replace = TRUE))
+  # Optionally add a random time-of-day within each day
+  start <- start_dates + sample(0:(24*60*60 - 1), n, replace = TRUE)
+
+  # End is 8 to 30 minutes after start
+  end <- start + sample(8:30, n, replace = TRUE) * 60
+
+  # If you specifically need character columns:
+  start_chr <- format(start, "%Y-%m-%d %H:%M:%S")
+  end_chr   <- format(end,   "%Y-%m-%d %H:%M:%S")
   date_survey <- as.character(seq(from = Sys.Date() - 6, to = Sys.Date(), length.out = n))
   deviceid <- paste0('device-', sprintf("%04d", 1:n))
   audit <- paste0('audit_', uuid, '.csv')
