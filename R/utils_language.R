@@ -3,7 +3,7 @@
 # ────────────────────────────────────────────────
 
 # Translation dictionary (extend later)
-iphra_translations <- list(
+phr_translations <- list(
   en = list(
     export_tor = "Export ToR",
     validation_passed = "Validation checks passed (dummy mode).",
@@ -59,15 +59,15 @@ iphra_translations <- list(
 )
 
 # Placeholder for current language (can later live in session$userData)
-iphra_current_lang <- "en"
+phr_current_lang <- "en"
 
 # ---- Safe Translation Lookup ----
-iphra_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefaultReactiveDomain()) {
+phr_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefaultReactiveDomain()) {
   # [🔗 FUTURE] When language reactivity is connected, use session$userData$lang()
-  # If no reactive session available, fallback to iphra_current_lang or "en"
+  # If no reactive session available, fallback to phr_current_lang or "en"
 
   # Use glue::glue to evaluate expressions in {} within the key string
-  # This allows dynamic content like iphra_txt("Processing {n} items")
+  # This allows dynamic content like phr_txt("Processing {n} items")
   key <- glue::glue(key, .envir = parent.frame())
 
   if (is.null(lang)) {
@@ -78,16 +78,16 @@ iphra_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefa
   }
 
   # Fallback chain
-  if (is.null(lang) || !lang %in% names(iphra_translations)) {
-    if (exists("iphra_current_lang", envir = .GlobalEnv)) {
-      lang <- get("iphra_current_lang", envir = .GlobalEnv)
+  if (is.null(lang) || !lang %in% names(phr_translations)) {
+    if (exists("phr_current_lang", envir = .GlobalEnv)) {
+      lang <- get("phr_current_lang", envir = .GlobalEnv)
     } else {
       lang <- "en"
     }
   }
 
   # ---- Lookup ----
-  value <- iphra_translations[[lang]][[key]]
+  value <- phr_translations[[lang]][[key]]
 
   # ---- Fallback logic ----
   if (is.null(value)) {

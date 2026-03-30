@@ -55,8 +55,8 @@ NutritionDataAnalytics <- R6::R6Class(
         value_label = value_label
       )
 
-      iphra_message(
-        iphra_txt(glue::glue("{dataset_name} initialized as NutritionDataAnalytics object."))
+      phr_message(
+        phr_txt(glue::glue("{dataset_name} initialized as NutritionDataAnalytics object."))
       )
     },
 
@@ -77,7 +77,7 @@ NutritionDataAnalytics <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "NutritionDataAnalytics$default_analysis_schema",
@@ -108,7 +108,7 @@ NutritionDataAnalytics <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "NutritionDataAnalytics$default_outputs_schema",

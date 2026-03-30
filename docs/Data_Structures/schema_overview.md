@@ -485,7 +485,7 @@ To create a new indicator function:
 1. **Function signature**: Must accept `.dataset` as first parameter
 2. **Return value**: Must return a modified data frame
 3. **Naming convention**: Must start with `add_`
-4. **Error handling**: Use `iphra_try()` for graceful error handling
+4. **Error handling**: Use `phr_try()` for graceful error handling
 
 Example:
 
@@ -496,10 +496,10 @@ add_my_indicator <- function(.dataset,
   
   origin <- "add_my_indicator"
   
-  iphra_try({
+  phr_try({
     # Validate inputs
-    iphra_validate_dataframe(.dataset, origin, soft = FALSE)
-    iphra_validate_columns(.dataset, input_var, origin, soft = FALSE)
+    phr_validate_dataframe(.dataset, origin, soft = FALSE)
+    phr_validate_columns(.dataset, input_var, origin, soft = FALSE)
     
     # Compute indicator
     .dataset$my_indicator_score <- ifelse(

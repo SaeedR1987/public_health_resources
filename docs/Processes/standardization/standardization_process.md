@@ -266,7 +266,7 @@ When a column is defined in `variable_schema$types`, the standardize process att
   - TRUE: "true", "t", "yes", "y", "1"
   - FALSE: "false", "f", "no", "n", "0"
   - NA: any other value
-- **date**: Uses `iphra_convert_date()` for flexible date parsing
+- **date**: Uses `phr_convert_date()` for flexible date parsing
 
 ### Safe Coercion
 
@@ -389,8 +389,8 @@ hh$clean()
 
 **Key Helper Functions**:
 - `.is_safely_coercible()` - Type conversion safety check
-- `iphra_infer_column_type()` - Type inference from data
-- `iphra_convert_date()` - Flexible date parsing
+- `phr_infer_column_type()` - Type inference from data
+- `phr_convert_date()` - Flexible date parsing
 - `process_select_multiple_columns()` - Select multiple expansion
 - `map_schema_vars()` - Variable and value mapping
 

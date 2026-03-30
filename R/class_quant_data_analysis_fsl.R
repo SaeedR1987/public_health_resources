@@ -23,7 +23,7 @@ QuantDataAnalysisFSL <- R6::R6Class(
                           variable_label = NULL,
                           value_label = NULL) {
       origin <- "QuantDataAnalysisFSL$initialize"
-      iphra_message(origin, "Initializing FSL quantitative analysis class...")
+      phr_message(origin, "Initializing FSL quantitative analysis class...")
 
       super$initialize(
         data = data,
@@ -38,7 +38,7 @@ QuantDataAnalysisFSL <- R6::R6Class(
         value_label = value_label
       )
 
-      iphra_message(origin,
+      phr_message(origin,
                     paste("Loaded FSL indicator schema with",
                           nrow(self$analysis_schema), "indicators.")
       )
@@ -64,7 +64,7 @@ QuantDataAnalysisFSL <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "QuantDataAnalysisFSL$default_analysis_schema",
@@ -96,7 +96,7 @@ QuantDataAnalysisFSL <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "QuantDataAnalysisFSL$default_outputs_schema",

@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Script to generate sample datasets for household schema testing
-# Generated from iphra_tool_v2.xlsx xlsform
+# Generated from phr_tool_v2.xlsx xlsform
 
 library(dplyr)
 library(tibble)

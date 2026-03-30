@@ -71,8 +71,8 @@ WASHAnalysis <- R6::R6Class(
       self$linked_containers_value_map <- linked_containers_value_map
 
       if (!is.null(linked_containers_data)) {
-        iphra_message(
-          iphra_txt("WASHAnalysis initialized with linked water container data.")
+        phr_message(
+          phr_txt("WASHAnalysis initialized with linked water container data.")
         )
       }
 
@@ -97,7 +97,7 @@ WASHAnalysis <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "WASHAnalysis$default_analysis_schema",
@@ -129,7 +129,7 @@ WASHAnalysis <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "WASHAnalysis$default_outputs_schema",

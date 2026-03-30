@@ -127,7 +127,7 @@ DeletionLog <- R6::R6Class(
     #' Sets self$validated and self$issues based on results.
     validate = function(check_against = NULL, stage = "clean") {
 
-      iphra_try({
+      phr_try({
 
         # ---- 1. Run base Log validation first ----
         super_issues <- super$validate()
@@ -149,9 +149,9 @@ DeletionLog <- R6::R6Class(
         if (length(incomplete_cols) > 0) {
           super_issues$missing_or_empty <- incomplete_cols
 
-          iphra_warning(
+          phr_warning(
             self$log_name,
-            iphra_txt(
+            phr_txt(
               "Deletion log contains missing or empty values in: {paste(incomplete_cols, collapse=', ')}."
             )
           )
@@ -207,7 +207,7 @@ DeletionLog <- R6::R6Class(
 
       out <- list()
 
-      iphra_try({
+      phr_try({
 
         df <- self$log_df
 
@@ -216,7 +216,7 @@ DeletionLog <- R6::R6Class(
 
         # ---- Dataset must have UUID column
         if (!data_obj$uuid %in% names(data_df)) {
-          iphra_error(
+          phr_error(
             message = paste0("UUID column '", data_obj$uuid, "' not found in dataset."),
             origin = "DeletionLog$post_validate"
           )
@@ -227,9 +227,9 @@ DeletionLog <- R6::R6Class(
         if (length(missing_uuid) > 0) {
           out$missing_uuid <- missing_uuid
 
-          iphra_warning(
+          phr_warning(
             "DeletionLog",
-            iphra_txt(
+            phr_txt(
               "The following UUIDs in deletion log do not exist in dataset: {paste(missing_uuid, collapse=', ')}"
             )
           )

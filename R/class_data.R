@@ -125,29 +125,29 @@ Data <- R6::R6Class(
                           variable_map = NULL,
                           value_map = NULL) {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(data)) {
-          iphra_error(
-            iphra_txt("No data provided for initialization."),
+          phr_error(
+            phr_txt("No data provided for initialization."),
             origin = dataset_name
           )
         }
 
         # --- NEW: enforce explicit uuid ---
         if (is.null(uuid) || !is.character(uuid) || length(uuid) != 1) {
-          iphra_error(
+          phr_error(
             dataset_name,
-            iphra_txt("You must supply a valid uuid column name when creating a Data object.")
+            phr_txt("You must supply a valid uuid column name when creating a Data object.")
           )
         }
 
-        iphra_validate_dataframe(data, origin = dataset_name, soft = FALSE)
+        phr_validate_dataframe(data, origin = dataset_name, soft = FALSE)
 
         if (!uuid %in% names(data)) {
-          iphra_error(
+          phr_error(
             dataset_name,
-            iphra_txt("UUID column '{uuid}' not found in provided data.")
+            phr_txt("UUID column '{uuid}' not found in provided data.")
           )
         }
 
@@ -173,7 +173,7 @@ Data <- R6::R6Class(
           log_name = paste0(dataset_name, "_DeletionLog")
         )
 
-        iphra_message(iphra_txt("{dataset_name} initialized with {nrow(data)} records."))
+        phr_message(phr_txt("{dataset_name} initialized with {nrow(data)} records."))
         self$update_metadata()
         # self$..autosave_checkpoint("initialize")
 
@@ -208,9 +208,9 @@ Data <- R6::R6Class(
       validated    <- TRUE
       had_warnings <- FALSE
 
-      iphra_try({
+      phr_try({
 
-        iphra_message(iphra_txt("Starting validation for {self$dataset_name}..."))
+        phr_message(phr_txt("Starting validation for {self$dataset_name}..."))
 
         # Auto-select stage based on data state if default stage argument is used
         if (missing(stage)) {
@@ -230,21 +230,21 @@ Data <- R6::R6Class(
         self$pre_validate()
 
         # Core checks
-        iphra_validate_dataframe(df, origin = self$dataset_name, soft = FALSE)
+        phr_validate_dataframe(df, origin = self$dataset_name, soft = FALSE)
 
         # Soft validations - warnings only, capture return status
-        cols_valid <- iphra_validate_columns(df, required_cols = self$required_columns, origin = self$dataset_name, soft = TRUE)
+        cols_valid <- phr_validate_columns(df, required_cols = self$required_columns, origin = self$dataset_name, soft = TRUE)
         if (!isTRUE(cols_valid)) had_warnings <- TRUE
 
         if (!self$uuid %in% names(df)) {
-          iphra_error(self$dataset_name,
-                      iphra_txt("UUID column '{self$uuid}' not found in dataset."))
+          phr_error(self$dataset_name,
+                      phr_txt("UUID column '{self$uuid}' not found in dataset."))
         }
 
-        no_missing_valid <- iphra_validate_no_missing(df, cols = self$uuid, origin = self$dataset_name, soft = TRUE)
+        no_missing_valid <- phr_validate_no_missing(df, cols = self$uuid, origin = self$dataset_name, soft = TRUE)
         if (!isTRUE(no_missing_valid)) had_warnings <- TRUE
 
-        unique_valid <- iphra_validate_unique(df, cols = self$uuid, origin = self$dataset_name, soft = TRUE)
+        unique_valid <- phr_validate_unique(df, cols = self$uuid, origin = self$dataset_name, soft = TRUE)
         if (!isTRUE(unique_valid)) had_warnings <- TRUE
 
 
@@ -254,9 +254,9 @@ Data <- R6::R6Class(
         missing_mapped <- setdiff(mapped, names(df))
 
         if (length(missing_mapped) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Mapped columns missing: {paste(missing_mapped, collapse=', ')}")
+            phr_txt("Mapped columns missing: {paste(missing_mapped, collapse=', ')}")
           )
           had_warnings <- TRUE
         }
@@ -270,9 +270,9 @@ Data <- R6::R6Class(
 
             # Missing role in variable_map
             if (!var %in% names(self$variable_map)) {
-              iphra_warning(
+              phr_warning(
                 self$dataset_name,
-                iphra_txt("Value map role '{var}' is not linked to any variable_map entry.")
+                phr_txt("Value map role '{var}' is not linked to any variable_map entry.")
               )
               had_warnings <- TRUE
               next
@@ -281,9 +281,9 @@ Data <- R6::R6Class(
             dataset_col <- self$variable_map[[var]]
 
             if (!dataset_col %in% names(df)) {
-              iphra_warning(
+              phr_warning(
                 self$dataset_name,
-                iphra_txt("Value map references column '{dataset_col}' which is missing.")
+                phr_txt("Value map references column '{dataset_col}' which is missing.")
               )
               had_warnings <- TRUE
               next
@@ -314,9 +314,9 @@ Data <- R6::R6Class(
               missing_vals <- setdiff(all_dataset_mapped_vals, dataset_vals)
 
               if (length(missing_vals) > 0) {
-                iphra_warning(
+                phr_warning(
                   self$dataset_name,
-                  iphra_txt("Value map for role '{var}' has values not found in dataset: {paste(missing_vals, collapse=', ')}")
+                  phr_txt("Value map for role '{var}' has values not found in dataset: {paste(missing_vals, collapse=', ')}")
                 )
                 had_warnings <- TRUE
               }
@@ -325,9 +325,9 @@ Data <- R6::R6Class(
               missing_vals <- setdiff(mapped_values, dataset_vals)
 
               if (length(missing_vals) > 0) {
-                iphra_warning(
+                phr_warning(
                   self$dataset_name,
-                  iphra_txt("Value map for role '{var}' has values not found in dataset: {paste(missing_vals, collapse=', ')}")
+                  phr_txt("Value map for role '{var}' has values not found in dataset: {paste(missing_vals, collapse=', ')}")
                 )
                 had_warnings <- TRUE
               }
@@ -344,7 +344,7 @@ Data <- R6::R6Class(
         validated <- (!had_warnings) && pv
         self$validated <- validated
 
-        iphra_message(iphra_txt("{self$dataset_name} validation complete."))
+        phr_message(phr_txt("{self$dataset_name} validation complete."))
 
         self$update_metadata()
 
@@ -405,48 +405,48 @@ Data <- R6::R6Class(
                           stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         # Ensure raw_data exists
-        result <- iphra_try_step({
+        result <- phr_try_step({
           if (is.null(self$raw_data)) {
-            iphra_error(
+            phr_error(
               "Raw data is NULL; cannot standardize.",
               origin = paste0(self$dataset_name, "$standardize"),
               hint = "Raw dataset has been removed or corrupted. Reinitialize the Data object."
             )
           }
-        }, step = "Check raw data", hint = iphra_txt("Ensure raw data exists before standardization"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Check raw data", hint = phr_txt("Ensure raw data exists before standardization"))
+        if (phr_failed(result)) return(result)
 
         # Run validation to ensure data is validated before standardization
-        result <- iphra_try_step({
+        result <- phr_try_step({
           self$validate()
 
           if (!self$validated) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Data validation failed. Proceed with standardization with caution.")
+              phr_txt("Data validation failed. Proceed with standardization with caution.")
             )
           }
-        }, step = "Validation", hint = iphra_txt("Check data structure and required columns"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Validation", hint = phr_txt("Check data structure and required columns"))
+        if (phr_failed(result)) return(result)
 
         # Run pre-standardize hook (subclass extension point)
-        result <- iphra_try_step({
+        result <- phr_try_step({
           self$pre_standardize(stage = stage)
-        }, step = "Pre-standardize hook", hint = iphra_txt("Subclass-specific setup before standardization"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Pre-standardize hook", hint = phr_txt("Subclass-specific setup before standardization"))
+        if (phr_failed(result)) return(result)
 
         # Update variable and value maps after pre_standardize
         # (in case pre_standardize added new columns or values)
-        result <- iphra_try_step({
+        result <- phr_try_step({
           self$map_schema_vars(stage = "raw")
           self$map_schema_labels()
-        }, step = "Map schema variables", hint = iphra_txt("Auto-map schema variables to dataset columns"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Map schema variables", hint = phr_txt("Auto-map schema variables to dataset columns"))
+        if (phr_failed(result)) return(result)
 
-        iphra_message(iphra_txt("Standardizing {self$dataset_name}..."))
+        phr_message(phr_txt("Standardizing {self$dataset_name}..."))
 
         data_copy <- self$raw_data
         sch <- self$variable_schema %||% list()
@@ -460,7 +460,7 @@ Data <- R6::R6Class(
         schema_cols <- names(sch$types %||% list())
 
         # ---- iterate over each column with type coercion
-        result <- iphra_try_step({
+        result <- phr_try_step({
           for (nm in names(data_copy)) {
 
             # skip designated columns entirely
@@ -497,7 +497,7 @@ Data <- R6::R6Class(
 
                   # date
                 } else if (want == "date") {
-                  new <- iphra_convert_date(col)
+                  new <- phr_convert_date(col)
 
                   # fallback
                 } else {
@@ -509,9 +509,9 @@ Data <- R6::R6Class(
 
               } else {
                 # NOT safely coercible
-                iphra_warning(
+                phr_warning(
                   self$dataset_name,
-                  iphra_txt("Column '{nm}' cannot be safely coerced to schema type '{want}'. Leaving as-is.")
+                  phr_txt("Column '{nm}' cannot be safely coerced to schema type '{want}'. Leaving as-is.")
                 )
                 next  # do NOT attempt further inference
               }
@@ -522,7 +522,7 @@ Data <- R6::R6Class(
 
 
             inferred <- tryCatch(
-              iphra_infer_column_type(col, name = nm),
+              phr_infer_column_type(col, name = nm),
               error = function(e) "character"
             )
 
@@ -543,7 +543,7 @@ Data <- R6::R6Class(
 
               # date
             } else if (identical(inferred, "date") && .is_safely_coercible(col, "Date")) {
-              new <- iphra_convert_date(col)
+              new <- phr_convert_date(col)
 
               # fallback → clean character
             } else {
@@ -594,19 +594,19 @@ Data <- R6::R6Class(
               }
             }
           }
-        }, step = "Type coercion and other column detection", hint = iphra_txt("Check schema types and column conversion logic"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Type coercion and other column detection", hint = phr_txt("Check schema types and column conversion logic"))
+        if (phr_failed(result)) return(result)
 
         # (e) PROCESS SELECT_MULTIPLE COLUMNS
         # If schema has question_types with select_multiple, expand those columns
 
-        result <- iphra_try_step({
+        result <- phr_try_step({
           if (!is.null(sch$question_types) && length(sch$question_types) > 0) {
             sm_result <- process_select_multiple_columns(data_copy, sch)
 
             if (length(sm_result$expanded_columns) > 0) {
-              iphra_message(
-                iphra_txt("Expanded {length(sm_result$expanded_columns)} dummy columns from select_multiple questions.")
+              phr_message(
+                phr_txt("Expanded {length(sm_result$expanded_columns)} dummy columns from select_multiple questions.")
               )
             }
 
@@ -641,8 +641,8 @@ Data <- R6::R6Class(
                 }
               }
 
-              iphra_message(
-                iphra_txt("Tracked {length(sm_result$other_related_columns)} select_multiple column(s) with 'other' responses.")
+              phr_message(
+                phr_txt("Tracked {length(sm_result$other_related_columns)} select_multiple column(s) with 'other' responses.")
               )
             }
 
@@ -652,15 +652,15 @@ Data <- R6::R6Class(
             # No select_multiple columns to process
             data_copy
           }
-        }, step = "Process select_multiple columns", hint = iphra_txt("Check select_multiple schema and expansion logic"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Process select_multiple columns", hint = phr_txt("Check select_multiple schema and expansion logic"))
+        if (phr_failed(result)) return(result)
         # Update data_copy with result from step
         data_copy <- result
 
         # (f) ADD SCHEMA-IDENTIFIED "OTHER" COLUMNS
         # If schema has is_other field, add those to self$other_columns
 
-        result <- iphra_try_step({
+        result <- phr_try_step({
           if (!is.null(sch$is_other) && length(sch$is_other) > 0) {
             # More efficient: directly filter TRUE values
             schema_other_cols <- names(sch$is_other)[unlist(sch$is_other, use.names = FALSE)]
@@ -686,42 +686,42 @@ Data <- R6::R6Class(
                   other_linked_columns = linked_cols
                 )
               }
-              iphra_message(
-                iphra_txt("Added {length(schema_other_cols)} schema-identified 'other' columns.")
+              phr_message(
+                phr_txt("Added {length(schema_other_cols)} schema-identified 'other' columns.")
               )
             }
           }
-        }, step = "Add schema-identified other columns", hint = iphra_txt("Check schema is_other field"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Add schema-identified other columns", hint = phr_txt("Check schema is_other field"))
+        if (phr_failed(result)) return(result)
 
         # (e.1) Process indicator schema (if present) - BEFORE assigning standardized data
-        result <- iphra_try_step({
+        result <- phr_try_step({
           # Start with current data
           working_data <- data_copy
 
           if (!is.null(self$indicator_schema) && length(self$indicator_schema) > 0) {
-            iphra_message(iphra_txt("Processing {length(self$indicator_schema)} indicator(s) from indicator schema..."))
+            phr_message(phr_txt("Processing {length(self$indicator_schema)} indicator(s) from indicator schema..."))
 
             for (ind_name in names(self$indicator_schema)) {
               ind <- self$indicator_schema[[ind_name]]
 
-              iphra_try({
+              phr_try({
                 # Get function name (should start with add_)
                 func_name <- ind$function_name
 
                 if (is.null(func_name) || func_name == "" || is.na(func_name)) {
-                  iphra_warning(
+                  phr_warning(
                     self$dataset_name,
-                    iphra_txt("Indicator '{ind_name}' has no function_name specified. Skipping.")
+                    phr_txt("Indicator '{ind_name}' has no function_name specified. Skipping.")
                   )
                   next
                 }
 
                 # Check if function exists
                 if (!exists(func_name, mode = "function")) {
-                  iphra_warning(
+                  phr_warning(
                     self$dataset_name,
-                    iphra_txt("Function '{func_name}' for indicator '{ind_name}' not found. Skipping.")
+                    phr_txt("Function '{func_name}' for indicator '{ind_name}' not found. Skipping.")
                   )
                   next
                 }
@@ -752,9 +752,9 @@ Data <- R6::R6Class(
 
                   # Check if any canonical variables lack valid mapping
                   if (length(missing_canonical_vars) > 0) {
-                    iphra_warning(
+                    phr_warning(
                       self$dataset_name,
-                      iphra_txt("Indicator '{ind_name}' requires variables not mapped in variable_map: {paste(missing_canonical_vars, collapse=', ')}. Skipping.")
+                      phr_txt("Indicator '{ind_name}' requires variables not mapped in variable_map: {paste(missing_canonical_vars, collapse=', ')}. Skipping.")
                     )
                     next
                   }
@@ -762,9 +762,9 @@ Data <- R6::R6Class(
                   # Check if mapped columns exist in the dataset
                   missing_cols <- setdiff(mapped_vars, names(working_data))
                   if (length(missing_cols) > 0) {
-                    iphra_warning(
+                    phr_warning(
                       self$dataset_name,
-                      iphra_txt("Indicator '{ind_name}' requires columns not present in dataset: {paste(missing_cols, collapse=', ')}. Skipping.")
+                      phr_txt("Indicator '{ind_name}' requires columns not present in dataset: {paste(missing_cols, collapse=', ')}. Skipping.")
                     )
                     next
                   }
@@ -829,9 +829,9 @@ Data <- R6::R6Class(
                           if (!is.null(resolved)) {
                             resolved_elements <- c(resolved_elements, resolved)
                           } else {
-                            iphra_warning(
+                            phr_warning(
                               self$dataset_name,
-                              iphra_txt("Variable map role '{role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'.")
+                              phr_txt("Variable map role '{role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'.")
                             )
                           }
                         }
@@ -849,9 +849,9 @@ Data <- R6::R6Class(
                                   # value_map can itself be a vector, flatten it
                                   resolved_elements <- c(resolved_elements, resolved)
                                 } else {
-                                  iphra_warning(
+                                  phr_warning(
                                     self$dataset_name,
-                                    iphra_txt("Value map '{elem}' not found in vector argument '{arg_name}' for indicator '{ind_name}'.")
+                                    phr_txt("Value map '{elem}' not found in vector argument '{arg_name}' for indicator '{ind_name}'.")
                                   )
                                 }
                               } else {
@@ -860,9 +860,9 @@ Data <- R6::R6Class(
                                 resolved_elements <- c(resolved_elements, resolved)
                               }
                             } else {
-                              iphra_warning(
+                              phr_warning(
                                 self$dataset_name,
-                                iphra_txt("Value map role '{role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'.")
+                                phr_txt("Value map role '{role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'.")
                               )
                             }
                           }
@@ -882,9 +882,9 @@ Data <- R6::R6Class(
                       if (!is.null(resolved_value)) {
                         func_args[[arg_name]] <- resolved_value
                       } else {
-                        iphra_warning(
+                        phr_warning(
                           self$dataset_name,
-                          iphra_txt("Variable map role '{role}' not found for indicator '{ind_name}'. Passing NULL for optional parameter '{arg_name}'.")
+                          phr_txt("Variable map role '{role}' not found for indicator '{ind_name}'. Passing NULL for optional parameter '{arg_name}'.")
                         )
                         func_args[[arg_name]] <- NULL
                       }
@@ -906,16 +906,16 @@ Data <- R6::R6Class(
                           if (!is.null(resolved_value)) {
                             func_args[[arg_name]] <- resolved_value
                           } else {
-                            iphra_warning(
+                            phr_warning(
                               self$dataset_name,
-                              iphra_txt("Value map '{arg_value}' not found for indicator '{ind_name}'. Using original value.")
+                              phr_txt("Value map '{arg_value}' not found for indicator '{ind_name}'. Using original value.")
                             )
                             func_args[[arg_name]] <- arg_value
                           }
                         } else {
-                          iphra_warning(
+                          phr_warning(
                             self$dataset_name,
-                            iphra_txt("Value map role '{role}' not found for indicator '{ind_name}'. Using original value.")
+                            phr_txt("Value map role '{role}' not found for indicator '{ind_name}'. Using original value.")
                           )
                           func_args[[arg_name]] <- arg_value
                         }
@@ -928,20 +928,20 @@ Data <- R6::R6Class(
                 }
 
                 # Call the add_ function
-                iphra_message(iphra_txt("Calling {func_name} for indicator '{ind_name}'..."))
+                phr_message(phr_txt("Calling {func_name} for indicator '{ind_name}'..."))
                 ind_result <- do.call(func_name, func_args)
 
                 # Update working_data with result (not self$standardized_data)
                 if (is.data.frame(ind_result)) {
                   working_data <- ind_result
-                  iphra_message(iphra_txt("Indicator '{ind_name}' computed successfully."))
+                  phr_message(phr_txt("Indicator '{ind_name}' computed successfully."))
 
                   # Update variable and value maps after each indicator
                   # Temporarily assign working_data to standardized_data so map_schema_vars can access it
                   temp_standardized <- self$standardized_data
                   self$standardized_data <- working_data
 
-                  iphra_try({
+                  phr_try({
                     self$map_schema_vars(stage = "standardized")
                     self$map_schema_labels()
                   }, on_error = "warn", origin = paste0(self$dataset_name, "$standardize$map_vars_", ind_name))
@@ -950,9 +950,9 @@ Data <- R6::R6Class(
                   self$standardized_data <- temp_standardized
 
                 } else {
-                  iphra_warning(
+                  phr_warning(
                     self$dataset_name,
-                    iphra_txt("Function '{func_name}' did not return a data frame. Result ignored.")
+                    phr_txt("Function '{func_name}' did not return a data frame. Result ignored.")
                   )
                 }
 
@@ -962,8 +962,8 @@ Data <- R6::R6Class(
 
           # Return the final working data
           working_data
-        }, step = "Process indicator schema", hint = iphra_txt("Check indicator functions and required variables"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Process indicator schema", hint = phr_txt("Check indicator functions and required variables"))
+        if (phr_failed(result)) return(result)
         # Update data_copy with result from step
         data_copy <- result
 
@@ -972,7 +972,7 @@ Data <- R6::R6Class(
         # that maps each unique cluster to an integer from 1 to n clusters.
         # This column is stored as "cluster_id_numeric" and used by
         # QuantDataAnalysis$create_survey_design() for reliable survey design creation.
-        result <- iphra_try_step({
+        result <- phr_try_step({
           cluster_col <- self$variable_map[["cluster_id"]]
           if (!is.null(cluster_col) && cluster_col %in% names(data_copy)) {
             cluster_vals <- data_copy[[cluster_col]]
@@ -985,44 +985,44 @@ Data <- R6::R6Class(
               as.integer(numeric_map[as.character(cluster_vals)])
             )
             self$variable_map[["cluster_id_numeric"]] <- "cluster_id_numeric"
-            iphra_message(
-              iphra_txt("Created cluster_id_numeric with {length(unique_clusters)} unique cluster(s).")
+            phr_message(
+              phr_txt("Created cluster_id_numeric with {length(unique_clusters)} unique cluster(s).")
             )
           }
           data_copy
-        }, step = "Generate cluster_id_numeric", hint = iphra_txt("Check variable_map for cluster_id role"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Generate cluster_id_numeric", hint = phr_txt("Check variable_map for cluster_id role"))
+        if (phr_failed(result)) return(result)
         data_copy <- result
 
         # assign standardized data
         self$standardized_data <- data_copy
         self$standardized <- TRUE
-        iphra_message(iphra_txt("{self$dataset_name} standardization complete."))
+        phr_message(phr_txt("{self$dataset_name} standardization complete."))
 
 
 
         # (f) Run quality checks automatically if schema exists
-        result <- iphra_try_step({
+        result <- phr_try_step({
           if (!is.null(self$standardized_data) && !is.null(self$variable_schema)) {
-            iphra_message(iphra_txt("Running quality checks on {self$dataset_name}..."))
+            phr_message(phr_txt("Running quality checks on {self$dataset_name}..."))
             self$run_quality_checks(stage = "standardized")
           }
-        }, step = "Run quality checks", hint = iphra_txt("Check dependency schema and type validations"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Run quality checks", hint = phr_txt("Check dependency schema and type validations"))
+        if (phr_failed(result)) return(result)
 
         # (g) Subclass extension hook
-        result <- iphra_try_step({
+        result <- phr_try_step({
           self$post_standardize()
-        }, step = "Post-standardize hook", hint = iphra_txt("Subclass-specific processing after standardization"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Post-standardize hook", hint = phr_txt("Subclass-specific processing after standardization"))
+        if (phr_failed(result)) return(result)
 
         # Update variable and value maps after post_standardize
         # (in case post_standardize added new columns or values)
-        result <- iphra_try_step({
+        result <- phr_try_step({
           self$map_schema_vars(stage = "standardized")
           self$map_schema_labels()
-        }, step = "Update variable and value maps (final)", hint = iphra_txt("Final map update after post-standardize"))
-        if (iphra_failed(result)) return(result)
+        }, step = "Update variable and value maps (final)", hint = phr_txt("Final map update after post-standardize"))
+        if (phr_failed(result)) return(result)
 
         self$update_metadata()
 
@@ -1075,26 +1075,26 @@ Data <- R6::R6Class(
     #' 5. Applies deletion log removals (if present)
     #' 6. Updates metadata and sets cleaned flag
     clean = function() {
-      iphra_try({
+      phr_try({
 
         # Run validation to ensure data is validated before cleaning
         self$validate()
 
         if (!self$validated) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Data validation failed. Proceeding with cleaning with caution.")
+            phr_txt("Data validation failed. Proceeding with cleaning with caution.")
           )
         }
 
         if (!self$standardized) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Data should be standardized before cleaning. Using fallback.")
+            phr_txt("Data should be standardized before cleaning. Using fallback.")
           )
         }
 
-        iphra_message(iphra_txt("Starting cleaning for {self$dataset_name}..."))
+        phr_message(phr_txt("Starting cleaning for {self$dataset_name}..."))
 
 
 
@@ -1105,16 +1105,16 @@ Data <- R6::R6Class(
         } else {
           # Only warn if standardized_data should have existed
           if (!self$standardized) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Data should be standardized before cleaning. Using fallback.")
+              phr_txt("Data should be standardized before cleaning. Using fallback.")
             )
           }
 
           if (!is.null(self$standardized_data) && !is.data.frame(self$standardized_data)) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Standardized data is invalid or corrupted; falling back to raw data.")
+              phr_txt("Standardized data is invalid or corrupted; falling back to raw data.")
             )
           }
 
@@ -1164,7 +1164,7 @@ Data <- R6::R6Class(
         # FINALIZE
 
         self$cleaned <- TRUE
-        iphra_message(iphra_txt("{self$dataset_name} cleaning complete."))
+        phr_message(phr_txt("{self$dataset_name} cleaning complete."))
 
         self$update_metadata()
 
@@ -1188,13 +1188,13 @@ Data <- R6::R6Class(
 
       mode <- match.arg(mode)
 
-      iphra_try({
+      phr_try({
 
-        iphra_validate_dataframe(df, origin = "import_cleaning_log", soft = FALSE)
+        phr_validate_dataframe(df, origin = "import_cleaning_log", soft = FALSE)
 
         # Must contain CleaningLog required columns:
         required <- self$cleaning_log$required_columns
-        iphra_validate_columns(df, required_cols = required, origin = "import_cleaning_log", soft = FALSE)
+        phr_validate_columns(df, required_cols = required, origin = "import_cleaning_log", soft = FALSE)
 
         if (mode == "replace") {
           self$cleaning_log$log_df <- df
@@ -1205,8 +1205,8 @@ Data <- R6::R6Class(
         # Revalidate new combined log
         self$cleaning_log$validate()
 
-        iphra_message(
-          iphra_txt("Imported cleaning log ({nrow(df)} rows) into {self$dataset_name}.")
+        phr_message(
+          phr_txt("Imported cleaning log ({nrow(df)} rows) into {self$dataset_name}.")
         )
 
         invisible(TRUE)
@@ -1231,12 +1231,12 @@ Data <- R6::R6Class(
 
       mode <- match.arg(mode)
 
-      iphra_try({
+      phr_try({
 
-        iphra_validate_dataframe(df, origin = "import_deletion_log", soft = FALSE)
+        phr_validate_dataframe(df, origin = "import_deletion_log", soft = FALSE)
 
         required <- self$deletion_log$required_columns
-        iphra_validate_columns(df, required_cols = required, origin = "import_deletion_log", soft = FALSE)
+        phr_validate_columns(df, required_cols = required, origin = "import_deletion_log", soft = FALSE)
 
         if (mode == "replace") {
           self$deletion_log$log_df <- df
@@ -1246,8 +1246,8 @@ Data <- R6::R6Class(
 
         self$deletion_log$validate()
 
-        iphra_message(
-          iphra_txt("Imported deletion log ({nrow(df)} rows) into {self$dataset_name}.")
+        phr_message(
+          phr_txt("Imported deletion log ({nrow(df)} rows) into {self$dataset_name}.")
         )
 
         invisible(TRUE)
@@ -1269,9 +1269,9 @@ Data <- R6::R6Class(
     #' After import, diagnostics are run to check for schema-data mismatches.
     import_variable_schema = function(df) {
 
-      iphra_try({
+      phr_try({
 
-        iphra_validate_dataframe(df, origin = "import_variable_schema", soft = FALSE)
+        phr_validate_dataframe(df, origin = "import_variable_schema", soft = FALSE)
 
         # Convert table → structured schema list
         new_schema <- data_table_to_schema(df)
@@ -1279,8 +1279,8 @@ Data <- R6::R6Class(
         # Assign schema
         self$variable_schema <- new_schema
 
-        iphra_message(
-          iphra_txt("Variable schema imported and attached to {self$dataset_name} ({length(new_schema$types)} typed variables).")
+        phr_message(
+          phr_txt("Variable schema imported and attached to {self$dataset_name} ({length(new_schema$types)} typed variables).")
         )
 
         # Optional: run immediate soft diagnostics
@@ -1290,9 +1290,9 @@ Data <- R6::R6Class(
           # Check if there are any issues (rows where issues != "ok")
           issues_found <- diag[diag$issues != "ok", ]
           if (nrow(issues_found) > 0) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Schema imported but {nrow(issues_found)} diagnostic issue(s) detected.")
+              phr_txt("Schema imported but {nrow(issues_found)} diagnostic issue(s) detected.")
             )
           }
         }
@@ -1313,12 +1313,12 @@ Data <- R6::R6Class(
     #' The structured schema list is converted to a table format using data_schema_to_table().
     export_variable_schema = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$variable_schema)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No variable schema available to export.")
+            phr_txt("No variable schema available to export.")
           )
           return(NULL)
         }
@@ -1326,8 +1326,8 @@ Data <- R6::R6Class(
         # Convert variable schema list → table
         variable_table <- data_schema_to_table(self$variable_schema)
 
-        iphra_message(
-          iphra_txt("Exported variable schema from {self$dataset_name} ({nrow(variable_table)} row(s)).")
+        phr_message(
+          phr_txt("Exported variable schema from {self$dataset_name} ({nrow(variable_table)} row(s)).")
         )
 
         return(variable_table)
@@ -1349,7 +1349,7 @@ Data <- R6::R6Class(
     #' Use this method when programmatically building schemas.
     set_variable_schema = function(schema_list) {
 
-      iphra_try({
+      phr_try({
 
         # 1. Validate nested schema structure
         data_validate_schema_to_table(
@@ -1367,8 +1367,8 @@ Data <- R6::R6Class(
         # 4. Store
         self$variable_schema <- schema_list
 
-        iphra_message(
-          iphra_txt("Variable schema attached to {self$dataset_name}.")
+        phr_message(
+          phr_txt("Variable schema attached to {self$dataset_name}.")
         )
 
         # 5. Auto-update variable and value maps now that schema is available.
@@ -1395,9 +1395,9 @@ Data <- R6::R6Class(
     #'
     #' @return Invisible schema list
     import_schema = function(df) {
-      iphra_warning(
+      phr_warning(
         self$dataset_name,
-        iphra_txt("import_schema() is deprecated. Use import_variable_schema() instead.")
+        phr_txt("import_schema() is deprecated. Use import_variable_schema() instead.")
       )
       self$import_variable_schema(df)
     },
@@ -1410,9 +1410,9 @@ Data <- R6::R6Class(
     #' @return Invisible indicator schema list
     import_indicator_schema = function(df) {
 
-      iphra_try({
+      phr_try({
 
-        iphra_validate_dataframe(df, origin = "import_indicator_schema", soft = FALSE)
+        phr_validate_dataframe(df, origin = "import_indicator_schema", soft = FALSE)
 
         # Convert table → structured indicator schema list
         new_indicator_schema <- indicator_table_to_schema(df)
@@ -1420,8 +1420,8 @@ Data <- R6::R6Class(
         # Assign indicator schema
         self$indicator_schema <- new_indicator_schema
 
-        iphra_message(
-          iphra_txt("Indicator schema imported and attached to {self$dataset_name} ({length(new_indicator_schema)} indicator(s)).")
+        phr_message(
+          phr_txt("Indicator schema imported and attached to {self$dataset_name} ({length(new_indicator_schema)} indicator(s)).")
         )
 
         invisible(new_indicator_schema)
@@ -1435,12 +1435,12 @@ Data <- R6::R6Class(
     #' @return Data frame containing indicator schema, or NULL if no schema exists
     export_indicator_schema = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$indicator_schema)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No indicator schema available to export.")
+            phr_txt("No indicator schema available to export.")
           )
           return(NULL)
         }
@@ -1448,8 +1448,8 @@ Data <- R6::R6Class(
         # Convert indicator schema list → table
         indicator_table <- indicator_schema_to_table(self$indicator_schema)
 
-        iphra_message(
-          iphra_txt("Exported indicator schema from {self$dataset_name} ({nrow(indicator_table)} row(s)).")
+        phr_message(
+          phr_txt("Exported indicator schema from {self$dataset_name} ({nrow(indicator_table)} row(s)).")
         )
 
         return(indicator_table)
@@ -1463,19 +1463,19 @@ Data <- R6::R6Class(
     #' @param indicator_schema_list List containing indicator definitions
     set_indicator_schema = function(indicator_schema_list) {
 
-      iphra_try({
+      phr_try({
 
         if (!is.list(indicator_schema_list)) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Indicator schema must be a list.")
+            phr_txt("Indicator schema must be a list.")
           )
         }
 
         self$indicator_schema <- indicator_schema_list
 
-        iphra_message(
-          iphra_txt("Indicator schema set for {self$dataset_name} ({length(indicator_schema_list)} indicator(s)).")
+        phr_message(
+          phr_txt("Indicator schema set for {self$dataset_name} ({length(indicator_schema_list)} indicator(s)).")
         )
 
       }, on_error = "abort", origin = paste0(self$dataset_name, "$set_indicator_schema"))
@@ -1495,9 +1495,9 @@ Data <- R6::R6Class(
     #' @return Invisible dependency schema list
     import_dependency_schema = function(df) {
 
-      iphra_try({
+      phr_try({
 
-        iphra_validate_dataframe(df, origin = "import_dependency_schema", soft = FALSE)
+        phr_validate_dataframe(df, origin = "import_dependency_schema", soft = FALSE)
 
         # Convert table → structured dependency schema list
         new_dependency_schema <- dependency_table_to_schema(df)
@@ -1505,8 +1505,8 @@ Data <- R6::R6Class(
         # Assign dependency schema
         self$dependency_schema <- new_dependency_schema
 
-        iphra_message(
-          iphra_txt("Dependency schema imported and attached to {self$dataset_name} ({length(new_dependency_schema$dependencies)} dependency/ies, {length(new_dependency_schema$soft_dependencies)} soft dependency/ies).")
+        phr_message(
+          phr_txt("Dependency schema imported and attached to {self$dataset_name} ({length(new_dependency_schema$dependencies)} dependency/ies, {length(new_dependency_schema$soft_dependencies)} soft dependency/ies).")
         )
 
         invisible(new_dependency_schema)
@@ -1520,12 +1520,12 @@ Data <- R6::R6Class(
     #' @return Data frame containing dependency schema, or NULL if no schema exists
     export_dependency_schema = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$dependency_schema)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No dependency schema available to export.")
+            phr_txt("No dependency schema available to export.")
           )
           return(NULL)
         }
@@ -1533,8 +1533,8 @@ Data <- R6::R6Class(
         # Convert dependency schema list → table
         dependency_table <- dependency_schema_to_table(self$dependency_schema)
 
-        iphra_message(
-          iphra_txt("Exported dependency schema from {self$dataset_name} ({nrow(dependency_table)} row(s)).")
+        phr_message(
+          phr_txt("Exported dependency schema from {self$dataset_name} ({nrow(dependency_table)} row(s)).")
         )
 
         return(dependency_table)
@@ -1548,19 +1548,19 @@ Data <- R6::R6Class(
     #' @param dependency_schema_list List containing dependency definitions
     set_dependency_schema = function(dependency_schema_list) {
 
-      iphra_try({
+      phr_try({
 
         if (!is.list(dependency_schema_list)) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Dependency schema must be a list.")
+            phr_txt("Dependency schema must be a list.")
           )
         }
 
         self$dependency_schema <- dependency_schema_list
 
-        iphra_message(
-          iphra_txt("Dependency schema set for {self$dataset_name} ({length(dependency_schema_list$dependencies %||% list())} dependency/ies, {length(dependency_schema_list$soft_dependencies %||% list())} soft dependency/ies).")
+        phr_message(
+          phr_txt("Dependency schema set for {self$dataset_name} ({length(dependency_schema_list$dependencies %||% list())} dependency/ies, {length(dependency_schema_list$soft_dependencies %||% list())} soft dependency/ies).")
         )
 
       }, on_error = "abort", origin = paste0(self$dataset_name, "$set_dependency_schema"))
@@ -1585,7 +1585,7 @@ Data <- R6::R6Class(
     #' @return Data frame at the specified stage, or NULL if stage not yet available
     get_data = function(stage = c("raw", "standardized", "clean")) {
       stage <- match.arg(stage)
-      iphra_try({
+      phr_try({
         if (stage == "raw") return(self$raw_data)
         if (stage == "standardized") return(self$standardized_data)
         if (stage == "clean") return(self$clean_data)
@@ -1609,10 +1609,10 @@ Data <- R6::R6Class(
     #' missingness, cardinality, and sample values.
     get_column_info = function(stage = c("raw","standardized","clean")) {
       stage <- match.arg(stage)
-      iphra_try({
+      phr_try({
         df <- self$get_data(stage)
         if (is.null(df)) {
-          iphra_warning(self$dataset_name, iphra_txt("No {stage} data available for column inspection."))
+          phr_warning(self$dataset_name, phr_txt("No {stage} data available for column inspection."))
           return(NULL)
         }
         cols <- names(df)
@@ -1645,10 +1645,10 @@ Data <- R6::R6Class(
     #' @return Invisible NULL (updates variable_label internally)
     set_label = function(var, label) {
       if (!var %in% names(self$data)) {
-        iphra_warning(self$dataset_name, iphra_txt("Variable '{var}' not found when setting label."))
+        phr_warning(self$dataset_name, phr_txt("Variable '{var}' not found when setting label."))
       }
       self$variable_label[[var]] <- as.character(label)
-      iphra_message(iphra_txt("Set label for '{var}' → '{label}'."))
+      phr_message(phr_txt("Set label for '{var}' → '{label}'."))
     },
 
     #' Set Value Labels for Variable
@@ -1662,10 +1662,10 @@ Data <- R6::R6Class(
     #' @return Invisible NULL (updates value_label internally)
     set_value_labels = function(var, labels_named_vector) {
       if (!is.character(names(labels_named_vector)) || any(names(labels_named_vector) == "")) {
-        iphra_warning(self$dataset_name, iphra_txt("Value labels should be a named character vector."))
+        phr_warning(self$dataset_name, phr_txt("Value labels should be a named character vector."))
       }
       self$value_label[[var]] <- labels_named_vector
-      iphra_message(iphra_txt("Set value labels for '{var}' ({length(labels_named_vector)} levels)."))
+      phr_message(phr_txt("Set value labels for '{var}' ({length(labels_named_vector)} levels)."))
     },
 
     #' Get Variable Label
@@ -1710,32 +1710,32 @@ Data <- R6::R6Class(
 
       # --- Basic input validation ---
       if (!is.character(role) || length(role) != 1) {
-        iphra_error(self$dataset_name, iphra_txt("Role must be a single character string."))
+        phr_error(self$dataset_name, phr_txt("Role must be a single character string."))
       }
 
       if (!is.character(column_name) || length(column_name) != 1) {
-        iphra_error(self$dataset_name, iphra_txt("Column name must be a single character string."))
+        phr_error(self$dataset_name, phr_txt("Column name must be a single character string."))
       }
 
       # --- Use unified accessor for correct stage ---
       df <- self$get_data(stage)
 
       if (is.null(df)) {
-        iphra_warning(
+        phr_warning(
           self$dataset_name,
-          iphra_txt("No {stage} dataset available when setting variable '{role}'.")
+          phr_txt("No {stage} dataset available when setting variable '{role}'.")
         )
       } else if (!column_name %in% names(df)) {
-        iphra_warning(
+        phr_warning(
           self$dataset_name,
-          iphra_txt("Column '{column_name}' not found in {stage} dataset.")
+          phr_txt("Column '{column_name}' not found in {stage} dataset.")
         )
       }
 
       # --- Set the variable map ---
       self$variable_map[[role]] <- column_name
 
-      iphra_message(iphra_txt("Mapped role '{role}' → '{column_name}' (checked on {stage} data)."))
+      phr_message(phr_txt("Mapped role '{role}' → '{column_name}' (checked on {stage} data)."))
     },
 
     #' Get Variable Column Name by Role
@@ -1779,9 +1779,9 @@ Data <- R6::R6Class(
       # Warn if column missing
       exists_in_data <- !is.null(df) && col %in% names(df)
       if (!exists_in_data) {
-        iphra_warning(
+        phr_warning(
           self$dataset_name,
-          iphra_txt("Column '{col}' not found in data (role='{role}').")
+          phr_txt("Column '{col}' not found in data (role='{role}').")
         )
       }
 
@@ -1839,14 +1839,14 @@ Data <- R6::R6Class(
 
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         # 1. Get data for selected stage
         df <- self$get_data(stage)
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No data available at selected stage '{stage}'.")
+            phr_txt("No data available at selected stage '{stage}'.")
           )
           return(NULL)
         }
@@ -1854,9 +1854,9 @@ Data <- R6::R6Class(
         # 2. Check if schema exists
         sch <- self$variable_schema
         if (is.null(sch) || (is.list(sch) && length(sch) == 0)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No variable schema defined.")
+            phr_txt("No variable schema defined.")
           )
           return(NULL)
         }
@@ -2046,8 +2046,8 @@ Data <- R6::R6Class(
         # Store in data_diagnostics field
         self$data_diagnostics <- result
 
-        iphra_message(
-          iphra_txt("Generated diagnostic table with {nrow(result)} row(s) for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated diagnostic table with {nrow(result)} row(s) for {self$dataset_name}.")
         )
 
         # Return the table
@@ -2073,31 +2073,31 @@ Data <- R6::R6Class(
     #' Results are stored in self$data_quality_flags for later use.
     run_quality_checks = function(stage = "standardized") {
 
-      iphra_try({
+      phr_try({
 
         # SAFE LOAD OF DATA & SCHEMA
 
-        df <- iphra_try(
+        df <- phr_try(
           self$get_data(stage),
           on_error = "abort",
           origin = paste0(self$dataset_name, "_DQ_load")
         )
 
         if (is.null(df)) {
-          iphra_error(
+          phr_error(
             msg    = "No dataset is available at the selected stage.",
             origin = paste0(self$dataset_name, "$run_quality_checks")
           )
         }
 
         # Load dependency_schema (primary) and variable_schema (for types only)
-        dep_schema <- iphra_try(
+        dep_schema <- phr_try(
           self$dependency_schema,
           on_error = "abort",
           origin   = paste0(self$dataset_name, "_DQ_dep_schema_load")
         )
 
-        var_schema <- iphra_try(
+        var_schema <- phr_try(
           self$variable_schema,
           on_error = "abort",
           origin   = paste0(self$dataset_name, "_DQ_var_schema_load")
@@ -2112,7 +2112,7 @@ Data <- R6::R6Class(
                     length(var_schema$types) > 0
 
         if (!has_dep_schema && !has_types) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
             "No dependency schema or type information available; skipping data quality checks."
           )
@@ -2129,7 +2129,7 @@ Data <- R6::R6Class(
         flags <- list()
 
         add_flag <- function(name, vec) {
-          iphra_try(
+          phr_try(
             {
               if (!is.null(vec) && length(vec) == nrow(df)) {
                 flags[[name]] <<- vec
@@ -2146,7 +2146,7 @@ Data <- R6::R6Class(
         # Use var_schema$types to determine intended types
         # This check identifies specific rows that cannot be coerced
 
-        iphra_try({
+        phr_try({
           if (has_types) {
 
             for (col in names(var_schema$types)) {
@@ -2173,7 +2173,7 @@ Data <- R6::R6Class(
         # All other quality checks (allowed values, ranges, patterns, unique, mutex, etc.)
         # should now be defined as dependency rules in the dependency_schema
 
-        iphra_try({
+        phr_try({
           if (has_dep_schema) {
 
             # Process all dependencies (action field determines treatment)
@@ -2181,8 +2181,8 @@ Data <- R6::R6Class(
 
               for (flag_name in names(dep_schema$dependencies)) {
 
-                # Wrap each dependency processing in iphra_try to continue on errors
-                iphra_try({
+                # Wrap each dependency processing in phr_try to continue on errors
+                phr_try({
                   rule <- dep_schema$dependencies[[flag_name]]
 
                   # CHANGE 1: Check if required variables are present in dataset
@@ -2211,8 +2211,8 @@ Data <- R6::R6Class(
 
                     # Skip this dependency if any required variables are missing
                     if (length(missing_vars) > 0) {
-                      iphra_message(
-                        iphra_txt("Skipping dependency '{flag_name}': required variable(s) not present in dataset: {paste(missing_vars, collapse=', ')}")
+                      phr_message(
+                        phr_txt("Skipping dependency '{flag_name}': required variable(s) not present in dataset: {paste(missing_vars, collapse=', ')}")
                       )
                       skip_dependency <- TRUE
                     }
@@ -2231,17 +2231,17 @@ Data <- R6::R6Class(
                       rule[["require"]]
 
                     if (is.null(rule_if)) {
-                      iphra_warning(
+                      phr_warning(
                         self$dataset_name,
-                        iphra_txt("Invalid dependency rule structure for '{flag_name}': missing 'if/condition_if'.")
+                        phr_txt("Invalid dependency rule structure for '{flag_name}': missing 'if/condition_if'.")
                       )
                       skip_dependency <- TRUE
                     } else if (is.null(rule_then) && rule_action != "flag_delete") {
                       # 'then' is required for all actions except flag_delete,
                       # which may use condition_if alone to identify rows for deletion
-                      iphra_warning(
+                      phr_warning(
                         self$dataset_name,
-                        iphra_txt("Invalid dependency rule structure for '{flag_name}': missing 'then'.")
+                        phr_txt("Invalid dependency rule structure for '{flag_name}': missing 'then'.")
                       )
                       skip_dependency <- TRUE
                     }
@@ -2270,7 +2270,7 @@ Data <- R6::R6Class(
 
                     rule_if_translated <- self$.translate_expression(rule_if, stage = stage)
 
-                    cond_if <- iphra_try(
+                    cond_if <- phr_try(
                       {
                         out <- with(df, eval(parse(text = rule_if_translated)))
                         if (!is.logical(out)) {
@@ -2301,7 +2301,7 @@ Data <- R6::R6Class(
                     if (!is.null(rule_then)) {
                       rule_then_translated <- self$.translate_expression(rule_then, stage = stage)
 
-                      cond_then <- iphra_try(
+                      cond_then <- phr_try(
                         {
                           out <- with(df, eval(parse(text = rule_then_translated)))
                           if (!is.logical(out)) {
@@ -2359,7 +2359,7 @@ Data <- R6::R6Class(
         # Final assembly of flags
 
         if (length(flags) == 0) {
-          iphra_message(self$dataset_name, "No data quality issues detected.")
+          phr_message(self$dataset_name, "No data quality issues detected.")
           self$data_quality_flags <- NULL
           return(invisible(NULL))
         }
@@ -2376,7 +2376,7 @@ Data <- R6::R6Class(
 
         # Append to standardized data
 
-        iphra_try({
+        phr_try({
 
           std <- self$standardized_data
           if (!is.null(std) && self$uuid %in% names(std)) {
@@ -2394,8 +2394,8 @@ Data <- R6::R6Class(
               std <- dplyr::left_join(std, flag_df, by = join_col)
               self$standardized_data <- std
 
-              iphra_message(
-                iphra_txt(
+              phr_message(
+                phr_txt(
                   "Appended {ncol(flag_df)-1} data quality flag columns onto standardized dataset."
                 )
               )
@@ -2405,8 +2405,8 @@ Data <- R6::R6Class(
         }, on_error = "warn", origin = paste0(self$dataset_name, "_DQ_append"))
 
 
-        iphra_message(
-          iphra_txt(
+        phr_message(
+          phr_txt(
             "Data quality check complete. {ncol(flag_df)-1} flag types generated."
           )
         )
@@ -2425,7 +2425,7 @@ Data <- R6::R6Class(
     #' @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
     #' @return Character string with action ("flag_autoclean", "flag_warning", etc.) or empty string
     get_flag_action_from_schema = function(flag_name) {
-      iphra_try({
+      phr_try({
 
         # Check separate dependency_schema first
         if (!is.null(self$dependency_schema)) {
@@ -2464,7 +2464,7 @@ Data <- R6::R6Class(
     #' @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
     #' @return Character vector of canonical variable names involved in the dependency, or NULL
     get_flag_variables_from_schema = function(flag_name) {
-      iphra_try({
+      phr_try({
 
         # Check separate dependency_schema first
         if (!is.null(self$dependency_schema)) {
@@ -2509,19 +2509,19 @@ Data <- R6::R6Class(
     #' @param overwrite If TRUE, clears existing log before adding new entries
     #' @return Invisible self$cleaning_log
     generate_cleaning_log = function(stage = "standardized", overwrite = FALSE) {
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
         if (is.null(df)) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("No data available at stage '{stage}'.")
+            phr_txt("No data available at stage '{stage}'.")
           )
         }
 
         # Warns on no quality flags
         if (is.null(self$data_quality_flags)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
             "No data quality flags available. Run run_quality_checks() first."
           )
@@ -2641,15 +2641,15 @@ Data <- R6::R6Class(
             }
 
             if (length(skipped_self_ref) > 0) {
-              iphra_message(
-                iphra_txt(
+              phr_message(
+                phr_txt(
                   "Skipping self-referential cleaning log variable(s) for flag '{col}': {paste(skipped_self_ref, collapse=', ')}."
                 )
               )
             }
             if (length(skipped_missing_cols) > 0) {
-              iphra_message(
-                iphra_txt(
+              phr_message(
+                phr_txt(
                   "Skipping cleaning log variable(s) for flag '{col}' not found in dataset at stage '{stage}': {paste(skipped_missing_cols, collapse=', ')}."
                 )
               )
@@ -2695,8 +2695,8 @@ Data <- R6::R6Class(
           }
         }
 
-        iphra_message(
-          iphra_txt(
+        phr_message(
+          phr_txt(
             "Generated {entries_added} cleaning log entries and {deletions_added} deletion log entries from quality flags."
           )
         )
@@ -2789,8 +2789,8 @@ Data <- R6::R6Class(
           }
 
           if (other_entries_added > 0) {
-            iphra_message(
-              iphra_txt(
+            phr_message(
+              phr_txt(
                 "Generated {other_entries_added} cleaning log entries from 'other' columns."
               )
             )
@@ -2855,8 +2855,8 @@ Data <- R6::R6Class(
           }
 
           if (unique_deletions_added > 0) {
-            iphra_message(
-              iphra_txt(
+            phr_message(
+              phr_txt(
                 "Generated {unique_deletions_added} deletion log entries from unique variable constraint checks."
               )
             )
@@ -3267,9 +3267,9 @@ Data <- R6::R6Class(
     #' Saves the complete R6 object including all data stages, logs, schemas, and metadata.
     #' Can be restored later with load_object().
     save_object = function(file_path) {
-      iphra_try({
+      phr_try({
         if (missing(file_path) || !is.character(file_path)) {
-          iphra_error(self$dataset_name, iphra_txt("A valid file path must be specified."))
+          phr_error(self$dataset_name, phr_txt("A valid file path must be specified."))
         }
         if (!grepl("\\.rds$", file_path, ignore.case = TRUE)) file_path <- paste0(file_path, ".rds")
         saveRDS(self, file = file_path)
@@ -3279,7 +3279,7 @@ Data <- R6::R6Class(
         #   session$userData$last_saved_object <- file_path
         # }
 
-        iphra_message(iphra_txt("Saved {self$dataset_name} object to '{file_path}'."))
+        phr_message(phr_txt("Saved {self$dataset_name} object to '{file_path}'."))
         invisible(TRUE)
       }, on_error = "abort", origin = paste0(self$dataset_name, "$save_object"))
     },
@@ -3296,13 +3296,13 @@ Data <- R6::R6Class(
     #' @details
     #' Restores a complete Data object that was saved with save_object().
     load_object = function(file_path) {
-      iphra_try({
+      phr_try({
         if (missing(file_path) || !file.exists(file_path)) {
-          iphra_error("Data", iphra_txt("File '{file_path}' not found or inaccessible."))
+          phr_error("Data", phr_txt("File '{file_path}' not found or inaccessible."))
         }
         loaded <- readRDS(file_path)
         if (!inherits(loaded, "Data")) {
-          iphra_warning("Data", iphra_txt("Loaded object is not a 'Data' class instance."))
+          phr_warning("Data", phr_txt("Loaded object is not a 'Data' class instance."))
         }
 
         # ---- DUMMY SESSION LOAD HOOK
@@ -3310,7 +3310,7 @@ Data <- R6::R6Class(
         #   session$userData$last_loaded_object <- loaded$dataset_name
         # }
 
-        iphra_message(iphra_txt("Loaded Data object '{loaded$dataset_name}' from '{file_path}'."))
+        phr_message(phr_txt("Loaded Data object '{loaded$dataset_name}' from '{file_path}'."))
         return(loaded)
       }, on_error = "abort", origin = "Data$load_object")
     },
@@ -3333,10 +3333,10 @@ Data <- R6::R6Class(
                            file_path = NULL) {
       stage <- match.arg(stage)
       format <- match.arg(format)
-      iphra_try({
+      phr_try({
         df <- self$get_data(stage)
         if (is.null(df)) {
-          iphra_error(self$dataset_name, iphra_txt("No data available at stage '{stage}' to export."))
+          phr_error(self$dataset_name, phr_txt("No data available at stage '{stage}' to export."))
         }
         if (is.null(file_path)) {
           file_path <- paste0(self$dataset_name, "_", stage, ".", format)
@@ -3347,7 +3347,7 @@ Data <- R6::R6Class(
           saveRDS(df, file_path)
         } else if (format == "xlsx") {
           if (!requireNamespace("openxlsx", quietly = TRUE)) {
-            iphra_error(self$dataset_name, iphra_txt("Package 'openxlsx' is required for XLSX export."))
+            phr_error(self$dataset_name, phr_txt("Package 'openxlsx' is required for XLSX export."))
           }
           openxlsx::write.xlsx(df, file = file_path)
         }
@@ -3357,7 +3357,7 @@ Data <- R6::R6Class(
         #   session$userData$last_export_path <- file_path
         # }
 
-        iphra_message(iphra_txt("Exported {stage} data to '{file_path}'."))
+        phr_message(phr_txt("Exported {stage} data to '{file_path}'."))
         invisible(file_path)
       }, on_error = "abort", origin = paste0(self$dataset_name, "$export_data"))
     },
@@ -3398,9 +3398,9 @@ Data <- R6::R6Class(
     #' @return List with summary information including dataset name, record/column counts,
     #'   validation status, schemas, and labels
     summary = function() {
-      iphra_try({
+      phr_try({
         if (is.null(self$raw_data)) {
-          iphra_warning(self$dataset_name, iphra_txt("No data loaded for summary."))
+          phr_warning(self$dataset_name, phr_txt("No data loaded for summary."))
           return(NULL)
         }
         list(
@@ -3440,10 +3440,10 @@ Data <- R6::R6Class(
     get_hash = function(stage = c("clean","standardized","raw")) {
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         if (!requireNamespace("digest", quietly = TRUE)) {
-          iphra_error(self$dataset_name, iphra_txt("Package 'digest' is required for hashing."))
+          phr_error(self$dataset_name, phr_txt("Package 'digest' is required for hashing."))
         }
 
         df <- self$get_data(stage)
@@ -3485,14 +3485,14 @@ Data <- R6::R6Class(
     #' Creates a foreign key relationship for use with validate_links().
     add_linked_dataset = function(name, other_object, by_self_role, by_other_role) {
       if (missing(name) || !is.character(name) || length(name) != 1) {
-        iphra_error(self$dataset_name, iphra_txt("Link 'name' must be a single character string."))
+        phr_error(self$dataset_name, phr_txt("Link 'name' must be a single character string."))
       }
       self$linked_objects[[name]] <- list(
         object = other_object,
         by_self_role = by_self_role,
         by_other_role = by_other_role
       )
-      iphra_message(iphra_txt("Linked '{name}' to {self$dataset_name} (by {by_self_role} -> {by_other_role})."))
+      phr_message(phr_txt("Linked '{name}' to {self$dataset_name} (by {by_self_role} -> {by_other_role})."))
       invisible(TRUE)
     },
 
@@ -3512,10 +3512,10 @@ Data <- R6::R6Class(
     #' * Checks for missing foreign key values
     #' * Reports orphaned records
     validate_links = function(stage_self = "clean", stage_other = "clean") {
-      iphra_try({
+      phr_try({
 
         if (length(self$linked_objects) == 0) {
-          iphra_message(iphra_txt("No linked objects to validate for {self$dataset_name}."))
+          phr_message(phr_txt("No linked objects to validate for {self$dataset_name}."))
           return(invisible(TRUE))
         }
 
@@ -3550,14 +3550,14 @@ Data <- R6::R6Class(
 
         # If no problems → TRUE
         if (length(problems) == 0) {
-          iphra_message(iphra_txt("All links validated successfully for {self$dataset_name}."))
+          phr_message(phr_txt("All links validated successfully for {self$dataset_name}."))
           return(invisible(TRUE))
         }
 
         # Otherwise return list of missing FKs
-        iphra_warning(
+        phr_warning(
           self$dataset_name,
-          iphra_txt("Link validation found missing foreign keys in: {paste(names(problems), collapse=', ')}")
+          phr_txt("Link validation found missing foreign keys in: {paste(names(problems), collapse=', ')}")
         )
 
         return(problems)
@@ -3578,14 +3578,14 @@ Data <- R6::R6Class(
 
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataQuality generation.")
+            phr_txt("No {stage} data available for DataQuality generation.")
           )
           return(NULL)
         }
@@ -3608,8 +3608,8 @@ Data <- R6::R6Class(
           value_label = self$value_label
         )
 
-        iphra_message(
-          iphra_txt("Generated general DataQuality object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated general DataQuality object for {self$dataset_name}.")
         )
 
         return(dq)
@@ -3629,14 +3629,14 @@ Data <- R6::R6Class(
 
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for Analysis generation.")
+            phr_txt("No {stage} data available for Analysis generation.")
           )
           return(NULL)
         }
@@ -3661,8 +3661,8 @@ Data <- R6::R6Class(
           value_label = self$value_label
         )
 
-        iphra_message(
-          iphra_txt("Generated general QuantDataAnalysis object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated general QuantDataAnalysis object for {self$dataset_name}.")
         )
 
         return(analysis)
@@ -3685,14 +3685,14 @@ Data <- R6::R6Class(
 
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataAnalytics generation.")
+            phr_txt("No {stage} data available for DataAnalytics generation.")
           )
           return(NULL)
         }
@@ -3714,8 +3714,8 @@ Data <- R6::R6Class(
           value_label     = self$value_label
         )
 
-        iphra_message(
-          iphra_txt("Generated general DataAnalytics object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated general DataAnalytics object for {self$dataset_name}.")
         )
 
         return(analytics)
@@ -3741,14 +3741,14 @@ Data <- R6::R6Class(
     #' @return Invisible self for method chaining
     map_schema_vars = function(stage = "raw") {
 
-      iphra_try({
+      phr_try({
 
         sch <- self$variable_schema
 
         # Early exit if no schema is defined
         if (is.null(sch) || length(sch) == 0) {
-          iphra_message(
-            iphra_txt("No variable schema defined for {self$dataset_name}; skipping auto-mapping.")
+          phr_message(
+            phr_txt("No variable schema defined for {self$dataset_name}; skipping auto-mapping.")
           )
           return(invisible(self))
         }
@@ -3756,9 +3756,9 @@ Data <- R6::R6Class(
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for schema variable mapping.")
+            phr_txt("No {stage} data available for schema variable mapping.")
           )
           return(invisible(self))
         }
@@ -3952,8 +3952,8 @@ Data <- R6::R6Class(
         }
 
         if (vars_mapped > 0 || vals_mapped > 0) {
-          iphra_message(
-            iphra_txt("Auto-mapped {vars_mapped} variable(s) and {vals_mapped} value set(s) for {self$dataset_name}.")
+          phr_message(
+            phr_txt("Auto-mapped {vars_mapped} variable(s) and {vals_mapped} value set(s) for {self$dataset_name}.")
           )
         }
 
@@ -3989,7 +3989,7 @@ Data <- R6::R6Class(
     #' `value_label_ar` columns.
     map_schema_labels = function(language = "english") {
 
-      iphra_try({
+      phr_try({
 
         sch <- self$variable_schema
 
@@ -4004,9 +4004,9 @@ Data <- R6::R6Class(
           "french"  = "fr",
           "arabic"  = "ar",
           {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Unknown language '{language}' in map_schema_labels(); defaulting to 'english'.")
+              phr_txt("Unknown language '{language}' in map_schema_labels(); defaulting to 'english'.")
             )
             "en"
           }
@@ -4036,8 +4036,8 @@ Data <- R6::R6Class(
         }
 
         if (vars_labelled > 0 || vals_labelled > 0) {
-          iphra_message(
-            iphra_txt("Labelled {vars_labelled} variable(s) and {vals_labelled} value set(s) for {self$dataset_name} ({language}).")
+          phr_message(
+            phr_txt("Labelled {vars_labelled} variable(s) and {vals_labelled} value set(s) for {self$dataset_name} ({language}).")
           )
         }
 
@@ -4088,7 +4088,7 @@ Data <- R6::R6Class(
         warnings = character(0)
       )
 
-      iphra_try({
+      phr_try({
 
         df <- if (validate_columns) self$get_data(stage) else NULL
         data_cols <- if (!is.null(df)) names(df) else character(0)
@@ -4100,18 +4100,18 @@ Data <- R6::R6Class(
 
           # Validate input structure
           if (!is.data.frame(variable_map_df)) {
-            iphra_error(
+            phr_error(
               self$dataset_name,
-              iphra_txt("variable_map_df must be a data frame.")
+              phr_txt("variable_map_df must be a data frame.")
             )
           }
 
           required_cols <- c("role", "column_name")
           missing <- setdiff(required_cols, names(variable_map_df))
           if (length(missing) > 0) {
-            iphra_error(
+            phr_error(
               self$dataset_name,
-              iphra_txt("variable_map_df missing required columns: {paste(missing, collapse=', ')}")
+              phr_txt("variable_map_df missing required columns: {paste(missing, collapse=', ')}")
             )
           }
 
@@ -4141,9 +4141,9 @@ Data <- R6::R6Class(
 
             # Validate column exists if requested
             if (validate_columns && length(data_cols) > 0 && !(col_name %in% data_cols)) {
-              warn_msg <- iphra_txt("Column '{col_name}' for role '{role}' not found in dataset.")
+              warn_msg <- phr_txt("Column '{col_name}' for role '{role}' not found in dataset.")
               result$warnings <- c(result$warnings, warn_msg)
-              iphra_warning(self$dataset_name, warn_msg)
+              phr_warning(self$dataset_name, warn_msg)
               next
             }
 
@@ -4160,18 +4160,18 @@ Data <- R6::R6Class(
 
           # Validate input structure
           if (!is.data.frame(value_map_df)) {
-            iphra_error(
+            phr_error(
               self$dataset_name,
-              iphra_txt("value_map_df must be a data frame.")
+              phr_txt("value_map_df must be a data frame.")
             )
           }
 
           required_cols <- c("role", "values")
           missing <- setdiff(required_cols, names(value_map_df))
           if (length(missing) > 0) {
-            iphra_error(
+            phr_error(
               self$dataset_name,
-              iphra_txt("value_map_df missing required columns: {paste(missing, collapse=', ')}")
+              phr_txt("value_map_df missing required columns: {paste(missing, collapse=', ')}")
             )
           }
 
@@ -4209,8 +4209,8 @@ Data <- R6::R6Class(
         }
 
         if (result$variables_updated > 0 || result$values_updated > 0) {
-          iphra_message(
-            iphra_txt("Updated {result$variables_updated} variable mapping(s) and {result$values_updated} value mapping(s) for {self$dataset_name}.")
+          phr_message(
+            phr_txt("Updated {result$variables_updated} variable mapping(s) and {result$values_updated} value mapping(s) for {self$dataset_name}.")
           )
         }
 
@@ -4236,7 +4236,7 @@ Data <- R6::R6Class(
     #   # - Save/Cancel buttons
     #   #
     #   # When saved, it will call repair_maps() with the edited dataframes.
-    #   iphra_message("UI modal for repair_maps not yet implemented.")
+    #   phr_message("UI modal for repair_maps not yet implemented.")
     #   return(NULL)
     # }
 

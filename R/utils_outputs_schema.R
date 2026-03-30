@@ -83,10 +83,10 @@ outputs_schema_to_table <- function(outputs_schema) {
 #' @export
 outputs_table_to_schema <- function(df) {
 
-  iphra_validate_dataframe(df, origin = "outputs_table_to_schema", soft = FALSE)
+  phr_validate_dataframe(df, origin = "outputs_table_to_schema", soft = FALSE)
   outputs_validate_table_to_schema(df)
 
-  iphra_validate_columns(
+  phr_validate_columns(
     df,
     required_cols = c(
       "output_name",
@@ -99,7 +99,7 @@ outputs_table_to_schema <- function(df) {
       "output_type"
     ),
     origin = "outputs_table_to_schema",
-    hint = iphra_txt("Outputs table must include all required schema fields."),
+    hint = phr_txt("Outputs table must include all required schema fields."),
     soft = FALSE
   )
 
@@ -186,9 +186,9 @@ outputs_table_to_schema <- function(df) {
 #' @export
 outputs_validate_table_to_schema <- function(df) {
 
-  iphra_try({
+  phr_try({
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       df,
       origin = "outputs_validate_table_to_schema",
       soft = FALSE
@@ -205,11 +205,11 @@ outputs_validate_table_to_schema <- function(df) {
       "output_type"
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       df,
       required_cols = required_cols,
       origin = "outputs_validate_table_to_schema",
-      hint = iphra_txt("Outputs schema table must include all required fields."),
+      hint = phr_txt("Outputs schema table must include all required fields."),
       soft = FALSE
     )
 
@@ -219,12 +219,12 @@ outputs_validate_table_to_schema <- function(df) {
                                      !df$output_type %in% valid_types]
     
     if (length(invalid_types) > 0) {
-      iphra_error(
+      phr_error(
         origin = "outputs_validate_table_to_schema",
-        message = iphra_txt(
+        message = phr_txt(
           glue::glue("Invalid output_type values: {paste(unique(invalid_types), collapse=', ')}")
         ),
-        hint = iphra_txt("output_type must be either 'visualization' or 'table'.")
+        hint = phr_txt("output_type must be either 'visualization' or 'table'.")
       )
     }
 
@@ -245,42 +245,42 @@ outputs_validate_table_to_schema <- function(df) {
 #' @export
 outputs_validate_schema_to_table <- function(outputs_schema, origin = "outputs_validate_schema_to_table") {
 
-  iphra_try({
+  phr_try({
 
     if (is.null(outputs_schema) || !is.list(outputs_schema)) {
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Outputs schema must be a list object."),
-        hint    = iphra_txt("Ensure outputs_schema is a named list.")
+        message = phr_txt("Outputs schema must be a list object."),
+        hint    = phr_txt("Ensure outputs_schema is a named list.")
       )
     }
 
     purrr::iwalk(outputs_schema, function(out, name) {
 
       if (!is.list(out)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("Output '{name}' must be a list."))
+          message = phr_txt(glue::glue("Output '{name}' must be a list."))
         )
       }
 
       # output_name
       if (!is.character(out$output_name) || length(out$output_name) != 1) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`output_name` in '{name}' must be a single character string."))
+          message = phr_txt(glue::glue("`output_name` in '{name}' must be a single character string."))
         )
       }
 
       if (out$output_name != name) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(
+          message = phr_txt(
             glue::glue(
               "Output list name '{name}' does not match output_name field value '{out$output_name}'."
             )
           ),
-          hint = iphra_txt(
+          hint = phr_txt(
             "The name used in the outputs list must be identical to the output_name field value."
           )
         )
@@ -288,17 +288,17 @@ outputs_validate_schema_to_table <- function(outputs_schema, origin = "outputs_v
 
       # output_type validation
       if (!is.character(out$output_type) || length(out$output_type) != 1) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`output_type` in '{name}' must be a single character string."))
+          message = phr_txt(glue::glue("`output_type` in '{name}' must be a single character string."))
         )
       }
 
       valid_types <- c("visualization", "table")
       if (!out$output_type %in% valid_types) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(
+          message = phr_txt(
             glue::glue(
               "`output_type` in '{name}' must be either 'visualization' or 'table', got '{out$output_type}'."
             )
@@ -309,17 +309,17 @@ outputs_validate_schema_to_table <- function(outputs_schema, origin = "outputs_v
       # variables (optional)
       if (!is.null(out$variables) &&
           !(is.character(out$variables) && is.atomic(out$variables))) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`variables` in '{name}' must be a character vector."))
+          message = phr_txt(glue::glue("`variables` in '{name}' must be a character vector."))
         )
       }
 
       # test_params (optional)
       if (!is.null(out$test_params) && !is.list(out$test_params)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`test_params` in '{name}' must be a list."))
+          message = phr_txt(glue::glue("`test_params` in '{name}' must be a list."))
         )
       }
     })

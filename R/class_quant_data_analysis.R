@@ -50,7 +50,7 @@ QuantDataAnalysis <- R6::R6Class(
                           variable_label = NULL,
                           value_label = NULL) {
       origin <- "QuantDataAnalysis$initialize"
-      iphra_message(origin, "Initializing quantitative analysis class...")
+      phr_message(origin, "Initializing quantitative analysis class...")
 
       self$parent_data_object <- parent_data_object
       self$dataset_name <- dataset_name
@@ -97,7 +97,7 @@ QuantDataAnalysis <- R6::R6Class(
       # 4. Load outputs schema
       self$outputs_schema <- self$default_outputs_schema()
 
-      iphra_message(origin, "Initialization complete.")
+      phr_message(origin, "Initialization complete.")
       invisible(self)
     },
 
@@ -135,7 +135,7 @@ QuantDataAnalysis <- R6::R6Class(
       }
 
       # Read the Excel template
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "QuantDataAnalysis$default_analysis_schema",
@@ -183,7 +183,7 @@ QuantDataAnalysis <- R6::R6Class(
       }
 
       # Read the Excel template
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "QuantDataAnalysis$default_outputs_schema",
@@ -215,12 +215,12 @@ QuantDataAnalysis <- R6::R6Class(
       origin <- "QuantDataAnalysis$create_survey_design"
 
       if (!requireNamespace("srvyr", quietly = TRUE)) {
-        iphra_warning(origin, "Package 'srvyr' must be installed to create survey design objects.")
+        phr_warning(origin, "Package 'srvyr' must be installed to create survey design objects.")
         return(NULL)
       }
 
       if (is.null(self$data)) {
-        iphra_warning(origin, "No data available to create survey design.")
+        phr_warning(origin, "No data available to create survey design.")
         return(NULL)
       }
 
@@ -246,7 +246,7 @@ QuantDataAnalysis <- R6::R6Class(
 
       # Build the as_survey_design call with whichever variables are available
       if (is.null(cluster_col)) {
-        iphra_message(origin, "No cluster column found in variable_map; using ids = 1 (simple random sample design).")
+        phr_message(origin, "No cluster column found in variable_map; using ids = 1 (simple random sample design).")
       }
 
       # Pre-compute tidy-eval symbols before the srvyr call.
@@ -259,7 +259,7 @@ QuantDataAnalysis <- R6::R6Class(
       weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
       fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
 
-      design <- iphra_try(
+      design <- phr_try(
         srvyr::as_survey_design(
           .data   = self$data,
           ids     = !!ids_sym,
@@ -274,7 +274,7 @@ QuantDataAnalysis <- R6::R6Class(
       )
 
       if (!is.null(design)) {
-        iphra_message(origin, "Survey design created successfully.")
+        phr_message(origin, "Survey design created successfully.")
       }
 
       return(design)
@@ -312,7 +312,7 @@ QuantDataAnalysis <- R6::R6Class(
                              note = NULL) {
       origin <- "QuantDataAnalysis$add_indicator_dap"
 
-      iphra_try({
+      phr_try({
         self$data_analysis_plan$add_indicator(
           indicator_name = indicator_name,
           calculation = calculation,
@@ -323,7 +323,7 @@ QuantDataAnalysis <- R6::R6Class(
           indicator_unit = indicator_unit
         )
 
-        iphra_message(origin, paste("Added indicator:", indicator_name))
+        phr_message(origin, paste("Added indicator:", indicator_name))
       },
       on_error = "warn",
       origin = origin,
@@ -341,16 +341,16 @@ QuantDataAnalysis <- R6::R6Class(
     remove_indicator_dap = function(indicator_name) {
       origin <- "QuantDataAnalysis$remove_indicator_dap"
 
-      iphra_try({
+      phr_try({
         if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
-          iphra_warning(origin, "No data_analysis_plan loaded.")
+          phr_warning(origin, "No data_analysis_plan loaded.")
           return(invisible(self))
         }
 
         self$data_analysis_plan$log_df <-
           self$data_analysis_plan$log_df[self$data_analysis_plan$log_df$indicator_name != indicator_name, ]
 
-        iphra_message(origin, paste("Removed indicator:", indicator_name))
+        phr_message(origin, paste("Removed indicator:", indicator_name))
       },
       on_error = "warn",
       origin = origin,
@@ -368,11 +368,11 @@ QuantDataAnalysis <- R6::R6Class(
     #'   if the schema is empty.
     to_list_schema = function() {
       origin <- "QuantDataAnalysis$to_list_schema"
-      iphra_message(origin, "Converting indicator schema tibble to named list...")
+      phr_message(origin, "Converting indicator schema tibble to named list...")
 
-      result <- iphra_try({
+      result <- phr_try({
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
-          iphra_warning(origin, "No analysis_schema loaded to convert.")
+          phr_warning(origin, "No analysis_schema loaded to convert.")
           return(list())
         }
 
@@ -383,7 +383,7 @@ QuantDataAnalysis <- R6::R6Class(
       origin = origin,
       hint = "Ensure analysis_schema is a valid tibble with 'indicator_name' column.")
 
-      iphra_message(origin, "Conversion complete.")
+      phr_message(origin, "Conversion complete.")
       return(result)
     },
 
@@ -400,9 +400,9 @@ QuantDataAnalysis <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     generate_dap_from_schema = function() {
       origin <- "QuantDataAnalysis$generate_dap_from_schema"
-      iphra_message(origin, "Generating data_analysis_plan from schema...")
+      phr_message(origin, "Generating data_analysis_plan from schema...")
 
-      iphra_try({
+      phr_try({
         # Determine the column names available in the dataset.
         # Prefer the survey design variables; fall back to data column names.
         if (!is.null(self$survey_design)) {
@@ -410,7 +410,7 @@ QuantDataAnalysis <- R6::R6Class(
         } else if (!is.null(self$data)) {
           available_vars <- names(self$data)
         } else {
-          iphra_error(origin, "Neither survey_design nor data is available.")
+          phr_error(origin, "Neither survey_design nor data is available.")
           return(invisible(self))
         }
 
@@ -432,7 +432,7 @@ QuantDataAnalysis <- R6::R6Class(
 
         # Guard: nothing to generate if the analysis schema is empty
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
-          iphra_warning(origin, "analysis_schema is empty; data_analysis_plan will remain empty.")
+          phr_warning(origin, "analysis_schema is empty; data_analysis_plan will remain empty.")
           return(invisible(self))
         }
 
@@ -490,9 +490,9 @@ QuantDataAnalysis <- R6::R6Class(
             self$analysis_plan_issue_log,
             issues
           )
-          iphra_warning(origin, paste0(nrow(issues), " indicators skipped due to missing variables."))
+          phr_warning(origin, paste0(nrow(issues), " indicators skipped due to missing variables."))
         } else {
-          iphra_message(origin, "All schema indicators found and added to data_analysis_plan.")
+          phr_message(origin, "All schema indicators found and added to data_analysis_plan.")
         }
       },
       on_error = "warn",
@@ -512,14 +512,14 @@ QuantDataAnalysis <- R6::R6Class(
     #' @return \code{TRUE} if validation passes, \code{FALSE} otherwise.
     validate_schema = function() {
       origin <- "QuantDataAnalysis$validate_schema"
-      iphra_message(origin, "Validating indicator schema...")
+      phr_message(origin, "Validating indicator schema...")
 
       issues <- tibble::tibble(
         indicator_name = character(),
         issue = character()
       )
 
-      iphra_try({
+      phr_try({
 
 
         # 1. Check schema exists
@@ -530,7 +530,7 @@ QuantDataAnalysis <- R6::R6Class(
             issue = "Indicator schema is empty."
           ))
           self$analysis_plan_issue_log <- issues
-          iphra_warning(origin, "Schema validation FAILED: schema empty.")
+          phr_warning(origin, "Schema validation FAILED: schema empty.")
           return(invisible(FALSE))
         }
 
@@ -612,14 +612,14 @@ QuantDataAnalysis <- R6::R6Class(
       # Return FALSE if any issues
 
       if (nrow(issues) > 0) {
-        iphra_warning(origin,
+        phr_warning(origin,
                       paste("Schema validation FAILED with",
                             nrow(issues),
                             "issue(s)."))
         return(FALSE)
       }
 
-      iphra_message(origin, "Schema validation PASSED.")
+      phr_message(origin, "Schema validation PASSED.")
       return(TRUE)
     },
 
@@ -634,11 +634,11 @@ QuantDataAnalysis <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     validate_plan = function() {
       origin <- "QuantDataAnalysis$validate_plan"
-      iphra_message(origin, "Validating analysis plan...")
+      phr_message(origin, "Validating analysis plan...")
 
       issues <- tibble::tibble(indicator_name = character(), issue = character())
 
-      iphra_try({
+      phr_try({
         if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
           issues <- dplyr::bind_rows(issues, tibble::tibble(
             indicator_name = NA_character_,
@@ -680,9 +680,9 @@ QuantDataAnalysis <- R6::R6Class(
 
       self$analysis_plan_issue_log <- issues
       if (nrow(issues) > 0) {
-        iphra_warning(origin, paste("Validation found", nrow(issues), "issue(s)."))
+        phr_warning(origin, paste("Validation found", nrow(issues), "issue(s)."))
       } else {
-        iphra_message(origin, "Analysis plan validation passed with no issues.")
+        phr_message(origin, "Analysis plan validation passed with no issues.")
       }
       invisible(self)
     },
@@ -704,21 +704,21 @@ QuantDataAnalysis <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     run_analysis = function() {
       origin <- "QuantDataAnalysis$run_analysis"
-      iphra_message(origin, "Running analysis plan...")
+      phr_message(origin, "Running analysis plan...")
 
       if (is.null(self$survey_design)) {
-        iphra_error(origin, "Survey design not set.")
+        phr_error(origin, "Survey design not set.")
         return(invisible(self))
       }
 
       if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
-        iphra_error(origin, "No data_analysis_plan provided.")
+        phr_error(origin, "No data_analysis_plan provided.")
         return(invisible(self))
       }
 
       # --- Survey-design results (weighted) ----------------------------------
-      survey_design_results <- iphra_try(
-        iphra_calc_survey_from_plan(
+      survey_design_results <- phr_try(
+        phr_calc_survey_from_plan(
           design = self$survey_design,
           analysis_plan = self$data_analysis_plan$log_df
         ),
@@ -730,7 +730,7 @@ QuantDataAnalysis <- R6::R6Class(
       # --- Base results (simple unweighted design) ---------------------------
       base_results <- NULL
       if (!is.null(self$data)) {
-        base_design <- iphra_try(
+        base_design <- phr_try(
           srvyr::as_survey_design(.data = self$data, ids = 1),
           on_error = "warn",
           origin = origin,
@@ -738,8 +738,8 @@ QuantDataAnalysis <- R6::R6Class(
         )
 
         if (!is.null(base_design)) {
-          base_results <- iphra_try(
-            iphra_calc_survey_from_plan(
+          base_results <- phr_try(
+            phr_calc_survey_from_plan(
               design = base_design,
               analysis_plan = self$data_analysis_plan$log_df
             ),
@@ -755,7 +755,7 @@ QuantDataAnalysis <- R6::R6Class(
         base          = base_results
       )
 
-      iphra_message(origin, "Analysis completed successfully.")
+      phr_message(origin, "Analysis completed successfully.")
       invisible(self)
     },
 
@@ -774,10 +774,10 @@ QuantDataAnalysis <- R6::R6Class(
     #'   or \code{NULL} if \code{run_analysis()} has not been called yet.
     get_results = function() {
       origin <- "QuantDataAnalysis$get_results"
-      iphra_message(origin, "Retrieving results...")
+      phr_message(origin, "Retrieving results...")
 
       if (is.null(self$results) || length(self$results) == 0) {
-        iphra_warning(origin, "No results available yet. Run run_analysis() first.")
+        phr_warning(origin, "No results available yet. Run run_analysis() first.")
       }
       return(self$results)
     },
@@ -799,13 +799,13 @@ QuantDataAnalysis <- R6::R6Class(
     export_results = function(path, format = "xlsx") {
       origin <- "QuantDataAnalysis$export_results"
 
-      iphra_try({
+      phr_try({
         if (is.null(self$results) || length(self$results) == 0) {
-          iphra_warning(origin, "No results to export.")
+          phr_warning(origin, "No results to export.")
           return(invisible(self))
         }
 
-        iphra_message(origin, paste("Exporting results to:", path))
+        phr_message(origin, paste("Exporting results to:", path))
 
         if (format == "xlsx") {
           sheets <- list()
@@ -820,7 +820,7 @@ QuantDataAnalysis <- R6::R6Class(
           tbl <- self$results$survey_design %||% tibble::tibble()
           readr::write_csv(tbl, path)
         } else {
-          iphra_warning(origin, paste("Unsupported export format:", format))
+          phr_warning(origin, paste("Unsupported export format:", format))
         }
       },
       on_error = "warn",
@@ -888,9 +888,9 @@ QuantDataAnalysis <- R6::R6Class(
     export_outputs_schema = function() {
       origin <- "QuantDataAnalysis$export_outputs_schema"
 
-      iphra_try({
+      phr_try({
         if (is.null(self$outputs_schema) || length(self$outputs_schema) == 0) {
-          iphra_warning(origin, "No outputs schema defined.")
+          phr_warning(origin, "No outputs schema defined.")
           return(NULL)
         }
 
@@ -911,13 +911,13 @@ QuantDataAnalysis <- R6::R6Class(
     import_outputs_schema = function(df) {
       origin <- "QuantDataAnalysis$import_outputs_schema"
 
-      iphra_try({
-        iphra_validate_dataframe(df, origin = origin, soft = FALSE)
+      phr_try({
+        phr_validate_dataframe(df, origin = origin, soft = FALSE)
 
         new_schema <- outputs_table_to_schema(df)
         self$outputs_schema <- new_schema
 
-        iphra_message(origin, paste("Outputs schema imported successfully with", length(new_schema), "output(s)."))
+        phr_message(origin, paste("Outputs schema imported successfully with", length(new_schema), "output(s)."))
 
         invisible(new_schema)
       },
@@ -938,20 +938,20 @@ QuantDataAnalysis <- R6::R6Class(
     export_analysis_schema = function(path, format = "xlsx") {
       origin <- "QuantDataAnalysis$export_analysis_schema"
 
-      iphra_try({
+      phr_try({
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
-          iphra_warning(origin, "No analysis schema to export.")
+          phr_warning(origin, "No analysis schema to export.")
           return(invisible(self))
         }
 
-        iphra_message(origin, paste("Exporting analysis schema to:", path))
+        phr_message(origin, paste("Exporting analysis schema to:", path))
 
         if (format == "xlsx") {
           openxlsx::write.xlsx(self$analysis_schema, path)
         } else if (format == "csv") {
           readr::write_csv(self$analysis_schema, path)
         } else {
-          iphra_warning(origin, paste("Unsupported export format:", format))
+          phr_warning(origin, paste("Unsupported export format:", format))
         }
       },
       on_error = "warn",
@@ -974,11 +974,11 @@ QuantDataAnalysis <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     import_analysis_schema = function(path) {
       origin <- "QuantDataAnalysis$import_analysis_schema"
-      iphra_message(origin, paste("Importing analysis schema from:", path))
+      phr_message(origin, paste("Importing analysis schema from:", path))
 
-      iphra_try({
+      phr_try({
         if (!file.exists(path)) {
-          iphra_error(origin, paste("File not found:", path))
+          phr_error(origin, paste("File not found:", path))
           return(invisible(self))
         }
 
@@ -990,7 +990,7 @@ QuantDataAnalysis <- R6::R6Class(
           "xlsx" = readxl::read_xlsx(path),
           "rds"  = readRDS(path),
           {
-            iphra_error(origin, paste("Unsupported file type:", ext))
+            phr_error(origin, paste("Unsupported file type:", ext))
             return(invisible(self))
           }
         )
@@ -1001,12 +1001,12 @@ QuantDataAnalysis <- R6::R6Class(
         )
         missing_cols <- setdiff(required_cols, names(schema_tbl))
         if (length(missing_cols) > 0) {
-          iphra_warning(origin, paste("Imported schema missing columns:", paste(missing_cols, collapse = ", ")))
+          phr_warning(origin, paste("Imported schema missing columns:", paste(missing_cols, collapse = ", ")))
         }
 
         self$analysis_schema <- schema_tbl
 
-        iphra_message(origin, paste("Analysis schema imported successfully with", nrow(schema_tbl), "row(s)."))
+        phr_message(origin, paste("Analysis schema imported successfully with", nrow(schema_tbl), "row(s)."))
       },
       on_error = "warn",
       origin = origin,
@@ -1033,30 +1033,30 @@ QuantDataAnalysis <- R6::R6Class(
     #' @return Invisibly returns a list with \code{visualizations} and \code{tables}
     run_outputs = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$outputs_schema) || length(self$outputs_schema) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No outputs defined in outputs schema.",
             origin = self$dataset_name
           )
           return(invisible(list(visualizations = self$visualizations, tables = self$tables)))
         }
 
-        iphra_message(iphra_txt(glue::glue("Running {length(self$outputs_schema)} output(s) for {self$dataset_name}...")))
+        phr_message(phr_txt(glue::glue("Running {length(self$outputs_schema)} output(s) for {self$dataset_name}...")))
 
         for (out_name in names(self$outputs_schema)) {
 
           out <- self$outputs_schema[[out_name]]
 
-          iphra_try({
+          phr_try({
 
             # Get function name
             func_name <- out$output_func_name
 
             if (is.null(func_name) || is.na(func_name) || !nzchar(func_name)) {
-              iphra_warning(
-                message = iphra_txt(glue::glue("Output '{out_name}' has no output_func_name specified. Skipping.")),
+              phr_warning(
+                message = phr_txt(glue::glue("Output '{out_name}' has no output_func_name specified. Skipping.")),
                 origin = self$dataset_name
               )
               next
@@ -1083,8 +1083,8 @@ QuantDataAnalysis <- R6::R6Class(
             }
 
             if (is.null(output_function)) {
-              iphra_warning(
-                message = iphra_txt(glue::glue("Function '{func_name}' for output '{out_name}' not found. Skipping.")),
+              phr_warning(
+                message = phr_txt(glue::glue("Function '{func_name}' for output '{out_name}' not found. Skipping.")),
                 origin = self$dataset_name
               )
               next
@@ -1117,8 +1117,8 @@ QuantDataAnalysis <- R6::R6Class(
                       if (!is.null(resolved)) {
                         resolved_elements <- c(resolved_elements, resolved)
                       } else {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue("Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                        phr_warning(
+                          message = phr_txt(glue::glue("Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                           origin = self$dataset_name
                         )
                       }
@@ -1133,8 +1133,8 @@ QuantDataAnalysis <- R6::R6Class(
                             if (!is.null(resolved)) {
                               resolved_elements <- c(resolved_elements, resolved)
                             } else {
-                              iphra_warning(
-                                message = iphra_txt(glue::glue("Value map '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                              phr_warning(
+                                message = phr_txt(glue::glue("Value map '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                                 origin = self$dataset_name
                               )
                             }
@@ -1143,8 +1143,8 @@ QuantDataAnalysis <- R6::R6Class(
                             resolved_elements <- c(resolved_elements, resolved)
                           }
                         } else {
-                          iphra_warning(
-                            message = iphra_txt(glue::glue("Value map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                          phr_warning(
+                            message = phr_txt(glue::glue("Value map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                             origin = self$dataset_name
                           )
                         }
@@ -1164,8 +1164,8 @@ QuantDataAnalysis <- R6::R6Class(
                   if (!is.null(resolved)) {
                     func_args[[arg_name]] <- resolved
                   } else {
-                    iphra_warning(
-                      message = iphra_txt(glue::glue("Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
+                    phr_warning(
+                      message = phr_txt(glue::glue("Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
                       origin = self$dataset_name
                     )
                   }
@@ -1177,8 +1177,8 @@ QuantDataAnalysis <- R6::R6Class(
                   if (!is.null(resolved)) {
                     func_args[[arg_name]] <- resolved
                   } else {
-                    iphra_warning(
-                      message = iphra_txt(glue::glue("Variable map role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
+                    phr_warning(
+                      message = phr_txt(glue::glue("Variable map role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
                       origin = self$dataset_name
                     )
                   }
@@ -1198,15 +1198,15 @@ QuantDataAnalysis <- R6::R6Class(
                       if (!is.null(resolved)) {
                         func_args[[arg_name]] <- resolved
                       } else {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue("Value label '{arg_value}' not found for output '{out_name}'. Using original value.")),
+                        phr_warning(
+                          message = phr_txt(glue::glue("Value label '{arg_value}' not found for output '{out_name}'. Using original value.")),
                           origin = self$dataset_name
                         )
                         func_args[[arg_name]] <- arg_value
                       }
                     } else {
-                      iphra_warning(
-                        message = iphra_txt(glue::glue("Value label role '{role}' not found for output '{out_name}'. Using original value.")),
+                      phr_warning(
+                        message = phr_txt(glue::glue("Value label role '{role}' not found for output '{out_name}'. Using original value.")),
                         origin = self$dataset_name
                       )
                       func_args[[arg_name]] <- arg_value
@@ -1228,15 +1228,15 @@ QuantDataAnalysis <- R6::R6Class(
                       if (!is.null(resolved)) {
                         func_args[[arg_name]] <- resolved
                       } else {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue("Value map '{arg_value}' not found for output '{out_name}'. Using original value.")),
+                        phr_warning(
+                          message = phr_txt(glue::glue("Value map '{arg_value}' not found for output '{out_name}'. Using original value.")),
                           origin = self$dataset_name
                         )
                         func_args[[arg_name]] <- arg_value
                       }
                     } else {
-                      iphra_warning(
-                        message = iphra_txt(glue::glue("Value map role '{role}' not found for output '{out_name}'. Using original value.")),
+                      phr_warning(
+                        message = phr_txt(glue::glue("Value map role '{role}' not found for output '{out_name}'. Using original value.")),
                         origin = self$dataset_name
                       )
                       func_args[[arg_name]] <- arg_value
@@ -1274,7 +1274,7 @@ QuantDataAnalysis <- R6::R6Class(
                 } else {
                   self$tables[[key]] <- result
                 }
-                iphra_message(iphra_txt(glue::glue("Table '{key}' stored successfully.")))
+                phr_message(phr_txt(glue::glue("Table '{key}' stored successfully.")))
               } else if (!is.null(out$output_type) && out$output_type == "visualization") {
                 if (!is.null(group)) {
                   if (is.null(self$visualizations[[group]])) self$visualizations[[group]] <- list()
@@ -1282,10 +1282,10 @@ QuantDataAnalysis <- R6::R6Class(
                 } else {
                   self$visualizations[[key]] <- result
                 }
-                iphra_message(iphra_txt(glue::glue("Visualization '{key}' stored successfully.")))
+                phr_message(phr_txt(glue::glue("Visualization '{key}' stored successfully.")))
               } else {
-                iphra_warning(
-                  message = iphra_txt(glue::glue(
+                phr_warning(
+                  message = phr_txt(glue::glue(
                     "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
                     "Expected 'visualization' or 'table'. Result not stored."
                   )),
@@ -1307,8 +1307,8 @@ QuantDataAnalysis <- R6::R6Class(
                 col_name <- self$variable_map[[role]]
                 var_label <- role
                 if (is.null(col_name)) {
-                  iphra_warning(
-                    message = iphra_txt(glue::glue("outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping per-group iteration.")),
+                  phr_warning(
+                    message = phr_txt(glue::glue("outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping per-group iteration.")),
                     origin = self$dataset_name
                   )
                   col_name <- NULL
@@ -1327,14 +1327,14 @@ QuantDataAnalysis <- R6::R6Class(
                 unique_vals <- unique(design_data[[col_name]])
                 unique_vals <- unique_vals[!is.na(unique_vals)]
 
-                iphra_message(iphra_txt(glue::glue("Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'...")))
+                phr_message(phr_txt(glue::glue("Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'...")))
 
                 for (val in unique_vals) {
                   filtered_design <- tryCatch(
                     dplyr::filter(self$survey_design, !!rlang::sym(col_name) == val),
                     error = function(e) {
-                      iphra_warning(
-                        message = iphra_txt(glue::glue("Failed to filter survey design for '{var_label}' == '{val}': {e$message}")),
+                      phr_warning(
+                        message = phr_txt(glue::glue("Failed to filter survey design for '{var_label}' == '{val}': {e$message}")),
                         origin = self$dataset_name
                       )
                       NULL
@@ -1348,22 +1348,22 @@ QuantDataAnalysis <- R6::R6Class(
 
                   amended_label <- paste0(label, "-", var_label, ".", val)
 
-                  iphra_try({
+                  phr_try({
                     output_result <- do.call(output_function, per_group_args)
                     store_result(output_result, amended_label)
                   }, on_error = "warn", origin = paste0(self$dataset_name, "$run_outputs$", out_name, "$", val))
                 }
 
               } else if (!is.null(col_name)) {
-                iphra_warning(
-                  message = iphra_txt(glue::glue("Column '{col_name}' for outputs_per_group not found in survey design for output '{out_name}'. Skipping per-group iteration.")),
+                phr_warning(
+                  message = phr_txt(glue::glue("Column '{col_name}' for outputs_per_group not found in survey design for output '{out_name}'. Skipping per-group iteration.")),
                   origin = self$dataset_name
                 )
               }
 
             } else {
               # Standard single output
-              iphra_message(iphra_txt(glue::glue("Calling {func_name} for output '{out_name}'...")))
+              phr_message(phr_txt(glue::glue("Calling {func_name} for output '{out_name}'...")))
               output_result <- do.call(output_function, func_args)
               store_result(output_result, label)
             }
@@ -1371,8 +1371,8 @@ QuantDataAnalysis <- R6::R6Class(
           }, on_error = "warn", origin = paste0(self$dataset_name, "$run_outputs$", out_name))
         }
 
-        iphra_message(
-          iphra_txt(glue::glue(
+        phr_message(
+          phr_txt(glue::glue(
             "run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s)."
           ))
         )

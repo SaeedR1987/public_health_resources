@@ -2,7 +2,7 @@
 #'
 #' @description
 #' A specialized Log class for managing quantitative data analysis plans. 
-#' Enforces the column structure defined in iphra_analysis_plan_template.csv
+#' Enforces the column structure defined in phr_analysis_plan_template.csv
 #' and provides validation for analysis plan entries.
 #'
 #' @details
@@ -12,7 +12,7 @@
 #' * Validating calculation types and variable names
 #' * Ensuring data analysis plans follow the standard template structure
 #'
-#' Required columns (matching iphra_analysis_plan_template.csv):
+#' Required columns (matching phr_analysis_plan_template.csv):
 #' * indicator_name: Name/label of the indicator
 #' * calculation: Type of calculation (prop, mean, median, ratio)
 #' * var_name: Primary variable name in the dataset
@@ -101,7 +101,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
     #' Sets self$validated and self$issues based on results.
     validate = function() {
 
-      iphra_try({
+      phr_try({
 
 
         # 1. Start with super validation
@@ -127,9 +127,9 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
 
           super_issues$missing_or_empty <- bad_cols
 
-          iphra_warning(
+          phr_warning(
             self$log_name,
-            iphra_txt(glue::glue("Analysis plan contains missing/empty values in: {paste(bad_cols, collapse=', ')}."))
+            phr_txt(glue::glue("Analysis plan contains missing/empty values in: {paste(bad_cols, collapse=', ')}."))
           )
         }
 
@@ -142,9 +142,9 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
           if (length(invalid_mult) > 0) {
             super_issues$invalid_multiplier <- invalid_mult
             
-            iphra_warning(
+            phr_warning(
               self$log_name,
-              iphra_txt(glue::glue("Analysis plan contains non-positive multipliers at rows: {paste(invalid_mult, collapse=', ')}."))
+              phr_txt(glue::glue("Analysis plan contains non-positive multipliers at rows: {paste(invalid_mult, collapse=', ')}."))
             )
           }
         }

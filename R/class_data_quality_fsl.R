@@ -64,8 +64,8 @@ FSLDataQuality <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      iphra_message(
-        iphra_txt(glue::glue("{dataset_name} initialized as FSLDataQuality object."))
+      phr_message(
+        phr_txt(glue::glue("{dataset_name} initialized as FSLDataQuality object."))
       )
     },
 
@@ -97,9 +97,9 @@ FSLDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "FSLDataQuality$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_fsl_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_fsl_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -146,9 +146,9 @@ FSLDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "FSLDataQuality$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_fsl_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_fsl_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
