@@ -26,7 +26,7 @@ HealthIndividualData <- R6::R6Class(
                           metadata = NULL,
                           variable_map = NULL) {
 
-      iphra_try({
+      phr_try({
 
         health_map <- list(
           uuid      = "person_id",
@@ -54,8 +54,8 @@ HealthIndividualData <- R6::R6Class(
         default_ind_schema <- self$default_indicator_schema()
         if (length(default_ind_schema) > 0) {
           self$set_indicator_schema(default_ind_schema)
-          iphra_message(
-            iphra_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+          phr_message(
+            phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
           )
         }
 
@@ -63,13 +63,13 @@ HealthIndividualData <- R6::R6Class(
         default_dep_schema <- self$default_dependency_schema()
         if (length(default_dep_schema$dependencies) > 0) {
           self$set_dependency_schema(default_dep_schema)
-          iphra_message(
-            iphra_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+          phr_message(
+            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )
         }
 
-        iphra_message(
-          iphra_txt("{dataset_name} initialized as HealthIndividualData object.")
+        phr_message(
+          phr_txt("{dataset_name} initialized as HealthIndividualData object.")
         )
 
       }, on_error = "abort", origin = "HealthIndividualData$initialize")
@@ -92,10 +92,10 @@ HealthIndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_error(
+        phr_error(
           origin  = "HealthIndividualData$default_health_schema",
-          message = iphra_txt("variable_schema_data_individual_health_template.xlsx not found in package resources."),
-          hint    = iphra_txt("Place the schema file under inst/resources/ before building the package.")
+          message = phr_txt("variable_schema_data_individual_health_template.xlsx not found in package resources."),
+          hint    = phr_txt("Place the schema file under inst/resources/ before building the package.")
         )
       }
 
@@ -103,9 +103,9 @@ HealthIndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_error(
+          phr_error(
             origin  = "HealthIndividualData$default_health_schema",
-            message = iphra_txt("Failed to read variable_schema_data_individual_health_template.xlsx"),
+            message = phr_txt("Failed to read variable_schema_data_individual_health_template.xlsx"),
             hint    = e$message
           )
         }
@@ -133,9 +133,9 @@ HealthIndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "HealthIndividualData$default_indicator_schema",
-          message = iphra_txt("indicator_schema_data_individual_health_template.xlsx not found in package resources. Continuing without default indicator schema.")
+          message = phr_txt("indicator_schema_data_individual_health_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
         return(list())
       }
@@ -144,9 +144,9 @@ HealthIndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HealthIndividualData$default_indicator_schema",
-            message = iphra_txt("Failed to read indicator_schema_data_individual_health_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read indicator_schema_data_individual_health_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -176,9 +176,9 @@ HealthIndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "HealthIndividualData$default_dependency_schema",
-          message = iphra_txt("dependency_schema_data_individual_health_template.xlsx not found in package resources. Continuing without default dependency schema.")
+          message = phr_txt("dependency_schema_data_individual_health_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
         return(list(dependencies = list()))
       }
@@ -187,9 +187,9 @@ HealthIndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HealthIndividualData$default_dependency_schema",
-            message = iphra_txt("Failed to read dependency_schema_data_individual_health_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read dependency_schema_data_individual_health_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -216,14 +216,14 @@ HealthIndividualData <- R6::R6Class(
 
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataAnalytics generation.")
+            phr_txt("No {stage} data available for DataAnalytics generation.")
           )
           return(NULL)
         }
@@ -245,8 +245,8 @@ HealthIndividualData <- R6::R6Class(
           value_label        = self$value_label
         )
 
-        iphra_message(
-          iphra_txt("Generated DataAnalytics object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated DataAnalytics object for {self$dataset_name}.")
         )
 
         return(analytics)

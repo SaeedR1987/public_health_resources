@@ -18,10 +18,10 @@ NULL
 #' @export
 quality_test_correlation <- function(data, variables, method = "pearson") {
 
-  iphra_try({
+  phr_try({
 
     if (length(variables) != 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_correlation",
         message = "Correlation test requires exactly 2 variables"
       )
@@ -31,7 +31,7 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
     var2 <- variables[2]
 
     if (!var1 %in% names(data) || !var2 %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_correlation",
         message = "One or both variables not found in data"
       )
@@ -44,7 +44,7 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
     # Remove pairs with missing values
     complete_cases <- complete.cases(x, y)
     if (sum(complete_cases) < 3) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_correlation",
         message = "Insufficient complete cases for correlation"
       )
@@ -74,10 +74,10 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
 #' @export
 quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
 
-  iphra_try({
+  phr_try({
 
     if (length(variables) == 0 || length(variables) > 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_ttest",
         message = "T-test requires 1 or 2 variables"
       )
@@ -86,7 +86,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
     var1 <- variables[1]
 
     if (!var1 %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_ttest",
         message = "Variable not found in data"
       )
@@ -97,7 +97,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
     x <- x[!is.na(x)]
 
     if (length(x) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_ttest",
         message = "Insufficient data for t-test"
       )
@@ -111,7 +111,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
       # Two-sample t-test
       var2 <- variables[2]
       if (!var2 %in% names(data)) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_ttest",
           message = "Second variable not found in data"
         )
@@ -122,7 +122,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
       y <- y[!is.na(y)]
 
       if (length(y) < 2) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_ttest",
           message = "Insufficient data in second variable"
         )
@@ -150,10 +150,10 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
 #' @export
 quality_test_chisq <- function(data, variables) {
 
-  iphra_try({
+  phr_try({
 
     if (length(variables) != 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_chisq",
         message = "Chi-squared test requires exactly 2 variables"
       )
@@ -163,7 +163,7 @@ quality_test_chisq <- function(data, variables) {
     var2 <- variables[2]
 
     if (!var1 %in% names(data) || !var2 %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_chisq",
         message = "One or both variables not found in data"
       )
@@ -179,7 +179,7 @@ quality_test_chisq <- function(data, variables) {
     y <- y[complete_cases]
 
     if (length(x) < 5) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_chisq",
         message = "Insufficient data for chi-squared test"
       )
@@ -191,7 +191,7 @@ quality_test_chisq <- function(data, variables) {
 
     # Check if table has sufficient cells
     if (any(dim(cont_table) < 2)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_chisq",
         message = "Contingency table too small for chi-squared test"
       )
@@ -219,10 +219,10 @@ quality_test_chisq <- function(data, variables) {
 #' @export
 quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
 
-  iphra_try({
+  phr_try({
 
     if (length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_flag_percentage",
         message = "Flag percentage test requires exactly 1 variable"
       )
@@ -231,7 +231,7 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_flag_percentage",
         message = "Variable not found in data"
       )
@@ -242,7 +242,7 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
     x <- x[!is.na(x)]
 
     if (length(x) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_flag_percentage",
         message = "No non-missing values found"
       )
@@ -271,10 +271,10 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
 #' @export
 quality_test_missing_percentage <- function(data, variables) {
 
-  iphra_try({
+  phr_try({
 
     if (length(variables) == 0) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_missing_percentage",
         message = "Missing percentage test requires at least 1 variable"
       )
@@ -284,7 +284,7 @@ quality_test_missing_percentage <- function(data, variables) {
     existing_vars <- intersect(variables, names(data))
 
     if (length(existing_vars) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_missing_percentage",
         message = "No specified variables found in data"
       )
@@ -326,19 +326,19 @@ quality_test_missing_percentage <- function(data, variables) {
 #' @export
 quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
-  iphra_try({
+  phr_try({
 
     # Validate data is a data frame
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       data,
       origin = "quality_test_outlier_percentage",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
       soft = FALSE
     )
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "Outlier test requires exactly 1 variable"
       )
@@ -346,7 +346,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "Variable name must be a character string"
       )
@@ -354,14 +354,14 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Validate z_threshold is numeric and positive
     if (!is.numeric(z_threshold) || length(z_threshold) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "z_threshold must be a single numeric value"
       )
     }
 
     if (is.na(z_threshold) || z_threshold <= 0) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "z_threshold must be a positive number"
       )
@@ -370,7 +370,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Variable not found in data"
       )
@@ -378,10 +378,10 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_outlier_percentage",
-      hint = iphra_txt("Outlier detection requires numeric data for z-score calculations."),
+      hint = phr_txt("Outlier detection requires numeric data for z-score calculations."),
       soft = TRUE
     )
 
@@ -394,7 +394,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
     x <- x[!is.na(x)]
 
     if (length(x) < 3) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Insufficient data for outlier detection (need at least 3 non-missing values)"
       )
@@ -403,7 +403,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Check for zero variance (all values identical)
     if (sd(x) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Variable has zero variance (all values are identical)"
       )
@@ -415,7 +415,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Additional safety check for Inf/NaN in z-scores
     if (any(is.infinite(z_scores)) || any(is.nan(z_scores))) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Unable to calculate valid z-scores"
       )
@@ -443,19 +443,19 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 #' @export
 quality_test_coefficient_variation <- function(data, variables) {
 
-  iphra_try({
+  phr_try({
 
     # Validate data is a data frame
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       data,
       origin = "quality_test_coefficient_variation",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
       soft = FALSE
     )
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_coefficient_variation",
         message = "CV test requires exactly 1 variable"
       )
@@ -463,7 +463,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_coefficient_variation",
         message = "Variable name must be a character string"
       )
@@ -472,7 +472,7 @@ quality_test_coefficient_variation <- function(data, variables) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Variable not found in data"
       )
@@ -480,10 +480,10 @@ quality_test_coefficient_variation <- function(data, variables) {
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_coefficient_variation",
-      hint = iphra_txt("CV calculation requires numeric data."),
+      hint = phr_txt("CV calculation requires numeric data."),
       soft = TRUE
     )
 
@@ -496,7 +496,7 @@ quality_test_coefficient_variation <- function(data, variables) {
     x <- x[!is.na(x)]
 
     if (length(x) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Insufficient data for CV calculation (need at least 2 non-missing values)"
       )
@@ -508,7 +508,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Check for zero variance (all values identical)
     if (sd_x == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Variable has zero variance (all values are identical), CV is 0"
       )
@@ -517,7 +517,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Check for zero mean
     if (mean_x == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Mean is zero, CV is undefined"
       )
@@ -528,7 +528,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Additional safety check for Inf/NaN in CV
     if (is.infinite(cv) || is.nan(cv)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Unable to calculate valid CV"
       )
@@ -555,19 +555,19 @@ quality_test_coefficient_variation <- function(data, variables) {
 #' @export
 quality_test_range_violation <- function(data, variables, min_value = -Inf, max_value = Inf) {
 
-  iphra_try({
+  phr_try({
 
     # Validate data is a data frame
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       data,
       origin = "quality_test_range_violation",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
       soft = FALSE
     )
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "Range test requires exactly 1 variable"
       )
@@ -575,7 +575,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "Variable name must be a character string"
       )
@@ -583,7 +583,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate min_value is numeric
     if (!is.numeric(min_value) || length(min_value) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "min_value must be a single numeric value"
       )
@@ -591,7 +591,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate max_value is numeric
     if (!is.numeric(max_value) || length(max_value) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "max_value must be a single numeric value"
       )
@@ -599,14 +599,14 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Check that min_value and max_value are not NA
     if (is.na(min_value)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "min_value cannot be NA"
       )
     }
 
     if (is.na(max_value)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "max_value cannot be NA"
       )
@@ -614,7 +614,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate that min_value <= max_value
     if (min_value > max_value) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "min_value must be less than or equal to max_value"
       )
@@ -623,7 +623,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_range_violation",
         message = "Variable not found in data"
       )
@@ -631,10 +631,10 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_range_violation",
-      hint = iphra_txt("Range violation test requires numeric data."),
+      hint = phr_txt("Range violation test requires numeric data."),
       soft = TRUE
     )
 
@@ -647,7 +647,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
     x <- x[!is.na(x)]
 
     if (length(x) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_range_violation",
         message = "No non-missing values found"
       )
@@ -656,14 +656,14 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Check for infinite values in the data
     if (any(is.infinite(x))) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_range_violation",
         message = "Variable contains infinite values which will be excluded from range check"
       )
       x <- x[is.finite(x)]
 
       if (length(x) == 0) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_range_violation",
           message = "No finite values found after removing infinite values"
         )
@@ -692,19 +692,19 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 #' @export
 quality_test_sd <- function(data, variables) {
 
-  iphra_try({
+  phr_try({
 
     # Validate data is a data frame
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       data,
       origin = "quality_test_sd",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
       soft = FALSE
     )
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd",
         message = "Standard deviation test requires exactly 1 variable"
       )
@@ -712,7 +712,7 @@ quality_test_sd <- function(data, variables) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd",
         message = "Variable name must be a character string"
       )
@@ -721,7 +721,7 @@ quality_test_sd <- function(data, variables) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd",
         message = "Variable not found in data"
       )
@@ -729,10 +729,10 @@ quality_test_sd <- function(data, variables) {
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_sd",
-      hint = iphra_txt("Standard deviation calculation requires numeric data."),
+      hint = phr_txt("Standard deviation calculation requires numeric data."),
       soft = TRUE
     )
 
@@ -745,7 +745,7 @@ quality_test_sd <- function(data, variables) {
     x <- x[!is.na(x)]
 
     if (length(x) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd",
         message = "Insufficient data for standard deviation calculation (need at least 2 non-missing values)"
       )
@@ -756,7 +756,7 @@ quality_test_sd <- function(data, variables) {
 
     # Additional safety check for Inf/NaN in standard deviation
     if (is.infinite(sd_x) || is.nan(sd_x)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd",
         message = "Unable to calculate valid standard deviation"
       )
@@ -783,19 +783,19 @@ quality_test_sd <- function(data, variables) {
 #' @export
 quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) {
 
-  iphra_try({
+  phr_try({
 
     # Validate data is a data frame
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       data,
       origin = "quality_test_sd_across_percentage",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
       soft = FALSE
     )
 
     # Validate variables is not NULL and has at least 2 variables
     if (is.null(variables) || length(variables) < 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "SD across percentage test requires at least 2 variables"
       )
@@ -803,7 +803,7 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "Variable names must be a character vector"
       )
@@ -811,14 +811,14 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Validate threshold is numeric and positive
     if (!is.numeric(threshold) || length(threshold) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "threshold must be a single numeric value"
       )
     }
 
     if (is.na(threshold) || threshold < 0) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "threshold must be a non-negative number"
       )
@@ -829,14 +829,14 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
     missing_vars <- setdiff(variables, names(data))
 
     if (length(missing_vars) > 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = paste0("Variables not found in data: ", paste(missing_vars, collapse = ", "))
       )
     }
 
     if (length(existing_vars) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = "At least 2 variables must exist in data for SD calculation"
       )
@@ -845,15 +845,15 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Validate that all existing variables are numeric
     for (var in existing_vars) {
-      is_valid <- iphra_validate_numeric(
+      is_valid <- phr_validate_numeric(
         data[[var]],
         origin = "quality_test_sd_across_percentage",
-        hint = iphra_txt(paste0("Variable '", var, "' must be numeric for SD calculation.")),
+        hint = phr_txt(paste0("Variable '", var, "' must be numeric for SD calculation.")),
         soft = TRUE
       )
 
       if (isFALSE(is_valid)) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_sd_across_percentage",
           message = paste0("Variable '", var, "' is not numeric and will be excluded")
         )
@@ -863,7 +863,7 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Check again after removing non-numeric variables
     if (length(existing_vars) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = "At least 2 numeric variables required after validation"
       )
@@ -894,7 +894,7 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
     valid_rows <- !is.na(row_sd)
 
     if (sum(valid_rows) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = "No rows with sufficient non-missing values for SD calculation"
       )
@@ -928,19 +928,19 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 #' @export
 quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
-  iphra_try({
+  phr_try({
 
     # Validate data is a data frame
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       data,
       origin = "quality_test_any_flag_percentage",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
       soft = FALSE
     )
 
     # Validate variables is not NULL and has at least 1 variable
     if (is.null(variables) || length(variables) < 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_any_flag_percentage",
         message = "Any flag percentage test requires at least 1 variable"
       )
@@ -948,7 +948,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_any_flag_percentage",
         message = "Variable names must be a character vector"
       )
@@ -956,7 +956,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
     # Validate flag_value is provided and not NULL
     if (is.null(flag_value) || length(flag_value) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_any_flag_percentage",
         message = "flag_value must be a single value"
       )
@@ -967,14 +967,14 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
     missing_vars <- setdiff(variables, names(data))
 
     if (length(missing_vars) > 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = paste0("Variables not found in data: ", paste(missing_vars, collapse = ", "))
       )
     }
 
     if (length(existing_vars) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = "No specified variables found in data"
       )
@@ -986,7 +986,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
     # Check if we have any rows
     if (nrow(subset_data) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = "Data has no rows"
       )
@@ -1015,7 +1015,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
     valid_rows <- !is.na(flag_column)
 
     if (sum(valid_rows) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = "No rows with non-missing values for flag calculation"
       )

@@ -77,12 +77,12 @@ WASHDataQuality <- R6::R6Class(
       self$linked_containers_value_map <- linked_containers_value_map
 
       if (!is.null(linked_containers_data)) {
-        iphra_message(
-          iphra_txt("WASHDataQuality initialized with linked water container data.")
+        phr_message(
+          phr_txt("WASHDataQuality initialized with linked water container data.")
         )
       } else {
-        iphra_message(
-          iphra_txt(glue::glue("{dataset_name} initialized as WASHDataQuality object."))
+        phr_message(
+          phr_txt(glue::glue("{dataset_name} initialized as WASHDataQuality object."))
         )
       }
     },
@@ -115,9 +115,9 @@ WASHDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "WASHDataQuality$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_wash_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_wash_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -148,7 +148,7 @@ WASHDataQuality <- R6::R6Class(
       # Call parent method first
       stats <- super$compute_summary_stats()
 
-      iphra_try({
+      phr_try({
 
         df <- self$data
 
@@ -194,8 +194,8 @@ WASHDataQuality <- R6::R6Class(
 
         self$summary_stats <- stats
 
-        iphra_message(
-          iphra_txt(glue::glue("Computed WASH summary statistics for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Computed WASH summary statistics for {self$dataset_name}."))
         )
 
         invisible(stats)
@@ -210,18 +210,18 @@ WASHDataQuality <- R6::R6Class(
     #' @return A ggplot object or NULL
     visualize = function(type = "summary") {
 
-      iphra_try({
+      phr_try({
 
         if (!requireNamespace("ggplot2", quietly = TRUE)) {
-          iphra_warning(
+          phr_warning(
             message = "Package 'ggplot2' required for visualization.",
             origin = self$dataset_name
           )
           return(invisible(NULL))
         }
 
-        iphra_message(
-          iphra_txt(glue::glue("WASH visualization type '{type}' - implementation pending."))
+        phr_message(
+          phr_txt(glue::glue("WASH visualization type '{type}' - implementation pending."))
         )
 
         invisible(NULL)
@@ -254,9 +254,9 @@ WASHDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "WASHDataQuality$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_wash_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_wash_template.xlsx: {e$message}"))
           )
           return(NULL)
         }

@@ -71,8 +71,8 @@ HealthAnalysis <- R6::R6Class(
       self$linked_ind_health_value_map <- linked_ind_health_value_map
 
       if (!is.null(linked_ind_health_data)) {
-        iphra_message(
-          iphra_txt("HealthAnalysis initialized with linked health individual data.")
+        phr_message(
+          phr_txt("HealthAnalysis initialized with linked health individual data.")
         )
       }
 
@@ -97,7 +97,7 @@ HealthAnalysis <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "HealthAnalysis$default_analysis_schema",
@@ -129,7 +129,7 @@ HealthAnalysis <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "HealthAnalysis$default_outputs_schema",

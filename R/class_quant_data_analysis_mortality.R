@@ -98,8 +98,8 @@ MortalityAnalysis <- R6::R6Class(
         msg_parts <- c()
         if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
         if (!is.null(linked_ind_deaths_data)) msg_parts <- c(msg_parts, "deaths")
-        iphra_message(
-          iphra_txt(paste0("MortalityAnalysis initialized with linked ", paste(msg_parts, collapse = " and "), " data."))
+        phr_message(
+          phr_txt(paste0("MortalityAnalysis initialized with linked ", paste(msg_parts, collapse = " and "), " data."))
         )
       }
 
@@ -124,7 +124,7 @@ MortalityAnalysis <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "MortalityAnalysis$default_analysis_schema",
@@ -156,7 +156,7 @@ MortalityAnalysis <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "MortalityAnalysis$default_outputs_schema",

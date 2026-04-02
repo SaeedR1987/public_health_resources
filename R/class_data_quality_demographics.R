@@ -53,8 +53,8 @@ DemographicsDataQuality <- R6::R6Class(
         value_label = value_label
       )
 
-      iphra_message(
-        iphra_txt(glue::glue("{dataset_name} initialized as DemographicsDataQuality object."))
+      phr_message(
+        phr_txt(glue::glue("{dataset_name} initialized as DemographicsDataQuality object."))
       )
     },
 
@@ -83,9 +83,9 @@ DemographicsDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DemographicsDataQuality$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_demographics_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_demographics_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -132,9 +132,9 @@ DemographicsDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DemographicsDataQuality$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_demographics_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_demographics_template.xlsx: {e$message}"))
           )
           return(NULL)
         }

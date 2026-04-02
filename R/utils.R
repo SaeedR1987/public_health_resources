@@ -431,7 +431,7 @@ replace_values <- function(df, col, mapping) {
     mutate(!!col := recode(!!col, !!!mapping))
 }
 
-iphra_pick_ci_method <- function(n_unweighted = NULL,
+phr_pick_ci_method <- function(n_unweighted = NULL,
                                  n_eff = NULL,
                                  p_estimate = NULL,
                                  deff = NULL,
@@ -517,7 +517,7 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
   ))
 }
 
-iphra_calc_survey_prop_single <- function(design,
+phr_calc_survey_prop_single <- function(design,
                                           var_name,
                                           group = NULL,
                                           indicator_name = "Proportion",
@@ -603,7 +603,7 @@ iphra_calc_survey_prop_single <- function(design,
   }, error = function(e) FALSE)
   
   # --- Apply policy ------------------------------------------
-  policy <- iphra_pick_ci_method(
+  policy <- phr_pick_ci_method(
     n_unweighted = n_unweighted,
     n_eff = n_eff,
     p_estimate = quick_est,
@@ -723,7 +723,7 @@ iphra_calc_survey_prop_single <- function(design,
   return(out)
 }
 
-iphra_calc_survey_mean_single <- function(design,
+phr_calc_survey_mean_single <- function(design,
                                           var_name,
                                           group = NULL,
                                           indicator_name = "Mean",
@@ -801,7 +801,7 @@ iphra_calc_survey_mean_single <- function(design,
   flag_outlier_var <- ifelse(!is.na(quick_var) && quick_var > (10 * quick_est^2), TRUE, FALSE)
   
   # --- CI method policy ----------------------------------------
-  policy <- iphra_pick_ci_method(
+  policy <- phr_pick_ci_method(
     n_unweighted = n_unweighted,
     n_eff = n_eff,
     p_estimate = quick_est,

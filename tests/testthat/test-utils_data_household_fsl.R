@@ -127,7 +127,7 @@ test_that("add_fcs() — dataset with NA produces NA scores appropriately", {
 })
 
 
-test_that("add_fcs() — out-of-range values trigger iphra_error", {
+test_that("add_fcs() — out-of-range values trigger phr_error", {
 
   set.seed(123)
   df_bad <- tibble::tibble(
@@ -151,7 +151,7 @@ test_that("add_fcs() — out-of-range values trigger iphra_error", {
 
 })
 
-test_that("add_fcs() — non-numeric values trigger iphra_error", {
+test_that("add_fcs() — non-numeric values trigger phr_error", {
 
   df_nonnumeric <- tibble::tibble(
     fsl_fcs_cereal  = c(1,2,3,4,5,6,7,0,1,2, rep(3, 20)),
@@ -471,7 +471,7 @@ test_that("add_rcsi() — normal functionality works", {
 })
 
 
-test_that("add_rcsi() — missing required RCSI columns triggers iphra_error", {
+test_that("add_rcsi() — missing required RCSI columns triggers phr_error", {
   df_missing <- tibble::tibble(
     fsl_rcsi_lessquality = 1:5,
     fsl_rcsi_borrow      = 1:5
@@ -484,7 +484,7 @@ test_that("add_rcsi() — missing required RCSI columns triggers iphra_error", {
 })
 
 
-test_that("add_rcsi() — out-of-range values cause iphra_error", {
+test_that("add_rcsi() — out-of-range values cause phr_error", {
   df_bad <- tibble::tibble(
     fsl_rcsi_lessquality = c(0, 1, 2, 3, 8),  # 8 is invalid
     fsl_rcsi_borrow      = 0:4,
@@ -499,7 +499,7 @@ test_that("add_rcsi() — out-of-range values cause iphra_error", {
 })
 
 
-test_that("add_rcsi() — non-numeric values trigger iphra_error", {
+test_that("add_rcsi() — non-numeric values trigger phr_error", {
   df_nonum <- tibble::tibble(
     fsl_rcsi_lessquality = c("a", "2", "3", "4", "5"), # unsafe coercion
     fsl_rcsi_borrow      = 0:4,
@@ -514,7 +514,7 @@ test_that("add_rcsi() — non-numeric values trigger iphra_error", {
 })
 
 
-test_that("add_rcsi() — empty dataset triggers iphra_error", {
+test_that("add_rcsi() — empty dataset triggers phr_error", {
   df_empty <- tibble::tibble(
     fsl_rcsi_lessquality = numeric(0),
     fsl_rcsi_borrow      = numeric(0),
@@ -525,7 +525,7 @@ test_that("add_rcsi() — empty dataset triggers iphra_error", {
 
   expect_error(
     add_rcsi(df_empty),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 
@@ -611,7 +611,7 @@ test_that("add_lcsi() — standard use case works", {
   expect_equal(levels(out$fsl_lcsi_cat_exhaust), c("Emergency", "Crisis", "Stress", "None"))
 })
 
-test_that("add_lcsi() — missing columns cause iphra_error", {
+test_that("add_lcsi() — missing columns cause phr_error", {
 
   df_missing <- tibble::tibble(
     fsl_lcsi_stress1 = "yes",
@@ -621,11 +621,11 @@ test_that("add_lcsi() — missing columns cause iphra_error", {
 
   expect_error(
     add_lcsi(df_missing),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 
-test_that("add_lcsi() — invalid values cause iphra_error", {
+test_that("add_lcsi() — invalid values cause phr_error", {
 
   df_bad <- tibble::tibble(
     fsl_lcsi_stress1    = c("yes","INVALID","no_had_no_need"),
@@ -758,7 +758,7 @@ test_that("add_hdds() — standard use case works", {
   expect_true(all(grepl("Low|Medium|High", out$fsl_hdds_cat, ignore.case = TRUE)))
 })
 
-test_that("add_hdds() — missing required columns causes iphra_error", {
+test_that("add_hdds() — missing required columns causes phr_error", {
 
   df_missing <- tibble::tibble(
     fsl_hdds_cereals = "yes",
@@ -768,11 +768,11 @@ test_that("add_hdds() — missing required columns causes iphra_error", {
 
   expect_error(
     add_hdds(df_missing),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 
-test_that("add_hdds() — invalid non-yes/no values cause iphra_error", {
+test_that("add_hdds() — invalid non-yes/no values cause phr_error", {
 
   df_bad <- tibble::tibble(
     fsl_hdds_cereals    = c("yes","INVALID","no"),
@@ -974,7 +974,7 @@ test_that("add_fcm_phase() — HDDS + HHS works when FCS & rCSI missing", {
 test_that("add_fcm_phase() — errors on non-dataframe input", {
   expect_error(
     add_fcm_phase(NULL),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 
@@ -982,11 +982,11 @@ test_that("add_fcm_phase() — errors on empty dataset", {
   df <- tibble::tibble()
   expect_error(
     add_fcm_phase(df),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 
-test_that("add_fcm_phase() — invalid category values throw iphra_error", {
+test_that("add_fcm_phase() — invalid category values throw phr_error", {
 
   df <- tibble::tibble(
     fsl_fcs_cat  = "SomethingWrong",
@@ -998,7 +998,7 @@ test_that("add_fcm_phase() — invalid category values throw iphra_error", {
   )
 })
 
-test_that("add_fcm_phase() — no valid combination throws iphra_error", {
+test_that("add_fcm_phase() — no valid combination throws phr_error", {
 
   df <- tibble::tibble(
     unrelated1 = "foo",
@@ -1007,7 +1007,7 @@ test_that("add_fcm_phase() — no valid combination throws iphra_error", {
 
   expect_error(
     add_fcm_phase(df),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 

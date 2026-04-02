@@ -1,9 +1,9 @@
 # Confidence Interval Method Decision Tree
 
-This document describes how `iphra_pick_ci_method()` selects the confidence
+This document describes how `phr_pick_ci_method()` selects the confidence
 interval (CI) method used by the survey calculation functions
-(`iphra_calc_survey_prop_single`, `iphra_calc_survey_categorical_single`, and
-`iphra_calc_survey_ratio_single`).
+(`phr_calc_survey_prop_single`, `phr_calc_survey_categorical_single`, and
+`phr_calc_survey_ratio_single`).
 
 ---
 

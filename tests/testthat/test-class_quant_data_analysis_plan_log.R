@@ -56,7 +56,7 @@ test_that("QuantDataAnalysisPlanLog attaches schema correctly", {
 
 test_that("QuantDataAnalysisPlanLog initializes from CSV template structure", {
   
-  # Simulate the structure from iphra_analysis_plan_template.csv
+  # Simulate the structure from phr_analysis_plan_template.csv
   df <- tibble(
     indicator_name = character(),
     calculation = character(),

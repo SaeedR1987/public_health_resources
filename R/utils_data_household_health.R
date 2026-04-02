@@ -76,7 +76,7 @@ add_health_barriers <- function(
 
   origin <- "add_health_barriers"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     physical_access_barriers_val <- ensure_value(physical_access_barriers_val, "physical")
@@ -92,27 +92,27 @@ add_health_barriers <- function(
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
 
     # Validate health barriers column
 
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       health_barriers_col,
       origin = origin,
-      hint = iphra_txt("Ensure the health barriers column exists in the dataset."),
+      hint = phr_txt("Ensure the health barriers column exists in the dataset."),
       soft = FALSE
     )
 
@@ -133,9 +133,9 @@ add_health_barriers <- function(
 
     for (col in output_columns) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
         )
       }
     }
@@ -200,14 +200,14 @@ add_health_barriers <- function(
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Health barrier indicators successfully computed.")
+      message = phr_txt("Health barrier indicators successfully computed.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure all input columns exist and the health barriers column contains valid, well-formatted data."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure all input columns exist and the health barriers column contains valid, well-formatted data."))
 }
 
 #' @title Add Healthcare Access Within One Hour
@@ -268,7 +268,7 @@ add_healthcare_access_one_hour <- function(
 
   origin <- "add_healthcare_access_one_hour"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for *_val parameters
     num_minutes_val <- ensure_value(num_minutes_val, "num_minutes")
@@ -278,17 +278,17 @@ add_healthcare_access_one_hour <- function(
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
     # Validate input columns
@@ -298,17 +298,17 @@ add_healthcare_access_one_hour <- function(
       health_care_travel_time_minutes_col,
       health_care_travel_time_range_col
     )
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       required_columns,
       origin = origin,
-      hint = iphra_txt("Ensure the required travel time columns exist in the dataset."),
+      hint = phr_txt("Ensure the required travel time columns exist in the dataset."),
       soft = FALSE
     )
 
     # Validate health_care_travel_time column
 
-    iphra_validate_choice(
+    phr_validate_choice(
       x = .dataset[[health_care_travel_time_col]],
       choices = c(num_minutes_val, range_val, NA_character_),
       origin = origin,
@@ -317,17 +317,17 @@ add_healthcare_access_one_hour <- function(
 
     # Validate health_care_travel_time_minutes column
 
-    iphra_validate_all_numeric(
+    phr_validate_all_numeric(
       .dataset[[health_care_travel_time_minutes_col]],
       origin = origin,
-      hint = iphra_txt("The `health_care_travel_time_minutes_col` column must contain numeric values."),
+      hint = phr_txt("The `health_care_travel_time_minutes_col` column must contain numeric values."),
       soft = TRUE
     )
 
     # Validate ranges from health_care_travel_time_range_col
 
     valid_ranges <- c(less_than_one_hour_range_val, one_hour_or_more_range_val, NA_character_)
-    iphra_validate_choice(
+    phr_validate_choice(
       x = .dataset[[health_care_travel_time_range_col]],
       choices = valid_ranges,
       origin = origin,
@@ -339,9 +339,9 @@ add_healthcare_access_one_hour <- function(
     output_column <- "health_healthcare_access_one_hour"
 
     if (output_column %in% names(.dataset)) {
-      iphra_warning(
+      phr_warning(
         origin = origin,
-        message = iphra_txt(glue::glue("Variable `{output_column}` already exists and will be overwritten."))
+        message = phr_txt(glue::glue("Variable `{output_column}` already exists and will be overwritten."))
       )
     }
 
@@ -353,33 +353,33 @@ add_healthcare_access_one_hour <- function(
           # Use numeric minutes if available
           .data[[health_care_travel_time_col]] == num_minutes_val &
             !is.na(.data[[health_care_travel_time_minutes_col]]) &
-            .data[[health_care_travel_time_minutes_col]] < 60 ~ iphra_txt("yes"),
+            .data[[health_care_travel_time_minutes_col]] < 60 ~ phr_txt("yes"),
           .data[[health_care_travel_time_col]] == num_minutes_val &
             !is.na(.data[[health_care_travel_time_minutes_col]]) &
-            .data[[health_care_travel_time_minutes_col]] >= 60 ~ iphra_txt("no"),
+            .data[[health_care_travel_time_minutes_col]] >= 60 ~ phr_txt("no"),
 
           # Use range-based travel time if numeric minutes are unavailable
           .data[[health_care_travel_time_col]] == range_val &
-            .data[[health_care_travel_time_range_col]] %in% less_than_one_hour_range_val ~ iphra_txt("yes"),
+            .data[[health_care_travel_time_range_col]] %in% less_than_one_hour_range_val ~ phr_txt("yes"),
           .data[[health_care_travel_time_col]] == range_val &
-            .data[[health_care_travel_time_range_col]] %in% one_hour_or_more_range_val ~ iphra_txt("no"),
+            .data[[health_care_travel_time_range_col]] %in% one_hour_or_more_range_val ~ phr_txt("no"),
 
           # Mark as `dont_know` if unable to determine
           is.na(.data[[health_care_travel_time_minutes_col]]) &
-            is.na(.data[[health_care_travel_time_range_col]]) ~ iphra_txt("dont_know"),
+            is.na(.data[[health_care_travel_time_range_col]]) ~ phr_txt("dont_know"),
 
           # Default for undefined cases
           TRUE ~ NA_character_
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Healthcare access within one hour successfully calculated.")
+      message = phr_txt("Healthcare access within one hour successfully calculated.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure input columns have valid data, and values align with the ranges and expected inputs provided."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure input columns have valid data, and values align with the ranges and expected inputs provided."))
 }
 

@@ -30,18 +30,18 @@ add_fcs <- function(.dataset,
 
   origin <- "add_fcs"
 
-  iphra_try(
+  phr_try(
     expr = {
 
 
       # Basic dataset validation
 
-      iphra_validate_dataframe(.dataset, origin, soft = FALSE)
+      phr_validate_dataframe(.dataset, origin, soft = FALSE)
 
-      iphra_assert(
+      phr_assert(
         nrow(.dataset) > 0,
         origin,
-        iphra_txt("Dataset is empty.")
+        phr_txt("Dataset is empty.")
       )
 
       fcs_vars <- c(
@@ -49,11 +49,11 @@ add_fcs <- function(.dataset,
         fsl_fcs_veg, fsl_fcs_fruit, fsl_fcs_oil, fsl_fcs_sugar
       )
 
-      iphra_validate_columns(
+      phr_validate_columns(
         .dataset,
         fcs_vars,
         origin,
-        hint = iphra_txt("Ensure all required FCS component variables are present."),
+        hint = phr_txt("Ensure all required FCS component variables are present."),
         soft = FALSE
       )
 
@@ -62,17 +62,17 @@ add_fcs <- function(.dataset,
 
       if ("fsl_fcs_score" %in% names(.dataset)) {
         var <- "fsl_fcs_score"
-        iphra_warning(
+        phr_warning(
           origin,
-          iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
 
       if ("fsl_fcs_cat" %in% names(.dataset)) {
         var <- "fsl_fcs_cat"
-        iphra_warning(
+        phr_warning(
           origin,
-          iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
 
@@ -82,17 +82,17 @@ add_fcs <- function(.dataset,
       for (v in fcs_vars) {
 
         # must be numeric
-        iphra_validate_all_numeric(.dataset[[v]], origin, soft = TRUE)
+        phr_validate_all_numeric(.dataset[[v]], origin, soft = TRUE)
 
         # call validator (warning only)
-        iphra_validate_range(
+        phr_validate_range(
           df = .dataset,
           col = v,
           min = 0,
           max = 7,
           soft = TRUE,
           origin = origin,
-          hint = iphra_txt("FCS frequency must be between 0 and 7.")
+          hint = phr_txt("FCS frequency must be between 0 and 7.")
         )
       }
 
@@ -137,9 +137,9 @@ add_fcs <- function(.dataset,
       # Handle cutoffs
 
       if (!cutoffs %in% c("normal", "alternative")) {
-        iphra_warning(
+        phr_warning(
           origin,
-          iphra_txt(
+          phr_txt(
             "Invalid cutoff type '{cutoffs}'. Defaulting to 'normal' thresholds."
           )
         )
@@ -154,9 +154,9 @@ add_fcs <- function(.dataset,
         .dataset <- .dataset %>%
           dplyr::mutate(
             fsl_fcs_cat = dplyr::case_when(
-              fsl_fcs_score < 21.5 ~ iphra_txt("Poor"),
-              fsl_fcs_score <= 35  ~ iphra_txt("Borderline"),
-              fsl_fcs_score > 35   ~ iphra_txt("Acceptable"),
+              fsl_fcs_score < 21.5 ~ phr_txt("Poor"),
+              fsl_fcs_score <= 35  ~ phr_txt("Borderline"),
+              fsl_fcs_score > 35   ~ phr_txt("Acceptable"),
               TRUE ~ NA_character_
             )
           )
@@ -166,9 +166,9 @@ add_fcs <- function(.dataset,
         .dataset <- .dataset %>%
           dplyr::mutate(
             fsl_fcs_cat = dplyr::case_when(
-              fsl_fcs_score <= 28 ~ iphra_txt("Poor"),
-              fsl_fcs_score <= 42 ~ iphra_txt("Borderline"),
-              fsl_fcs_score > 42  ~ iphra_txt("Acceptable"),
+              fsl_fcs_score <= 28 ~ phr_txt("Poor"),
+              fsl_fcs_score <= 42 ~ phr_txt("Borderline"),
+              fsl_fcs_score > 42  ~ phr_txt("Acceptable"),
               TRUE ~ NA_character_
             )
           )
@@ -180,9 +180,9 @@ add_fcs <- function(.dataset,
           fsl_fcs_cat = factor(
             fsl_fcs_cat,
             levels = c(
-              iphra_txt("Poor"),
-              iphra_txt("Borderline"),
-              iphra_txt("Acceptable")
+              phr_txt("Poor"),
+              phr_txt("Borderline"),
+              phr_txt("Acceptable")
             )
           )
         )
@@ -190,13 +190,13 @@ add_fcs <- function(.dataset,
 
       # Completion
 
-      iphra_message(origin, iphra_txt("FCS score and category computed successfully."))
+      phr_message(origin, phr_txt("FCS score and category computed successfully."))
 
       return(.dataset)
     },
     on_error = "abort",
     origin = origin,
-    hint = iphra_txt("Ensure FCS component variables contain numeric values 0–7.")
+    hint = phr_txt("Ensure FCS component variables contain numeric values 0–7.")
   )
 }
 
@@ -238,7 +238,7 @@ add_hhs <- function(
 
   origin <- "add_hhs"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     yes_answer <- ensure_value(yes_answer, "yes")
@@ -250,12 +250,12 @@ add_hhs <- function(
 
     # Validate dataset
 
-    iphra_validate_dataframe(.dataset, origin, soft = FALSE)
+    phr_validate_dataframe(.dataset, origin, soft = FALSE)
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
     # Missing column check
@@ -267,8 +267,8 @@ add_hhs <- function(
 
     missing_cols <- setdiff(hhs_vars, names(.dataset))
     if (length(missing_cols) > 0) {
-      iphra_error(
-        iphra_txt(glue::glue("Missing required HHS columns: {paste(missing_cols, collapse=', ')}")),
+      phr_error(
+        phr_txt(glue::glue("Missing required HHS columns: {paste(missing_cols, collapse=', ')}")),
         origin = origin
       )
     }
@@ -285,9 +285,9 @@ add_hhs <- function(
 
     for (var in overwrite_vars) {
       if (var %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
     }
@@ -296,14 +296,14 @@ add_hhs <- function(
     # Validate choices
 
     # Yes/No items
-    iphra_validate_choice(.dataset[[fsl_hhs_nofoodhh]], c(yes_answer, no_answer, NA_character_), origin, soft = FALSE)
-    iphra_validate_choice(.dataset[[fsl_hhs_sleephungry]], c(yes_answer, no_answer, NA_character_), origin, soft = FALSE)
-    iphra_validate_choice(.dataset[[fsl_hhs_alldaynight]], c(yes_answer, no_answer, NA_character_), origin, soft = FALSE)
+    phr_validate_choice(.dataset[[fsl_hhs_nofoodhh]], c(yes_answer, no_answer, NA_character_), origin, soft = FALSE)
+    phr_validate_choice(.dataset[[fsl_hhs_sleephungry]], c(yes_answer, no_answer, NA_character_), origin, soft = FALSE)
+    phr_validate_choice(.dataset[[fsl_hhs_alldaynight]], c(yes_answer, no_answer, NA_character_), origin, soft = FALSE)
 
     # Frequency items
-    iphra_validate_choice(.dataset[[fsl_hhs_nofoodhh_freq]], c(rarely_answer, sometimes_answer, often_answer, NA_character_), origin, soft = FALSE)
-    iphra_validate_choice(.dataset[[fsl_hhs_sleephungry_freq]], c(rarely_answer, sometimes_answer, often_answer, NA_character_), origin, soft = FALSE)
-    iphra_validate_choice(.dataset[[fsl_hhs_alldaynight_freq]], c(rarely_answer, sometimes_answer, often_answer, NA_character_), origin, soft = FALSE)
+    phr_validate_choice(.dataset[[fsl_hhs_nofoodhh_freq]], c(rarely_answer, sometimes_answer, often_answer, NA_character_), origin, soft = FALSE)
+    phr_validate_choice(.dataset[[fsl_hhs_sleephungry_freq]], c(rarely_answer, sometimes_answer, often_answer, NA_character_), origin, soft = FALSE)
+    phr_validate_choice(.dataset[[fsl_hhs_alldaynight_freq]], c(rarely_answer, sometimes_answer, often_answer, NA_character_), origin, soft = FALSE)
 
 
     # Construct numeric HHS components
@@ -374,43 +374,43 @@ add_hhs <- function(
     .dataset <- .dataset %>%
       dplyr::mutate(
         fsl_hhs_cat_ipc = dplyr::case_when(
-          fsl_hhs_score == 0 ~ iphra_txt("None"),
-          fsl_hhs_score == 1 ~ iphra_txt("Little"),
-          fsl_hhs_score <= 3 ~ iphra_txt("Moderate"),
-          fsl_hhs_score == 4 ~ iphra_txt("Severe"),
-          fsl_hhs_score <= 6 ~ iphra_txt("Very Severe"),
+          fsl_hhs_score == 0 ~ phr_txt("None"),
+          fsl_hhs_score == 1 ~ phr_txt("Little"),
+          fsl_hhs_score <= 3 ~ phr_txt("Moderate"),
+          fsl_hhs_score == 4 ~ phr_txt("Severe"),
+          fsl_hhs_score <= 6 ~ phr_txt("Very Severe"),
           TRUE ~ NA_character_
         ),
         fsl_hhs_cat = dplyr::case_when(
-          fsl_hhs_score <= 1 ~ iphra_txt("Little to No"),
-          fsl_hhs_score <= 3 ~ iphra_txt("Moderate"),
-          fsl_hhs_score <= 6 ~ iphra_txt("Severe"),
+          fsl_hhs_score <= 1 ~ phr_txt("Little to No"),
+          fsl_hhs_score <= 3 ~ phr_txt("Moderate"),
+          fsl_hhs_score <= 6 ~ phr_txt("Severe"),
           TRUE ~ NA_character_
         )
       ) %>%
       dplyr::mutate(
         fsl_hhs_cat = factor(fsl_hhs_cat, levels = c(
-          iphra_txt("Severe"),
-          iphra_txt("Moderate"),
-          iphra_txt("Little to No")
+          phr_txt("Severe"),
+          phr_txt("Moderate"),
+          phr_txt("Little to No")
         )),
         fsl_hhs_cat_ipc = factor(fsl_hhs_cat_ipc, levels = c(
-          iphra_txt("Very Severe"),
-          iphra_txt("Severe"),
-          iphra_txt("Moderate"),
-          iphra_txt("Little"),
-          iphra_txt("None")
+          phr_txt("Very Severe"),
+          phr_txt("Severe"),
+          phr_txt("Moderate"),
+          phr_txt("Little"),
+          phr_txt("None")
         ))
       )
 
-    iphra_message(origin, iphra_txt("HHS score and categories computed successfully."))
+    phr_message(origin, phr_txt("HHS score and categories computed successfully."))
 
     return(.dataset)
 
   },
   on_error = "abort",
   origin = origin,
-  hint = iphra_txt("Ensure HHS component variables are appropriately structured."))
+  hint = phr_txt("Ensure HHS component variables are appropriately structured."))
 }
 
 #' Calculate Reduced Coping Strategies Index (rCSI)
@@ -437,18 +437,18 @@ add_rcsi <- function(.dataset,
 
   origin <- "add_rcsi"
 
-  iphra_try(
+  phr_try(
 
     expr = {
 
       # Basic dataset checks
 
-      iphra_validate_dataframe(.dataset, origin, soft = FALSE)
+      phr_validate_dataframe(.dataset, origin, soft = FALSE)
 
-      iphra_assert(
+      phr_assert(
         nrow(.dataset) > 0,
         origin,
-        iphra_txt("Dataset is empty.")
+        phr_txt("Dataset is empty.")
       )
 
       rcsi_vars <- c(
@@ -459,11 +459,11 @@ add_rcsi <- function(.dataset,
         fsl_rcsi_mealnb
       )
 
-      iphra_validate_columns(
+      phr_validate_columns(
         .dataset,
         rcsi_vars,
         origin,
-        hint = iphra_txt("Ensure all required RCSI columns are present."),
+        hint = phr_txt("Ensure all required RCSI columns are present."),
         soft = FALSE
       )
 
@@ -472,33 +472,33 @@ add_rcsi <- function(.dataset,
 
       if ("fsl_rcsi_score" %in% names(.dataset)) {
         var <- "fsl_rcsi_score"
-        iphra_warning(
+        phr_warning(
           origin,
-          iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
 
       if ("fsl_rcsi_cat" %in% names(.dataset)) {
         var <- "fsl_rcsi_cat"
-        iphra_warning(
+        phr_warning(
           origin,
-          iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
 
 
-      # Enforce allowed 0–7 range using iphra_validate_range()
+      # Enforce allowed 0–7 range using phr_validate_range()
 
       for (v in rcsi_vars) {
-        iphra_validate_all_numeric(.dataset[[v]], origin, soft = TRUE)
+        phr_validate_all_numeric(.dataset[[v]], origin, soft = TRUE)
 
-        iphra_validate_range(
+        phr_validate_range(
           df  = .dataset,
           col = v,
           min = 0,
           max = 7,
           origin = origin,
-          hint = iphra_txt("RCSI frequency values must be between 0 and 7."),
+          hint = phr_txt("RCSI frequency values must be between 0 and 7."),
           soft = TRUE
         )
       }
@@ -581,31 +581,31 @@ add_rcsi <- function(.dataset,
 
           fsl_rcsi_cat = dplyr::case_when(
             any_weighted_na ~ NA_character_,
-            fsl_rcsi_score <= 3 ~ iphra_txt("No to Low"),
-            fsl_rcsi_score <= 18 ~ iphra_txt("Medium"),
-            fsl_rcsi_score > 18 ~ iphra_txt("High"),
+            fsl_rcsi_score <= 3 ~ phr_txt("No to Low"),
+            fsl_rcsi_score <= 18 ~ phr_txt("Medium"),
+            fsl_rcsi_score > 18 ~ phr_txt("High"),
             TRUE ~ NA_character_
           ),
 
-          # Standardize factor levels (ALL iphra_txt)
+          # Standardize factor levels (ALL phr_txt)
           fsl_rcsi_cat = factor(
             fsl_rcsi_cat,
             levels = c(
-              iphra_txt("High"),
-              iphra_txt("Medium"),
-              iphra_txt("No to Low")
+              phr_txt("High"),
+              phr_txt("Medium"),
+              phr_txt("No to Low")
             )
           )
         ) %>%
         dplyr::select(-any_weighted_na)  # Remove helper column
 
-      iphra_message(origin, iphra_txt("RCSI successfully calculated."))
+      phr_message(origin, phr_txt("RCSI successfully calculated."))
 
       return(.dataset)
     },
     on_error = "abort",
     origin = origin,
-    hint = iphra_txt("Ensure all RCSI fields exist and contain integer values 0–7.")
+    hint = phr_txt("Ensure all RCSI fields exist and contain integer values 0–7.")
   )
 }
 
@@ -651,7 +651,7 @@ add_lcsi <- function(.dataset,
 
   origin <- "add_lcsi"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     yes_val <- ensure_value(yes_val, "yes")
@@ -659,22 +659,22 @@ add_lcsi <- function(.dataset,
     exhausted_val <- ensure_value(exhausted_val, "no_exhausted")
     not_applicable_val <- ensure_value(not_applicable_val, "not_applicable")
 
-    iphra_message(origin, iphra_txt("Starting LCSI calculation..."))
+    phr_message(origin, phr_txt("Starting LCSI calculation..."))
 
 
     # 1. Basic validations
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint   = iphra_txt("The first argument must be a data.frame or tibble."),
+      hint   = phr_txt("The first argument must be a data.frame or tibble."),
       soft   = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
     lcsi_vars <- c(
@@ -683,11 +683,11 @@ add_lcsi <- function(.dataset,
       fsl_lcsi_emergency1, fsl_lcsi_emergency2, fsl_lcsi_emergency3
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       df           = .dataset,
       required_cols = lcsi_vars,
       origin       = origin,
-      hint         = iphra_txt("Ensure all required LCSI variables are present in the dataset."),
+      hint         = phr_txt("Ensure all required LCSI variables are present in the dataset."),
       soft         = FALSE
     )
 
@@ -705,21 +705,21 @@ add_lcsi <- function(.dataset,
 
     for (var in overwrite_vars) {
       if (var %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
     }
 
 
-    # 2. Allowed value validation (using iphra_validate_choice)
+    # 2. Allowed value validation (using phr_validate_choice)
     #    NA is allowed and should pass silently
 
     lcsi_cat_values <- c(yes_val, no_val, exhausted_val, not_applicable_val)
 
     validate_lcsi_col <- function(col_name) {
-      iphra_validate_choice(
+      phr_validate_choice(
         x       = as.character(.dataset[[col_name]]),
         choices = c(lcsi_cat_values, NA_character_),
         origin  = origin,
@@ -813,13 +813,13 @@ add_lcsi <- function(.dataset,
         fsl_lcsi_cat_yes = dplyr::case_when(
           fsl_lcsi_stress_yes    != "1" &
             fsl_lcsi_crisis_yes  != "1" &
-            fsl_lcsi_emergency_yes != "1" ~ iphra_txt("None"),
+            fsl_lcsi_emergency_yes != "1" ~ phr_txt("None"),
           fsl_lcsi_stress_yes == "1" &
             fsl_lcsi_crisis_yes != "1" &
-            fsl_lcsi_emergency_yes != "1" ~ iphra_txt("Stress"),
+            fsl_lcsi_emergency_yes != "1" ~ phr_txt("Stress"),
           fsl_lcsi_crisis_yes == "1" &
-            fsl_lcsi_emergency_yes != "1" ~ iphra_txt("Crisis"),
-          fsl_lcsi_emergency_yes == "1" ~ iphra_txt("Emergency"),
+            fsl_lcsi_emergency_yes != "1" ~ phr_txt("Crisis"),
+          fsl_lcsi_emergency_yes == "1" ~ phr_txt("Emergency"),
           TRUE ~ NA_character_
         ),
 
@@ -827,13 +827,13 @@ add_lcsi <- function(.dataset,
         fsl_lcsi_cat_exhaust = dplyr::case_when(
           fsl_lcsi_stress_exhaust    != "1" &
             fsl_lcsi_crisis_exhaust  != "1" &
-            fsl_lcsi_emergency_exhaust != "1" ~ iphra_txt("None"),
+            fsl_lcsi_emergency_exhaust != "1" ~ phr_txt("None"),
           fsl_lcsi_stress_exhaust == "1" &
             fsl_lcsi_crisis_exhaust != "1" &
-            fsl_lcsi_emergency_exhaust != "1" ~ iphra_txt("Stress"),
+            fsl_lcsi_emergency_exhaust != "1" ~ phr_txt("Stress"),
           fsl_lcsi_crisis_exhaust == "1" &
-            fsl_lcsi_emergency_exhaust != "1" ~ iphra_txt("Crisis"),
-          fsl_lcsi_emergency_exhaust == "1" ~ iphra_txt("Emergency"),
+            fsl_lcsi_emergency_exhaust != "1" ~ phr_txt("Crisis"),
+          fsl_lcsi_emergency_exhaust == "1" ~ phr_txt("Emergency"),
           TRUE ~ NA_character_
         ),
 
@@ -841,13 +841,13 @@ add_lcsi <- function(.dataset,
         fsl_lcsi_cat = dplyr::case_when(
           fsl_lcsi_stress    != "1" &
             fsl_lcsi_crisis  != "1" &
-            fsl_lcsi_emergency != "1" ~ iphra_txt("None"),
+            fsl_lcsi_emergency != "1" ~ phr_txt("None"),
           fsl_lcsi_stress == "1" &
             fsl_lcsi_crisis != "1" &
-            fsl_lcsi_emergency != "1" ~ iphra_txt("Stress"),
+            fsl_lcsi_emergency != "1" ~ phr_txt("Stress"),
           fsl_lcsi_crisis == "1" &
-            fsl_lcsi_emergency != "1" ~ iphra_txt("Crisis"),
-          fsl_lcsi_emergency == "1" ~ iphra_txt("Emergency"),
+            fsl_lcsi_emergency != "1" ~ phr_txt("Crisis"),
+          fsl_lcsi_emergency == "1" ~ phr_txt("Emergency"),
           TRUE ~ NA_character_
         )
       )
@@ -887,30 +887,30 @@ add_lcsi <- function(.dataset,
         fsl_lcsi_cat_yes = factor(
           fsl_lcsi_cat_yes,
           levels = c(
-            iphra_txt("Emergency"),
-            iphra_txt("Crisis"),
-            iphra_txt("Stress"),
-            iphra_txt("None")
+            phr_txt("Emergency"),
+            phr_txt("Crisis"),
+            phr_txt("Stress"),
+            phr_txt("None")
           ),
           ordered = TRUE
         ),
         fsl_lcsi_cat_exhaust = factor(
           fsl_lcsi_cat_exhaust,
           levels = c(
-            iphra_txt("Emergency"),
-            iphra_txt("Crisis"),
-            iphra_txt("Stress"),
-            iphra_txt("None")
+            phr_txt("Emergency"),
+            phr_txt("Crisis"),
+            phr_txt("Stress"),
+            phr_txt("None")
           ),
           ordered = TRUE
         ),
         fsl_lcsi_cat = factor(
           fsl_lcsi_cat,
           levels = c(
-            iphra_txt("Emergency"),
-            iphra_txt("Crisis"),
-            iphra_txt("Stress"),
-            iphra_txt("None")
+            phr_txt("Emergency"),
+            phr_txt("Crisis"),
+            phr_txt("Stress"),
+            phr_txt("None")
           ),
           ordered = TRUE
         )
@@ -932,11 +932,11 @@ add_lcsi <- function(.dataset,
         )
       )
 
-    iphra_message(origin, iphra_txt("LCSI indicators and categories computed successfully."))
+    phr_message(origin, phr_txt("LCSI indicators and categories computed successfully."))
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure all LCSI columns exist and contain valid response values."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure all LCSI columns exist and contain valid response values."))
 }
 
 #' Calculate Household Dietary Diversity Score (HDDS)
@@ -981,7 +981,7 @@ add_hdds <- function(.dataset,
 
   origin <- "add_hdds"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     yes_val <- ensure_value(yes_val, "yes")
@@ -990,18 +990,18 @@ add_hdds <- function(.dataset,
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Confirm that you passed a valid data.frame from your cleaning pipeline."),
+      hint = phr_txt("Confirm that you passed a valid data.frame from your cleaning pipeline."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin,
-      iphra_txt("Dataset is empty."),
-      hint = iphra_txt("Check that your input data has rows after filtering or import.")
+      phr_txt("Dataset is empty."),
+      hint = phr_txt("Check that your input data has rows after filtering or import.")
     )
 
 
@@ -1015,11 +1015,11 @@ add_hdds <- function(.dataset,
       fsl_hdds_dairy, fsl_hdds_oil, fsl_hdds_sugar, fsl_hdds_condiments
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       hdds_vars,
       origin = origin,
-      hint = iphra_txt("Check that all 12 HDDS food group variables are present and correctly named."),
+      hint = phr_txt("Check that all 12 HDDS food group variables are present and correctly named."),
       soft = FALSE
     )
 
@@ -1030,7 +1030,7 @@ add_hdds <- function(.dataset,
 
     for (v in hdds_vars) {
       # Allow NA as valid input
-      iphra_validate_choice(
+      phr_validate_choice(
         x       = .dataset[[v]],
         choices = c(allowed, NA_character_),
         origin  = origin,
@@ -1048,9 +1048,9 @@ add_hdds <- function(.dataset,
 
     for (var in overwrite_vars) {
       if (var %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
     }
@@ -1078,9 +1078,9 @@ add_hdds <- function(.dataset,
 
         fsl_hdds_cat = dplyr::case_when(
           is.na(fsl_hdds_score) ~ NA_character_,
-          fsl_hdds_score <= 2 ~ iphra_txt("Low"),
-          fsl_hdds_score <= 4 ~ iphra_txt("Medium"),
-          fsl_hdds_score > 4 ~ iphra_txt("High")
+          fsl_hdds_score <= 2 ~ phr_txt("Low"),
+          fsl_hdds_score <= 4 ~ phr_txt("Medium"),
+          fsl_hdds_score > 4 ~ phr_txt("High")
         )
       ) |>
       dplyr::ungroup()
@@ -1093,16 +1093,16 @@ add_hdds <- function(.dataset,
         fsl_hdds_cat = factor(
           fsl_hdds_cat,
           levels = c(
-            iphra_txt("Low"),
-            iphra_txt("Medium"),
-            iphra_txt("High")
+            phr_txt("Low"),
+            phr_txt("Medium"),
+            phr_txt("High")
           )
         )
       )
 
-    iphra_message(
+    phr_message(
       origin,
-      iphra_txt("HDDS score and category computed successfully.")
+      phr_txt("HDDS score and category computed successfully.")
     )
 
     return(.dataset)
@@ -1210,7 +1210,7 @@ add_fcm_phase <- function(
     hhs_very_severe_val = NULL
 ) {
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     fcs_acceptable_val <- ensure_value(fcs_acceptable_val, "Acceptable")
@@ -1372,13 +1372,13 @@ add_fcm_phase <- function(
     # 2. PRECONDITIONS
 
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = "add_fcm_phase",
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = "add_fcm_phase"
     )
@@ -1404,19 +1404,19 @@ add_fcm_phase <- function(
 
     for (var in overwrite_vars) {
       if (var %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin  = "add_fcm_phase",
-          message = iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
     }
 
 
-    # 4. VALIDATE CATEGORIES using iphra_validate_choices
+    # 4. VALIDATE CATEGORIES using phr_validate_choices
 
 
     if (has_fcs) {
-      iphra_validate_choice(
+      phr_validate_choice(
         .dataset[[fcs_col]],
         choices = c(fcs_acceptable_val, fcs_borderline_val, fcs_poor_val),
         origin = "add_fcm_phase",
@@ -1425,7 +1425,7 @@ add_fcm_phase <- function(
     }
 
     if (has_rcsi) {
-      iphra_validate_choice(
+      phr_validate_choice(
         .dataset[[rcsi_col]],
         choices = c(rcsi_low_val, rcsi_medium_val, rcsi_high_val),
         origin = "add_fcm_phase",
@@ -1434,7 +1434,7 @@ add_fcm_phase <- function(
     }
 
     if (has_hhs) {
-      iphra_validate_choice(
+      phr_validate_choice(
         .dataset[[hhs_col]],
         choices = c(hhs_none_val, hhs_little_val, hhs_moderate_val, hhs_severe_val, hhs_very_severe_val),
         origin = "add_fcm_phase",
@@ -1443,7 +1443,7 @@ add_fcm_phase <- function(
     }
 
     if (has_hdds) {
-      iphra_validate_choice(
+      phr_validate_choice(
         .dataset[[hdds_col]],
         choices = c(hdds_low_val, hdds_medium_val, hdds_high_val),
         origin = "add_fcm_phase",
@@ -1503,10 +1503,10 @@ add_fcm_phase <- function(
       )
 
     } else {
-      iphra_error(
+      phr_error(
         origin = "add_fcm_phase",
-        iphra_txt("No valid FEWS NET indicator combination detected."),
-        hint = iphra_txt("Provide at least one valid combination: (FCS+rCSI), (HDDS+rCSI), (FCS+HHS), (HDDS+HHS), or (FCS+rCSI+HHS).")
+        phr_txt("No valid FEWS NET indicator combination detected."),
+        hint = phr_txt("Provide at least one valid combination: (FCS+rCSI), (HDDS+rCSI), (FCS+HHS), (HDDS+HHS), or (FCS+rCSI+HHS).")
       )
     }
 
@@ -1550,8 +1550,8 @@ add_fcm_phase <- function(
       }
     }
 
-    iphra_message(
-      iphra_txt("FEWS NET matrix classification computed: fsl_fc_cell, fsl_fc_phase.")
+    phr_message(
+      phr_txt("FEWS NET matrix classification computed: fsl_fc_cell, fsl_fc_phase.")
     )
 
     return(out)
@@ -1639,7 +1639,7 @@ add_fclcm_phase <- function(
     lcsi_emergency_val = NULL,
     lcsi_exhaustion_val = NULL
 ) {
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     p1_val <- ensure_value(p1_val, "P1")
@@ -1726,44 +1726,44 @@ add_fclcm_phase <- function(
 
     # 2. PRECONDITIONS
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = "add_fclcm_phase",
-      hint   = iphra_txt("Input must be a valid dataframe."),
+      hint   = phr_txt("Input must be a valid dataframe."),
       soft   = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       condition = nrow(.dataset) > 0,
-      message   = iphra_txt("Dataset is empty; cannot create FCLCM composite."),
+      message   = phr_txt("Dataset is empty; cannot create FCLCM composite."),
       origin    = "add_fclcm_phase",
-      hint      = iphra_txt("Provide at least one row of data.")
+      hint      = phr_txt("Provide at least one row of data.")
     )
 
-    iphra_assert(
+    phr_assert(
       condition = fc_phase_col %in% names(.dataset),
-      message   = iphra_txt(glue::glue("Missing FC phase column '{fc_phase_col}'.")),
+      message   = phr_txt(glue::glue("Missing FC phase column '{fc_phase_col}'.")),
       origin    = "add_fclcm_phase",
-      hint      = iphra_txt("Ensure the dataset contains the FC phase variable.")
+      hint      = phr_txt("Ensure the dataset contains the FC phase variable.")
     )
 
-    iphra_assert(
+    phr_assert(
       condition = lcsi_col %in% names(.dataset),
-      message   = iphra_txt(glue::glue("Missing LCSI column '{lcsi_col}'.")),
+      message   = phr_txt(glue::glue("Missing LCSI column '{lcsi_col}'.")),
       origin    = "add_fclcm_phase",
-      hint      = iphra_txt("Ensure the dataset contains the LCSI variable.")
+      hint      = phr_txt("Ensure the dataset contains the LCSI variable.")
     )
 
     # 3. CATEGORY VALIDATION
 
-    iphra_validate_choice(
+    phr_validate_choice(
       .dataset[[fc_phase_col]],
       choices = c(p1_val, p2_val, p3_val, p4_val, p5_val, NA_character_),
       origin  = "add_fclcm_phase",
       soft    = FALSE
     )
 
-    iphra_validate_choice(
+    phr_validate_choice(
       .dataset[[lcsi_col]],
       choices = c(lcsi_none_val, lcsi_stress_val, lcsi_crisis_val, lcsi_emergency_val, lcsi_exhaustion_val, NA_character_),
       origin  = "add_fclcm_phase",
@@ -1779,9 +1779,9 @@ add_fclcm_phase <- function(
 
     for (var in overwrite_vars) {
       if (var %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin  = "add_fclcm_phase",
-          message = iphra_txt(glue::glue("Variable {var} already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable {var} already exists and will be overwritten."))
         )
       }
     }
@@ -1826,8 +1826,8 @@ add_fclcm_phase <- function(
       }
     }
 
-    iphra_message(
-      iphra_txt(
+    phr_message(
+      phr_txt(
         "FCLCM composite applied using {lut_label}. Output columns: fsl_fclcm_cell and fsl_fclcm_phase."
       )
     )

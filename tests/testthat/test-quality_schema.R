@@ -156,7 +156,7 @@ test_that("quality_validate_schema_to_table accepts empty thresholds and penalty
 
   expect_error(
     quality_validate_schema_to_table(qc_schema),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 

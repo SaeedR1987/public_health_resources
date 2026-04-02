@@ -5,7 +5,7 @@
 \title{QuantDataAnalysisPlanLog: Quant Data Analysis Plan Log Class}
 \description{
 A specialized Log class for managing quantitative data analysis plans. 
-Enforces the column structure defined in iphra_analysis_plan_template.csv
+Enforces the column structure defined in phr_analysis_plan_template.csv
 and provides validation for analysis plan entries.
 }
 \details{
@@ -15,7 +15,7 @@ The QuantDataAnalysisPlanLog extends the Log base class with specific functional
 * Validating calculation types and variable names
 * Ensuring data analysis plans follow the standard template structure
 
-Required columns (matching iphra_analysis_plan_template.csv):
+Required columns (matching phr_analysis_plan_template.csv):
 * indicator_name: Name/label of the indicator
 * calculation: Type of calculation (prop, mean, median, ratio)
 * var_name: Primary variable name in the dataset

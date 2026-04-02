@@ -133,7 +133,7 @@ test_that("run_analysis runs with mocked calc and stores dual results", {
   )
 
   local_mocked_bindings(
-    iphra_calc_survey_from_plan = function(design, analysis_plan, ...) {
+    phr_calc_survey_from_plan = function(design, analysis_plan, ...) {
       tibble::tibble(indicator_name = "A", est = 3.14)
     }
   )
@@ -354,7 +354,7 @@ test_that("import_analysis_schema warns on missing columns", {
   readr::write_csv(tibble::tibble(indicator_name = "A"), tmp)
 
   obj <- QuantDataAnalysis$new()
-  # iphra_warning() issues an R warning when columns are missing
+  # phr_warning() issues an R warning when columns are missing
   suppressWarnings(obj$import_analysis_schema(tmp))
 
   # The schema should still be set even with missing columns

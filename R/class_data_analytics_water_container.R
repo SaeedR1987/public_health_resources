@@ -58,8 +58,8 @@ WaterContainerDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      iphra_message(
-        iphra_txt(glue::glue("{dataset_name} initialized as WaterContainerDataAnalytics object."))
+      phr_message(
+        phr_txt(glue::glue("{dataset_name} initialized as WaterContainerDataAnalytics object."))
       )
     },
 
@@ -83,9 +83,9 @@ WaterContainerDataAnalytics <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "WaterContainerDataAnalytics$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_water_container_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_water_container_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -121,7 +121,7 @@ WaterContainerDataAnalytics <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "WaterContainerDataAnalytics$default_outputs_schema",

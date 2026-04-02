@@ -104,12 +104,12 @@ HealthDataQuality <- R6::R6Class(
         msg_parts <- c()
         if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
         if (!is.null(linked_ind_health_data)) msg_parts <- c(msg_parts, "health individual")
-        iphra_message(
-          iphra_txt(paste0("HealthDataQuality initialized with linked ", paste(msg_parts, collapse = " and "), " data."))
+        phr_message(
+          phr_txt(paste0("HealthDataQuality initialized with linked ", paste(msg_parts, collapse = " and "), " data."))
         )
       } else {
-        iphra_message(
-          iphra_txt(glue::glue("{dataset_name} initialized as HealthDataQuality object."))
+        phr_message(
+          phr_txt(glue::glue("{dataset_name} initialized as HealthDataQuality object."))
         )
       }
     },
@@ -142,9 +142,9 @@ HealthDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HealthDataQuality$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_health_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_health_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -191,9 +191,9 @@ HealthDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HealthDataQuality$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_health_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_health_template.xlsx: {e$message}"))
           )
           return(NULL)
         }

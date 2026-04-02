@@ -31,11 +31,11 @@
 #' @examples
 #' \dontrun{
 #'   ft <- flextable::flextable(data.frame(a = 1:3, b = letters[1:3]))
-#'   ft <- apply_iphra_flextable_theme(ft)
-#'   ft <- apply_iphra_flextable_theme(ft, color_palette = "reach2")
-#'   ft <- apply_iphra_flextable_theme(ft, color_palette = "group")
+#'   ft <- apply_phr_flextable_theme(ft)
+#'   ft <- apply_phr_flextable_theme(ft, color_palette = "reach2")
+#'   ft <- apply_phr_flextable_theme(ft, color_palette = "group")
 #' }
-apply_iphra_flextable_theme <- function(ft,
+apply_phr_flextable_theme <- function(ft,
                                         color_palette      = "reach1",
                                         header_color       = "white",
                                         font_name          = "Roboto Condensed",
@@ -45,9 +45,9 @@ apply_iphra_flextable_theme <- function(ft,
                                         outer_border_color = "#808080",
                                         outer_border_width = 1) {
 
-  origin <- "apply_iphra_flextable_theme"
+  origin <- "apply_phr_flextable_theme"
 
-  iphra_try({
+  phr_try({
 
     # Resolve the palette name to a vector of colours, then use the first
     # colour as the header background (same pattern as plot_* functions)

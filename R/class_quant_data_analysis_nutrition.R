@@ -27,7 +27,7 @@ NutritionAnalysis <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "NutritionAnalysis$default_analysis_schema",
@@ -59,7 +59,7 @@ NutritionAnalysis <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "NutritionAnalysis$default_outputs_schema",

@@ -103,12 +103,12 @@ MortalityDataQuality <- R6::R6Class(
         msg_parts <- c()
         if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
         if (!is.null(linked_ind_deaths_data)) msg_parts <- c(msg_parts, "deaths")
-        iphra_message(
-          iphra_txt(paste0("MortalityDataQuality initialized with linked ", paste(msg_parts, collapse = " and "), " data."))
+        phr_message(
+          phr_txt(paste0("MortalityDataQuality initialized with linked ", paste(msg_parts, collapse = " and "), " data."))
         )
       } else {
-        iphra_message(
-          iphra_txt(glue::glue("{dataset_name} initialized as MortalityDataQuality object."))
+        phr_message(
+          phr_txt(glue::glue("{dataset_name} initialized as MortalityDataQuality object."))
         )
       }
     },
@@ -138,9 +138,9 @@ MortalityDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "MortalityDataQuality$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_mortality_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_mortality_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -187,9 +187,9 @@ MortalityDataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "MortalityDataQuality$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_mortality_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_mortality_template.xlsx: {e$message}"))
           )
           return(NULL)
         }

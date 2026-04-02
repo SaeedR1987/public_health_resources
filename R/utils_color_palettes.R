@@ -73,8 +73,8 @@ reach_colors <- function(ramp = 1, n = NULL, reverse = FALSE) {
   )
 
   # Validate ramp parameter
-  iphra_assert(ramp %in% 1:4,
-               iphra_txt("ramp must be an integer between 1 and 4"),
+  phr_assert(ramp %in% 1:4,
+               phr_txt("ramp must be an integer between 1 and 4"),
                origin = origin)
 
   # Get selected ramp
@@ -87,8 +87,8 @@ reach_colors <- function(ramp = 1, n = NULL, reverse = FALSE) {
 
   # If n is specified, interpolate to get exactly n colors
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n == 1) {
@@ -153,8 +153,8 @@ traffic_light_colors <- function(n = NULL, include_grey = TRUE, reverse = FALSE)
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n <= length(colors)) {
@@ -257,8 +257,8 @@ group_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n == 1) {
@@ -376,8 +376,8 @@ ipc_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n <= length(colors)) {
@@ -434,8 +434,8 @@ water_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n <= length(colors)) {
@@ -495,8 +495,8 @@ sanitation_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n <= length(colors)) {
@@ -556,8 +556,8 @@ hygiene_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    iphra_assert(is.numeric(n) && n > 0,
-                 iphra_txt("n must be a positive integer"),
+    phr_assert(is.numeric(n) && n > 0,
+                 phr_txt("n must be a positive integer"),
                  origin = origin)
 
     if (n <= length(colors)) {
@@ -630,8 +630,8 @@ get_color_palette <- function(type = "reach1", n = NULL, reverse = FALSE) {
 
   # Validate type
   valid_types <- c("reach1", "reach2", "reach3", "reach4", "traffic_light", "sex", "group", "iycf_area", "ipc", "water", "sanitation", "hygiene", "default")
-  iphra_assert(type %in% valid_types,
-               iphra_txt("type must be one of: {paste(valid_types, collapse = ', ')}"),
+  phr_assert(type %in% valid_types,
+               phr_txt("type must be one of: {paste(valid_types, collapse = ', ')}"),
                origin = origin)
 
   # Return appropriate palette

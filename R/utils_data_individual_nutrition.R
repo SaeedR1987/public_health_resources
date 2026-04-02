@@ -74,7 +74,7 @@ add_ecfies <- function(
 
   origin <- "add_ecfies"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     yes_val <- ensure_value(yes_val, "yes")
@@ -85,17 +85,17 @@ add_ecfies <- function(
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
 
@@ -112,11 +112,11 @@ add_ecfies <- function(
       nut_ecfies_so8_col
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       ecfies_columns,
       origin = origin,
-      hint = iphra_txt("Ensure all EC-FIES columns (1-8) exist in the dataset."),
+      hint = phr_txt("Ensure all EC-FIES columns (1-8) exist in the dataset."),
       soft = FALSE
     )
 
@@ -126,7 +126,7 @@ add_ecfies <- function(
     valid_values <- c(yes_val, no_val, dont_know_val, prefer_not_to_answer_val, NA_character_)
 
     for (col in ecfies_columns) {
-      iphra_validate_choice(
+      phr_validate_choice(
         x = .dataset[[col]],
         choices = valid_values,
         origin = origin,
@@ -141,9 +141,9 @@ add_ecfies <- function(
 
     for (col in output_columns) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
         )
       }
     }
@@ -162,10 +162,10 @@ add_ecfies <- function(
 
         # Assign food insecurity category
         nut_ecfies_cat = dplyr::case_when(
-          nut_ecfies_score == 0 ~ iphra_txt("No Food Insecurity"),
-          nut_ecfies_score >= 1 & nut_ecfies_score <= 3 ~ iphra_txt("Mild Food Insecurity"),
-          nut_ecfies_score >= 4 & nut_ecfies_score <= 6 ~ iphra_txt("Moderate Food Insecurity"),
-          nut_ecfies_score >= 7 & nut_ecfies_score <= 8 ~ iphra_txt("Severe Food Insecurity"),
+          nut_ecfies_score == 0 ~ phr_txt("No Food Insecurity"),
+          nut_ecfies_score >= 1 & nut_ecfies_score <= 3 ~ phr_txt("Mild Food Insecurity"),
+          nut_ecfies_score >= 4 & nut_ecfies_score <= 6 ~ phr_txt("Moderate Food Insecurity"),
+          nut_ecfies_score >= 7 & nut_ecfies_score <= 8 ~ phr_txt("Severe Food Insecurity"),
           TRUE ~ NA_character_
         ),
 
@@ -173,23 +173,23 @@ add_ecfies <- function(
         nut_ecfies_cat = factor(
           nut_ecfies_cat,
           levels = c(
-            iphra_txt("No Food Insecurity"),
-            iphra_txt("Mild Food Insecurity"),
-            iphra_txt("Moderate Food Insecurity"),
-            iphra_txt("Severe Food Insecurity")
+            phr_txt("No Food Insecurity"),
+            phr_txt("Mild Food Insecurity"),
+            phr_txt("Moderate Food Insecurity"),
+            phr_txt("Severe Food Insecurity")
           ),
           ordered = TRUE
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("EC-FIES score and categorization successfully computed.")
+      message = phr_txt("EC-FIES score and categorization successfully computed.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure input columns exist, contain valid data, and scoring values are correctly specified."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure input columns exist, contain valid data, and scoring values are correctly specified."))
 }
 
 #' @title Add MUAC-Based SAM, MAM, GAM Classifications & Flag Extreme MUAC Values
@@ -268,7 +268,7 @@ add_muac <- function(
 ) {
   origin <- "add_muac"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for *_val parameter
     edema_confirm_val <- ensure_value(edema_confirm_val, "yes")
@@ -276,35 +276,35 @@ add_muac <- function(
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
 
     # Validate input columns
 
     required_columns <- c(nut_muac_cm_col, edema_confirm_col, child_age_months_col)
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       required_columns,
       origin = origin,
-      hint = iphra_txt("Ensure the required columns for MUAC calculation exist in the dataset."),
+      hint = phr_txt("Ensure the required columns for MUAC calculation exist in the dataset."),
       soft = FALSE
     )
 
-    iphra_validate_all_numeric(
+    phr_validate_all_numeric(
       .dataset[[nut_muac_cm_col]],
       origin = origin,
-      hint = iphra_txt("The `nut_muac_cm_col` column must contain numeric values."),
+      hint = phr_txt("The `nut_muac_cm_col` column must contain numeric values."),
       soft = TRUE
     )
 
@@ -317,9 +317,9 @@ add_muac <- function(
     if (muac_is_cm) {
       # Add or overwrite millimeter column (convert centimeters to millimeters)
       if ("nut_muac_mm" %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt("The column `nut_muac_mm` already exists and will be overwritten.")
+          message = phr_txt("The column `nut_muac_mm` already exists and will be overwritten.")
         )
       }
       .dataset <- .dataset %>%
@@ -327,16 +327,16 @@ add_muac <- function(
           nut_muac_mm = .data[[nut_muac_cm_col]] * 10
         )
 
-      iphra_message(
+      phr_message(
         origin = origin,
-        message = iphra_txt("MUAC values detected as centimeters. Converted and added `nut_muac_mm` column.")
+        message = phr_txt("MUAC values detected as centimeters. Converted and added `nut_muac_mm` column.")
       )
     } else if (muac_is_mm) {
       # Add or overwrite centimeter column (convert millimeters to centimeters)
       if ("nut_muac_cm" %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt("The column `nut_muac_cm` already exists and will be overwritten.")
+          message = phr_txt("The column `nut_muac_cm` already exists and will be overwritten.")
         )
       }
       .dataset <- .dataset %>%
@@ -344,14 +344,14 @@ add_muac <- function(
           `nut_muac_cm` = .data[[nut_muac_cm_col]] / 10
         )
 
-      iphra_message(
+      phr_message(
         origin = origin,
-        message = iphra_txt("MUAC values detected as millimeters. Converted and added (or overwritten) `nut_muac_cm` column.")
+        message = phr_txt("MUAC values detected as millimeters. Converted and added (or overwritten) `nut_muac_cm` column.")
       )
     } else {
-      iphra_warning(
+      phr_warning(
         origin = origin,
-        message = iphra_txt("MUAC values could not be clearly identified as centimeters or millimeters. No additional unit columns created.")
+        message = phr_txt("MUAC values could not be clearly identified as centimeters or millimeters. No additional unit columns created.")
       )
     }
 
@@ -362,9 +362,9 @@ add_muac <- function(
 
     for (col in output_columns) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
         )
       }
     }
@@ -415,14 +415,14 @@ add_muac <- function(
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("MUAC-based SAM, MAM, GAM classifications and extreme value flags successfully calculated.")
+      message = phr_txt("MUAC-based SAM, MAM, GAM classifications and extreme value flags successfully calculated.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure input columns exist and contain valid numeric or categorical data."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure input columns exist and contain valid numeric or categorical data."))
 }
 
 #' @title Add MFA-Z-Based Classifications and Flags
@@ -495,7 +495,7 @@ add_mfaz <- function(
 ) {
   origin <- "add_mfaz"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for *_val parameters
     male_sex_val <- ensure_value(male_sex_val, "Male")
@@ -505,35 +505,35 @@ add_mfaz <- function(
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
 
     # Validate input columns
 
     required_columns <- c(nut_muac_cm_col, edema_confirm_col, child_age_months_col, child_sex_col)
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       required_columns,
       origin = origin,
-      hint = iphra_txt("Ensure the required columns for MFA-Z calculation exist in the dataset."),
+      hint = phr_txt("Ensure the required columns for MFA-Z calculation exist in the dataset."),
       soft = FALSE
     )
 
-    iphra_validate_all_numeric(
+    phr_validate_all_numeric(
       .dataset[[nut_muac_cm_col]],
       origin = origin,
-      hint = iphra_txt("The `nut_muac_cm_col` column must contain numeric values for MFA-Z calculation."),
+      hint = phr_txt("The `nut_muac_cm_col` column must contain numeric values for MFA-Z calculation."),
       soft = TRUE
     )
 
@@ -544,9 +544,9 @@ add_mfaz <- function(
 
     for (col in output_columns) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable `{col}` already exists and will be overwritten."))
         )
       }
     }
@@ -556,9 +556,9 @@ add_mfaz <- function(
 
     temp_sex_col <- "temp_sex_for_zscorer"
     if (temp_sex_col %in% names(.dataset)) {
-      iphra_warning(
+      phr_warning(
         origin = origin,
-        message = iphra_txt(glue::glue("The temporary column `{temp_sex_col}` already exists and will be overwritten for zscorer compatibility."))
+        message = phr_txt(glue::glue("The temporary column `{temp_sex_col}` already exists and will be overwritten for zscorer compatibility."))
       )
     }
 
@@ -655,14 +655,14 @@ add_mfaz <- function(
     .dataset <- .dataset %>%
       dplyr::select(-all_of(temp_sex_col))
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("MFA-Z-based classifications and flags were successfully calculated.")
+      message = phr_txt("MFA-Z-based classifications and flags were successfully calculated.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure input columns exist and contain valid numeric or categorical data."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure input columns exist and contain valid numeric or categorical data."))
 }
 
 
@@ -704,28 +704,28 @@ add_standardized_nutrition_demographics <- function(
   
   origin <- "add_standardized_nutrition_demographics"
   
-  iphra_try({
+  phr_try({
     
     # Validate dataset
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
     
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
     
     # Validate age column
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       age_years_col,
       origin = origin,
-      hint = iphra_txt("Ensure age_years_col exists. Run add_standardized_age first."),
+      hint = phr_txt("Ensure age_years_col exists. Run add_standardized_age first."),
       soft = FALSE
     )
     
@@ -736,9 +736,9 @@ add_standardized_nutrition_demographics <- function(
     
     for (col in output_cols) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Column `{col}` already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Column `{col}` already exists and will be overwritten."))
         )
       }
     }
@@ -762,12 +762,12 @@ add_standardized_nutrition_demographics <- function(
         )
       )
     
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Standardized nutrition demographic columns added successfully.")
+      message = phr_txt("Standardized nutrition demographic columns added successfully.")
     )
     
     return(.dataset)
     
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure age column is valid."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure age column is valid."))
 }

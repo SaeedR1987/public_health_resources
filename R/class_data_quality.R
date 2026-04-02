@@ -85,18 +85,18 @@ DataQuality <- R6::R6Class(
                           value_label = NULL,
                           quality_schema = NULL) {
 
-      iphra_try({
+      phr_try({
 
         # Validate data is provided
         if (is.null(data)) {
-          iphra_error(
+          phr_error(
             message = "No data provided for DataQuality initialization.",
             origin = dataset_name
           )
         }
 
         # Validate data is a data frame
-        iphra_validate_dataframe(data, origin = dataset_name, soft = FALSE)
+        phr_validate_dataframe(data, origin = dataset_name, soft = FALSE)
 
         # Store the data
         self$data <- data
@@ -134,7 +134,7 @@ DataQuality <- R6::R6Class(
         self$visualizations <- list()  # List of ggplot2 graphics
         self$tables <- list()          # List of dataframes/formatted tables
 
-        iphra_message(iphra_txt(glue::glue("{dataset_name} initialized with {nrow(data)} records.")))
+        phr_message(phr_txt(glue::glue("{dataset_name} initialized with {nrow(data)} records.")))
 
       }, on_error = "abort", origin = paste0(dataset_name, "$initialize"))
     },
@@ -167,9 +167,9 @@ DataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DataQuality$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -219,9 +219,9 @@ DataQuality <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DataQuality$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_quality_schema_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -244,15 +244,15 @@ DataQuality <- R6::R6Class(
     #' @param schema A list defining quality checks, thresholds, and penalties
     set_quality_schema = function(schema) {
 
-      iphra_try({
+      phr_try({
 
         # Validate schema structure
         self$validate_quality_schema(schema)
 
         self$quality_schema <- schema
 
-        iphra_message(
-          iphra_txt(glue::glue("Quality schema set for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Quality schema set for {self$dataset_name}."))
         )
 
       }, on_error = "abort", origin = paste0(self$dataset_name, "$set_quality_schema"))
@@ -275,7 +275,7 @@ DataQuality <- R6::R6Class(
     #' @param schema A list defining outputs (visualizations and tables)
     set_outputs_schema = function(schema) {
 
-      iphra_try({
+      phr_try({
 
         # 1. Validate nested schema structure
         outputs_validate_schema_to_table(
@@ -292,8 +292,8 @@ DataQuality <- R6::R6Class(
         # 4. Store
         self$outputs_schema <- schema
 
-        iphra_message(
-          iphra_txt(glue::glue("Outputs schema set for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Outputs schema set for {self$dataset_name}."))
         )
 
       }, on_error = "abort", origin = paste0(self$dataset_name, "$set_outputs_schema"))
@@ -314,10 +314,10 @@ DataQuality <- R6::R6Class(
     #' @return TRUE if valid, throws error otherwise
     validate_quality_schema = function(schema) {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(schema) || !is.list(schema)) {
-          iphra_error(
+          phr_error(
             message = "Quality schema must be a list.",
             origin = self$dataset_name
           )
@@ -329,8 +329,8 @@ DataQuality <- R6::R6Class(
           check <- schema[[check_name]]
 
           if (!is.list(check)) {
-            iphra_error(
-              message = iphra_txt(glue::glue("Check '{check_name}' must be a list.")),
+            phr_error(
+              message = phr_txt(glue::glue("Check '{check_name}' must be a list.")),
               origin = self$dataset_name
             )
           }
@@ -339,8 +339,8 @@ DataQuality <- R6::R6Class(
           missing <- setdiff(required_fields, names(check))
 
           if (length(missing) > 0) {
-            iphra_warning(
-              message = iphra_txt(glue::glue("Check '{check_name}' is missing recommended fields: {paste(missing, collapse=', ')}.")),
+            phr_warning(
+              message = phr_txt(glue::glue("Check '{check_name}' is missing recommended fields: {paste(missing, collapse=', ')}.")),
               origin = self$dataset_name
             )
           }
@@ -358,11 +358,11 @@ DataQuality <- R6::R6Class(
     run_quality_checks = function() {
 
 
-      iphra_try({
+      phr_try({
 
         # Schema is now the checks list itself (no wrapper)
         if (is.null(self$quality_schema) || length(self$quality_schema) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No quality checks defined in schema.",
             origin = self$dataset_name
           )
@@ -451,8 +451,8 @@ DataQuality <- R6::R6Class(
         }
         # -------------------------------------------------------------------
 
-        iphra_message(
-          iphra_txt(glue::glue("Ran {length(results)} quality checks for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Ran {length(results)} quality checks for {self$dataset_name}."))
         )
 
         invisible(results)
@@ -467,7 +467,7 @@ DataQuality <- R6::R6Class(
     #' @return A list containing the check result
     execute_check = function(check) {
 
-      iphra_try({
+      phr_try({
 
 
         result <- list(
@@ -639,7 +639,7 @@ DataQuality <- R6::R6Class(
 
         # Evaluate the logical expression
         # The expression can reference test_statistic and p_value
-        iphra_try({
+        phr_try({
           # Create evaluation environment with test_statistic and p_value
           eval_env <- new.env()
           eval_env$test_statistic <- test_statistic
@@ -676,7 +676,7 @@ DataQuality <- R6::R6Class(
     #' @return The overall quality score (0-100)
     calculate_overall_score = function() {
 
-      iphra_try({
+      phr_try({
 
         if (length(self$results) == 0) {
           self$overall_score <- NA_real_
@@ -712,12 +712,12 @@ DataQuality <- R6::R6Class(
     #' @return A list of summary statistics
     compute_summary_stats = function() {
 
-      iphra_try({
+      phr_try({
 
         df <- self$data
 
         if (is.null(df) || nrow(df) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No data available for summary statistics.",
             origin = self$dataset_name
           )
@@ -735,8 +735,8 @@ DataQuality <- R6::R6Class(
 
         self$summary_stats <- stats
 
-        iphra_message(
-          iphra_txt(glue::glue("Computed summary statistics for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Computed summary statistics for {self$dataset_name}."))
         )
 
         invisible(stats)
@@ -782,7 +782,7 @@ DataQuality <- R6::R6Class(
     #'   * `message` - Descriptive message about the result
     results_to_table = function() {
 
-      iphra_try({
+      phr_try({
 
         if (length(self$results) == 0) {
           return(tibble::tibble(
@@ -832,13 +832,13 @@ DataQuality <- R6::R6Class(
     #' @param df A data frame representing the quality schema
     import_schema_from_table = function(df) {
 
-      iphra_try({
+      phr_try({
 
         schema <- quality_table_to_schema(df)
         self$set_quality_schema(schema)
 
-        iphra_message(
-          iphra_txt(glue::glue("Imported quality schema from table for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Imported quality schema from table for {self$dataset_name}."))
         )
 
         invisible(TRUE)
@@ -855,11 +855,11 @@ DataQuality <- R6::R6Class(
     #' @return A tibble representing the outputs schema, or NULL if no schema is defined
     export_outputs_schema = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$outputs_schema) || length(self$outputs_schema) == 0) {
-          iphra_warning(
-            iphra_txt("No outputs schema defined for {self$dataset_name}."),
+          phr_warning(
+            phr_txt("No outputs schema defined for {self$dataset_name}."),
             origin = self$dataset_name
           )
           return(NULL)
@@ -880,9 +880,9 @@ DataQuality <- R6::R6Class(
     #' @return The imported schema (invisibly)
     import_outputs_schema = function(df) {
 
-      iphra_try({
+      phr_try({
 
-        iphra_validate_dataframe(df, origin = "import_outputs_schema", soft = FALSE)
+        phr_validate_dataframe(df, origin = "import_outputs_schema", soft = FALSE)
 
         # Convert table → structured schema list
         new_schema <- outputs_table_to_schema(df)
@@ -890,8 +890,8 @@ DataQuality <- R6::R6Class(
         # Assign schema
         self$outputs_schema <- new_schema
 
-        iphra_message(
-          iphra_txt(glue::glue("Outputs schema imported and attached to {self$dataset_name} ({length(new_schema)} output(s))."))
+        phr_message(
+          phr_txt(glue::glue("Outputs schema imported and attached to {self$dataset_name} ({length(new_schema)} output(s))."))
         )
 
         invisible(new_schema)
@@ -905,8 +905,8 @@ DataQuality <- R6::R6Class(
     #' @param type The type of visualization
     #' @return A plot object or NULL
     visualize = function(type = "summary") {
-      iphra_message(
-        iphra_txt("Visualization not implemented in base DataQuality class.")
+      phr_message(
+        phr_txt("Visualization not implemented in base DataQuality class.")
       )
       invisible(NULL)
     },
@@ -974,7 +974,7 @@ DataQuality <- R6::R6Class(
     #'   if the column is absent from the data or no non-NA group values exist.
     .compute_results_by_group = function(group_col) {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(group_col) || !nzchar(group_col) ||
             !group_col %in% names(self$data)) {
@@ -1026,7 +1026,7 @@ DataQuality <- R6::R6Class(
     #' @return A list containing the full quality report
     generate_report = function() {
 
-      iphra_try({
+      phr_try({
 
         # Ensure checks have been run
         if (length(self$results) == 0) {
@@ -1048,8 +1048,8 @@ DataQuality <- R6::R6Class(
           generated_at = Sys.time()
         )
 
-        iphra_message(
-          iphra_txt(glue::glue("Generated quality report for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Generated quality report for {self$dataset_name}."))
         )
 
         report
@@ -1063,7 +1063,7 @@ DataQuality <- R6::R6Class(
     #' @return A list containing detailed plausibility assessment
     generate_plausibility_report = function() {
 
-      iphra_try({
+      phr_try({
 
         # Ensure checks have been run
         if (length(self$results) == 0) {
@@ -1127,8 +1127,8 @@ DataQuality <- R6::R6Class(
           schema_version = self$quality_schema$metadata$version %||% "3.0.0"
         )
 
-        iphra_message(
-          iphra_txt(glue::glue("Generated plausibility report for {self$dataset_name}. Score: {round(plausibility_score, 2)}"))
+        phr_message(
+          phr_txt(glue::glue("Generated plausibility report for {self$dataset_name}. Score: {round(plausibility_score, 2)}"))
         )
 
         return(report)
@@ -1161,30 +1161,30 @@ DataQuality <- R6::R6Class(
     #' @return Invisibly returns a list with \code{visualizations} and \code{tables}
     run_outputs = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$outputs_schema) || length(self$outputs_schema) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No outputs defined in outputs schema.",
             origin = self$dataset_name
           )
           return(invisible(list(visualizations = self$visualizations, tables = self$tables)))
         }
 
-        iphra_message(iphra_txt(glue::glue("Running {length(self$outputs_schema)} output(s) for {self$dataset_name}...")))
+        phr_message(phr_txt(glue::glue("Running {length(self$outputs_schema)} output(s) for {self$dataset_name}...")))
 
         for (out_name in names(self$outputs_schema)) {
 
           out <- self$outputs_schema[[out_name]]
 
-          iphra_try({
+          phr_try({
 
             # Get function name
             func_name <- out$output_func_name
 
             if (is.null(func_name) || is.na(func_name) || !nzchar(func_name)) {
-              iphra_warning(
-                message = iphra_txt(glue::glue("Output '{out_name}' has no output_func_name specified. Skipping.")),
+              phr_warning(
+                message = phr_txt(glue::glue("Output '{out_name}' has no output_func_name specified. Skipping.")),
                 origin = self$dataset_name
               )
               next
@@ -1211,8 +1211,8 @@ DataQuality <- R6::R6Class(
             }
 
             if (is.null(output_function)) {
-              iphra_warning(
-                message = iphra_txt(glue::glue("Function '{func_name}' for output '{out_name}' not found. Skipping.")),
+              phr_warning(
+                message = phr_txt(glue::glue("Function '{func_name}' for output '{out_name}' not found. Skipping.")),
                 origin = self$dataset_name
               )
               next
@@ -1290,8 +1290,8 @@ DataQuality <- R6::R6Class(
                       if (!is.null(resolved)) {
                         resolved_elements <- c(resolved_elements, resolved)
                       } else {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue("Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                        phr_warning(
+                          message = phr_txt(glue::glue("Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                           origin = self$dataset_name
                         )
                       }
@@ -1310,8 +1310,8 @@ DataQuality <- R6::R6Class(
                               # value_map can itself be a vector, flatten it
                               resolved_elements <- c(resolved_elements, resolved)
                             } else {
-                              iphra_warning(
-                                message = iphra_txt(glue::glue("Value map '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                              phr_warning(
+                                message = phr_txt(glue::glue("Value map '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                                 origin = self$dataset_name
                               )
                             }
@@ -1322,8 +1322,8 @@ DataQuality <- R6::R6Class(
                             resolved_elements <- c(resolved_elements, resolved)
                           }
                         } else {
-                          iphra_warning(
-                            message = iphra_txt(glue::glue("Value map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                          phr_warning(
+                            message = phr_txt(glue::glue("Value map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                             origin = self$dataset_name
                           )
                         }
@@ -1344,8 +1344,8 @@ DataQuality <- R6::R6Class(
                   if (!is.null(resolved)) {
                     func_args[[arg_name]] <- resolved
                   } else {
-                    iphra_warning(
-                      message = iphra_txt(glue::glue("Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
+                    phr_warning(
+                      message = phr_txt(glue::glue("Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
                       origin = self$dataset_name
                     )
                   }
@@ -1370,15 +1370,15 @@ DataQuality <- R6::R6Class(
                       if (!is.null(resolved)) {
                         func_args[[arg_name]] <- resolved
                       } else {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue("Value label '{arg_value}' not found for output '{out_name}'. Using original value.")),
+                        phr_warning(
+                          message = phr_txt(glue::glue("Value label '{arg_value}' not found for output '{out_name}'. Using original value.")),
                           origin = self$dataset_name
                         )
                         func_args[[arg_name]] <- arg_value
                       }
                     } else {
-                      iphra_warning(
-                        message = iphra_txt(glue::glue("Value label role '{role}' not found for output '{out_name}'. Using original value.")),
+                      phr_warning(
+                        message = phr_txt(glue::glue("Value label role '{role}' not found for output '{out_name}'. Using original value.")),
                         origin = self$dataset_name
                       )
                       func_args[[arg_name]] <- arg_value
@@ -1392,8 +1392,8 @@ DataQuality <- R6::R6Class(
                   if (!is.null(resolved)) {
                     func_args[[arg_name]] <- resolved
                   } else {
-                    iphra_warning(
-                      message = iphra_txt(glue::glue("Variable map role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
+                    phr_warning(
+                      message = phr_txt(glue::glue("Variable map role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
                       origin = self$dataset_name
                     )
                   }
@@ -1413,15 +1413,15 @@ DataQuality <- R6::R6Class(
                       if (!is.null(resolved)) {
                         func_args[[arg_name]] <- resolved
                       } else {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue("Value map '{arg_value}' not found for output '{out_name}'. Using original value.")),
+                        phr_warning(
+                          message = phr_txt(glue::glue("Value map '{arg_value}' not found for output '{out_name}'. Using original value.")),
                           origin = self$dataset_name
                         )
                         func_args[[arg_name]] <- arg_value
                       }
                     } else {
-                      iphra_warning(
-                        message = iphra_txt(glue::glue("Value map role '{role}' not found for output '{out_name}'. Using original value.")),
+                      phr_warning(
+                        message = phr_txt(glue::glue("Value map role '{role}' not found for output '{out_name}'. Using original value.")),
                         origin = self$dataset_name
                       )
                       func_args[[arg_name]] <- arg_value
@@ -1459,7 +1459,7 @@ DataQuality <- R6::R6Class(
                 } else {
                   self$tables[[key]] <- result
                 }
-                iphra_message(iphra_txt(glue::glue("Table '{key}' stored successfully.")))
+                phr_message(phr_txt(glue::glue("Table '{key}' stored successfully.")))
               } else if (!is.null(out$output_type) && out$output_type == "visualization") {
                 if (!is.null(group)) {
                   if (is.null(self$visualizations[[group]])) self$visualizations[[group]] <- list()
@@ -1467,10 +1467,10 @@ DataQuality <- R6::R6Class(
                 } else {
                   self$visualizations[[key]] <- result
                 }
-                iphra_message(iphra_txt(glue::glue("Visualization '{key}' stored successfully.")))
+                phr_message(phr_txt(glue::glue("Visualization '{key}' stored successfully.")))
               } else {
-                iphra_warning(
-                  message = iphra_txt(glue::glue(
+                phr_warning(
+                  message = phr_txt(glue::glue(
                     "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
                     "Expected 'visualization' or 'table'. Result not stored."
                   )),
@@ -1492,8 +1492,8 @@ DataQuality <- R6::R6Class(
                 col_name <- self$variable_map[[role]]
                 var_label <- role
                 if (is.null(col_name)) {
-                  iphra_warning(
-                    message = iphra_txt(glue::glue("outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping per-group iteration.")),
+                  phr_warning(
+                    message = phr_txt(glue::glue("outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping per-group iteration.")),
                     origin = self$dataset_name
                   )
                   col_name <- NULL
@@ -1507,7 +1507,7 @@ DataQuality <- R6::R6Class(
                 unique_vals <- unique(self$data[[col_name]])
                 unique_vals <- unique_vals[!is.na(unique_vals)]
 
-                iphra_message(iphra_txt(glue::glue("Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'...")))
+                phr_message(phr_txt(glue::glue("Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'...")))
 
                 for (val in unique_vals) {
                   filtered_data <- self$data[self$data[[col_name]] == val, , drop = FALSE]
@@ -1516,22 +1516,22 @@ DataQuality <- R6::R6Class(
 
                   amended_label <- paste0(label, "-", var_label, ".", val)
 
-                  iphra_try({
+                  phr_try({
                     output_result <- do.call(output_function, per_group_args)
                     store_result(output_result, amended_label)
                   }, on_error = "warn", origin = paste0(self$dataset_name, "$run_outputs$", out_name, "$", val))
                 }
 
               } else if (!is.null(col_name)) {
-                iphra_warning(
-                  message = iphra_txt(glue::glue("Column '{col_name}' for outputs_per_group not found in data for output '{out_name}'. Skipping per-group iteration.")),
+                phr_warning(
+                  message = phr_txt(glue::glue("Column '{col_name}' for outputs_per_group not found in data for output '{out_name}'. Skipping per-group iteration.")),
                   origin = self$dataset_name
                 )
               }
 
             } else {
               # Standard single output
-              iphra_message(iphra_txt(glue::glue("Calling {func_name} for output '{out_name}'...")))
+              phr_message(phr_txt(glue::glue("Calling {func_name} for output '{out_name}'...")))
               output_result <- do.call(output_function, func_args)
               store_result(output_result, label)
             }
@@ -1539,8 +1539,8 @@ DataQuality <- R6::R6Class(
           }, on_error = "warn", origin = paste0(self$dataset_name, "$run_outputs$", out_name))
         }
 
-        iphra_message(
-          iphra_txt(glue::glue(
+        phr_message(
+          phr_txt(glue::glue(
             "run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s)."
           ))
         )

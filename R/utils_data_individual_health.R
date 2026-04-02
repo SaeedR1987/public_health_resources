@@ -56,7 +56,7 @@ add_foregone_care <- function(
 ) {
   origin <- "add_foregone_care"
 
-  iphra_try({
+  phr_try({
 
     # Use ensure_value for all *_val parameters
     illness_yes_val <- ensure_value(illness_yes_val, "yes")
@@ -69,39 +69,39 @@ add_foregone_care <- function(
     #------------------------------------------------------------
     # Validate dataset
     #------------------------------------------------------------
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
     #------------------------------------------------------------
     # Validate input columns
     #------------------------------------------------------------
     required_columns <- c(ind_illness_col, ind_received_care_col)
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       required_columns,
       origin = origin,
-      hint = iphra_txt("Ensure the specified columns for illness and received care exist in the dataset."),
+      hint = phr_txt("Ensure the specified columns for illness and received care exist in the dataset."),
       soft = FALSE
     )
 
-    iphra_validate_choice(
+    phr_validate_choice(
       .dataset[[ind_illness_col]],
       choices = c(illness_yes_val, illness_no_val, illness_dontknow_val, NA_character_),
       origin = origin,
       soft = TRUE
     )
 
-    iphra_validate_choice(
+    phr_validate_choice(
       .dataset[[ind_received_care_col]],
       choices = c(care_yes_val, care_no_val, care_dontknow_val, NA_character_),
       origin = origin,
@@ -114,9 +114,9 @@ add_foregone_care <- function(
     output_column <- "health_foregone_care_cat"
 
     if (output_column %in% names(.dataset)) {
-      iphra_warning(
+      phr_warning(
         origin = origin,
-        message = iphra_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
+        message = phr_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
       )
     }
 
@@ -127,16 +127,16 @@ add_foregone_care <- function(
       dplyr::mutate(
         health_foregone_care_cat = dplyr::case_when(
           # No health need and no illness
-          .data[[ind_illness_col]] == illness_no_val ~ iphra_txt("No need"),
+          .data[[ind_illness_col]] == illness_no_val ~ phr_txt("No need"),
 
           # Had health need and received care
-          .data[[ind_illness_col]] == illness_yes_val & .data[[ind_received_care_col]] == care_yes_val ~ iphra_txt("Met need"),
+          .data[[ind_illness_col]] == illness_yes_val & .data[[ind_received_care_col]] == care_yes_val ~ phr_txt("Met need"),
 
           # Had health need and did not receive care
-          .data[[ind_illness_col]] == illness_yes_val & .data[[ind_received_care_col]] == care_no_val ~ iphra_txt("Foregone care"),
+          .data[[ind_illness_col]] == illness_yes_val & .data[[ind_received_care_col]] == care_no_val ~ phr_txt("Foregone care"),
 
           # No need if illness is no but received care is don't know
-          .data[[ind_illness_col]] == illness_no_val & .data[[ind_received_care_col]] == care_dontknow_val ~ iphra_txt("No need"),
+          .data[[ind_illness_col]] == illness_no_val & .data[[ind_received_care_col]] == care_dontknow_val ~ phr_txt("No need"),
 
           # Cannot classify if received care is don't know
           .data[[ind_received_care_col]] == care_dontknow_val ~ NA_character_,
@@ -151,20 +151,20 @@ add_foregone_care <- function(
         health_foregone_care_cat = factor(
           health_foregone_care_cat,
           levels = c(
-            iphra_txt("No need"),
-            iphra_txt("Met need"),
-            iphra_txt("Foregone care")
+            phr_txt("No need"),
+            phr_txt("Met need"),
+            phr_txt("Foregone care")
           ),
           ordered = TRUE
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Foregone care category successfully calculated.")
+      message = phr_txt("Foregone care category successfully calculated.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure input columns exist, contain valid data, and use specified values for the respective arguments."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure input columns exist, contain valid data, and use specified values for the respective arguments."))
 }

@@ -100,7 +100,7 @@ HouseholdData <- R6::R6Class(
                           metadata = NULL,
                           variable_map = NULL) {
 
-      iphra_try({
+      phr_try({
 
 
         # Default variable map for common household fields (roles -> columns)
@@ -131,8 +131,8 @@ HouseholdData <- R6::R6Class(
         default_ind_schema <- self$default_indicator_schema()
         if (length(default_ind_schema) > 0) {
           self$set_indicator_schema(default_ind_schema)
-          iphra_message(
-            iphra_txt(glue::glue("Loaded default indicator schema with {length(default_ind_schema)} indicator(s)."))
+          phr_message(
+            phr_txt(glue::glue("Loaded default indicator schema with {length(default_ind_schema)} indicator(s)."))
           )
         }
 
@@ -141,8 +141,8 @@ HouseholdData <- R6::R6Class(
         default_dep_schema <- self$default_dependency_schema()
         if (length(default_dep_schema$dependencies) > 0) {
           self$set_dependency_schema(default_dep_schema)
-          iphra_message(
-            iphra_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+          phr_message(
+            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )
         }
 
@@ -172,7 +172,7 @@ HouseholdData <- R6::R6Class(
           self$variable_map$gps_lon
         )
 
-        iphra_message(iphra_txt("{dataset_name} initialized as HouseholdData object."))
+        phr_message(phr_txt("{dataset_name} initialized as HouseholdData object."))
 
       }, on_error = "abort", origin = "HouseholdData$initialize")
     },
@@ -197,7 +197,7 @@ HouseholdData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_error(
+        phr_error(
           origin  = "HouseholdData$default_schema",
           message = "variable_schema_data_household_template.xlsx not found in package resources.",
           hint    = "Place the schema file under inst/resources/ before building the package."
@@ -208,7 +208,7 @@ HouseholdData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_error(
+          phr_error(
             origin  = "HouseholdData$default_schema",
             message = "Failed to read variable_schema_data_household_template.xlsx",
             hint    = e$message
@@ -241,7 +241,7 @@ HouseholdData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "HouseholdData$default_indicator_schema",
           message = "indicator_schema_data_household_template.xlsx not found in package resources. Continuing without default indicator schema."
         )
@@ -252,9 +252,9 @@ HouseholdData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HouseholdData$default_indicator_schema",
-            message = iphra_txt(glue::glue("Failed to read indicator_schema_data_household_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read indicator_schema_data_household_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -287,7 +287,7 @@ HouseholdData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "HouseholdData$default_dependency_schema",
           message = "dependency_schema_data_household_template.xlsx not found in package resources. Continuing without default dependency schema."
         )
@@ -298,9 +298,9 @@ HouseholdData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HouseholdData$default_dependency_schema",
-            message = iphra_txt("Failed to read dependency_schema_data_household_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read dependency_schema_data_household_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -353,9 +353,9 @@ HouseholdData <- R6::R6Class(
 
 
         if (length(lat_invalid) > 0 || length(lon_invalid) > 0) {
-          iphra_warning(
+          phr_warning(
             nm,
-            iphra_txt("Some GPS coordinates appear invalid (latitudes outside [-90,90] or longitudes outside [-180,180]).")
+            phr_txt("Some GPS coordinates appear invalid (latitudes outside [-90,90] or longitudes outside [-180,180]).")
           )
           had_issues <- TRUE
         }
@@ -370,12 +370,12 @@ HouseholdData <- R6::R6Class(
         wts <- suppressWarnings(as.numeric(df[[self$variable_map$weight]]))
 
         if (any(is.na(wts))) {
-          iphra_warning(nm, iphra_txt("Missing values found in weight variable."))
+          phr_warning(nm, phr_txt("Missing values found in weight variable."))
           had_issues <- TRUE
         }
 
         if (any(wts < 0, na.rm = TRUE)) {
-          iphra_warning(nm, iphra_txt("Negative weights detected."))
+          phr_warning(nm, phr_txt("Negative weights detected."))
           had_issues <- TRUE
         }
       }
@@ -389,7 +389,7 @@ HouseholdData <- R6::R6Class(
         strata_vals <- df[[self$variable_map$strata]]
 
         if (any(is.na(strata_vals))) {
-          iphra_warning(nm, iphra_txt("Missing strata values detected."))
+          phr_warning(nm, phr_txt("Missing strata values detected."))
           had_issues <- TRUE
         }
       }
@@ -398,14 +398,14 @@ HouseholdData <- R6::R6Class(
       # Link placeholders
 
       if (!is.null(self$roster_link)) {
-        iphra_message(iphra_txt("Validating linked roster data (placeholder)."))
+        phr_message(phr_txt("Validating linked roster data (placeholder)."))
       }
 
       if (!is.null(self$deaths_link)) {
-        iphra_message(iphra_txt("Validating linked deaths data (placeholder)."))
+        phr_message(phr_txt("Validating linked deaths data (placeholder)."))
       }
 
-      iphra_message(iphra_txt(glue::glue("Post-validation for {nm} complete.")))
+      phr_message(phr_txt(glue::glue("Post-validation for {nm} complete.")))
 
       # Return TRUE (good) or FALSE (warnings occurred)
       return(!had_issues)
@@ -438,13 +438,13 @@ HouseholdData <- R6::R6Class(
     #' For HouseholdData, these roles are always fixed. If you need custom roles, use a base Data object instead.
     add_linked_dataset = function(name, data_object, by_self_role = NULL, by_other_role = NULL) {
 
-      iphra_try({
+      phr_try({
 
         # Warn if user provided role parameters (they will be ignored)
         if (!is.null(by_self_role) || !is.null(by_other_role)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("by_self_role and by_other_role are not used for HouseholdData. They are automatically set to 'uuid' and 'hh_uuid' respectively.")
+            phr_txt("by_self_role and by_other_role are not used for HouseholdData. They are automatically set to 'uuid' and 'hh_uuid' respectively.")
           )
         }
 
@@ -460,33 +460,33 @@ HouseholdData <- R6::R6Class(
 
         # Validate inputs
         if (missing(name) || !is.character(name) || length(name) != 1) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Link name must be a single character string.")
+            phr_txt("Link name must be a single character string.")
           )
         }
 
         # Check if name is in the allowed list
         if (!name %in% names(allowed_links)) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Link name '{name}' is not allowed. Allowed names are: {paste(names(allowed_links), collapse=', ')}.")
+            phr_txt("Link name '{name}' is not allowed. Allowed names are: {paste(names(allowed_links), collapse=', ')}.")
           )
         }
 
         if (!inherits(data_object, "Data")) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Linked object must be a Data class or subclass object.")
+            phr_txt("Linked object must be a Data class or subclass object.")
           )
         }
 
         # Check if the data object is of the correct type for this link name
         expected_class <- allowed_links[[name]]
         if (!inherits(data_object, expected_class)) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Link name '{name}' expects a {expected_class} object, but received {class(data_object)[1]}.")
+            phr_txt("Link name '{name}' expects a {expected_class} object, but received {class(data_object)[1]}.")
           )
         }
 
@@ -500,8 +500,8 @@ HouseholdData <- R6::R6Class(
           by_other_role = "hh_uuid"  # household UUID foreign key role in linked dataset
         )
 
-        iphra_message(
-          iphra_txt("Added linked dataset '{name}' ({class(data_object)[1]}) to {self$dataset_name}.")
+        phr_message(
+          phr_txt("Added linked dataset '{name}' ({class(data_object)[1]}) to {self$dataset_name}.")
         )
 
         invisible(TRUE)
@@ -530,7 +530,7 @@ HouseholdData <- R6::R6Class(
     ..get_data_with_fallback = function(data_obj, stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
         # Define priority order based on requested stage
         if (stage == "clean") {
           priority_order <- c("clean", "standardized", "raw")
@@ -580,15 +580,15 @@ HouseholdData <- R6::R6Class(
     pre_standardize = function(stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
 
         # Check if any linked objects exist (using inherited linked_objects from Data class)
         if (length(self$linked_objects) == 0) {
-          iphra_message(iphra_txt("No linked datasets found in {self$dataset_name}."))
+          phr_message(phr_txt("No linked datasets found in {self$dataset_name}."))
           return(invisible(NULL))
         }
 
-        iphra_message(iphra_txt("Processing {length(self$linked_objects)} linked dataset(s) for {self$dataset_name}..."))
+        phr_message(phr_txt("Processing {length(self$linked_objects)} linked dataset(s) for {self$dataset_name}..."))
 
         # Iterate through linked objects
         for (link_name in names(self$linked_objects)) {
@@ -597,9 +597,9 @@ HouseholdData <- R6::R6Class(
 
           # Validate that the linked object is a Data class or subclass
           if (!inherits(linked_obj, "Data")) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Linked object '{link_name}' is not a Data class object. Skipping.")
+              phr_txt("Linked object '{link_name}' is not a Data class object. Skipping.")
             )
             next
           }
@@ -610,28 +610,28 @@ HouseholdData <- R6::R6Class(
           self$..merge_household_vars_to_linked(linked_obj, link_name, hh_stage = stage, linked_stage = stage)
 
           # Then check if the linked dataset is standardized
-          iphra_message(iphra_txt("Checking standardization status of linked dataset '{link_name}'..."))
+          phr_message(phr_txt("Checking standardization status of linked dataset '{link_name}'..."))
           if (!linked_obj$standardized) {
-            iphra_message(iphra_txt("Linked dataset '{link_name}' is not standardized. Running standardize()..."))
+            phr_message(phr_txt("Linked dataset '{link_name}' is not standardized. Running standardize()..."))
             linked_obj$standardize(stage = stage)
           } else {
-            iphra_message(iphra_txt("Linked dataset '{link_name}' is already standardized."))
+            phr_message(phr_txt("Linked dataset '{link_name}' is already standardized."))
           }
         }
 
         # Get household data using fallback logic
         hh_data_result <- self$..get_data_with_fallback(self, stage)
         if (is.null(hh_data_result)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No household data available (tried stages: clean, standardized, raw). Cannot aggregate linked data.")
+            phr_txt("No household data available (tried stages: clean, standardized, raw). Cannot aggregate linked data.")
           )
           return(invisible(NULL))
         }
 
         hh_data <- hh_data_result$data
         hh_data_stage <- hh_data_result$stage
-        iphra_message(iphra_txt("Using household data from stage: {hh_data_stage}"))
+        phr_message(phr_txt("Using household data from stage: {hh_data_stage}"))
 
         # Now aggregate data from linked datasets and add to household data
         hh_data_updated <- self$..aggregate_linked_data(hh_data, stage = stage)
@@ -645,7 +645,7 @@ HouseholdData <- R6::R6Class(
           self$raw_data <- hh_data_updated
         }
 
-        iphra_message(iphra_txt("Pre-standardize processing complete for {self$dataset_name}."))
+        phr_message(phr_txt("Pre-standardize processing complete for {self$dataset_name}."))
 
       }, on_error = "warn", origin = paste0(self$dataset_name, "$pre_standardize"))
     },
@@ -671,17 +671,17 @@ HouseholdData <- R6::R6Class(
     get_survey_design = function(stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
-      iphra_try({
+      phr_try({
         if (!requireNamespace("srvyr", quietly = TRUE)) {
-          iphra_error(
+          phr_error(
             self$dataset_name,
-            iphra_txt("Package 'srvyr' must be installed to create survey design objects.")
+            phr_txt("Package 'srvyr' must be installed to create survey design objects.")
           )
         }
 
         df <- self$get_data(stage)
         if (is.null(df)) {
-          iphra_warning(self$dataset_name, iphra_txt(glue::glue("No {stage} data available to create survey design.")))
+          phr_warning(self$dataset_name, phr_txt(glue::glue("No {stage} data available to create survey design.")))
           return(NULL)
         }
 
@@ -697,9 +697,9 @@ HouseholdData <- R6::R6Class(
           missing_fields <- c(missing_fields, "weight")
 
         if (length(missing_fields) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt(
+            phr_txt(
               "Survey design creation incomplete: missing required fields ({paste(missing_fields, collapse=', ')})."
             )
           )
@@ -734,7 +734,7 @@ HouseholdData <- R6::R6Class(
         )
 
         self$survey_design <- design
-        iphra_message(iphra_txt("Survey design object created and stored in HouseholdData."))
+        phr_message(phr_txt("Survey design object created and stored in HouseholdData."))
 
         invisible(design)
 
@@ -755,14 +755,14 @@ HouseholdData <- R6::R6Class(
       stage <- match.arg(stage)
       type <- match.arg(type)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataQuality generation.")
+            phr_txt("No {stage} data available for DataQuality generation.")
           )
           return(NULL)
         }
@@ -893,15 +893,15 @@ HouseholdData <- R6::R6Class(
             linked_ind_health_variable_map = if (!is.null(linked_info_health)) linked_info_health$variable_map else NULL,
             linked_ind_health_value_map = if (!is.null(linked_info_health)) linked_info_health$value_map else NULL
           ),
-          # Default: error with iphra_error
-          iphra_error(
+          # Default: error with phr_error
+          phr_error(
             origin = paste0(self$dataset_name, "$generate_data_quality"),
-            message = iphra_txt("Unknown quality type '{type}' for HouseholdData. Valid types: fsl, wash, mortality, health")
+            message = phr_txt("Unknown quality type '{type}' for HouseholdData. Valid types: fsl, wash, mortality, health")
           )
         )
 
-        iphra_message(
-          iphra_txt("Generated {type} DataQuality object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated {type} DataQuality object for {self$dataset_name}.")
         )
 
         return(dq)
@@ -925,14 +925,14 @@ HouseholdData <- R6::R6Class(
       stage <- match.arg(stage)
       type <- match.arg(type)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for Analysis generation.")
+            phr_txt("No {stage} data available for Analysis generation.")
           )
           return(NULL)
         }
@@ -1068,15 +1068,15 @@ HouseholdData <- R6::R6Class(
             variable_label = self$variable_label,
             value_label = self$value_label
           ),
-          # Default: error with iphra_error
-          iphra_error(
+          # Default: error with phr_error
+          phr_error(
             origin = paste0(self$dataset_name, "$generate_data_analysis"),
-            message = iphra_txt("Unknown analysis type '{type}' for HouseholdData. Valid types: fsl, wash, health, mortality, general")
+            message = phr_txt("Unknown analysis type '{type}' for HouseholdData. Valid types: fsl, wash, health, mortality, general")
           )
         )
 
-        iphra_message(
-          iphra_txt("Generated {type} Analysis object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated {type} Analysis object for {self$dataset_name}.")
         )
 
         return(analysis)
@@ -1103,14 +1103,14 @@ HouseholdData <- R6::R6Class(
       stage <- match.arg(stage)
       type  <- match.arg(type)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataAnalytics generation.")
+            phr_txt("No {stage} data available for DataAnalytics generation.")
           )
           return(NULL)
         }
@@ -1246,14 +1246,14 @@ HouseholdData <- R6::R6Class(
             variable_label  = self$variable_label,
             value_label     = self$value_label
           ),
-          iphra_error(
+          phr_error(
             origin  = paste0(self$dataset_name, "$generate_data_analytics"),
-            message = iphra_txt("Unknown analytics type '{type}' for HouseholdData. Valid types: fsl, wash, health, mortality, general")
+            message = phr_txt("Unknown analytics type '{type}' for HouseholdData. Valid types: fsl, wash, health, mortality, general")
           )
         )
 
-        iphra_message(
-          iphra_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
         )
 
         return(analytics)
@@ -1285,7 +1285,7 @@ HouseholdData <- R6::R6Class(
       # Store original hh_data to ensure we never return NULL
       original_hh_data <- hh_data
 
-      result <- iphra_try({
+      result <- phr_try({
 
         # Use linked_objects (inherited from Data class) instead of linked_datasets
         if (length(self$linked_objects) == 0) {
@@ -1296,9 +1296,9 @@ HouseholdData <- R6::R6Class(
         hh_uuid_col <- self$uuid
 
         if (!hh_uuid_col %in% names(hh_data)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Household UUID column '{hh_uuid_col}' not found. Cannot aggregate linked data.")
+            phr_txt("Household UUID column '{hh_uuid_col}' not found. Cannot aggregate linked data.")
           )
           return(hh_data)
         }
@@ -1316,30 +1316,30 @@ HouseholdData <- R6::R6Class(
           # Get linked data using fallback logic
           linked_data_result <- self$..get_data_with_fallback(linked_obj, stage)
           if (is.null(linked_data_result)) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Linked dataset '{link_name}' has no data at any stage.")
+              phr_txt("Linked dataset '{link_name}' has no data at any stage.")
             )
             next
           }
 
           linked_data <- linked_data_result$data
           linked_data_stage <- linked_data_result$stage
-          iphra_message(iphra_txt("Using linked dataset '{link_name}' from stage: {linked_data_stage}"))
+          phr_message(phr_txt("Using linked dataset '{link_name}' from stage: {linked_data_stage}"))
 
           # Determine the household linkage column in the linked dataset
           # Try to find hh_uuid in variable_map first
           linked_hh_col <- linked_obj$variable_map$hh_uuid %||% linked_obj$variable_map$household_uuid %||% "hh_uuid"
 
           if (!linked_hh_col %in% names(linked_data)) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'.")
+              phr_txt("Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'.")
             )
             next
           }
 
-          iphra_message(iphra_txt("Aggregating data from linked dataset '{link_name}'..."))
+          phr_message(phr_txt("Aggregating data from linked dataset '{link_name}'..."))
 
           # Aggregate based on dataset class
           # Check for specific subclasses first, then fall back to base classes
@@ -1361,7 +1361,7 @@ HouseholdData <- R6::R6Class(
             # Note: roster-style aggregation may not be appropriate for all subclass types
             agg_result <- self$..aggregate_roster_data(hh_data, linked_data, hh_uuid_col, linked_hh_col, link_name, linked_obj)
           } else {
-            iphra_message(iphra_txt("No specific aggregation defined for linked dataset '{link_name}' of class {class(linked_obj)[1]}."))
+            phr_message(phr_txt("No specific aggregation defined for linked dataset '{link_name}' of class {class(linked_obj)[1]}."))
             agg_result <- hh_data  # No aggregation, keep existing data
           }
 
@@ -1369,9 +1369,9 @@ HouseholdData <- R6::R6Class(
           if (!is.null(agg_result)) {
             hh_data <- agg_result
           } else {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("Aggregation of linked dataset '{link_name}' failed. Skipping this dataset.")
+              phr_txt("Aggregation of linked dataset '{link_name}' failed. Skipping this dataset.")
             )
           }
         }
@@ -1380,11 +1380,11 @@ HouseholdData <- R6::R6Class(
 
       }, on_error = "warn", origin = paste0(self$dataset_name, "$..aggregate_linked_data"))
 
-      # Ensure we never return NULL - if iphra_try returned NULL on error, return original data
+      # Ensure we never return NULL - if phr_try returned NULL on error, return original data
       if (is.null(result)) {
-        iphra_warning(
+        phr_warning(
           self$dataset_name,
-          iphra_txt("Aggregation encountered an error. Returning original household data without aggregated columns.")
+          phr_txt("Aggregation encountered an error. Returning original household data without aggregated columns.")
         )
         return(original_hh_data)
       }
@@ -1416,7 +1416,7 @@ HouseholdData <- R6::R6Class(
     #' @keywords internal
     ..aggregate_deaths_data = function(hh_data, deaths_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
-      iphra_try({
+      phr_try({
 
         # Use variable_map to identify canonical death and person_time columns
         # These are the standardized output column names from death data processing
@@ -1437,9 +1437,9 @@ HouseholdData <- R6::R6Class(
         available_cols <- intersect(canonical_cols, names(deaths_data))
 
         if (length(available_cols) == 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No canonical death or person_time columns found in linked dataset '{link_name}'.")
+            phr_txt("No canonical death or person_time columns found in linked dataset '{link_name}'.")
           )
           return(hh_data)
         }
@@ -1465,9 +1465,9 @@ HouseholdData <- R6::R6Class(
         agg_cols_only <- setdiff(names(agg_data), hh_uuid_col)
         existing_cols <- intersect(agg_cols_only, names(hh_data))
         if (length(existing_cols) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
+            phr_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
           )
           # Remove existing columns from agg_data but keep the join column
           cols_to_keep <- c(hh_uuid_col, setdiff(names(agg_data), c(hh_uuid_col, existing_cols)))
@@ -1486,8 +1486,8 @@ HouseholdData <- R6::R6Class(
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
-        iphra_message(
-          iphra_txt("Added {ncol(agg_data) - 1} aggregated column(s) from deaths data")
+        phr_message(
+          phr_txt("Added {ncol(agg_data) - 1} aggregated column(s) from deaths data")
         )
 
         return(hh_data)
@@ -1516,7 +1516,7 @@ HouseholdData <- R6::R6Class(
     #' @keywords internal
     ..aggregate_water_container_data = function(hh_data, water_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
-      iphra_try({
+      phr_try({
 
         # Look for total liters column - try variable_map first, then fallback to known names
         water_col <- linked_obj$variable_map$container_capacity_liters %||%
@@ -1524,9 +1524,9 @@ HouseholdData <- R6::R6Class(
                      intersect(names(water_data), c("wash_container_total_litres", "wash_container_total_liters", "container_capacity_liters", "total_liters"))[1]
 
         if (is.null(water_col) || is.na(water_col) || !water_col %in% names(water_data)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No water container total liters column found in linked dataset '{link_name}'.")
+            phr_txt("No water container total liters column found in linked dataset '{link_name}'.")
           )
           return(hh_data)
         }
@@ -1550,9 +1550,9 @@ HouseholdData <- R6::R6Class(
         agg_cols_only <- setdiff(names(agg_data), hh_uuid_col)
         existing_cols <- intersect(agg_cols_only, names(hh_data))
         if (length(existing_cols) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
+            phr_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
           )
           # Remove existing columns from agg_data but keep the join column
           cols_to_keep <- c(hh_uuid_col, setdiff(names(agg_data), c(hh_uuid_col, existing_cols)))
@@ -1571,8 +1571,8 @@ HouseholdData <- R6::R6Class(
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
-        iphra_message(
-          iphra_txt("Added aggregated water container data: wash_container_total_liters, num_containers")
+        phr_message(
+          phr_txt("Added aggregated water container data: wash_container_total_liters, num_containers")
         )
 
         return(hh_data)
@@ -1603,7 +1603,7 @@ HouseholdData <- R6::R6Class(
     #' @keywords internal
     ..aggregate_roster_data = function(hh_data, roster_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
-      iphra_try({
+      phr_try({
 
         # Use canonical column names created by add_standardized_roster_demographics
         # These are the standardized output column names from roster data processing
@@ -1620,9 +1620,9 @@ HouseholdData <- R6::R6Class(
         available_cols <- intersect(canonical_cols, names(roster_data))
 
         if (length(available_cols) == 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No canonical roster columns found in linked dataset '{link_name}'. Falling back to basic household_size calculation.")
+            phr_txt("No canonical roster columns found in linked dataset '{link_name}'. Falling back to basic household_size calculation.")
           )
           # At minimum, provide household size
           agg_data <- roster_data %>%
@@ -1652,9 +1652,9 @@ HouseholdData <- R6::R6Class(
         agg_cols_only <- setdiff(names(agg_data), hh_uuid_col)
         existing_cols <- intersect(agg_cols_only, names(hh_data))
         if (length(existing_cols) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
+            phr_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
           )
           # Remove existing columns from agg_data but keep the join column
           cols_to_keep <- c(hh_uuid_col, setdiff(names(agg_data), c(hh_uuid_col, existing_cols)))
@@ -1673,8 +1673,8 @@ HouseholdData <- R6::R6Class(
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
-        iphra_message(
-          iphra_txt("Added {ncol(agg_data) - 1} aggregated column(s) from roster data")
+        phr_message(
+          phr_txt("Added {ncol(agg_data) - 1} aggregated column(s) from roster data")
         )
 
         return(hh_data)
@@ -1703,7 +1703,7 @@ HouseholdData <- R6::R6Class(
     #' @keywords internal
     ..aggregate_nutrition_data = function(hh_data, nutrition_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
-      iphra_try({
+      phr_try({
 
         # Use canonical column names created by add_standardized_nutrition_demographics
         # These are the standardized output column names from nutrition data processing
@@ -1739,9 +1739,9 @@ HouseholdData <- R6::R6Class(
           }
 
           if (is.null(age_months_col) || is.na(age_months_col) || !age_months_col %in% names(nutrition_data)) {
-            iphra_warning(
+            phr_warning(
               self$dataset_name,
-              iphra_txt("No canonical nutrition columns or age in months column found in linked dataset '{link_name}'.")
+              phr_txt("No canonical nutrition columns or age in months column found in linked dataset '{link_name}'.")
             )
             return(hh_data)
           }
@@ -1767,9 +1767,9 @@ HouseholdData <- R6::R6Class(
         agg_cols_only <- setdiff(names(agg_data), hh_uuid_col)
         existing_cols <- intersect(agg_cols_only, names(hh_data))
         if (length(existing_cols) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
+            phr_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
           )
           # Remove existing columns from agg_data but keep the join column
           cols_to_keep <- c(hh_uuid_col, setdiff(names(agg_data), c(hh_uuid_col, existing_cols)))
@@ -1786,8 +1786,8 @@ HouseholdData <- R6::R6Class(
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
-        iphra_message(
-          iphra_txt("Added {ncol(agg_data) - 1} aggregated column(s) from nutrition data")
+        phr_message(
+          phr_txt("Added {ncol(agg_data) - 1} aggregated column(s) from nutrition data")
         )
 
         return(hh_data)
@@ -1816,7 +1816,7 @@ HouseholdData <- R6::R6Class(
     #' @keywords internal
     ..aggregate_health_data = function(hh_data, health_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
-      iphra_try({
+      phr_try({
 
         # Aggregate by household - count number of people recorded
         agg_data <- health_data %>%
@@ -1836,9 +1836,9 @@ HouseholdData <- R6::R6Class(
         agg_cols_only <- setdiff(names(agg_data), hh_uuid_col)
         existing_cols <- intersect(agg_cols_only, names(hh_data))
         if (length(existing_cols) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
+            phr_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
           )
           # Remove existing columns from agg_data but keep the join column
           cols_to_keep <- c(hh_uuid_col, setdiff(names(agg_data), c(hh_uuid_col, existing_cols)))
@@ -1855,8 +1855,8 @@ HouseholdData <- R6::R6Class(
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
-        iphra_message(
-          iphra_txt("Added {ncol(agg_data) - 1} aggregated column(s) from health data")
+        phr_message(
+          phr_txt("Added {ncol(agg_data) - 1} aggregated column(s) from health data")
         )
 
         return(hh_data)
@@ -1885,7 +1885,7 @@ HouseholdData <- R6::R6Class(
     #' @keywords internal
     ..aggregate_women_data = function(hh_data, women_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
-      iphra_try({
+      phr_try({
 
         # For women data, all rows represent women aged 15-49
         # Simply count the number of women per household
@@ -1906,9 +1906,9 @@ HouseholdData <- R6::R6Class(
         agg_cols_only <- setdiff(names(agg_data), hh_uuid_col)
         existing_cols <- intersect(agg_cols_only, names(hh_data))
         if (length(existing_cols) > 0) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
+            phr_txt("The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}")
           )
           # Remove existing columns from agg_data but keep the join column
           cols_to_keep <- c(hh_uuid_col, setdiff(names(agg_data), c(hh_uuid_col, existing_cols)))
@@ -1925,8 +1925,8 @@ HouseholdData <- R6::R6Class(
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
-        iphra_message(
-          iphra_txt("Added {ncol(agg_data) - 1} aggregated column(s) from women data")
+        phr_message(
+          phr_txt("Added {ncol(agg_data) - 1} aggregated column(s) from women data")
         )
 
         return(hh_data)
@@ -1959,7 +1959,7 @@ HouseholdData <- R6::R6Class(
       hh_stage <- match.arg(hh_stage)
       linked_stage <- match.arg(linked_stage)
 
-      iphra_try({
+      phr_try({
 
         if (!inherits(linked_obj, "Data")) {
           return(invisible(NULL))
@@ -1968,38 +1968,38 @@ HouseholdData <- R6::R6Class(
         # Get linked data using fallback logic
         linked_data_result <- self$..get_data_with_fallback(linked_obj, linked_stage)
         if (is.null(linked_data_result)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Linked dataset '{link_name}' has no data at any stage to merge variables to.")
+            phr_txt("Linked dataset '{link_name}' has no data at any stage to merge variables to.")
           )
           return(invisible(NULL))
         }
 
         linked_data <- linked_data_result$data
         linked_data_stage <- linked_data_result$stage
-        iphra_message(iphra_txt("Using linked dataset '{link_name}' data from stage: {linked_data_stage}"))
+        phr_message(phr_txt("Using linked dataset '{link_name}' data from stage: {linked_data_stage}"))
 
         # Get household data using fallback logic
         hh_data_result <- self$..get_data_with_fallback(self, hh_stage)
         if (is.null(hh_data_result)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Household data not available at any stage; cannot merge variables to linked dataset '{link_name}'.")
+            phr_txt("Household data not available at any stage; cannot merge variables to linked dataset '{link_name}'.")
           )
           return(invisible(NULL))
         }
 
         hh_data <- hh_data_result$data
         hh_data_stage <- hh_data_result$stage
-        iphra_message(iphra_txt("Using household data from stage: {hh_data_stage}"))
+        phr_message(phr_txt("Using household data from stage: {hh_data_stage}"))
 
         # Get household UUID column
         hh_uuid_col <- self$uuid
 
         if (!hh_uuid_col %in% names(hh_data)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Household UUID column '{hh_uuid_col}' not found. Cannot merge variables to linked dataset '{link_name}'.")
+            phr_txt("Household UUID column '{hh_uuid_col}' not found. Cannot merge variables to linked dataset '{link_name}'.")
           )
           return(invisible(NULL))
         }
@@ -2008,9 +2008,9 @@ HouseholdData <- R6::R6Class(
         linked_hh_col <- linked_obj$variable_map$hh_uuid %||% linked_obj$variable_map$household_uuid %||% "hh_uuid"
 
         if (!linked_hh_col %in% names(linked_data)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'.")
+            phr_txt("Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'.")
           )
           return(invisible(NULL))
         }
@@ -2035,11 +2035,11 @@ HouseholdData <- R6::R6Class(
         }
 
         if (length(vars_to_merge) == 0) {
-          iphra_message(iphra_txt("No household variables found to merge to linked dataset '{link_name}'."))
+          phr_message(phr_txt("No household variables found to merge to linked dataset '{link_name}'."))
           return(invisible(NULL))
         }
 
-        iphra_message(iphra_txt("Merging {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'..."))
+        phr_message(phr_txt("Merging {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'..."))
 
         # Create a subset of household data with only the variables to merge plus the UUID
         merge_cols <- c(hh_uuid_col, unlist(vars_to_merge))
@@ -2048,8 +2048,8 @@ HouseholdData <- R6::R6Class(
         # Check which variables already exist in linked data and will be overwritten
         existing_vars <- intersect(unlist(vars_to_merge), names(linked_data))
         if (length(existing_vars) > 0) {
-          iphra_message(
-            iphra_txt("The following variables already exist in linked dataset '{link_name}' and will be overwritten: {paste(existing_vars, collapse=', ')}")
+          phr_message(
+            phr_txt("The following variables already exist in linked dataset '{link_name}' and will be overwritten: {paste(existing_vars, collapse=', ')}")
           )
           # Remove existing columns from linked data before merge
           linked_data <- linked_data[, !(names(linked_data) %in% existing_vars), drop = FALSE]
@@ -2071,8 +2071,8 @@ HouseholdData <- R6::R6Class(
           linked_obj$raw_data <- linked_data_merged
         }
 
-        iphra_message(
-          iphra_txt("Successfully merged {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'.")
+        phr_message(
+          phr_txt("Successfully merged {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'.")
         )
 
         invisible(TRUE)
