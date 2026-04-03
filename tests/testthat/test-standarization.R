@@ -1341,3 +1341,88 @@ test_that("cluster_id_numeric numbers clusters starting at 1 sequentially", {
   # All rows for cluster 10 should get the same numeric id
   expect_true(length(unique(vals[test_data$cluster == 10L])) == 1L)
 })
+
+
+# ---- datetime type coercion in standardize() ----
+
+make_datetime_schema <- function(extra_vars = NULL, extra_types = NULL) {
+  base_vars  <- c("hh_id", "interview_start", "interview_end")
+  base_types <- c("character", "datetime", "datetime")
+  vars  <- c(base_vars,  extra_vars)
+  types <- c(base_types, extra_types)
+  n <- length(vars)
+  schema_df <- data.frame(
+    rule_type         = rep("variable", n),
+    variable          = vars,
+    value             = rep(NA, n),
+    required          = c(TRUE, rep(FALSE, n - 1)),
+    type              = types,
+    allowed           = rep(NA, n),
+    col_names         = rep(NA, n),
+    pattern           = rep(NA, n),
+    range             = rep(NA, n),
+    precision_limits  = rep(NA, n),
+    unique            = c(TRUE, rep(FALSE, n - 1)),
+    mutex_group       = rep(NA, n),
+    not_future        = rep(FALSE, n),
+    label             = rep(NA, n),
+    comment           = rep(NA, n),
+    question_type     = rep(NA, n),
+    is_other          = rep(FALSE, n),
+    other_column_link = rep(NA, n),
+    stringsAsFactors  = FALSE
+  )
+  data_table_to_schema(schema_df)
+}
+
+test_that("standardize() coerces character datetime columns to POSIXct when schema type is 'datetime'", {
+  test_data <- data.frame(
+    hh_id           = c("HH001", "HH002"),
+    interview_start = c("2024-05-01 08:00:00", "2024-05-01 09:30:00"),
+    interview_end   = c("2024-05-01 08:45:00", "2024-05-01 10:15:00"),
+    stringsAsFactors = FALSE
+  )
+
+  obj <- Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  obj$variable_schema <- make_datetime_schema()
+  obj$standardize()
+
+  expect_true(inherits(obj$standardized_data$interview_start, c("POSIXct", "POSIXlt")))
+  expect_true(inherits(obj$standardized_data$interview_end,   c("POSIXct", "POSIXlt")))
+})
+
+test_that("standardize() preserves time information when schema type is 'datetime'", {
+  test_data <- data.frame(
+    hh_id           = c("HH001"),
+    interview_start = c("2024-05-01 08:00:00"),
+    interview_end   = c("2024-05-01 08:45:00"),
+    stringsAsFactors = FALSE
+  )
+
+  obj <- Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  obj$variable_schema <- make_datetime_schema()
+  obj$standardize()
+
+  start_val <- obj$standardized_data$interview_start[[1]]
+  end_val   <- obj$standardized_data$interview_end[[1]]
+
+  # Difference should be 45 minutes, not zero (which would happen if time was stripped)
+  diff_mins <- as.numeric(difftime(end_val, start_val, units = "mins"))
+  expect_equal(diff_mins, 45)
+})
+
+test_that("standardize() retains POSIXct columns unchanged when schema type is 'datetime'", {
+  test_data <- data.frame(
+    hh_id           = c("HH001", "HH002"),
+    interview_start = as.POSIXct(c("2024-05-01 08:00:00", "2024-05-01 09:30:00"), tz = "UTC"),
+    interview_end   = as.POSIXct(c("2024-05-01 08:45:00", "2024-05-01 10:15:00"), tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+
+  obj <- Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  obj$variable_schema <- make_datetime_schema()
+  obj$standardize()
+
+  expect_true(inherits(obj$standardized_data$interview_start, c("POSIXct", "POSIXlt")))
+  expect_true(inherits(obj$standardized_data$interview_end,   c("POSIXct", "POSIXlt")))
+})

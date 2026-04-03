@@ -499,6 +499,10 @@ Data <- R6::R6Class(
                 } else if (want == "date") {
                   new <- phr_convert_date(col)
 
+                  # datetime
+                } else if (want == "datetime") {
+                  new <- phr_convert_datetime(col)
+
                   # fallback
                 } else {
                   new <- trimws(as.character(col))
