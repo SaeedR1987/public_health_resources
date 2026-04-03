@@ -492,6 +492,16 @@ phr_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
   phr_error(msg, origin = origin, hint = hint_txt)
 }
 
+# Shared datetime format strings used by phr_validate_datetime(),
+# .is_safely_coercible(), and phr_convert_datetime().
+.phr_datetime_formats <- c(
+  "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
+  "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ", "%Y-%m-%dT%H:%M:%OS%z",
+  "%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %I:%M:%S %p",
+  "%m/%d/%Y %I:%M:%S %p", "%d/%m/%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
+  "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%d/%m/%Y %H:%M"
+)
+
 # ---- Validate Datetime ----------------------------------------------
 
 #' @title Validate Date-Time Input
@@ -525,15 +535,7 @@ phr_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
 
   # Check character strings that include a time component
   if (is.character(x)) {
-    datetime_formats <- c(
-      "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
-      "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ", "%Y-%m-%dT%H:%M:%OS%z",
-      "%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %I:%M:%S %p",
-      "%m/%d/%Y %I:%M:%S %p", "%d/%m/%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
-      "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%d/%m/%Y %H:%M"
-    )
-
-    for (fmt in datetime_formats) {
+    for (fmt in .phr_datetime_formats) {
       parsed <- suppressWarnings(as.POSIXct(x, format = fmt, tz = "UTC"))
       if (!any(is.na(parsed))) {
         return(invisible(TRUE))
@@ -792,18 +794,11 @@ phr_validate_choice <- function(x, choices, origin = NULL, soft) {
       return(is.character(x) || is.factor(x))
     } else if (to_type == "datetime" || to_type == "POSIXct" || to_type == "POSIXlt") {
       if (inherits(x, c("POSIXct", "POSIXlt"))) return(TRUE)
-      datetime_formats <- c(
-        "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ", "%Y-%m-%dT%H:%M:%OS%z",
-        "%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %I:%M:%S %p",
-        "%m/%d/%Y %I:%M:%S %p", "%d/%m/%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
-        "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%d/%m/%Y %H:%M"
-      )
       is_convertible <- vapply(x, function(val) {
         if (is.na(val)) {
           TRUE
         } else {
-          any(!is.na(sapply(datetime_formats, function(fmt) {
+          any(!is.na(sapply(.phr_datetime_formats, function(fmt) {
             suppressWarnings(as.POSIXct(as.character(val), format = fmt, tz = "UTC"))
           })))
         }
@@ -1805,20 +1800,12 @@ phr_convert_datetime <- function(x, tz = "UTC") {
   if (is.numeric(x)) return(as.POSIXct(x, origin = "1970-01-01", tz = tz))
 
   # Character — try known datetime formats
-  datetime_formats <- c(
-    "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
-    "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ", "%Y-%m-%dT%H:%M:%OS%z",
-    "%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %I:%M:%S %p",
-    "%m/%d/%Y %I:%M:%S %p", "%d/%m/%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
-    "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%d/%m/%Y %H:%M"
-  )
-
   x_chr <- as.character(x)
   is_na <- is.na(x_chr)
   to_parse <- trimws(x_chr[!is_na])
 
   parsed <- NULL
-  for (fmt in datetime_formats) {
+  for (fmt in .phr_datetime_formats) {
     converted <- suppressWarnings(as.POSIXct(to_parse, format = fmt, tz = tz))
     if (all(!is.na(converted))) {
       parsed <- converted
