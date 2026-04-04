@@ -1614,7 +1614,7 @@ HouseholdData <- R6::R6Class(
           "roster_birth",
           "roster_person_time", "roster_person_time_under5",
           "roster_person_time_male", "roster_person_time_female",
-          "age_6_29m", "age_30_59m"
+          "roster_age_6_29m", "roster_age_30_59m"
         )
 
         # Filter to columns that actually exist in roster_data

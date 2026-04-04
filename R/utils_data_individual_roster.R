@@ -193,7 +193,7 @@ add_age_months_cat <- function(
 
     # Overwrite warning for existing output columns
 
-    output_columns <- c("age_months_cat", "age_6_29m", "age_30_59m")
+    output_columns <- c("age_months_cat", "roster_age_6_29m", "roster_age_30_59m")
 
     for (output_column in output_columns) {
       if (output_column %in% names(.dataset)) {
@@ -219,13 +219,13 @@ add_age_months_cat <- function(
             "48-53 months", "54-59 months"
           )
         ),
-        age_6_29m = dplyr::case_when(
+        roster_age_6_29m = dplyr::case_when(
           .data[[age_months_col]] < 6 ~ NA_real_,
           .data[[age_months_col]] >= 6 & .data[[age_months_col]] <= 29 ~ 1,
           .data[[age_months_col]] >= 30 & .data[[age_months_col]] <= 59 ~ 0,
           TRUE ~ NA_real_
         ),
-        age_30_59m = dplyr::case_when(
+        roster_age_30_59m = dplyr::case_when(
           .data[[age_months_col]] < 6 ~ NA_real_,
           .data[[age_months_col]] >= 6 & .data[[age_months_col]] <= 29 ~ 0,
           .data[[age_months_col]] >= 30 & .data[[age_months_col]] <= 59 ~ 1,
