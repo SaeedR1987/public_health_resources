@@ -27,9 +27,9 @@ hh_dms_to_decimal <- function(x) {
   }, on_error = "warn", origin = "hh_dms_to_decimal")
 }
 
-# ====================================================================
+
 # WEIGHT UTILITIES
-# ====================================================================
+
 
 #' Identify outliers using IQR rule
 hh_flag_weight_outliers <- function(w) {
@@ -85,9 +85,9 @@ hh_check_weight_integrity <- function(w) {
   }, on_error = "warn", origin = "hh_check_weight_integrity")
 }
 
-# ====================================================================
+
 # ADM UNIT NORMALIZATION
-# ====================================================================
+
 
 #' Normalize administrative names
 hh_normalize_adm <- function(x) {
@@ -116,9 +116,9 @@ hh_validate_adm <- function(x, valid) {
   }, on_error = "warn", origin = "hh_validate_adm")
 }
 
-# ====================================================================
+
 # SKIP-LOGIC & CONSISTENCY CHECKS
-# ====================================================================
+
 
 #' Enforce consent-based skip logic
 hh_check_consent_skip <- function(df, consent_col, skip_cols) {
@@ -170,9 +170,9 @@ hh_flag_early_interviews <- function(dates, project_start) {
   }, on_error = "warn", origin = "hh_flag_early_interviews")
 }
 
-# ====================================================================
+
 # INTERVIEW TIME UTILITIES
-# ====================================================================
+
 
 #' Calculate and add interview duration in minutes
 #'
@@ -240,9 +240,9 @@ add_interview_time <- function(.dataset,
   )
 }
 
-# ====================================================================
+
 # LINKAGE UTILITIES
-# ====================================================================
+
 
 #' Validate loop dataset counts against parent dataset
 #'
@@ -268,9 +268,9 @@ loop_count_check <- function(parent_df,
 
   phr_try({
 
-    # ============================================================
+
     # 1. Structural validation
-    # ============================================================
+
     if (!parent_uuid %in% names(parent_df)) {
       phr_error("LoopCheck",
                   phr_txt(glue::glue("Parent UUID column '{parent_uuid}' not found in parent dataset."))
@@ -289,9 +289,9 @@ loop_count_check <- function(parent_df,
       )
     }
 
-    # ============================================================
+
     # 2. Prepare vectors
-    # ============================================================
+
     parent_ids <- as.character(parent_df[[parent_uuid]])
     expected_counts <- parent_df[[parent_count]]
 
@@ -315,9 +315,9 @@ loop_count_check <- function(parent_df,
 
     mismatches <- c()
 
-    # ============================================================
+
     # 3. Loop UUIDs not in parent → mismatch
-    # ============================================================
+
     extra_loop_ids <- setdiff(names(table(child_ids)), parent_ids)
 
     if (length(extra_loop_ids) > 0) {
@@ -328,9 +328,9 @@ loop_count_check <- function(parent_df,
       )
     }
 
-    # ============================================================
+
     # 4. Parent expected = NA AND actual > 0 → mismatch
-    # ============================================================
+
     problem_na_child <- df_out$uuid[
       is.na(df_out$expected) & df_out$actual > 0
     ]
@@ -343,9 +343,9 @@ loop_count_check <- function(parent_df,
       )
     }
 
-    # ============================================================
+
     # 5. NEW RULE: Parent expected = NA AND actual = 0
-    # ============================================================
+
     if (!soft_missing_parent) {
       problem_na_soft <- df_out$uuid[
         is.na(df_out$expected) & df_out$actual == 0
@@ -360,9 +360,9 @@ loop_count_check <- function(parent_df,
       }
     }
 
-    # ============================================================
+
     # 6. Numeric mismatch when expected is known
-    # ============================================================
+
     numeric_mismatch <- df_out$uuid[
       !is.na(df_out$expected) &
         df_out$expected != df_out$actual
@@ -378,9 +378,9 @@ loop_count_check <- function(parent_df,
 
     mismatches <- unique(mismatches)
 
-    # ============================================================
+
     # 7. Return results
-    # ============================================================
+
     return(list(
       ok = (length(mismatches) == 0),
       mismatches = mismatches,

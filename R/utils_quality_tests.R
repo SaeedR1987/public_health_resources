@@ -1033,3 +1033,363 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
   }, on_error = "warn", origin = "quality_test_any_flag_percentage")
 }
+
+#' Sex Ratio Test (Male:Female)
+#'
+#' Perform a chi-squared goodness-of-fit test comparing the observed male/female
+#' counts to an expected male:female ratio (default 1:1).
+#'
+#' @param data Data frame containing the sex column
+#' @param sex_col Character scalar. Name of the sex column in `data`
+#' @param male_val Value in `sex_col` that indicates "male"
+#' @param female_val Value in `sex_col` that indicates "female"
+#' @param expected_ratio_val Single positive numeric giving expected male:female ratio.
+#'   Default 1 (i.e., 1:1).
+#' @return List with statistic (chi-squared value) and p-value
+#' @export
+quality_test_sexratio <- function(
+    data,
+    sex_col,
+    male_val,
+    female_val,
+    expected_ratio_val = 1
+) {
+
+  phr_try({
+
+    if (!is.character(sex_col) || length(sex_col) != 1L) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`sex_col` must be a single character column name"
+      )
+    }
+
+    if (!sex_col %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Sex column not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    if (!is.numeric(expected_ratio_val) || length(expected_ratio_val) != 1L) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`expected_ratio_val` must be a single numeric value (male:female)"
+      )
+    }
+
+    if (!is.finite(expected_ratio_val) || expected_ratio_val <= 0) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`expected_ratio_val` must be a finite positive number"
+      )
+    }
+
+    if (identical(male_val, female_val)) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`male_val` and `female_val` must be different"
+      )
+    }
+
+    s <- data[[sex_col]]
+    s <- s[!is.na(s)]
+
+    if (length(s) < 5) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Insufficient data for sex ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # Exclude values other than male_val/female_val, and warn if any are found
+    is_mf <- (s == male_val) | (s == female_val)
+    n_excluded <- sum(!is_mf)
+
+    if (n_excluded > 0) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = paste0(
+          "Excluding ", n_excluded,
+          " record(s) with sex values not equal to `male_val` or `female_val`"
+        )
+      )
+    }
+
+    s <- s[is_mf]
+
+    if (length(s) < 5) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Insufficient male/female data for sex ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    obs_male <- sum(s == male_val, na.rm = TRUE)
+    obs_female <- sum(s == female_val, na.rm = TRUE)
+
+    if (obs_male == 0L || obs_female == 0L) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Only one sex category present; cannot test sex ratio"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    obs <- c(male = obs_male, female = obs_female)
+
+    # expected_ratio_val is male:female
+    p_male <- expected_ratio_val / (expected_ratio_val + 1)
+    p_female <- 1 / (expected_ratio_val + 1)
+    p <- c(p_male, p_female)
+
+    test_result <- chisq.test(x = obs, p = p)
+
+    return(list(
+      statistic = as.numeric(test_result$statistic),
+      p_value = test_result$p.value
+    ))
+
+  }, on_error = "warn", origin = "quality_test_sexratio")
+}
+
+#' Age Group Ratio Test (Two Indicator Columns)
+#'
+#' Perform a chi-squared goodness-of-fit test comparing the observed counts of "yes"
+#' in two different age-group indicator columns to an expected ratio (default 1:1).
+#'
+#' @param data Data frame containing the indicator columns
+#' @param age_group_col1 Character scalar. Name of the first age-group indicator column
+#' @param age_group_col2 Character scalar. Name of the second age-group indicator column
+#' @param yes_val Value indicating "yes" in the indicator columns. Default 1.
+#' @param no_val Value indicating "no" in the indicator columns. Default 0.
+#' @param expected_ratio_val Single positive numeric giving expected ratio of
+#'   age_group_col1:age_group_col2. Default 1 (i.e., 1:1).
+#' @return List with statistic (chi-squared value) and p-value
+#' @export
+quality_test_ageratio <- function(
+    data,
+    age_group_col1,
+    age_group_col2,
+    yes_val = 1,
+    no_val = 0,
+    expected_ratio_val = 1
+) {
+
+  phr_try({
+
+    if (!is.character(age_group_col1) || length(age_group_col1) != 1L ||
+        !is.character(age_group_col2) || length(age_group_col2) != 1L) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`age_group_col1` and `age_group_col2` must each be a single character column name"
+      )
+    }
+
+    if (!age_group_col1 %in% names(data) || !age_group_col2 %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "One or both age group columns not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    if (identical(age_group_col1, age_group_col2)) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`age_group_col1` and `age_group_col2` must be different columns"
+      )
+    }
+
+    if (identical(yes_val, no_val)) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`yes_val` and `no_val` must be different"
+      )
+    }
+
+    if (!is.numeric(expected_ratio_val) || length(expected_ratio_val) != 1L) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`expected_ratio_val` must be a single numeric value (col1:col2)"
+      )
+    }
+
+    if (!is.finite(expected_ratio_val) || expected_ratio_val <= 0) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`expected_ratio_val` must be a finite positive number"
+      )
+    }
+
+    x <- data[[age_group_col1]]
+    y <- data[[age_group_col2]]
+
+    # Remove missing values
+    complete_cases <- complete.cases(x, y)
+    x <- x[complete_cases]
+    y <- y[complete_cases]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "Insufficient data for age ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # Exclude values not equal to yes_val/no_val in either column, and warn
+    valid_x <- (x == yes_val) | (x == no_val)
+    valid_y <- (y == yes_val) | (y == no_val)
+    valid <- valid_x & valid_y
+
+    n_excluded <- sum(!valid)
+    if (n_excluded > 0) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = paste0(
+          "Excluding ", n_excluded,
+          " record(s) with values not equal to `yes_val` or `no_val` in one or both age group columns"
+        )
+      )
+    }
+
+    x <- x[valid]
+    y <- y[valid]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "Insufficient valid data for age ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # Observed "yes" counts in each indicator column
+    yes1 <- sum(x == yes_val, na.rm = TRUE)
+    yes2 <- sum(y == yes_val, na.rm = TRUE)
+
+    if (yes1 == 0L || yes2 == 0L) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "One of the age groups has zero 'yes' counts; cannot test age ratio"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    obs <- c(col1_yes = yes1, col2_yes = yes2)
+
+    # expected_ratio_val is col1:col2
+    p1 <- expected_ratio_val / (expected_ratio_val + 1)
+    p2 <- 1 / (expected_ratio_val + 1)
+    p <- c(p1, p2)
+
+    test_result <- chisq.test(x = obs, p = p)
+
+    return(list(
+      statistic = as.numeric(test_result$statistic),
+      p_value = test_result$p.value
+    ))
+
+  }, on_error = "warn", origin = "quality_test_ageratio")
+}
+
+#' Digit Preference Score (MUAC)
+#'
+#' Compute digit preference score for a numeric MUAC (cm) variable using nipnTK.
+#'
+#' @param data Data frame containing the MUAC variable
+#' @param variable Character scalar. Name of the MUAC (cm) column in `data`
+#' @return List with statistic (digit preference score) and p_value (NA_real_)
+#' @export
+quality_test_digit_preference <- function(data, variable) {
+
+  phr_try({
+
+    if (!is.character(variable) || length(variable) != 1L) {
+      phr_error(
+        origin = "quality_test_digit_preference",
+        message = "`variable` must be a single character column name"
+      )
+    }
+
+    if (!variable %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_digit_preference",
+        message = "Variable not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    x <- data[[variable]]
+
+    # Remove missing values
+    x <- x[!is.na(x)]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_digit_preference",
+        message = "Insufficient data for digit preference calculation"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    if (!is.numeric(x)) {
+      phr_warning(
+        origin = "quality_test_digit_preference",
+        message = "Variable is not numeric; cannot compute digit preference score"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # nipnTK::digitPreference() returns a list; first element is the score
+    dp <- nipnTK::digitPreference(x)[[1]]
+
+    return(list(
+      statistic = as.numeric(dp),
+      p_value = NA_real_
+    ))
+
+  }, on_error = "warn", origin = "quality_test_digit_preference")
+}
+
+#' Non-missing Count Test
+#'
+#' Return the number of non-missing (non-NA) values in a specified column.
+#'
+#' @param data Data frame
+#' @param count_col Character scalar. Name of the column to count non-missing values for
+#' @return List with statistic (non-missing count) and p_value (NA_real_)
+#' @export
+quality_test_count <- function(data, count_col) {
+
+  phr_try({
+
+    if (!is.character(count_col) || length(count_col) != 1L) {
+      phr_error(
+        origin = "quality_test_count",
+        message = "`count_col` must be a single character column name"
+      )
+    }
+
+    if (!count_col %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_count",
+        message = "Column not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    x <- data[[count_col]]
+    n_non_missing <- sum(!is.na(x))
+
+    return(list(
+      statistic = as.numeric(n_non_missing),
+      p_value = NA_real_
+    ))
+
+  }, on_error = "warn", origin = "quality_test_count")
+}
