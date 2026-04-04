@@ -74,7 +74,7 @@ NutritionDataAnalytics <- R6::R6Class(
       self$quality_schema_anthro       <- self$default_quality_anthro_schema()
       self$quality_schema_iycf         <- self$default_quality_iycf_schema()
 
-      # Initialise separate result containers
+      # Initialize separate result containers
       self$plausibility_results_anthro <- list()
       self$plausibility_results_iycf   <- list()
 
@@ -193,10 +193,7 @@ NutritionDataAnalytics <- R6::R6Class(
         self$calculate_overall_score()
 
         phr_message(
-          phr_txt(glue::glue(
-            "Ran {length(anthro_results)} anthropometric and ",
-            "{length(iycf_results)} IYCF quality checks for {self$dataset_name}."
-          ))
+          phr_txt(glue::glue("Ran {length(anthro_results)} anthropometric and {length(iycf_results)} IYCF quality checks for {self$dataset_name}."))
         )
 
         invisible(list(anthro = anthro_results, iycf = iycf_results))
