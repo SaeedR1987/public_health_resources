@@ -115,7 +115,7 @@ MortalityDataAnalytics <- R6::R6Class(
       if (missing(data) || is.null(data)) {
         phr_error(
           origin  = origin,
-          message = "A household dataframe is required to initialize MortalityDataAnalytics."
+          message = "The data parameter (household dataframe) is required to initialize MortalityDataAnalytics."
         )
       }
 
@@ -661,8 +661,8 @@ MortalityDataAnalytics <- R6::R6Class(
         "Running {length(outputs_schema)} output(s) for '{namespace}' dataset..."
       )))
 
-      if (is.null(self$visualizations[[namespace]])) self$visualizations[[namespace]] <- list()
-      if (is.null(self$tables[[namespace]]))         self$tables[[namespace]]         <- list()
+      self$visualizations[[namespace]] <- self$visualizations[[namespace]] %||% list()
+      self$tables[[namespace]]         <- self$tables[[namespace]]         %||% list()
 
       for (out_name in names(outputs_schema)) {
         out <- outputs_schema[[out_name]]
