@@ -191,15 +191,17 @@ add_age_months_cat <- function(
     )
 
 
-    # Overwrite warning for existing output column
+    # Overwrite warning for existing output columns
 
-    output_column <- "age_months_cat"
+    output_columns <- c("age_months_cat", "roster_age_6_29m", "roster_age_30_59m")
 
-    if (output_column %in% names(.dataset)) {
-      phr_warning(
-        origin = origin,
-        message = phr_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
-      )
+    for (output_column in output_columns) {
+      if (output_column %in% names(.dataset)) {
+        phr_warning(
+          origin = origin,
+          message = phr_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
+        )
+      }
     }
 
 
@@ -216,6 +218,18 @@ add_age_months_cat <- function(
             "24-29 months", "30-35 months", "36-41 months", "42-47 months",
             "48-53 months", "54-59 months"
           )
+        ),
+        roster_age_6_29m = dplyr::case_when(
+          .data[[age_months_col]] < 6 ~ NA_real_,
+          .data[[age_months_col]] >= 6 & .data[[age_months_col]] <= 29 ~ 1,
+          .data[[age_months_col]] >= 30 & .data[[age_months_col]] <= 59 ~ 0,
+          TRUE ~ NA_real_
+        ),
+        roster_age_30_59m = dplyr::case_when(
+          .data[[age_months_col]] < 6 ~ NA_real_,
+          .data[[age_months_col]] >= 6 & .data[[age_months_col]] <= 29 ~ 0,
+          .data[[age_months_col]] >= 30 & .data[[age_months_col]] <= 59 ~ 1,
+          TRUE ~ NA_real_
         )
       )
 
