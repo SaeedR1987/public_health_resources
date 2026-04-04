@@ -609,7 +609,7 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
     "character",
     "logical",
     "factor",
-    "date", "Date", "POSIXct"
+    "date", "Date", "POSIXct", "POSIXlt", "datetime"
   )
 
   purrr::iwalk(types, function(val, varname) {
