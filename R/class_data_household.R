@@ -1146,9 +1146,19 @@ HouseholdData <- R6::R6Class(
         } else if (type == "mortality") {
           if (!is.null(self$linked_objects$roster)) {
             linked_info_roster <- get_linked_data_info(self$linked_objects$roster, stage)
+          } else {
+            phr_warning(
+              origin  = paste0(self$dataset_name, "$generate_data_analytics"),
+              message = phr_txt("No linked roster data found. Mortality analytics will use only household data.")
+            )
           }
           if (!is.null(self$linked_objects$deaths)) {
             linked_info_deaths <- get_linked_data_info(self$linked_objects$deaths, stage)
+          } else {
+            phr_warning(
+              origin  = paste0(self$dataset_name, "$generate_data_analytics"),
+              message = phr_txt("No linked deaths data found. Mortality analytics will use only household data.")
+            )
           }
         } else if (type == "health") {
           if (!is.null(self$linked_objects$roster)) {
