@@ -1,12 +1,12 @@
-# iphRa Documentation
+# public_health_resources Documentation
 
-Welcome to the iphRa package documentation. This documentation is organized into two main sections: **Data Structures** and **Processes**.
+Welcome to the public_health_resources package documentation. This documentation is organized into two main sections: **Data Structures** and **Processes**.
 
 ## Documentation Structure
 
 ### Data_Structures/
 
-Documentation for the R6 classes that form the foundation of the iphRa package.
+Documentation for the R6 classes that form the foundation of the public_health_resources package.
 
 #### Data_Classes/
 - **[data_classes_overview.md](Data_Structures/Data_Classes/data_classes_overview.md)** - Overview of the Data class hierarchy
@@ -49,7 +49,7 @@ Documentation for the R6 classes that form the foundation of the iphRa package.
 
 ### Processes/
 
-Documentation for the major processes and workflows in the iphRa package.
+Documentation for the major processes and workflows in the public_health_resources package.
 
 #### error_handling/
 - **[error_handling.md](Processes/error_handling/error_handling.md)** - Error handling patterns and practices
@@ -85,7 +85,7 @@ Start with the overview documents for each class hierarchy:
 
 ### 2. Understanding Schemas
 
-Schemas are central to iphRa's functionality:
+Schemas are central to public_health_resources's functionality:
 1. Read [schema_overview.md](Data_Structures/schema_overview.md) for a comprehensive introduction
 2. Read [indicator_schema.md](Data_Structures/indicator_schema.md) for indicator calculations
 3. Read [variable_value_mapping_guide.md](Data_Structures/variable_value_mapping_guide.md) for value mapping
@@ -157,7 +157,7 @@ results <- analysis$calculate_all_indicators()
 ## Key Concepts
 
 ### R6 Classes
-iphRa uses R6 object-oriented programming with inheritance hierarchies for Data, Quality, Analysis, and Log classes.
+public_health_resources uses R6 object-oriented programming with inheritance hierarchies for Data, Quality, Analysis, and Log classes.
 
 ### Schemas
 Schemas define the structure, validation rules, and transformations for survey data. Four main types:
@@ -195,8 +195,8 @@ The package uses specific naming conventions throughout. See [naming_conventions
 
 For package-level documentation, see:
 - Function reference: Use `?function_name` in R
-- Package vignettes: `browseVignettes("iphRa")`
-- GitHub repository: https://github.com/SaeedR1987/iphRa
+- Package vignettes: `browseVignettes("public_health_resources")`
+- GitHub repository: https://github.com/SaeedR1987/public_health_resources
 
 ## Contributing to Documentation
 

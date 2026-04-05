@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `Data` class serves as the base class for all data structures in iphRa. Its initialization process establishes the foundation for data validation, standardization, and cleaning operations.
+The `Data` class serves as the base class for all data structures in public_health_resources. Its initialization process establishes the foundation for data validation, standardization, and cleaning operations.
 
 **File**: `R/class_data.R`, lines 64-185
 

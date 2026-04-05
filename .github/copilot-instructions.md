@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions for iphRa Repository
+# GitHub Copilot Instructions for public_health_resources Repository
 
 ## General Guidelines
 

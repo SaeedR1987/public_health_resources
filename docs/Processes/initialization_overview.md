@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This document provides an overview of initialization processes for the core R6 classes in the iphRa package. Understanding these initialization steps is crucial for working with Data, Log, Quality, and Analysis objects, as they establish the foundational state and relationships between objects.
+This document provides an overview of initialization processes for the core R6 classes in the public_health_resources package. Understanding these initialization steps is crucial for working with Data, Log, Quality, and Analysis objects, as they establish the foundational state and relationships between objects.
 
-Object initialization in iphRa serves several critical functions:
+Object initialization in public_health_resources serves several critical functions:
 - Validates input parameters and data structures
 - Establishes required fields and metadata
 - Creates relationships between parent and child objects
@@ -149,6 +149,6 @@ Each object type follows a consistent pattern:
 
 ## Summary
 
-Understanding object initialization is crucial for effective use of the iphRa package. Each object type has specific initialization requirements documented in detail in the class-specific pages linked above. All objects follow common patterns for metadata tracking, validation flags, and schema loading, ensuring consistency across the package.
+Understanding object initialization is crucial for effective use of the public_health_resources package. Each object type has specific initialization requirements documented in detail in the class-specific pages linked above. All objects follow common patterns for metadata tracking, validation flags, and schema loading, ensuring consistency across the package.
 
-By following initialization best practices and understanding the parent-child relationships between objects, you can build robust data processing workflows that leverage the full capabilities of the iphRa package.
+By following initialization best practices and understanding the parent-child relationships between objects, you can build robust data processing workflows that leverage the full capabilities of the public_health_resources package.

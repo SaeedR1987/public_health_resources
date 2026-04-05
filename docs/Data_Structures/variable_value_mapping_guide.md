@@ -2,7 +2,7 @@
 
 ## Overview
 
-The iphRa data pipeline uses a mapping system to translate between **canonical names/values** (standardized across all datasets) and **dataset-specific names/values** (actual column names and values in your data).
+The public_health_resources data pipeline uses a mapping system to translate between **canonical names/values** (standardized across all datasets) and **dataset-specific names/values** (actual column names and values in your data).
 
 This guide explains how to reference mapped variables and values in different parts of your schema.
 

@@ -158,7 +158,7 @@ the main column from naming conventions:
 ## 4. Complete Example
 
 ```r
-library(iphRa)
+library(public_health_resources)
 
 # Create sample survey data
 df <- data.frame(
