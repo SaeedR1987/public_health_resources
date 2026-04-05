@@ -651,6 +651,95 @@ HouseholdData <- R6::R6Class(
     },
 
 
+    #' Generate Cleaning Log for Household and Linked Datasets
+    #'
+    #' @description
+    #' Generates a cleaning log for the household dataset by calling the parent
+    #' implementation, then propagates the call to all linked data objects so
+    #' that each linked dataset produces its own cleaning log entries.
+    #'
+    #' @param stage Character string specifying the data stage to use:
+    #'   "standardized" (default), "clean", or "raw"
+    #' @param overwrite Logical; if TRUE, clears the existing cleaning log before
+    #'   generating new entries (default: FALSE)
+    #'
+    #' @return NULL (invisibly). Side effect: populates cleaning logs on the
+    #'   household object and on every linked data object.
+    generate_cleaning_log = function(stage = "standardized", overwrite = FALSE) {
+
+      # Run parent implementation for the household dataset itself
+      super$generate_cleaning_log(stage = stage, overwrite = overwrite)
+
+      phr_try({
+
+        if (length(self$linked_objects) == 0) {
+          return(invisible(NULL))
+        }
+
+        phr_message(phr_txt("Generating cleaning log for {length(self$linked_objects)} linked dataset(s) in {self$dataset_name}..."))
+
+        for (link_name in names(self$linked_objects)) {
+          link_info <- self$linked_objects[[link_name]]
+          linked_obj <- link_info$object
+
+          if (!inherits(linked_obj, "Data")) {
+            phr_warning(
+              self$dataset_name,
+              phr_txt("Linked object '{link_name}' is not a Data class object. Skipping.")
+            )
+            next
+          }
+
+          phr_message(phr_txt("Generating cleaning log for linked dataset '{link_name}'..."))
+          linked_obj$generate_cleaning_log(stage = stage, overwrite = overwrite)
+        }
+
+      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_cleaning_log"))
+    },
+
+
+    #' Clean Household and Linked Datasets
+    #'
+    #' @description
+    #' Cleans the household dataset by calling the parent implementation, then
+    #' propagates the call to all linked data objects so that each linked dataset
+    #' is cleaned using its own cleaning and deletion logs.
+    #'
+    #' @return NULL (invisibly). Side effect: sets \code{clean_data} on the
+    #'   household object and on every linked data object.
+    clean = function() {
+
+      # Run parent implementation for the household dataset itself
+      super$clean()
+
+      phr_try({
+
+        if (length(self$linked_objects) == 0) {
+          return(invisible(NULL))
+        }
+
+        phr_message(phr_txt("Cleaning {length(self$linked_objects)} linked dataset(s) in {self$dataset_name}..."))
+
+        for (link_name in names(self$linked_objects)) {
+          link_info <- self$linked_objects[[link_name]]
+          linked_obj <- link_info$object
+
+          if (!inherits(linked_obj, "Data")) {
+            phr_warning(
+              self$dataset_name,
+              phr_txt("Linked object '{link_name}' is not a Data class object. Skipping.")
+            )
+            next
+          }
+
+          phr_message(phr_txt("Cleaning linked dataset '{link_name}'..."))
+          linked_obj$clean()
+        }
+
+      }, on_error = "warn", origin = paste0(self$dataset_name, "$clean"))
+    },
+
+
     #' Get Survey Design Object
     #'
     #' @description
