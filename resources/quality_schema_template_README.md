@@ -147,7 +147,7 @@ fcs_income_corr      | test_statistic < 0.3             | 20
 ### 2. Import in R
 
 ```r
-library(iphRa)
+library(public_health_resources)
 library(openxlsx)
 
 # Read template
@@ -324,4 +324,4 @@ quality_schema <- list(
 
 ## Support
 
-For questions, refer to the iphRa package documentation or GitHub repository.
+For questions, refer to the public_health_resources package documentation or GitHub repository.

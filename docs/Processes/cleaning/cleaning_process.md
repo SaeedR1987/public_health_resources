@@ -2,7 +2,7 @@
 
 ## Overview
 
-The cleaning process is the final transformation step in the iphRa data pipeline. It applies validated corrections and deletions to standardized data, producing analysis-ready clean data. This document provides a comprehensive overview of the cleaning workflow, including cleaning log generation, deletion log generation, and the clean operation.
+The cleaning process is the final transformation step in the public_health_resources data pipeline. It applies validated corrections and deletions to standardized data, producing analysis-ready clean data. This document provides a comprehensive overview of the cleaning workflow, including cleaning log generation, deletion log generation, and the clean operation.
 
 ## Purpose
 

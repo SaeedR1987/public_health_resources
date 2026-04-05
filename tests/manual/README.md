@@ -1,6 +1,6 @@
 # Household Schema Sample Datasets and Test Script
 
-This directory contains sample datasets and a test script for validating the Household Data schema workflow in the iphRa application.
+This directory contains sample datasets and a test script for validating the Household Data schema workflow in the public_health_resources application.
 
 ## Files
 
@@ -48,7 +48,7 @@ This directory contains sample datasets and a test script for validating the Hou
 
 ### Running the Test Script
 
-From the iphRa project root directory:
+From the public_health_resources project root directory:
 
 ```r
 # Option 1: Source the script in R

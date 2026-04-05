@@ -1,8 +1,8 @@
-# Naming Conventions in iphRa
+# Naming Conventions in public_health_resources
 
 ## Overview
 
-This document describes the naming conventions used throughout the iphRa codebase to ensure consistency, clarity, and maintainability.
+This document describes the naming conventions used throughout the public_health_resources codebase to ensure consistency, clarity, and maintainability.
 
 ## Variable and Column Naming
 

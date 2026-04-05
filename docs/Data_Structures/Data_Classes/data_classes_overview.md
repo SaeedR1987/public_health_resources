@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Data class hierarchy provides R6 classes for managing, validating, standardizing, and transforming survey datasets in the iphRa package. These classes form the foundation for all data operations in the system.
+The Data class hierarchy provides R6 classes for managing, validating, standardizing, and transforming survey datasets in the public_health_resources package. These classes form the foundation for all data operations in the system.
 
 ## Base Class: Data
 
@@ -23,7 +23,7 @@ The `Data` class is the abstract base class that defines common functionality fo
 
 ## Interrelations with Other Classes
 
-Data classes serve as the central hub that creates and manages other object types in the iphRa ecosystem:
+Data classes serve as the central hub that creates and manages other object types in the public_health_resources ecosystem:
 
 ### 1. Owns Log Objects
 

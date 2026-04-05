@@ -38,7 +38,7 @@ The `DataQuality` class provides comprehensive quality assessment capabilities f
 
 ### 5. Schema Loading
 - **Attempts template loading**: Tries to load quality schema from package resources
-  - Path: `system.file("resources", "data_quality_template.json", package = "iphRa")`
+  - Path: `system.file("resources", "data_quality_template.json", package = "public_health_resources")`
   - Template defines default quality checks and thresholds
 - **Error handling**: If template unavailable, creates empty schema
   - `self$quality_schema = list()` as fallback

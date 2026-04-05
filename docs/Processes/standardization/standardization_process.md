@@ -2,7 +2,7 @@
 
 ## Overview
 
-The standardization process is the core data transformation pipeline in the iphRa package. It converts raw survey data into a consistent, validated, and analysis-ready format. This document provides a high-level overview of the standardization workflow and its key components.
+The standardization process is the core data transformation pipeline in the public_health_resources package. It converts raw survey data into a consistent, validated, and analysis-ready format. This document provides a high-level overview of the standardization workflow and its key components.
 
 ## Purpose
 

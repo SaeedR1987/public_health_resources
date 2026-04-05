@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the harmonization of dependency rules in the iphRa package. The goal was to consolidate all data quality checks into a unified `dependency_schema` structure, removing redundancy and improving maintainability.
+This document describes the harmonization of dependency rules in the public_health_resources package. The goal was to consolidate all data quality checks into a unified `dependency_schema` structure, removing redundancy and improving maintainability.
 
 ## What Changed
 

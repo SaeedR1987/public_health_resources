@@ -2,7 +2,7 @@
 
 ## Overview
 
-The iphRa package provides a comprehensive error handling system designed for both interactive (Shiny) and non-interactive (console) use. The system ensures graceful error handling, informative messages, and proper error propagation throughout the data pipeline.
+The public_health_resources package provides a comprehensive error handling system designed for both interactive (Shiny) and non-interactive (console) use. The system ensures graceful error handling, informative messages, and proper error propagation throughout the data pipeline.
 
 ## Core Components
 

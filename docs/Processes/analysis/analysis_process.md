@@ -2,7 +2,7 @@
 
 ## Overview
 
-The analysis process in iphRa involves calculating indicators, performing statistical analysis, and generating analytical outputs from cleaned and validated survey data. This process transforms standardized data into meaningful indicators and insights.
+The analysis process in public_health_resources involves calculating indicators, performing statistical analysis, and generating analytical outputs from cleaned and validated survey data. This process transforms standardized data into meaningful indicators and insights.
 
 ## Process Flow
 
@@ -295,8 +295,8 @@ analysis_metadata <- list(
   data_source = "survey_2024",
   weights = "survey_weight",
   confidence_level = 0.95,
-  software = "iphRa",
-  version = packageVersion("iphRa")
+  software = "public_health_resources",
+  version = packageVersion("public_health_resources")
 )
 
 # Include in output

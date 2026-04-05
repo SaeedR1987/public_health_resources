@@ -2,7 +2,7 @@
 
 ## Overview
 
-The validation process is a critical step in the iphRa data pipeline that ensures data quality, structural integrity, and conformance to schema definitions before proceeding with standardization or cleaning. This document provides a comprehensive overview of the validation workflow, including the role of variable and value maps.
+The validation process is a critical step in the public_health_resources data pipeline that ensures data quality, structural integrity, and conformance to schema definitions before proceeding with standardization or cleaning. This document provides a comprehensive overview of the validation workflow, including the role of variable and value maps.
 
 ## Purpose
 
