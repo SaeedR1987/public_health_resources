@@ -358,7 +358,7 @@ add_muac <- function(
 
     # Overwrite warnings for any existing output columns
 
-    output_columns <- c("sam_muac", "mam_muac", "gam_muac", "flag_muac_extreme")
+    output_columns <- c("sam_muac", "mam_muac", "gam_muac", "nut_muac_cat", "flag_muac_extreme")
 
     for (col in output_columns) {
       if (col %in% names(.dataset)) {
@@ -406,6 +406,14 @@ add_muac <- function(
         sam_muac = ifelse(age_months < 6 | age_months >= 60, NA_real_, sam_muac),
         mam_muac = ifelse(age_months < 6 | age_months >= 60, NA_real_, mam_muac),
         gam_muac = ifelse(age_months < 6 | age_months >= 60, NA_real_, gam_muac),
+
+        # Categorize MUAC after edema + age exclusions have been applied
+        nut_muac_cat = dplyr::case_when(
+          is.na(sam_muac) | is.na(mam_muac) ~ NA_character_,
+          sam_muac == 1 ~ phr_txt("SAM"),
+          mam_muac == 1 ~ phr_txt("MAM"),
+          TRUE ~ phr_txt("Normal")
+        ),
 
         # Flag extreme MUAC values (< 5 cm or > 20 cm)
         flag_muac_extreme = dplyr::case_when(
@@ -701,11 +709,11 @@ add_standardized_nutrition_demographics <- function(
     .dataset,
     age_years_col = "calc_age_years"
 ) {
-  
+
   origin <- "add_standardized_nutrition_demographics"
-  
+
   phr_try({
-    
+
     # Validate dataset
     phr_validate_dataframe(
       .dataset,
@@ -713,13 +721,13 @@ add_standardized_nutrition_demographics <- function(
       hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
-    
+
     phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
       phr_txt("Dataset is empty.")
     )
-    
+
     # Validate age column
     phr_validate_columns(
       .dataset,
@@ -728,12 +736,12 @@ add_standardized_nutrition_demographics <- function(
       hint = phr_txt("Ensure age_years_col exists. Run add_standardized_age first."),
       soft = FALSE
     )
-    
+
     # Warn about overwriting existing columns
     output_cols <- c(
       "nutrition_child_under2", "nutrition_child_2to5", "nutrition_child_under5"
     )
-    
+
     for (col in output_cols) {
       if (col %in% names(.dataset)) {
         phr_warning(
@@ -742,7 +750,7 @@ add_standardized_nutrition_demographics <- function(
         )
       }
     }
-    
+
     # Add age-based columns
     .dataset <- .dataset %>%
       dplyr::mutate(
@@ -751,8 +759,8 @@ add_standardized_nutrition_demographics <- function(
           1, 0
         ),
         nutrition_child_2to5 = dplyr::if_else(
-          !is.na(.data[[age_years_col]]) & 
-            .data[[age_years_col]] >= 2 & 
+          !is.na(.data[[age_years_col]]) &
+            .data[[age_years_col]] >= 2 &
             .data[[age_years_col]] < 5,
           1, 0
         ),
@@ -761,13 +769,13 @@ add_standardized_nutrition_demographics <- function(
           1, 0
         )
       )
-    
+
     phr_message(
       origin = origin,
       message = phr_txt("Standardized nutrition demographic columns added successfully.")
     )
-    
+
     return(.dataset)
-    
+
   }, on_error = "abort", origin = origin, hint = phr_txt("Ensure age column is valid."))
 }

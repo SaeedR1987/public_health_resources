@@ -240,6 +240,14 @@ good_deaths <- DeathIndividualData$new(
 
   nut_analytics$variable_map
 
+  nut_analytics$data_analysis_plan$log_df
+
+  nut_analytics$run_analysis()
+
+  View(nut_analytics$analysis_results$survey_design)
+
+  nut_analytics$run_quality_checks()
+
   # Test 2: Roster Data ####
 
 

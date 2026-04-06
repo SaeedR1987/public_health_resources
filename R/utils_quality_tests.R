@@ -1040,16 +1040,16 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 #' counts to an expected male:female ratio (default 1:1).
 #'
 #' @param data Data frame containing the sex column
-#' @param sex_col Character scalar. Name of the sex column in `data`
-#' @param male_val Value in `sex_col` that indicates "male"
-#' @param female_val Value in `sex_col` that indicates "female"
+#' @param variables Character scalar. Name of the sex column in `data`
+#' @param male_val Value in `variables` that indicates "male"
+#' @param female_val Value in `variables` that indicates "female"
 #' @param expected_ratio_val Single positive numeric giving expected male:female ratio.
 #'   Default 1 (i.e., 1:1).
 #' @return List with statistic (chi-squared value) and p-value
 #' @export
 quality_test_sexratio <- function(
     data,
-    sex_col,
+    variables,
     male_val,
     female_val,
     expected_ratio_val = 1
@@ -1057,14 +1057,14 @@ quality_test_sexratio <- function(
 
   phr_try({
 
-    if (!is.character(sex_col) || length(sex_col) != 1L) {
+    if (!is.character(variables) || length(variables) != 1L) {
       phr_error(
         origin = "quality_test_sexratio",
-        message = "`sex_col` must be a single character column name"
+        message = "`variables` must be a single character column name"
       )
     }
 
-    if (!sex_col %in% names(data)) {
+    if (!variables %in% names(data)) {
       phr_warning(
         origin = "quality_test_sexratio",
         message = "Sex column not found in data"
@@ -1093,7 +1093,7 @@ quality_test_sexratio <- function(
       )
     }
 
-    s <- data[[sex_col]]
+    s <- data[[variables]]
     s <- s[!is.na(s)]
 
     if (length(s) < 5) {
@@ -1162,32 +1162,32 @@ quality_test_sexratio <- function(
 #' in two different age-group indicator columns to an expected ratio (default 1:1).
 #'
 #' @param data Data frame containing the indicator columns
-#' @param age_group_col1 Character scalar. Name of the first age-group indicator column
-#' @param age_group_col2 Character scalar. Name of the second age-group indicator column
+#' @param variables Character vector of length 2. Names of the two age-group indicator columns in `data`
 #' @param yes_val Value indicating "yes" in the indicator columns. Default 1.
 #' @param no_val Value indicating "no" in the indicator columns. Default 0.
 #' @param expected_ratio_val Single positive numeric giving expected ratio of
-#'   age_group_col1:age_group_col2. Default 1 (i.e., 1:1).
+#'   variables[1]:variables[2]. Default 1 (i.e., 1:1).
 #' @return List with statistic (chi-squared value) and p-value
 #' @export
 quality_test_ageratio <- function(
     data,
-    age_group_col1,
-    age_group_col2,
+    variables,
     yes_val = 1,
     no_val = 0,
-    expected_ratio_val = 1
+    expected_ratio_val = 0.85
 ) {
 
   phr_try({
 
-    if (!is.character(age_group_col1) || length(age_group_col1) != 1L ||
-        !is.character(age_group_col2) || length(age_group_col2) != 1L) {
+    if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
         origin = "quality_test_ageratio",
-        message = "`age_group_col1` and `age_group_col2` must each be a single character column name"
+        message = "`variables` must be a character vector of length 2 (two column names)"
       )
     }
+
+    age_group_col1 <- variables[[1]]
+    age_group_col2 <- variables[[2]]
 
     if (!age_group_col1 %in% names(data) || !age_group_col2 %in% names(data)) {
       phr_warning(
@@ -1200,7 +1200,7 @@ quality_test_ageratio <- function(
     if (identical(age_group_col1, age_group_col2)) {
       phr_error(
         origin = "quality_test_ageratio",
-        message = "`age_group_col1` and `age_group_col2` must be different columns"
+        message = "The two column names in `variables` must be different"
       )
     }
 
@@ -1302,21 +1302,21 @@ quality_test_ageratio <- function(
 #' Compute digit preference score for a numeric MUAC (cm) variable using nipnTK.
 #'
 #' @param data Data frame containing the MUAC variable
-#' @param variable Character scalar. Name of the MUAC (cm) column in `data`
+#' @param variables Character scalar. Name of the MUAC (cm) column in `data`
 #' @return List with statistic (digit preference score) and p_value (NA_real_)
 #' @export
-quality_test_digit_preference <- function(data, variable) {
+quality_test_digit_preference <- function(data, variables) {
 
   phr_try({
 
-    if (!is.character(variable) || length(variable) != 1L) {
+    if (!is.character(variables) || length(variables) != 1L) {
       phr_error(
         origin = "quality_test_digit_preference",
-        message = "`variable` must be a single character column name"
+        message = "`variables` must be a single character column name"
       )
     }
 
-    if (!variable %in% names(data)) {
+    if (!variables %in% names(data)) {
       phr_warning(
         origin = "quality_test_digit_preference",
         message = "Variable not found in data"
@@ -1324,7 +1324,7 @@ quality_test_digit_preference <- function(data, variable) {
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    x <- data[[variable]]
+    x <- data[[variables]]
 
     # Remove missing values
     x <- x[!is.na(x)]
@@ -1361,21 +1361,21 @@ quality_test_digit_preference <- function(data, variable) {
 #' Return the number of non-missing (non-NA) values in a specified column.
 #'
 #' @param data Data frame
-#' @param count_col Character scalar. Name of the column to count non-missing values for
+#' @param variables Character scalar. Name of the column to count non-missing values for
 #' @return List with statistic (non-missing count) and p_value (NA_real_)
 #' @export
-quality_test_count <- function(data, count_col) {
+quality_test_count <- function(data, variables) {
 
   phr_try({
 
-    if (!is.character(count_col) || length(count_col) != 1L) {
+    if (!is.character(variables) || length(variables) != 1L) {
       phr_error(
         origin = "quality_test_count",
-        message = "`count_col` must be a single character column name"
+        message = "`variables` must be a single character column name"
       )
     }
 
-    if (!count_col %in% names(data)) {
+    if (!variables %in% names(data)) {
       phr_warning(
         origin = "quality_test_count",
         message = "Column not found in data"
@@ -1383,7 +1383,7 @@ quality_test_count <- function(data, count_col) {
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    x <- data[[count_col]]
+    x <- data[[variables]]
     n_non_missing <- sum(!is.na(x))
 
     return(list(
