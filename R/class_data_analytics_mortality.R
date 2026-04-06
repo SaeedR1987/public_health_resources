@@ -25,11 +25,15 @@
 #' @field linked_ind_roster_data_hash Hash of linked roster data
 #' @field linked_ind_roster_variable_map Variable mappings for linked roster data
 #' @field linked_ind_roster_value_map Value mappings for linked roster data
+#' @field linked_ind_roster_variable_label Variable labels for linked roster data
+#' @field linked_ind_roster_value_label Value labels for linked roster data
 #' @field linked_ind_deaths_data Optional linked deaths dataframe
 #' @field linked_ind_deaths_data_stage_name Name of linked deaths data stage
 #' @field linked_ind_deaths_data_hash Hash of linked deaths data
 #' @field linked_ind_deaths_variable_map Variable mappings for linked deaths data
 #' @field linked_ind_deaths_value_map Value mappings for linked deaths data
+#' @field linked_ind_deaths_variable_label Variable labels for linked deaths data
+#' @field linked_ind_deaths_value_label Value labels for linked deaths data
 #' @field analysis_schema_roster Analysis schema for linked roster dataset
 #' @field analysis_schema_deaths Analysis schema for linked deaths dataset
 #' @field outputs_schema_roster Outputs schema for linked roster dataset
@@ -49,6 +53,8 @@ MortalityDataAnalytics <- R6::R6Class(
     linked_ind_roster_data_hash = NULL,
     linked_ind_roster_variable_map = NULL,
     linked_ind_roster_value_map = NULL,
+    linked_ind_roster_variable_label = NULL,
+    linked_ind_roster_value_label = NULL,
 
     # Fields for linked deaths data
     linked_ind_deaths_data = NULL,
@@ -56,6 +62,8 @@ MortalityDataAnalytics <- R6::R6Class(
     linked_ind_deaths_data_hash = NULL,
     linked_ind_deaths_variable_map = NULL,
     linked_ind_deaths_value_map = NULL,
+    linked_ind_deaths_variable_label = NULL,
+    linked_ind_deaths_value_label = NULL,
 
     # Per-dataset schemas for roster and deaths
     analysis_schema_roster = NULL,
@@ -82,11 +90,15 @@ MortalityDataAnalytics <- R6::R6Class(
     #' @param linked_ind_roster_data_hash Hash of linked roster data
     #' @param linked_ind_roster_variable_map Variable mappings for linked roster data
     #' @param linked_ind_roster_value_map Value mappings for linked roster data
+    #' @param linked_ind_roster_variable_label Variable labels for linked roster data
+    #' @param linked_ind_roster_value_label Value labels for linked roster data
     #' @param linked_ind_deaths_data Optional linked deaths dataframe
     #' @param linked_ind_deaths_data_stage_name Name of linked deaths data stage
     #' @param linked_ind_deaths_data_hash Hash of linked deaths data
     #' @param linked_ind_deaths_variable_map Variable mappings for linked deaths data
     #' @param linked_ind_deaths_value_map Value mappings for linked deaths data
+    #' @param linked_ind_deaths_variable_label Variable labels for linked deaths data
+    #' @param linked_ind_deaths_value_label Value labels for linked deaths data
     #' @return A new MortalityDataAnalytics object
     initialize = function(data,
                           dap = NULL,
@@ -104,11 +116,15 @@ MortalityDataAnalytics <- R6::R6Class(
                           linked_ind_roster_data_hash = NULL,
                           linked_ind_roster_variable_map = NULL,
                           linked_ind_roster_value_map = NULL,
+                          linked_ind_roster_variable_label = NULL,
+                          linked_ind_roster_value_label = NULL,
                           linked_ind_deaths_data = NULL,
                           linked_ind_deaths_data_stage_name = NULL,
                           linked_ind_deaths_data_hash = NULL,
                           linked_ind_deaths_variable_map = NULL,
-                          linked_ind_deaths_value_map = NULL) {
+                          linked_ind_deaths_value_map = NULL,
+                          linked_ind_deaths_variable_label = NULL,
+                          linked_ind_deaths_value_label = NULL) {
 
       origin <- paste0(dataset_name, "$initialize")
 
@@ -138,12 +154,63 @@ MortalityDataAnalytics <- R6::R6Class(
       self$linked_ind_roster_data_hash         <- linked_ind_roster_data_hash
       self$linked_ind_roster_variable_map      <- linked_ind_roster_variable_map
       self$linked_ind_roster_value_map         <- linked_ind_roster_value_map
+      self$linked_ind_roster_variable_label    <- linked_ind_roster_variable_label
+      self$linked_ind_roster_value_label       <- linked_ind_roster_value_label
 
       self$linked_ind_deaths_data              <- linked_ind_deaths_data
       self$linked_ind_deaths_data_stage_name   <- linked_ind_deaths_data_stage_name
       self$linked_ind_deaths_data_hash         <- linked_ind_deaths_data_hash
       self$linked_ind_deaths_variable_map      <- linked_ind_deaths_variable_map
       self$linked_ind_deaths_value_map         <- linked_ind_deaths_value_map
+      self$linked_ind_deaths_variable_label    <- linked_ind_deaths_variable_label
+      self$linked_ind_deaths_value_label       <- linked_ind_deaths_value_label
+
+      # Safely merge linked roster and deaths variable/value maps and labels into
+      # the consolidated maps set by super$initialize. Household data takes precedence:
+      # only keys absent from the household maps are added from linked datasets.
+      for (linked_maps in list(
+        list(
+          variable_map   = linked_ind_roster_variable_map,
+          value_map      = linked_ind_roster_value_map,
+          variable_label = linked_ind_roster_variable_label,
+          value_label    = linked_ind_roster_value_label
+        ),
+        list(
+          variable_map   = linked_ind_deaths_variable_map,
+          value_map      = linked_ind_deaths_value_map,
+          variable_label = linked_ind_deaths_variable_label,
+          value_label    = linked_ind_deaths_value_label
+        )
+      )) {
+        if (!is.null(linked_maps$variable_map)) {
+          for (key in names(linked_maps$variable_map)) {
+            if (is.null(self$variable_map[[key]])) {
+              self$variable_map[[key]] <- linked_maps$variable_map[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$value_map)) {
+          for (key in names(linked_maps$value_map)) {
+            if (is.null(self$value_map[[key]])) {
+              self$value_map[[key]] <- linked_maps$value_map[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$variable_label)) {
+          for (key in names(linked_maps$variable_label)) {
+            if (is.null(self$variable_label[[key]])) {
+              self$variable_label[[key]] <- linked_maps$variable_label[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$value_label)) {
+          for (key in names(linked_maps$value_label)) {
+            if (is.null(self$value_label[[key]])) {
+              self$value_label[[key]] <- linked_maps$value_label[[key]]
+            }
+          }
+        }
+      }
 
       # Load per-dataset schemas for roster and deaths
       self$analysis_schema_roster <- self$default_analysis_schema_roster()

@@ -715,7 +715,12 @@ DataAnalytics <- R6::R6Class(
 
         test_args   <- list(data = self$data, variables = available_vars)
         if (!is.null(test_params)) {
-          test_args <- c(test_args, test_params)
+          test_args <- private$.resolve_output_params(
+            func_args           = test_args,
+            test_params         = test_params,
+            out_name            = check$check_name %||% "unknown",
+            skip_results_table  = TRUE
+          )
         }
 
         test_result <- do.call(test_function, test_args)
