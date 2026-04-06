@@ -871,16 +871,20 @@ HouseholdData <- R6::R6Class(
               stage_name = NULL,
               hash = NULL,
               variable_map = NULL,
-              value_map = NULL
+              value_map = NULL,
+              variable_label = NULL,
+              value_label = NULL
             ))
           }
           obj <- linked_obj$object
           list(
-            data         = obj$get_data(stage),
-            stage_name   = stage,
-            hash         = obj$get_hash(stage),
-            variable_map = obj$variable_map,
-            value_map    = obj$value_map
+            data           = obj$get_data(stage),
+            stage_name     = stage,
+            hash           = obj$get_hash(stage),
+            variable_map   = obj$variable_map,
+            value_map      = obj$value_map,
+            variable_label = obj$variable_label,
+            value_label    = obj$value_label
           )
         }
 
@@ -1044,16 +1048,20 @@ HouseholdData <- R6::R6Class(
               stage_name = NULL,
               hash = NULL,
               variable_map = NULL,
-              value_map = NULL
+              value_map = NULL,
+              variable_label = NULL,
+              value_label = NULL
             ))
           }
           obj <- linked_obj$object
           list(
-            data         = obj$get_data(stage),
-            stage_name   = stage,
-            hash         = obj$get_hash(stage),
-            variable_map = obj$variable_map,
-            value_map    = obj$value_map
+            data           = obj$get_data(stage),
+            stage_name     = stage,
+            hash           = obj$get_hash(stage),
+            variable_map   = obj$variable_map,
+            value_map      = obj$value_map,
+            variable_label = obj$variable_label,
+            value_label    = obj$value_label
           )
         }
 
@@ -1221,16 +1229,19 @@ HouseholdData <- R6::R6Class(
           if (is.null(linked_obj)) {
             return(list(
               data = NULL, stage_name = NULL, hash = NULL,
-              variable_map = NULL, value_map = NULL
+              variable_map = NULL, value_map = NULL,
+              variable_label = NULL, value_label = NULL
             ))
           }
           obj <- linked_obj$object
           list(
-            data         = obj$get_data(stage),
-            stage_name   = stage,
-            hash         = obj$get_hash(stage),
-            variable_map = obj$variable_map,
-            value_map    = obj$value_map
+            data           = obj$get_data(stage),
+            stage_name     = stage,
+            hash           = obj$get_hash(stage),
+            variable_map   = obj$variable_map,
+            value_map      = obj$value_map,
+            variable_label = obj$variable_label,
+            value_label    = obj$value_label
           )
         }
 
@@ -1314,11 +1325,15 @@ HouseholdData <- R6::R6Class(
             linked_ind_roster_data_hash         = if (!is.null(linked_info_roster)) linked_info_roster$hash else NULL,
             linked_ind_roster_variable_map      = if (!is.null(linked_info_roster)) linked_info_roster$variable_map else NULL,
             linked_ind_roster_value_map         = if (!is.null(linked_info_roster)) linked_info_roster$value_map else NULL,
+            linked_ind_roster_variable_label    = if (!is.null(linked_info_roster)) linked_info_roster$variable_label else NULL,
+            linked_ind_roster_value_label       = if (!is.null(linked_info_roster)) linked_info_roster$value_label else NULL,
             linked_ind_deaths_data              = if (!is.null(linked_info_deaths)) linked_info_deaths$data else NULL,
             linked_ind_deaths_data_stage_name   = if (!is.null(linked_info_deaths)) linked_info_deaths$stage_name else NULL,
             linked_ind_deaths_data_hash         = if (!is.null(linked_info_deaths)) linked_info_deaths$hash else NULL,
             linked_ind_deaths_variable_map      = if (!is.null(linked_info_deaths)) linked_info_deaths$variable_map else NULL,
-            linked_ind_deaths_value_map         = if (!is.null(linked_info_deaths)) linked_info_deaths$value_map else NULL
+            linked_ind_deaths_value_map         = if (!is.null(linked_info_deaths)) linked_info_deaths$value_map else NULL,
+            linked_ind_deaths_variable_label    = if (!is.null(linked_info_deaths)) linked_info_deaths$variable_label else NULL,
+            linked_ind_deaths_value_label       = if (!is.null(linked_info_deaths)) linked_info_deaths$value_label else NULL
           ),
           "health" = HealthDataAnalytics$new(
             data            = df,
