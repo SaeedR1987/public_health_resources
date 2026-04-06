@@ -862,6 +862,8 @@ HouseholdData <- R6::R6Class(
         value_map <- self$value_map
 
         # Helper function to extract linked data info
+        # self$linked_objects stores wrapper lists: list(object = <Data obj>, by_self_role, by_other_role)
+        # so we must access $object to reach the actual Data object's methods/fields.
         get_linked_data_info <- function(linked_obj, stage) {
           if (is.null(linked_obj)) {
             return(list(
@@ -872,21 +874,22 @@ HouseholdData <- R6::R6Class(
               value_map = NULL
             ))
           }
+          obj <- linked_obj$object
           list(
-            data = linked_obj$get_data(stage),
-            stage_name = stage,
-            hash = linked_obj$get_hash(stage),
-            variable_map = linked_obj$variable_map,
-            value_map = linked_obj$value_map
+            data         = obj$get_data(stage),
+            stage_name   = stage,
+            hash         = obj$get_hash(stage),
+            variable_map = obj$variable_map,
+            value_map    = obj$value_map
           )
         }
 
         # Get linked dataset info based on type
         linked_info_containers <- NULL
-        linked_info_roster <- NULL
-        linked_info_deaths <- NULL
-        linked_info_health <- NULL
-        
+        linked_info_roster     <- NULL
+        linked_info_deaths     <- NULL
+        linked_info_health     <- NULL
+
         if (type == "wash" && !is.null(self$linked_objects$water_containers)) {
           linked_info_containers <- get_linked_data_info(self$linked_objects$water_containers, stage)
         } else if (type == "mortality") {
@@ -1032,6 +1035,8 @@ HouseholdData <- R6::R6Class(
         value_map <- self$value_map
 
         # Helper function to extract linked data info
+        # self$linked_objects stores wrapper lists: list(object = <Data obj>, by_self_role, by_other_role)
+        # so we must access $object to reach the actual Data object's methods/fields.
         get_linked_data_info <- function(linked_obj, stage) {
           if (is.null(linked_obj)) {
             return(list(
@@ -1042,21 +1047,22 @@ HouseholdData <- R6::R6Class(
               value_map = NULL
             ))
           }
+          obj <- linked_obj$object
           list(
-            data = linked_obj$get_data(stage),
-            stage_name = stage,
-            hash = linked_obj$get_hash(stage),
-            variable_map = linked_obj$variable_map,
-            value_map = linked_obj$value_map
+            data         = obj$get_data(stage),
+            stage_name   = stage,
+            hash         = obj$get_hash(stage),
+            variable_map = obj$variable_map,
+            value_map    = obj$value_map
           )
         }
 
         # Get linked dataset info based on type
         linked_info_containers <- NULL
-        linked_info_health <- NULL
-        linked_info_roster <- NULL
-        linked_info_deaths <- NULL
-        
+        linked_info_health     <- NULL
+        linked_info_roster     <- NULL
+        linked_info_deaths     <- NULL
+
         if (type == "wash" && !is.null(self$linked_objects$water_containers)) {
           linked_info_containers <- get_linked_data_info(self$linked_objects$water_containers, stage)
         } else if (type == "health" && !is.null(self$linked_objects$health)) {
@@ -1209,6 +1215,8 @@ HouseholdData <- R6::R6Class(
         value_map    <- self$value_map
 
         # Helper to extract linked data info
+        # self$linked_objects stores wrapper lists: list(object = <Data obj>, by_self_role, by_other_role)
+        # so we must access $object to reach the actual Data object's methods/fields.
         get_linked_data_info <- function(linked_obj, stage) {
           if (is.null(linked_obj)) {
             return(list(
@@ -1216,12 +1224,13 @@ HouseholdData <- R6::R6Class(
               variable_map = NULL, value_map = NULL
             ))
           }
+          obj <- linked_obj$object
           list(
-            data         = linked_obj$get_data(stage),
+            data         = obj$get_data(stage),
             stage_name   = stage,
-            hash         = linked_obj$get_hash(stage),
-            variable_map = linked_obj$variable_map,
-            value_map    = linked_obj$value_map
+            hash         = obj$get_hash(stage),
+            variable_map = obj$variable_map,
+            value_map    = obj$value_map
           )
         }
 
