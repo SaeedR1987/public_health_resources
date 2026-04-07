@@ -38,6 +38,8 @@
 #' @field analysis_schema_deaths Analysis schema for linked deaths dataset
 #' @field outputs_schema_roster Outputs schema for linked roster dataset
 #' @field outputs_schema_deaths Outputs schema for linked deaths dataset
+#' @field data_analysis_plan_roster Data analysis plan for linked roster dataset
+#' @field data_analysis_plan_deaths Data analysis plan for linked deaths dataset
 #'
 #' @seealso [DataAnalytics], [MortalityDataQuality], [MortalityAnalysis]
 #' @export
@@ -70,6 +72,10 @@ MortalityDataAnalytics <- R6::R6Class(
     analysis_schema_deaths = NULL,
     outputs_schema_roster  = NULL,
     outputs_schema_deaths  = NULL,
+
+    # Per-dataset data analysis plans
+    data_analysis_plan_roster = NULL,
+    data_analysis_plan_deaths = NULL,
 
     #' @description
     #' Initialize a new MortalityDataAnalytics object
@@ -135,6 +141,61 @@ MortalityDataAnalytics <- R6::R6Class(
         )
       }
 
+      # Pre-merge linked roster and deaths variable/value maps and labels into the
+      # household maps BEFORE calling super$initialize. This ensures that when
+      # super$initialize() calls generate_dap_from_schema(), self$variable_map
+      # already contains all canonical-name mappings, including those for mortality
+      # analysis indicators that may be defined in a linked dataset's variable_map.
+      # Household data takes precedence: keys already present are never overwritten.
+      merged_variable_map   <- variable_map   %||% list()
+      merged_value_map      <- value_map      %||% list()
+      merged_variable_label <- variable_label %||% list()
+      merged_value_label    <- value_label    %||% list()
+
+      for (linked_maps in list(
+        list(
+          variable_map   = linked_ind_roster_variable_map,
+          value_map      = linked_ind_roster_value_map,
+          variable_label = linked_ind_roster_variable_label,
+          value_label    = linked_ind_roster_value_label
+        ),
+        list(
+          variable_map   = linked_ind_deaths_variable_map,
+          value_map      = linked_ind_deaths_value_map,
+          variable_label = linked_ind_deaths_variable_label,
+          value_label    = linked_ind_deaths_value_label
+        )
+      )) {
+        if (!is.null(linked_maps$variable_map)) {
+          for (key in names(linked_maps$variable_map)) {
+            if (is.null(merged_variable_map[[key]])) {
+              merged_variable_map[[key]] <- linked_maps$variable_map[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$value_map)) {
+          for (key in names(linked_maps$value_map)) {
+            if (is.null(merged_value_map[[key]])) {
+              merged_value_map[[key]] <- linked_maps$value_map[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$variable_label)) {
+          for (key in names(linked_maps$variable_label)) {
+            if (is.null(merged_variable_label[[key]])) {
+              merged_variable_label[[key]] <- linked_maps$variable_label[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$value_label)) {
+          for (key in names(linked_maps$value_label)) {
+            if (is.null(merged_value_label[[key]])) {
+              merged_value_label[[key]] <- linked_maps$value_label[[key]]
+            }
+          }
+        }
+      }
+
       super$initialize(
         data = data,
         dap = dap,
@@ -142,10 +203,10 @@ MortalityDataAnalytics <- R6::R6Class(
         dataset_name = dataset_name,
         data_stage_name = data_stage_name,
         data_hash = data_hash,
-        variable_map = variable_map,
-        value_map = value_map,
-        variable_label = variable_label,
-        value_label = value_label,
+        variable_map = merged_variable_map,
+        value_map = merged_value_map,
+        variable_label = merged_variable_label,
+        value_label = merged_value_label,
         quality_schema = quality_schema
       )
 
@@ -165,58 +226,29 @@ MortalityDataAnalytics <- R6::R6Class(
       self$linked_ind_deaths_variable_label    <- linked_ind_deaths_variable_label
       self$linked_ind_deaths_value_label       <- linked_ind_deaths_value_label
 
-      # Safely merge linked roster and deaths variable/value maps and labels into
-      # the consolidated maps set by super$initialize. Household data takes precedence:
-      # only keys absent from the household maps are added from linked datasets.
-      for (linked_maps in list(
-        list(
-          variable_map   = linked_ind_roster_variable_map,
-          value_map      = linked_ind_roster_value_map,
-          variable_label = linked_ind_roster_variable_label,
-          value_label    = linked_ind_roster_value_label
-        ),
-        list(
-          variable_map   = linked_ind_deaths_variable_map,
-          value_map      = linked_ind_deaths_value_map,
-          variable_label = linked_ind_deaths_variable_label,
-          value_label    = linked_ind_deaths_value_label
-        )
-      )) {
-        if (!is.null(linked_maps$variable_map)) {
-          for (key in names(linked_maps$variable_map)) {
-            if (is.null(self$variable_map[[key]])) {
-              self$variable_map[[key]] <- linked_maps$variable_map[[key]]
-            }
-          }
-        }
-        if (!is.null(linked_maps$value_map)) {
-          for (key in names(linked_maps$value_map)) {
-            if (is.null(self$value_map[[key]])) {
-              self$value_map[[key]] <- linked_maps$value_map[[key]]
-            }
-          }
-        }
-        if (!is.null(linked_maps$variable_label)) {
-          for (key in names(linked_maps$variable_label)) {
-            if (is.null(self$variable_label[[key]])) {
-              self$variable_label[[key]] <- linked_maps$variable_label[[key]]
-            }
-          }
-        }
-        if (!is.null(linked_maps$value_label)) {
-          for (key in names(linked_maps$value_label)) {
-            if (is.null(self$value_label[[key]])) {
-              self$value_label[[key]] <- linked_maps$value_label[[key]]
-            }
-          }
-        }
-      }
-
       # Load per-dataset schemas for roster and deaths
       self$analysis_schema_roster <- self$default_analysis_schema_roster()
       self$analysis_schema_deaths <- self$default_analysis_schema_deaths()
       self$outputs_schema_roster  <- self$default_outputs_schema_roster()
       self$outputs_schema_deaths  <- self$default_outputs_schema_deaths()
+
+      # Generate per-dataset analysis plans for roster and deaths
+      self$data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
+        log_df   = NULL,
+        log_name = "Quant Data Analysis Plan (Roster)"
+      )
+      self$data_analysis_plan_deaths <- QuantDataAnalysisPlanLog$new(
+        log_df   = NULL,
+        log_name = "Quant Data Analysis Plan (Deaths)"
+      )
+
+      if (!is.null(linked_ind_roster_data)) {
+        self$generate_dap_from_schema_roster()
+      }
+
+      if (!is.null(linked_ind_deaths_data)) {
+        self$generate_dap_from_schema_deaths()
+      }
 
       msg_parts <- c()
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
@@ -462,6 +494,106 @@ MortalityDataAnalytics <- R6::R6Class(
     },
 
     #' @description
+    #' Generate the data analysis plan for the linked roster dataset.
+    #'
+    #' Uses \code{analysis_schema_roster} and \code{linked_ind_roster_variable_map}
+    #' (falling back to the merged \code{variable_map}) to translate canonical variable
+    #' names to actual column names present in \code{linked_ind_roster_data}, then
+    #' stores the resulting plan in \code{data_analysis_plan_roster}.
+    #'
+    #' @return Invisibly returns self.
+    generate_dap_from_schema_roster = function() {
+      origin <- paste0(self$dataset_name, "$generate_dap_from_schema_roster")
+      phr_message(origin, "Generating data_analysis_plan_roster from analysis_schema_roster...")
+
+      phr_try({
+
+        if (is.null(self$linked_ind_roster_data) || nrow(self$linked_ind_roster_data) == 0) {
+          phr_warning(origin, "linked_ind_roster_data is not available; skipping roster DAP generation.")
+          return(invisible(self))
+        }
+
+        if (is.null(self$analysis_schema_roster) || nrow(self$analysis_schema_roster) == 0) {
+          phr_warning(origin, "analysis_schema_roster is empty; data_analysis_plan_roster will remain empty.")
+          return(invisible(self))
+        }
+
+        result <- private$.build_dap_from_schema(
+          analysis_schema = self$analysis_schema_roster,
+          variable_map    = self$linked_ind_roster_variable_map %||% self$variable_map %||% list(),
+          available_vars  = names(self$linked_ind_roster_data),
+          dataset_label   = "roster"
+        )
+
+        self$data_analysis_plan_roster$log_df <- result$dap_df
+
+        if (nrow(result$issues) > 0) {
+          self$analysis_plan_issue_log <- dplyr::bind_rows(
+            self$analysis_plan_issue_log,
+            result$issues
+          )
+          phr_warning(origin, paste0(nrow(result$issues), " roster indicators skipped due to missing variables."))
+        } else {
+          phr_message(origin, "All roster schema indicators found and added to data_analysis_plan_roster.")
+        }
+
+      }, on_error = "warn", origin = origin,
+         hint = "Ensure linked_ind_roster_data has the expected columns and analysis_schema_roster is valid.")
+
+      invisible(self)
+    },
+
+    #' @description
+    #' Generate the data analysis plan for the linked deaths dataset.
+    #'
+    #' Uses \code{analysis_schema_deaths} and \code{linked_ind_deaths_variable_map}
+    #' (falling back to the merged \code{variable_map}) to translate canonical variable
+    #' names to actual column names present in \code{linked_ind_deaths_data}, then
+    #' stores the resulting plan in \code{data_analysis_plan_deaths}.
+    #'
+    #' @return Invisibly returns self.
+    generate_dap_from_schema_deaths = function() {
+      origin <- paste0(self$dataset_name, "$generate_dap_from_schema_deaths")
+      phr_message(origin, "Generating data_analysis_plan_deaths from analysis_schema_deaths...")
+
+      phr_try({
+
+        if (is.null(self$linked_ind_deaths_data) || nrow(self$linked_ind_deaths_data) == 0) {
+          phr_warning(origin, "linked_ind_deaths_data is not available; skipping deaths DAP generation.")
+          return(invisible(self))
+        }
+
+        if (is.null(self$analysis_schema_deaths) || nrow(self$analysis_schema_deaths) == 0) {
+          phr_warning(origin, "analysis_schema_deaths is empty; data_analysis_plan_deaths will remain empty.")
+          return(invisible(self))
+        }
+
+        result <- private$.build_dap_from_schema(
+          analysis_schema = self$analysis_schema_deaths,
+          variable_map    = self$linked_ind_deaths_variable_map %||% self$variable_map %||% list(),
+          available_vars  = names(self$linked_ind_deaths_data),
+          dataset_label   = "deaths"
+        )
+
+        self$data_analysis_plan_deaths$log_df <- result$dap_df
+
+        if (nrow(result$issues) > 0) {
+          self$analysis_plan_issue_log <- dplyr::bind_rows(
+            self$analysis_plan_issue_log,
+            result$issues
+          )
+          phr_warning(origin, paste0(nrow(result$issues), " deaths indicators skipped due to missing variables."))
+        } else {
+          phr_message(origin, "All deaths schema indicators found and added to data_analysis_plan_deaths.")
+        }
+
+      }, on_error = "warn", origin = origin,
+         hint = "Ensure linked_ind_deaths_data has the expected columns and analysis_schema_deaths is valid.")
+
+      invisible(self)
+    },
+
+    #' @description
     #' Run quantitative analysis for all available mortality datasets.
     #'
     #' Analysis is run independently for each available dataset:
@@ -470,10 +602,10 @@ MortalityDataAnalytics <- R6::R6Class(
     #'     survey design from the household data. Results stored in
     #'     \code{analysis_results$household}.}
     #'   \item{roster}{Run when \code{linked_ind_roster_data} is available and
-    #'     \code{analysis_schema_roster} contains at least one indicator. Results
+    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
     #'     stored in \code{analysis_results$roster}.}
     #'   \item{deaths}{Run when \code{linked_ind_deaths_data} is available and
-    #'     \code{analysis_schema_deaths} contains at least one indicator. Results
+    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
     #'     stored in \code{analysis_results$deaths}.}
     #' }
     #'
@@ -490,37 +622,75 @@ MortalityDataAnalytics <- R6::R6Class(
         self$analysis_results    <- list(household = household_results)
 
         # --- Roster analysis --------------------------------------------------
-        if (!is.null(self$linked_ind_roster_data) &&
-            !is.null(self$analysis_schema_roster) &&
-            nrow(self$analysis_schema_roster) > 0) {
+        roster_dap_rows <- private$.dap_row_count(self$data_analysis_plan_roster)
 
-          phr_message(origin, "Running analysis for linked roster data...")
-          roster_results <- private$.run_analysis_for_dataset(
-            data            = self$linked_ind_roster_data,
-            analysis_schema = self$analysis_schema_roster,
-            variable_map    = self$linked_ind_roster_variable_map %||% self$variable_map
+        if (!is.null(self$linked_ind_roster_data) && roster_dap_rows > 0L) {
+
+          phr_message(origin, "Running analysis for linked roster data using data_analysis_plan_roster...")
+
+          roster_survey <- private$.create_survey_design_for_dataset(
+            data         = self$linked_ind_roster_data,
+            variable_map = self$variable_map,
+            origin       = origin
           )
-          self$analysis_results[["roster"]] <- roster_results
+
+          if (!is.null(roster_survey)) {
+            roster_sd_results <- phr_try(
+              phr_calc_survey_from_plan(
+                design        = roster_survey,
+                analysis_plan = self$data_analysis_plan_roster$log_df
+              ),
+              on_error = "warn",
+              origin   = origin,
+              hint     = "Verify all variables exist in linked_ind_roster_data."
+            )
+            # survey_design carries the weighted/clustered design result; base carries
+            # the same result set. phr_calc_survey_from_plan returns a plain list so
+            # R's copy-on-modify semantics keep the two fields independent if mutated.
+            self$analysis_results[["roster"]] <- list(
+              survey_design = roster_sd_results,
+              base          = roster_sd_results
+            )
+          }
 
         } else if (!is.null(self$linked_ind_roster_data)) {
-          phr_message(origin, "Linked roster data present but analysis_schema_roster is empty. Skipping roster analysis.")
+          phr_message(origin, "Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis.")
         }
 
         # --- Deaths analysis --------------------------------------------------
-        if (!is.null(self$linked_ind_deaths_data) &&
-            !is.null(self$analysis_schema_deaths) &&
-            nrow(self$analysis_schema_deaths) > 0) {
+        deaths_dap_rows <- private$.dap_row_count(self$data_analysis_plan_deaths)
 
-          phr_message(origin, "Running analysis for linked deaths data...")
-          deaths_results <- private$.run_analysis_for_dataset(
-            data            = self$linked_ind_deaths_data,
-            analysis_schema = self$analysis_schema_deaths,
-            variable_map    = self$linked_ind_deaths_variable_map %||% self$variable_map
+        if (!is.null(self$linked_ind_deaths_data) && deaths_dap_rows > 0L) {
+
+          phr_message(origin, "Running analysis for linked deaths data using data_analysis_plan_deaths...")
+
+          deaths_survey <- private$.create_survey_design_for_dataset(
+            data         = self$linked_ind_deaths_data,
+            variable_map = self$variable_map,
+            origin       = origin
           )
-          self$analysis_results[["deaths"]] <- deaths_results
+
+          if (!is.null(deaths_survey)) {
+            deaths_sd_results <- phr_try(
+              phr_calc_survey_from_plan(
+                design        = deaths_survey,
+                analysis_plan = self$data_analysis_plan_deaths$log_df
+              ),
+              on_error = "warn",
+              origin   = origin,
+              hint     = "Verify all variables exist in linked_ind_deaths_data."
+            )
+            # survey_design carries the weighted/clustered design result; base carries
+            # the same result set. phr_calc_survey_from_plan returns a plain list so
+            # R's copy-on-modify semantics keep the two fields independent if mutated.
+            self$analysis_results[["deaths"]] <- list(
+              survey_design = deaths_sd_results,
+              base          = deaths_sd_results
+            )
+          }
 
         } else if (!is.null(self$linked_ind_deaths_data)) {
-          phr_message(origin, "Linked deaths data present but analysis_schema_deaths is empty. Skipping deaths analysis.")
+          phr_message(origin, "Linked deaths data present but data_analysis_plan_deaths is empty. Skipping deaths analysis.")
         }
 
         phr_message(
@@ -613,6 +783,155 @@ MortalityDataAnalytics <- R6::R6Class(
   ),
 
   private = list(
+
+    #' Return the number of rows in a QuantDataAnalysisPlanLog's log_df, or 0L.
+    #'
+    #' @param dap A QuantDataAnalysisPlanLog object (or NULL).
+    #' @return Integer row count, or 0L when dap or its log_df is NULL.
+    .dap_row_count = function(dap) {
+      if (!is.null(dap) && !is.null(dap$log_df)) nrow(dap$log_df) else 0L
+    },
+
+    #' Create a proper survey design for an arbitrary data frame using variable_map.
+    #'
+    #' Applies the same logic as \code{create_survey_design()} (which operates on
+    #' \code{self$data} and \code{self$variable_map}) but accepts any data frame and
+    #' variable map. Reads \code{cluster_id_numeric} / \code{cluster_id},
+    #' \code{weight}, \code{stratum}, and \code{fpc} from \code{variable_map} and
+    #' builds an \code{srvyr} survey design accordingly. Falls back to a simple
+    #' random sample (\code{ids = 1}) when none of those columns are present.
+    #'
+    #' @param data A data frame for the linked dataset.
+    #' @param variable_map Named list mapping canonical names to actual column names.
+    #' @param origin Character; caller label used in log/warning messages.
+    #' @return An \code{srvyr} survey design object, or NULL on failure.
+    .create_survey_design_for_dataset = function(data, variable_map, origin = NULL) {
+
+      origin <- origin %||% paste0(self$dataset_name, "$.create_survey_design_for_dataset")
+
+      if (is.null(data) || nrow(data) == 0) {
+        phr_warning(origin, "No data available to create survey design for linked dataset.")
+        return(NULL)
+      }
+
+      vm        <- variable_map %||% list()
+      data_cols <- names(data)
+
+      cluster_col <- vm[["cluster_id_numeric"]]
+      if (is.null(cluster_col) || !cluster_col %in% data_cols) {
+        cluster_col <- vm[["cluster_id"]]
+      }
+      if (is.null(cluster_col) || !cluster_col %in% data_cols) {
+        cluster_col <- NULL
+      }
+
+      weight_col <- vm[["weight"]]
+      if (is.null(weight_col) || !weight_col %in% data_cols) weight_col <- NULL
+
+      strata_col <- vm[["stratum"]]
+      if (is.null(strata_col) || !strata_col %in% data_cols) strata_col <- NULL
+
+      fpc_col    <- vm[["fpc"]]
+      if (is.null(fpc_col) || !fpc_col %in% data_cols) fpc_col <- NULL
+
+      if (is.null(cluster_col)) {
+        phr_message(origin, "No cluster column found for linked dataset; using ids = 1 (simple random sample design).")
+      }
+
+      ids_sym    <- if (!is.null(cluster_col)) rlang::sym(cluster_col) else 1
+      strata_sym <- if (!is.null(strata_col))  rlang::sym(strata_col)  else NULL
+      weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
+      fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
+
+      design <- phr_try(
+        srvyr::as_survey_design(
+          .data   = data,
+          ids     = !!ids_sym,
+          strata  = !!strata_sym,
+          weights = !!weight_sym,
+          fpc     = !!fpc_sym,
+          nest    = TRUE
+        ),
+        on_error = "warn",
+        origin   = origin,
+        hint     = "Check that cluster_id_numeric (or cluster_id) and weight columns contain valid data in the linked dataset."
+      )
+
+      if (!is.null(design)) {
+        phr_message(origin, "Survey design created successfully for linked dataset.")
+      }
+
+      design
+    },
+
+    #' Build a DAP tibble from an analysis schema, resolving canonical variable names.
+    #'
+    #' Translates each \code{var_name} and \code{denom_var} in \code{analysis_schema}
+    #' through \code{variable_map}, then keeps only indicators whose resolved columns
+    #' are present in \code{available_vars}.
+    #'
+    #' @param analysis_schema A tibble with analysis schema columns.
+    #' @param variable_map Named list mapping canonical names to actual column names.
+    #' @param available_vars Character vector of column names available in the target dataset.
+    #' @param dataset_label Character label used in the returned issues tibble (e.g. "roster").
+    #' @return A named list with elements \code{dap_df} (tibble) and \code{issues} (tibble).
+    .build_dap_from_schema = function(analysis_schema, variable_map, available_vars,
+                                       dataset_label = "dataset") {
+
+      vm <- variable_map %||% list()
+
+      translate_var <- function(canonical_name) {
+        if (is.null(canonical_name) || is.na(canonical_name)) return(NA_character_)
+        if (canonical_name %in% names(vm)) {
+          actual <- vm[[canonical_name]]
+          if (!is.null(actual) && nzchar(actual)) return(actual)
+        }
+        return(canonical_name)
+      }
+
+      schema_valid <- analysis_schema %>%
+        dplyr::mutate(
+          var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
+          denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
+          var_exists       = .data$var_name_actual %in% available_vars,
+          denom_exists     = ifelse(
+            !is.na(.data$denom_var_actual),
+            .data$denom_var_actual %in% available_vars,
+            TRUE
+          )
+        ) %>%
+        dplyr::mutate(include = .data$var_exists & .data$denom_exists)
+
+      issues <- schema_valid %>%
+        dplyr::filter(!.data$include) %>%
+        dplyr::transmute(
+          dataset        = dataset_label,
+          indicator_name = .data$indicator_name,
+          issue = paste0(
+            "Missing variable(s): ",
+            ifelse(!.data$var_exists,
+                   paste0(.data$var_name, " (maps to: ", .data$var_name_actual, ")"),
+                   ""),
+            ifelse(!.data$denom_exists & !is.na(.data$denom_var),
+                   paste0(", ", .data$denom_var, " (maps to: ", .data$denom_var_actual, ")"),
+                   "")
+          )
+        )
+
+      dap_df <- schema_valid %>%
+        dplyr::filter(.data$include) %>%
+        dplyr::transmute(
+          indicator_name = .data$indicator_name,
+          calculation    = .data$calculation,
+          var_name       = .data$var_name_actual,
+          denom_var      = .data$denom_var_actual,
+          disaggregation = .data$disaggregation,
+          multiplier     = .data$multiplier,
+          indicator_unit = .data$indicator_unit
+        )
+
+      list(dap_df = dap_df, issues = issues)
+    },
 
     #' Run analysis for an arbitrary dataset using a given analysis schema.
     #'
