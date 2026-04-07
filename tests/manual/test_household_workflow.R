@@ -234,6 +234,9 @@ good_deaths <- DeathIndividualData$new(
   mortality_analyics$run_analysis()
   mortality_analyics$run_outputs()
 
+  mortality_analyics$analysis_schema
+
+
   # Create Nutrition Data Analytics Object ####
 
   nut_analytics <- good_nutrition$generate_data_analytics(stage = "standardized", type = "nutrition")
