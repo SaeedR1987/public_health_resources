@@ -230,8 +230,8 @@ good_deaths <- DeathIndividualData$new(
 
   mortality_analyics <- good_hh$generate_data_analytics(stage = "standardized", type = "mortality")
 
-  mortality_analyics$run_quality_checks()
   mortality_analyics$run_analysis()
+  mortality_analyics$run_quality_checks()
   mortality_analyics$run_outputs()
 
   mortality_analyics$analysis_schema

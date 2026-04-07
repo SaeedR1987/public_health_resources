@@ -90,9 +90,9 @@ DataAnalytics <- R6::R6Class(
     tables = NULL,
 
 
-    # =========================================================================
+
     # Initialization
-    # =========================================================================
+
 
     #' @description
     #' Initialize a new DataAnalytics object
@@ -125,7 +125,7 @@ DataAnalytics <- R6::R6Class(
       origin <- paste0(dataset_name, "$initialize")
       phr_message(origin, "Initializing DataAnalytics class...")
 
-      # --- Common fields -------------------------------------------------------
+      # --- Common fields
       self$parent_data_object <- parent_data_object
       self$dataset_name       <- dataset_name
       self$data_stage_name    <- data_stage_name
@@ -135,11 +135,11 @@ DataAnalytics <- R6::R6Class(
       self$variable_label     <- variable_label %||% list()
       self$value_label        <- value_label   %||% list()
 
-      # --- Shared output containers -------------------------------------------
+      # --- Shared output containers
       self$visualizations         <- list()
       self$tables                 <- list()
 
-      # --- Quality-specific initialization (from DataQuality) -----------------
+      # --- Quality-specific initialization (from DataQuality
       if (!is.null(data)) {
         phr_validate_dataframe(data, origin = origin, soft = FALSE)
         self$data <- data
@@ -171,7 +171,7 @@ DataAnalytics <- R6::R6Class(
       # Load quality outputs schema
       self$outputs_schema <- self$default_outputs_schema()
 
-      # --- Analysis-specific initialization (from QuantDataAnalysis) ----------
+      # --- Analysis-specific initialization (from QuantDataAnalysis)
       self$analysis_results        <- list()
       self$analysis_plan_issue_log <- tibble::tibble()
 
@@ -207,9 +207,9 @@ DataAnalytics <- R6::R6Class(
     },
 
 
-    # =========================================================================
+
     # Default schema loaders
-    # =========================================================================
+
 
     #' @description Load the default quality schema from template file
     #' @return A list of quality checks
@@ -335,9 +335,9 @@ DataAnalytics <- R6::R6Class(
     },
 
 
-    # =========================================================================
+
     # Quality Schema Management
-    # =========================================================================
+
 
     #' @description Set the quality check schema
     #' @param schema A list defining quality checks, thresholds, and penalties
@@ -553,10 +553,7 @@ DataAnalytics <- R6::R6Class(
       self$analysis_schema
     },
 
-
-    # =========================================================================
     # Quality Checks
-    # =========================================================================
 
     #' @description Run all quality checks defined in the quality schema
     #' @return A list of check results (invisibly)
@@ -583,7 +580,7 @@ DataAnalytics <- R6::R6Class(
         self$plausibility_results <- results
         self$calculate_overall_score()
 
-        # --- Plausibility tables -------------------------------------------
+        # --- Plausibility tables
         if (is.null(self$tables[["plausibility"]])) {
           self$tables[["plausibility"]] <- list()
         }
@@ -1109,9 +1106,9 @@ DataAnalytics <- R6::R6Class(
       }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_plausibility_report"))
     },
 
-    # =========================================================================
+
     # Diagnose Methods
-    # =========================================================================
+
 
     #' @description
     #' Diagnose issues in the quality schema against the current dataset.
@@ -1160,7 +1157,7 @@ DataAnalytics <- R6::R6Class(
         for (check_name in names(self$quality_schema)) {
           check <- self$quality_schema[[check_name]]
 
-          # --- basic fields ---------------------------------------------------
+          # --- basic fields
           check_group      <- check$check_group      %||% NA_character_
           check_label      <- check$check_label      %||% NA_character_
           statistical_test <- check$statistical_test %||% NA_character_
@@ -1168,12 +1165,12 @@ DataAnalytics <- R6::R6Class(
           test_params      <- check$test_params      %||% list()
           thresholds       <- check$thresholds       %||% list()
 
-          # --- 1. variables present in data -----------------------------------
+          # --- 1. variables present in data
           mapped_vars <- self$.translate_canonical_to_actual_vars(variables)
           missing_vars <- setdiff(mapped_vars, data_cols)
           vars_in_data <- length(missing_vars) == 0
 
-          # --- 2. test function available -------------------------------------
+          # --- 2. test function available
           func_available <- FALSE
           if (!is.na(statistical_test) && nzchar(statistical_test)) {
             func_name <- paste0("quality_test_", statistical_test)
@@ -1190,7 +1187,7 @@ DataAnalytics <- R6::R6Class(
             }
           }
 
-          # --- 3. threshold expressions parseable ----------------------------
+          # --- 3. threshold expressions parseable
           thresholds_valid <- TRUE
           if (length(thresholds) > 0) {
             for (thr in thresholds) {
@@ -1205,7 +1202,7 @@ DataAnalytics <- R6::R6Class(
             }
           }
 
-          # --- build status string -------------------------------------------
+          # --- build status string
           issues <- character(0)
           if (!vars_in_data)     issues <- c(issues, paste0("missing variables: ", paste(missing_vars, collapse = ", ")))
           if (!func_available)   issues <- c(issues, paste0("function not found: quality_test_", statistical_test %||% "NA"))
@@ -1656,9 +1653,9 @@ DataAnalytics <- R6::R6Class(
     },
 
 
-    # =========================================================================
+
     # Analysis Methods (from QuantDataAnalysis)
-    # =========================================================================
+
 
     #' @description
     #' Create a survey design object from the stored data and variable_map.
@@ -2259,9 +2256,9 @@ DataAnalytics <- R6::R6Class(
 
   ),
 
-  # ===========================================================================
+
   # Private helpers
-  # ===========================================================================
+
 
   private = list(
 
@@ -2415,11 +2412,11 @@ DataAnalytics <- R6::R6Class(
           variables      <- out$variables        %||% character(0)
           test_params    <- out$test_params      %||% list()
 
-          # --- 1. required fields present ------------------------------------
+          # --- 1. required fields present
           req_ok <- !is.null(func_name) && !is.na(func_name) && nzchar(func_name) &&
                     !is.null(output_type) && !is.na(output_type) && nzchar(output_type)
 
-          # --- 2. function available -----------------------------------------
+          # --- 2. function available
           func_available <- FALSE
           if (req_ok) {
             if (requireNamespace("iphRa", quietly = TRUE)) {
@@ -2435,13 +2432,13 @@ DataAnalytics <- R6::R6Class(
             }
           }
 
-          # --- 3. variables present in data ----------------------------------
+          # --- 3. variables present in data
           # Only check literal variable refs (skip @variable_map and @value_map)
           literal_vars <- variables[!grepl("^@", variables)]
           missing_vars <- setdiff(literal_vars, data_cols)
           vars_in_data <- length(missing_vars) == 0
 
-          # --- build status --------------------------------------------------
+          # --- build status
           issues <- character(0)
           if (!req_ok)        issues <- c(issues, "missing required fields (output_func_name or output_type)")
           if (!func_available && req_ok) issues <- c(issues, paste0("function '", func_name, "' not found"))

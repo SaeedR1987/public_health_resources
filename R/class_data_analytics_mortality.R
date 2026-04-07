@@ -616,12 +616,12 @@ MortalityDataAnalytics <- R6::R6Class(
 
       phr_try({
 
-        # --- Household analysis (base class logic) ----------------------------
+        # --- Household analysis (base class logic)
         super$run_analysis()
         household_results        <- self$analysis_results
         self$analysis_results    <- list(household = household_results)
 
-        # --- Roster analysis --------------------------------------------------
+        # --- Roster analysis
         roster_dap_rows <- private$.dap_row_count(self$data_analysis_plan_roster)
 
         if (!is.null(self$linked_ind_roster_data) && roster_dap_rows > 0L) {
@@ -657,7 +657,7 @@ MortalityDataAnalytics <- R6::R6Class(
           phr_message(origin, "Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis.")
         }
 
-        # --- Deaths analysis --------------------------------------------------
+        # --- Deaths analysis
         deaths_dap_rows <- private$.dap_row_count(self$data_analysis_plan_deaths)
 
         if (!is.null(self$linked_ind_deaths_data) && deaths_dap_rows > 0L) {
@@ -727,7 +727,7 @@ MortalityDataAnalytics <- R6::R6Class(
 
       phr_try({
 
-        # --- Household outputs: call parent, then wrap in $household ----------
+        # --- Household outputs: call parent, then wrap in $household
         saved_viz        <- self$visualizations
         saved_tbl        <- self$tables
         self$visualizations <- list()
@@ -741,7 +741,7 @@ MortalityDataAnalytics <- R6::R6Class(
         self$visualizations <- saved_viz
         self$tables         <- saved_tbl
 
-        # --- Roster outputs ---------------------------------------------------
+        # --- Roster outputs
         if (!is.null(self$linked_ind_roster_data) &&
             !is.null(self$outputs_schema_roster) &&
             length(self$outputs_schema_roster) > 0) {
@@ -756,7 +756,7 @@ MortalityDataAnalytics <- R6::R6Class(
           phr_message(phr_txt(glue::glue("{origin}: Linked roster data present but outputs_schema_roster is empty. Skipping roster outputs.")))
         }
 
-        # --- Deaths outputs ---------------------------------------------------
+        # --- Deaths outputs
         if (!is.null(self$linked_ind_deaths_data) &&
             !is.null(self$outputs_schema_deaths) &&
             length(self$outputs_schema_deaths) > 0) {
