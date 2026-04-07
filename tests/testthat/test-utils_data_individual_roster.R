@@ -511,6 +511,55 @@ test_that("add_standardized_age uses only existing date columns in coalesce", {
   expect_equal(result$calc_date_birth_final, as.Date(c("2013-01-01", "2003-01-01", "1993-01-01")))
 })
 
+test_that("add_standardized_age — calc_date_birth_final is NA when all birth date columns are NA", {
+  # Regression test: death date columns exist and have values, but birth date columns are all NA.
+  # calc_date_birth_final should remain NA for all records, NOT pick up values from death date columns.
+  df <- tibble::tibble(
+    age_years = c(5, 10, 30),
+    dob_exact = as.Date(c(NA, NA, NA)),
+    dob_approx = as.Date(c(NA, NA, NA)),
+    date_death_exact = as.Date(c("2023-01-01", "2023-02-01", "2023-03-01")),
+    date_death_approx = as.Date(c(NA, "2023-02-15", NA))
+  )
+
+  result <- add_standardized_age(
+    .dataset = df,
+    age_years_col = "age_years",
+    date_birth_exact_col = "dob_exact",
+    date_birth_approx_col = "dob_approx",
+    date_death_exact_col = "date_death_exact",
+    date_death_approx_col = "date_death_approx"
+  )
+
+  # calc_date_birth_final should be NA for all rows — death dates must not bleed into birth dates
+  expect_true("calc_date_birth_final" %in% names(result))
+  expect_true(all(is.na(result$calc_date_birth_final)))
+})
+
+test_that("add_standardized_age — calc_date_death_final uses exact death date when approx is NA", {
+  # Regression test: when date_death_exact_col and date_death_approx_col point to different columns,
+  # calc_date_death_final should prefer the exact date and fall back to approx only when exact is NA.
+  df <- tibble::tibble(
+    age_years = c(5, 10, 30),
+    date_death_exact = as.Date(c("2023-01-01", NA, "2023-03-01")),
+    date_death_approx = as.Date(c(NA, "2023-02-15", "2023-03-20"))
+  )
+
+  result <- add_standardized_age(
+    .dataset = df,
+    age_years_col = "age_years",
+    date_death_exact_col = "date_death_exact",
+    date_death_approx_col = "date_death_approx"
+  )
+
+  # Row 1: exact date available — use it
+  expect_equal(result$calc_date_death_final[1], as.Date("2023-01-01"))
+  # Row 2: only approx available — use approx
+  expect_equal(result$calc_date_death_final[2], as.Date("2023-02-15"))
+  # Row 3: both available — prefer exact
+  expect_equal(result$calc_date_death_final[3], as.Date("2023-03-01"))
+})
+
 
 # add_standardized_roster_demographics ####
 
