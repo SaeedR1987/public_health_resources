@@ -214,11 +214,13 @@ good_deaths <- DeathIndividualData$new(
   fsl_analytics$analysis_results$base
   fsl_analytics$analysis_results$survey_design
 
-  fsl_analytics$visualizations$survey_design
+  fsl_analytics$plausibility_results$plaus_sd_fcs
+
+  fsl_analytics$visualizations$overall$lcsi_overall
 
   fsl_analytics$quality_issues_log
 
-  fsl_analytics$tables$plausibility$penalty_summary
+  fsl_analytics$tables$plausibility$penalty_summary_by_enum_id
 
   fsl_analytics$visualizations$survey_design
 
@@ -228,13 +230,27 @@ good_deaths <- DeathIndividualData$new(
 
   mortality_analyics <- good_hh$generate_data_analytics(stage = "standardized", type = "mortality")
 
+  mortality_analyics$run_quality_checks()
+  mortality_analyics$run_analysis()
+  mortality_analyics$run_outputs()
+
   # Create Nutrition Data Analytics Object ####
 
   nut_analytics <- good_nutrition$generate_data_analytics(stage = "standardized", type = "nutrition")
 
-  nut_analytics$analysis_schema
+  nut_analytics$run_quality_checks()
+  nut_analytics$run_analysis()
+  nut_analytics$run_outputs()
+
+  nut_analytics$visualizations$base$mfaz_boxplot_overall
 
   nut_analytics$data_analysis_plan$log_df
+
+  nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
+  nut_analytics$tables$plausibility_results
+
+  nut_analytics$visualizations$base$mfaz_cat_overall
+  nut_analytics$visualizations$base$muac_cat_overall
 
   nut_analytics$data$nut_ecfies_cat
 
@@ -242,11 +258,10 @@ good_deaths <- DeathIndividualData$new(
 
   nut_analytics$data_analysis_plan$log_df
 
-  nut_analytics$run_analysis()
 
   View(nut_analytics$analysis_results$survey_design)
 
-  nut_analytics$run_quality_checks()
+
 
   # Test 2: Roster Data ####
 

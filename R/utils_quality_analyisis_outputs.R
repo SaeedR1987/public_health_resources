@@ -2749,11 +2749,18 @@ plot_domain_distribution <- function(df,
 #' @param weighted Logical indicating whether to apply survey weights. Default: FALSE.
 #' @param weights_col Character value specifying the column name containing survey weights.
 #'   Required if weighted = TRUE. Default: NULL.
+#' @param show_overall Logical. When grouping is provided, if TRUE, adds an "Overall" bar (leftmost)
+#'   showing the overall distribution across all groups. Default: TRUE. Only applies when grouping is not NULL.
+#' @param overall_label Character. Label for the overall bar when show_overall = TRUE. Default: "Overall".
 #' @param flip_coordinates Logical. If TRUE, creates horizontal bars (flipped coordinates).
 #'   By default: FALSE (vertical bars).
 #' @param color_palette Inputs an optional character value specifying the color palette to use.
 #'   Options: "reach1", "reach2", "reach3", "reach4", "traffic_light", "default". Default is "reach1".
 #' @param title_name Inputs an optional character value for the title of the plot.
+#' @param variable_label Character. Optional human-readable label for the category variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Character. Optional human-readable label for the grouping variable, appended
+#'   to the auto-generated title as ", by <grouping_label>". Defaults to the column name when NULL.
 #' @param subtitle Inputs an optional character value for the subtitle of the plot.
 #'   If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.
 #' @param x_label Inputs an optional character value for the x-axis label.
@@ -2761,16 +2768,10 @@ plot_domain_distribution <- function(df,
 #' @param legend_label Inputs an optional character value for the legend title.
 #'   If NULL, uses fill_var as the legend title.
 #' @param show_labels Inputs a logical value indicating whether to show percentage labels on bars (default: FALSE).
-#'
-#' @param show_overall Logical. When grouping is provided, if TRUE, adds an "Overall" bar (leftmost)
-#'   showing the overall distribution across all groups. Default: TRUE. Only applies when grouping is not NULL.
-#' @param overall_label Character. Label for the overall bar when show_overall = TRUE. Default: "Overall".
-#' @param variable_label Character. Optional human-readable label for the category variable, used to
-#'   auto-generate the plot title when title_name is NULL. Default: NULL.
-#' @param grouping_label Character. Optional human-readable label for the grouping variable, appended
-#'   to the auto-generated title as ", by <grouping_label>". Defaults to the column name when NULL.
+#' @param show_NA Logical. If TRUE, missing values in the fill variable are shown as an explicit `"NA"` category.
+#'   If FALSE (default), rows with missing fill values are excluded from the plotted distribution.
 #' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
-#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
+#'
 #' @return Returns a ggplot2 object showing the 100% stacked bar chart.
 #' @export
 #'
@@ -2788,8 +2789,11 @@ plot_domain_distribution <- function(df,
 #'   plot_stacked_bar(df, category_var = "response_type", grouping = "district",
 #'                    weighted = TRUE, weights_col = "survey_weight",
 #'                    flip_coordinates = TRUE, legend_label = "Response Type")
+#'
+#'   # Show NA as an explicit category
+#'   plot_stacked_bar(df, category_var = "response_type",
+#'                    show_NA = TRUE, title_name = "Response Distribution (including NA)")
 #' }
-
 plot_stacked_bar <- function(df,
                              category_var,
                              grouping = NULL,
@@ -2808,6 +2812,7 @@ plot_stacked_bar <- function(df,
                              y_label = "Percentage",
                              legend_label = NULL,
                              show_labels = FALSE,
+                             show_NA = FALSE,
                              legend_position = "bottom") {
   origin <- "plot_stacked_bar"
 
@@ -2819,18 +2824,19 @@ plot_stacked_bar <- function(df,
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phr_validate_logical(show_NA, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
 
     phr_validate_columns(df, category_var, origin = origin,
-                           hint = phr_txt("Ensure the category column '{category_var}' exists in the dataset"),
-                           soft = FALSE)
+                         hint = phr_txt("Ensure the category column '{category_var}' exists in the dataset"),
+                         soft = FALSE)
 
     # Validate weights if weighted = TRUE
     if (weighted) {
       phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
       phr_validate_columns(df, weights_col, origin = origin,
-                             hint = phr_txt("Ensure the weights column '{weights_col}' exists in the dataset"),
-                             soft = FALSE)
+                           hint = phr_txt("Ensure the weights column '{weights_col}' exists in the dataset"),
+                           soft = FALSE)
 
       # Validate weights column is numeric
       phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
@@ -2845,8 +2851,20 @@ plot_stacked_bar <- function(df,
       fill_var <- category_var
     } else {
       phr_validate_columns(df, fill_var, origin = origin,
-                             hint = phr_txt("Ensure the fill column '{fill_var}' exists in the dataset"),
-                             soft = FALSE)
+                           hint = phr_txt("Ensure the fill column '{fill_var}' exists in the dataset"),
+                           soft = FALSE)
+    }
+
+    # If requested, show NA as an explicit category in the fill var
+    if (show_NA) {
+      df <- df %>%
+        dplyr::mutate(
+          !!rlang::sym(fill_var) := dplyr::if_else(
+            is.na(!!rlang::sym(fill_var)),
+            "NA",
+            as.character(!!rlang::sym(fill_var))
+          )
+        )
     }
 
     # Set legend label
@@ -2860,7 +2878,10 @@ plot_stacked_bar <- function(df,
       if (weighted) {
         # Weighted calculation
         df_plot <- df %>%
-          dplyr::filter(!is.na(!!rlang::sym(fill_var)) & !is.na(!!rlang::sym(weights_col))) %>%
+          dplyr::filter(
+            (show_NA | !is.na(!!rlang::sym(fill_var))) &
+              !is.na(!!rlang::sym(weights_col))
+          ) %>%
           dplyr::group_by(!!rlang::sym(fill_var)) %>%
           dplyr::summarise(
             weighted_n = sum(!!rlang::sym(weights_col)),
@@ -2880,6 +2901,7 @@ plot_stacked_bar <- function(df,
       } else {
         # Unweighted calculation
         df_plot <- df %>%
+          dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var))) %>%
           dplyr::count(!!rlang::sym(fill_var), name = "n") %>%
           dplyr::mutate(
             percentage = n / sum(n) * 100,
@@ -2892,9 +2914,6 @@ plot_stacked_bar <- function(df,
       }
 
       # Determine number of colors needed
-      # Check the original df for factor levels so all levels (including unused ones) are
-      # used to build a named color vector. This ensures correct color-level mapping even
-      # when some levels are absent from this particular dataset slice (df_plot).
       if (is.factor(df[[fill_var]])) {
         all_levels <- levels(df[[fill_var]])
         all_colors <- get_color_palette(type = color_palette, n = length(all_levels))
@@ -2937,8 +2956,8 @@ plot_stacked_bar <- function(df,
     } else {
       # Grouped plot
       phr_validate_columns(df, grouping, origin = origin,
-                             hint = phr_txt("Ensure the grouping column '{grouping}' exists in the dataset"),
-                             soft = FALSE)
+                           hint = phr_txt("Ensure the grouping column '{grouping}' exists in the dataset"),
+                           soft = FALSE)
 
       # Ensure overall_label is a non-empty string when show_overall is TRUE
       if (show_overall && !is.character(overall_label)) {
@@ -2948,9 +2967,11 @@ plot_stacked_bar <- function(df,
       if (weighted) {
         # Weighted calculation by group
         df_plot <- df %>%
-          dplyr::filter(!is.na(!!rlang::sym(fill_var)) &
-                          !is.na(!!rlang::sym(grouping)) &
-                          !is.na(!!rlang::sym(weights_col))) %>%
+          dplyr::filter(
+            (show_NA | !is.na(!!rlang::sym(fill_var))) &
+              !is.na(!!rlang::sym(grouping)) &
+              !is.na(!!rlang::sym(weights_col))
+          ) %>%
           dplyr::group_by(!!rlang::sym(grouping), !!rlang::sym(fill_var)) %>%
           dplyr::summarise(
             weighted_n = sum(!!rlang::sym(weights_col)),
@@ -2967,7 +2988,10 @@ plot_stacked_bar <- function(df,
         # Optionally prepend an overall bar
         if (show_overall) {
           df_overall <- df %>%
-            dplyr::filter(!is.na(!!rlang::sym(fill_var)) & !is.na(!!rlang::sym(weights_col))) %>%
+            dplyr::filter(
+              (show_NA | !is.na(!!rlang::sym(fill_var))) &
+                !is.na(!!rlang::sym(weights_col))
+            ) %>%
             dplyr::group_by(!!rlang::sym(fill_var)) %>%
             dplyr::summarise(
               weighted_n = sum(!!rlang::sym(weights_col)),
@@ -2999,6 +3023,10 @@ plot_stacked_bar <- function(df,
       } else {
         # Unweighted calculation by group
         df_plot <- df %>%
+          dplyr::filter(
+            (show_NA | !is.na(!!rlang::sym(fill_var))) &
+              !is.na(!!rlang::sym(grouping))
+          ) %>%
           dplyr::group_by(!!rlang::sym(grouping), !!rlang::sym(fill_var)) %>%
           dplyr::summarise(n = dplyr::n(), .groups = "drop_last") %>%
           dplyr::mutate(
@@ -3011,7 +3039,7 @@ plot_stacked_bar <- function(df,
         # Optionally prepend an overall bar
         if (show_overall) {
           df_overall <- df %>%
-            dplyr::filter(!is.na(!!rlang::sym(fill_var))) %>%
+            dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var))) %>%
             dplyr::count(!!rlang::sym(fill_var), name = "n") %>%
             dplyr::mutate(
               percentage = n / sum(n) * 100,
@@ -3032,9 +3060,6 @@ plot_stacked_bar <- function(df,
       }
 
       # Determine number of colors needed
-      # Check the original df for factor levels so all levels (including unused ones) are
-      # used to build a named color vector. This ensures correct color-level mapping even
-      # when some levels are absent from this particular dataset slice (df_plot).
       if (is.factor(df[[fill_var]])) {
         all_levels <- levels(df[[fill_var]])
         all_colors <- get_color_palette(type = color_palette, n = length(all_levels))
@@ -5139,9 +5164,9 @@ plot_ci_bar_percentage <- function(df,
     # Determine if we have grouping
     has_grouping <- !is.null(grouping)
 
-    # -----------------------------------------------------------------------
+
     # SURVEY DESIGN PATH: use phr_calc_survey_categorical_single
-    # -----------------------------------------------------------------------
+
     if (is_survey) {
 
       ind_label <- variable_label %||% category_var
@@ -5197,9 +5222,9 @@ plot_ci_bar_percentage <- function(df,
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
     } else {
-      # -----------------------------------------------------------------------
+
       # DATA FRAME PATH (original logic)
-      # -----------------------------------------------------------------------
+
       if (weighted) {
         phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
         phr_validate_columns(df, weights_col, origin = origin,
@@ -5304,9 +5329,9 @@ plot_ci_bar_percentage <- function(df,
       }
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
     }
-    # -----------------------------------------------------------------------
+
     # PLOTTING (shared for both paths)
-    # -----------------------------------------------------------------------
+
 
     # Get colors
     n_cats <- if (has_grouping) length(unique(df_plot$fill_var)) else length(unique(df_plot$x_var))
@@ -5537,9 +5562,9 @@ plot_ci_point_mean <- function(df,
       y_lab <- if (is_ratio) paste0("Ratio: ", numeric_var, " / ", numeric_var2) else paste0("Mean of ", numeric_var)
     }
 
-    # -----------------------------------------------------------------------
+
     # SURVEY DESIGN PATH: use phr_calc_survey_*_single
-    # -----------------------------------------------------------------------
+
     if (is_survey) {
 
       ind_label <- variable_label %||% numeric_var
@@ -5597,9 +5622,9 @@ plot_ci_point_mean <- function(df,
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
     } else {
-      # -----------------------------------------------------------------------
+
       # DATA FRAME PATH (original logic)
-      # -----------------------------------------------------------------------
+
 
       # Auto-subtitle with n
       total_n <- nrow(df)
@@ -5666,9 +5691,9 @@ plot_ci_point_mean <- function(df,
         stats_df$label <- sprintf("%.2f", stats_df$est)
       }
     }
-    # -----------------------------------------------------------------------
+
     # PLOTTING (shared for both paths)
-    # -----------------------------------------------------------------------
+
     if (!has_grouping) {
       if (!"x_var" %in% names(stats_df)) stats_df$x_var <- "Overall"
 
