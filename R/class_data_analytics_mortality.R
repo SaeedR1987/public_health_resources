@@ -516,66 +516,21 @@ MortalityDataAnalytics <- R6::R6Class(
           return(invisible(self))
         }
 
-        available_vars <- names(self$linked_ind_roster_data)
-        vm <- self$linked_ind_roster_variable_map %||% self$variable_map %||% list()
+        result <- private$..build_dap_from_schema(
+          analysis_schema = self$analysis_schema_roster,
+          variable_map    = self$linked_ind_roster_variable_map %||% self$variable_map %||% list(),
+          available_vars  = names(self$linked_ind_roster_data),
+          dataset_label   = "roster"
+        )
 
-        translate_var <- function(canonical_name) {
-          if (is.null(canonical_name) || is.na(canonical_name)) return(NA_character_)
-          if (canonical_name %in% names(vm)) {
-            actual <- vm[[canonical_name]]
-            if (!is.null(actual) && nzchar(actual)) return(actual)
-          }
-          return(canonical_name)
-        }
+        self$data_analysis_plan_roster$log_df <- result$dap_df
 
-        schema_valid <- self$analysis_schema_roster %>%
-          dplyr::mutate(
-            var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
-            denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
-            var_exists       = .data$var_name_actual %in% available_vars,
-            denom_exists     = ifelse(
-              !is.na(.data$denom_var_actual),
-              .data$denom_var_actual %in% available_vars,
-              TRUE
-            )
-          ) %>%
-          dplyr::mutate(include = .data$var_exists & .data$denom_exists)
-
-        issues <- schema_valid %>%
-          dplyr::filter(!.data$include) %>%
-          dplyr::transmute(
-            indicator_name = .data$indicator_name,
-            issue = paste0(
-              "Missing variable(s): ",
-              ifelse(!.data$var_exists,
-                     paste0(.data$var_name, " (maps to: ", .data$var_name_actual, ")"),
-                     ""),
-              ifelse(!.data$denom_exists & !is.na(.data$denom_var),
-                     paste0(", ", .data$denom_var, " (maps to: ", .data$denom_var_actual, ")"),
-                     "")
-            )
-          )
-
-        dap_df <- schema_valid %>%
-          dplyr::filter(.data$include) %>%
-          dplyr::transmute(
-            indicator_name = .data$indicator_name,
-            calculation    = .data$calculation,
-            var_name       = .data$var_name_actual,
-            denom_var      = .data$denom_var_actual,
-            disaggregation = .data$disaggregation,
-            multiplier     = .data$multiplier,
-            indicator_unit = .data$indicator_unit
-          )
-
-        self$data_analysis_plan_roster$log_df <- dap_df
-
-        if (nrow(issues) > 0) {
+        if (nrow(result$issues) > 0) {
           self$analysis_plan_issue_log <- dplyr::bind_rows(
             self$analysis_plan_issue_log,
-            issues
+            result$issues
           )
-          phr_warning(origin, paste0(nrow(issues), " roster indicators skipped due to missing variables."))
+          phr_warning(origin, paste0(nrow(result$issues), " roster indicators skipped due to missing variables."))
         } else {
           phr_message(origin, "All roster schema indicators found and added to data_analysis_plan_roster.")
         }
@@ -611,66 +566,21 @@ MortalityDataAnalytics <- R6::R6Class(
           return(invisible(self))
         }
 
-        available_vars <- names(self$linked_ind_deaths_data)
-        vm <- self$linked_ind_deaths_variable_map %||% self$variable_map %||% list()
+        result <- private$..build_dap_from_schema(
+          analysis_schema = self$analysis_schema_deaths,
+          variable_map    = self$linked_ind_deaths_variable_map %||% self$variable_map %||% list(),
+          available_vars  = names(self$linked_ind_deaths_data),
+          dataset_label   = "deaths"
+        )
 
-        translate_var <- function(canonical_name) {
-          if (is.null(canonical_name) || is.na(canonical_name)) return(NA_character_)
-          if (canonical_name %in% names(vm)) {
-            actual <- vm[[canonical_name]]
-            if (!is.null(actual) && nzchar(actual)) return(actual)
-          }
-          return(canonical_name)
-        }
+        self$data_analysis_plan_deaths$log_df <- result$dap_df
 
-        schema_valid <- self$analysis_schema_deaths %>%
-          dplyr::mutate(
-            var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
-            denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
-            var_exists       = .data$var_name_actual %in% available_vars,
-            denom_exists     = ifelse(
-              !is.na(.data$denom_var_actual),
-              .data$denom_var_actual %in% available_vars,
-              TRUE
-            )
-          ) %>%
-          dplyr::mutate(include = .data$var_exists & .data$denom_exists)
-
-        issues <- schema_valid %>%
-          dplyr::filter(!.data$include) %>%
-          dplyr::transmute(
-            indicator_name = .data$indicator_name,
-            issue = paste0(
-              "Missing variable(s): ",
-              ifelse(!.data$var_exists,
-                     paste0(.data$var_name, " (maps to: ", .data$var_name_actual, ")"),
-                     ""),
-              ifelse(!.data$denom_exists & !is.na(.data$denom_var),
-                     paste0(", ", .data$denom_var, " (maps to: ", .data$denom_var_actual, ")"),
-                     "")
-            )
-          )
-
-        dap_df <- schema_valid %>%
-          dplyr::filter(.data$include) %>%
-          dplyr::transmute(
-            indicator_name = .data$indicator_name,
-            calculation    = .data$calculation,
-            var_name       = .data$var_name_actual,
-            denom_var      = .data$denom_var_actual,
-            disaggregation = .data$disaggregation,
-            multiplier     = .data$multiplier,
-            indicator_unit = .data$indicator_unit
-          )
-
-        self$data_analysis_plan_deaths$log_df <- dap_df
-
-        if (nrow(issues) > 0) {
+        if (nrow(result$issues) > 0) {
           self$analysis_plan_issue_log <- dplyr::bind_rows(
             self$analysis_plan_issue_log,
-            issues
+            result$issues
           )
-          phr_warning(origin, paste0(nrow(issues), " deaths indicators skipped due to missing variables."))
+          phr_warning(origin, paste0(nrow(result$issues), " deaths indicators skipped due to missing variables."))
         } else {
           phr_message(origin, "All deaths schema indicators found and added to data_analysis_plan_deaths.")
         }
@@ -871,6 +781,75 @@ MortalityDataAnalytics <- R6::R6Class(
   ),
 
   private = list(
+
+    #' Build a DAP tibble from an analysis schema, resolving canonical variable names.
+    #'
+    #' Translates each \code{var_name} and \code{denom_var} in \code{analysis_schema}
+    #' through \code{variable_map}, then keeps only indicators whose resolved columns
+    #' are present in \code{available_vars}.
+    #'
+    #' @param analysis_schema A tibble with analysis schema columns.
+    #' @param variable_map Named list mapping canonical names to actual column names.
+    #' @param available_vars Character vector of column names available in the target dataset.
+    #' @param dataset_label Character label used in the returned issues tibble (e.g. "roster").
+    #' @return A named list with elements \code{dap_df} (tibble) and \code{issues} (tibble).
+    ..build_dap_from_schema = function(analysis_schema, variable_map, available_vars,
+                                       dataset_label = "dataset") {
+
+      vm <- variable_map %||% list()
+
+      translate_var <- function(canonical_name) {
+        if (is.null(canonical_name) || is.na(canonical_name)) return(NA_character_)
+        if (canonical_name %in% names(vm)) {
+          actual <- vm[[canonical_name]]
+          if (!is.null(actual) && nzchar(actual)) return(actual)
+        }
+        return(canonical_name)
+      }
+
+      schema_valid <- analysis_schema %>%
+        dplyr::mutate(
+          var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
+          denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
+          var_exists       = .data$var_name_actual %in% available_vars,
+          denom_exists     = ifelse(
+            !is.na(.data$denom_var_actual),
+            .data$denom_var_actual %in% available_vars,
+            TRUE
+          )
+        ) %>%
+        dplyr::mutate(include = .data$var_exists & .data$denom_exists)
+
+      issues <- schema_valid %>%
+        dplyr::filter(!.data$include) %>%
+        dplyr::transmute(
+          dataset        = dataset_label,
+          indicator_name = .data$indicator_name,
+          issue = paste0(
+            "Missing variable(s): ",
+            ifelse(!.data$var_exists,
+                   paste0(.data$var_name, " (maps to: ", .data$var_name_actual, ")"),
+                   ""),
+            ifelse(!.data$denom_exists & !is.na(.data$denom_var),
+                   paste0(", ", .data$denom_var, " (maps to: ", .data$denom_var_actual, ")"),
+                   "")
+          )
+        )
+
+      dap_df <- schema_valid %>%
+        dplyr::filter(.data$include) %>%
+        dplyr::transmute(
+          indicator_name = .data$indicator_name,
+          calculation    = .data$calculation,
+          var_name       = .data$var_name_actual,
+          denom_var      = .data$denom_var_actual,
+          disaggregation = .data$disaggregation,
+          multiplier     = .data$multiplier,
+          indicator_unit = .data$indicator_unit
+        )
+
+      list(dap_df = dap_df, issues = issues)
+    },
 
     #' Run analysis for an arbitrary dataset using a given analysis schema.
     #'
