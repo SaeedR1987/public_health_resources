@@ -620,9 +620,7 @@ MortalityDataAnalytics <- R6::R6Class(
         self$analysis_results    <- list(household = household_results)
 
         # --- Roster analysis --------------------------------------------------
-        roster_dap_rows <- if (!is.null(self$data_analysis_plan_roster) &&
-                               !is.null(self$data_analysis_plan_roster$log_df))
-                             nrow(self$data_analysis_plan_roster$log_df) else 0L
+        roster_dap_rows <- private$..dap_row_count(self$data_analysis_plan_roster)
 
         if (!is.null(self$linked_ind_roster_data) && roster_dap_rows > 0L) {
 
@@ -645,6 +643,8 @@ MortalityDataAnalytics <- R6::R6Class(
               origin   = origin,
               hint     = "Verify all variables exist in linked_ind_roster_data."
             )
+            # Linked datasets use a simple (unweighted) SRS design, so survey_design
+            # and base both reference the same result set.
             self$analysis_results[["roster"]] <- list(
               survey_design = roster_sd_results,
               base          = roster_sd_results
@@ -656,9 +656,7 @@ MortalityDataAnalytics <- R6::R6Class(
         }
 
         # --- Deaths analysis --------------------------------------------------
-        deaths_dap_rows <- if (!is.null(self$data_analysis_plan_deaths) &&
-                               !is.null(self$data_analysis_plan_deaths$log_df))
-                             nrow(self$data_analysis_plan_deaths$log_df) else 0L
+        deaths_dap_rows <- private$..dap_row_count(self$data_analysis_plan_deaths)
 
         if (!is.null(self$linked_ind_deaths_data) && deaths_dap_rows > 0L) {
 
@@ -681,6 +679,8 @@ MortalityDataAnalytics <- R6::R6Class(
               origin   = origin,
               hint     = "Verify all variables exist in linked_ind_deaths_data."
             )
+            # Linked datasets use a simple (unweighted) SRS design, so survey_design
+            # and base both reference the same result set.
             self$analysis_results[["deaths"]] <- list(
               survey_design = deaths_sd_results,
               base          = deaths_sd_results
@@ -781,6 +781,14 @@ MortalityDataAnalytics <- R6::R6Class(
   ),
 
   private = list(
+
+    #' Return the number of rows in a QuantDataAnalysisPlanLog's log_df, or 0L.
+    #'
+    #' @param dap A QuantDataAnalysisPlanLog object (or NULL).
+    #' @return Integer row count, or 0L when dap or its log_df is NULL.
+    ..dap_row_count = function(dap) {
+      if (!is.null(dap) && !is.null(dap$log_df)) nrow(dap$log_df) else 0L
+    },
 
     #' Build a DAP tibble from an analysis schema, resolving canonical variable names.
     #'
