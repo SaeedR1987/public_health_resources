@@ -628,11 +628,10 @@ MortalityDataAnalytics <- R6::R6Class(
 
           phr_message(origin, "Running analysis for linked roster data using data_analysis_plan_roster...")
 
-          roster_survey <- phr_try(
-            srvyr::as_survey_design(.data = self$linked_ind_roster_data, ids = 1),
-            on_error = "warn",
-            origin   = origin,
-            hint     = "Could not create survey design from linked_ind_roster_data."
+          roster_survey <- private$.create_survey_design_for_dataset(
+            data         = self$linked_ind_roster_data,
+            variable_map = self$variable_map,
+            origin       = origin
           )
 
           if (!is.null(roster_survey)) {
@@ -645,10 +644,9 @@ MortalityDataAnalytics <- R6::R6Class(
               origin   = origin,
               hint     = "Verify all variables exist in linked_ind_roster_data."
             )
-            # Linked datasets use a simple (unweighted) SRS design. survey_design and
-            # base both carry the same results; because phr_calc_survey_from_plan
-            # returns a plain list, R's copy-on-modify semantics ensure the two fields
-            # remain independent if either is later mutated.
+            # survey_design carries the weighted/clustered design result; base carries
+            # the same result set. phr_calc_survey_from_plan returns a plain list so
+            # R's copy-on-modify semantics keep the two fields independent if mutated.
             self$analysis_results[["roster"]] <- list(
               survey_design = roster_sd_results,
               base          = roster_sd_results
@@ -666,11 +664,10 @@ MortalityDataAnalytics <- R6::R6Class(
 
           phr_message(origin, "Running analysis for linked deaths data using data_analysis_plan_deaths...")
 
-          deaths_survey <- phr_try(
-            srvyr::as_survey_design(.data = self$linked_ind_deaths_data, ids = 1),
-            on_error = "warn",
-            origin   = origin,
-            hint     = "Could not create survey design from linked_ind_deaths_data."
+          deaths_survey <- private$.create_survey_design_for_dataset(
+            data         = self$linked_ind_deaths_data,
+            variable_map = self$variable_map,
+            origin       = origin
           )
 
           if (!is.null(deaths_survey)) {
@@ -683,10 +680,9 @@ MortalityDataAnalytics <- R6::R6Class(
               origin   = origin,
               hint     = "Verify all variables exist in linked_ind_deaths_data."
             )
-            # Linked datasets use a simple (unweighted) SRS design. survey_design and
-            # base both carry the same results; because phr_calc_survey_from_plan
-            # returns a plain list, R's copy-on-modify semantics ensure the two fields
-            # remain independent if either is later mutated.
+            # survey_design carries the weighted/clustered design result; base carries
+            # the same result set. phr_calc_survey_from_plan returns a plain list so
+            # R's copy-on-modify semantics keep the two fields independent if mutated.
             self$analysis_results[["deaths"]] <- list(
               survey_design = deaths_sd_results,
               base          = deaths_sd_results
@@ -794,6 +790,78 @@ MortalityDataAnalytics <- R6::R6Class(
     #' @return Integer row count, or 0L when dap or its log_df is NULL.
     .dap_row_count = function(dap) {
       if (!is.null(dap) && !is.null(dap$log_df)) nrow(dap$log_df) else 0L
+    },
+
+    #' Create a proper survey design for an arbitrary data frame using variable_map.
+    #'
+    #' Applies the same logic as \code{create_survey_design()} (which operates on
+    #' \code{self$data} and \code{self$variable_map}) but accepts any data frame and
+    #' variable map. Reads \code{cluster_id_numeric} / \code{cluster_id},
+    #' \code{weight}, \code{stratum}, and \code{fpc} from \code{variable_map} and
+    #' builds an \code{srvyr} survey design accordingly. Falls back to a simple
+    #' random sample (\code{ids = 1}) when none of those columns are present.
+    #'
+    #' @param data A data frame for the linked dataset.
+    #' @param variable_map Named list mapping canonical names to actual column names.
+    #' @param origin Character; caller label used in log/warning messages.
+    #' @return An \code{srvyr} survey design object, or NULL on failure.
+    .create_survey_design_for_dataset = function(data, variable_map, origin = NULL) {
+
+      origin <- origin %||% paste0(self$dataset_name, "$.create_survey_design_for_dataset")
+
+      if (is.null(data) || nrow(data) == 0) {
+        phr_warning(origin, "No data available to create survey design for linked dataset.")
+        return(NULL)
+      }
+
+      vm        <- variable_map %||% list()
+      data_cols <- names(data)
+
+      cluster_col <- vm[["cluster_id_numeric"]]
+      if (is.null(cluster_col) || !cluster_col %in% data_cols) {
+        cluster_col <- vm[["cluster_id"]]
+      }
+      if (is.null(cluster_col) || !cluster_col %in% data_cols) {
+        cluster_col <- NULL
+      }
+
+      weight_col <- vm[["weight"]]
+      if (is.null(weight_col) || !weight_col %in% data_cols) weight_col <- NULL
+
+      strata_col <- vm[["stratum"]]
+      if (is.null(strata_col) || !strata_col %in% data_cols) strata_col <- NULL
+
+      fpc_col    <- vm[["fpc"]]
+      if (is.null(fpc_col) || !fpc_col %in% data_cols) fpc_col <- NULL
+
+      if (is.null(cluster_col)) {
+        phr_message(origin, "No cluster column found for linked dataset; using ids = 1 (simple random sample design).")
+      }
+
+      ids_sym    <- if (!is.null(cluster_col)) rlang::sym(cluster_col) else 1
+      strata_sym <- if (!is.null(strata_col))  rlang::sym(strata_col)  else NULL
+      weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
+      fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
+
+      design <- phr_try(
+        srvyr::as_survey_design(
+          .data   = data,
+          ids     = !!ids_sym,
+          strata  = !!strata_sym,
+          weights = !!weight_sym,
+          fpc     = !!fpc_sym,
+          nest    = TRUE
+        ),
+        on_error = "warn",
+        origin   = origin,
+        hint     = "Check that cluster_id_numeric (or cluster_id) and weight columns contain valid data in the linked dataset."
+      )
+
+      if (!is.null(design)) {
+        phr_message(origin, "Survey design created successfully for linked dataset.")
+      }
+
+      design
     },
 
     #' Build a DAP tibble from an analysis schema, resolving canonical variable names.
