@@ -516,7 +516,7 @@ MortalityDataAnalytics <- R6::R6Class(
           return(invisible(self))
         }
 
-        result <- private$..build_dap_from_schema(
+        result <- private$.build_dap_from_schema(
           analysis_schema = self$analysis_schema_roster,
           variable_map    = self$linked_ind_roster_variable_map %||% self$variable_map %||% list(),
           available_vars  = names(self$linked_ind_roster_data),
@@ -566,7 +566,7 @@ MortalityDataAnalytics <- R6::R6Class(
           return(invisible(self))
         }
 
-        result <- private$..build_dap_from_schema(
+        result <- private$.build_dap_from_schema(
           analysis_schema = self$analysis_schema_deaths,
           variable_map    = self$linked_ind_deaths_variable_map %||% self$variable_map %||% list(),
           available_vars  = names(self$linked_ind_deaths_data),
@@ -620,7 +620,7 @@ MortalityDataAnalytics <- R6::R6Class(
         self$analysis_results    <- list(household = household_results)
 
         # --- Roster analysis --------------------------------------------------
-        roster_dap_rows <- private$..dap_row_count(self$data_analysis_plan_roster)
+        roster_dap_rows <- private$.dap_row_count(self$data_analysis_plan_roster)
 
         if (!is.null(self$linked_ind_roster_data) && roster_dap_rows > 0L) {
 
@@ -656,7 +656,7 @@ MortalityDataAnalytics <- R6::R6Class(
         }
 
         # --- Deaths analysis --------------------------------------------------
-        deaths_dap_rows <- private$..dap_row_count(self$data_analysis_plan_deaths)
+        deaths_dap_rows <- private$.dap_row_count(self$data_analysis_plan_deaths)
 
         if (!is.null(self$linked_ind_deaths_data) && deaths_dap_rows > 0L) {
 
@@ -786,7 +786,7 @@ MortalityDataAnalytics <- R6::R6Class(
     #'
     #' @param dap A QuantDataAnalysisPlanLog object (or NULL).
     #' @return Integer row count, or 0L when dap or its log_df is NULL.
-    ..dap_row_count = function(dap) {
+    .dap_row_count = function(dap) {
       if (!is.null(dap) && !is.null(dap$log_df)) nrow(dap$log_df) else 0L
     },
 
@@ -801,7 +801,7 @@ MortalityDataAnalytics <- R6::R6Class(
     #' @param available_vars Character vector of column names available in the target dataset.
     #' @param dataset_label Character label used in the returned issues tibble (e.g. "roster").
     #' @return A named list with elements \code{dap_df} (tibble) and \code{issues} (tibble).
-    ..build_dap_from_schema = function(analysis_schema, variable_map, available_vars,
+    .build_dap_from_schema = function(analysis_schema, variable_map, available_vars,
                                        dataset_label = "dataset") {
 
       vm <- variable_map %||% list()
