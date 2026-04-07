@@ -141,6 +141,61 @@ MortalityDataAnalytics <- R6::R6Class(
         )
       }
 
+      # Pre-merge linked roster and deaths variable/value maps and labels into the
+      # household maps BEFORE calling super$initialize. This ensures that when
+      # super$initialize() calls generate_dap_from_schema(), self$variable_map
+      # already contains all canonical-name mappings, including those for mortality
+      # analysis indicators that may be defined in a linked dataset's variable_map.
+      # Household data takes precedence: keys already present are never overwritten.
+      merged_variable_map   <- variable_map   %||% list()
+      merged_value_map      <- value_map      %||% list()
+      merged_variable_label <- variable_label %||% list()
+      merged_value_label    <- value_label    %||% list()
+
+      for (linked_maps in list(
+        list(
+          variable_map   = linked_ind_roster_variable_map,
+          value_map      = linked_ind_roster_value_map,
+          variable_label = linked_ind_roster_variable_label,
+          value_label    = linked_ind_roster_value_label
+        ),
+        list(
+          variable_map   = linked_ind_deaths_variable_map,
+          value_map      = linked_ind_deaths_value_map,
+          variable_label = linked_ind_deaths_variable_label,
+          value_label    = linked_ind_deaths_value_label
+        )
+      )) {
+        if (!is.null(linked_maps$variable_map)) {
+          for (key in names(linked_maps$variable_map)) {
+            if (is.null(merged_variable_map[[key]])) {
+              merged_variable_map[[key]] <- linked_maps$variable_map[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$value_map)) {
+          for (key in names(linked_maps$value_map)) {
+            if (is.null(merged_value_map[[key]])) {
+              merged_value_map[[key]] <- linked_maps$value_map[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$variable_label)) {
+          for (key in names(linked_maps$variable_label)) {
+            if (is.null(merged_variable_label[[key]])) {
+              merged_variable_label[[key]] <- linked_maps$variable_label[[key]]
+            }
+          }
+        }
+        if (!is.null(linked_maps$value_label)) {
+          for (key in names(linked_maps$value_label)) {
+            if (is.null(merged_value_label[[key]])) {
+              merged_value_label[[key]] <- linked_maps$value_label[[key]]
+            }
+          }
+        }
+      }
+
       super$initialize(
         data = data,
         dap = dap,
@@ -148,10 +203,10 @@ MortalityDataAnalytics <- R6::R6Class(
         dataset_name = dataset_name,
         data_stage_name = data_stage_name,
         data_hash = data_hash,
-        variable_map = variable_map,
-        value_map = value_map,
-        variable_label = variable_label,
-        value_label = value_label,
+        variable_map = merged_variable_map,
+        value_map = merged_value_map,
+        variable_label = merged_variable_label,
+        value_label = merged_value_label,
         quality_schema = quality_schema
       )
 
@@ -171,64 +226,11 @@ MortalityDataAnalytics <- R6::R6Class(
       self$linked_ind_deaths_variable_label    <- linked_ind_deaths_variable_label
       self$linked_ind_deaths_value_label       <- linked_ind_deaths_value_label
 
-      # Safely merge linked roster and deaths variable/value maps and labels into
-      # the consolidated maps set by super$initialize. Household data takes precedence:
-      # only keys absent from the household maps are added from linked datasets.
-      for (linked_maps in list(
-        list(
-          variable_map   = linked_ind_roster_variable_map,
-          value_map      = linked_ind_roster_value_map,
-          variable_label = linked_ind_roster_variable_label,
-          value_label    = linked_ind_roster_value_label
-        ),
-        list(
-          variable_map   = linked_ind_deaths_variable_map,
-          value_map      = linked_ind_deaths_value_map,
-          variable_label = linked_ind_deaths_variable_label,
-          value_label    = linked_ind_deaths_value_label
-        )
-      )) {
-        if (!is.null(linked_maps$variable_map)) {
-          for (key in names(linked_maps$variable_map)) {
-            if (is.null(self$variable_map[[key]])) {
-              self$variable_map[[key]] <- linked_maps$variable_map[[key]]
-            }
-          }
-        }
-        if (!is.null(linked_maps$value_map)) {
-          for (key in names(linked_maps$value_map)) {
-            if (is.null(self$value_map[[key]])) {
-              self$value_map[[key]] <- linked_maps$value_map[[key]]
-            }
-          }
-        }
-        if (!is.null(linked_maps$variable_label)) {
-          for (key in names(linked_maps$variable_label)) {
-            if (is.null(self$variable_label[[key]])) {
-              self$variable_label[[key]] <- linked_maps$variable_label[[key]]
-            }
-          }
-        }
-        if (!is.null(linked_maps$value_label)) {
-          for (key in names(linked_maps$value_label)) {
-            if (is.null(self$value_label[[key]])) {
-              self$value_label[[key]] <- linked_maps$value_label[[key]]
-            }
-          }
-        }
-      }
-
       # Load per-dataset schemas for roster and deaths
       self$analysis_schema_roster <- self$default_analysis_schema_roster()
       self$analysis_schema_deaths <- self$default_analysis_schema_deaths()
       self$outputs_schema_roster  <- self$default_outputs_schema_roster()
       self$outputs_schema_deaths  <- self$default_outputs_schema_deaths()
-
-      # Re-generate the household DAP now that the merged variable_map is available.
-      # super$initialize() called generate_dap_from_schema() with only the household
-      # variable_map; the linked dataset maps may supply additional canonical-name
-      # mappings needed for the household mortality analysis indicators.
-      self$generate_dap_from_schema()
 
       # Generate per-dataset analysis plans for roster and deaths
       self$data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
@@ -643,8 +645,10 @@ MortalityDataAnalytics <- R6::R6Class(
               origin   = origin,
               hint     = "Verify all variables exist in linked_ind_roster_data."
             )
-            # Linked datasets use a simple (unweighted) SRS design, so survey_design
-            # and base both reference the same result set.
+            # Linked datasets use a simple (unweighted) SRS design. survey_design and
+            # base both carry the same results; because phr_calc_survey_from_plan
+            # returns a plain list, R's copy-on-modify semantics ensure the two fields
+            # remain independent if either is later mutated.
             self$analysis_results[["roster"]] <- list(
               survey_design = roster_sd_results,
               base          = roster_sd_results
@@ -679,8 +683,10 @@ MortalityDataAnalytics <- R6::R6Class(
               origin   = origin,
               hint     = "Verify all variables exist in linked_ind_deaths_data."
             )
-            # Linked datasets use a simple (unweighted) SRS design, so survey_design
-            # and base both reference the same result set.
+            # Linked datasets use a simple (unweighted) SRS design. survey_design and
+            # base both carry the same results; because phr_calc_survey_from_plan
+            # returns a plain list, R's copy-on-modify semantics ensure the two fields
+            # remain independent if either is later mutated.
             self$analysis_results[["deaths"]] <- list(
               survey_design = deaths_sd_results,
               base          = deaths_sd_results
