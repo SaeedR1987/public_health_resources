@@ -234,8 +234,16 @@ good_deaths <- DeathIndividualData$new(
   mortality_analyics$run_quality_checks()
   mortality_analyics$run_outputs()
 
-  mortality_analyics$analysis_schema
+  View(mortality_analyics$analysis_results$household$base)
+  View(mortality_analyics$analysis_results$deaths$base)
 
+  mortality_analyics$analysis_plan_issue_log
+
+
+  (a <- sum(mortality_analyics$data$linked_person_time))
+  (b <- sum(mortality_analyics$data$linked_person_time_female))
+  (c <- sum(mortality_analyics$data$linked_person_time_male))
+  (d <- sum(mortality_analyics$data$linked_person_time_under5))
 
   # Create Nutrition Data Analytics Object ####
 

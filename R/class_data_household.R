@@ -1735,8 +1735,8 @@ HouseholdData <- R6::R6Class(
           "roster_child_under2", "roster_child_under5",
           "roster_male", "roster_female", "roster_woman_15to49",
           "roster_birth",
-          "roster_person_time", "roster_person_time_under5",
-          "roster_person_time_male", "roster_person_time_female",
+          "person_time", "person_time_under5",
+          "person_time_male", "person_time_female",
           "roster_age_6_29m", "roster_age_30_59m"
         )
 

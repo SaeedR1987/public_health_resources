@@ -437,33 +437,71 @@ add_standardized_age <- function(
       }
     }
 
-    # Compute `calc_date_birth_final` taking into account final columns
-    # Only include columns that are not NULL and exist in the dataset
-    birth_cols <- c(
-      if (!is.null(date_birth_exact_col) && date_birth_exact_col %in% names(.dataset)) date_birth_exact_col,
-      if (!is.null(date_birth_approx_col) && date_birth_approx_col %in% names(.dataset)) date_birth_approx_col,
-      if (!is.null(date_birth_final_col) && date_birth_final_col %in% names(.dataset)) date_birth_final_col
-    )
+    # flags for whether each candidate column is usable
+    has_exact <- !is.null(date_birth_exact_col) && date_birth_exact_col %in% names(.dataset)
+    has_approx <- !is.null(date_birth_approx_col) && date_birth_approx_col %in% names(.dataset)
+    has_final <- !is.null(date_birth_final_col) && date_birth_final_col %in% names(.dataset)
 
-    if (length(birth_cols) > 0) {
+    if (has_exact && has_approx) {
       .dataset <- .dataset %>%
         dplyr::mutate(
-          calc_date_birth_final = dplyr::coalesce(!!!rlang::syms(birth_cols))
+          calc_date_birth_final = dplyr::if_else(
+            !is.na(.data[[date_birth_exact_col]]),
+            .data[[date_birth_exact_col]],
+            .data[[date_birth_approx_col]]
+          )
+        )
+
+    } else if (has_exact) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_birth_final = .data[[date_birth_exact_col]]
+        )
+
+    } else if (has_approx) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_birth_final = .data[[date_birth_approx_col]]
+        )
+
+    } else if (has_final) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_birth_final = .data[[date_birth_final_col]]
         )
     }
 
-    # Compute `calc_date_death_final` taking into account final columns
-    # Only include columns that are not NULL and exist in the dataset
-    death_cols <- c(
-      if (!is.null(date_death_exact_col) && date_death_exact_col %in% names(.dataset)) date_death_exact_col,
-      if (!is.null(date_death_approx_col) && date_death_approx_col %in% names(.dataset)) date_death_approx_col,
-      if (!is.null(date_death_final_col) && date_death_final_col %in% names(.dataset)) date_death_final_col
-    )
+    # flags for whether each candidate column is usable
+    has_exact_death <- !is.null(date_death_exact_col) && date_death_exact_col %in% names(.dataset)
+    has_approx_death <- !is.null(date_death_approx_col) && date_death_approx_col %in% names(.dataset)
+    has_final_death <- !is.null(date_death_final_col) && date_death_final_col %in% names(.dataset)
 
-    if (length(death_cols) > 0) {
+    if (has_exact_death && has_approx_death) {
       .dataset <- .dataset %>%
         dplyr::mutate(
-          calc_date_death_final = dplyr::coalesce(!!!rlang::syms(death_cols))
+          calc_date_death_final = dplyr::if_else(
+            !is.na(.data[[date_death_exact_col]]),
+            .data[[date_death_exact_col]],
+            .data[[date_death_approx_col]]
+          )
+        )
+
+    } else if (has_exact_death) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_death_final = .data[[date_death_exact_col]]
+        )
+
+    } else if (has_approx_death) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_death_final = .data[[date_death_approx_col]]
+        )
+
+    } else if (has_final_death) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_death_final = .data[[date_death_final_col]]
         )
     }
 
