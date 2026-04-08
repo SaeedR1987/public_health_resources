@@ -40,6 +40,8 @@
 #' @field outputs_schema_deaths Outputs schema for linked deaths dataset
 #' @field data_analysis_plan_roster Data analysis plan for linked roster dataset
 #' @field data_analysis_plan_deaths Data analysis plan for linked deaths dataset
+#' @field survey_design_roster srvyr survey design object for the linked roster dataset
+#' @field survey_design_deaths srvyr survey design object for the linked deaths dataset
 #'
 #' @seealso [DataAnalytics], [MortalityDataQuality], [MortalityAnalysis]
 #' @export
@@ -76,6 +78,10 @@ MortalityDataAnalytics <- R6::R6Class(
     # Per-dataset data analysis plans
     data_analysis_plan_roster = NULL,
     data_analysis_plan_deaths = NULL,
+
+    # Per-dataset survey design objects
+    survey_design_roster = NULL,
+    survey_design_deaths = NULL,
 
     #' @description
     #' Initialize a new MortalityDataAnalytics object
@@ -248,6 +254,23 @@ MortalityDataAnalytics <- R6::R6Class(
 
       if (!is.null(linked_ind_deaths_data)) {
         self$generate_dap_from_schema_deaths()
+      }
+
+      # Create and store per-dataset survey designs for roster and deaths
+      if (!is.null(linked_ind_roster_data)) {
+        self$survey_design_roster <- private$.create_survey_design_for_dataset(
+          data         = linked_ind_roster_data,
+          variable_map = linked_ind_roster_variable_map %||% merged_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
+      }
+
+      if (!is.null(linked_ind_deaths_data)) {
+        self$survey_design_deaths <- private$.create_survey_design_for_dataset(
+          data         = linked_ind_deaths_data,
+          variable_map = linked_ind_deaths_variable_map %||% merged_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
       }
 
       msg_parts <- c()
@@ -750,7 +773,7 @@ MortalityDataAnalytics <- R6::R6Class(
             data           = self$linked_ind_roster_data,
             outputs_schema = self$outputs_schema_roster,
             namespace      = "roster",
-            variable_map   = self$linked_ind_roster_variable_map %||% self$variable_map
+            survey_design  = self$survey_design_roster
           )
 
         } else if (!is.null(self$linked_ind_roster_data)) {
@@ -766,7 +789,7 @@ MortalityDataAnalytics <- R6::R6Class(
             data           = self$linked_ind_deaths_data,
             outputs_schema = self$outputs_schema_deaths,
             namespace      = "deaths",
-            variable_map   = self$linked_ind_deaths_variable_map %||% self$variable_map
+            survey_design  = self$survey_design_deaths
           )
 
         } else if (!is.null(self$linked_ind_deaths_data)) {
@@ -1036,10 +1059,9 @@ MortalityDataAnalytics <- R6::R6Class(
     #' Supported \code{dataset_type} values per output entry:
     #' \describe{
     #'   \item{"data"}{uses \code{data} as the first argument (default)}
-    #'   \item{"survey_design"}{builds a survey design from \code{data} using
-    #'     \code{variable_map} (via \code{.create_survey_design_for_dataset}) and
-    #'     passes it as the first argument. The design is created once and reused
-    #'     for all outputs in the same namespace that request it.}
+    #'   \item{"survey_design"}{uses the pre-built \code{survey_design} object as the
+    #'     first argument. If \code{survey_design} is \code{NULL}, outputs requesting
+    #'     this type are skipped with a warning.}
     #' }
     #'
     #' @param data A data frame for the namespace dataset.
@@ -1047,12 +1069,12 @@ MortalityDataAnalytics <- R6::R6Class(
     #'   \code{outputs_table_to_schema}).
     #' @param namespace Character; key used for the sub-list in \code{self$visualizations}
     #'   and \code{self$tables} (e.g., "roster" or "deaths").
-    #' @param variable_map Named list mapping canonical variable names to actual column
-    #'   names in \code{data}. Used when building a survey design for the namespace
-    #'   dataset (i.e. when any output has \code{dataset_type = "survey_design"}).
+    #' @param survey_design An srvyr survey design object for the namespace dataset,
+    #'   used when an output entry has \code{dataset_type = "survey_design"}.
+    #'   Should be pre-built and stored (e.g. \code{self$survey_design_roster}).
     #' @return Invisibly returns NULL.
     .run_outputs_for_namespace = function(data, outputs_schema, namespace,
-                                          variable_map = NULL) {
+                                          survey_design = NULL) {
       origin <- paste0(self$dataset_name, "$.run_outputs_for_namespace[", namespace, "]")
 
       if (is.null(outputs_schema) || length(outputs_schema) == 0) {
@@ -1065,10 +1087,6 @@ MortalityDataAnalytics <- R6::R6Class(
 
       self$visualizations[[namespace]] <- self$visualizations[[namespace]] %||% list()
       self$tables[[namespace]]         <- self$tables[[namespace]]         %||% list()
-
-      # Lazily-created survey design for this namespace; built at most once.
-      namespace_survey_design <- NULL
-      namespace_survey_design_tried <- FALSE
 
       for (out_name in names(outputs_schema)) {
         out <- outputs_schema[[out_name]]
@@ -1114,7 +1132,7 @@ MortalityDataAnalytics <- R6::R6Class(
           }
 
           # Determine first positional argument from dataset_type.
-          # "survey_design" – a survey design built from data + variable_map.
+          # "survey_design" – the pre-built survey design for this namespace dataset.
           # "data" (default) – the raw data frame.
           dataset_type <- if (!is.null(out$dataset_type) &&
                                !is.na(out$dataset_type) &&
@@ -1123,28 +1141,17 @@ MortalityDataAnalytics <- R6::R6Class(
           } else "data"
 
           if (dataset_type == "survey_design") {
-            # Build (or reuse) the namespace-level survey design.
-            if (!namespace_survey_design_tried) {
-              namespace_survey_design_tried <- TRUE
-              namespace_survey_design <- private$.create_survey_design_for_dataset(
-                data         = data,
-                variable_map = variable_map,
-                origin       = origin
+            if (is.null(survey_design)) {
+              phr_warning(
+                message = phr_txt(glue::glue(
+                  "Output '{out_name}' in '{namespace}' requires dataset_type='survey_design' but ",
+                  "no survey design is available for this dataset. Skipping."
+                )),
+                origin = origin
               )
-              if (is.null(namespace_survey_design)) {
-                phr_warning(
-                  message = phr_txt(glue::glue(
-                    "Could not create survey design for '{namespace}' dataset. ",
-                    "Outputs with dataset_type='survey_design' will be skipped."
-                  )),
-                  origin = origin
-                )
-              }
-            }
-            if (is.null(namespace_survey_design)) {
               next
             }
-            func_args <- list(namespace_survey_design)
+            func_args <- list(survey_design)
           } else {
             func_args <- list(data)
           }
