@@ -1187,9 +1187,9 @@ phr_calc_survey_ratio_single <- function(design,
       lower_ci = NA_real_,
       upper_ci = NA_real_,
       ci_method = NA_character_,
-      n_unweighted = sum(!is.na(data[[numerator_var]]) & !is.na(data[[denominator_var]])),
+      n_unweighted = NA_real_,
       n_weighted = NA_real_,
-      denom_unweighted = sum(!is.na(data[[denominator_var]])),
+      denom_unweighted = NA_real_,
       denom_weighted = NA_real_,
       n_eff = NA_real_,
       deff = NA_real_,
@@ -1205,10 +1205,10 @@ phr_calc_survey_ratio_single <- function(design,
 
   dsn_sum <- design_srvyr %>%
     srvyr::summarise(
-      n_weighted       = srvyr::survey_total(!is.na(!!num_sym) & !is.na(!!den_sym), vartype = NULL, na.rm = TRUE),
-      n_unweighted     = sum(!is.na(!!num_sym) & !is.na(!!den_sym)),
-      denom_weighted   = srvyr::survey_total(!is.na(!!den_sym), vartype = NULL, na.rm = TRUE),
-      denom_unweighted = sum(!is.na(!!den_sym))
+      n_weighted       = srvyr::survey_total(!!num_sym, vartype = NULL, na.rm = TRUE),
+      n_unweighted     = sum(!!num_sym, na.rm = TRUE),
+      denom_weighted   = srvyr::survey_total(!!den_sym, vartype = NULL, na.rm = TRUE),
+      denom_unweighted = sum(!!den_sym, na.rm = TRUE)
     )
 
   n_weighted       <- as.numeric(dsn_sum$n_weighted)
@@ -1216,7 +1216,7 @@ phr_calc_survey_ratio_single <- function(design,
   denom_weighted   <- as.numeric(dsn_sum$denom_weighted)
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(survey::weights(design), error = function(e) rep(1, nrow(data)))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean ratio
