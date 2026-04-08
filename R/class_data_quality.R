@@ -1328,6 +1328,44 @@ DataQuality <- R6::R6Class(
                           )
                         }
                       }
+                    # Resolve @variable_label references within vector
+                    } else if (grepl("^@variable_label\\$", elem)) {
+                      role     <- sub("^@variable_label\\$", "", elem)
+                      resolved <- self$variable_label[[role]]
+                      if (!is.null(resolved)) {
+                        resolved_elements <- c(resolved_elements, resolved)
+                      } else {
+                        phr_warning(
+                          message = phr_txt(glue::glue("Variable label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                          origin = self$dataset_name
+                        )
+                      }
+                    # Resolve @value_label references within vector
+                    } else if (grepl("^@value_label\\$", elem)) {
+                      parts <- strsplit(sub("^@value_label\\$", "", elem), "\\$")[[1]]
+                      if (length(parts) >= 1) {
+                        role <- parts[1]
+                        if (!is.null(self$value_label[[role]])) {
+                          if (length(parts) == 2) {
+                            resolved <- self$value_label[[role]][[parts[2]]]
+                            if (!is.null(resolved)) {
+                              resolved_elements <- c(resolved_elements, resolved)
+                            } else {
+                              phr_warning(
+                                message = phr_txt(glue::glue("Value label '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                                origin = self$dataset_name
+                              )
+                            }
+                          } else {
+                            resolved_elements <- c(resolved_elements, unlist(self$value_label[[role]], use.names = FALSE))
+                          }
+                        } else {
+                          phr_warning(
+                            message = phr_txt(glue::glue("Value label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                            origin = self$dataset_name
+                          )
+                        }
+                      }
                     } else {
                       # Literal value - remove quotes if present
                       elem <- gsub("^['\"]|['\"]$", "", elem)

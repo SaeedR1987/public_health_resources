@@ -2308,6 +2308,42 @@ DataAnalytics <- R6::R6Class(
                   }
                 }
               }
+            } else if (grepl("^@variable_label\\$", elem)) {
+              role     <- sub("^@variable_label\\$", "", elem)
+              resolved <- self$variable_label[[role]]
+              if (!is.null(resolved)) {
+                resolved_elements <- c(resolved_elements, resolved)
+              } else {
+                phr_warning(
+                  message = phr_txt(glue::glue("Variable label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                  origin = self$dataset_name
+                )
+              }
+            } else if (grepl("^@value_label\\$", elem)) {
+              parts <- strsplit(sub("^@value_label\\$", "", elem), "\\$")[[1]]
+              if (length(parts) >= 1) {
+                role <- parts[1]
+                if (!is.null(self$value_label[[role]])) {
+                  if (length(parts) == 2) {
+                    resolved <- self$value_label[[role]][[parts[2]]]
+                    if (!is.null(resolved)) {
+                      resolved_elements <- c(resolved_elements, resolved)
+                    } else {
+                      phr_warning(
+                        message = phr_txt(glue::glue("Value label '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                        origin = self$dataset_name
+                      )
+                    }
+                  } else {
+                    resolved_elements <- c(resolved_elements, unlist(self$value_label[[role]], use.names = FALSE))
+                  }
+                } else {
+                  phr_warning(
+                    message = phr_txt(glue::glue("Value label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                    origin = self$dataset_name
+                  )
+                }
+              }
             } else {
               resolved_elements <- c(resolved_elements, gsub("^['\"]|['\"]$", "", elem))
             }
@@ -2318,7 +2354,14 @@ DataAnalytics <- R6::R6Class(
         } else if (is.character(arg_value) && grepl("^@variable_label\\$", arg_value)) {
           role     <- sub("^@variable_label\\$", "", arg_value)
           resolved <- self$variable_label[[role]]
-          if (!is.null(resolved)) func_args[[arg_name]] <- resolved
+          if (!is.null(resolved)) {
+            func_args[[arg_name]] <- resolved
+          } else {
+            phr_warning(
+              message = phr_txt(glue::glue("Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
+              origin = self$dataset_name
+            )
+          }
 
         } else if (is.character(arg_value) && arg_value == "@results_table") {
           if (!skip_results_table) {
