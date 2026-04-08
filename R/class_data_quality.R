@@ -1328,8 +1328,9 @@ DataQuality <- R6::R6Class(
                           )
                         }
                       }
+                    }
                     # Resolve @variable_label references within vector
-                    } else if (grepl("^@variable_label\\$", elem)) {
+                    else if (grepl("^@variable_label\\$", elem)) {
                       role     <- sub("^@variable_label\\$", "", elem)
                       resolved <- self$variable_label[[role]]
                       if (!is.null(resolved)) {
@@ -1340,8 +1341,9 @@ DataQuality <- R6::R6Class(
                           origin = self$dataset_name
                         )
                       }
+                    }
                     # Resolve @value_label references within vector
-                    } else if (grepl("^@value_label\\$", elem)) {
+                    else if (grepl("^@value_label\\$", elem)) {
                       parts <- strsplit(sub("^@value_label\\$", "", elem), "\\$")[[1]]
                       if (length(parts) >= 1) {
                         role <- parts[1]
