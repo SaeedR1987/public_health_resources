@@ -8018,7 +8018,7 @@ table_frequency_v2 <- function(.dataset,
 
     # Require a survey design object
     if (!inherits(.dataset, c("tbl_svy", "survey.design", "survey.design2",
-                               "svyrep.design", "srvyr_svy"))) {
+                               "svyrep.design"))) {
       phr_error(origin = origin,
                 message = phr_txt(
                   ".dataset must be a survey design object (e.g. created with srvyr::as_survey_design())."
@@ -8260,7 +8260,7 @@ table_frequency_v2 <- function(.dataset,
 
         per_group <- lapply(group_levels, function(g) {
           design_sub <- tryCatch(
-            subset(.dataset, working_df[[disagg]] == g),
+            subset(.dataset, .dataset$variables[[disagg]] == g),
             error = function(e) {
               phr_warning(origin, paste("Subset failed for", disagg, "=", g))
               NULL
