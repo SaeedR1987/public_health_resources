@@ -234,7 +234,7 @@ good_deaths <- DeathIndividualData$new(
   mortality_analyics$run_quality_checks()
   mortality_analyics$run_outputs()
 
-  View(mortality_analyics$analysis_results$household$base)
+  View(mortality_analyics$analysis_results$household$survey_design)
   View(mortality_analyics$analysis_results$deaths$base)
 
   mortality_analyics$analysis_plan_issue_log
@@ -249,11 +249,13 @@ good_deaths <- DeathIndividualData$new(
 
   nut_analytics <- good_nutrition$generate_data_analytics(stage = "standardized", type = "nutrition")
 
-  nut_analytics$run_quality_checks()
   nut_analytics$run_analysis()
+  nut_analytics$run_quality_checks()
   nut_analytics$run_outputs()
 
-  nut_analytics$visualizations$base$mfaz_boxplot_overall
+  nut_analytics$analysis_results$base
+
+   nut_analytics$visualizations$base$mfaz_boxplot_overall
 
   nut_analytics$data_analysis_plan$log_df
 

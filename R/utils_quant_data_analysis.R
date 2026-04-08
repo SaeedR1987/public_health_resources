@@ -59,7 +59,7 @@ phr_calc_survey_from_plan <- function(design,
   origin <- "phr_calc_survey_from_plan"
   phr_message(origin, "Starting execution of data analysis plan...")
 
-  # --- Validation ------------------------------------------------------------
+  # --- Validation
   phr_try({
     if (is.null(design)) phr_error(origin, "Survey design object is NULL.")
     if (!inherits(analysis_plan, "data.frame")) {
@@ -79,10 +79,10 @@ phr_calc_survey_from_plan <- function(design,
   origin = origin,
   hint = "Check that your data_analysis_plan follows the expected template.")
 
-  # --- Initialize results holder --------------------------------------------
+  # --- Initialize results holder
   results <- list()
 
-  # --- Loop through analysis plan -------------------------------------------
+  # --- Loop through analysis plan
   for (i in seq_len(nrow(analysis_plan))) {
     row <- analysis_plan[i, ]
     indicator <- row$indicator_name
@@ -95,7 +95,7 @@ phr_calc_survey_from_plan <- function(design,
 
     phr_message(origin, paste0("Running [", i, "/", nrow(analysis_plan), "]: ", indicator, " (", calc_type, ")"))
 
-    # --- Internal helper for one calculation ----------------------
+    # --- Internal helper for one calculation
     run_single_calc <- function(design_subset, group_value = NA_character_) {
       result_i <- phr_try({
         if (calc_type %in% c("prop", "proportion")) {
@@ -200,7 +200,7 @@ phr_calc_survey_from_plan <- function(design,
       result_i[c(present, extra)]
     }
 
-    # --- Handle disaggregated analysis --------------------------------------
+    # --- Handle disaggregated analysis
     if (!is.null(disagg) && disagg %in% names(design$variables)) {
       group_levels <- unique(na.omit(design$variables[[disagg]]))
       phr_message(origin, paste("Disaggregating by:", disagg, "(", length(group_levels), "groups )"))
@@ -229,7 +229,7 @@ phr_calc_survey_from_plan <- function(design,
     }
   }
 
-  # --- Bind and return ------------------------------------------------------
+  # --- Bind and return
   out <- tryCatch(
     dplyr::bind_rows(results),
     error = function(e) {
@@ -281,7 +281,7 @@ phr_pick_ci_method <- function(n_unweighted = NULL,
                                  is_numeric = FALSE,
                                  is_ratio = FALSE) {
 
-  # --- Initialize --------------------------------------------
+  # --- Initialize
   flags <- c(
     flag_small_n    = FALSE,
     flag_low_neff   = FALSE,
@@ -292,20 +292,20 @@ phr_pick_ci_method <- function(n_unweighted = NULL,
   )
   notes <- c()
 
-  # --- Handle missing inputs gracefully ----------------------
+  # --- Handle missing inputs gracefully
   if (is.null(n_unweighted)) n_unweighted <- NA_real_
   if (is.null(n_eff)) n_eff <- NA_real_
   if (is.null(p_estimate)) p_estimate <- NA_real_
   if (is.null(deff)) deff <- NA_real_
 
-  # --- Lonely PSU handling -----------------------------------
+  # --- Lonely PSU handling
   if (isTRUE(lonely_psu)) {
     options(survey.lonely.psu = "adjust")
     flags["flag_lonely_psu"] <- TRUE
     notes <- c(notes, "lonely PSU adjusted (variance mode = 'adjust')")
   }
 
-  # --- Trigger checks ----------------------------------------
+  # --- Trigger checks
   if (is.finite(n_unweighted) && n_unweighted < 30) {
     flags["flag_small_n"] <- TRUE
     notes <- c(notes, "small sample size (n < 30)")
@@ -347,9 +347,9 @@ phr_pick_ci_method <- function(n_unweighted = NULL,
       notes <- c(notes, "Wald CI (default) selected")
     }
   } else {
-    #----------------------------------------------------------
+
     # Decision logic for RATIO cases
-    #----------------------------------------------------------
+
 
     # Default: Taylor-linearized (survey::svyratio)
     method <- "design-taylor"
