@@ -749,7 +749,8 @@ MortalityDataAnalytics <- R6::R6Class(
           private$.run_outputs_for_namespace(
             data           = self$linked_ind_roster_data,
             outputs_schema = self$outputs_schema_roster,
-            namespace      = "roster"
+            namespace      = "roster",
+            variable_map   = self$linked_ind_roster_variable_map %||% self$variable_map
           )
 
         } else if (!is.null(self$linked_ind_roster_data)) {
@@ -764,7 +765,8 @@ MortalityDataAnalytics <- R6::R6Class(
           private$.run_outputs_for_namespace(
             data           = self$linked_ind_deaths_data,
             outputs_schema = self$outputs_schema_deaths,
-            namespace      = "deaths"
+            namespace      = "deaths",
+            variable_map   = self$linked_ind_deaths_variable_map %||% self$variable_map
           )
 
         } else if (!is.null(self$linked_ind_deaths_data)) {
@@ -1025,18 +1027,32 @@ MortalityDataAnalytics <- R6::R6Class(
     #' Run outputs for an arbitrary dataset, storing results under a namespace sub-list.
     #'
     #' For each output defined in \code{outputs_schema}, the specified output function
-    #' is called with \code{data} as the first positional argument and any additional
-    #' parameters resolved from \code{test_params}. Results are stored in
+    #' is called with the appropriate first positional argument (determined by
+    #' \code{dataset_type} in the output entry) and any additional parameters
+    #' resolved from \code{test_params}. Results are stored in
     #' \code{self$visualizations[[namespace]]} or \code{self$tables[[namespace]]}
     #' depending on \code{output_type}.
     #'
-    #' @param data A data frame to pass as the first argument to each output function.
+    #' Supported \code{dataset_type} values per output entry:
+    #' \describe{
+    #'   \item{"data"}{uses \code{data} as the first argument (default)}
+    #'   \item{"survey_design"}{builds a survey design from \code{data} using
+    #'     \code{variable_map} (via \code{.create_survey_design_for_dataset}) and
+    #'     passes it as the first argument. The design is created once and reused
+    #'     for all outputs in the same namespace that request it.}
+    #' }
+    #'
+    #' @param data A data frame for the namespace dataset.
     #' @param outputs_schema A named list of output definitions (as produced by
     #'   \code{outputs_table_to_schema}).
     #' @param namespace Character; key used for the sub-list in \code{self$visualizations}
     #'   and \code{self$tables} (e.g., "roster" or "deaths").
+    #' @param variable_map Named list mapping canonical variable names to actual column
+    #'   names in \code{data}. Used when building a survey design for the namespace
+    #'   dataset (i.e. when any output has \code{dataset_type = "survey_design"}).
     #' @return Invisibly returns NULL.
-    .run_outputs_for_namespace = function(data, outputs_schema, namespace) {
+    .run_outputs_for_namespace = function(data, outputs_schema, namespace,
+                                          variable_map = NULL) {
       origin <- paste0(self$dataset_name, "$.run_outputs_for_namespace[", namespace, "]")
 
       if (is.null(outputs_schema) || length(outputs_schema) == 0) {
@@ -1049,6 +1065,10 @@ MortalityDataAnalytics <- R6::R6Class(
 
       self$visualizations[[namespace]] <- self$visualizations[[namespace]] %||% list()
       self$tables[[namespace]]         <- self$tables[[namespace]]         %||% list()
+
+      # Lazily-created survey design for this namespace; built at most once.
+      namespace_survey_design <- NULL
+      namespace_survey_design_tried <- FALSE
 
       for (out_name in names(outputs_schema)) {
         out <- outputs_schema[[out_name]]
@@ -1093,7 +1113,41 @@ MortalityDataAnalytics <- R6::R6Class(
             next
           }
 
-          func_args <- list(data)
+          # Determine first positional argument from dataset_type.
+          # "survey_design" – a survey design built from data + variable_map.
+          # "data" (default) – the raw data frame.
+          dataset_type <- if (!is.null(out$dataset_type) &&
+                               !is.na(out$dataset_type) &&
+                               nzchar(out$dataset_type)) {
+            out$dataset_type
+          } else "data"
+
+          if (dataset_type == "survey_design") {
+            # Build (or reuse) the namespace-level survey design.
+            if (!namespace_survey_design_tried) {
+              namespace_survey_design_tried <- TRUE
+              namespace_survey_design <- private$.create_survey_design_for_dataset(
+                data         = data,
+                variable_map = variable_map,
+                origin       = origin
+              )
+              if (is.null(namespace_survey_design)) {
+                phr_warning(
+                  message = phr_txt(glue::glue(
+                    "Could not create survey design for '{namespace}' dataset. ",
+                    "Outputs with dataset_type='survey_design' will be skipped."
+                  )),
+                  origin = origin
+                )
+              }
+            }
+            if (is.null(namespace_survey_design)) {
+              next
+            }
+            func_args <- list(namespace_survey_design)
+          } else {
+            func_args <- list(data)
+          }
 
           if (!is.null(out$test_params) && length(out$test_params) > 0) {
             func_args <- private$.resolve_output_params(
