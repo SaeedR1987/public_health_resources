@@ -1631,7 +1631,7 @@ quality_test_binomial_ratio_rowwise <- function(data,
       s <- success_vals[i]
       n <- total_vals[i]
 
-      if (is.na(s) || is.na(n) || n <= 0 || n < s ||
+      if (is.na(s) || is.na(n) || s < 0 || n <= 0 || n < s ||
           n != floor(n) || s != floor(s)) {
         return(NA_real_)
       }
@@ -1868,7 +1868,7 @@ quality_test_poisson_ratio_rowwise <- function(data,
       ev  <- event_vals[i]
       exp <- exposure_vals[i]
 
-      if (is.na(ev) || is.na(exp) || exp <= 0 || ev < 0) {
+      if (is.na(ev) || is.na(exp) || exp <= 0 || ev < 0 || ev != floor(ev)) {
         return(NA_real_)
       }
 

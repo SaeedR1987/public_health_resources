@@ -1538,7 +1538,7 @@ test_that("quality_test_anova warns with fewer than 2 group levels", {
   expect_equal(result$statistic, NA_real_)
 })
 
-test_that("quality_test_anova errors with non-character outcome_col", {
+test_that("quality_test_anova warns with non-character outcome_col", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
@@ -1547,7 +1547,7 @@ test_that("quality_test_anova errors with non-character outcome_col", {
   )
 })
 
-test_that("quality_test_anova errors with non-character group_col", {
+test_that("quality_test_anova warns with non-character group_col", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
@@ -1602,7 +1602,7 @@ test_that("quality_test_chisq_binary warns with fewer than 2 rows", {
   expect_equal(result$statistic, NA_real_)
 })
 
-test_that("quality_test_chisq_binary errors with non-character column args", {
+test_that("quality_test_chisq_binary warns with non-character column args", {
   df <- tibble::tibble(g = c("A", "B"), c1 = c(10, 20), c2 = c(5, 15))
 
   expect_warning(
@@ -1671,7 +1671,7 @@ test_that("quality_test_binomial_ratio_rowwise warns when column is missing", {
   )
 })
 
-test_that("quality_test_binomial_ratio_rowwise errors with invalid expected_ratio", {
+test_that("quality_test_binomial_ratio_rowwise warns with invalid expected_ratio", {
   df <- tibble::tibble(s = c(5L), n = c(10L))
 
   expect_warning(
@@ -1741,7 +1741,7 @@ test_that("quality_test_ttest_summary_rowwise warns when column is missing", {
   )
 })
 
-test_that("quality_test_ttest_summary_rowwise errors with invalid alternative", {
+test_that("quality_test_ttest_summary_rowwise warns with invalid alternative", {
   df <- tibble::tibble(m = 5.0, s = 1.0, n = 30L)
 
   expect_warning(
@@ -1810,7 +1810,7 @@ test_that("quality_test_poisson_ratio_rowwise warns when column is missing", {
   )
 })
 
-test_that("quality_test_poisson_ratio_rowwise errors with non-positive expected_rate", {
+test_that("quality_test_poisson_ratio_rowwise warns with non-positive expected_rate", {
   df <- tibble::tibble(ev = c(5L), exp = c(100))
 
   expect_warning(
