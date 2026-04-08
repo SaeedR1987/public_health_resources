@@ -243,7 +243,9 @@ good_deaths <- DeathIndividualData$new(
   mortality_analyics$visualizations$roster$age_pyramid_overall_weighted
   mortality_analyics$visualizations$roster$age_months_distribution_unweighted
 
-  mortality_analyics$tables$roster$demographics_table
+  mortality_analyics$tables$roster$basic_demo_table_weighted
+  mortality_analyics$tables$roster$basic_demo_table_strata_weighted
+
 
   (a <- sum(mortality_analyics$data$linked_person_time))
   (b <- sum(mortality_analyics$data$linked_person_time_female))
