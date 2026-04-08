@@ -40,6 +40,8 @@
 #' @field outputs_schema_deaths Outputs schema for linked deaths dataset
 #' @field data_analysis_plan_roster Data analysis plan for linked roster dataset
 #' @field data_analysis_plan_deaths Data analysis plan for linked deaths dataset
+#' @field survey_design_roster srvyr survey design object for the linked roster dataset
+#' @field survey_design_deaths srvyr survey design object for the linked deaths dataset
 #'
 #' @seealso [DataAnalytics], [MortalityDataQuality], [MortalityAnalysis]
 #' @export
@@ -76,6 +78,10 @@ MortalityDataAnalytics <- R6::R6Class(
     # Per-dataset data analysis plans
     data_analysis_plan_roster = NULL,
     data_analysis_plan_deaths = NULL,
+
+    # Per-dataset survey design objects
+    survey_design_roster = NULL,
+    survey_design_deaths = NULL,
 
     #' @description
     #' Initialize a new MortalityDataAnalytics object
@@ -248,6 +254,23 @@ MortalityDataAnalytics <- R6::R6Class(
 
       if (!is.null(linked_ind_deaths_data)) {
         self$generate_dap_from_schema_deaths()
+      }
+
+      # Create and store per-dataset survey designs for roster and deaths
+      if (!is.null(linked_ind_roster_data)) {
+        self$survey_design_roster <- private$.create_survey_design_for_dataset(
+          data         = linked_ind_roster_data,
+          variable_map = linked_ind_roster_variable_map %||% merged_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
+      }
+
+      if (!is.null(linked_ind_deaths_data)) {
+        self$survey_design_deaths <- private$.create_survey_design_for_dataset(
+          data         = linked_ind_deaths_data,
+          variable_map = linked_ind_deaths_variable_map %||% merged_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
       }
 
       msg_parts <- c()
@@ -749,7 +772,8 @@ MortalityDataAnalytics <- R6::R6Class(
           private$.run_outputs_for_namespace(
             data           = self$linked_ind_roster_data,
             outputs_schema = self$outputs_schema_roster,
-            namespace      = "roster"
+            namespace      = "roster",
+            survey_design  = self$survey_design_roster
           )
 
         } else if (!is.null(self$linked_ind_roster_data)) {
@@ -764,7 +788,8 @@ MortalityDataAnalytics <- R6::R6Class(
           private$.run_outputs_for_namespace(
             data           = self$linked_ind_deaths_data,
             outputs_schema = self$outputs_schema_deaths,
-            namespace      = "deaths"
+            namespace      = "deaths",
+            survey_design  = self$survey_design_deaths
           )
 
         } else if (!is.null(self$linked_ind_deaths_data)) {
@@ -1025,18 +1050,31 @@ MortalityDataAnalytics <- R6::R6Class(
     #' Run outputs for an arbitrary dataset, storing results under a namespace sub-list.
     #'
     #' For each output defined in \code{outputs_schema}, the specified output function
-    #' is called with \code{data} as the first positional argument and any additional
-    #' parameters resolved from \code{test_params}. Results are stored in
+    #' is called with the appropriate first positional argument (determined by
+    #' \code{dataset_type} in the output entry) and any additional parameters
+    #' resolved from \code{test_params}. Results are stored in
     #' \code{self$visualizations[[namespace]]} or \code{self$tables[[namespace]]}
     #' depending on \code{output_type}.
     #'
-    #' @param data A data frame to pass as the first argument to each output function.
+    #' Supported \code{dataset_type} values per output entry:
+    #' \describe{
+    #'   \item{"data"}{uses \code{data} as the first argument (default)}
+    #'   \item{"survey_design"}{uses the pre-built \code{survey_design} object as the
+    #'     first argument. If \code{survey_design} is \code{NULL}, outputs requesting
+    #'     this type are skipped with a warning.}
+    #' }
+    #'
+    #' @param data A data frame for the namespace dataset.
     #' @param outputs_schema A named list of output definitions (as produced by
     #'   \code{outputs_table_to_schema}).
     #' @param namespace Character; key used for the sub-list in \code{self$visualizations}
     #'   and \code{self$tables} (e.g., "roster" or "deaths").
+    #' @param survey_design An srvyr survey design object for the namespace dataset,
+    #'   used when an output entry has \code{dataset_type = "survey_design"}.
+    #'   Should be pre-built and stored (e.g. \code{self$survey_design_roster}).
     #' @return Invisibly returns NULL.
-    .run_outputs_for_namespace = function(data, outputs_schema, namespace) {
+    .run_outputs_for_namespace = function(data, outputs_schema, namespace,
+                                          survey_design = NULL) {
       origin <- paste0(self$dataset_name, "$.run_outputs_for_namespace[", namespace, "]")
 
       if (is.null(outputs_schema) || length(outputs_schema) == 0) {
@@ -1093,7 +1131,30 @@ MortalityDataAnalytics <- R6::R6Class(
             next
           }
 
-          func_args <- list(data)
+          # Determine first positional argument from dataset_type.
+          # "survey_design" – the pre-built survey design for this namespace dataset.
+          # "data" (default) – the raw data frame.
+          dataset_type <- if (!is.null(out$dataset_type) &&
+                               !is.na(out$dataset_type) &&
+                               nzchar(out$dataset_type)) {
+            out$dataset_type
+          } else "data"
+
+          if (dataset_type == "survey_design") {
+            if (is.null(survey_design)) {
+              phr_warning(
+                message = phr_txt(glue::glue(
+                  "Output '{out_name}' in '{namespace}' requires dataset_type='survey_design' but ",
+                  "no survey design is available for this dataset. Skipping."
+                )),
+                origin = origin
+              )
+              next
+            }
+            func_args <- list(survey_design)
+          } else {
+            func_args <- list(data)
+          }
 
           if (!is.null(out$test_params) && length(out$test_params) > 0) {
             func_args <- private$.resolve_output_params(
