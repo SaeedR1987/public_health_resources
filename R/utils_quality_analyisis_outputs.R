@@ -7992,6 +7992,648 @@ table_frequency <- function(.dataset,
 }
 
 
+table_frequency_v2 <- function(.dataset,
+                                variable,
+                                stat_type = "percentage",
+                                weighted_result = TRUE,
+                                weights_col = NULL,
+                                disaggregation = NULL,
+                                disaggregation_wide = FALSE,
+                                show_overall = FALSE,
+                                ratio_denominator = NULL,
+                                show_ci = FALSE,
+                                title_name = NULL,
+                                variable_label = NULL,
+                                disaggregation_label = NULL,
+                                show_n = TRUE,
+                                show_unit = TRUE,
+                                digits = 1,
+                                table_width = NULL,
+                                table_height = NULL,
+                                color_palette = "reach1") {
+
+  origin <- "table_frequency_v2"
+
+  phr_try({
+
+    # Require a survey design object
+    if (!inherits(.dataset, c("tbl_svy", "survey.design", "survey.design2",
+                               "svyrep.design"))) {
+      phr_error(origin = origin,
+                message = phr_txt(
+                  ".dataset must be a survey design object (e.g. created with srvyr::as_survey_design())."
+                ))
+    }
+
+    working_df <- .dataset$variables
+
+    # Validate inputs
+    valid_stat_types <- c("percentage", "mean", "median", "ratio")
+
+    phr_validate_not_null(variable, origin = origin, soft = FALSE)
+
+    # Handle multiple variables
+    n_vars <- length(variable)
+
+    # Expand scalar arguments to match number of variables
+    if (length(stat_type) == 1) {
+      stat_type <- rep(stat_type, n_vars)
+    }
+
+    # Handle disaggregation - keep NULL as NULL, otherwise expand
+    if (is.null(disaggregation)) {
+      disaggregation <- rep(list(NULL), n_vars)
+    } else if (length(disaggregation) == 1 && !is.list(disaggregation)) {
+      disaggregation <- rep(list(disaggregation), n_vars)
+    } else if (!is.list(disaggregation)) {
+      disaggregation <- as.list(disaggregation)
+    }
+
+    # Handle ratio_denominator - keep NULL as NULL, otherwise expand
+    if (is.null(ratio_denominator)) {
+      ratio_denominator <- rep(list(NULL), n_vars)
+    } else if (length(ratio_denominator) == 1 && !is.list(ratio_denominator)) {
+      if (is.na(ratio_denominator)) {
+        ratio_denominator <- rep(list(NULL), n_vars)
+      } else {
+        ratio_denominator <- rep(list(ratio_denominator), n_vars)
+      }
+    } else if (!is.list(ratio_denominator)) {
+      ratio_denominator <- lapply(ratio_denominator, function(x) if (is.na(x)) NULL else x)
+    }
+
+    # Handle variable_label
+    if (is.null(variable_label)) {
+      variable_label <- variable
+    } else if (length(variable_label) == 1) {
+      variable_label <- rep(variable_label, n_vars)
+    }
+
+    # Validate lengths match
+    if (length(stat_type) != n_vars) {
+      phr_error(origin = origin,
+                message = phr_txt("stat_type must be length 1 or same length as variable"))
+    }
+    if (length(disaggregation) != n_vars) {
+      phr_error(origin = origin,
+                message = phr_txt("disaggregation must be length 1 or same length as variable"))
+    }
+    if (length(ratio_denominator) != n_vars) {
+      phr_error(origin = origin,
+                message = phr_txt("ratio_denominator must be length 1 or same length as variable"))
+    }
+    if (length(variable_label) != n_vars) {
+      phr_error(origin = origin,
+                message = phr_txt("variable_label must be length 1 or same length as variable"))
+    }
+
+    # Validate each stat_type
+    for (st in stat_type) {
+      if (!st %in% valid_stat_types) {
+        phr_error(
+          origin = origin,
+          message = phr_txt(glue::glue(
+            "stat_type must be one of: {paste(valid_stat_types, collapse=', ')}. Got '{st}'."
+          ))
+        )
+      }
+    }
+
+    # Validate show_overall
+    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+
+    # Validate columns exist
+    phr_validate_columns(working_df, variable, origin = origin, soft = FALSE)
+
+    for (i in seq_along(variable)) {
+      if (!is.null(disaggregation[[i]])) {
+        phr_validate_columns(working_df, disaggregation[[i]], origin = origin, soft = FALSE)
+      }
+      if (stat_type[i] == "ratio" && is.null(ratio_denominator[[i]])) {
+        phr_error(
+          origin = origin,
+          message = phr_txt(glue::glue(
+            "ratio_denominator must be specified for variable '{variable[i]}' when stat_type = 'ratio'."
+          ))
+        )
+      }
+      if (!is.null(ratio_denominator[[i]])) {
+        phr_validate_columns(working_df, ratio_denominator[[i]], origin = origin, soft = FALSE)
+      }
+    }
+
+    # Calculate overall N for each variable (for appending to labels)
+    overall_n_by_var <- sapply(variable, function(var) {
+      sum(!is.na(working_df[[var]]))
+    })
+
+    # Append N to variable labels
+    variable_label_with_n <- sapply(seq_along(variable), function(i) {
+      sprintf("%s (N = %d)", variable_label[i], overall_n_by_var[i])
+    })
+
+    # Internal helper: compute stats for one (possibly subsetted) design and
+    # return a tidy data frame with columns Value, n, estimate (or estimate with
+    # CI string when show_ci = TRUE).
+    .calc_one_group <- function(design_sub, var, st, ratio_denom) {
+
+      if (st == "percentage") {
+        result <- phr_calc_survey_categorical_single(
+          design           = design_sub,
+          var_name         = var,
+          indicator_name   = var,
+          indicator_unit   = "%",
+          multiplier       = 100,
+          group_name_label = "Overall"
+        )
+        prefix <- paste0(var, " - ")
+        df <- tibble::tibble(
+          Value = sub(prefix, "", result$indicator_name, fixed = TRUE),
+          n     = as.integer(round(result$n_weighted))
+        )
+        if (show_ci) {
+          df$estimate <- sprintf(
+            "%.*f [%.*f - %.*f]",
+            digits, round(result$point.estimate, digits),
+            digits, round(result$lower_ci,        digits),
+            digits, round(result$upper_ci,         digits)
+          )
+        } else {
+          df$estimate <- round(result$point.estimate, digits)
+        }
+
+      } else if (st == "mean") {
+        result <- phr_calc_survey_mean_single(
+          design           = design_sub,
+          var_name         = var,
+          indicator_name   = var,
+          group_name_label = "Overall"
+        )
+        df <- tibble::tibble(
+          Value = "Overall",
+          n     = as.integer(round(result$n_weighted))
+        )
+        if (show_ci) {
+          df$estimate <- sprintf(
+            "%.*f [%.*f - %.*f]",
+            digits, round(result$point.estimate, digits),
+            digits, round(result$lower_ci,        digits),
+            digits, round(result$upper_ci,         digits)
+          )
+        } else {
+          df$estimate <- round(result$point.estimate, digits)
+        }
+
+      } else if (st == "median") {
+        result <- phr_calc_survey_median_single(
+          design           = design_sub,
+          var_name         = var,
+          indicator_name   = var,
+          group_name_label = "Overall"
+        )
+        df <- tibble::tibble(
+          Value = "Overall",
+          n     = as.integer(round(result$n_weighted))
+        )
+        if (show_ci) {
+          df$estimate <- sprintf(
+            "%.*f [%.*f - %.*f]",
+            digits, round(result$point.estimate, digits),
+            digits, round(result$lower_ci,        digits),
+            digits, round(result$upper_ci,         digits)
+          )
+        } else {
+          df$estimate <- round(result$point.estimate, digits)
+        }
+
+      } else if (st == "ratio") {
+        result <- phr_calc_survey_ratio_single(
+          design           = design_sub,
+          numerator_var    = var,
+          denominator_var  = ratio_denom,
+          indicator_name   = var,
+          group_name_label = "Overall"
+        )
+        df <- tibble::tibble(
+          Value = "Overall",
+          n     = as.integer(round(result$n_weighted))
+        )
+        if (show_ci) {
+          df$estimate <- sprintf(
+            "%.*f [%.*f - %.*f]",
+            digits, round(result$point.estimate, digits),
+            digits, round(result$lower_ci,        digits),
+            digits, round(result$upper_ci,         digits)
+          )
+        } else {
+          df$estimate <- round(result$point.estimate, digits)
+        }
+      }
+
+      df
+    }
+
+    # Process each variable
+    all_results <- list()
+
+    for (i in seq_along(variable)) {
+      var        <- variable[i]
+      st         <- stat_type[i]
+      disagg     <- disaggregation[[i]]
+      ratio_denom <- ratio_denominator[[i]]
+      var_label  <- variable_label_with_n[i]
+
+      # Determine unit label for this variable (if show_unit = TRUE)
+      if (show_unit) {
+        unit_label <- switch(
+          st,
+          percentage = "%",
+          mean       = "Mean",
+          median     = "Median",
+          ratio      = "Ratio"
+        )
+      }
+
+      # --- Compute statistics for this variable ---
+      if (!is.null(disagg)) {
+        group_levels <- unique(na.omit(working_df[[disagg]]))
+
+        per_group <- lapply(group_levels, function(g) {
+          design_sub <- tryCatch(
+            subset(.dataset, .dataset$variables[[disagg]] == g),
+            error = function(e) {
+              phr_warning(origin, paste("Subset failed for", disagg, "=", g))
+              NULL
+            }
+          )
+          if (is.null(design_sub)) return(tibble::tibble())
+          row_df <- .calc_one_group(design_sub, var, st, ratio_denom)
+          dplyr::mutate(row_df, !!rlang::sym(disagg) := as.character(g), .before = 1)
+        })
+
+        results_df <- dplyr::bind_rows(per_group)
+
+      } else {
+        results_df <- .calc_one_group(.dataset, var, st, ratio_denom)
+      }
+
+      # Compute and append Overall rows when show_overall = TRUE
+      if (show_overall && !is.null(disagg)) {
+        overall_df <- .calc_one_group(.dataset, var, st, ratio_denom)
+        overall_df <- dplyr::mutate(overall_df,
+                                    !!rlang::sym(disagg) := "Overall", .before = 1)
+
+        common_cols <- intersect(names(results_df), names(overall_df))
+        overall_df  <- overall_df  %>% dplyr::select(dplyr::all_of(common_cols))
+        results_df  <- results_df  %>% dplyr::select(dplyr::all_of(common_cols))
+        results_df  <- dplyr::bind_rows(results_df, overall_df)
+      }
+
+      if ("n" %in% names(results_df)) {
+        results_df$n <- as.integer(round(results_df$n))
+      }
+
+      # Add Unit column after n (if show_unit = TRUE)
+      if (show_unit) {
+        results_df <- results_df %>%
+          dplyr::mutate(Unit = unit_label, .after = n)
+      }
+
+      if (n_vars > 1) {
+        if (!is.null(disagg) && disagg %in% names(results_df)) {
+          results_df <- results_df %>%
+            dplyr::mutate(Variable = var_label, .after = !!rlang::sym(disagg))
+        } else {
+          results_df <- results_df %>%
+            dplyr::mutate(Variable = var_label, .before = 1)
+        }
+      }
+
+      all_results[[i]] <- results_df
+    }
+
+    # Coerce factor and other non-character columns that are used as disaggregation
+    # labels to character so dplyr::bind_rows() can combine them without type errors
+    all_results <- lapply(all_results, function(df) {
+      df %>% dplyr::mutate(dplyr::across(where(is.factor), as.character))
+    })
+
+    # Combine all results
+    results_df <- dplyr::bind_rows(all_results)
+
+    first_disagg <- disaggregation[[1]]
+
+    # Handle wide format for disaggregation
+    if (disaggregation_wide && !is.null(first_disagg) && first_disagg %in% names(results_df)) {
+
+      col_order <- c()
+      if (n_vars > 1 && "Variable" %in% names(results_df)) {
+        col_order <- c(col_order, "Variable")
+      }
+      if ("Value" %in% names(results_df)) {
+        col_order <- c(col_order, "Value")
+      }
+      if (show_unit && "Unit" %in% names(results_df)) {
+        col_order <- c(col_order, "Unit")
+      }
+      col_order <- c(col_order, first_disagg)
+      if ("n" %in% names(results_df)) {
+        col_order <- c(col_order, "n")
+      }
+      if ("estimate" %in% names(results_df)) {
+        col_order <- c(col_order, "estimate")
+      }
+
+      results_df <- results_df %>%
+        dplyr::select(dplyr::all_of(col_order))
+
+      id_cols <- c()
+      if (n_vars > 1 && "Variable" %in% names(results_df)) {
+        id_cols <- c(id_cols, "Variable")
+      }
+      if ("Value" %in% names(results_df)) {
+        id_cols <- c(id_cols, "Value")
+      }
+      if (show_unit && "Unit" %in% names(results_df)) {
+        id_cols <- c(id_cols, "Unit")
+      }
+
+      value_cols <- c()
+      if ("n" %in% names(results_df)) {
+        value_cols <- c(value_cols, "n")
+      }
+      if ("estimate" %in% names(results_df)) {
+        value_cols <- c(value_cols, "estimate")
+      }
+
+      results_df <- results_df %>%
+        tidyr::pivot_wider(
+          id_cols     = tidyselect::all_of(id_cols),
+          names_from  = tidyselect::all_of(first_disagg),
+          values_from = tidyselect::all_of(value_cols),
+          names_sep   = "_"
+        )
+
+      {
+        pivot_id_present <- id_cols[id_cols %in% names(results_df)]
+        data_col_names   <- setdiff(names(results_df), pivot_id_present)
+
+        grp_names_raw <- character(length(data_col_names))
+        for (j_col in seq_along(data_col_names)) {
+          data_col <- data_col_names[[j_col]]
+          for (vc in value_cols) {
+            prefix <- paste0(vc, "_")
+            if (startsWith(data_col, prefix)) {
+              grp_names_raw[[j_col]] <- substr(data_col, nchar(prefix) + 1L, nchar(data_col))
+              break
+            }
+          }
+        }
+        grp_names <- unique(grp_names_raw[nzchar(grp_names_raw)])
+
+        reordered_cols <- vector("list", length(grp_names) * length(value_cols))
+        k_col <- 0L
+        for (grp in grp_names) {
+          for (vc in value_cols) {
+            col <- paste0(vc, "_", grp)
+            if (col %in% names(results_df)) {
+              k_col <- k_col + 1L
+              reordered_cols[[k_col]] <- col
+            }
+          }
+        }
+        reordered_cols <- unlist(reordered_cols[seq_len(k_col)])
+
+        if (length(reordered_cols) > 0) {
+          results_df <- results_df %>%
+            dplyr::select(dplyr::all_of(c(pivot_id_present, reordered_cols)))
+        }
+      }
+    } else {
+      # Long format (original behavior)
+      if (n_vars > 1 && !is.null(first_disagg) && first_disagg %in% names(results_df)) {
+        other_cols <- setdiff(names(results_df), c(first_disagg, "Variable", "Value"))
+        results_df <- results_df %>%
+          dplyr::select(!!rlang::sym(first_disagg), Variable, Value, dplyr::all_of(other_cols))
+      }
+    }
+
+    if (!show_n && "n" %in% names(results_df)) {
+      if (disaggregation_wide) {
+        n_cols <- grep("^n_", names(results_df), value = TRUE)
+        if (length(n_cols) > 0) {
+          results_df <- results_df %>% dplyr::select(-tidyselect::all_of(n_cols))
+        }
+      } else {
+        results_df <- results_df %>% dplyr::select(-n)
+      }
+    }
+
+    if (!show_unit && "Unit" %in% names(results_df)) {
+      results_df <- results_df %>% dplyr::select(-Unit)
+    }
+
+    # Build flextable
+    ft <- flextable::flextable(as.data.frame(results_df))
+
+    # Handle two-level headers for wide format
+    if (disaggregation_wide && !is.null(first_disagg)) {
+      disagg_groups <- unique(gsub("^(n|estimate)_(.*)$", "\\2",
+                                   grep("^(n|estimate)_", names(results_df), value = TRUE)))
+
+      header_df <- data.frame(
+        col_keys = names(results_df),
+        line1    = character(length(names(results_df))),
+        line2    = character(length(names(results_df))),
+        stringsAsFactors = FALSE
+      )
+
+      for (col in names(results_df)) {
+        if (col == "Variable" && n_vars > 1) {
+          header_df[header_df$col_keys == col, "line1"] <- "Variable"
+          header_df[header_df$col_keys == col, "line2"] <- "Variable"
+        } else if (col == "Value") {
+          val_label <- if (n_vars == 1) variable_label_with_n[1] else "Value"
+          header_df[header_df$col_keys == col, "line1"] <- val_label
+          header_df[header_df$col_keys == col, "line2"] <- val_label
+        } else if (col == "Unit" && show_unit) {
+          header_df[header_df$col_keys == col, "line1"] <- "Unit"
+          header_df[header_df$col_keys == col, "line2"] <- "Unit"
+        }
+      }
+
+      for (group in disagg_groups) {
+        n_col   <- paste0("n_", group)
+        est_col <- paste0("estimate_", group)
+
+        if (n_col %in% names(results_df)) {
+          header_df[header_df$col_keys == n_col, "line1"] <- group
+          header_df[header_df$col_keys == n_col, "line2"] <- "n"
+        }
+        if (est_col %in% names(results_df)) {
+          header_df[header_df$col_keys == est_col, "line1"] <- group
+          header_df[header_df$col_keys == est_col, "line2"] <- "Estimate"
+        }
+      }
+
+      ft <- flextable::set_header_df(ft, mapping = header_df, key = "col_keys")
+
+      for (group in disagg_groups) {
+        group_cols <- names(results_df)[endsWith(names(results_df), paste0("_", group))]
+        if (length(group_cols) > 1) {
+          ft <- flextable::merge_at(ft, i = 1, j = group_cols, part = "header")
+        }
+      }
+
+      if (n_vars > 1 && "Variable" %in% names(results_df)) {
+        ft <- flextable::merge_at(ft, i = 1:2, j = "Variable", part = "header")
+      }
+      if ("Value" %in% names(results_df)) {
+        ft <- flextable::merge_at(ft, i = 1:2, j = "Value", part = "header")
+      }
+      if (show_unit && "Unit" %in% names(results_df)) {
+        ft <- flextable::merge_at(ft, i = 1:2, j = "Unit", part = "header")
+      }
+
+    } else {
+      # Single-level headers (original behavior)
+      col_labels <- list()
+
+      if (!is.null(first_disagg) && first_disagg %in% names(results_df)) {
+        col_labels[[first_disagg]] <- disaggregation_label %||% first_disagg
+      }
+
+      if (n_vars > 1 && "Variable" %in% names(results_df)) {
+        col_labels[["Variable"]] <- "Variable"
+      }
+
+      if ("Value" %in% names(results_df)) {
+        col_labels[["Value"]] <- if (n_vars == 1) variable_label_with_n[1] else "Value"
+      }
+
+      if (show_n && "n" %in% names(results_df)) {
+        col_labels[["n"]] <- "n"
+      }
+
+      if (show_unit && "Unit" %in% names(results_df)) {
+        col_labels[["Unit"]] <- "Unit"
+      }
+
+      if ("estimate" %in% names(results_df)) {
+        col_labels[["estimate"]] <- "Estimate"
+      }
+
+      present_labels <- col_labels[names(col_labels) %in% names(results_df)]
+      if (length(present_labels) > 0) {
+        ft <- flextable::set_header_labels(ft, values = present_labels)
+      }
+    }
+
+    # Styling — apply standard iphRa theme
+    ft <- apply_phr_flextable_theme(ft, color_palette = color_palette)
+
+    # Right-align numeric columns
+    if (disaggregation_wide) {
+      right_cols <- grep("^(n|estimate)_", names(results_df), value = TRUE)
+    } else {
+      right_cols <- intersect(c("estimate", "n"), names(results_df))
+    }
+    if (length(right_cols) > 0) {
+      ft <- flextable::align(ft, j = right_cols, align = "right", part = "body")
+    }
+
+    # Center-align Unit column
+    if (show_unit && "Unit" %in% names(results_df)) {
+      ft <- flextable::align(ft, j = "Unit", align = "center", part = "body")
+      ft <- flextable::align(ft, j = "Unit", align = "center", part = "header")
+    }
+
+    # Merge cells for long format multi-variable tables
+    if (!disaggregation_wide) {
+      if (n_vars > 1 && "Variable" %in% names(results_df)) {
+        var_values <- results_df[["Variable"]]
+        run_starts <- which(!duplicated(var_values))
+        run_ends   <- c(run_starts[-1] - 1, length(var_values))
+
+        for (k in seq_along(run_starts)) {
+          if (run_ends[k] > run_starts[k]) {
+            ft <- flextable::merge_at(ft, i = run_starts[k]:run_ends[k],
+                                      j = "Variable", part = "body")
+          }
+        }
+        ft <- flextable::valign(ft, j = "Variable", valign = "top", part = "body")
+      }
+
+      if (!is.null(first_disagg) && first_disagg %in% names(results_df)) {
+        if (n_vars > 1 && "Variable" %in% names(results_df)) {
+          var_values <- results_df[["Variable"]]
+          var_starts <- which(!duplicated(var_values))
+          var_ends   <- c(var_starts[-1] - 1, nrow(results_df))
+
+          for (v in seq_along(var_starts)) {
+            var_row_range <- var_starts[v]:var_ends[v]
+            disagg_in_var <- results_df[[first_disagg]][var_row_range]
+
+            disagg_run_starts <- which(!duplicated(disagg_in_var))
+            disagg_run_ends   <- c(disagg_run_starts[-1] - 1, length(disagg_in_var))
+
+            for (d in seq_along(disagg_run_starts)) {
+              if (disagg_run_ends[d] > disagg_run_starts[d]) {
+                actual_rows <- var_row_range[disagg_run_starts[d]:disagg_run_ends[d]]
+                ft <- flextable::merge_at(ft, i = actual_rows,
+                                          j = first_disagg, part = "body")
+              }
+            }
+          }
+        } else {
+          disagg_values <- results_df[[first_disagg]]
+          run_starts    <- which(!duplicated(disagg_values))
+          run_ends      <- c(run_starts[-1] - 1, length(disagg_values))
+
+          for (k in seq_along(run_starts)) {
+            if (run_ends[k] > run_starts[k]) {
+              ft <- flextable::merge_at(ft, i = run_starts[k]:run_ends[k],
+                                        j = first_disagg, part = "body")
+            }
+          }
+        }
+
+        ft <- flextable::valign(ft, j = first_disagg, valign = "top", part = "body")
+      }
+    }
+
+    if (!is.null(title_name)) {
+      ft <- flextable::set_caption(ft, caption = title_name)
+    } else {
+      first_var_label   <- variable_label[1]
+      auto_caption      <- paste(phr_txt("Frequency Table of"), first_var_label)
+      first_disagg_col  <- disaggregation[[1]]
+      if (!is.null(first_disagg_col)) {
+        disagg_lbl   <- if (!is.null(disaggregation_label)) disaggregation_label else first_disagg_col
+        auto_caption <- paste0(auto_caption, phr_txt(", by"), " ", disagg_lbl)
+      }
+      ft <- flextable::set_caption(ft, caption = auto_caption)
+    }
+
+    if (nrow(results_df) > 1) {
+      even_rows <- seq(2, nrow(results_df), by = 2)
+      ft <- flextable::bg(ft, i = even_rows, bg = "#f5f5f5", part = "body")
+    }
+
+    if (!is.null(table_width)) {
+      ft <- flextable::width(ft, width = table_width)
+    }
+
+    if (!is.null(table_height)) {
+      ft <- flextable::height(ft, height = table_height)
+    }
+
+    return(ft)
+
+  }, on_error = "warn", origin = origin)
+}
+
+
 
 #' Create a Quality Penalty Summary Table (flextable)
 #'
