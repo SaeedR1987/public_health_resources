@@ -239,10 +239,12 @@ good_deaths <- DeathIndividualData$new(
 
   mortality_analyics$analysis_plan_issue_log
 
+  mortality_analyics$tables$roster$
   mortality_analyics$visualizations$roster$age_pyramid_overall_unweighted
   mortality_analyics$visualizations$roster$age_pyramid_overall_weighted
   mortality_analyics$visualizations$roster$age_months_distribution_unweighted
 
+  mortality_analyics$tables$roster
   mortality_analyics$tables$roster$basic_demo_table_weighted
   mortality_analyics$tables$roster$basic_demo_table_strata_weighted
 
