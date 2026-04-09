@@ -1734,11 +1734,11 @@ test_that("quality_test_ttest_summary_rowwise supports alternative hypotheses", 
   df <- tibble::tibble(
     a = c(50.0, -50.0),
     b = c(52.0, -48.0),
-    cc = c(51.0, -49.0)
+    c3 = c(51.0, -49.0)
   )
 
-  r_greater <- quality_test_ttest_summary_rowwise(df, c("a", "b", "cc"), alternative = "greater")
-  r_less    <- quality_test_ttest_summary_rowwise(df, c("a", "b", "cc"), alternative = "less")
+  r_greater <- quality_test_ttest_summary_rowwise(df, c("a", "b", "c3"), alternative = "greater")
+  r_less    <- quality_test_ttest_summary_rowwise(df, c("a", "b", "c3"), alternative = "less")
 
   expect_true(all(!is.na(r_greater$p_value)))
   expect_true(all(!is.na(r_less$p_value)))
@@ -1762,7 +1762,7 @@ test_that("quality_test_ttest_summary_rowwise warns with invalid alternative", {
   )
 })
 
-test_that("quality_test_ttest_summary_rowwise errors with fewer than 2 variables", {
+test_that("quality_test_ttest_summary_rowwise warns with fewer than 2 variables", {
   df <- tibble::tibble(a = c(1.0, 2.0))
 
   expect_warning(
