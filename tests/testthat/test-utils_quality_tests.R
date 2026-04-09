@@ -1483,7 +1483,7 @@ test_that("quality_test_anova returns F-statistic and p-value for a clear group 
     group = c("A", "A", "A", "B", "B", "B", "C", "C", "C")
   )
 
-  result <- quality_test_anova(df, "score", "group")
+  result <- quality_test_anova(df, variable = "score", group_col = "group")
 
   expect_true(is.list(result))
   expect_true(all(c("statistic", "p_value") %in% names(result)))
@@ -1499,7 +1499,7 @@ test_that("quality_test_anova handles missing values", {
     group = c("A", "A", "A", "B", "B", "B", "C", "C", "C")
   )
 
-  result <- quality_test_anova(df, "score", "group")
+  result <- quality_test_anova(df, variable = "score", group_col = "group")
 
   expect_true(is.list(result))
   expect_true(!is.na(result$statistic))
@@ -1509,7 +1509,7 @@ test_that("quality_test_anova warns when outcome column not found", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
-    result <- quality_test_anova(df, "nonexistent", "group"),
+    result <- quality_test_anova(df, variable = "nonexistent", group_col = "group"),
     regexp = "not found"
   )
   expect_equal(result$statistic, NA_real_)
@@ -1519,7 +1519,7 @@ test_that("quality_test_anova warns when group column not found", {
   df <- tibble::tibble(score = 1:5)
 
   expect_warning(
-    result <- quality_test_anova(df, "score", "nonexistent"),
+    result <- quality_test_anova(df, variable = "score", group_col = "nonexistent"),
     regexp = "not found"
   )
   expect_equal(result$statistic, NA_real_)
@@ -1532,17 +1532,17 @@ test_that("quality_test_anova warns with fewer than 2 group levels", {
   )
 
   expect_warning(
-    result <- quality_test_anova(df, "score", "group"),
+    result <- quality_test_anova(df, variable = "score", group_col = "group"),
     regexp = "at least 2 distinct levels"
   )
   expect_equal(result$statistic, NA_real_)
 })
 
-test_that("quality_test_anova warns with non-character outcome_col", {
+test_that("quality_test_anova warns with non-character variable", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
-    quality_test_anova(df, 1, "group"),
+    quality_test_anova(df, variable = 1, group_col = "group"),
     regexp = "single character"
   )
 })
@@ -1551,7 +1551,7 @@ test_that("quality_test_anova warns with non-character group_col", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
-    quality_test_anova(df, "score", TRUE),
+    quality_test_anova(df, variable = "score", group_col = TRUE),
     regexp = "single character"
   )
 })
@@ -1560,14 +1560,14 @@ test_that("quality_test_anova warns with non-character group_col", {
 # 9. CHI-SQUARED BINARY TEST ####
 
 
-test_that("quality_test_chisq_binary returns statistic and p-value", {
+test_that("quality_test_chisq_binary returns statistic and p-value from raw data", {
   df <- tibble::tibble(
-    region   = c("North", "South", "East"),
-    vaccinated   = c(80, 60, 90),
-    unvaccinated = c(20, 40, 10)
+    treatment = rep(c("A", "B"), each = 50),
+    outcome   = c(rep(c("yes", "no"), times = c(35, 15)),
+                  rep(c("yes", "no"), times = c(20, 30)))
   )
 
-  result <- quality_test_chisq_binary(df, "region", "vaccinated", "unvaccinated")
+  result <- quality_test_chisq_binary(df, c("treatment", "outcome"))
 
   expect_true(is.list(result))
   expect_true(all(c("statistic", "p_value") %in% names(result)))
@@ -1576,38 +1576,47 @@ test_that("quality_test_chisq_binary returns statistic and p-value", {
 })
 
 test_that("quality_test_chisq_binary warns when a column is missing", {
-  df <- tibble::tibble(
-    region = c("A", "B"),
-    cat1   = c(10, 20)
-  )
+  df <- tibble::tibble(cat1 = c("A", "B", "A", "B", "A"))
 
   expect_warning(
-    result <- quality_test_chisq_binary(df, "region", "cat1", "nonexistent"),
+    result <- quality_test_chisq_binary(df, c("cat1", "nonexistent")),
     regexp = "not found"
   )
   expect_equal(result$statistic, NA_real_)
 })
 
-test_that("quality_test_chisq_binary warns with fewer than 2 rows", {
+test_that("quality_test_chisq_binary warns with insufficient data", {
   df <- tibble::tibble(
-    region = "North",
-    cat1   = 80L,
-    cat2   = 20L
+    cat1 = c("A", "B", "A"),
+    cat2 = c("X", NA,  NA)
   )
 
   expect_warning(
-    result <- quality_test_chisq_binary(df, "region", "cat1", "cat2"),
-    regexp = "at least 2"
+    result <- quality_test_chisq_binary(df, c("cat1", "cat2")),
+    regexp = "Insufficient"
   )
   expect_equal(result$statistic, NA_real_)
 })
 
-test_that("quality_test_chisq_binary warns with non-character column args", {
-  df <- tibble::tibble(g = c("A", "B"), c1 = c(10, 20), c2 = c(5, 15))
+test_that("quality_test_chisq_binary warns when variable has only one level", {
+  df <- tibble::tibble(
+    cat1 = rep("A", 10),
+    cat2 = rep(c("X", "Y"), 5)
+  )
 
   expect_warning(
-    quality_test_chisq_binary(df, 1, "c1", "c2"),
-    regexp = "single character"
+    result <- quality_test_chisq_binary(df, c("cat1", "cat2")),
+    regexp = "too small"
+  )
+  expect_equal(result$statistic, NA_real_)
+})
+
+test_that("quality_test_chisq_binary warns with non-character variables", {
+  df <- tibble::tibble(c1 = c("A", "B"), c2 = c("X", "Y"))
+
+  expect_warning(
+    quality_test_chisq_binary(df, 1:2),
+    regexp = "exactly 2 column names"
   )
 })
 
@@ -1621,7 +1630,7 @@ test_that("quality_test_binomial_ratio_rowwise adds p-value column", {
     trials    = c(10L, 10L, 10L)
   )
 
-  result <- quality_test_binomial_ratio_rowwise(df, "successes", "trials")
+  result <- quality_test_binomial_ratio_rowwise(df, c("successes", "trials"))
 
   expect_true(is.data.frame(result))
   expect_true("p_value" %in% names(result))
@@ -1632,7 +1641,7 @@ test_that("quality_test_binomial_ratio_rowwise adds p-value column", {
 test_that("quality_test_binomial_ratio_rowwise uses custom pval_colname", {
   df <- tibble::tibble(s = c(5L, 8L), n = c(10L, 10L))
 
-  result <- quality_test_binomial_ratio_rowwise(df, "s", "n", pval_colname = "binom_p")
+  result <- quality_test_binomial_ratio_rowwise(df, c("s", "n"), pval_colname = "binom_p")
 
   expect_true("binom_p" %in% names(result))
 })
@@ -1643,7 +1652,7 @@ test_that("quality_test_binomial_ratio_rowwise returns NA for invalid rows", {
     n = c(10L,  10L,   10L,  0L)
   )
 
-  result <- quality_test_binomial_ratio_rowwise(df, "s", "n")
+  result <- quality_test_binomial_ratio_rowwise(df, c("s", "n"))
 
   expect_true(is.data.frame(result))
   expect_false(is.na(result$p_value[1]))
@@ -1655,8 +1664,8 @@ test_that("quality_test_binomial_ratio_rowwise returns NA for invalid rows", {
 test_that("quality_test_binomial_ratio_rowwise supports alternative hypotheses", {
   df <- tibble::tibble(s = c(8L, 2L), n = c(10L, 10L))
 
-  r_greater <- quality_test_binomial_ratio_rowwise(df, "s", "n", alternative = "greater")
-  r_less    <- quality_test_binomial_ratio_rowwise(df, "s", "n", alternative = "less")
+  r_greater <- quality_test_binomial_ratio_rowwise(df, c("s", "n"), alternative = "greater")
+  r_less    <- quality_test_binomial_ratio_rowwise(df, c("s", "n"), alternative = "less")
 
   expect_true(all(!is.na(r_greater$p_value)))
   expect_true(all(!is.na(r_less$p_value)))
@@ -1666,7 +1675,7 @@ test_that("quality_test_binomial_ratio_rowwise warns when column is missing", {
   df <- tibble::tibble(s = c(5L, 8L))
 
   expect_warning(
-    quality_test_binomial_ratio_rowwise(df, "s", "nonexistent"),
+    quality_test_binomial_ratio_rowwise(df, c("s", "nonexistent")),
     regexp = "not found"
   )
 })
@@ -1675,7 +1684,7 @@ test_that("quality_test_binomial_ratio_rowwise warns with invalid expected_ratio
   df <- tibble::tibble(s = c(5L), n = c(10L))
 
   expect_warning(
-    quality_test_binomial_ratio_rowwise(df, "s", "n", expected_ratio = 1.5),
+    quality_test_binomial_ratio_rowwise(df, c("s", "n"), expected_ratio = 1.5),
     regexp = "strictly between 0 and 1"
   )
 })
@@ -1684,14 +1693,14 @@ test_that("quality_test_binomial_ratio_rowwise warns with invalid expected_ratio
 # 11. T-TEST SUMMARY ROWWISE TEST ####
 
 
-test_that("quality_test_ttest_summary_rowwise adds p-value column", {
+test_that("quality_test_ttest_summary_rowwise adds p-value column using actual data", {
   df <- tibble::tibble(
-    m  = c(5.0, 10.0, 0.5),
-    s  = c(1.0,  2.0,  0.5),
-    n  = c(30L,  30L,  30L)
+    w1 = c(5.0,  10.0, 0.5),
+    w2 = c(6.0,  11.0, 1.5),
+    w3 = c(5.5,  10.5, 1.0)
   )
 
-  result <- quality_test_ttest_summary_rowwise(df, "m", "s", "n", expected_mean = 0)
+  result <- quality_test_ttest_summary_rowwise(df, c("w1", "w2", "w3"), expected_mean = 0)
 
   expect_true(is.data.frame(result))
   expect_true("p_value" %in% names(result))
@@ -1700,53 +1709,65 @@ test_that("quality_test_ttest_summary_rowwise adds p-value column", {
 })
 
 test_that("quality_test_ttest_summary_rowwise uses custom pval_colname", {
-  df <- tibble::tibble(m = 5.0, s = 1.0, n = 30L)
+  df <- tibble::tibble(a = c(1.0, 2.0), b = c(3.0, 4.0))
 
-  result <- quality_test_ttest_summary_rowwise(df, "m", "s", "n", pval_colname = "t_p")
+  result <- quality_test_ttest_summary_rowwise(df, c("a", "b"), pval_colname = "t_p")
 
   expect_true("t_p" %in% names(result))
 })
 
-test_that("quality_test_ttest_summary_rowwise returns NA for invalid rows", {
+test_that("quality_test_ttest_summary_rowwise returns NA when all row values are missing", {
   df <- tibble::tibble(
-    m  = c(5.0,  NA,   5.0,  5.0),
-    s  = c(1.0,  1.0,  0.0,  1.0),
-    n  = c(30L,  30L,  30L,  1L)
+    a = c(5.0,  NA,   1.0),
+    b = c(6.0,  NA,   2.0),
+    c = c(5.5,  NA,   1.5)
   )
 
-  result <- quality_test_ttest_summary_rowwise(df, "m", "s", "n")
+  result <- quality_test_ttest_summary_rowwise(df, c("a", "b", "c"))
 
   expect_false(is.na(result$p_value[1]))
   expect_true(is.na(result$p_value[2]))
-  expect_true(is.na(result$p_value[3]))
-  expect_true(is.na(result$p_value[4]))
+  expect_false(is.na(result$p_value[3]))
 })
 
 test_that("quality_test_ttest_summary_rowwise supports alternative hypotheses", {
-  df <- tibble::tibble(m = c(5.0, -3.0), s = c(1.0, 1.0), n = c(30L, 30L))
+  df <- tibble::tibble(
+    a = c(50.0, -50.0),
+    b = c(52.0, -48.0),
+    cc = c(51.0, -49.0)
+  )
 
-  r_greater <- quality_test_ttest_summary_rowwise(df, "m", "s", "n", alternative = "greater")
-  r_less    <- quality_test_ttest_summary_rowwise(df, "m", "s", "n", alternative = "less")
+  r_greater <- quality_test_ttest_summary_rowwise(df, c("a", "b", "cc"), alternative = "greater")
+  r_less    <- quality_test_ttest_summary_rowwise(df, c("a", "b", "cc"), alternative = "less")
 
   expect_true(all(!is.na(r_greater$p_value)))
   expect_true(all(!is.na(r_less$p_value)))
 })
 
 test_that("quality_test_ttest_summary_rowwise warns when column is missing", {
-  df <- tibble::tibble(m = 5.0, s = 1.0)
+  df <- tibble::tibble(a = c(1.0, 2.0), b = c(3.0, 4.0))
 
   expect_warning(
-    quality_test_ttest_summary_rowwise(df, "m", "s", "nonexistent"),
+    quality_test_ttest_summary_rowwise(df, c("a", "b", "nonexistent")),
     regexp = "not found"
   )
 })
 
 test_that("quality_test_ttest_summary_rowwise warns with invalid alternative", {
-  df <- tibble::tibble(m = 5.0, s = 1.0, n = 30L)
+  df <- tibble::tibble(a = c(1.0, 2.0), b = c(3.0, 4.0))
 
   expect_warning(
-    quality_test_ttest_summary_rowwise(df, "m", "s", "n", alternative = "both"),
+    quality_test_ttest_summary_rowwise(df, c("a", "b"), alternative = "both"),
     regexp = "two.sided.*greater.*less"
+  )
+})
+
+test_that("quality_test_ttest_summary_rowwise errors with fewer than 2 variables", {
+  df <- tibble::tibble(a = c(1.0, 2.0))
+
+  expect_warning(
+    quality_test_ttest_summary_rowwise(df, "a"),
+    regexp = "at least 2 column names"
   )
 })
 
@@ -1760,7 +1781,7 @@ test_that("quality_test_poisson_ratio_rowwise adds p-value column", {
     exposure = c(100, 100, 100)
   )
 
-  result <- quality_test_poisson_ratio_rowwise(df, "events", "exposure",
+  result <- quality_test_poisson_ratio_rowwise(df, c("events", "exposure"),
                                                expected_rate = 0.05)
 
   expect_true(is.data.frame(result))
@@ -1772,7 +1793,7 @@ test_that("quality_test_poisson_ratio_rowwise adds p-value column", {
 test_that("quality_test_poisson_ratio_rowwise uses custom pval_colname", {
   df <- tibble::tibble(ev = c(5L), exp = c(100))
 
-  result <- quality_test_poisson_ratio_rowwise(df, "ev", "exp", pval_colname = "pois_p")
+  result <- quality_test_poisson_ratio_rowwise(df, c("ev", "exp"), pval_colname = "pois_p")
 
   expect_true("pois_p" %in% names(result))
 })
@@ -1783,7 +1804,7 @@ test_that("quality_test_poisson_ratio_rowwise returns NA for invalid rows", {
     exp = c(100,  100, 100,  0)
   )
 
-  result <- quality_test_poisson_ratio_rowwise(df, "ev", "exp")
+  result <- quality_test_poisson_ratio_rowwise(df, c("ev", "exp"))
 
   expect_false(is.na(result$p_value[1]))
   expect_true(is.na(result$p_value[2]))
@@ -1794,8 +1815,8 @@ test_that("quality_test_poisson_ratio_rowwise returns NA for invalid rows", {
 test_that("quality_test_poisson_ratio_rowwise supports alternative hypotheses", {
   df <- tibble::tibble(ev = c(5L, 1L), exp = c(100, 100))
 
-  r_greater <- quality_test_poisson_ratio_rowwise(df, "ev", "exp", alternative = "greater")
-  r_less    <- quality_test_poisson_ratio_rowwise(df, "ev", "exp", alternative = "less")
+  r_greater <- quality_test_poisson_ratio_rowwise(df, c("ev", "exp"), alternative = "greater")
+  r_less    <- quality_test_poisson_ratio_rowwise(df, c("ev", "exp"), alternative = "less")
 
   expect_true(all(!is.na(r_greater$p_value)))
   expect_true(all(!is.na(r_less$p_value)))
@@ -1805,7 +1826,7 @@ test_that("quality_test_poisson_ratio_rowwise warns when column is missing", {
   df <- tibble::tibble(ev = c(5L))
 
   expect_warning(
-    quality_test_poisson_ratio_rowwise(df, "ev", "nonexistent"),
+    quality_test_poisson_ratio_rowwise(df, c("ev", "nonexistent")),
     regexp = "not found"
   )
 })
@@ -1814,7 +1835,7 @@ test_that("quality_test_poisson_ratio_rowwise warns with non-positive expected_r
   df <- tibble::tibble(ev = c(5L), exp = c(100))
 
   expect_warning(
-    quality_test_poisson_ratio_rowwise(df, "ev", "exp", expected_rate = -0.01),
+    quality_test_poisson_ratio_rowwise(df, c("ev", "exp"), expected_rate = -0.01),
     regexp = "positive numeric"
   )
 })

@@ -1362,12 +1362,12 @@ quality_test_digit_preference <- function(data, variables) {
 #' across two or more groups.
 #'
 #' @param data Data frame containing the variables
-#' @param outcome_col Character scalar. Name of the numeric outcome column
+#' @param variable Character scalar. Name of the numeric outcome column
 #' @param group_col Character scalar. Name of the grouping column (must have
 #'   at least 2 distinct levels)
 #' @return List with statistic (F-value) and p_value
 #' @export
-quality_test_anova <- function(data, outcome_col, group_col) {
+quality_test_anova <- function(data, variable, group_col) {
 
   phr_try({
 
@@ -1378,10 +1378,10 @@ quality_test_anova <- function(data, outcome_col, group_col) {
       soft = FALSE
     )
 
-    if (!is.character(outcome_col) || length(outcome_col) != 1L) {
+    if (!is.character(variable) || length(variable) != 1L) {
       phr_error(
         origin = "quality_test_anova",
-        message = "`outcome_col` must be a single character column name"
+        message = "`variable` must be a single character column name"
       )
     }
 
@@ -1392,7 +1392,7 @@ quality_test_anova <- function(data, outcome_col, group_col) {
       )
     }
 
-    if (!outcome_col %in% names(data)) {
+    if (!variable %in% names(data)) {
       phr_warning(
         origin = "quality_test_anova",
         message = "Outcome column not found in data"
@@ -1409,7 +1409,7 @@ quality_test_anova <- function(data, outcome_col, group_col) {
     }
 
     is_valid <- phr_validate_numeric(
-      data[[outcome_col]],
+      data[[variable]],
       origin = "quality_test_anova",
       hint = phr_txt("ANOVA requires a numeric outcome variable."),
       soft = TRUE
@@ -1419,7 +1419,7 @@ quality_test_anova <- function(data, outcome_col, group_col) {
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    outcome <- as.numeric(data[[outcome_col]])
+    outcome <- as.numeric(data[[variable]])
     group   <- data[[group_col]]
 
     complete_cases <- complete.cases(outcome, group)
@@ -1457,21 +1457,17 @@ quality_test_anova <- function(data, outcome_col, group_col) {
 
 #' Chi-Squared Test with Binary Contingency Table
 #'
-#' Perform a chi-squared test on a pre-aggregated contingency table where each
-#' row in \code{data} represents one group and two columns supply the counts
-#' for the two categories.
+#' Perform a chi-squared test of independence between two categorical columns in
+#' the dataset. The contingency table is built internally from the raw data.
 #'
-#' @param data Data frame where each row represents a group, with two columns
-#'   containing the count data for each category
-#' @param group_col Character scalar. Name of the column containing group
-#'   labels (used as row identifiers for the contingency table)
-#' @param cat1_col Character scalar. Name of the column containing counts for
-#'   the first category
-#' @param cat2_col Character scalar. Name of the column containing counts for
-#'   the second category
+#' @param data Data frame containing the raw (unaggregated) data
+#' @param variables Character vector of exactly 2 variable names. The first
+#'   element is the first categorical column and the second element is the
+#'   second categorical column. A contingency table is formed from their
+#'   cross-tabulation.
 #' @return List with statistic (chi-squared value) and p_value
 #' @export
-quality_test_chisq_binary <- function(data, group_col, cat1_col, cat2_col) {
+quality_test_chisq_binary <- function(data, variables) {
 
   phr_try({
 
@@ -1482,28 +1478,14 @@ quality_test_chisq_binary <- function(data, group_col, cat1_col, cat2_col) {
       soft = FALSE
     )
 
-    if (!is.character(group_col) || length(group_col) != 1L) {
+    if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
         origin = "quality_test_chisq_binary",
-        message = "`group_col` must be a single character column name"
+        message = "`variables` must be a character vector of exactly 2 column names"
       )
     }
 
-    if (!is.character(cat1_col) || length(cat1_col) != 1L) {
-      phr_error(
-        origin = "quality_test_chisq_binary",
-        message = "`cat1_col` must be a single character column name"
-      )
-    }
-
-    if (!is.character(cat2_col) || length(cat2_col) != 1L) {
-      phr_error(
-        origin = "quality_test_chisq_binary",
-        message = "`cat2_col` must be a single character column name"
-      )
-    }
-
-    missing_cols <- setdiff(c(group_col, cat1_col, cat2_col), names(data))
+    missing_cols <- setdiff(variables, names(data))
     if (length(missing_cols) > 0) {
       phr_warning(
         origin = "quality_test_chisq_binary",
@@ -1512,27 +1494,35 @@ quality_test_chisq_binary <- function(data, group_col, cat1_col, cat2_col) {
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    complete_cases <- complete.cases(data[[group_col]], data[[cat1_col]], data[[cat2_col]])
-    group_vals <- as.character(data[[group_col]][complete_cases])
-    cat1_vals  <- as.numeric(data[[cat1_col]][complete_cases])
-    cat2_vals  <- as.numeric(data[[cat2_col]][complete_cases])
+    cat1_col <- variables[1]
+    cat2_col <- variables[2]
 
-    if (length(group_vals) < 2) {
+    x <- data[[cat1_col]]
+    y <- data[[cat2_col]]
+
+    complete_cases <- complete.cases(x, y)
+    x <- x[complete_cases]
+    y <- y[complete_cases]
+
+    if (length(x) < 5) {
       phr_warning(
         origin = "quality_test_chisq_binary",
-        message = "Insufficient rows for chi-squared binary test (need at least 2)"
+        message = "Insufficient data for chi-squared binary test (need at least 5 complete observations)"
       )
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    contingency_matrix <- matrix(
-      c(cat1_vals, cat2_vals),
-      nrow = length(group_vals),
-      ncol = 2,
-      dimnames = list(group_vals, c(cat1_col, cat2_col))
-    )
+    contingency_table <- table(x, y)
 
-    test_result <- chisq.test(contingency_matrix)
+    if (any(dim(contingency_table) < 2)) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = "Contingency table too small for chi-squared test (each variable must have at least 2 distinct levels)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    test_result <- chisq.test(contingency_table)
 
     return(list(
       statistic = as.numeric(test_result$statistic),
@@ -1549,10 +1539,10 @@ quality_test_chisq_binary <- function(data, group_col, cat1_col, cat2_col) {
 #' data frame.
 #'
 #' @param data Data frame containing the variables
-#' @param success_col Character scalar. Name of the column containing the
-#'   number of successes (non-negative integer)
-#' @param total_col Character scalar. Name of the column containing the total
-#'   number of trials (positive integer \eqn{\geq} success count)
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the column containing the number of successes (non-negative
+#'   integer) and the second is the column containing the total number of
+#'   trials (positive integer \eqn{\geq} success count).
 #' @param expected_ratio Numeric scalar. Expected proportion under the null
 #'   hypothesis (default: 0.5; must be strictly between 0 and 1)
 #' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
@@ -1564,8 +1554,7 @@ quality_test_chisq_binary <- function(data, group_col, cat1_col, cat2_col) {
 #'   or invalid values receive \code{NA}
 #' @export
 quality_test_binomial_ratio_rowwise <- function(data,
-                                                success_col,
-                                                total_col,
+                                                variables,
                                                 expected_ratio = 0.5,
                                                 alternative    = "two.sided",
                                                 pval_colname   = "p_value") {
@@ -1579,17 +1568,10 @@ quality_test_binomial_ratio_rowwise <- function(data,
       soft = FALSE
     )
 
-    if (!is.character(success_col) || length(success_col) != 1L) {
+    if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
         origin = "quality_test_binomial_ratio_rowwise",
-        message = "`success_col` must be a single character column name"
-      )
-    }
-
-    if (!is.character(total_col) || length(total_col) != 1L) {
-      phr_error(
-        origin = "quality_test_binomial_ratio_rowwise",
-        message = "`total_col` must be a single character column name"
+        message = "`variables` must be a character vector of exactly 2 column names (success, total)"
       )
     }
 
@@ -1615,7 +1597,7 @@ quality_test_binomial_ratio_rowwise <- function(data,
       )
     }
 
-    missing_cols <- setdiff(c(success_col, total_col), names(data))
+    missing_cols <- setdiff(variables, names(data))
     if (length(missing_cols) > 0) {
       phr_warning(
         origin = "quality_test_binomial_ratio_rowwise",
@@ -1624,6 +1606,8 @@ quality_test_binomial_ratio_rowwise <- function(data,
       return(data)
     }
 
+    success_col  <- variables[1]
+    total_col    <- variables[2]
     success_vals <- data[[success_col]]
     total_vals   <- data[[total_col]]
 
@@ -1656,18 +1640,17 @@ quality_test_binomial_ratio_rowwise <- function(data,
   }, on_error = "warn", origin = "quality_test_binomial_ratio_rowwise")
 }
 
-#' One-Sample T-Test from Summary Statistics (Row-wise)
+#' One-Sample T-Test from Actual Data (Row-wise Across Columns)
 #'
-#' Perform a row-wise one-sample t-test computed analytically from summary
-#' statistics (mean, standard deviation, and sample size), appending a
-#' p-value column to the data frame.
+#' Perform a row-wise one-sample t-test on the actual data values. For each
+#' row, the values across the columns specified in \code{variables} are
+#' extracted and used to compute a one-sample t-test against
+#' \code{expected_mean}. A p-value column is appended to the data frame.
 #'
 #' @param data Data frame containing the variables
-#' @param mean_col Character scalar. Name of the column containing sample means
-#' @param sd_col Character scalar. Name of the column containing sample
-#'   standard deviations (must be positive)
-#' @param n_col Character scalar. Name of the column containing sample sizes
-#'   (must be \eqn{\geq 2})
+#' @param variables Character vector of column names whose values are used
+#'   row-wise for the t-test. At least 2 columns must be provided so that a
+#'   standard deviation can be estimated.
 #' @param expected_mean Numeric scalar. Hypothesised population mean under the
 #'   null hypothesis (default: 0)
 #' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
@@ -1675,13 +1658,11 @@ quality_test_binomial_ratio_rowwise <- function(data,
 #' @param pval_colname Character scalar. Name for the new p-value column
 #'   (default: \code{"p_value"})
 #' @return Data frame with an additional column containing the row-wise
-#'   t-test p-values (rounded to 3 decimal places); rows with missing or
-#'   invalid values receive \code{NA}
+#'   t-test p-values (rounded to 3 decimal places); rows with fewer than 2
+#'   non-missing values receive \code{NA}
 #' @export
 quality_test_ttest_summary_rowwise <- function(data,
-                                               mean_col,
-                                               sd_col,
-                                               n_col,
+                                               variables,
                                                expected_mean = 0,
                                                alternative   = "two.sided",
                                                pval_colname  = "p_value") {
@@ -1695,24 +1676,10 @@ quality_test_ttest_summary_rowwise <- function(data,
       soft = FALSE
     )
 
-    if (!is.character(mean_col) || length(mean_col) != 1L) {
+    if (!is.character(variables) || length(variables) < 2L) {
       phr_error(
         origin = "quality_test_ttest_summary_rowwise",
-        message = "`mean_col` must be a single character column name"
-      )
-    }
-
-    if (!is.character(sd_col) || length(sd_col) != 1L) {
-      phr_error(
-        origin = "quality_test_ttest_summary_rowwise",
-        message = "`sd_col` must be a single character column name"
-      )
-    }
-
-    if (!is.character(n_col) || length(n_col) != 1L) {
-      phr_error(
-        origin = "quality_test_ttest_summary_rowwise",
-        message = "`n_col` must be a single character column name"
+        message = "`variables` must be a character vector of at least 2 column names"
       )
     }
 
@@ -1737,7 +1704,7 @@ quality_test_ttest_summary_rowwise <- function(data,
       )
     }
 
-    missing_cols <- setdiff(c(mean_col, sd_col, n_col), names(data))
+    missing_cols <- setdiff(variables, names(data))
     if (length(missing_cols) > 0) {
       phr_warning(
         origin = "quality_test_ttest_summary_rowwise",
@@ -1746,31 +1713,25 @@ quality_test_ttest_summary_rowwise <- function(data,
       return(data)
     }
 
-    mean_vals <- as.numeric(data[[mean_col]])
-    sd_vals   <- as.numeric(data[[sd_col]])
-    n_vals    <- as.numeric(data[[n_col]])
+    existing_vars <- intersect(variables, names(data))
 
-    p_values <- vapply(seq_len(nrow(data)), function(i) {
-      m <- mean_vals[i]
-      s <- sd_vals[i]
-      n <- n_vals[i]
+    subset_mat <- as.matrix(as.data.frame(lapply(data[, existing_vars, drop = FALSE], as.numeric)))
 
-      if (is.na(m) || is.na(s) || is.na(n) || s <= 0 || n < 2) {
+    p_values <- vapply(seq_len(nrow(subset_mat)), function(i) {
+      row_vals <- subset_mat[i, ]
+      row_vals <- row_vals[!is.na(row_vals)]
+
+      if (length(row_vals) < 2) {
         return(NA_real_)
       }
 
-      tryCatch({
-        t_stat <- (m - expected_mean) / (s / sqrt(n))
-        df_val <- n - 1
-        p <- switch(
-          alternative,
-          "two.sided" = 2 * pt(-abs(t_stat), df_val),
-          "greater"   = pt(t_stat, df_val, lower.tail = FALSE),
-          "less"      = pt(t_stat, df_val, lower.tail = TRUE),
-          NA_real_
-        )
-        round(p, digits = 3)
-      }, error = function(e) NA_real_)
+      tryCatch(
+        round(
+          t.test(row_vals, mu = expected_mean, alternative = alternative)$p.value,
+          digits = 3
+        ),
+        error = function(e) NA_real_
+      )
     }, numeric(1))
 
     data[[pval_colname]] <- p_values
@@ -1785,11 +1746,10 @@ quality_test_ttest_summary_rowwise <- function(data,
 #' against an expected rate, appending a p-value column to the data frame.
 #'
 #' @param data Data frame containing the variables
-#' @param event_col Character scalar. Name of the column containing the number
-#'   of events (non-negative integer)
-#' @param exposure_col Character scalar. Name of the column containing the
-#'   exposure units (positive numeric, e.g., person-time or number of
-#'   households)
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the column containing the number of events (non-negative
+#'   integer) and the second is the column containing the exposure units
+#'   (positive numeric, e.g., person-time or number of households).
 #' @param expected_rate Numeric scalar. Expected event rate per unit exposure
 #'   under the null hypothesis (default: 0.02; must be positive)
 #' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
@@ -1801,8 +1761,7 @@ quality_test_ttest_summary_rowwise <- function(data,
 #'   or invalid values receive \code{NA}
 #' @export
 quality_test_poisson_ratio_rowwise <- function(data,
-                                               event_col,
-                                               exposure_col,
+                                               variables,
                                                expected_rate = 0.02,
                                                alternative   = "two.sided",
                                                pval_colname  = "p_value") {
@@ -1816,17 +1775,10 @@ quality_test_poisson_ratio_rowwise <- function(data,
       soft = FALSE
     )
 
-    if (!is.character(event_col) || length(event_col) != 1L) {
+    if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
         origin = "quality_test_poisson_ratio_rowwise",
-        message = "`event_col` must be a single character column name"
-      )
-    }
-
-    if (!is.character(exposure_col) || length(exposure_col) != 1L) {
-      phr_error(
-        origin = "quality_test_poisson_ratio_rowwise",
-        message = "`exposure_col` must be a single character column name"
+        message = "`variables` must be a character vector of exactly 2 column names (events, exposure)"
       )
     }
 
@@ -1852,7 +1804,7 @@ quality_test_poisson_ratio_rowwise <- function(data,
       )
     }
 
-    missing_cols <- setdiff(c(event_col, exposure_col), names(data))
+    missing_cols <- setdiff(variables, names(data))
     if (length(missing_cols) > 0) {
       phr_warning(
         origin = "quality_test_poisson_ratio_rowwise",
@@ -1861,6 +1813,8 @@ quality_test_poisson_ratio_rowwise <- function(data,
       return(data)
     }
 
+    event_col     <- variables[1]
+    exposure_col  <- variables[2]
     event_vals    <- data[[event_col]]
     exposure_vals <- data[[exposure_col]]
 
