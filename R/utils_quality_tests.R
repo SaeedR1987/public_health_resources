@@ -1356,6 +1356,485 @@ quality_test_digit_preference <- function(data, variables) {
   }, on_error = "warn", origin = "quality_test_digit_preference")
 }
 
+#' ANOVA Test
+#'
+#' Perform a one-way analysis of variance (ANOVA) to compare group means
+#' across two or more groups.
+#'
+#' @param data Data frame containing the variables
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the numeric outcome column and the second is the grouping
+#'   column (must have at least 2 distinct levels).
+#' @return List with statistic (F-value) and p_value
+#' @export
+quality_test_anova <- function(data, variables) {
+
+  phr_try({
+
+    phr_validate_dataframe(
+      data,
+      origin = "quality_test_anova",
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
+      soft = FALSE
+    )
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_anova",
+        message = "`variables` must be a character vector of exactly 2 column names (outcome, group)"
+      )
+    }
+
+    outcome_col <- variables[1]
+    group_col   <- variables[2]
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_anova",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    is_valid <- phr_validate_numeric(
+      data[[outcome_col]],
+      origin = "quality_test_anova",
+      hint = phr_txt("ANOVA requires a numeric outcome variable."),
+      soft = TRUE
+    )
+
+    if (isFALSE(is_valid)) {
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    outcome <- as.numeric(data[[outcome_col]])
+    group   <- data[[group_col]]
+
+    complete_cases <- complete.cases(outcome, group)
+    outcome <- outcome[complete_cases]
+    group   <- group[complete_cases]
+
+    if (length(outcome) < 3) {
+      phr_warning(
+        origin = "quality_test_anova",
+        message = "Insufficient data for ANOVA (need at least 3 non-missing observations)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    group <- as.factor(group)
+
+    if (nlevels(group) < 2) {
+      phr_warning(
+        origin = "quality_test_anova",
+        message = "Group column must have at least 2 distinct levels for ANOVA"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    model       <- aov(outcome ~ group, data = data.frame(outcome = outcome, group = group))
+    anova_table <- summary(model)[[1]]
+
+    return(list(
+      statistic = as.numeric(anova_table[["F value"]][1]),
+      p_value   = as.numeric(anova_table[["Pr(>F)"]][1])
+    ))
+
+  }, on_error = "warn", origin = "quality_test_anova")
+}
+
+#' Chi-Squared Test with Binary Contingency Table
+#'
+#' Perform a chi-squared test of independence between two categorical columns in
+#' the dataset. The contingency table is built internally from the raw data.
+#'
+#' @param data Data frame containing the raw (unaggregated) data
+#' @param variables Character vector of exactly 2 variable names. The first
+#'   element is the first categorical column and the second element is the
+#'   second categorical column. A contingency table is formed from their
+#'   cross-tabulation.
+#' @return List with statistic (chi-squared value) and p_value
+#' @export
+quality_test_chisq_binary <- function(data, variables) {
+
+  phr_try({
+
+    phr_validate_dataframe(
+      data,
+      origin = "quality_test_chisq_binary",
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
+      soft = FALSE
+    )
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_chisq_binary",
+        message = "`variables` must be a character vector of exactly 2 column names"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    cat1_col <- variables[1]
+    cat2_col <- variables[2]
+
+    x <- data[[cat1_col]]
+    y <- data[[cat2_col]]
+
+    complete_cases <- complete.cases(x, y)
+    x <- x[complete_cases]
+    y <- y[complete_cases]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = "Insufficient data for chi-squared binary test (need at least 5 complete observations)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    contingency_table <- table(x, y)
+
+    if (any(dim(contingency_table) < 2)) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = "Contingency table too small for chi-squared test (each variable must have at least 2 distinct levels)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    test_result <- chisq.test(contingency_table)
+
+    return(list(
+      statistic = as.numeric(test_result$statistic),
+      p_value   = test_result$p.value
+    ))
+
+  }, on_error = "warn", origin = "quality_test_chisq_binary")
+}
+
+#' Binomial Ratio Test (Row-wise)
+#'
+#' Perform a row-wise exact binomial proportion test comparing the observed
+#' success rate against an expected ratio, appending a p-value column to the
+#' data frame.
+#'
+#' @param data Data frame containing the variables
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the column containing the number of successes (non-negative
+#'   integer) and the second is the column containing the total number of
+#'   trials (positive integer \eqn{\geq} success count).
+#' @param expected_ratio Numeric scalar. Expected proportion under the null
+#'   hypothesis (default: 0.5; must be strictly between 0 and 1)
+#' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
+#'   \code{"greater"}, or \code{"less"} (default: \code{"two.sided"})
+#' @param pval_colname Character scalar. Name for the new p-value column
+#'   (default: \code{"p_value"})
+#' @return Data frame with an additional column containing the row-wise
+#'   binomial test p-values (rounded to 5 decimal places); rows with missing
+#'   or invalid values receive \code{NA}
+#' @export
+quality_test_binomial_ratio_rowwise <- function(data,
+                                                variables,
+                                                expected_ratio = 0.5,
+                                                alternative    = "two.sided",
+                                                pval_colname   = "p_value") {
+
+  phr_try({
+
+    phr_validate_dataframe(
+      data,
+      origin = "quality_test_binomial_ratio_rowwise",
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
+      soft = FALSE
+    )
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`variables` must be a character vector of exactly 2 column names (success, total)"
+      )
+    }
+
+    if (!is.numeric(expected_ratio) || length(expected_ratio) != 1L ||
+        is.na(expected_ratio) || expected_ratio <= 0 || expected_ratio >= 1) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`expected_ratio` must be a single numeric value strictly between 0 and 1"
+      )
+    }
+
+    if (!alternative %in% c("two.sided", "greater", "less")) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
+      )
+    }
+
+    if (!is.character(pval_colname) || length(pval_colname) != 1L) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`pval_colname` must be a single character string"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(data)
+    }
+
+    success_col  <- variables[1]
+    total_col    <- variables[2]
+    success_vals <- data[[success_col]]
+    total_vals   <- data[[total_col]]
+
+    p_values <- vapply(seq_len(nrow(data)), function(i) {
+      s <- success_vals[i]
+      n <- total_vals[i]
+
+      if (is.na(s) || is.na(n) || s < 0 || n <= 0 || n < s ||
+          n != floor(n) || s != floor(s)) {
+        return(NA_real_)
+      }
+
+      tryCatch(
+        round(
+          binom.test(
+            x           = as.integer(s),
+            n           = as.integer(n),
+            p           = expected_ratio,
+            alternative = alternative
+          )$p.value,
+          digits = 5
+        ),
+        error = function(e) NA_real_
+      )
+    }, numeric(1))
+
+    data[[pval_colname]] <- p_values
+    return(data)
+
+  }, on_error = "warn", origin = "quality_test_binomial_ratio_rowwise")
+}
+
+#' One-Sample T-Test from Actual Data (Row-wise Across Columns)
+#'
+#' Perform a row-wise one-sample t-test on the actual data values. For each
+#' row, the values across the columns specified in \code{variables} are
+#' extracted and used to compute a one-sample t-test against
+#' \code{expected_mean}. A p-value column is appended to the data frame.
+#'
+#' @param data Data frame containing the variables
+#' @param variables Character vector of column names whose values are used
+#'   row-wise for the t-test. At least 2 columns must be provided so that a
+#'   standard deviation can be estimated.
+#' @param expected_mean Numeric scalar. Hypothesised population mean under the
+#'   null hypothesis (default: 0)
+#' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
+#'   \code{"greater"}, or \code{"less"} (default: \code{"two.sided"})
+#' @param pval_colname Character scalar. Name for the new p-value column
+#'   (default: \code{"p_value"})
+#' @return Data frame with an additional column containing the row-wise
+#'   t-test p-values (rounded to 3 decimal places); rows with fewer than 2
+#'   non-missing values receive \code{NA}
+#' @export
+quality_test_ttest_summary_rowwise <- function(data,
+                                               variables,
+                                               expected_mean = 0,
+                                               alternative   = "two.sided",
+                                               pval_colname  = "p_value") {
+
+  phr_try({
+
+    phr_validate_dataframe(
+      data,
+      origin = "quality_test_ttest_summary_rowwise",
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
+      soft = FALSE
+    )
+
+    if (!is.character(variables) || length(variables) < 2L) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`variables` must be a character vector of at least 2 column names"
+      )
+    }
+
+    if (!is.numeric(expected_mean) || length(expected_mean) != 1L || is.na(expected_mean)) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`expected_mean` must be a single non-missing numeric value"
+      )
+    }
+
+    if (!alternative %in% c("two.sided", "greater", "less")) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
+      )
+    }
+
+    if (!is.character(pval_colname) || length(pval_colname) != 1L) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`pval_colname` must be a single character string"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(data)
+    }
+
+    existing_vars <- intersect(variables, names(data))
+
+    subset_mat <- as.matrix(as.data.frame(lapply(data[, existing_vars, drop = FALSE], as.numeric)))
+
+    p_values <- vapply(seq_len(nrow(subset_mat)), function(i) {
+      row_vals <- subset_mat[i, ]
+      row_vals <- row_vals[!is.na(row_vals)]
+
+      if (length(row_vals) < 2) {
+        return(NA_real_)
+      }
+
+      tryCatch(
+        round(
+          t.test(row_vals, mu = expected_mean, alternative = alternative)$p.value,
+          digits = 3
+        ),
+        error = function(e) NA_real_
+      )
+    }, numeric(1))
+
+    data[[pval_colname]] <- p_values
+    return(data)
+
+  }, on_error = "warn", origin = "quality_test_ttest_summary_rowwise")
+}
+
+#' Poisson Rate Test (Row-wise)
+#'
+#' Perform a row-wise exact Poisson test comparing an observed event count
+#' against an expected rate, appending a p-value column to the data frame.
+#'
+#' @param data Data frame containing the variables
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the column containing the number of events (non-negative
+#'   integer) and the second is the column containing the exposure units
+#'   (positive numeric, e.g., person-time or number of households).
+#' @param expected_rate Numeric scalar. Expected event rate per unit exposure
+#'   under the null hypothesis (default: 0.02; must be positive)
+#' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
+#'   \code{"greater"}, or \code{"less"} (default: \code{"two.sided"})
+#' @param pval_colname Character scalar. Name for the new p-value column
+#'   (default: \code{"p_value"})
+#' @return Data frame with an additional column containing the row-wise
+#'   Poisson test p-values (rounded to 5 decimal places); rows with missing
+#'   or invalid values receive \code{NA}
+#' @export
+quality_test_poisson_ratio_rowwise <- function(data,
+                                               variables,
+                                               expected_rate = 0.02,
+                                               alternative   = "two.sided",
+                                               pval_colname  = "p_value") {
+
+  phr_try({
+
+    phr_validate_dataframe(
+      data,
+      origin = "quality_test_poisson_ratio_rowwise",
+      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
+      soft = FALSE
+    )
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`variables` must be a character vector of exactly 2 column names (events, exposure)"
+      )
+    }
+
+    if (!is.numeric(expected_rate) || length(expected_rate) != 1L ||
+        is.na(expected_rate) || expected_rate <= 0) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`expected_rate` must be a single positive numeric value"
+      )
+    }
+
+    if (!alternative %in% c("two.sided", "greater", "less")) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
+      )
+    }
+
+    if (!is.character(pval_colname) || length(pval_colname) != 1L) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`pval_colname` must be a single character string"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(data)
+    }
+
+    event_col     <- variables[1]
+    exposure_col  <- variables[2]
+    event_vals    <- data[[event_col]]
+    exposure_vals <- data[[exposure_col]]
+
+    p_values <- vapply(seq_len(nrow(data)), function(i) {
+      ev  <- event_vals[i]
+      exp <- exposure_vals[i]
+
+      if (is.na(ev) || is.na(exp) || exp <= 0 || ev < 0 || ev != floor(ev)) {
+        return(NA_real_)
+      }
+
+      tryCatch(
+        round(
+          poisson.test(
+            x           = as.integer(ev),
+            T           = exp,
+            r           = expected_rate,
+            alternative = alternative
+          )$p.value,
+          digits = 5
+        ),
+        error = function(e) NA_real_
+      )
+    }, numeric(1))
+
+    data[[pval_colname]] <- p_values
+    return(data)
+
+  }, on_error = "warn", origin = "quality_test_poisson_ratio_rowwise")
+}
+
 #' Non-missing Count Test
 #'
 #' Return the number of non-missing (non-NA) values in a specified column.
