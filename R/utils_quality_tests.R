@@ -1362,12 +1362,12 @@ quality_test_digit_preference <- function(data, variables) {
 #' across two or more groups.
 #'
 #' @param data Data frame containing the variables
-#' @param variable Character scalar. Name of the numeric outcome column
-#' @param group_col Character scalar. Name of the grouping column (must have
-#'   at least 2 distinct levels)
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the numeric outcome column and the second is the grouping
+#'   column (must have at least 2 distinct levels).
 #' @return List with statistic (F-value) and p_value
 #' @export
-quality_test_anova <- function(data, variable, group_col) {
+quality_test_anova <- function(data, variables) {
 
   phr_try({
 
@@ -1378,38 +1378,27 @@ quality_test_anova <- function(data, variable, group_col) {
       soft = FALSE
     )
 
-    if (!is.character(variable) || length(variable) != 1L) {
+    if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
         origin = "quality_test_anova",
-        message = "`variable` must be a single character column name"
+        message = "`variables` must be a character vector of exactly 2 column names (outcome, group)"
       )
     }
 
-    if (!is.character(group_col) || length(group_col) != 1L) {
-      phr_error(
-        origin = "quality_test_anova",
-        message = "`group_col` must be a single character column name"
-      )
-    }
+    outcome_col <- variables[1]
+    group_col   <- variables[2]
 
-    if (!variable %in% names(data)) {
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
       phr_warning(
         origin = "quality_test_anova",
-        message = "Outcome column not found in data"
-      )
-      return(list(statistic = NA_real_, p_value = NA_real_))
-    }
-
-    if (!group_col %in% names(data)) {
-      phr_warning(
-        origin = "quality_test_anova",
-        message = "Group column not found in data"
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
       )
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
     is_valid <- phr_validate_numeric(
-      data[[variable]],
+      data[[outcome_col]],
       origin = "quality_test_anova",
       hint = phr_txt("ANOVA requires a numeric outcome variable."),
       soft = TRUE
@@ -1419,7 +1408,7 @@ quality_test_anova <- function(data, variable, group_col) {
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    outcome <- as.numeric(data[[variable]])
+    outcome <- as.numeric(data[[outcome_col]])
     group   <- data[[group_col]]
 
     complete_cases <- complete.cases(outcome, group)

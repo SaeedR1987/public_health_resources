@@ -1483,7 +1483,7 @@ test_that("quality_test_anova returns F-statistic and p-value for a clear group 
     group = c("A", "A", "A", "B", "B", "B", "C", "C", "C")
   )
 
-  result <- quality_test_anova(df, variable = "score", group_col = "group")
+  result <- quality_test_anova(df, c("score", "group"))
 
   expect_true(is.list(result))
   expect_true(all(c("statistic", "p_value") %in% names(result)))
@@ -1499,17 +1499,17 @@ test_that("quality_test_anova handles missing values", {
     group = c("A", "A", "A", "B", "B", "B", "C", "C", "C")
   )
 
-  result <- quality_test_anova(df, variable = "score", group_col = "group")
+  result <- quality_test_anova(df, c("score", "group"))
 
   expect_true(is.list(result))
   expect_true(!is.na(result$statistic))
 })
 
-test_that("quality_test_anova warns when outcome column not found", {
+test_that("quality_test_anova warns when a column is not found", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
-    result <- quality_test_anova(df, variable = "nonexistent", group_col = "group"),
+    result <- quality_test_anova(df, c("nonexistent", "group")),
     regexp = "not found"
   )
   expect_equal(result$statistic, NA_real_)
@@ -1519,7 +1519,7 @@ test_that("quality_test_anova warns when group column not found", {
   df <- tibble::tibble(score = 1:5)
 
   expect_warning(
-    result <- quality_test_anova(df, variable = "score", group_col = "nonexistent"),
+    result <- quality_test_anova(df, c("score", "nonexistent")),
     regexp = "not found"
   )
   expect_equal(result$statistic, NA_real_)
@@ -1532,27 +1532,27 @@ test_that("quality_test_anova warns with fewer than 2 group levels", {
   )
 
   expect_warning(
-    result <- quality_test_anova(df, variable = "score", group_col = "group"),
+    result <- quality_test_anova(df, c("score", "group")),
     regexp = "at least 2 distinct levels"
   )
   expect_equal(result$statistic, NA_real_)
 })
 
-test_that("quality_test_anova warns with non-character variable", {
+test_that("quality_test_anova warns with non-character variables", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
-    quality_test_anova(df, variable = 1, group_col = "group"),
-    regexp = "single character"
+    quality_test_anova(df, 1:2),
+    regexp = "exactly 2 column names"
   )
 })
 
-test_that("quality_test_anova warns with non-character group_col", {
+test_that("quality_test_anova warns when variables has wrong length", {
   df <- tibble::tibble(score = 1:5, group = c("A", "A", "B", "B", "B"))
 
   expect_warning(
-    quality_test_anova(df, variable = "score", group_col = TRUE),
-    regexp = "single character"
+    quality_test_anova(df, "score"),
+    regexp = "exactly 2 column names"
   )
 })
 
