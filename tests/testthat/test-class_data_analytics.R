@@ -458,6 +458,46 @@ test_that("outputs_diagnose flags missing variable", {
   expect_equal(nrow(da$outputs_issues_log), 1)
 })
 
+test_that("analysis_diagnose resolves canonical var names via variable_map", {
+  df <- tibble::tibble(id = 1:5, actual_score = 1:5)
+  da <- DataAnalytics$new(data = df, dataset_name = "ADiagVarMap")
+  da$variable_map <- list(canonical_score = "actual_score")
+
+  da$data_analysis_plan$log_df <- tibble::tibble(
+    indicator_name = c("Mapped var"),
+    calculation    = c("mean"),
+    var_name       = c("canonical_score"),
+    denom_var      = c(NA_character_),
+    disaggregation = c(NA_character_),
+    multiplier     = c(1),
+    indicator_unit = c("%")
+  )
+
+  result <- da$analysis_diagnose()
+  expect_equal(nrow(result), 1)
+  expect_true(result$var_name_in_data[1])
+  expect_equal(result$status[1], "ok")
+})
+
+test_that("outputs_diagnose resolves canonical var names via variable_map", {
+  df <- tibble::tibble(id = 1:5, actual_col = 1:5)
+  da <- DataAnalytics$new(data = df, dataset_name = "ODiagVarMap")
+  da$variable_map <- list(canonical_col = "actual_col")
+
+  da$outputs_schema <- list(
+    out_mapped = list(
+      output_name = "out_mapped", output_title = "Mapped var output",
+      output_func_name = "plot_stacked_bar",
+      output_type = "visualization",
+      variables = c("canonical_col"), test_params = list(), outputs_group = NULL
+    )
+  )
+
+  result <- da$outputs_diagnose()
+  expect_equal(nrow(result), 1)
+  expect_true(result$variables_in_data[1])
+})
+
 # ============================================================================
 # Schema Accessor Methods Tests
 # ============================================================================
