@@ -7574,12 +7574,17 @@ table_frequency <- function(survey_design,
       all_results[[i]] <- results_df
     }
 
-    # Coerce factor and other non-character columns that are used as disaggregation
-    # labels to character so dplyr::bind_rows() can combine them without type errors
+    # Coerce disaggregation columns, the Value column, and any factor columns to
+    # character so dplyr::bind_rows() can combine them without type errors
     # (e.g. "Can't combine `..1$enumerator`" when the same column is character in one
-    # result and factor/integer in another).
+    # result and integer/factor in another).
+    disagg_cols <- unique(unlist(disaggregation))
+    char_cols   <- c(disagg_cols, "Value")
     all_results <- lapply(all_results, function(df) {
-      df %>% dplyr::mutate(dplyr::across(where(is.factor), as.character))
+      df %>% dplyr::mutate(
+        dplyr::across(dplyr::any_of(char_cols), as.character),
+        dplyr::across(where(is.factor), as.character)
+      )
     })
 
     # Combine all results
