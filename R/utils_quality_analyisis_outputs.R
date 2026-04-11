@@ -8562,14 +8562,14 @@ table_frequency_v2 <- function(survey_design,
 
 #' Create a Quality Penalty Summary Table (flextable)
 #'
-#' Takes the results data frame from a \code{DataQuality} object's
+#' Takes the results data frame from a \code{DataAnalytics} object's
 #' \code{results_to_table()} and produces a formatted flextable summarising
 #' penalties by \code{check_group}. Each row shows the statistical test result
 #' and penalty for an individual check, and merged cells display the summed
 #' penalty per check group.
 #'
 #' @param results_df A data frame as returned by
-#'   \code{DataQuality$results_to_table()}. Must contain columns:
+#'   \code{DataAnalytics$results_to_table()}. Must contain columns:
 #'   \code{check_name}, \code{check_label}, \code{penalty}. Optional columns:
 #'   \code{check_group}, \code{test_statistic}, \code{p_value},
 #'   \code{max_penalty}.
@@ -8738,7 +8738,7 @@ table_quality_penalty_summary <- function(results_df,
 #' Create a Quality Penalty Summary Table by Group — Wide Format (flextable)
 #'
 #' Takes a per-group results data frame (e.g. as produced by
-#' \code{DataQuality$.compute_results_by_group()}) and produces a formatted
+#' \code{DataAnalytics$.compute_results_by_group()}) and produces a formatted
 #' flextable summarising penalties broken down by a grouping variable such as
 #' enumerator ID or stratum.  The output uses a \strong{wide format}: each
 #' unique group value becomes a column set rather than a row group.  The table

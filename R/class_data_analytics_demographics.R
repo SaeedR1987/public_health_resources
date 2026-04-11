@@ -10,7 +10,7 @@
 #' * Quantitative analysis indicators via analysis_schema
 #' * All visualizations/tables (quality and analysis) via outputs_schema
 #'
-#' @seealso [DataAnalytics], [DemographicsDataQuality], [DemographicsAnalysis]
+#' @seealso [DataAnalytics]
 #' @export
 DemographicsDataAnalytics <- R6::R6Class(
   classname = "DemographicsDataAnalytics",

@@ -21,7 +21,7 @@
 #' @field linked_ind_health_variable_map Variable mappings for linked health individual data
 #' @field linked_ind_health_value_map Value mappings for linked health individual data
 #'
-#' @seealso [DataAnalytics], [HealthDataQuality], [HealthAnalysis]
+#' @seealso [DataAnalytics]
 #' @export
 HealthDataAnalytics <- R6::R6Class(
   classname = "HealthDataAnalytics",

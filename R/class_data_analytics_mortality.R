@@ -43,7 +43,7 @@
 #' @field survey_design_roster srvyr survey design object for the linked roster dataset
 #' @field survey_design_deaths srvyr survey design object for the linked deaths dataset
 #'
-#' @seealso [DataAnalytics], [MortalityDataQuality], [MortalityAnalysis]
+#' @seealso [DataAnalytics]
 #' @export
 MortalityDataAnalytics <- R6::R6Class(
   classname = "MortalityDataAnalytics",

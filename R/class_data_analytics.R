@@ -46,7 +46,7 @@
 #' @field overall_score Overall data quality score
 #' @field metadata Free-form metadata list
 #'
-#' @seealso [DataQuality], [QuantDataAnalysis], [FSLDataAnalytics]
+#' @seealso [FSLDataAnalytics]
 #' @export
 DataAnalytics <- R6::R6Class(
   classname = "DataAnalytics",
