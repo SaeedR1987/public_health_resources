@@ -1311,13 +1311,22 @@ DataAnalytics <- R6::R6Class(
         rows <- lapply(seq_len(nrow(plan_df)), function(i) {
           row <- plan_df[i, ]
 
+          # Helper: resolve a canonical name through variable_map and check availability
+          resolve_var <- function(val) {
+            v <- val %||% NA_character_
+            if (is.na(v) || !nzchar(v)) return(v)
+            resolved <- self$.translate_canonical_to_actual_vars(v)
+            if (length(resolved) > 0) resolved[[1]] else v
+          }
+
           # Helper: an optional variable field is ok if blank/NA, or if the col exists in data
           optional_var_ok <- function(val) {
             v <- val %||% NA_character_
-            is.na(v) || !nzchar(v) || v %in% available_vars
+            is.na(v) || !nzchar(v) || resolve_var(v) %in% available_vars
           }
 
-          var_name_ok  <- !is.na(row$var_name) && nzchar(row$var_name) && row$var_name %in% available_vars
+          resolved_var_name <- resolve_var(row$var_name)
+          var_name_ok  <- !is.na(row$var_name) && nzchar(row$var_name) && resolved_var_name %in% available_vars
           denom_ok     <- optional_var_ok(row$denom_var)
           disagg_ok    <- optional_var_ok(row$disaggregation)
           calc_valid   <- !is.na(row$calculation) && row$calculation %in% valid_calcs
@@ -2493,9 +2502,10 @@ DataAnalytics <- R6::R6Class(
           }
 
           # --- 3. variables present in data
-          # Only check literal variable refs (skip @variable_map and @value_map)
+          # Skip @variable_map and @value_map refs; resolve canonical names via variable_map
           literal_vars <- variables[!grepl("^@", variables)]
-          missing_vars <- setdiff(literal_vars, data_cols)
+          resolved_vars <- self$.translate_canonical_to_actual_vars(literal_vars)
+          missing_vars <- setdiff(resolved_vars, data_cols)
           vars_in_data <- length(missing_vars) == 0
 
           # --- build status
