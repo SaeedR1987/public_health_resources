@@ -2067,7 +2067,7 @@ Data <- R6::R6Class(
     #'
     #' @param stage Character string: "standardized" (default) or "clean"
     #'
-    #' @return DataQuality object containing check results and flags, or NULL if no dependency schema
+    #' @return A list containing check results and flags, or NULL if no dependency schema
     #'
     #' @details
     #' Quality checks include:
@@ -3570,109 +3570,7 @@ Data <- R6::R6Class(
     },
 
 
-    # Data Quality & Analysis Generation Hooks
-
-    #' @description
-    #' Generate a DataQuality object for this dataset.
-    #' This is a generic hook that should be overridden by subclasses.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @return A DataQuality object or NULL
-    generate_data_quality = function(stage = c("standardized", "clean")) {
-
-      stage <- match.arg(stage)
-
-      phr_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          phr_warning(
-            self$dataset_name,
-            phr_txt("No {stage} data available for DataQuality generation.")
-          )
-          return(NULL)
-        }
-
-        # Get hash, variable_map, and value_map from Data object
-        data_hash <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map <- self$value_map
-
-        # Base implementation returns a general DataQuality object
-        dq <- DataQuality$new(
-          data = df,
-          parent_data_object = self,
-          dataset_name = paste0(self$dataset_name, "_DataQuality"),
-          data_stage_name = stage,
-          data_hash = data_hash,
-          variable_map = variable_map,
-          value_map = value_map,
-          variable_label = self$variable_label,
-          value_label = self$value_label
-        )
-
-        phr_message(
-          phr_txt("Generated general DataQuality object for {self$dataset_name}.")
-        )
-
-        return(dq)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_quality"))
-    },
-
-    #' @description
-    #' Generate a DataAnalysis object for this dataset.
-    #' This is a generic hook that should be overridden by subclasses.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param analysis_config Optional analysis configuration (data analysis plan)
-    #' @return An Analysis object or NULL
-    generate_data_analysis = function(stage = c("standardized", "clean"),
-                                      analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-
-      phr_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          phr_warning(
-            self$dataset_name,
-            phr_txt("No {stage} data available for Analysis generation.")
-          )
-          return(NULL)
-        }
-
-        # Get hash, variable_map, and value_map from Data object
-        data_hash <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map <- self$value_map
-
-        # Base implementation returns a general QuantDataAnalysis object.
-        # The analysis class creates its own survey design from data + variable_map.
-        analysis <- QuantDataAnalysis$new(
-          dap = analysis_config,
-          parent_data_object = self,
-          dataset_name = paste0(self$dataset_name, "_QuantDataAnalysis"),
-          data = df,
-          data_stage_name = stage,
-          data_hash = data_hash,
-          variable_map = variable_map,
-          value_map = value_map,
-          variable_label = self$variable_label,
-          value_label = self$value_label
-        )
-
-        phr_message(
-          phr_txt("Generated general QuantDataAnalysis object for {self$dataset_name}.")
-        )
-
-        return(analysis)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analysis"))
-    },
+    # Data Analytics Generation Hook
 
     #' @description
     #' Generate a DataAnalytics object for this dataset.

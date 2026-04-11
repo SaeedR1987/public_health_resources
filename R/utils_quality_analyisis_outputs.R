@@ -3,7 +3,7 @@
 
 #' Plot Correlogram
 #'
-#' @param .dataset output of the create_fsl_flags functions
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param numeric_cols a vector of the fsl indicator scores.
 #' By default: c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score")
 #' @param title_name Title of the plot
@@ -13,29 +13,29 @@
 #'
 #' @examples
 #' \dontrun{
-#'   plot_correlogram(.dataset)
+#'   plot_correlogram(survey_design)
 #' }
 
-plot_correlogram <- function (.dataset, numeric_cols = c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score"), title_name = NULL, variable_label = NULL, subtitle = NULL){
+plot_correlogram <- function (survey_design, numeric_cols = c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score"), title_name = NULL, variable_label = NULL, subtitle = NULL){
   origin <- "plot_correlogram"
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
     phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
     phr_validate_vector_length(numeric_cols, min_length = 1, origin = origin, soft = FALSE)
-    phr_validate_columns(.dataset, numeric_cols, origin = origin,
+    phr_validate_columns(df, numeric_cols, origin = origin,
                           hint = phr_txt("Ensure all specified columns exist in the dataset"), soft = FALSE)
 
     print(numeric_cols)
 
     # Create subtitle with n
-    total_n <- nrow(.dataset)
+    total_n <- nrow(df)
     auto_subtitle <- sprintf("n = %d", total_n)
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-    g <- GGally::ggpairs(data = .dataset, columns = numeric_cols)
+    g <- GGally::ggpairs(data = df, columns = numeric_cols)
     if (!is.null(title_name)) {
       g$title <- paste0(title_name, "\n", final_subtitle)
     } else if (!is.null(variable_label)) {
@@ -51,7 +51,7 @@ plot_correlogram <- function (.dataset, numeric_cols = c("fsl_fcs_score",  "fsl_
 
 #' Plot Age Pyramid
 #'
-#' @param .dataset HH_roster Data with Age and Sex of individuals
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param sex_col (Required) The variable name in the Data indicating the sex of the individual.
 #' @param age_years_col (Required) The variable name in the Data indicating the age of the individual.
 #' @param age_grouping If TRUE, user is using age_grouping in data with variable name
@@ -84,13 +84,13 @@ plot_correlogram <- function (.dataset, numeric_cols = c("fsl_fcs_score",  "fsl_
 #'
 #' @examples
 #' \dontrun{
-#'   plot_age_pyramid(.dataset = hh_roster, sex_col = "sex", age_years_col = "age_years")
-#'   plot_age_pyramid(.dataset = hh_roster, sex_col = "gender", age_years_col = "age",
+#'   plot_age_pyramid(survey_design = hh_roster, sex_col = "sex", age_years_col = "age_years")
+#'   plot_age_pyramid(survey_design = hh_roster, sex_col = "gender", age_years_col = "age",
 #'                    sex_male_val = "m", sex_female_val = "f")
-#'   plot_age_pyramid(.dataset = hh_roster, sex_col = "sex", age_years_col = "age_years",
+#'   plot_age_pyramid(survey_design = hh_roster, sex_col = "sex", age_years_col = "age_years",
 #'                    weights_col = "survey_weight", weighted_result = TRUE)
 #' }
-plot_age_pyramid <- function (.dataset,
+plot_age_pyramid <- function (survey_design,
                               sex_col,
                               age_years_col,
                               age_grouping = FALSE,
@@ -114,8 +114,8 @@ plot_age_pyramid <- function (.dataset,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_assert(!missing(sex_col) && !is.null(sex_col),
                  phr_txt("sex_col is required and cannot be NULL"), origin = origin)
@@ -130,7 +130,7 @@ plot_age_pyramid <- function (.dataset,
     y_lab <- ensure_value(y_lab, "Age Group")
 
     # Create a working copy
-    plot_data <- .dataset
+    plot_data <- df
 
     # Handle age grouping
     if (age_grouping == FALSE) {
@@ -364,7 +364,7 @@ plot_age_pyramid <- function (.dataset,
 
 #' Plot Age Distribution
 #'
-#' @param .dataset Dataset containing age data
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param by_group_col Column name for grouping/faceting the plots. By default: NULL (no grouping)
 #' @param year_or_month Specify whether to use "year" or "month" for age. By default: NULL (uses "year")
 #' @param age_years_col Column name for age in years. By default: "age_years"
@@ -386,11 +386,11 @@ plot_age_pyramid <- function (.dataset,
 #'
 #' @examples
 #' \dontrun{
-#'   plot_age_distribution(.dataset = children_data)
-#'   plot_age_distribution(.dataset = children_data, year_or_month = "month",
+#'   plot_age_distribution(survey_design = children_data)
+#'   plot_age_distribution(survey_design = children_data, year_or_month = "month",
 #'                         min_age = 0, max_age = 59)
 #' }
-plot_age_distribution <- function (.dataset,
+plot_age_distribution <- function (survey_design,
                                    by_group_col = NULL,
                                    year_or_month = NULL,
                                    age_years_col = "age_years",
@@ -413,24 +413,24 @@ plot_age_distribution <- function (.dataset,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
 
     if(!is.null(by_group_col)) {
-      phr_validate_columns(.dataset, by_group_col, origin = origin,
+      phr_validate_columns(df, by_group_col, origin = origin,
                              hint = phr_txt("Ensure grouping column exists in the dataset"), soft = FALSE)
     }
 
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
       phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(.dataset, weights_col, origin = origin,
+      phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(.dataset[[weights_col]], origin = origin, soft = FALSE)
-      .dataset <- .dataset %>% dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
+      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      df <- df %>% dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
     # Ensure fallback value for y_lab
@@ -440,7 +440,7 @@ plot_age_distribution <- function (.dataset,
     hist_color <- get_color_palette(type = color_palette, n = 1)[1]
 
     if(is.null(year_or_month) | year_or_month == "year"){
-      phr_validate_columns(.dataset, age_years_col, origin = origin,
+      phr_validate_columns(df, age_years_col, origin = origin,
                              hint = phr_txt("Ensure age_years_col column exists in the dataset"), soft = FALSE)
       if (is.null(min_age)) {
         min_age <- 0
@@ -459,16 +459,16 @@ plot_age_distribution <- function (.dataset,
         x_lab <- "Age (Years)"
       }
 
-      .dataset <- .dataset %>% dplyr::filter(!!rlang::sym(age_years_col) >= min_age &
+      df <- df %>% dplyr::filter(!!rlang::sym(age_years_col) >= min_age &
                                                !!rlang::sym(age_years_col) <= max_age)
 
       # Create subtitle with n
       if (is.null(by_group_col)) {
-        total_n <- nrow(.dataset)
-        auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(.dataset[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
+        total_n <- nrow(df)
+        auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
         final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-        g <- ggplot2::ggplot(data = .dataset,
+        g <- ggplot2::ggplot(data = df,
                              if (weighted) ggplot2::aes(x = !!rlang::sym(age_years_col), weight = !!rlang::sym(weights_col))
                              else ggplot2::aes(x = !!rlang::sym(age_years_col))) +
           ggplot2::geom_histogram(binwidth = breaks, fill = hist_color, color = "white", linewidth = 0.5) +
@@ -479,7 +479,7 @@ plot_age_distribution <- function (.dataset,
       }
       else {
         # Create subtitle with n by group
-        n_by_group <- .dataset %>%
+        n_by_group <- df %>%
           dplyr::group_by(!!rlang::sym(by_group_col)) %>%
           dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
           dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(by_group_col), n))
@@ -488,7 +488,7 @@ plot_age_distribution <- function (.dataset,
         if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
         final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-        g <- ggplot2::ggplot(data = .dataset,
+        g <- ggplot2::ggplot(data = df,
                              if (weighted) ggplot2::aes(x = !!rlang::sym(age_years_col), weight = !!rlang::sym(weights_col))
                              else ggplot2::aes(x = !!rlang::sym(age_years_col))) +
           ggplot2::geom_histogram(binwidth = breaks, fill = hist_color, color = "white", linewidth = 0.5) +
@@ -501,7 +501,7 @@ plot_age_distribution <- function (.dataset,
     }
 
     if(year_or_month == "month"){
-      phr_validate_columns(.dataset, age_months_col, origin = origin,
+      phr_validate_columns(df, age_months_col, origin = origin,
                              hint = phr_txt("Ensure age_months_col column exists in the dataset"), soft = FALSE)
       if (is.null(min_age)) {
         min_age <- 0
@@ -520,18 +520,18 @@ plot_age_distribution <- function (.dataset,
         x_lab <- "Age (Months)"
       }
 
-      .dataset <- .dataset %>%
+      df <- df %>%
         dplyr::mutate(!!rlang::sym(age_months_col) := as.numeric(!!rlang::sym(age_months_col))) %>%
         dplyr::filter(!!rlang::sym(age_months_col) >= min_age &
                         !!rlang::sym(age_months_col) <= max_age)
 
       # Create subtitle with n
       if (is.null(by_group_col)) {
-        total_n <- nrow(.dataset)
-        auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(.dataset[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
+        total_n <- nrow(df)
+        auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
         final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-        g <- ggplot2::ggplot(data = .dataset,
+        g <- ggplot2::ggplot(data = df,
                              if (weighted) ggplot2::aes(x = !!rlang::sym(age_months_col), weight = !!rlang::sym(weights_col))
                              else ggplot2::aes(x = !!rlang::sym(age_months_col))) +
           ggplot2::geom_histogram(binwidth = breaks, fill = hist_color, color = "white", linewidth = 0.5) +
@@ -542,7 +542,7 @@ plot_age_distribution <- function (.dataset,
       }
       else {
         # Create subtitle with n by group
-        n_by_group <- .dataset %>%
+        n_by_group <- df %>%
           dplyr::group_by(!!rlang::sym(by_group_col)) %>%
           dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
           dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(by_group_col), n))
@@ -551,7 +551,7 @@ plot_age_distribution <- function (.dataset,
         if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
         final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-        g <- ggplot2::ggplot(data = .dataset,
+        g <- ggplot2::ggplot(data = df,
                              if (weighted) ggplot2::aes(x = !!rlang::sym(age_months_col), weight = !!rlang::sym(weights_col))
                              else ggplot2::aes(x = !!rlang::sym(age_months_col))) +
           ggplot2::geom_histogram(binwidth = breaks, fill = hist_color, color = "white", linewidth = 0.5) +
@@ -587,7 +587,7 @@ plot_age_distribution <- function (.dataset,
 
 #' Plot Ridge Distribution
 #'
-#' @param .dataset output of the create_fsl_flags functions
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param numeric_cols a vector of the same fsl indicator score columns
 #' By default: NULL.
 #' @param numeric_cols_labels Optional vector of labels for numeric_cols. Must be same length as numeric_cols.
@@ -610,7 +610,7 @@ plot_age_distribution <- function (.dataset,
 #'                           numeric_cols_labels = c("FCS", "rCSI"))
 #' }
 
-plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
+plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
                                      numeric_cols_labels = NULL,
                                      name_groups = NULL, name_units = NULL, grouping = NULL,
                                      color_palette = "reach3", title_name = NULL,
@@ -625,12 +625,12 @@ plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
-    phr_validate_columns(.dataset, numeric_cols, origin = origin,
+    phr_validate_columns(df, numeric_cols, origin = origin,
                            hint = phr_txt("Ensure all numeric columns exist in the dataset"), soft = FALSE)
 
     # Validate numeric_cols_labels if provided
@@ -644,11 +644,11 @@ plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
       phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(.dataset, weights_col, origin = origin,
+      phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(.dataset[[weights_col]], origin = origin, soft = FALSE)
-      .dataset <- .dataset %>% dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
+      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      df <- df %>% dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
     # Apply defaults for name_groups and name_units if not provided
@@ -658,22 +658,22 @@ plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
     a <- 0
 
     if (is.null(grouping)) {
-      .dataset <- .dataset %>% dplyr::mutate(group = "All")
+      df <- df %>% dplyr::mutate(group = "All")
       grouping <- "group"
       a <- 1
     } else {
-      phr_validate_columns(.dataset, grouping, origin = origin,
+      phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt("Ensure grouping column exists in the dataset"), soft = FALSE)
     }
 
     # Create subtitle with n
     if (a == 1) {
       # Overall plot
-      total_n <- nrow(.dataset)
-      auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(.dataset[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
+      total_n <- nrow(df)
+      auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
     } else {
       # Grouped plot
-      n_by_group <- .dataset %>%
+      n_by_group <- df %>%
         dplyr::group_by(!!rlang::sym(grouping)) %>%
         dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
         dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
@@ -684,21 +684,21 @@ plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
     select_cols <- if (weighted) c(grouping, numeric_cols, weights_col) else c(grouping, numeric_cols)
-    .dataset <- .dataset %>% dplyr::select(dplyr::all_of(select_cols)) %>% tidyr::gather(key = !!name_groups,
+    df <- df %>% dplyr::select(dplyr::all_of(select_cols)) %>% tidyr::gather(key = !!name_groups,
                                                                                      value = !!name_units, numeric_cols)
 
     # Apply custom labels if provided
     if (!is.null(numeric_cols_labels)) {
       label_mapping <- setNames(numeric_cols_labels, numeric_cols)
-      .dataset <- .dataset %>%
+      df <- df %>%
         dplyr::mutate(!!rlang::sym(name_groups) := dplyr::recode(!!rlang::sym(name_groups), !!!label_mapping))
     }
 
     # Get colors based on number of groups
-    n_colors <- length(unique(.dataset[[name_groups]]))
+    n_colors <- length(unique(df[[name_groups]]))
     colors <- get_color_palette(type = color_palette, n = n_colors)
 
-    g <- ggplot2::ggplot(.dataset,
+    g <- ggplot2::ggplot(df,
                          if (weighted) ggplot2::aes(x = get(name_units), y = get(name_groups), fill = get(name_groups), weight = !!rlang::sym(weights_col))
                          else ggplot2::aes(x = get(name_units), y = get(name_groups), fill = get(name_groups))) +
       ggridges::geom_density_ridges() +
@@ -733,7 +733,7 @@ plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
 #' for each level of a grouping variable. The overall distribution is placed at the top,
 #' followed by one ridge per group, all vertically stacked (not faceted).
 #'
-#' @param .dataset A dataframe containing the data to plot.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param numeric_col A character string specifying the name of the numeric column to plot.
 #' @param grouping A character string specifying the column name for the grouping variable.
 #' @param overall_label Character. Label for the overall distribution ridge. Default: "Overall".
@@ -756,7 +756,7 @@ plot_ridge_distribution <- function (.dataset, numeric_cols = NULL,
 #'   plot_ridge_distribution_by_group(df, numeric_col = "fcs_score", grouping = "district")
 #' }
 
-plot_ridge_distribution_by_group <- function(.dataset,
+plot_ridge_distribution_by_group <- function(survey_design,
                                              numeric_col,
                                              grouping,
                                              overall_label = "Overall",
@@ -775,8 +775,8 @@ plot_ridge_distribution_by_group <- function(.dataset,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
     phr_validate_not_null(numeric_col, origin = origin, soft = FALSE)
     phr_validate_not_null(grouping, origin = origin, soft = FALSE)
     phr_validate_character(numeric_col, origin = origin, soft = FALSE)
@@ -785,26 +785,26 @@ plot_ridge_distribution_by_group <- function(.dataset,
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
 
-    phr_validate_columns(.dataset, numeric_col, origin = origin,
+    phr_validate_columns(df, numeric_col, origin = origin,
                            hint = phr_txt("Ensure the numeric column exists in the dataset"),
                            soft = FALSE)
-    phr_validate_columns(.dataset, grouping, origin = origin,
+    phr_validate_columns(df, grouping, origin = origin,
                            hint = phr_txt("Ensure the grouping column exists in the dataset"),
                            soft = FALSE)
 
     if (weighted) {
       phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(.dataset, weights_col, origin = origin,
+      phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(.dataset[[weights_col]], origin = origin, soft = FALSE)
-      .dataset <- .dataset %>%
+      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      df <- df %>%
         dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
     # Build subtitle
-    total_n <- nrow(.dataset)
-    n_by_group <- .dataset %>%
+    total_n <- nrow(df)
+    n_by_group <- df %>%
       dplyr::group_by(!!rlang::sym(grouping)) %>%
       dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
       dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
@@ -814,13 +814,13 @@ plot_ridge_distribution_by_group <- function(.dataset,
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
     # Create overall rows
-    df_overall <- .dataset %>%
+    df_overall <- df %>%
       dplyr::select(dplyr::all_of(c(numeric_col,
                                     if (weighted) weights_col else character(0)))) %>%
       dplyr::mutate(.group_label = overall_label)
 
     # Create grouped rows
-    df_grouped <- .dataset %>%
+    df_grouped <- df %>%
       dplyr::select(dplyr::all_of(c(numeric_col, grouping,
                                     if (weighted) weights_col else character(0)))) %>%
       dplyr::rename(.group_label = !!rlang::sym(grouping)) %>%
@@ -880,7 +880,7 @@ plot_ridge_distribution_by_group <- function(.dataset,
 
 #' Plot the cumulative distribution of a numeric variable (e.g., MUAC or anthropometric z-scores).
 #'
-#' @param df A data frame containing the variable to plot.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param data_var A character string specifying the column name containing the data to plot.
 #' @param vline_intercepts Optional numeric vector specifying positions for vertical reference lines.
 #'   For z-scores: default is c(-3, -2) representing severe and moderate cutoffs.
@@ -915,7 +915,7 @@ plot_ridge_distribution_by_group <- function(.dataset,
 #'                             grouping = "district")
 #' }
 #' @importFrom rlang .data
-plot_cumulative_distribution <- function(df, data_var,
+plot_cumulative_distribution <- function(survey_design, data_var,
                                          vline_intercepts = NULL,
                                          vline_colors = NULL,
                                          x_label = NULL,
@@ -936,8 +936,8 @@ plot_cumulative_distribution <- function(df, data_var,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_character(data_var, origin = origin, soft = FALSE)
@@ -1098,7 +1098,7 @@ plot_cumulative_distribution <- function(df, data_var,
 #' Plot the distribution of a z-score variable to visualize and assess the distribution
 #' against a normal Gaussian curve.
 #'
-#' @param df A data frame containing the z-score data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param zscore_var A character string specifying the column name containing z-scores to plot.
 #' @param vline_intercepts Optional numeric vector specifying positions for vertical reference lines.
 #'   Default is c(-3, -2, 2, 3) representing standard WHO cutoffs.
@@ -1129,7 +1129,7 @@ plot_cumulative_distribution <- function(df, data_var,
 #' }
 #' @importFrom rlang .data
 #' @importFrom stats density
-plot_zscore_distribution <- function(df, zscore_var,
+plot_zscore_distribution <- function(survey_design, zscore_var,
                                      vline_intercepts = c(-3, -2, 2, 3),
                                      vline_colors = c("red", "orange", "orange", "red"),
                                      x_label = NULL,
@@ -1148,8 +1148,8 @@ plot_zscore_distribution <- function(df, zscore_var,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_character(zscore_var, origin = origin, soft = FALSE)
@@ -1299,7 +1299,7 @@ plot_zscore_distribution <- function(df, zscore_var,
 
 #' Plot IYCF Area Graph
 #'
-#' @param df Dataset with IYCF indicators
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param age_months_col Column name for age in months. By default: "age_months". Must be numeric.
 #' @param iycf_ebf_col Column name for exclusive breastfeeding indicator. By default: "iycf_ebf"
 #' @param iycf_4_col Column name for currently breastfeeding indicator (IYCF 4). By default: "iycf_4"
@@ -1350,12 +1350,12 @@ plot_zscore_distribution <- function(df, zscore_var,
 #'
 #' @examples
 #' \dontrun{
-#'   plot_iycf_areagraph(df = iycf_data)
+#'   plot_iycf_areagraph(survey_design = iycf_data)
 #' }
 
 #' Plot IYCF Area Graph
 #'
-#' @param df Dataset with IYCF indicators
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param age_months_col Column name for age in months. By default: "age_months". Must be numeric.
 #' @param iycf_ebf_col Column name for exclusive breastfeeding indicator. By default: "iycf_ebf"
 #' @param iycf_4_col Column name for currently breastfeeding indicator (IYCF 4). By default: "iycf_4"
@@ -1405,10 +1405,10 @@ plot_zscore_distribution <- function(df, zscore_var,
 #'
 #' @examples
 #' \dontrun{
-#'   plot_iycf_areagraph(df = iycf_data)
+#'   plot_iycf_areagraph(survey_design = iycf_data)
 #' }
 
-plot_iycf_areagraph <- function(df,
+plot_iycf_areagraph <- function(survey_design,
                                 # Basic columns
                                 age_months_col = "age_months",
                                 iycf_ebf_col = "iycf_ebf",
@@ -1465,8 +1465,8 @@ plot_iycf_areagraph <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_columns(df, age_months_col, origin = origin,
@@ -1750,7 +1750,7 @@ plot_iycf_areagraph <- function(df,
 
 #' Plot Date Runner - Cumulative Statistics Over Time
 #'
-#' @param df Dataset containing date and numeric variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param date_col Column name for the date variable. By default: "date_dc_date"
 #' @param numeric_col Column name for the primary numeric variable to analyze
 #' @param numeric_col2 Column name for a second numeric variable (for ratio operations). By default: NULL
@@ -1795,7 +1795,7 @@ plot_iycf_areagraph <- function(df,
 #'                    operation = "ratio")
 #' }
 
-plot_date_runner <- function(df,
+plot_date_runner <- function(survey_design,
                              date_col = "date_dc_date",
                              numeric_col,
                              numeric_col2 = NULL,
@@ -1819,8 +1819,8 @@ plot_date_runner <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_assert(!missing(numeric_col) && !is.null(numeric_col),
@@ -2130,7 +2130,7 @@ helper_runner_dps <- function(x) {
 
 #' Plot Domain Radar Chart
 #'
-#' @param df Dataset with domain indicators
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param domain_cols Vector of column names representing domains (binary 0/1 values)
 #' @param domain_labels Vector of labels for domains. By default: NULL (uses domain_cols)
 #' @param grouping Column name for grouping. By default: NULL (single group)
@@ -2148,12 +2148,12 @@ helper_runner_dps <- function(x) {
 #'
 #' @examples
 #' \dontrun{
-#'   plot_domain_radar(df = data,
+#'   plot_domain_radar(survey_design = data,
 #'                     domain_cols = c("food", "water", "health"),
 #'                     domain_labels = c("Food Security", "WASH", "Health"))
 #' }
 
-plot_domain_radar <- function(df,
+plot_domain_radar <- function(survey_design,
                               domain_cols,
                               domain_labels = NULL,
                               grouping = NULL,
@@ -2171,8 +2171,8 @@ plot_domain_radar <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_not_null(domain_cols, origin = origin, soft = FALSE)
@@ -2370,7 +2370,7 @@ plot_domain_radar <- function(df,
 #' response options can be grouped by barriers related to availability, accessibility, or
 #' quality of services. Each response option should only belong to one domain category.
 #'
-#' @param df Inputs a dataframe.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param domain_list A named list where each element represents a domain. Each domain element
 #' should be a list with:
 #'   - 'responses': character vector of column names for that domain
@@ -2409,7 +2409,7 @@ plot_domain_radar <- function(df,
 #'       response_labels = c("barrier.rudestaff" = "Rude Staff")
 #'     )
 #'   )
-#'   plot_domain_distribution(df = data, domain_list = domain_list)
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list)
 #' }
 #' @importFrom rlang .data
 
@@ -2421,7 +2421,7 @@ plot_domain_radar <- function(df,
 #' response options can be grouped by barriers related to availability, accessibility, or
 #' quality of services. Each response option should only belong to one domain category.
 #'
-#' @param df Inputs a dataframe.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param domain_list A named list where each element represents a domain. Each domain element
 #' should be a list with:
 #'   - 'responses': character vector of column names for that domain
@@ -2460,18 +2460,18 @@ plot_domain_radar <- function(df,
 #'     )
 #'   )
 #'   # Horizontal bars (default)
-#'   plot_domain_distribution(df = data, domain_list = domain_list)
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list)
 #'
 #'   # Vertical bars
-#'   plot_domain_distribution(df = data, domain_list = domain_list, flip_coordinates = FALSE,
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list, flip_coordinates = FALSE,
 #'                               legend_position = "bottom")
 #'
 #'   # Show percentages
-#'   plot_domain_distribution(df = data, domain_list = domain_list, show_percentage = TRUE)
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list, show_percentage = TRUE)
 #' }
 #' @importFrom rlang .data
 
-plot_domain_distribution <- function(df,
+plot_domain_distribution <- function(survey_design,
                                      domain_list,
                                      show_percentage = FALSE,
                                      flip_coordinates = TRUE,
@@ -2488,8 +2488,8 @@ plot_domain_distribution <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_not_null(domain_list, origin = origin, soft = FALSE)
     phr_validate_list(domain_list, origin = origin, soft = FALSE)
@@ -2740,7 +2740,7 @@ plot_domain_distribution <- function(df,
 #' The plot shows the relative proportions of each category as a percentage of the total.
 #' Supports survey weights for proper representation of weighted surveys.
 #'
-#' @param df Inputs a dataframe containing the categorical data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param category_var Inputs a character value specifying the column name for the categorical variable to plot.
 #' @param grouping Inputs an optional character value specifying the column name for grouping the data.
 #'   If NULL, creates an overall plot. If provided, creates separate stacked bars for each group.
@@ -2794,7 +2794,7 @@ plot_domain_distribution <- function(df,
 #'   plot_stacked_bar(df, category_var = "response_type",
 #'                    show_NA = TRUE, title_name = "Response Distribution (including NA)")
 #' }
-plot_stacked_bar <- function(df,
+plot_stacked_bar <- function(survey_design,
                              category_var,
                              grouping = NULL,
                              fill_var = NULL,
@@ -2818,8 +2818,8 @@ plot_stacked_bar <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_not_null(category_var, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
@@ -2872,46 +2872,33 @@ plot_stacked_bar <- function(df,
       legend_label <- fill_var
     }
 
-    # Prepare data
+    # Prepare data using phr_calc_survey_categorical_single for consistent
+    # survey-weighted proportions that match run_analysis outputs.
+    ind_label  <- variable_label %||% fill_var
+    cat_prefix <- paste0(ind_label, " - ")
+
     if (is.null(grouping)) {
-      # Overall plot
-      if (weighted) {
-        # Weighted calculation
-        df_plot <- df %>%
-          dplyr::filter(
-            (show_NA | !is.na(!!rlang::sym(fill_var))) &
-              !is.na(!!rlang::sym(weights_col))
-          ) %>%
-          dplyr::group_by(!!rlang::sym(fill_var)) %>%
-          dplyr::summarise(
-            weighted_n = sum(!!rlang::sym(weights_col)),
-            n = dplyr::n(),
-            .groups = "drop"
-          ) %>%
-          dplyr::mutate(
-            percentage = weighted_n / sum(weighted_n) * 100,
-            group = "Overall",
-            label = sprintf("%.1f%%", percentage)
-          )
+      # Overall plot — use phr_calc_survey_categorical_single
+      calc_df <- phr_calc_survey_categorical_single(
+        design           = survey_design,
+        var_name         = fill_var,
+        indicator_name   = ind_label,
+        multiplier       = 100
+      )
 
-        total_n <- sum(df_plot$n)
-        total_weighted_n <- sum(df_plot$weighted_n)
-        auto_subtitle <- sprintf("n = %d (weighted n = %.0f)", total_n, total_weighted_n)
+      df_plot <- calc_df %>%
+        dplyr::mutate(
+          !!rlang::sym(fill_var) := gsub(cat_prefix, "", .data$indicator_name, fixed = TRUE),
+          percentage             = .data$point.estimate,
+          group                  = "Overall",
+          n                      = as.integer(.data$n_unweighted),
+          label                  = sprintf("%.1f%%", .data$point.estimate)
+        ) %>%
+        dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var)))
 
-      } else {
-        # Unweighted calculation
-        df_plot <- df %>%
-          dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var))) %>%
-          dplyr::count(!!rlang::sym(fill_var), name = "n") %>%
-          dplyr::mutate(
-            percentage = n / sum(n) * 100,
-            group = "Overall",
-            label = sprintf("%.1f%% (%d)", percentage, n)
-          )
-
-        total_n <- sum(df_plot$n)
-        auto_subtitle <- sprintf("n = %d", total_n)
-      }
+      total_n          <- sum(df_plot$n, na.rm = TRUE)
+      total_weighted_n <- sum(calc_df$n_weighted, na.rm = TRUE)
+      auto_subtitle    <- sprintf("n = %d (weighted n = %.0f)", total_n, total_weighted_n)
 
       # Determine number of colors needed
       if (is.factor(df[[fill_var]])) {
@@ -2964,100 +2951,56 @@ plot_stacked_bar <- function(df,
         overall_label <- "Overall"
       }
 
-      if (weighted) {
-        # Weighted calculation by group
-        df_plot <- df %>%
-          dplyr::filter(
-            (show_NA | !is.na(!!rlang::sym(fill_var))) &
-              !is.na(!!rlang::sym(grouping)) &
-              !is.na(!!rlang::sym(weights_col))
-          ) %>%
-          dplyr::group_by(!!rlang::sym(grouping), !!rlang::sym(fill_var)) %>%
-          dplyr::summarise(
-            weighted_n = sum(!!rlang::sym(weights_col)),
-            n = dplyr::n(),
-            .groups = "drop_last"
-          ) %>%
-          dplyr::mutate(
-            percentage = weighted_n / sum(weighted_n) * 100,
-            label = sprintf("%.1f%%", percentage)
-          ) %>%
-          dplyr::ungroup() %>%
-          dplyr::mutate(!!rlang::sym(grouping) := as.character(!!rlang::sym(grouping)))
+      group_vals <- unique(df[[grouping]])
+      group_vals <- group_vals[!is.na(group_vals)]
 
-        # Optionally prepend an overall bar
-        if (show_overall) {
-          df_overall <- df %>%
-            dplyr::filter(
-              (show_NA | !is.na(!!rlang::sym(fill_var))) &
-                !is.na(!!rlang::sym(weights_col))
-            ) %>%
-            dplyr::group_by(!!rlang::sym(fill_var)) %>%
-            dplyr::summarise(
-              weighted_n = sum(!!rlang::sym(weights_col)),
-              n = dplyr::n(),
-              .groups = "drop"
-            ) %>%
-            dplyr::mutate(
-              percentage = weighted_n / sum(weighted_n) * 100,
-              label = sprintf("%.1f%%", percentage),
-              !!rlang::sym(grouping) := overall_label
-            )
-          df_plot <- dplyr::bind_rows(df_overall, df_plot)
-        }
+      calc_list <- lapply(group_vals, function(gv) {
+        dsn_g <- dplyr::filter(survey_design, !!rlang::sym(grouping) == gv)
+        r <- phr_calc_survey_categorical_single(
+          design           = dsn_g,
+          var_name         = fill_var,
+          indicator_name   = ind_label,
+          multiplier       = 100
+        )
+        r[[grouping]] <- as.character(gv)
+        r
+      })
 
-        # Create subtitle with n and weighted n by group
-        n_by_group <- df_plot %>%
-          dplyr::filter(!show_overall | !!rlang::sym(grouping) != overall_label) %>%
-          dplyr::group_by(!!rlang::sym(grouping)) %>%
-          dplyr::summarise(
-            total = sum(n),
-            total_weighted = sum(weighted_n),
-            .groups = "drop"
-          ) %>%
-          dplyr::mutate(group_label = sprintf("%s (n=%d, wn=%.0f)",
-                                              !!rlang::sym(grouping), total, total_weighted))
-
-        auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
-
-      } else {
-        # Unweighted calculation by group
-        df_plot <- df %>%
-          dplyr::filter(
-            (show_NA | !is.na(!!rlang::sym(fill_var))) &
-              !is.na(!!rlang::sym(grouping))
-          ) %>%
-          dplyr::group_by(!!rlang::sym(grouping), !!rlang::sym(fill_var)) %>%
-          dplyr::summarise(n = dplyr::n(), .groups = "drop_last") %>%
-          dplyr::mutate(
-            percentage = n / sum(n) * 100,
-            label = sprintf("%.1f%% (%d)", percentage, n)
-          ) %>%
-          dplyr::ungroup() %>%
-          dplyr::mutate(!!rlang::sym(grouping) := as.character(!!rlang::sym(grouping)))
-
-        # Optionally prepend an overall bar
-        if (show_overall) {
-          df_overall <- df %>%
-            dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var))) %>%
-            dplyr::count(!!rlang::sym(fill_var), name = "n") %>%
-            dplyr::mutate(
-              percentage = n / sum(n) * 100,
-              label = sprintf("%.1f%% (%d)", percentage, n),
-              !!rlang::sym(grouping) := overall_label
-            )
-          df_plot <- dplyr::bind_rows(df_overall, df_plot)
-        }
-
-        # Create subtitle with n by group (exclude the overall bar from subtitle counts)
-        n_by_group <- df_plot %>%
-          dplyr::filter(!show_overall | !!rlang::sym(grouping) != overall_label) %>%
-          dplyr::group_by(!!rlang::sym(grouping)) %>%
-          dplyr::summarise(total = sum(n), .groups = "drop") %>%
-          dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), total))
-
-        auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
+      if (show_overall) {
+        r_overall <- phr_calc_survey_categorical_single(
+          design           = survey_design,
+          var_name         = fill_var,
+          indicator_name   = ind_label,
+          multiplier       = 100
+        )
+        r_overall[[grouping]] <- overall_label
+        calc_list <- c(list(r_overall), calc_list)
       }
+
+      calc_df_all <- dplyr::bind_rows(calc_list)
+
+      df_plot <- calc_df_all %>%
+        dplyr::mutate(
+          !!rlang::sym(fill_var) := gsub(cat_prefix, "", .data$indicator_name, fixed = TRUE),
+          percentage             = .data$point.estimate,
+          n                      = as.integer(.data$n_unweighted),
+          label                  = sprintf("%.1f%%", .data$point.estimate),
+          !!rlang::sym(grouping) := as.character(.data[[grouping]])
+        ) %>%
+        dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var)))
+
+      # Build subtitle from group-level sample sizes
+      n_by_group <- df_plot %>%
+        dplyr::filter(!show_overall | .data[[grouping]] != overall_label) %>%
+        dplyr::group_by(!!rlang::sym(grouping)) %>%
+        dplyr::summarise(
+          total_n          = sum(.data$n, na.rm = TRUE),
+          total_weighted_n = sum(calc_df_all$n_weighted[calc_df_all[[grouping]] == dplyr::cur_group()[[grouping]]], na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        dplyr::mutate(group_label = sprintf("%s (n=%d, wn=%.0f)", .data[[grouping]], total_n, total_weighted_n))
+
+      auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
 
       # Determine number of colors needed
       if (is.factor(df[[fill_var]])) {
@@ -3133,7 +3076,7 @@ plot_stacked_bar <- function(df,
 #' Supports survey weights for proper representation of weighted surveys.
 #' Allows different color palettes and separate legends for each variable.
 #'
-#' @param df Inputs a dataframe containing the categorical data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param category_vars Inputs a character vector specifying the column names for the categorical variables to plot (required, minimum 2).
 #' @param category_labels Inputs an optional character vector of custom labels for each category variable.
 #'   If NULL, uses category_vars as labels. Must be same length as category_vars if provided.
@@ -3169,7 +3112,7 @@ plot_stacked_bar <- function(df,
 #' @return Returns a ggplot2 object showing the 100% stacked bar chart with multiple variables.
 #' @export
 
-plot_stacked_bar_multiple_vars <- function(df,
+plot_stacked_bar_multiple_vars <- function(survey_design,
                                            category_vars,
                                            category_labels = NULL,
                                            grouping = NULL,
@@ -3195,6 +3138,7 @@ plot_stacked_bar_multiple_vars <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
     legend_position <- ensure_value(legend_position, "bottom")
     weighted <- ensure_value(weighted, FALSE)
@@ -3219,7 +3163,6 @@ plot_stacked_bar_multiple_vars <- function(df,
     legend_label <- ensure_value(legend_label, NULL)
 
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_not_null(category_vars, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
@@ -3686,7 +3629,7 @@ plot_stacked_bar_multiple_vars <- function(df,
 #' Creates grouped bar charts for select multiple responses that don't add up to 100%.
 #' This is useful for displaying the frequency of each response option, either overall or grouped.
 #'
-#' @param df Inputs a dataframe containing the select multiple response data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param response_vars Inputs a character vector of column names for the response options.
 #'   Each column should be coded as binary (0/1 or TRUE/FALSE).
 #' @param response_labels Inputs an optional character vector of labels for the response variables.
@@ -3726,7 +3669,7 @@ plot_stacked_bar_multiple_vars <- function(df,
 #'                             title_name = "Health Barriers by District (Weighted)")
 #' }
 
-plot_grouped_bar_multiple <- function(df,
+plot_grouped_bar_multiple <- function(survey_design,
                                       response_vars,
                                       response_labels = NULL,
                                       grouping = NULL,
@@ -3748,8 +3691,8 @@ plot_grouped_bar_multiple <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_not_null(response_vars, origin = origin, soft = FALSE)
     phr_validate_vector_length(response_vars, min_length = 1, origin = origin, soft = FALSE)
@@ -4059,7 +4002,7 @@ plot_grouped_bar_multiple <- function(df,
 #' Creates box and whisker plots for showing the distribution of numeric variables,
 #' either overall or grouped by a categorical variable. Supports survey weights.
 #'
-#' @param df Inputs a dataframe containing the numeric data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param numeric_var Inputs a character value specifying the column name for the numeric variable to plot.
 #' @param grouping Inputs an optional character value specifying the column name for grouping the data.
 #'   If NULL, creates a single overall box plot. If provided, creates separate box plots for each group.
@@ -4105,7 +4048,7 @@ plot_grouped_bar_multiple <- function(df,
 #'                title_name = "MUAC Distribution by District (Weighted)")
 #' }
 
-plot_boxplot <- function(df,
+plot_boxplot <- function(survey_design,
                          numeric_var,
                          grouping = NULL,
                          weighted = FALSE,
@@ -4130,8 +4073,8 @@ plot_boxplot <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
     phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
@@ -4426,7 +4369,7 @@ plot_boxplot <- function(df,
 #' Creates a treemap visualization showing hierarchical proportions.
 #' Supports single-level or two-level hierarchical treemaps.
 #'
-#' @param df Data frame containing the data
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param category_var Character, column name for the main category (required)
 #' @param subcategory_var Character, optional column name for subcategory within main category (default: NULL)
 #'   When provided, creates a hierarchical treemap showing subcategories nested within categories.
@@ -4451,7 +4394,7 @@ plot_boxplot <- function(df,
 #'   # Hierarchical treemap with subcategories
 #'   plot_treemap(df, category_var = "sector", subcategory_var = "assistance_type")
 #' }
-plot_treemap <- function(df,
+plot_treemap <- function(survey_design,
                          category_var,
                          subcategory_var = NULL,
                          size_var = NULL,
@@ -4468,6 +4411,7 @@ plot_treemap <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value to all potentially NULL arguments early with appropriate non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     label_size <- ensure_value(label_size, 1)
@@ -4485,7 +4429,6 @@ plot_treemap <- function(df,
     weights_col <- ensure_value(weights_col, NA_character_)
 
     # Standard validation block
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_not_null(category_var, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
@@ -4743,7 +4686,7 @@ plot_treemap <- function(df,
 #'
 #' Creates a Sankey/alluvial diagram showing flows between categories
 #'
-#' @param df Data frame containing the data
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param axis_vars Character vector of 2+ column names representing flow axes (required)
 #' @param axis_labels Character vector of custom labels for axes (optional, default: NULL uses axis_vars)
 #'   Must be same length as axis_vars if provided
@@ -4762,7 +4705,7 @@ plot_treemap <- function(df,
 #'
 #' @return A ggplot2 alluvial/sankey diagram
 #' @export
-plot_sankey <- function(df,
+plot_sankey <- function(survey_design,
                         axis_vars,
                         axis_labels = NULL,
                         weighted = FALSE,
@@ -4782,6 +4725,7 @@ plot_sankey <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     legend_position <- ensure_value(legend_position, "bottom")
@@ -4802,7 +4746,6 @@ plot_sankey <- function(df,
     axis_labels <- ensure_value(axis_labels, NULL)
 
     # Standard validation block
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(show_percentage, origin = origin, soft = FALSE)
     phr_validate_logical(show_stratum_labels, origin = origin, soft = FALSE)
@@ -5065,7 +5008,7 @@ plot_sankey <- function(df,
 #' and probability weights. When a plain data frame is supplied the original
 #' binomial (or weighted) computation is used.
 #'
-#' @param df Data frame **or** survey design object containing the data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param category_var Character, column containing categories (required)
 #' @param grouping Character, optional grouping variable (default: NULL)
 #' @param weighted Logical, whether to use weighted calculations when \code{df}
@@ -5089,7 +5032,7 @@ plot_sankey <- function(df,
 #'
 #' @return A ggplot2 bar chart with confidence intervals
 #' @export
-plot_ci_bar_percentage <- function(df,
+plot_ci_bar_percentage <- function(survey_design,
                                    category_var,
                                    grouping = NULL,
                                    weighted = FALSE,
@@ -5110,6 +5053,8 @@ plot_ci_bar_percentage <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
+    is_survey <- inherits(survey_design, c("tbl_svy", "survey.design", "survey.design2", "svyrep.design"))
     # Apply ensure_value with non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     legend_position <- ensure_value(legend_position, "bottom")
@@ -5130,10 +5075,6 @@ plot_ci_bar_percentage <- function(df,
     grouping <- ensure_value(grouping, NA_character_)
 
     # Standard validation block — skip for survey design objects
-    is_survey <- inherits(df, c("survey.design", "tbl_svy", "svyrep.design"))
-    if (!is_survey) {
-      phr_validate_dataframe(df, origin = origin, soft = FALSE)
-    }
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_logical(show_labels, origin = origin, soft = FALSE)
@@ -5150,7 +5091,7 @@ plot_ci_bar_percentage <- function(df,
 
     # Validate category_var
     phr_validate_not_null(category_var, origin = origin, soft = FALSE)
-    working_df <- if (is_survey) df$variables else df
+    working_df <- df
     phr_validate_columns(working_df, category_var, origin = origin,
                            hint = phr_txt(paste0("Category column '", category_var, "' must exist")),
                            soft = FALSE)
@@ -5174,7 +5115,7 @@ plot_ci_bar_percentage <- function(df,
       if (!has_grouping) {
         # Single overall call
         calc_df <- phr_calc_survey_categorical_single(
-          design          = df,
+          design          = survey_design,
           var_name        = category_var,
           indicator_name  = ind_label,
           group_name_label = "Overall"
@@ -5191,11 +5132,11 @@ plot_ci_bar_percentage <- function(df,
 
       } else {
         # Per-group: filter design and call for each group value
-        group_vals <- unique(df$variables[[grouping]])
+        group_vals <- unique(df[[grouping]])
         group_vals <- group_vals[!is.na(group_vals)]
 
         calc_list <- lapply(group_vals, function(gv) {
-          dsn_g <- dplyr::filter(df, !!rlang::sym(grouping) == gv)
+          dsn_g <- dplyr::filter(survey_design, !!rlang::sym(grouping) == gv)
           r <- phr_calc_survey_categorical_single(
             design           = dsn_g,
             var_name         = category_var,
@@ -5217,7 +5158,7 @@ plot_ci_bar_percentage <- function(df,
       }
 
       # subtitle: use weighted n from results
-      total_n <- if ("n_unweighted" %in% names(df_plot)) sum(df_plot$n_unweighted, na.rm = TRUE) else nrow(df$variables)
+      total_n <- if ("n_unweighted" %in% names(df_plot)) sum(df_plot$n_unweighted, na.rm = TRUE) else nrow(df)
       auto_subtitle <- sprintf("n = %d (survey design)", as.integer(total_n))
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
@@ -5410,7 +5351,7 @@ plot_ci_bar_percentage <- function(df,
 #' account for clustering, stratification and probability weights. When a plain
 #' data frame is supplied the original Wald CI computation is used.
 #'
-#' @param df Data frame **or** survey design object containing the data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param numeric_var Character, column for numeric values (required)
 #' @param grouping Character, optional grouping variable (default: NULL)
 #' @param numeric_var2 Character, optional second numeric variable for ratio
@@ -5439,7 +5380,7 @@ plot_ci_bar_percentage <- function(df,
 #'
 #' @return A ggplot2 point chart with confidence intervals
 #' @export
-plot_ci_point_mean <- function(df,
+plot_ci_point_mean <- function(survey_design,
                                numeric_var,
                                grouping = NULL,
                                numeric_var2 = NULL,
@@ -5463,6 +5404,8 @@ plot_ci_point_mean <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
+    is_survey <- inherits(survey_design, c("tbl_svy", "survey.design", "survey.design2", "svyrep.design"))
     # Apply ensure_value with non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     legend_position <- ensure_value(legend_position, "bottom")
@@ -5487,10 +5430,6 @@ plot_ci_point_mean <- function(df,
     # ylim stays as NULL if not provided (we'll handle it later)
 
     # Standard validation block — skip for survey design objects
-    is_survey <- inherits(df, c("survey.design", "tbl_svy", "svyrep.design"))
-    if (!is_survey) {
-      phr_validate_dataframe(df, origin = origin, soft = FALSE)
-    }
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_logical(show_labels, origin = origin, soft = FALSE)
@@ -5519,7 +5458,7 @@ plot_ci_point_mean <- function(df,
     if (y_lab == "") y_lab <- NULL
     if (legend_label == "") legend_label <- NULL
 
-    working_df <- if (is_survey) df$variables else df
+    working_df <- df
 
     # Validate numeric_var
     phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
@@ -5589,7 +5528,7 @@ plot_ci_point_mean <- function(df,
       }
 
       if (!has_grouping) {
-        calc_df <- .calc_one(df, "Overall")
+        calc_df <- .calc_one(survey_design, "Overall")
         stats_df <- data.frame(
           x_var    = "Overall",
           est      = calc_df$point.estimate,
@@ -5599,11 +5538,11 @@ plot_ci_point_mean <- function(df,
           stringsAsFactors = FALSE
         )
       } else {
-        group_vals <- unique(df$variables[[grouping]])
+        group_vals <- unique(df[[grouping]])
         group_vals <- group_vals[!is.na(group_vals)]
 
         stats_list <- lapply(group_vals, function(gv) {
-          dsn_g <- dplyr::filter(df, !!rlang::sym(grouping) == gv)
+          dsn_g <- dplyr::filter(survey_design, !!rlang::sym(grouping) == gv)
           r <- .calc_one(dsn_g, as.character(gv))
           data.frame(
             x_var    = as.character(gv),
@@ -5782,7 +5721,7 @@ plot_ci_point_mean <- function(df,
 #'
 #' Creates a scatter plot between two numeric variables with optional grouping
 #'
-#' @param df Data frame containing the data
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param x_var Character, column for x-axis (required)
 #' @param y_var Character, column for y-axis (required)
 #' @param grouping Character, optional column for coloring points (default: NULL)
@@ -5802,7 +5741,7 @@ plot_ci_point_mean <- function(df,
 #'
 #' @return A ggplot2 scatter plot
 #' @export
-plot_scatter <- function(df,
+plot_scatter <- function(survey_design,
                         x_var,
                         y_var,
                         grouping = NULL,
@@ -5825,8 +5764,8 @@ plot_scatter <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Standard validation block
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
@@ -5934,7 +5873,7 @@ plot_scatter <- function(df,
 #'
 #' Creates a donut chart showing categorical proportions
 #'
-#' @param df Data frame containing the data
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param category_var Character, column containing categories (required)
 #' @param value_var Character, optional column with numeric values to sum (default: NULL)
 #'   When provided, the donut shows sum of values by category instead of count of observations
@@ -5953,7 +5892,7 @@ plot_scatter <- function(df,
 #'
 #' @return A ggplot2 donut chart
 #' @export
-plot_donut <- function(df,
+plot_donut <- function(survey_design,
                        category_var,
                        value_var = NULL,
                        weighted = FALSE,
@@ -5972,6 +5911,7 @@ plot_donut <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     legend_position <- ensure_value(legend_position, "right")
@@ -5991,7 +5931,6 @@ plot_donut <- function(df,
     value_var <- ensure_value(value_var, NA_character_)
 
     # Standard validation block
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
     phr_validate_logical(show_labels, origin = origin, soft = FALSE)
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
@@ -6029,75 +5968,73 @@ plot_donut <- function(df,
 
     # Auto-subtitle with n
     total_n <- nrow(df)
-    if (weighted) {
-      auto_subtitle <- sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE))
+    total_weighted_n <- tryCatch(sum(survey_design$prob^(-1), na.rm = TRUE), error = function(e) NA_real_)
+    if (!is.na(total_weighted_n) && total_weighted_n != total_n) {
+      auto_subtitle <- sprintf("n = %d (weighted n = %.0f)", total_n, total_weighted_n)
     } else {
       auto_subtitle <- sprintf("n = %d", total_n)
     }
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-    # Calculate proportions - SPLIT INTO SEPARATE BLOCKS
+    # Calculate proportions using phr_calc_survey_categorical_single for
+    # consistency with run_analysis outputs (unless value_var is specified,
+    # which aggregates a numeric value rather than counting observations).
     category_sym <- rlang::sym(category_var)
-    df <- df %>% dplyr::filter(!is.na(!!category_sym))
+    ind_label    <- variable_label %||% category_var
+    cat_prefix   <- paste0(ind_label, " - ")
 
     has_value_var <- !is.null(value_var)
 
-    if (has_value_var) {
-      value_sym <- rlang::sym(value_var)
+    if (!has_value_var) {
+      # Use phr_calc for consistent survey-weighted proportions
+      calc_df <- phr_calc_survey_categorical_single(
+        design           = survey_design,
+        var_name         = category_var,
+        indicator_name   = ind_label,
+        multiplier       = 100
+      )
 
-      if (weighted) {
-        weights_sym <- rlang::sym(weights_col)
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            value_sum = sum(!!weights_sym * !!value_sym, na.rm = TRUE),
-            count = dplyr::n(),
-            .groups = "drop"
-          )
-      } else {
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            value_sum = sum(!!value_sym, na.rm = TRUE),
-            count = dplyr::n(),
-            .groups = "drop"
-          )
-      }
-
-      # When value_var is provided, use value_sum for proportions
-      df_plot <- df_plot %>%
-        dplyr::mutate(n = value_sum)
+      df_plot <- calc_df %>%
+        dplyr::mutate(
+          !!category_sym := factor(
+            gsub(cat_prefix, "", .data$indicator_name, fixed = TRUE)
+          ),
+          n     = .data$n_unweighted,
+          count = as.integer(.data$n_unweighted),
+          pct   = .data$point.estimate
+        ) %>%
+        dplyr::filter(!is.na(!!category_sym)) %>%
+        dplyr::arrange(dplyr::desc(pct)) %>%
+        dplyr::mutate(
+          ymax      = cumsum(pct),
+          ymin      = dplyr::lag(ymax, default = 0),
+          label_pos = (ymax + ymin) / 2
+        )
 
     } else {
-      if (weighted) {
-        weights_sym <- rlang::sym(weights_col)
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            n = sum(!!weights_sym, na.rm = TRUE),
-            count = dplyr::n(),
-            .groups = "drop"
-          )
-      } else {
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            n = dplyr::n(),
-            .groups = "drop"
-          ) %>%
-          dplyr::mutate(count = n)
-      }
-    }
+      # When value_var is provided, fall back to direct aggregation on extracted df
+      phr_validate_columns(df, value_var, origin = origin,
+                             hint = phr_txt(paste0("Value column '", value_var, "' must exist")),
+                             soft = FALSE)
+      phr_validate_all_numeric(df[[value_var]], origin = origin, soft = FALSE)
 
-    # Calculate percentages and labels
-    df_plot <- df_plot %>%
-      dplyr::arrange(dplyr::desc(n)) %>%
-      dplyr::mutate(
-        pct = n / sum(n) * 100,
-        ymax = cumsum(pct),
-        ymin = dplyr::lag(ymax, default = 0),
-        label_pos = (ymax + ymin) / 2
-      )
+      value_sym <- rlang::sym(value_var)
+      df_plot <- df %>%
+        dplyr::filter(!is.na(!!category_sym)) %>%
+        dplyr::group_by(!!category_sym) %>%
+        dplyr::summarise(
+          n     = sum(!!value_sym, na.rm = TRUE),
+          count = dplyr::n(),
+          .groups = "drop"
+        ) %>%
+        dplyr::arrange(dplyr::desc(n)) %>%
+        dplyr::mutate(
+          pct       = n / sum(n) * 100,
+          ymax      = cumsum(pct),
+          ymin      = dplyr::lag(ymax, default = 0),
+          label_pos = (ymax + ymin) / 2
+        )
+    }
 
     # Create labels based on what we're displaying
     if (has_value_var) {
@@ -6167,7 +6104,7 @@ plot_donut <- function(df,
 #' Cells show percentages with counts, and are shaded on a gradient from lowest to highest values.
 #' Supports survey weights, marginal totals, and optional cell highlighting for significant findings.
 #'
-#' @param df Inputs a dataframe containing the categorical data.
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param row_var Inputs a character value specifying the column name for the row variable.
 #' @param col_var Inputs a character value specifying the column name for the column variable.
 #' @param weighted Logical indicating whether to apply survey weights. Default: FALSE.
@@ -6224,7 +6161,7 @@ plot_donut <- function(df,
   df_crosstab
 }
 
-plot_crosstab <- function(df,
+plot_crosstab <- function(survey_design,
                           row_var,
                           col_var,
                           weighted = FALSE,
@@ -6257,6 +6194,7 @@ plot_crosstab <- function(df,
 
   phr_try({
 
+    df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
     weighted <- ensure_value(weighted, FALSE)
     percentage_by <- ensure_value(percentage_by, "total")
@@ -6288,7 +6226,6 @@ plot_crosstab <- function(df,
     highlight_cells_col_val2 <- ensure_value(highlight_cells_col_val2, NULL)
 
     # Validate inputs
-    phr_validate_dataframe(df, origin = origin, soft = FALSE)
     phr_validate_not_null(row_var, origin = origin, soft = FALSE)
     phr_validate_not_null(col_var, origin = origin, soft = FALSE)
     phr_validate_logical(weighted, origin = origin, soft = FALSE)
@@ -6768,7 +6705,7 @@ plot_crosstab <- function(df,
 }
 
 
-table_frequency <- function(.dataset,
+table_frequency <- function(survey_design,
                             variable,
                             stat_type = "percentage",
                             weighted_result = TRUE,
@@ -6792,19 +6729,14 @@ table_frequency <- function(.dataset,
 
   phr_try({
 
-    # Detect if input is a srvyr design object
-    is_srvyr <- inherits(.dataset, "tbl_svy")
+    df <- phr_get_data_from_design(survey_design)
+
+    is_srvyr <- inherits(survey_design, "tbl_svy")
 
     # Validate inputs
     valid_stat_types <- c("percentage", "mean", "median", "ratio")
 
-    # Determine the working data frame for column validation
-    if (is_srvyr) {
-      working_df <- .dataset$variables
-    } else {
-      phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
-      working_df <- .dataset
-    }
+    working_df <- df
 
     phr_validate_not_null(variable, origin = origin, soft = FALSE)
 
@@ -6932,7 +6864,7 @@ table_frequency <- function(.dataset,
       # Compute statistics for this variable
       if (is_srvyr) {
         # --- Weighted via srvyr design ---
-        dsn <- .dataset
+        dsn <- survey_design
 
         if (!is.null(disagg)) {
           dsn <- dsn %>% srvyr::group_by(!!rlang::sym(disagg))
@@ -7335,7 +7267,7 @@ table_frequency <- function(.dataset,
         overall_df <- NULL
 
         if (is_srvyr) {
-          dsn_overall <- .dataset
+          dsn_overall <- survey_design
           var_sym_o    <- rlang::sym(var)
           ci_vartype_o <- if (show_ci) "ci" else NULL
 
@@ -7992,7 +7924,7 @@ table_frequency <- function(.dataset,
 }
 
 
-table_frequency_v2 <- function(.dataset,
+table_frequency_v2 <- function(survey_design,
                                 variable,
                                 stat_type = "percentage",
                                 weighted_result = TRUE,
@@ -8016,16 +7948,9 @@ table_frequency_v2 <- function(.dataset,
 
   phr_try({
 
-    # Require a survey design object
-    if (!inherits(.dataset, c("tbl_svy", "survey.design", "survey.design2",
-                               "svyrep.design"))) {
-      phr_error(origin = origin,
-                message = phr_txt(
-                  ".dataset must be a survey design object (e.g. created with srvyr::as_survey_design())."
-                ))
-    }
+    df <- phr_get_data_from_design(survey_design)
 
-    working_df <- .dataset$variables
+    working_df <- df
 
     # Validate inputs
     valid_stat_types <- c("percentage", "mean", "median", "ratio")
@@ -8260,7 +8185,7 @@ table_frequency_v2 <- function(.dataset,
 
         per_group <- lapply(group_levels, function(g) {
           design_sub <- tryCatch(
-            subset(.dataset, .dataset$variables[[disagg]] == g),
+            subset(survey_design, df[[disagg]] == g),
             error = function(e) {
               phr_warning(origin, paste("Subset failed for", disagg, "=", g))
               NULL
@@ -8274,12 +8199,12 @@ table_frequency_v2 <- function(.dataset,
         results_df <- dplyr::bind_rows(per_group)
 
       } else {
-        results_df <- .calc_one_group(.dataset, var, st, ratio_denom)
+        results_df <- .calc_one_group(survey_design, var, st, ratio_denom)
       }
 
       # Compute and append Overall rows when show_overall = TRUE
       if (show_overall && !is.null(disagg)) {
-        overall_df <- .calc_one_group(.dataset, var, st, ratio_denom)
+        overall_df <- .calc_one_group(survey_design, var, st, ratio_denom)
         overall_df <- dplyr::mutate(overall_df,
                                     !!rlang::sym(disagg) := "Overall", .before = 1)
 
@@ -8637,14 +8562,14 @@ table_frequency_v2 <- function(.dataset,
 
 #' Create a Quality Penalty Summary Table (flextable)
 #'
-#' Takes the results data frame from a \code{DataQuality} object's
+#' Takes the results data frame from a \code{DataAnalytics} object's
 #' \code{results_to_table()} and produces a formatted flextable summarising
 #' penalties by \code{check_group}. Each row shows the statistical test result
 #' and penalty for an individual check, and merged cells display the summed
 #' penalty per check group.
 #'
 #' @param results_df A data frame as returned by
-#'   \code{DataQuality$results_to_table()}. Must contain columns:
+#'   \code{DataAnalytics$results_to_table()}. Must contain columns:
 #'   \code{check_name}, \code{check_label}, \code{penalty}. Optional columns:
 #'   \code{check_group}, \code{test_statistic}, \code{p_value},
 #'   \code{max_penalty}.
@@ -8813,7 +8738,7 @@ table_quality_penalty_summary <- function(results_df,
 #' Create a Quality Penalty Summary Table by Group — Wide Format (flextable)
 #'
 #' Takes a per-group results data frame (e.g. as produced by
-#' \code{DataQuality$.compute_results_by_group()}) and produces a formatted
+#' \code{DataAnalytics$.compute_results_by_group()}) and produces a formatted
 #' flextable summarising penalties broken down by a grouping variable such as
 #' enumerator ID or stratum.  The output uses a \strong{wide format}: each
 #' unique group value becomes a column set rather than a row group.  The table

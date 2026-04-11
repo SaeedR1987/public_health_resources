@@ -10,7 +10,7 @@
 #' * All visualizations/tables via outputs_schema (inherits from base)
 #' * An empty quality schema (no sector-specific quality checks)
 #'
-#' @seealso [DataAnalytics], [QuantDataAnalysisGeneral]
+#' @seealso [DataAnalytics]
 #' @export
 GeneralDataAnalytics <- R6::R6Class(
   classname = "GeneralDataAnalytics",

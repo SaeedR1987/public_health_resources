@@ -16,7 +16,7 @@
 #' @field linked_containers_variable_map Variable mappings for linked containers data
 #' @field linked_containers_value_map Value mappings for linked containers data
 #'
-#' @seealso [DataAnalytics], [WASHDataQuality], [WASHAnalysis]
+#' @seealso [DataAnalytics]
 #' @export
 WASHDataAnalytics <- R6::R6Class(
   classname = "WASHDataAnalytics",

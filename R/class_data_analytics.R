@@ -46,7 +46,7 @@
 #' @field overall_score Overall data quality score
 #' @field metadata Free-form metadata list
 #'
-#' @seealso [DataQuality], [QuantDataAnalysis], [FSLDataAnalytics]
+#' @seealso [FSLDataAnalytics]
 #' @export
 DataAnalytics <- R6::R6Class(
   classname = "DataAnalytics",
@@ -78,6 +78,7 @@ DataAnalytics <- R6::R6Class(
     # Analysis-specific fields
     data_analysis_plan = NULL,
     survey_design = NULL,
+    base_survey_design = NULL,
     analysis_results = NULL,      # Quantitative analysis results
     analysis_plan_issue_log = NULL,
     analysis_schema = NULL,
@@ -178,8 +179,16 @@ DataAnalytics <- R6::R6Class(
       # 1. Load analysis schema
       self$analysis_schema <- self$default_analysis_schema()
 
-      # 2. Create survey design from data + variable_map
+      # 2. Create survey design objects from data + variable_map.
+      #    base_survey_design: simple unweighted design (ids = 1, no weights/strata/clusters)
+      #    survey_design: full weighted design considering clusters, weights, and strata
       if (!is.null(data)) {
+        self$base_survey_design <- phr_try(
+          srvyr::as_survey_design(.data = data, ids = 1),
+          on_error = "warn",
+          origin   = origin,
+          hint     = "Could not create base (unweighted) survey design from data."
+        )
         self$survey_design <- self$create_survey_design()
       }
 
@@ -710,7 +719,7 @@ DataAnalytics <- R6::R6Class(
           return(result)
         }
 
-        test_args   <- list(data = self$data, variables = available_vars)
+        test_args   <- list(survey_design = self$base_survey_design %||% self$survey_design, variables = available_vars)
         if (!is.null(test_params)) {
           test_args <- private$.resolve_output_params(
             func_args           = test_args,
@@ -1386,13 +1395,13 @@ DataAnalytics <- R6::R6Class(
     #' \code{@value_map}, \code{@variable_label}, \code{@value_label}, and
     #' \code{@results_table} references in \code{test_params}, determines the
     #' first positional argument from \code{dataset_type} (defaulting to
-    #' \code{"data"}), calls the specified output function, and stores results
+    #' \code{"base"}), calls the specified output function, and stores results
     #' in \code{self$visualizations} or \code{self$tables}.
     #'
     #' Supported \code{dataset_type} values:
     #' \describe{
-    #'   \item{"data"}{uses \code{self$data} (default)}
-    #'   \item{"survey_design"}{uses \code{self$survey_design}}
+    #'   \item{"base"}{uses \code{self$base_survey_design} (unweighted; default for all quality outputs)}
+    #'   \item{"survey_design"}{uses \code{self$survey_design} (weighted)}
     #'   \item{"analysis_results_surveydesign"}{uses \code{self$analysis_results$survey_design}}
     #'   \item{"analysis_results_base"}{uses \code{self$analysis_results$base}}
     #' }
@@ -1459,21 +1468,22 @@ DataAnalytics <- R6::R6Class(
 
             # Determine first positional argument based on dataset_type column.
             # Supported values:
-            #   "data"                          – self$data (default)
-            #   "survey_design"                 – self$survey_design
+            #   "base"                          – self$base_survey_design (unweighted)
+            #   "survey_design"                 – self$survey_design (weighted)
             #   "analysis_results_surveydesign" – self$analysis_results$survey_design
             #   "analysis_results_base"         – self$analysis_results$base
             dataset_type <- if (!is.null(out$dataset_type) &&
                                   !is.na(out$dataset_type) &&
                                   nzchar(out$dataset_type)) {
               out$dataset_type
-            } else "data"
+            } else "base"
 
             first_arg <- switch(dataset_type,
+              "base"                          = self$base_survey_design,
               "survey_design"                 = self$survey_design,
               "analysis_results_surveydesign" = if (!is.null(self$analysis_results)) self$analysis_results$survey_design else NULL,
               "analysis_results_base"         = if (!is.null(self$analysis_results)) self$analysis_results$base else NULL,
-              self$data  # default: "data"
+              self$base_survey_design  # default: "base" (unweighted survey design)
             )
 
             func_args <- list(first_arg)
@@ -1561,18 +1571,20 @@ DataAnalytics <- R6::R6Class(
               }
 
               # Determine the data frame used for finding unique group values.
-              # For survey_design types, use the variables data frame.
+              # All survey_design types: extract variables tibble.
               source_df <- switch(dataset_type,
-                "data"                          = self$data,
                 "analysis_results_surveydesign" = if (!is.null(self$analysis_results)) self$analysis_results$survey_design else NULL,
                 "analysis_results_base"         = if (!is.null(self$analysis_results)) self$analysis_results$base else NULL,
-                # default: survey_design – extract variables tibble
-                if (!is.null(self$survey_design)) {
-                  tryCatch(self$survey_design$variables, error = function(e) NULL)
-                } else NULL
+                # default: base or survey_design – extract variables tibble
+                {
+                  design_obj <- if (dataset_type == "survey_design") self$survey_design else self$base_survey_design
+                  if (!is.null(design_obj)) {
+                    tryCatch(design_obj$variables, error = function(e) NULL)
+                  } else NULL
+                }
               )
 
-              is_survey_design_type <- !(dataset_type %in% c("data", "analysis_results_surveydesign", "analysis_results_base"))
+              is_survey_design_type <- !(dataset_type %in% c("analysis_results_surveydesign", "analysis_results_base"))
 
               if (!is.null(col_name) && !is.null(source_df) && col_name %in% names(source_df)) {
                 unique_vals <- unique(source_df[[col_name]])
@@ -1584,8 +1596,9 @@ DataAnalytics <- R6::R6Class(
 
                 for (val in unique_vals) {
                   if (is_survey_design_type) {
+                    design_to_filter <- if (dataset_type == "survey_design") self$survey_design else self$base_survey_design
                     filtered_first_arg <- tryCatch(
-                      dplyr::filter(self$survey_design, !!rlang::sym(col_name) == val),
+                      dplyr::filter(design_to_filter, !!rlang::sym(col_name) == val),
                       error = function(e) {
                         phr_warning(
                           message = phr_txt(glue::glue(
@@ -2143,6 +2156,7 @@ DataAnalytics <- R6::R6Class(
         visualizations               = self$visualizations,
         tables                       = self$tables,
         survey_design                = self$survey_design,
+        base_survey_design           = self$base_survey_design,
         quality_issues_log           = self$quality_issues_log,
         analysis_plan_issues_log     = self$analysis_plan_issues_log,
         outputs_issues_log           = self$outputs_issues_log
@@ -2179,6 +2193,9 @@ DataAnalytics <- R6::R6Class(
 
       if (!is.null(state$survey_design)) {
         self$survey_design <- state$survey_design
+      }
+      if (!is.null(state$base_survey_design)) {
+        self$base_survey_design <- state$base_survey_design
       }
 
       invisible(self)

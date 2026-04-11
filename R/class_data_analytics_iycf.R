@@ -10,7 +10,7 @@
 #' * All visualizations/tables via outputs_schema
 #' * A default empty analysis schema (no sector-specific quantitative template)
 #'
-#' @seealso [DataAnalytics], [IYCFDataQuality]
+#' @seealso [DataAnalytics]
 #' @export
 IYCFDataAnalytics <- R6::R6Class(
   classname = "IYCFDataAnalytics",

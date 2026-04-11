@@ -83,6 +83,139 @@ NutritionDataAnalytics <- R6::R6Class(
       )
     },
 
+    #' @description
+    #' Diagnose issues in both anthropometric and IYCF quality schemas.
+    #'
+    #' Runs the standard quality_diagnose logic on both \code{quality_schema_anthro}
+    #' and \code{quality_schema_iycf} and returns a combined tibble with a
+    #' \code{schema_type} column indicating which schema each check belongs to.
+    #' Results are stored in \code{self$quality_issues_log}.
+    #'
+    #' @return A tibble (invisibly) with one row per quality check, covering
+    #'   both anthropometric and IYCF schemas.
+    quality_diagnose = function() {
+
+      origin <- paste0(self$dataset_name, "$quality_diagnose")
+
+      phr_try({
+
+        empty_row <- tibble::tibble(
+          schema_type         = character(),
+          check_group         = character(),
+          check_name          = character(),
+          check_label         = character(),
+          variables           = character(),
+          statistical_test    = character(),
+          test_params         = character(),
+          n_thresholds        = integer(),
+          variables_in_data   = logical(),
+          missing_variables   = character(),
+          function_available  = logical(),
+          thresholds_valid    = logical(),
+          status              = character()
+        )
+
+        data_cols <- if (!is.null(self$data)) names(self$data) else character(0)
+
+        # Internal helper: diagnose one schema
+        diagnose_schema <- function(schema, schema_label) {
+
+          if (is.null(schema) || length(schema) == 0) {
+            phr_warning(
+              message = glue::glue("No {schema_label} quality schema defined. Skipping."),
+              origin  = origin
+            )
+            return(empty_row)
+          }
+
+          rows <- list()
+
+          for (check_name in names(schema)) {
+            check <- schema[[check_name]]
+
+            check_group      <- check$check_group      %||% NA_character_
+            check_label      <- check$check_label      %||% NA_character_
+            statistical_test <- check$statistical_test %||% NA_character_
+            variables        <- check$variables        %||% character(0)
+            test_params      <- check$test_params      %||% list()
+            thresholds       <- check$thresholds       %||% list()
+
+            mapped_vars  <- private$.translate_canonical_to_actual_vars(variables)
+            missing_vars <- setdiff(mapped_vars, data_cols)
+            vars_in_data <- length(missing_vars) == 0
+
+            func_available <- FALSE
+            if (!is.na(statistical_test) && nzchar(statistical_test)) {
+              func_name <- paste0("quality_test_", statistical_test)
+              if (requireNamespace("iphRa", quietly = TRUE)) {
+                tryCatch({
+                  ns <- asNamespace("iphRa")
+                  func_available <- exists(func_name, envir = ns, mode = "function", inherits = FALSE)
+                }, error = function(e) {})
+              }
+              if (!func_available) {
+                tryCatch({
+                  func_available <- exists(func_name, mode = "function", inherits = TRUE)
+                }, error = function(e) {})
+              }
+            }
+
+            thresholds_valid <- TRUE
+            if (length(thresholds) > 0) {
+              for (thr in thresholds) {
+                expr_str <- thr$threshold_expression %||% thr$expression
+                if (!is.null(expr_str) && !is.na(expr_str) && nzchar(expr_str)) {
+                  parsed <- tryCatch(parse(text = expr_str), error = function(e) NULL)
+                  if (is.null(parsed)) {
+                    thresholds_valid <- FALSE
+                    break
+                  }
+                }
+              }
+            }
+
+            issues <- character(0)
+            if (!vars_in_data)     issues <- c(issues, paste0("missing variables: ", paste(missing_vars, collapse = ", ")))
+            if (!func_available)   issues <- c(issues, paste0("function not found: quality_test_", statistical_test %||% "NA"))
+            if (!thresholds_valid) issues <- c(issues, "invalid threshold expression(s)")
+            status <- if (length(issues) == 0) "ok" else paste(issues, collapse = "; ")
+
+            rows[[length(rows) + 1]] <- tibble::tibble(
+              schema_type        = schema_label,
+              check_group        = check_group,
+              check_name         = check_name,
+              check_label        = check_label,
+              variables          = paste(variables, collapse = ", "),
+              statistical_test   = statistical_test %||% NA_character_,
+              test_params        = if (length(test_params) > 0) paste(names(test_params), test_params, sep = "=", collapse = ", ") else NA_character_,
+              n_thresholds       = length(thresholds),
+              variables_in_data  = vars_in_data,
+              missing_variables  = if (length(missing_vars) > 0) paste(missing_vars, collapse = ", ") else NA_character_,
+              function_available = func_available,
+              thresholds_valid   = thresholds_valid,
+              status             = status
+            )
+          }
+
+          if (length(rows) > 0) dplyr::bind_rows(rows) else empty_row
+        }
+
+        anthro_result <- diagnose_schema(self$quality_schema_anthro, "anthropometric")
+        iycf_result   <- diagnose_schema(self$quality_schema_iycf,   "iycf")
+
+        result <- dplyr::bind_rows(anthro_result, iycf_result)
+        self$quality_issues_log <- result
+
+        n_issues <- sum(result$status != "ok", na.rm = TRUE)
+        phr_message(phr_txt(glue::glue(
+          "quality_diagnose complete: {nrow(result)} check(s) reviewed ({nrow(anthro_result)} anthropometric, {nrow(iycf_result)} IYCF), {n_issues} issue(s) found for {self$dataset_name}."
+        )))
+
+        invisible(result)
+
+      }, on_error = "warn", origin = origin)
+    },
+
     #' @description Load the default anthropometric quality schema from template file
     #' @return A list of anthropometric quality checks
     default_quality_anthro_schema = function() {
