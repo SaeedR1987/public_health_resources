@@ -11,14 +11,16 @@ NULL
 #'
 #' Calculate correlation coefficient between two numeric variables
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 variable names
 #' @param method Correlation method: "pearson", "spearman", or "kendall"
 #' @return List with statistic (correlation coefficient) and p_value
 #' @export
-quality_test_correlation <- function(data, variables, method = "pearson") {
+quality_test_correlation <- function(survey_design, variables, method = "pearson") {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) != 2) {
       phr_error(
@@ -66,15 +68,17 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
 #'
 #' Perform a one-sample t-test or two-sample t-test
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of 1 or 2 variable names
 #' @param mu Expected mean for one-sample test (default: 0)
 #' @param paired Logical, whether to perform paired t-test for two variables
 #' @return List with statistic (t-value) and p-value
 #' @export
-quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
+quality_test_ttest <- function(survey_design, variables, mu = 0, paired = FALSE) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) == 0 || length(variables) > 2) {
       phr_error(
@@ -144,13 +148,15 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
 #'
 #' Perform chi-squared test of independence between two categorical variables
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 variable names
 #' @return List with statistic (chi-squared value) and p-value
 #' @export
-quality_test_chisq <- function(data, variables) {
+quality_test_chisq <- function(survey_design, variables) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) != 2) {
       phr_error(
@@ -212,14 +218,16 @@ quality_test_chisq <- function(data, variables) {
 #'
 #' Calculate the percentage of records with a specific flag value
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @param flag_value The value to count (default: TRUE or 1)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
+quality_test_flag_percentage <- function(survey_design, variables, flag_value = TRUE) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) != 1) {
       phr_error(
@@ -265,13 +273,15 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
 #'
 #' Calculate the percentage of missing values across specified variables
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of variable names
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_missing_percentage <- function(data, variables) {
+quality_test_missing_percentage <- function(survey_design, variables) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) == 0) {
       phr_error(
@@ -319,22 +329,16 @@ quality_test_missing_percentage <- function(data, variables) {
 #'
 #' Calculate the percentage of outliers based on z-score threshold
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @param z_threshold Z-score threshold (default: 3)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
+quality_test_outlier_percentage <- function(survey_design, variables, z_threshold = 3) {
 
   phr_try({
 
-    # Validate data is a data frame
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_outlier_percentage",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
@@ -437,21 +441,15 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 #'
 #' Calculate the coefficient of variation (CV) for a numeric variable
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @return List with statistic (CV percentage) and p_value (NA)
 #' @export
-quality_test_coefficient_variation <- function(data, variables) {
+quality_test_coefficient_variation <- function(survey_design, variables) {
 
   phr_try({
 
-    # Validate data is a data frame
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_coefficient_variation",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
@@ -547,23 +545,17 @@ quality_test_coefficient_variation <- function(data, variables) {
 #'
 #' Calculate the percentage of values outside the specified range
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @param min_value Minimum allowed value (default: -Inf)
 #' @param max_value Maximum allowed value (default: Inf)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_range_violation <- function(data, variables, min_value = -Inf, max_value = Inf) {
+quality_test_range_violation <- function(survey_design, variables, min_value = -Inf, max_value = Inf) {
 
   phr_try({
 
-    # Validate data is a data frame
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_range_violation",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
@@ -686,21 +678,15 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 #'
 #' Calculate the standard deviation for a numeric variable
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @return List with statistic (standard deviation) and p_value (NA)
 #' @export
-quality_test_sd <- function(data, variables) {
+quality_test_sd <- function(survey_design, variables) {
 
   phr_try({
 
-    # Validate data is a data frame
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_sd",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
@@ -776,22 +762,16 @@ quality_test_sd <- function(data, variables) {
 #' Calculate the percentage of rows where the standard deviation across
 #' specified columns falls below a threshold value
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of variable names (minimum 2)
 #' @param threshold Threshold value for SD comparison (default: 0.8)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) {
+quality_test_sd_across_percentage <- function(survey_design, variables, threshold = 0.8) {
 
   phr_try({
 
-    # Validate data is a data frame
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_sd_across_percentage",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has at least 2 variables
     if (is.null(variables) || length(variables) < 2) {
@@ -921,22 +901,16 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 #' Calculate the percentage of rows where at least one of the specified
 #' variables has the flag value
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of variable names (minimum 1)
 #' @param flag_value The value to check for (default: 1)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
+quality_test_any_flag_percentage <- function(survey_design, variables, flag_value = 1) {
 
   phr_try({
 
-    # Validate data is a data frame
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_any_flag_percentage",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has at least 1 variable
     if (is.null(variables) || length(variables) < 1) {
@@ -1039,7 +1013,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 #' Perform a chi-squared goodness-of-fit test comparing the observed male/female
 #' counts to an expected male:female ratio (default 1:1).
 #'
-#' @param data Data frame containing the sex column
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character scalar. Name of the sex column in `data`
 #' @param male_val Value in `variables` that indicates "male"
 #' @param female_val Value in `variables` that indicates "female"
@@ -1048,7 +1022,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 #' @return List with statistic (chi-squared value) and p-value
 #' @export
 quality_test_sexratio <- function(
-    data,
+    survey_design,
     variables,
     male_val,
     female_val,
@@ -1056,6 +1030,8 @@ quality_test_sexratio <- function(
 ) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 1L) {
       phr_error(
@@ -1161,7 +1137,7 @@ quality_test_sexratio <- function(
 #' Perform a chi-squared goodness-of-fit test comparing the observed counts of "yes"
 #' in two different age-group indicator columns to an expected ratio (default 1:1).
 #'
-#' @param data Data frame containing the indicator columns
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of length 2. Names of the two age-group indicator columns in `data`
 #' @param yes_val Value indicating "yes" in the indicator columns. Default 1.
 #' @param no_val Value indicating "no" in the indicator columns. Default 0.
@@ -1170,7 +1146,7 @@ quality_test_sexratio <- function(
 #' @return List with statistic (chi-squared value) and p-value
 #' @export
 quality_test_ageratio <- function(
-    data,
+    survey_design,
     variables,
     yes_val = 1,
     no_val = 0,
@@ -1178,6 +1154,8 @@ quality_test_ageratio <- function(
 ) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
@@ -1301,13 +1279,15 @@ quality_test_ageratio <- function(
 #'
 #' Compute digit preference score for a numeric MUAC (cm) variable using nipnTK.
 #'
-#' @param data Data frame containing the MUAC variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character scalar. Name of the MUAC (cm) column in `data`
 #' @return List with statistic (digit preference score) and p_value (NA_real_)
 #' @export
-quality_test_digit_preference <- function(data, variables) {
+quality_test_digit_preference <- function(survey_design, variables) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 1L) {
       phr_error(
@@ -1361,22 +1341,17 @@ quality_test_digit_preference <- function(data, variables) {
 #' Perform a one-way analysis of variance (ANOVA) to compare group means
 #' across two or more groups.
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 column names. The first
 #'   element is the numeric outcome column and the second is the grouping
 #'   column (must have at least 2 distinct levels).
 #' @return List with statistic (F-value) and p_value
 #' @export
-quality_test_anova <- function(data, variables) {
+quality_test_anova <- function(survey_design, variables) {
 
   phr_try({
 
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_anova",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
@@ -1449,23 +1424,18 @@ quality_test_anova <- function(data, variables) {
 #' Perform a chi-squared test of independence between two categorical columns in
 #' the dataset. The contingency table is built internally from the raw data.
 #'
-#' @param data Data frame containing the raw (unaggregated) data
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 variable names. The first
 #'   element is the first categorical column and the second element is the
 #'   second categorical column. A contingency table is formed from their
 #'   cross-tabulation.
 #' @return List with statistic (chi-squared value) and p_value
 #' @export
-quality_test_chisq_binary <- function(data, variables) {
+quality_test_chisq_binary <- function(survey_design, variables) {
 
   phr_try({
 
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_chisq_binary",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
@@ -1527,7 +1497,7 @@ quality_test_chisq_binary <- function(data, variables) {
 #' success rate against an expected ratio, appending a p-value column to the
 #' data frame.
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 column names. The first
 #'   element is the column containing the number of successes (non-negative
 #'   integer) and the second is the column containing the total number of
@@ -1542,7 +1512,7 @@ quality_test_chisq_binary <- function(data, variables) {
 #'   binomial test p-values (rounded to 5 decimal places); rows with missing
 #'   or invalid values receive \code{NA}
 #' @export
-quality_test_binomial_ratio_rowwise <- function(data,
+quality_test_binomial_ratio_rowwise <- function(survey_design,
                                                 variables,
                                                 expected_ratio = 0.5,
                                                 alternative    = "two.sided",
@@ -1550,12 +1520,7 @@ quality_test_binomial_ratio_rowwise <- function(data,
 
   phr_try({
 
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_binomial_ratio_rowwise",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
@@ -1636,7 +1601,7 @@ quality_test_binomial_ratio_rowwise <- function(data,
 #' extracted and used to compute a one-sample t-test against
 #' \code{expected_mean}. A p-value column is appended to the data frame.
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of column names whose values are used
 #'   row-wise for the t-test. At least 2 columns must be provided so that a
 #'   standard deviation can be estimated.
@@ -1650,7 +1615,7 @@ quality_test_binomial_ratio_rowwise <- function(data,
 #'   t-test p-values (rounded to 3 decimal places); rows with fewer than 2
 #'   non-missing values receive \code{NA}
 #' @export
-quality_test_ttest_summary_rowwise <- function(data,
+quality_test_ttest_summary_rowwise <- function(survey_design,
                                                variables,
                                                expected_mean = 0,
                                                alternative   = "two.sided",
@@ -1658,12 +1623,7 @@ quality_test_ttest_summary_rowwise <- function(data,
 
   phr_try({
 
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_ttest_summary_rowwise",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) < 2L) {
       phr_error(
@@ -1734,7 +1694,7 @@ quality_test_ttest_summary_rowwise <- function(data,
 #' Perform a row-wise exact Poisson test comparing an observed event count
 #' against an expected rate, appending a p-value column to the data frame.
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 column names. The first
 #'   element is the column containing the number of events (non-negative
 #'   integer) and the second is the column containing the exposure units
@@ -1749,7 +1709,7 @@ quality_test_ttest_summary_rowwise <- function(data,
 #'   Poisson test p-values (rounded to 5 decimal places); rows with missing
 #'   or invalid values receive \code{NA}
 #' @export
-quality_test_poisson_ratio_rowwise <- function(data,
+quality_test_poisson_ratio_rowwise <- function(survey_design,
                                                variables,
                                                expected_rate = 0.02,
                                                alternative   = "two.sided",
@@ -1757,12 +1717,7 @@ quality_test_poisson_ratio_rowwise <- function(data,
 
   phr_try({
 
-    phr_validate_dataframe(
-      data,
-      origin = "quality_test_poisson_ratio_rowwise",
-      hint = phr_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 2L) {
       phr_error(
@@ -1839,13 +1794,15 @@ quality_test_poisson_ratio_rowwise <- function(data,
 #'
 #' Return the number of non-missing (non-NA) values in a specified column.
 #'
-#' @param data Data frame
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character scalar. Name of the column to count non-missing values for
 #' @return List with statistic (non-missing count) and p_value (NA_real_)
 #' @export
-quality_test_count <- function(data, variables) {
+quality_test_count <- function(survey_design, variables) {
 
   phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (!is.character(variables) || length(variables) != 1L) {
       phr_error(

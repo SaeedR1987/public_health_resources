@@ -84,10 +84,10 @@ plot_correlogram <- function (survey_design, numeric_cols = c("fsl_fcs_score",  
 #'
 #' @examples
 #' \dontrun{
-#'   plot_age_pyramid(df = hh_roster, sex_col = "sex", age_years_col = "age_years")
-#'   plot_age_pyramid(df = hh_roster, sex_col = "gender", age_years_col = "age",
+#'   plot_age_pyramid(survey_design = hh_roster, sex_col = "sex", age_years_col = "age_years")
+#'   plot_age_pyramid(survey_design = hh_roster, sex_col = "gender", age_years_col = "age",
 #'                    sex_male_val = "m", sex_female_val = "f")
-#'   plot_age_pyramid(df = hh_roster, sex_col = "sex", age_years_col = "age_years",
+#'   plot_age_pyramid(survey_design = hh_roster, sex_col = "sex", age_years_col = "age_years",
 #'                    weights_col = "survey_weight", weighted_result = TRUE)
 #' }
 plot_age_pyramid <- function (survey_design,
@@ -386,8 +386,8 @@ plot_age_pyramid <- function (survey_design,
 #'
 #' @examples
 #' \dontrun{
-#'   plot_age_distribution(df = children_data)
-#'   plot_age_distribution(df = children_data, year_or_month = "month",
+#'   plot_age_distribution(survey_design = children_data)
+#'   plot_age_distribution(survey_design = children_data, year_or_month = "month",
 #'                         min_age = 0, max_age = 59)
 #' }
 plot_age_distribution <- function (survey_design,
@@ -1350,7 +1350,7 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
 #'
 #' @examples
 #' \dontrun{
-#'   plot_iycf_areagraph(df = iycf_data)
+#'   plot_iycf_areagraph(survey_design = iycf_data)
 #' }
 
 #' Plot IYCF Area Graph
@@ -1405,7 +1405,7 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
 #'
 #' @examples
 #' \dontrun{
-#'   plot_iycf_areagraph(df = iycf_data)
+#'   plot_iycf_areagraph(survey_design = iycf_data)
 #' }
 
 plot_iycf_areagraph <- function(survey_design,
@@ -2148,7 +2148,7 @@ helper_runner_dps <- function(x) {
 #'
 #' @examples
 #' \dontrun{
-#'   plot_domain_radar(df = data,
+#'   plot_domain_radar(survey_design = data,
 #'                     domain_cols = c("food", "water", "health"),
 #'                     domain_labels = c("Food Security", "WASH", "Health"))
 #' }
@@ -2409,7 +2409,7 @@ plot_domain_radar <- function(survey_design,
 #'       response_labels = c("barrier.rudestaff" = "Rude Staff")
 #'     )
 #'   )
-#'   plot_domain_distribution(df = data, domain_list = domain_list)
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list)
 #' }
 #' @importFrom rlang .data
 
@@ -2460,14 +2460,14 @@ plot_domain_radar <- function(survey_design,
 #'     )
 #'   )
 #'   # Horizontal bars (default)
-#'   plot_domain_distribution(df = data, domain_list = domain_list)
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list)
 #'
 #'   # Vertical bars
-#'   plot_domain_distribution(df = data, domain_list = domain_list, flip_coordinates = FALSE,
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list, flip_coordinates = FALSE,
 #'                               legend_position = "bottom")
 #'
 #'   # Show percentages
-#'   plot_domain_distribution(df = data, domain_list = domain_list, show_percentage = TRUE)
+#'   plot_domain_distribution(survey_design = data, domain_list = domain_list, show_percentage = TRUE)
 #' }
 #' @importFrom rlang .data
 
@@ -6788,7 +6788,7 @@ table_frequency <- function(survey_design,
 
     df <- phr_get_data_from_design(survey_design)
 
-    is_srvyr <- TRUE
+    is_srvyr <- inherits(survey_design, "tbl_svy")
 
     # Validate inputs
     valid_stat_types <- c("percentage", "mean", "median", "ratio")
