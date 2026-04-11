@@ -49,13 +49,20 @@ safe_lgl <- function(x) if (length(x) == 1 && !is.null(x)) as.logical(x) else NA
 #'   \code{disaggregation}, \code{multiplier}, and \code{indicator_unit}.
 #' @param high_design_complexity Logical; if \code{TRUE}, triggers stricter
 #'   CI selection (e.g. logit-transformed CIs for proportions).
+#' @param include_overall Logical; for categorical indicators with
+#'   disaggregation, controls whether an overall (all-data) result is computed
+#'   in addition to the per-group results. Defaults to \code{FALSE} so only
+#'   per-group rows are returned.
 #'
 #' @return A tibble of analysis results, one row per indicator (or one row per
-#'   disaggregation group plus an overall row when disaggregation is specified).
+#'   disaggregation group when disaggregation is specified; an overall row is
+#'   added only for non-categorical indicators, or for categorical when
+#'   \code{include_overall = TRUE}).
 #' @noRd
 phr_calc_survey_from_plan <- function(design,
                                         analysis_plan,
-                                        high_design_complexity = FALSE) {
+                                        high_design_complexity = FALSE,
+                                        include_overall = FALSE) {
   origin <- "phr_calc_survey_from_plan"
   phr_message(origin, "Starting execution of data analysis plan...")
 
@@ -152,7 +159,8 @@ phr_calc_survey_from_plan <- function(design,
             indicator_unit = unit,
             multiplier = mult,
             group_name_label = group_value,
-            high_design_complexity = high_design_complexity
+            high_design_complexity = high_design_complexity,
+            include_overall = include_overall
           )
         } else {
           phr_warning(origin, paste("Unknown calculation type for indicator:", indicator))
@@ -220,7 +228,11 @@ phr_calc_survey_from_plan <- function(design,
         }
       })
 
-      overall_result <- run_single_calc(design, group_value = "Overall")
+      overall_result <- if (calc_type %in% c("categorical", "category", "cat") && !include_overall) {
+        NULL
+      } else {
+        run_single_calc(design, group_value = "Overall")
+      }
       combined <- dplyr::bind_rows(overall_result, group_results)
       results[[i]] <- combined
 
@@ -1357,6 +1369,10 @@ phr_calc_survey_ratio_single <- function(design,
 #'   group (e.g. \code{"Overall"} or a specific stratum value).
 #' @param high_design_complexity Logical; passed to
 #'   \code{\link{phr_calc_survey_prop_single}}.
+#' @param include_overall Logical; when \code{TRUE}, callers such as
+#'   \code{\link{phr_calc_survey_from_plan}} will also compute an overall
+#'   (all-data) result in addition to per-group results. Defaults to
+#'   \code{FALSE} so only per-group category rows are returned.
 #'
 #' @return A tibble with one row per category level, with the same columns as
 #'   \code{\link{phr_calc_survey_prop_single}}.
@@ -1368,7 +1384,8 @@ phr_calc_survey_categorical_single <- function(
     indicator_unit = "%",
     multiplier = 100,
     group_name_label = "Overall",
-    high_design_complexity = FALSE
+    high_design_complexity = FALSE,
+    include_overall = FALSE
 ) {
 
   data <- design$variables[[var_name]]
