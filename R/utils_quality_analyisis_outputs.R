@@ -5111,6 +5111,7 @@ plot_ci_bar_percentage <- function(survey_design,
   phr_try({
 
     df <- phr_get_data_from_design(survey_design)
+    is_survey <- inherits(survey_design, c("tbl_svy", "survey.design", "survey.design2", "svyrep.design"))
     # Apply ensure_value with non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     legend_position <- ensure_value(legend_position, "bottom")
@@ -5147,7 +5148,7 @@ plot_ci_bar_percentage <- function(survey_design,
 
     # Validate category_var
     phr_validate_not_null(category_var, origin = origin, soft = FALSE)
-    working_df <- if (is_survey) df$variables else df
+    working_df <- df
     phr_validate_columns(working_df, category_var, origin = origin,
                            hint = phr_txt(paste0("Category column '", category_var, "' must exist")),
                            soft = FALSE)
@@ -5171,7 +5172,7 @@ plot_ci_bar_percentage <- function(survey_design,
       if (!has_grouping) {
         # Single overall call
         calc_df <- phr_calc_survey_categorical_single(
-          design          = df,
+          design          = survey_design,
           var_name        = category_var,
           indicator_name  = ind_label,
           group_name_label = "Overall"
@@ -5188,11 +5189,11 @@ plot_ci_bar_percentage <- function(survey_design,
 
       } else {
         # Per-group: filter design and call for each group value
-        group_vals <- unique(df$variables[[grouping]])
+        group_vals <- unique(df[[grouping]])
         group_vals <- group_vals[!is.na(group_vals)]
 
         calc_list <- lapply(group_vals, function(gv) {
-          dsn_g <- dplyr::filter(df, !!rlang::sym(grouping) == gv)
+          dsn_g <- dplyr::filter(survey_design, !!rlang::sym(grouping) == gv)
           r <- phr_calc_survey_categorical_single(
             design           = dsn_g,
             var_name         = category_var,
@@ -5214,7 +5215,7 @@ plot_ci_bar_percentage <- function(survey_design,
       }
 
       # subtitle: use weighted n from results
-      total_n <- if ("n_unweighted" %in% names(df_plot)) sum(df_plot$n_unweighted, na.rm = TRUE) else nrow(df$variables)
+      total_n <- if ("n_unweighted" %in% names(df_plot)) sum(df_plot$n_unweighted, na.rm = TRUE) else nrow(df)
       auto_subtitle <- sprintf("n = %d (survey design)", as.integer(total_n))
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
@@ -5461,6 +5462,7 @@ plot_ci_point_mean <- function(survey_design,
   phr_try({
 
     df <- phr_get_data_from_design(survey_design)
+    is_survey <- inherits(survey_design, c("tbl_svy", "survey.design", "survey.design2", "svyrep.design"))
     # Apply ensure_value with non-NULL defaults
     color_palette <- ensure_value(color_palette, "reach1")
     legend_position <- ensure_value(legend_position, "bottom")
@@ -5513,7 +5515,7 @@ plot_ci_point_mean <- function(survey_design,
     if (y_lab == "") y_lab <- NULL
     if (legend_label == "") legend_label <- NULL
 
-    working_df <- if (is_survey) df$variables else df
+    working_df <- df
 
     # Validate numeric_var
     phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
@@ -5583,7 +5585,7 @@ plot_ci_point_mean <- function(survey_design,
       }
 
       if (!has_grouping) {
-        calc_df <- .calc_one(df, "Overall")
+        calc_df <- .calc_one(survey_design, "Overall")
         stats_df <- data.frame(
           x_var    = "Overall",
           est      = calc_df$point.estimate,
@@ -5593,11 +5595,11 @@ plot_ci_point_mean <- function(survey_design,
           stringsAsFactors = FALSE
         )
       } else {
-        group_vals <- unique(df$variables[[grouping]])
+        group_vals <- unique(df[[grouping]])
         group_vals <- group_vals[!is.na(group_vals)]
 
         stats_list <- lapply(group_vals, function(gv) {
-          dsn_g <- dplyr::filter(df, !!rlang::sym(grouping) == gv)
+          dsn_g <- dplyr::filter(survey_design, !!rlang::sym(grouping) == gv)
           r <- .calc_one(dsn_g, as.character(gv))
           data.frame(
             x_var    = as.character(gv),
