@@ -220,7 +220,7 @@ good_deaths <- DeathIndividualData$new(
 
   fsl_analytics$quality_issues_log
 
-  fsl_analytics$tables$plausibility$penalty_summary_by_enum_id
+  fsl_analytics$tables$plausibility$penalty_summary
 
   fsl_analytics$visualizations$survey_design
 
@@ -254,6 +254,15 @@ good_deaths <- DeathIndividualData$new(
   (c <- sum(mortality_analyics$data$linked_person_time_male))
   (d <- sum(mortality_analyics$data$linked_person_time_under5))
 
+  fsl_analytics$analysis_diagnose()
+  View(fsl_analytics$analysis_plan_issues_log)
+
+  fsl_analytics$quality_diagnose()
+  fsl_analytics$quality_issues_log
+
+  fsl_analytics$outputs_diagnose()
+  View(fsl_analytics$outputs_issues_log)
+
   # Create Nutrition Data Analytics Object ####
 
   nut_analytics <- good_nutrition$generate_data_analytics(stage = "standardized", type = "nutrition")
@@ -262,14 +271,13 @@ good_deaths <- DeathIndividualData$new(
   nut_analytics$run_quality_checks()
   nut_analytics$run_outputs()
 
-  nut_analytics$analysis_results$base
+  nut_analytics$analysis_results$survey_design
 
-   nut_analytics$visualizations$base$mfaz_boxplot_overall
+  nut_analytics$visualizations$base$mfaz_cat_overall
 
   nut_analytics$data_analysis_plan$log_df
 
-  nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
-  nut_analytics$tables$plausibility_results
+  nut_analytics$tables$plausibility_anthro$penalty_summary
 
   nut_analytics$visualizations$base$mfaz_cat_overall
   nut_analytics$visualizations$base$muac_cat_overall

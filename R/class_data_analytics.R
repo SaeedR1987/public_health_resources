@@ -1270,7 +1270,7 @@ DataAnalytics <- R6::R6Class(
 
       origin <- paste0(self$dataset_name, "$analysis_diagnose")
 
-      valid_calcs <- c("prop", "mean", "median", "ratio", "categorical")
+      valid_calcs <- c("prop", "mean", "median", "ratio", "cat", "categorical")
 
       empty_result <- tibble::tibble(
         indicator_name          = character(),
