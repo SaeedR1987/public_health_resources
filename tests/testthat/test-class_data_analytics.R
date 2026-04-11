@@ -562,3 +562,48 @@ test_that("load_state_object restores plausibility_results", {
   da2$load_state_object(state)
   expect_equal(da2$plausibility_results, da$plausibility_results)
 })
+
+# ============================================================================
+# NutritionDataAnalytics – quality_diagnose
+# ============================================================================
+
+test_that("NutritionDataAnalytics$quality_diagnose returns a tibble covering both schemas", {
+  df <- tibble::tibble(id = 1:5, age_months = 6:10, weight_kg = c(7, 8, 9, 10, 11))
+  nut <- NutritionDataAnalytics$new(data = df, dataset_name = "NutQDiag")
+
+  nut$quality_schema_anthro <- list(
+    check_anthro = list(
+      check_name = "check_anthro", check_label = "Anthro check",
+      statistical_test = "range_violation",
+      variables = c("age_months"),
+      thresholds = list(), test_params = list()
+    )
+  )
+  nut$quality_schema_iycf <- list(
+    check_iycf = list(
+      check_name = "check_iycf", check_label = "IYCF check",
+      statistical_test = "range_violation",
+      variables = c("weight_kg"),
+      thresholds = list(), test_params = list()
+    )
+  )
+
+  result <- nut$quality_diagnose()
+
+  expect_true(tibble::is_tibble(result))
+  expect_true(nrow(result) >= 2)
+  expect_true("schema_type" %in% names(result))
+  expect_true("anthropometric" %in% result$schema_type)
+  expect_true("iycf"           %in% result$schema_type)
+  expect_true(tibble::is_tibble(nut$quality_issues_log))
+})
+
+test_that("NutritionDataAnalytics$quality_diagnose does not error when schemas are empty", {
+  df <- tibble::tibble(id = 1:5)
+  nut <- NutritionDataAnalytics$new(data = df, dataset_name = "NutQDiagEmpty")
+  nut$quality_schema_anthro <- list()
+  nut$quality_schema_iycf   <- list()
+
+  expect_warning(result <- nut$quality_diagnose(), NA)
+  expect_true(is.null(result) || tibble::is_tibble(result))
+})

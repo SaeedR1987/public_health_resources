@@ -140,7 +140,7 @@ NutritionDataAnalytics <- R6::R6Class(
             test_params      <- check$test_params      %||% list()
             thresholds       <- check$thresholds       %||% list()
 
-            mapped_vars  <- private$.translate_canonical_to_actual_vars(variables)
+            mapped_vars  <- self$.translate_canonical_to_actual_vars(variables)
             missing_vars <- setdiff(mapped_vars, data_cols)
             vars_in_data <- length(missing_vars) == 0
 
