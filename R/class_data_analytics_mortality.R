@@ -82,6 +82,8 @@ MortalityDataAnalytics <- R6::R6Class(
     # Per-dataset survey design objects
     survey_design_roster = NULL,
     survey_design_deaths = NULL,
+    base_survey_design_roster = NULL,
+    base_survey_design_deaths = NULL,
 
     #' @description
     #' Initialize a new MortalityDataAnalytics object
@@ -258,6 +260,12 @@ MortalityDataAnalytics <- R6::R6Class(
 
       # Create and store per-dataset survey designs for roster and deaths
       if (!is.null(linked_ind_roster_data)) {
+        self$base_survey_design_roster <- phr_try(
+          srvyr::as_survey_design(.data = linked_ind_roster_data, ids = 1),
+          on_error = "warn",
+          origin   = paste0(dataset_name, "$initialize"),
+          hint     = "Could not create base (unweighted) survey design for roster data."
+        )
         self$survey_design_roster <- private$.create_survey_design_for_dataset(
           data         = linked_ind_roster_data,
           variable_map = linked_ind_roster_variable_map %||% merged_variable_map,
@@ -266,6 +274,12 @@ MortalityDataAnalytics <- R6::R6Class(
       }
 
       if (!is.null(linked_ind_deaths_data)) {
+        self$base_survey_design_deaths <- phr_try(
+          srvyr::as_survey_design(.data = linked_ind_deaths_data, ids = 1),
+          on_error = "warn",
+          origin   = paste0(dataset_name, "$initialize"),
+          hint     = "Could not create base (unweighted) survey design for deaths data."
+        )
         self$survey_design_deaths <- private$.create_survey_design_for_dataset(
           data         = linked_ind_deaths_data,
           variable_map = linked_ind_deaths_variable_map %||% merged_variable_map,

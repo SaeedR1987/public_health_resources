@@ -112,7 +112,7 @@ AnthropometricDataQuality <- R6::R6Class(
     #' @description
     #' Get the default Anthropometric outputs schema from template file
     #'
-    #' Reads the outputs_quality_schema_data_quality_anthropometric_template.xlsx file from package resources
+    #' Reads the outputs_schema_data_analytics_nutrition_template.xlsx file from package resources
     #' and converts it to a nested list of outputs definitions.
     #'
     #' @return A list of anthropometric-specific outputs definitions
@@ -120,12 +120,12 @@ AnthropometricDataQuality <- R6::R6Class(
 
       file <- system.file(
         "resources",
-        "outputs_quality_schema_data_quality_anthropometric_template.xlsx",
+        "outputs_schema_data_analytics_nutrition_template.xlsx",
         package = "iphRa"
       )
 
       if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_quality_schema_data_quality_anthropometric_template.xlsx")
+        file <- file.path("resources", "outputs_schema_data_analytics_nutrition_template.xlsx")
         if (!file.exists(file)) {
           return(list())
         }
@@ -136,7 +136,7 @@ AnthropometricDataQuality <- R6::R6Class(
         error = function(e) {
           phr_warning(
             origin  = "AnthropometricDataQuality$default_outputs_schema",
-            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_anthropometric_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_schema_data_analytics_nutrition_template.xlsx: {e$message}"))
           )
           return(NULL)
         }

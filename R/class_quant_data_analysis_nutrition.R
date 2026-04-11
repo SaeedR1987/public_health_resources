@@ -48,12 +48,12 @@ NutritionAnalysis <- R6::R6Class(
     default_outputs_schema = function() {
       file <- system.file(
         "resources",
-        "outputs_analysis_schema_quant_data_analysis_nutrition_template.xlsx",
+        "outputs_schema_data_analytics_nutrition_template.xlsx",
         package = "iphRa"
       )
 
       if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_analysis_schema_quant_data_analysis_nutrition_template.xlsx")
+        file <- file.path("resources", "outputs_schema_data_analytics_nutrition_template.xlsx")
         if (!file.exists(file)) {
           return(list())
         }
@@ -63,7 +63,7 @@ NutritionAnalysis <- R6::R6Class(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin  = "NutritionAnalysis$default_outputs_schema",
-        hint = "Check that outputs_analysis_schema_quant_data_analysis_nutrition_template.xlsx is a valid Excel file."
+        hint = "Check that outputs_schema_data_analytics_nutrition_template.xlsx is a valid Excel file."
       )
 
       if (is.null(df) || nrow(df) == 0) {

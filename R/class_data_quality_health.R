@@ -169,7 +169,7 @@ HealthDataQuality <- R6::R6Class(
     #' @description
     #' Get the default Health outputs schema from template file
     #'
-    #' Reads the outputs_quality_schema_data_quality_health_template.xlsx file from package resources
+    #' Reads the outputs_schema_data_analytics_health_template.xlsx file from package resources
     #' and converts it to a nested list of outputs definitions.
     #'
     #' @return A list of health-specific outputs definitions
@@ -177,12 +177,12 @@ HealthDataQuality <- R6::R6Class(
 
       file <- system.file(
         "resources",
-        "outputs_quality_schema_data_quality_health_template.xlsx",
+        "outputs_schema_data_analytics_health_template.xlsx",
         package = "iphRa"
       )
 
       if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_quality_schema_data_quality_health_template.xlsx")
+        file <- file.path("resources", "outputs_schema_data_analytics_health_template.xlsx")
         if (!file.exists(file)) {
           return(list())
         }
@@ -193,7 +193,7 @@ HealthDataQuality <- R6::R6Class(
         error = function(e) {
           phr_warning(
             origin  = "HealthDataQuality$default_outputs_schema",
-            message = phr_txt(glue::glue("Failed to read outputs_quality_schema_data_quality_health_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_schema_data_analytics_health_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
