@@ -2156,6 +2156,7 @@ DataAnalytics <- R6::R6Class(
         visualizations               = self$visualizations,
         tables                       = self$tables,
         survey_design                = self$survey_design,
+        base_survey_design           = self$base_survey_design,
         quality_issues_log           = self$quality_issues_log,
         analysis_plan_issues_log     = self$analysis_plan_issues_log,
         outputs_issues_log           = self$outputs_issues_log
@@ -2192,6 +2193,9 @@ DataAnalytics <- R6::R6Class(
 
       if (!is.null(state$survey_design)) {
         self$survey_design <- state$survey_design
+      }
+      if (!is.null(state$base_survey_design)) {
+        self$base_survey_design <- state$base_survey_design
       }
 
       invisible(self)

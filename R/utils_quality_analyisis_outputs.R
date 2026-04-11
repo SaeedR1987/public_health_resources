@@ -2872,46 +2872,33 @@ plot_stacked_bar <- function(survey_design,
       legend_label <- fill_var
     }
 
-    # Prepare data
+    # Prepare data using phr_calc_survey_categorical_single for consistent
+    # survey-weighted proportions that match run_analysis outputs.
+    ind_label  <- variable_label %||% fill_var
+    cat_prefix <- paste0(ind_label, " - ")
+
     if (is.null(grouping)) {
-      # Overall plot
-      if (weighted) {
-        # Weighted calculation
-        df_plot <- df %>%
-          dplyr::filter(
-            (show_NA | !is.na(!!rlang::sym(fill_var))) &
-              !is.na(!!rlang::sym(weights_col))
-          ) %>%
-          dplyr::group_by(!!rlang::sym(fill_var)) %>%
-          dplyr::summarise(
-            weighted_n = sum(!!rlang::sym(weights_col)),
-            n = dplyr::n(),
-            .groups = "drop"
-          ) %>%
-          dplyr::mutate(
-            percentage = weighted_n / sum(weighted_n) * 100,
-            group = "Overall",
-            label = sprintf("%.1f%%", percentage)
-          )
+      # Overall plot — use phr_calc_survey_categorical_single
+      calc_df <- phr_calc_survey_categorical_single(
+        design           = survey_design,
+        var_name         = fill_var,
+        indicator_name   = ind_label,
+        multiplier       = 100
+      )
 
-        total_n <- sum(df_plot$n)
-        total_weighted_n <- sum(df_plot$weighted_n)
-        auto_subtitle <- sprintf("n = %d (weighted n = %.0f)", total_n, total_weighted_n)
+      df_plot <- calc_df %>%
+        dplyr::mutate(
+          !!rlang::sym(fill_var) := gsub(cat_prefix, "", .data$indicator_name, fixed = TRUE),
+          percentage             = .data$point.estimate,
+          group                  = "Overall",
+          n                      = as.integer(.data$n_unweighted),
+          label                  = sprintf("%.1f%%", .data$point.estimate)
+        ) %>%
+        dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var)))
 
-      } else {
-        # Unweighted calculation
-        df_plot <- df %>%
-          dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var))) %>%
-          dplyr::count(!!rlang::sym(fill_var), name = "n") %>%
-          dplyr::mutate(
-            percentage = n / sum(n) * 100,
-            group = "Overall",
-            label = sprintf("%.1f%% (%d)", percentage, n)
-          )
-
-        total_n <- sum(df_plot$n)
-        auto_subtitle <- sprintf("n = %d", total_n)
-      }
+      total_n          <- sum(df_plot$n, na.rm = TRUE)
+      total_weighted_n <- sum(calc_df$n_weighted, na.rm = TRUE)
+      auto_subtitle    <- sprintf("n = %d (weighted n = %.0f)", total_n, total_weighted_n)
 
       # Determine number of colors needed
       if (is.factor(df[[fill_var]])) {
@@ -2964,100 +2951,56 @@ plot_stacked_bar <- function(survey_design,
         overall_label <- "Overall"
       }
 
-      if (weighted) {
-        # Weighted calculation by group
-        df_plot <- df %>%
-          dplyr::filter(
-            (show_NA | !is.na(!!rlang::sym(fill_var))) &
-              !is.na(!!rlang::sym(grouping)) &
-              !is.na(!!rlang::sym(weights_col))
-          ) %>%
-          dplyr::group_by(!!rlang::sym(grouping), !!rlang::sym(fill_var)) %>%
-          dplyr::summarise(
-            weighted_n = sum(!!rlang::sym(weights_col)),
-            n = dplyr::n(),
-            .groups = "drop_last"
-          ) %>%
-          dplyr::mutate(
-            percentage = weighted_n / sum(weighted_n) * 100,
-            label = sprintf("%.1f%%", percentage)
-          ) %>%
-          dplyr::ungroup() %>%
-          dplyr::mutate(!!rlang::sym(grouping) := as.character(!!rlang::sym(grouping)))
+      group_vals <- unique(df[[grouping]])
+      group_vals <- group_vals[!is.na(group_vals)]
 
-        # Optionally prepend an overall bar
-        if (show_overall) {
-          df_overall <- df %>%
-            dplyr::filter(
-              (show_NA | !is.na(!!rlang::sym(fill_var))) &
-                !is.na(!!rlang::sym(weights_col))
-            ) %>%
-            dplyr::group_by(!!rlang::sym(fill_var)) %>%
-            dplyr::summarise(
-              weighted_n = sum(!!rlang::sym(weights_col)),
-              n = dplyr::n(),
-              .groups = "drop"
-            ) %>%
-            dplyr::mutate(
-              percentage = weighted_n / sum(weighted_n) * 100,
-              label = sprintf("%.1f%%", percentage),
-              !!rlang::sym(grouping) := overall_label
-            )
-          df_plot <- dplyr::bind_rows(df_overall, df_plot)
-        }
+      calc_list <- lapply(group_vals, function(gv) {
+        dsn_g <- dplyr::filter(survey_design, !!rlang::sym(grouping) == gv)
+        r <- phr_calc_survey_categorical_single(
+          design           = dsn_g,
+          var_name         = fill_var,
+          indicator_name   = ind_label,
+          multiplier       = 100
+        )
+        r[[grouping]] <- as.character(gv)
+        r
+      })
 
-        # Create subtitle with n and weighted n by group
-        n_by_group <- df_plot %>%
-          dplyr::filter(!show_overall | !!rlang::sym(grouping) != overall_label) %>%
-          dplyr::group_by(!!rlang::sym(grouping)) %>%
-          dplyr::summarise(
-            total = sum(n),
-            total_weighted = sum(weighted_n),
-            .groups = "drop"
-          ) %>%
-          dplyr::mutate(group_label = sprintf("%s (n=%d, wn=%.0f)",
-                                              !!rlang::sym(grouping), total, total_weighted))
-
-        auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
-
-      } else {
-        # Unweighted calculation by group
-        df_plot <- df %>%
-          dplyr::filter(
-            (show_NA | !is.na(!!rlang::sym(fill_var))) &
-              !is.na(!!rlang::sym(grouping))
-          ) %>%
-          dplyr::group_by(!!rlang::sym(grouping), !!rlang::sym(fill_var)) %>%
-          dplyr::summarise(n = dplyr::n(), .groups = "drop_last") %>%
-          dplyr::mutate(
-            percentage = n / sum(n) * 100,
-            label = sprintf("%.1f%% (%d)", percentage, n)
-          ) %>%
-          dplyr::ungroup() %>%
-          dplyr::mutate(!!rlang::sym(grouping) := as.character(!!rlang::sym(grouping)))
-
-        # Optionally prepend an overall bar
-        if (show_overall) {
-          df_overall <- df %>%
-            dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var))) %>%
-            dplyr::count(!!rlang::sym(fill_var), name = "n") %>%
-            dplyr::mutate(
-              percentage = n / sum(n) * 100,
-              label = sprintf("%.1f%% (%d)", percentage, n),
-              !!rlang::sym(grouping) := overall_label
-            )
-          df_plot <- dplyr::bind_rows(df_overall, df_plot)
-        }
-
-        # Create subtitle with n by group (exclude the overall bar from subtitle counts)
-        n_by_group <- df_plot %>%
-          dplyr::filter(!show_overall | !!rlang::sym(grouping) != overall_label) %>%
-          dplyr::group_by(!!rlang::sym(grouping)) %>%
-          dplyr::summarise(total = sum(n), .groups = "drop") %>%
-          dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), total))
-
-        auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
+      if (show_overall) {
+        r_overall <- phr_calc_survey_categorical_single(
+          design           = survey_design,
+          var_name         = fill_var,
+          indicator_name   = ind_label,
+          multiplier       = 100
+        )
+        r_overall[[grouping]] <- overall_label
+        calc_list <- c(list(r_overall), calc_list)
       }
+
+      calc_df_all <- dplyr::bind_rows(calc_list)
+
+      df_plot <- calc_df_all %>%
+        dplyr::mutate(
+          !!rlang::sym(fill_var) := gsub(cat_prefix, "", .data$indicator_name, fixed = TRUE),
+          percentage             = .data$point.estimate,
+          n                      = as.integer(.data$n_unweighted),
+          label                  = sprintf("%.1f%%", .data$point.estimate),
+          !!rlang::sym(grouping) := as.character(.data[[grouping]])
+        ) %>%
+        dplyr::filter(show_NA | !is.na(!!rlang::sym(fill_var)))
+
+      # Build subtitle from group-level sample sizes
+      n_by_group <- df_plot %>%
+        dplyr::filter(!show_overall | .data[[grouping]] != overall_label) %>%
+        dplyr::group_by(!!rlang::sym(grouping)) %>%
+        dplyr::summarise(
+          total_n          = sum(.data$n, na.rm = TRUE),
+          total_weighted_n = sum(calc_df_all$n_weighted[calc_df_all[[grouping]] == dplyr::cur_group()[[grouping]]], na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        dplyr::mutate(group_label = sprintf("%s (n=%d, wn=%.0f)", .data[[grouping]], total_n, total_weighted_n))
+
+      auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
 
       # Determine number of colors needed
       if (is.factor(df[[fill_var]])) {
@@ -6025,75 +5968,73 @@ plot_donut <- function(survey_design,
 
     # Auto-subtitle with n
     total_n <- nrow(df)
-    if (weighted) {
-      auto_subtitle <- sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE))
+    total_weighted_n <- tryCatch(sum(survey_design$prob^(-1), na.rm = TRUE), error = function(e) NA_real_)
+    if (!is.na(total_weighted_n) && total_weighted_n != total_n) {
+      auto_subtitle <- sprintf("n = %d (weighted n = %.0f)", total_n, total_weighted_n)
     } else {
       auto_subtitle <- sprintf("n = %d", total_n)
     }
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-    # Calculate proportions - SPLIT INTO SEPARATE BLOCKS
+    # Calculate proportions using phr_calc_survey_categorical_single for
+    # consistency with run_analysis outputs (unless value_var is specified,
+    # which aggregates a numeric value rather than counting observations).
     category_sym <- rlang::sym(category_var)
-    df <- df %>% dplyr::filter(!is.na(!!category_sym))
+    ind_label    <- variable_label %||% category_var
+    cat_prefix   <- paste0(ind_label, " - ")
 
     has_value_var <- !is.null(value_var)
 
-    if (has_value_var) {
-      value_sym <- rlang::sym(value_var)
+    if (!has_value_var) {
+      # Use phr_calc for consistent survey-weighted proportions
+      calc_df <- phr_calc_survey_categorical_single(
+        design           = survey_design,
+        var_name         = category_var,
+        indicator_name   = ind_label,
+        multiplier       = 100
+      )
 
-      if (weighted) {
-        weights_sym <- rlang::sym(weights_col)
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            value_sum = sum(!!weights_sym * !!value_sym, na.rm = TRUE),
-            count = dplyr::n(),
-            .groups = "drop"
-          )
-      } else {
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            value_sum = sum(!!value_sym, na.rm = TRUE),
-            count = dplyr::n(),
-            .groups = "drop"
-          )
-      }
-
-      # When value_var is provided, use value_sum for proportions
-      df_plot <- df_plot %>%
-        dplyr::mutate(n = value_sum)
+      df_plot <- calc_df %>%
+        dplyr::mutate(
+          !!category_sym := factor(
+            gsub(cat_prefix, "", .data$indicator_name, fixed = TRUE)
+          ),
+          n     = .data$n_unweighted,
+          count = as.integer(.data$n_unweighted),
+          pct   = .data$point.estimate
+        ) %>%
+        dplyr::filter(!is.na(!!category_sym)) %>%
+        dplyr::arrange(dplyr::desc(pct)) %>%
+        dplyr::mutate(
+          ymax      = cumsum(pct),
+          ymin      = dplyr::lag(ymax, default = 0),
+          label_pos = (ymax + ymin) / 2
+        )
 
     } else {
-      if (weighted) {
-        weights_sym <- rlang::sym(weights_col)
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            n = sum(!!weights_sym, na.rm = TRUE),
-            count = dplyr::n(),
-            .groups = "drop"
-          )
-      } else {
-        df_plot <- df %>%
-          dplyr::group_by(!!category_sym) %>%
-          dplyr::summarise(
-            n = dplyr::n(),
-            .groups = "drop"
-          ) %>%
-          dplyr::mutate(count = n)
-      }
-    }
+      # When value_var is provided, fall back to direct aggregation on extracted df
+      phr_validate_columns(df, value_var, origin = origin,
+                             hint = phr_txt(paste0("Value column '", value_var, "' must exist")),
+                             soft = FALSE)
+      phr_validate_all_numeric(df[[value_var]], origin = origin, soft = FALSE)
 
-    # Calculate percentages and labels
-    df_plot <- df_plot %>%
-      dplyr::arrange(dplyr::desc(n)) %>%
-      dplyr::mutate(
-        pct = n / sum(n) * 100,
-        ymax = cumsum(pct),
-        ymin = dplyr::lag(ymax, default = 0),
-        label_pos = (ymax + ymin) / 2
-      )
+      value_sym <- rlang::sym(value_var)
+      df_plot <- df %>%
+        dplyr::filter(!is.na(!!category_sym)) %>%
+        dplyr::group_by(!!category_sym) %>%
+        dplyr::summarise(
+          n     = sum(!!value_sym, na.rm = TRUE),
+          count = dplyr::n(),
+          .groups = "drop"
+        ) %>%
+        dplyr::arrange(dplyr::desc(n)) %>%
+        dplyr::mutate(
+          pct       = n / sum(n) * 100,
+          ymax      = cumsum(pct),
+          ymin      = dplyr::lag(ymax, default = 0),
+          label_pos = (ymax + ymin) / 2
+        )
+    }
 
     # Create labels based on what we're displaying
     if (has_value_var) {
