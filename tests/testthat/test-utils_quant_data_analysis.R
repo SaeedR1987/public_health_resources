@@ -363,8 +363,10 @@ test_that("phr_calc_survey_categorical_single returns only category rows regardl
 
   design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
 
-  # include_overall has no internal effect; it is used by callers like
-  # phr_calc_survey_from_plan to decide whether to compute the overall group
+  # include_overall is a pass-through parameter for callers like
+  # phr_calc_survey_from_plan. It has no effect within phr_calc_survey_categorical_single
+  # itself; this test confirms that setting include_overall = TRUE does not
+  # add extra rows to the function's own output.
   out <- phr_calc_survey_categorical_single(
     design = design,
     var_name = "cat",
@@ -372,7 +374,8 @@ test_that("phr_calc_survey_categorical_single returns only category rows regardl
     include_overall = TRUE
   )
 
-  # Still returns one row per category only
+  # phr_calc_survey_categorical_single always returns exactly one row per
+  # category, regardless of include_overall
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 3)
   expect_true(any(grepl("FCS Category - Low", out$indicator_name)))
