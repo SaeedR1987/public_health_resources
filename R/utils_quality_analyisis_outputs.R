@@ -8244,7 +8244,7 @@ table_frequency_v2 <- function(survey_design,
 
         per_group <- lapply(group_levels, function(g) {
           design_sub <- tryCatch(
-            subset(survey_design, survey_design$variables[[disagg]] == g),
+            subset(survey_design, df[[disagg]] == g),
             error = function(e) {
               phr_warning(origin, paste("Subset failed for", disagg, "=", g))
               NULL
