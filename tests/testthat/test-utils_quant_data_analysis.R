@@ -339,7 +339,7 @@ test_that("phr_calc_survey_categorical_single extracts all categories and comput
     indicator_name = "FCS Category"
   )
 
-  # Should return one row per category (no overall by default)
+  # Should return one row per category
   expect_s3_class(out, "tbl_df")
   expect_equal(nrow(out), 3)
 
@@ -352,35 +352,6 @@ test_that("phr_calc_survey_categorical_single extracts all categories and comput
   expect_equal(out$point.estimate[out$variable == "cat" & grepl("FCS Category - Low", out$indicator_name)], 50)
   expect_equal(out$point.estimate[out$variable == "cat" & grepl("FCS Category - Borderline", out$indicator_name)], 25)
   expect_equal(out$point.estimate[out$variable == "cat" & grepl("FCS Category - Acceptable", out$indicator_name)], 25)
-})
-
-test_that("phr_calc_survey_categorical_single returns only category rows regardless of include_overall", {
-
-  df <- tibble::tibble(
-    cat = factor(c("Low", "Borderline", "Acceptable", "Low")),
-    wt  = c(1, 1, 1, 1)
-  )
-
-  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
-
-  # include_overall is a pass-through parameter for callers like
-  # phr_calc_survey_from_plan. It has no effect within phr_calc_survey_categorical_single
-  # itself; this test confirms that setting include_overall = TRUE does not
-  # add extra rows to the function's own output.
-  out <- phr_calc_survey_categorical_single(
-    design = design,
-    var_name = "cat",
-    indicator_name = "FCS Category",
-    include_overall = TRUE
-  )
-
-  # phr_calc_survey_categorical_single always returns exactly one row per
-  # category, regardless of include_overall
-  expect_s3_class(out, "tbl_df")
-  expect_equal(nrow(out), 3)
-  expect_true(any(grepl("FCS Category - Low", out$indicator_name)))
-  expect_true(any(grepl("FCS Category - Borderline", out$indicator_name)))
-  expect_true(any(grepl("FCS Category - Acceptable", out$indicator_name)))
 })
 
 # Testing Survey Calc from Plan ####
@@ -519,9 +490,9 @@ test_that("phr_calc_survey_from_plan correctly performs disaggregation", {
 
   out <- phr_calc_survey_from_plan(design, plan)
 
-  # Should have: Overall + A + B = 3 rows
-  expect_equal(nrow(out), 3)
-  expect_setequal(out$disaggregation_value, c("Overall","A","B"))
+  # Should have: A + B only (no Overall when disaggregation is specified)
+  expect_equal(nrow(out), 2)
+  expect_setequal(out$disaggregation_value, c("A","B"))
 })
 
 test_that("phr_calc_survey_from_plan gracefully handles missing variables", {
@@ -749,12 +720,12 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with disaggr
 
   # ------------------------------------------------------
   # Expected rows:
-  #   PROP → 3 groups (A, B, Overall)
-  #   MEAN → 3 groups
-  #   CAT  → 3 categories × 2 groups (A, B only, no Overall by default) = 6
-  #   TOTAL = 3 + 3 + 6 = 12
+  #   PROP → 2 groups (A, B)
+  #   MEAN → 2 groups
+  #   CAT  → 3 categories × 2 groups = 6
+  #   TOTAL = 2 + 2 + 6 = 10
   # ------------------------------------------------------
-  expect_equal(nrow(out), 12)
+  expect_equal(nrow(out), 10)
 
   # ------------------------------------------------------
   # Categorical indicator names expand correctly
@@ -767,15 +738,13 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with disaggr
     "CatVar - High"
   )))
 
-  # Categorical rows should not include an Overall group by default
-  expect_false("Overall" %in% cat_rows$disaggregation_value)
-
   # ------------------------------------------------------
-  # Disaggregation column should exist and contain correct levels
-  # (Overall appears for non-categorical indicators only)
+  # Disaggregation column should exist and contain only the group levels
+  # (no Overall row when disaggregation is requested)
   # ------------------------------------------------------
   expect_true("disaggregation_value" %in% names(out))
-  expect_true(all(c("A", "B", "Overall") %in% out$disaggregation_value))
+  expect_true(all(c("A", "B") %in% out$disaggregation_value))
+  expect_false("Overall" %in% out$disaggregation_value)
 
   # Basic structure checks
   expect_s3_class(out, "tbl_df")
@@ -834,12 +803,12 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with stratif
 
   # ------------------------------------------------------
   # Expected rows:
-  #   PROP → 3 groups (G1, G2, Overall)
-  #   MEAN → 3 groups
-  #   CAT  → 3 categories × 2 groups (G1, G2 only, no Overall by default) = 6
-  #   TOTAL = 3 + 3 + 6 = 12
+  #   PROP → 2 groups (G1, G2)
+  #   MEAN → 2 groups
+  #   CAT  → 3 categories × 2 groups = 6
+  #   TOTAL = 2 + 2 + 6 = 10
   # ------------------------------------------------------
-  expect_equal(nrow(out), 12)
+  expect_equal(nrow(out), 10)
 
   # ------------------------------------------------------
   # Confirm categorical expansion works
@@ -852,15 +821,12 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with stratif
     "CatVar - High"
   )))
 
-  # Categorical rows should not include an Overall group by default
-  expect_false("Overall" %in% cat_rows$disaggregation_value)
-
   # ------------------------------------------------------
-  # Check disaggregation values exist
-  # (Overall appears for non-categorical indicators only)
+  # Check disaggregation values exist and no Overall row is added
   # ------------------------------------------------------
   expect_true("disaggregation_value" %in% names(out))
-  expect_true(all(c("G1", "G2", "Overall") %in% out$disaggregation_value))
+  expect_true(all(c("G1", "G2") %in% out$disaggregation_value))
+  expect_false("Overall" %in% out$disaggregation_value)
 
   # ------------------------------------------------------
   # Complex design metadata present
@@ -869,36 +835,6 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with stratif
 
   # CIs should be numeric even under stratified-cluster design
   expect_true(all(is.numeric(out$lower_ci) | is.na(out$lower_ci)))
-})
-
-test_that("phr_calc_survey_from_plan includes Overall for categorical when include_overall = TRUE", {
-
-  df <- tibble::tibble(
-    cat = factor(rep(c("Low", "Medium", "High"), 4)),
-    grp = rep(c("A", "B"), each = 6),
-    wt  = 1
-  )
-
-  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
-
-  dap <- tibble::tibble(
-    indicator_name = "CatVar",
-    calculation    = "categorical",
-    var_name       = "cat",
-    denom_var      = NA,
-    disaggregation = "grp",
-    multiplier     = 100,
-    indicator_unit = "%"
-  )
-
-  out <- phr_calc_survey_from_plan(design, dap, include_overall = TRUE)
-
-  cat_rows <- out %>% dplyr::filter(stringr::str_starts(indicator_name, "CatVar"))
-
-  # With include_overall = TRUE, Overall group should be present for categorical too
-  expect_true("Overall" %in% cat_rows$disaggregation_value)
-  # 3 categories × 3 groups (A, B, Overall) = 9 rows
-  expect_equal(nrow(cat_rows), 9)
 })
 
 test_that("phr_calc_survey_from_plan returns columns in canonical order", {
