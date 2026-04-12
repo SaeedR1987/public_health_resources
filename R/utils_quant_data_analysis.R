@@ -154,6 +154,16 @@ phr_calc_survey_from_plan <- function(design,
             group_name_label = group_value,
             high_design_complexity = high_design_complexity
           )
+        } else if (calc_type %in% c("select_multiple_cat")) {
+          phr_calc_multiple_choice_cat(
+            design = design_subset,
+            var_name = var_name,
+            indicator_name = indicator,
+            indicator_unit = unit,
+            multiplier = mult,
+            group_name_label = group_value,
+            high_design_complexity = high_design_complexity
+          )
         } else {
           phr_warning(origin, paste("Unknown calculation type for indicator:", indicator))
           tibble::tibble(
@@ -1398,5 +1408,170 @@ phr_calc_survey_categorical_single <- function(
     out
   })
 
+  return(results)
+}
+
+#' Calculate survey-weighted proportions for each response in a select-multiple variable
+#'
+#' For select-multiple (multi-select) columns where a single cell may contain
+#' several space-separated responses (e.g. \code{"fed_other_milk lack_of_time"}),
+#' this function:
+#' \enumerate{
+#'   \item Uses \code{grepl} to identify all unique valid responses across all
+#'         non-missing values in the column.
+#'   \item Creates a temporary binary indicator per response
+#'         (1 = response present, 0 = absent) for all non-missing records.
+#'   \item Calls \code{\link{phr_calc_survey_prop_single}} for each response to
+#'         obtain the survey-weighted proportion of records that include that
+#'         response.
+#' }
+#'
+#' The denominator for each response is the number of records with a non-missing
+#' value in \code{var_name} (i.e. records that answered the question), not the
+#' total number of records.
+#'
+#' @param design A \code{srvyr} or \code{survey} design object.
+#' @param var_name Character; name of the select-multiple variable in
+#'   \code{design$variables}.  Values should be character strings of
+#'   space-separated response tokens, or \code{NA} for missing.
+#' @param indicator_name Character; human-readable label for the indicator.
+#'   Each response result is labelled as
+#'   \code{"\{indicator_name\} - \{response\}"}.
+#' @param indicator_unit Character; unit label (default \code{"\%"}).
+#' @param multiplier Numeric; scale factor applied to the point estimate and
+#'   CI bounds (default \code{100} to express as a percentage).
+#' @param group_name_label Character; label identifying the disaggregation
+#'   group (e.g. \code{"Overall"} or a specific stratum value).
+#' @param high_design_complexity Logical; passed to
+#'   \code{\link{phr_calc_survey_prop_single}}.
+#'
+#' @return A tibble with one row per unique response token, with the same
+#'   columns as \code{\link{phr_calc_survey_prop_single}}.  The
+#'   \code{variable} column always contains \code{var_name} and
+#'   \code{indicator_name} is formatted as
+#'   \code{"\{indicator_name\} - \{response\}"}.
+#'   Returns a single-row NA tibble (with an informative \code{note}) when the
+#'   design or variable is invalid, or when no valid responses are found.
+#' @noRd
+phr_calc_multiple_choice_cat <- function(
+    design,
+    var_name,
+    indicator_name = "Select Multiple",
+    indicator_unit = "%",
+    multiplier = 100,
+    group_name_label = "Overall",
+    high_design_complexity = FALSE
+) {
+  origin <- "phr_calc_multiple_choice_cat"
+  phr_message(origin, paste("Starting select-multiple calculation for:", indicator_name))
+
+  # Helper to build a standard NA result row
+  na_row <- function(note_text) {
+    tibble::tibble(
+      variable         = var_name,
+      indicator_name   = indicator_name,
+      indicator_unit   = indicator_unit,
+      point.estimate   = NA_real_,
+      lower_ci         = NA_real_,
+      upper_ci         = NA_real_,
+      ci_method        = NA_character_,
+      n_unweighted     = NA_real_,
+      n_weighted       = NA_real_,
+      denom_unweighted = NA_real_,
+      denom_weighted   = NA_real_,
+      n_eff            = NA_real_,
+      deff             = NA_real_,
+      group_name       = group_name_label,
+      note             = note_text
+    )
+  }
+
+
+  # 1. Input Validation
+
+  if (is.null(design) || !inherits(design, c("survey.design", "srvyr_svy", "tbl_svy"))) {
+    return(na_row("invalid or missing survey design"))
+  }
+
+  if (!var_name %in% names(design$variables)) {
+    return(na_row("variable not found in dataset"))
+  }
+
+  raw_values <- design$variables[[var_name]]
+
+  if (!is.character(raw_values) && !is.factor(raw_values)) {
+    phr_warning(origin, paste0("Variable '", var_name,
+                               "' is not character or factor; coercing to character."))
+  }
+  raw_values <- as.character(raw_values)
+
+
+  # 2. Identify unique responses using grepl across all non-missing values
+
+  non_missing <- raw_values[!is.na(raw_values) & nzchar(trimws(raw_values))]
+
+  if (length(non_missing) == 0) {
+    return(na_row("no non-missing values found in variable"))
+  }
+
+  # Split each record's responses on whitespace to get individual tokens
+  all_tokens <- unlist(strsplit(non_missing, "\\s+"))
+  unique_responses <- sort(unique(all_tokens[nzchar(all_tokens)]))
+
+  if (length(unique_responses) == 0) {
+    return(na_row("no valid response tokens found in variable"))
+  }
+
+  phr_message(origin, paste0("Found ", length(unique_responses),
+                              " unique response(s): ",
+                              paste(unique_responses, collapse = ", ")))
+
+
+  # 3. Subset design to respondents who answered (non-missing)
+  #    so the denominator is "those who answered", not total records.
+
+  design_answered <- tryCatch(
+    subset(design, !is.na(design$variables[[var_name]]) &
+             nzchar(trimws(as.character(design$variables[[var_name]])))),
+    error = function(e) {
+      phr_warning(origin, paste("Could not subset to non-missing respondents:", e$message))
+      design
+    }
+  )
+
+
+  # 4. For each unique response, create a binary indicator and call
+  #    phr_calc_survey_prop_single
+
+  results <- purrr::map_dfr(unique_responses, function(resp) {
+
+    # Escape any regex special characters in the token before building pattern
+    resp_esc <- gsub("([.\\[\\]()^$*+?{}|\\\\])", "\\\\\\1", resp, perl = TRUE)
+
+    # Use grepl to flag records where this response token appears as a whole word
+    design_tmp <- design_answered
+    design_tmp$variables$.tmp_mc <- as.integer(
+      grepl(pattern = paste0("(^|\\s)", resp_esc, "(\\s|$)"),
+            x       = design_tmp$variables[[var_name]],
+            perl    = TRUE)
+    )
+
+    out <- phr_calc_survey_prop_single(
+      design                = design_tmp,
+      var_name              = ".tmp_mc",
+      indicator_name        = paste0(indicator_name, " - ", resp),
+      indicator_unit        = indicator_unit,
+      multiplier            = multiplier,
+      group_name_label      = group_name_label,
+      high_design_complexity = high_design_complexity
+    )
+
+    # Restore original variable name
+    out$variable <- var_name
+
+    out
+  })
+
+  phr_message(origin, paste("Completed select-multiple calculation for:", indicator_name))
   return(results)
 }
