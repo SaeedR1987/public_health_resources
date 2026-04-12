@@ -29,12 +29,16 @@ create_test_numeric_data <- function(n = 100) {
 }
 
 create_test_multiple_response_data <- function(n = 100) {
+  set.seed(42)
+  options_pool <- c("barrier_cost", "barrier_distance", "barrier_availability", "barrier_quality")
+  barriers <- vapply(seq_len(n), function(i) {
+    chosen <- sample(options_pool, sample(1:3, 1), replace = FALSE)
+    paste(sort(chosen), collapse = " ")
+  }, character(1))
   data.frame(
-    barrier_cost = sample(0:1, n, replace = TRUE),
-    barrier_distance = sample(0:1, n, replace = TRUE),
-    barrier_availability = sample(0:1, n, replace = TRUE),
-    barrier_quality = sample(0:1, n, replace = TRUE),
-    district = sample(c("District A", "District B"), n, replace = TRUE)
+    barriers = barriers,
+    district = sample(c("District A", "District B"), n, replace = TRUE),
+    stringsAsFactors = FALSE
   )
 }
 
@@ -127,28 +131,23 @@ test_that("plot_stacked_bar legend_position parameter works", {
 
 test_that("plot_grouped_bar_multiple requires valid dataset", {
   expect_error(
-    plot_grouped_bar_multiple(NULL, response_vars = c("var1")),
+    plot_grouped_bar_multiple(NULL, var_name = "barriers"),
     regexp = "survey design"
   )
 
   expect_error(
-    plot_grouped_bar_multiple("not a dataframe", response_vars = c("var1")),
+    plot_grouped_bar_multiple("not a dataframe", var_name = "barriers"),
     regexp = "survey design"
   )
 })
 
-test_that("plot_grouped_bar_multiple requires response_vars parameter", {
+test_that("plot_grouped_bar_multiple requires var_name parameter", {
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
   expect_error(
-    plot_grouped_bar_multiple(sdesign, response_vars = NULL),
+    plot_grouped_bar_multiple(sdesign, var_name = NULL),
     regexp = "NULL"
-  )
-
-  expect_error(
-    plot_grouped_bar_multiple(sdesign, response_vars = character(0)),
-    regexp = "length"
   )
 })
 
@@ -157,7 +156,7 @@ test_that("plot_grouped_bar_multiple validates column existence", {
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
   expect_error(
-    plot_grouped_bar_multiple(sdesign, response_vars = c("nonexistent_column")),
+    plot_grouped_bar_multiple(sdesign, var_name = "nonexistent_column"),
     regexp = "Missing required columns"
   )
 })
@@ -166,9 +165,7 @@ test_that("plot_grouped_bar_multiple creates overall plot when grouping is NULL"
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  g <- plot_grouped_bar_multiple(sdesign,
-                                 response_vars = c("barrier_cost", "barrier_distance",
-                                                  "barrier_availability"))
+  g <- plot_grouped_bar_multiple(sdesign, var_name = "barriers")
 
   expect_s3_class(g, "ggplot")
   expect_true("ggplot" %in% class(g))
@@ -179,7 +176,7 @@ test_that("plot_grouped_bar_multiple creates grouped plot when grouping is provi
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
   g <- plot_grouped_bar_multiple(sdesign,
-                                 response_vars = c("barrier_cost", "barrier_distance"),
+                                 var_name = "barriers",
                                  grouping = "district")
 
   expect_s3_class(g, "ggplot")
@@ -190,37 +187,32 @@ test_that("plot_grouped_bar_multiple handles percentage vs count display", {
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  g_pct <- plot_grouped_bar_multiple(sdesign,
-                                     response_vars = c("barrier_cost", "barrier_distance"),
-                                     calc_percentage = TRUE)
-  g_count <- plot_grouped_bar_multiple(sdesign,
-                                       response_vars = c("barrier_cost", "barrier_distance"),
+  g_pct   <- plot_grouped_bar_multiple(sdesign, var_name = "barriers",
+                                       calc_percentage = TRUE)
+  g_count <- plot_grouped_bar_multiple(sdesign, var_name = "barriers",
                                        calc_percentage = FALSE)
 
   expect_s3_class(g_pct, "ggplot")
   expect_s3_class(g_count, "ggplot")
 })
 
-test_that("plot_grouped_bar_multiple validates response_labels length", {
+test_that("plot_grouped_bar_multiple accepts named response_labels", {
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
-    plot_grouped_bar_multiple(sdesign,
-                             response_vars = c("barrier_cost", "barrier_distance"),
-                             response_labels = c("Cost")),
-    regexp = "number of response_labels must equal"
+  labels <- c(
+    barrier_cost         = "Cost Barrier",
+    barrier_distance     = "Distance Barrier",
+    barrier_availability = "Availability Barrier",
+    barrier_quality      = "Quality Barrier"
   )
-})
-
-
-test_that("plot_grouped_bar_multiple accepts custom labels", {
-  df <- create_test_multiple_response_data()
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
 
   g <- plot_grouped_bar_multiple(sdesign,
-                                 response_vars = c("barrier_cost", "barrier_distance"),
-                                 response_labels = c("Cost Barrier", "Distance Barrier"), grouping = "district", color_palette = "reach1", title_name = "Main barriers by District")
+                                 var_name = "barriers",
+                                 response_labels = labels,
+                                 grouping = "district",
+                                 color_palette = "reach1",
+                                 title_name = "Main barriers by District")
 
   expect_s3_class(g, "ggplot")
 })
@@ -229,12 +221,10 @@ test_that("plot_grouped_bar_multiple legend_position parameter works", {
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  g_bottom <- plot_grouped_bar_multiple(sdesign,
-                                       response_vars = c("barrier_cost", "barrier_distance"),
-                                       legend_position = "bottom")
-  g_right <- plot_grouped_bar_multiple(sdesign,
-                                      response_vars = c("barrier_cost", "barrier_distance"),
-                                      legend_position = "right")
+  g_bottom <- plot_grouped_bar_multiple(sdesign, var_name = "barriers",
+                                        legend_position = "bottom")
+  g_right  <- plot_grouped_bar_multiple(sdesign, var_name = "barriers",
+                                        legend_position = "right")
 
   expect_s3_class(g_bottom, "ggplot")
   expect_s3_class(g_right, "ggplot")

@@ -3626,55 +3626,77 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
 
 #' Plot Grouped Bar Chart for Select Multiple Responses
 #'
-#' Creates grouped bar charts for select multiple responses that don't add up to 100%.
-#' This is useful for displaying the frequency of each response option, either overall or grouped.
+#' Creates grouped bar charts for select-multiple (multi-select) survey columns where
+#' each cell contains space-separated response tokens (e.g.
+#' \code{"barrier_cost barrier_distance"}).  Survey-weighted proportions for each
+#' unique response token are computed via
+#' \code{\link{phr_calc_multiple_choice_cat}}, so the weights embedded in
+#' \code{survey_design} are applied automatically.  Bars do not add up to 100\%
+#' because respondents may select more than one option.
 #'
-#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
-#' @param response_vars Inputs a character vector of column names for the response options.
-#'   Each column should be coded as binary (0/1 or TRUE/FALSE).
-#' @param response_labels Inputs an optional character vector of labels for the response variables.
-#'   If NULL, uses the column names.
-#' @param grouping Inputs an optional character value specifying the column name for grouping the data.
-#'   If NULL, creates an overall plot. If provided, creates grouped bars for comparison.
-#' @param weighted Logical. If TRUE, applies survey weights. By default: FALSE.
-#' @param weights_col Character. Column name containing survey weights. Required if weighted = TRUE.
-#' @param calc_percentage Inputs a logical value indicating whether to calculate percentages (TRUE)
-#'   or show counts (FALSE). Default is TRUE.
-#' @param flip_coordinates Logical. If TRUE, creates horizontal bars. By default: TRUE.
-#' @param color_palette Inputs an optional character value specifying the color palette to use.
-#'   Options: "reach1", "reach2", "reach3", "reach4", "traffic_light", "default". Default is "reach2".
-#' @param title_name Inputs an optional character value for the title of the plot.
-#' @param subtitle Inputs an optional character value for the subtitle of the plot.
-#'   If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.
-#' @param x_label Inputs an optional character value for the x-axis label (default: "Response Options").
-#' @param y_label Inputs an optional character value for the y-axis label.
-#' @param legend_label Inputs an optional character value for the legend title. If NULL, uses grouping variable name.
-#' @param show_labels Inputs a logical value indicating whether to show percentage/count labels on bars (default: FALSE).
+#' @param survey_design A \code{srvyr} or \code{survey} design object (e.g.
+#'   created with \code{srvyr::as_survey_design()}).
+#' @param var_name Character scalar; name of the column in \code{survey_design}
+#'   that contains the space-separated select-multiple responses.
+#' @param response_labels Optional named or positional character vector for
+#'   mapping response tokens to display labels.
+#'   \itemize{
+#'     \item If \code{NULL} (default), the raw token strings are used as labels.
+#'     \item If a \strong{named} vector, names must match the unique response
+#'       tokens; each matching token is replaced by its label.
+#'     \item If an \strong{unnamed} positional vector, it must have the same
+#'       length as the number of unique tokens (tokens are sorted alphabetically
+#'       by \code{phr_calc_multiple_choice_cat}) and is applied in that order.
+#'   }
+#' @param grouping Optional character scalar; column name to use for
+#'   disaggregation.  When supplied, separate bars per group are shown side by
+#'   side for each response token.  If \code{NULL}, an overall plot is produced.
+#' @param calc_percentage Logical; if \code{TRUE} (default) bars show the
+#'   survey-weighted percentage of respondents who selected each token.  If
+#'   \code{FALSE}, bars show the unweighted count.
+#' @param flip_coordinates Logical; if \code{TRUE} (default) creates horizontal
+#'   bars (easier to read long response labels).
+#' @param color_palette Character; color palette to use.  Options:
+#'   \code{"reach1"}, \code{"reach2"}, \code{"reach3"}, \code{"reach4"},
+#'   \code{"traffic_light"}, \code{"default"}.  Default is \code{"reach2"}.
+#' @param title_name Optional character scalar for the plot title.
+#' @param variable_label Optional character scalar used to auto-generate the
+#'   title when \code{title_name} is \code{NULL}.
+#' @param grouping_label Optional character scalar; human-readable label for the
+#'   grouping variable, appended to the auto-generated title.
+#' @param subtitle Optional character scalar appended to the auto-generated
+#'   subtitle (which shows \emph{n}).
+#' @param x_label Character scalar for the x-axis label (default:
+#'   \code{"Response Options"}).
+#' @param y_label Optional character scalar for the y-axis label.  Defaults to
+#'   \code{"Percentage"} or \code{"Count"} based on \code{calc_percentage}.
+#' @param legend_label Optional character scalar for the legend title.  Defaults
+#'   to the grouping column name.
+#' @param show_labels Logical; if \code{TRUE}, percentage or count labels are
+#'   shown on the bars (default: \code{FALSE}).
+#' @param legend_position Position of the legend.  Default \code{"bottom"}.
+#'   Options: \code{"bottom"}, \code{"top"}, \code{"left"}, \code{"right"},
+#'   \code{"none"}.
 #'
-#' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
-#' @return Returns a ggplot2 object showing the grouped bar chart.
+#' @return A \code{ggplot2} object showing the grouped bar chart.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#'   response_vars <- c("barrier_cost", "barrier_distance", "barrier_availability")
+#'   # Column with space-separated responses, e.g. "barrier_cost barrier_distance"
+#'   plot_grouped_bar_multiple(survey_design, var_name = "barriers",
+#'                             title_name = "Health Barriers")
 #'
-#'   # Unweighted
-#'   plot_grouped_bar_multiple(df, response_vars = response_vars, grouping = "district",
+#'   # With disaggregation by district
+#'   plot_grouped_bar_multiple(survey_design, var_name = "barriers",
+#'                             grouping = "district",
 #'                             title_name = "Health Barriers by District")
-#'
-#'   # Weighted
-#'   plot_grouped_bar_multiple(df, response_vars = response_vars, grouping = "district",
-#'                             weighted = TRUE, weights_col = "survey_weight",
-#'                             title_name = "Health Barriers by District (Weighted)")
 #' }
 
 plot_grouped_bar_multiple <- function(survey_design,
-                                      response_vars,
+                                      var_name,
                                       response_labels = NULL,
                                       grouping = NULL,
-                                      weighted = FALSE,
-                                      weights_col = NULL,
                                       calc_percentage = TRUE,
                                       flip_coordinates = TRUE,
                                       color_palette = "reach2",
@@ -3686,266 +3708,180 @@ plot_grouped_bar_multiple <- function(survey_design,
                                       y_label = NULL,
                                       legend_label = NULL,
                                       show_labels = FALSE,
-                                  legend_position = "bottom") {
+                                      legend_position = "bottom") {
   origin <- "plot_grouped_bar_multiple"
 
   phr_try({
 
     df <- phr_get_data_from_design(survey_design)
-    # Validate inputs
+
+    # --- Input validation ---
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_not_null(response_vars, origin = origin, soft = FALSE)
-    phr_validate_vector_length(response_vars, min_length = 1, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phr_validate_not_null(var_name, origin = origin, soft = FALSE)
+    phr_validate_character(var_name, origin = origin, soft = FALSE)
     phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
 
-    phr_validate_columns(df, response_vars, origin = origin,
-                           hint = phr_txt("Ensure all response columns exist in the dataset"), soft = FALSE)
+    phr_validate_columns(df, var_name, origin = origin,
+                         hint = phr_txt(paste0("Ensure column '", var_name, "' exists in the dataset")),
+                         soft = FALSE)
 
-    # Validate weights if requested
-    if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
-                             hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
-                             soft = FALSE)
-
-      # Validate weights column is numeric
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
-
-      # Coerce to numeric
-      df <- df %>%
-        dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
+    if (!is.null(grouping)) {
+      phr_validate_columns(df, grouping, origin = origin,
+                           hint = phr_txt(paste0("Ensure the grouping column '", grouping,
+                                                 "' exists in the dataset")),
+                           soft = FALSE)
     }
 
-    # Set response labels
-    if (is.null(response_labels)) {
-      response_labels <- response_vars
-    } else {
-      phr_assert(length(response_labels) == length(response_vars),
-                   phr_txt("The number of response_labels must equal the number of response_vars"), origin = origin)
-    }
-
-    # Set default y-axis label based on orientation
+    # --- Default y-axis label ---
     if (is.null(y_label)) {
-      if (flip_coordinates) {
-        y_label <- if (calc_percentage) "Percentage" else "Count"
-      } else {
-        y_label <- if (calc_percentage) "Percentage" else "Count"
-      }
+      y_label <- if (calc_percentage) "Percentage" else "Count"
     }
 
-    # Prepare data
+    # --- Run phr_calc_multiple_choice_cat, with optional per-group disaggregation ---
+    multiplier_val <- if (calc_percentage) 100 else 1
+
     if (is.null(grouping)) {
-      # Overall plot
-      if (weighted) {
-        # Weighted calculation
-        df_plot <- df %>%
-          dplyr::select(dplyr::all_of(c(response_vars, weights_col))) %>%
-          tidyr::pivot_longer(cols = -!!rlang::sym(weights_col),
-                              names_to = "response",
-                              values_to = "value") %>%
-          dplyr::filter(!is.na(value)) %>%
-          dplyr::group_by(response) %>%
-          dplyr::summarise(
-            weighted_count = sum((value == 1 | value == TRUE) * !!rlang::sym(weights_col), na.rm = TRUE),
-            total_weight = sum(!!rlang::sym(weights_col), na.rm = TRUE),
-            unweighted_n = dplyr::n(),
-            .groups = "drop"
-          )
 
-        if (calc_percentage) {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = (weighted_count / total_weight) * 100,
-              label = sprintf("%.1f%%", value)
-            )
-        } else {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = weighted_count,
-              label = sprintf("%.1f", weighted_count)
-            )
-        }
-      } else {
-        # Unweighted calculation
-        df_plot <- df %>%
-          dplyr::select(dplyr::all_of(response_vars)) %>%
-          tidyr::pivot_longer(cols = dplyr::everything(),
-                              names_to = "response",
-                              values_to = "value") %>%
-          dplyr::filter(!is.na(value)) %>%
-          dplyr::group_by(response) %>%
-          dplyr::summarise(
-            count = sum(value == 1 | value == TRUE, na.rm = TRUE),
-            total = dplyr::n(),
-            .groups = "drop"
-          )
+      # Overall calculation
+      calc_res <- phr_calc_multiple_choice_cat(
+        design           = survey_design,
+        var_name         = var_name,
+        indicator_name   = var_name,
+        multiplier       = multiplier_val,
+        group_name_label = "Overall"
+      )
 
-        if (calc_percentage) {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = (count / total) * 100,
-              label = sprintf("%.1f%% (%d)", value, count)
-            )
-        } else {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = count,
-              label = as.character(count)
-            )
-        }
+      if (is.null(calc_res) || nrow(calc_res) == 0 || all(is.na(calc_res$point.estimate))) {
+        phr_warning(origin, paste0("No valid results returned for variable '", var_name, "'."))
+        return(invisible(NULL))
       }
 
-      # Map response variables to labels
-      label_map <- setNames(response_labels, response_vars)
-      df_plot <- df_plot %>%
-        dplyr::mutate(response = label_map[response])
+      # Extract the response token from indicator_name (strip "{var_name} - " prefix)
+      prefix <- paste0(var_name, " - ")
+      calc_res$response <- sub(paste0("^", prefix), "", calc_res$indicator_name)
 
-      # Create subtitle with n
-      if (weighted) {
-        auto_subtitle <- sprintf("n = %d (weighted)", nrow(df))
+      # Apply response_labels
+      calc_res$response <- .apply_response_labels(calc_res$response, response_labels)
+
+      # Select value column
+      if (calc_percentage) {
+        df_plot <- calc_res %>%
+          dplyr::mutate(
+            value = point.estimate,
+            label = sprintf("%.1f%%", point.estimate)
+          )
       } else {
-        total_n <- if ("total" %in% names(df_plot)) unique(df_plot$total)[1] else nrow(df)
-        auto_subtitle <- sprintf("n = %d", total_n)
+        df_plot <- calc_res %>%
+          dplyr::mutate(
+            value = n_unweighted,
+            label = as.character(round(n_unweighted))
+          )
       }
+
+      # Build subtitle (denominator = answered records)
+      denom_n <- if (!is.null(calc_res$denom_unweighted) && any(!is.na(calc_res$denom_unweighted))) {
+        max(calc_res$denom_unweighted, na.rm = TRUE)
+      } else {
+        sum(!is.na(df[[var_name]]) & nzchar(trimws(as.character(df[[var_name]]))))
+      }
+      auto_subtitle <- sprintf("n = %d", as.integer(denom_n))
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-      # Get single color from palette
+      # Single-color palette
       colors <- get_color_palette(type = color_palette, n = 1)
 
-      # Create base plot
-      g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = stats::reorder(response, value), y = value)) +
+      g <- ggplot2::ggplot(df_plot,
+                           ggplot2::aes(x = stats::reorder(response, value), y = value)) +
         ggplot2::geom_bar(stat = "identity", fill = colors[1]) +
         ggplot2::theme_minimal() +
         ggplot2::theme(legend.position = legend_position) +
         ggplot2::labs(x = x_label, y = y_label, subtitle = final_subtitle)
 
-      # Apply coordinate flip if requested
       if (flip_coordinates) {
         g <- g + ggplot2::coord_flip()
-
-        # Add labels for flipped coordinates
         if (show_labels) {
           g <- g + ggplot2::geom_text(ggplot2::aes(label = label), hjust = -0.1, size = 3)
         }
       } else {
-        # Add labels for non-flipped coordinates
         if (show_labels) {
           g <- g + ggplot2::geom_text(ggplot2::aes(label = label), vjust = -0.5, size = 3)
         }
-        # Angle x-axis labels
         g <- g + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
       }
 
     } else {
-      # Grouped plot
-      phr_validate_columns(df, grouping, origin = origin,
-                             hint = phr_txt(paste0("Ensure the grouping column '", grouping, "' exists in the dataset")),
-                             soft = FALSE)
 
-      if (weighted) {
-        # Weighted grouped calculation
-        df_plot <- df %>%
-          dplyr::select(dplyr::all_of(c(grouping, response_vars, weights_col))) %>%
-          tidyr::pivot_longer(cols = -c(!!rlang::sym(grouping), !!rlang::sym(weights_col)),
-                              names_to = "response",
-                              values_to = "value") %>%
-          dplyr::filter(!is.na(value)) %>%
-          dplyr::group_by(!!rlang::sym(grouping), response) %>%
-          dplyr::summarise(
-            weighted_count = sum((value == 1 | value == TRUE) * !!rlang::sym(weights_col), na.rm = TRUE),
-            total_weight = sum(!!rlang::sym(weights_col), na.rm = TRUE),
-            unweighted_n = dplyr::n(),
-            .groups = "drop"
-          )
+      # Grouped calculation: call phr_calc_multiple_choice_cat per group subset
+      group_levels <- sort(unique(stats::na.omit(df[[grouping]])))
 
-        if (calc_percentage) {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = (weighted_count / total_weight) * 100,
-              label = sprintf("%.1f%%", value)
-            )
-        } else {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = weighted_count,
-              label = sprintf("%.1f", weighted_count)
-            )
-        }
-      } else {
-        # Unweighted grouped calculation
-        df_plot <- df %>%
-          dplyr::select(dplyr::all_of(c(grouping, response_vars))) %>%
-          tidyr::pivot_longer(cols = -!!rlang::sym(grouping),
-                              names_to = "response",
-                              values_to = "value") %>%
-          dplyr::filter(!is.na(value)) %>%
-          dplyr::group_by(!!rlang::sym(grouping), response) %>%
-          dplyr::summarise(
-            count = sum(value == 1 | value == TRUE, na.rm = TRUE),
-            total = dplyr::n(),
-            .groups = "drop"
-          )
+      calc_res_list <- purrr::map(group_levels, function(g_val) {
+        subset_design <- tryCatch(
+          subset(survey_design, survey_design$variables[[grouping]] == g_val),
+          error = function(e) {
+            phr_warning(origin, paste("Subset failed for", grouping, "=", g_val))
+            NULL
+          }
+        )
+        if (is.null(subset_design)) return(tibble::tibble())
 
-        if (calc_percentage) {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = (count / total) * 100,
-              label = sprintf("%.1f%% (%d)", value, count)
-            )
-        } else {
-          df_plot <- df_plot %>%
-            dplyr::mutate(
-              value = count,
-              label = as.character(count)
-            )
-        }
+        res <- phr_calc_multiple_choice_cat(
+          design           = subset_design,
+          var_name         = var_name,
+          indicator_name   = var_name,
+          multiplier       = multiplier_val,
+          group_name_label = as.character(g_val)
+        )
+        res[[grouping]] <- as.character(g_val)
+        res
+      })
+
+      calc_res <- dplyr::bind_rows(calc_res_list)
+
+      if (is.null(calc_res) || nrow(calc_res) == 0 || all(is.na(calc_res$point.estimate))) {
+        phr_warning(origin, paste0("No valid grouped results returned for variable '", var_name, "'."))
+        return(invisible(NULL))
       }
 
-      # Map response variables to labels
-      label_map <- setNames(response_labels, response_vars)
-      df_plot <- df_plot %>%
-        dplyr::mutate(response = label_map[response])
+      # Extract response token
+      prefix <- paste0(var_name, " - ")
+      calc_res$response <- sub(paste0("^", prefix), "", calc_res$indicator_name)
+      calc_res$response <- .apply_response_labels(calc_res$response, response_labels)
 
-      # Create subtitle with n by group
-      if (weighted) {
-        n_by_group <- df %>%
-          dplyr::group_by(!!rlang::sym(grouping)) %>%
-          dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
-          dplyr::mutate(group_label = sprintf("%s (n=%d, weighted)", !!rlang::sym(grouping), n))
+      if (calc_percentage) {
+        df_plot <- calc_res %>%
+          dplyr::mutate(
+            value = point.estimate,
+            label = sprintf("%.1f%%", point.estimate)
+          )
       } else {
-        n_by_group <- df_plot %>%
-          dplyr::group_by(!!rlang::sym(grouping)) %>%
-          dplyr::slice(1) %>%
-          dplyr::ungroup()
-
-        if ("total" %in% names(n_by_group)) {
-          n_by_group <- n_by_group %>%
-            dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), total))
-        } else {
-          n_by_group <- df %>%
-            dplyr::group_by(!!rlang::sym(grouping)) %>%
-            dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
-            dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
-        }
+        df_plot <- calc_res %>%
+          dplyr::mutate(
+            value = n_unweighted,
+            label = as.character(round(n_unweighted))
+          )
       }
+
+      # Build subtitle: n per group
+      n_by_group <- df %>%
+        dplyr::filter(!is.na(!!rlang::sym(grouping))) %>%
+        dplyr::group_by(!!rlang::sym(grouping)) %>%
+        dplyr::summarise(
+          n = sum(!is.na(!!rlang::sym(var_name)) & nzchar(trimws(as.character(!!rlang::sym(var_name))))),
+          .groups = "drop"
+        ) %>%
+        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
 
       auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-      # Get colors based on number of groups
-      n_colors <- length(unique(df_plot[[grouping]]))
+      n_colors <- length(group_levels)
       colors <- get_color_palette(type = color_palette, n = n_colors)
 
-      # Set legend label
-      if (is.null(legend_label)) {
-        legend_label <- grouping
-      }
+      if (is.null(legend_label)) legend_label <- grouping
 
-      # Create base plot
       g <- ggplot2::ggplot(df_plot, ggplot2::aes(
-        x = stats::reorder(response, value),
-        y = value,
+        x    = stats::reorder(response, value),
+        y    = value,
         fill = as.factor(!!rlang::sym(grouping))
       )) +
         ggplot2::geom_bar(stat = "identity", position = "dodge") +
@@ -3954,11 +3890,8 @@ plot_grouped_bar_multiple <- function(survey_design,
         ggplot2::theme(legend.position = legend_position) +
         ggplot2::labs(x = x_label, y = y_label, subtitle = final_subtitle)
 
-      # Apply coordinate flip if requested
       if (flip_coordinates) {
         g <- g + ggplot2::coord_flip()
-
-        # Add labels for flipped coordinates
         if (show_labels) {
           g <- g + ggplot2::geom_text(
             ggplot2::aes(label = label),
@@ -3967,7 +3900,6 @@ plot_grouped_bar_multiple <- function(survey_design,
           )
         }
       } else {
-        # Add labels for non-flipped coordinates
         if (show_labels) {
           g <- g + ggplot2::geom_text(
             ggplot2::aes(label = label),
@@ -3975,12 +3907,11 @@ plot_grouped_bar_multiple <- function(survey_design,
             vjust = -0.5, size = 3
           )
         }
-        # Angle x-axis labels
         g <- g + ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
       }
     }
 
-    # Add title if provided
+    # Add title
     if (!is.null(title_name)) {
       g <- g + ggplot2::ggtitle(title_name)
     } else if (!is.null(variable_label)) {
@@ -3994,6 +3925,24 @@ plot_grouped_bar_multiple <- function(survey_design,
 
     return(g)
   }, on_error = "warn", origin = origin)
+}
+
+# Internal helper: apply response_labels to a character vector of token strings
+# labels may be NULL (no-op), a named vector (name→label map), or a positional
+# vector (same length as tokens, applied in order).
+.apply_response_labels <- function(tokens, labels) {
+  if (is.null(labels)) return(tokens)
+  if (!is.null(names(labels))) {
+    # Named vector: replace matching tokens
+    idx <- match(tokens, names(labels))
+    tokens[!is.na(idx)] <- labels[idx[!is.na(idx)]]
+  } else {
+    # Positional vector: must be same length
+    if (length(labels) == length(tokens)) {
+      tokens <- labels
+    }
+  }
+  tokens
 }
 
 
