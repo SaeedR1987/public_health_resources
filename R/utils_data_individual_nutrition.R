@@ -368,7 +368,9 @@ add_muac <- function(
     output_columns <- c(
       "sam_muac", "mam_muac", "gam_muac",
       "sam_muac_noflag", "mam_muac_noflag", "gam_muac_noflag",
-      "nut_muac_cat", "flag_muac_extreme"
+      "nut_muac_cat", "nut_muac_cat_noflag",
+      "nut_muac_cm_noflag", "nut_muac_mm_noflag",
+      "flag_muac_extreme"
     )
 
     for (col in output_columns) {
@@ -441,7 +443,19 @@ add_muac <- function(
         # No-flag versions of MUAC indicators (set to NA when MUAC is extreme)
         sam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, sam_muac),
         mam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, mam_muac),
-        gam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, gam_muac)
+        gam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, gam_muac),
+        nut_muac_cat_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, nut_muac_cat),
+        nut_muac_cm_noflag = dplyr::if_else(
+          flag_muac_extreme == 1,
+          NA_real_,
+          as.numeric(.data[["nut_muac_cm"]])
+        ),
+        nut_muac_mm_noflag = dplyr::if_else(
+          flag_muac_extreme == 1,
+          NA_real_,
+          as.numeric(.data[["nut_muac_mm"]])
+        )
+
       )
 
     phr_message(
