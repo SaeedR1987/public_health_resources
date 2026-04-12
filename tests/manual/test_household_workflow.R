@@ -258,7 +258,7 @@ good_deaths <- DeathIndividualData$new(
   View(fsl_analytics$analysis_plan_issues_log)
 
   fsl_analytics$quality_diagnose()
-  fsl_analytics$quality_issues_log
+  View(fsl_analytics$quality_issues_log)
 
   fsl_analytics$outputs_diagnose()
   View(fsl_analytics$outputs_issues_log)
@@ -291,7 +291,14 @@ good_deaths <- DeathIndividualData$new(
 
   View(nut_analytics$analysis_results$survey_design)
 
+  nut_analytics$analysis_diagnose()
+  View(nut_analytics$analysis_plan_issues_log)
 
+  nut_analytics$quality_diagnose()
+  nut_analytics$quality_issues_log
+
+  nut_analytics$outputs_diagnose()
+  View(nut_analytics$outputs_issues_log)
 
   # Test 2: Roster Data ####
 
