@@ -275,9 +275,15 @@ good_deaths <- DeathIndividualData$new(
   View(nut_analytics$analysis_results$survey_design)
 
 
+  nut_analytics$quality_diagnose()
+  nut_analytics$quality_issues_log
   nut_analytics$run_quality_checks()
+
+  nut_analytics$outputs_diagnose()
+  View(nut_analytics$outputs_issues_log)
   nut_analytics$run_outputs()
 
+  nut_analytics$visualizations$enumerator$mfaz_cat_enum_id
 
 
   nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
