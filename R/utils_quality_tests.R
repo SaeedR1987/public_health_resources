@@ -1019,7 +1019,7 @@ quality_test_any_flag_percentage <- function(survey_design, variables, flag_valu
 #' @param female_val Value in `variables` that indicates "female"
 #' @param expected_ratio_val Single positive numeric giving expected male:female ratio.
 #'   Default 1 (i.e., 1:1).
-#' @return List with statistic (chi-squared value) and p-value
+#' @return List with statistic (observed male:female ratio) and p-value
 #' @export
 quality_test_sexratio <- function(
     survey_design,
@@ -1122,10 +1122,12 @@ quality_test_sexratio <- function(
     p_female <- 1 / (expected_ratio_val + 1)
     p <- c(p_male, p_female)
 
+    obs_ratio <- obs_male / obs_female
+
     test_result <- chisq.test(x = obs, p = p)
 
     return(list(
-      statistic = as.numeric(test_result$statistic),
+      statistic = obs_ratio,
       p_value = test_result$p.value
     ))
 
@@ -1143,7 +1145,7 @@ quality_test_sexratio <- function(
 #' @param no_val Value indicating "no" in the indicator columns. Default 0.
 #' @param expected_ratio_val Single positive numeric giving expected ratio of
 #'   variables[1]:variables[2]. Default 1 (i.e., 1:1).
-#' @return List with statistic (chi-squared value) and p-value
+#' @return List with statistic (observed col1:col2 ratio) and p-value
 #' @export
 quality_test_ageratio <- function(
     survey_design,
@@ -1265,10 +1267,12 @@ quality_test_ageratio <- function(
     p2 <- 1 / (expected_ratio_val + 1)
     p <- c(p1, p2)
 
+    obs_ratio <- yes1 / yes2
+
     test_result <- chisq.test(x = obs, p = p)
 
     return(list(
-      statistic = as.numeric(test_result$statistic),
+      statistic = obs_ratio,
       p_value = test_result$p.value
     ))
 
