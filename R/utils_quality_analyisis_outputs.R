@@ -958,6 +958,16 @@ plot_cumulative_distribution <- function(survey_design, data_var,
       df <- df %>% dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
+    n_before <- sum(!is.na(df[[data_var]]))
+    df <- df %>% dplyr::mutate(!!rlang::sym(data_var) := as.numeric(!!rlang::sym(data_var)))
+    n_after <- sum(!is.na(df[[data_var]]))
+    if (n_after < n_before) {
+      phr_warning(
+        paste0("Coercing '", data_var, "' to numeric introduced ", n_before - n_after, " NA value(s). Check that the column contains valid numbers."),
+        origin = origin
+      )
+    }
+
     # Set defaults based on data range if not provided
     if (is.null(xlim)) {
       data_range <- range(df[[data_var]], na.rm = TRUE)
@@ -1066,12 +1076,12 @@ plot_cumulative_distribution <- function(survey_design, data_var,
       colors <- get_color_palette(type = color_palette, n = n_colors)
     }
 
-    g <- g + ggplot2::xlim(xlim) +
+    g <- g +
       ggplot2::theme_minimal() +
       ggplot2::theme(legend.position = legend_position) +
       ggplot2::xlab(x_label) +
       ggplot2::ylab(y_label) +
-      ggplot2::scale_x_continuous(breaks = seq(xlim[1], xlim[2], by = breaks_by)) +
+      ggplot2::scale_x_continuous(limits = xlim, breaks = seq(xlim[1], xlim[2], by = breaks_by)) +
       ggplot2::scale_color_manual(values = colors) +
       ggplot2::labs(subtitle = final_subtitle)
 
