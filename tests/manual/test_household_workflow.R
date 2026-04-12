@@ -222,7 +222,7 @@ good_deaths <- DeathIndividualData$new(
 
   fsl_analytics$tables$plausibility$penalty_summary
 
-  fsl_analytics$visualizations$survey_design
+  fsl_analytics$visualizations$survey_design$fcs_score_overall2
 
   View(fsl_analytics$analysis_results$survey_design)
 
@@ -267,18 +267,18 @@ good_deaths <- DeathIndividualData$new(
 
   nut_analytics <- good_nutrition$generate_data_analytics(stage = "standardized", type = "nutrition")
 
+  nut_analytics$data_analysis_plan$log_df
   nut_analytics$analysis_diagnose()
   View(nut_analytics$analysis_plan_issues_log)
-
   nut_analytics$run_analysis()
+  View(nut_analytics$analysis_results$base)
+  View(nut_analytics$analysis_results$survey_design)
+
+
   nut_analytics$run_quality_checks()
   nut_analytics$run_outputs()
 
-  nut_analytics$analysis_results$survey_design
 
-  nut_analytics$visualizations$base$mfaz_cat_overall
-
-  nut_analytics$data_analysis_plan$log_df
 
   nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
 
