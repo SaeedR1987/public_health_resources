@@ -363,10 +363,10 @@ test_that("quality_diagnose flags unavailable test function", {
   expect_false(result$status[1] == "ok")
 })
 
-test_that("analysis_diagnose returns empty tibble when no analysis plan", {
+test_that("analysis_diagnose returns empty tibble when no analysis schema", {
   df <- tibble::tibble(id = 1:5, x = 1:5)
   da <- DataAnalytics$new(data = df, dataset_name = "ADiagEmpty")
-  da$data_analysis_plan$log_df <- tibble::tibble(
+  da$analysis_schema <- tibble::tibble(
     indicator_name = character(), calculation = character(),
     var_name = character(), denom_var = character(),
     disaggregation = character(), multiplier = numeric(),
@@ -382,18 +382,18 @@ test_that("analysis_diagnose correctly identifies valid and invalid indicators",
   df <- tibble::tibble(id = 1:10, fcs_score = rnorm(10), group = rep(c("A","B"), 5))
   da <- DataAnalytics$new(data = df, dataset_name = "ADiagVars")
 
-  da$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = c("Valid", "Bad var", "Bad calc"),
-    calculation    = c("mean", "mean", "invalid_type"),
-    var_name       = c("fcs_score", "nonexistent", "fcs_score"),
-    denom_var      = c(NA_character_, NA_character_, NA_character_),
-    disaggregation = c(NA_character_, NA_character_, NA_character_),
-    multiplier     = c(1, 1, 1),
-    indicator_unit = c("%", "%", "%")
+  da$analysis_schema <- tibble::tibble(
+    indicator_name = c("Valid", "Bad var", "Bad calc", "Select Multiple"),
+    calculation    = c("mean", "mean", "invalid_type", "select_multiple_cat"),
+    var_name       = c("fcs_score", "nonexistent", "fcs_score", "fcs_score"),
+    denom_var      = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    disaggregation = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    multiplier     = c(1, 1, 1, 1),
+    indicator_unit = c("%", "%", "%", "%")
   )
 
   result <- da$analysis_diagnose()
-  expect_equal(nrow(result), 3)
+  expect_equal(nrow(result), 4)
   expect_true("var_name_in_data"  %in% names(result))
   expect_true("calculation_valid" %in% names(result))
   expect_true("status"            %in% names(result))
@@ -401,9 +401,10 @@ test_that("analysis_diagnose correctly identifies valid and invalid indicators",
   expect_equal(result$status[result$indicator_name == "Valid"], "ok")
   expect_false(result$status[result$indicator_name == "Bad var"] == "ok")
   expect_false(result$status[result$indicator_name == "Bad calc"] == "ok")
+  expect_equal(result$status[result$indicator_name == "Select Multiple"], "ok")
 
   # Stored in field
-  expect_equal(nrow(da$analysis_plan_issues_log), 3)
+  expect_equal(nrow(da$analysis_plan_issues_log), 4)
 })
 
 test_that("outputs_diagnose returns empty tibble when no schema", {
@@ -463,7 +464,7 @@ test_that("analysis_diagnose resolves canonical var names via variable_map", {
   da <- DataAnalytics$new(data = df, dataset_name = "ADiagVarMap")
   da$variable_map <- list(canonical_score = "actual_score")
 
-  da$data_analysis_plan$log_df <- tibble::tibble(
+  da$analysis_schema <- tibble::tibble(
     indicator_name = c("Mapped var"),
     calculation    = c("mean"),
     var_name       = c("canonical_score"),
