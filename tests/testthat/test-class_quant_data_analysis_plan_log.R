@@ -51,7 +51,8 @@ test_that("QuantDataAnalysisPlanLog attaches schema correctly", {
   expect_equal(log$schema$types$indicator_name, "character")
   expect_equal(log$schema$types$calculation, "character")
   expect_equal(log$schema$types$multiplier, "numeric")
-  expect_equal(log$schema$allowed_values$calculation, c("prop", "mean", "median", "ratio"))
+  expect_equal(log$schema$allowed_values$calculation,
+               c("prop", "mean", "median", "ratio", "categorical", "select_multiple_cat"))
 })
 
 test_that("QuantDataAnalysisPlanLog initializes from CSV template structure", {

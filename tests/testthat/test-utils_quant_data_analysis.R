@@ -1115,7 +1115,172 @@ test_that("phr_calc_survey_categorical_single computes non-NA deff with cluster 
   }
 })
 
+# Tests for phr_calc_multiple_choice_cat ####
 
+test_that("phr_calc_multiple_choice_cat computes correct proportions for select-multiple variable", {
 
+  df <- tibble::tibble(
+    reasons = c(
+      "lack_of_info fed_other_milk",
+      "fed_other_milk lack_of_time",
+      "lack_of_info",
+      "lack_of_time fed_other_milk",
+      NA
+    ),
+    wt = c(1, 1, 1, 1, 1)
+  )
+
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "reasons",
+    indicator_name = "BF Lack Reasons"
+  )
+
+  expect_s3_class(out, "tbl_df")
+
+  # Unique responses: fed_other_milk, lack_of_info, lack_of_time
+  expect_equal(nrow(out), 3)
+
+  # All variable columns should refer back to the original var_name
+  expect_true(all(out$variable == "reasons"))
+
+  # Indicator names should include original name and response token
+  expect_true(any(grepl("fed_other_milk", out$indicator_name)))
+  expect_true(any(grepl("lack_of_info",   out$indicator_name)))
+  expect_true(any(grepl("lack_of_time",   out$indicator_name)))
+
+  # fed_other_milk appears in 3 of 4 answered records = 75%
+  pe_fed <- out$point.estimate[grepl("fed_other_milk", out$indicator_name)]
+  expect_equal(pe_fed, 75)
+
+  # lack_of_info appears in 2 of 4 = 50%
+  pe_info <- out$point.estimate[grepl("lack_of_info", out$indicator_name)]
+  expect_equal(pe_info, 50)
+
+  # lack_of_time appears in 2 of 4 = 50%
+  pe_time <- out$point.estimate[grepl("lack_of_time", out$indicator_name)]
+  expect_equal(pe_time, 50)
+})
+
+test_that("phr_calc_multiple_choice_cat returns NA row for invalid design", {
+
+  out <- phr_calc_multiple_choice_cat(
+    design = NULL,
+    var_name = "reasons",
+    indicator_name = "Test"
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_match(out$note, "invalid or missing survey design")
+})
+
+test_that("phr_calc_multiple_choice_cat returns NA row when variable not found", {
+
+  df <- tibble::tibble(x = c(1, 0, 1), wt = c(1, 1, 1))
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "not_in_data",
+    indicator_name = "Test"
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_match(out$note, "variable not found in dataset")
+})
+
+test_that("phr_calc_multiple_choice_cat returns NA row when all values are missing", {
+
+  df <- tibble::tibble(reasons = c(NA_character_, NA_character_), wt = c(1, 1))
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "reasons",
+    indicator_name = "Test"
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_match(out$note, "no non-missing values")
+})
+
+test_that("phr_calc_multiple_choice_cat handles single-token responses", {
+
+  df <- tibble::tibble(
+    reasons = c("optionA", "optionB", "optionA", "optionA"),
+    wt = rep(1, 4)
+  )
+
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "reasons",
+    indicator_name = "Single Token"
+  )
+
+  expect_equal(nrow(out), 2)
+  pe_a <- out$point.estimate[grepl("optionA", out$indicator_name)]
+  pe_b <- out$point.estimate[grepl("optionB", out$indicator_name)]
+  expect_equal(pe_a, 75)
+  expect_equal(pe_b, 25)
+})
+
+test_that("phr_calc_multiple_choice_cat works via phr_calc_survey_from_plan with select_multiple_cat", {
+
+  df <- tibble::tibble(
+    reasons = c(
+      "lack_of_info fed_other_milk",
+      "fed_other_milk lack_of_time",
+      "lack_of_info",
+      "lack_of_time",
+      NA
+    ),
+    wt = c(1, 1, 1, 1, 1)
+  )
+
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  plan <- tibble::tibble(
+    indicator_name = "BF Lack Reasons",
+    calculation    = "select_multiple_cat",
+    var_name       = "reasons",
+    denom_var      = NA_character_,
+    disaggregation = NA_character_,
+    multiplier     = 100,
+    indicator_unit = "%"
+  )
+
+  out <- phr_calc_survey_from_plan(design = design, analysis_plan = plan)
+
+  expect_s3_class(out, "tbl_df")
+  # 3 unique tokens = 3 rows
+  expect_equal(nrow(out), 3)
+  expect_true(all(!is.na(out$point.estimate)))
+  expect_true(all(grepl("BF Lack Reasons", out$indicator_name)))
+})
+
+test_that("QuantDataAnalysisPlanLog allows select_multiple_cat as calculation type", {
+
+  df <- tibble::tibble(
+    indicator_name = "BF Reasons",
+    calculation    = "select_multiple_cat",
+    var_name       = "nut_bf_lack_reasons",
+    denom_var      = NA_character_,
+    disaggregation = NA_character_,
+    multiplier     = 100,
+    indicator_unit = "%"
+  )
+
+  log <- QuantDataAnalysisPlanLog$new(df)
+
+  expect_silent(log$validate())
+  expect_true(log$validated)
+})
 
 
