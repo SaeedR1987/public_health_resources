@@ -424,7 +424,7 @@ test_that("outputs_diagnose flags unavailable function", {
 
   da$outputs_schema <- list(
     out1 = list(
-      output_name = "out1", output_title = "Out 1",
+      output_title = "out1", output_name = "Out 1",
       output_func_name = "this_func_does_not_exist_xyz",
       output_type = "visualization",
       variables = c("val"), test_params = list(), outputs_group = NULL
@@ -443,7 +443,7 @@ test_that("outputs_diagnose flags missing variable", {
 
   da$outputs_schema <- list(
     out_missing = list(
-      output_name = "out_missing", output_title = "Missing var output",
+      output_title = "out_missing", output_name = "Missing var output",
       output_func_name = "plot_stacked_bar",
       output_type = "visualization",
       variables = c("nonexistent_col"), test_params = list(), outputs_group = NULL
@@ -487,7 +487,7 @@ test_that("outputs_diagnose resolves canonical var names via variable_map", {
 
   da$outputs_schema <- list(
     out_mapped = list(
-      output_name = "out_mapped", output_title = "Mapped var output",
+      output_title = "out_mapped", output_name = "Mapped var output",
       output_func_name = "plot_stacked_bar",
       output_type = "visualization",
       variables = c("canonical_col"), test_params = list(), outputs_group = NULL
@@ -529,8 +529,8 @@ test_that("set_outputs_schema and get_outputs_schema work", {
 
   new_schema <- list(
     test_out = list(
-      output_name = "test_out",
-      output_title = "Test output",
+      output_title = "test_out",
+      output_name = "Test output",
       output_subtitle = NA_character_,
       variables = c("id"),
       disaggregation = NULL,
@@ -545,7 +545,7 @@ test_that("set_outputs_schema and get_outputs_schema work", {
   da$set_outputs_schema(new_schema)
   result <- da$get_outputs_schema()
   expect_equal(length(result), 1)
-  expect_equal(result$test_out$output_name, "test_out")
+  expect_equal(result$test_out$output_title, "test_out")
 })
 
 test_that("get_quality_schema returns current quality schema", {

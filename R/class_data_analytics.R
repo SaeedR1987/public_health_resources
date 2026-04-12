@@ -1373,7 +1373,7 @@ DataAnalytics <- R6::R6Class(
     #' For every output defined in \code{self$outputs_schema}, this method checks
     #' that (a) the output function exists, (b) any \code{variables} listed exist
     #' in the data or survey design, and (c) required schema fields
-    #' (\code{output_name}, \code{output_func_name}, \code{output_type}) are
+    #' (\code{output_title}, \code{output_func_name}, \code{output_type}) are
     #' non-empty. The results mirror the outputs schema table and add a
     #' \code{status} column. Results are stored in \code{self$outputs_issues_log}.
     #'
@@ -1407,6 +1407,16 @@ DataAnalytics <- R6::R6Class(
     #' \code{"base"}), calls the specified output function, and stores results
     #' in \code{self$visualizations} or \code{self$tables}.
     #'
+    #' The \code{output_name} field in each schema entry controls the key used
+    #' when storing results in \code{visualizations} or \code{tables}. The
+    #' \code{output_title} field (matching the schema list key) and the
+    #' language-specific title fields (\code{output_title_english},
+    #' \code{output_title_french}, \code{output_title_arabic}) are used to
+    #' auto-generate the \code{title_name} argument passed to \code{plot_*} or
+    #' \code{table_*} functions. The language-specific title for the chosen
+    #' \code{language} takes precedence; if absent the generic
+    #' \code{output_title} value is used as a fallback.
+    #'
     #' Supported \code{dataset_type} values:
     #' \describe{
     #'   \item{"base"}{uses \code{self$base_survey_design} (unweighted; default for all quality outputs)}
@@ -1415,8 +1425,12 @@ DataAnalytics <- R6::R6Class(
     #'   \item{"analysis_results_base"}{uses \code{self$analysis_results$base}}
     #' }
     #'
+    #' @param language Character string specifying the language for auto-generated
+    #'   titles. One of \code{"english"} (default), \code{"french"}, or
+    #'   \code{"arabic"}. Falls back to the generic \code{output_title} when the
+    #'   language-specific field is absent.
     #' @return Invisibly returns a list with \code{visualizations} and \code{tables}
-    run_outputs = function() {
+    run_outputs = function(language = "english") {
 
       phr_try({
 
@@ -1517,10 +1531,27 @@ DataAnalytics <- R6::R6Class(
               )
             }
 
-            label <- if (!is.null(out$output_title) && !is.na(out$output_title) && nzchar(out$output_title)) {
-              out$output_title
+            # Storage key: use output_name field; fall back to out_name (schema list key)
+            label <- if (!is.null(out$output_name) && !is.na(out$output_name) && nzchar(out$output_name)) {
+              out$output_name
             } else {
               out_name
+            }
+
+            # Auto-inject title_name unless already supplied in test_params
+            if (is.null(func_args[["title_name"]])) {
+              title_field <- switch(language,
+                "french"  = "output_title_french",
+                "arabic"  = "output_title_arabic",
+                "output_title_english"
+              )
+              auto_title <- out[[title_field]]
+              if (is.null(auto_title) || is.na(auto_title) || !nzchar(auto_title)) {
+                auto_title <- out$output_title
+              }
+              if (!is.null(auto_title) && !is.na(auto_title) && nzchar(auto_title)) {
+                func_args[["title_name"]] <- auto_title
+              }
             }
 
             group <- if (!is.null(out$outputs_group) && !is.na(out$outputs_group) && nzchar(out$outputs_group)) {
@@ -2453,8 +2484,8 @@ DataAnalytics <- R6::R6Class(
       phr_try({
 
         empty_result <- tibble::tibble(
-          output_name        = character(),
           output_title       = character(),
+          output_name        = character(),
           output_func_name   = character(),
           output_type        = character(),
           variables          = character(),
@@ -2483,7 +2514,7 @@ DataAnalytics <- R6::R6Class(
 
           func_name      <- out$output_func_name %||% NA_character_
           output_type    <- out$output_type      %||% NA_character_
-          output_title   <- out$output_title     %||% NA_character_
+          output_name    <- out$output_name      %||% NA_character_
           outputs_group  <- out$outputs_group    %||% NA_character_
           variables      <- out$variables        %||% character(0)
           test_params    <- out$test_params      %||% list()
@@ -2523,8 +2554,8 @@ DataAnalytics <- R6::R6Class(
           status <- if (length(issues) == 0) "ok" else paste(issues, collapse = "; ")
 
           rows[[length(rows) + 1]] <- tibble::tibble(
-            output_name        = out_name,
-            output_title       = output_title,
+            output_title       = out_name,
+            output_name        = output_name %||% NA_character_,
             output_func_name   = func_name %||% NA_character_,
             output_type        = output_type %||% NA_character_,
             variables          = if (length(variables) > 0) paste(variables, collapse = ", ") else NA_character_,

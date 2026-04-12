@@ -28,9 +28,12 @@ outputs_schema_to_table <- function(outputs_schema) {
   for (nm in names(outputs_schema)) {
     x <- outputs_schema[[nm]]
 
-    output_name <- x$output_name %||% nm
-    output_title <- x$output_title %||% NA_character_
+    output_title <- x$output_title %||% nm
+    output_name <- x$output_name %||% NA_character_
     output_subtitle <- x$output_subtitle %||% NA_character_
+    output_title_english <- x$output_title_english %||% NA_character_
+    output_title_french <- x$output_title_french %||% NA_character_
+    output_title_arabic <- x$output_title_arabic %||% NA_character_
 
     variables <- if (!is.null(x$variables)) {
       paste(x$variables, collapse = ",")
@@ -55,9 +58,12 @@ outputs_schema_to_table <- function(outputs_schema) {
     dataset_type <- x$dataset_type %||% NA_character_
 
     rows <- append(rows, list(tibble::tibble(
-      output_name = output_name,
       output_title = output_title,
+      output_name = output_name,
       output_subtitle = output_subtitle,
+      output_title_english = output_title_english,
+      output_title_french = output_title_french,
+      output_title_arabic = output_title_arabic,
       variables = variables,
       disaggregation = disaggregation,
       output_func_name = output_func_name,
@@ -89,8 +95,8 @@ outputs_table_to_schema <- function(df) {
   phr_validate_columns(
     df,
     required_cols = c(
-      "output_name",
       "output_title",
+      "output_name",
       "output_subtitle",
       "variables",
       "disaggregation",
@@ -108,7 +114,7 @@ outputs_table_to_schema <- function(df) {
   for (i in seq_len(nrow(df))) {
     row <- df[i, ]
 
-    output_name <- row$output_name
+    output_title <- row$output_title
 
     variables <- if (!is.na(row$variables) && nzchar(row$variables)) {
       strsplit(row$variables, ",")[[1]] |> trimws()
@@ -157,10 +163,28 @@ outputs_table_to_schema <- function(df) {
       row$dataset_type
     } else NULL
 
-    outputs[[output_name]] <- list(
-      output_name = output_name,
-      output_title = row$output_title,
+    output_title_english <- if ("output_title_english" %in% names(row) &&
+                                  !is.na(row$output_title_english) && nzchar(row$output_title_english)) {
+      row$output_title_english
+    } else NULL
+
+    output_title_french <- if ("output_title_french" %in% names(row) &&
+                                 !is.na(row$output_title_french) && nzchar(row$output_title_french)) {
+      row$output_title_french
+    } else NULL
+
+    output_title_arabic <- if ("output_title_arabic" %in% names(row) &&
+                                 !is.na(row$output_title_arabic) && nzchar(row$output_title_arabic)) {
+      row$output_title_arabic
+    } else NULL
+
+    outputs[[output_title]] <- list(
+      output_title = output_title,
+      output_name = row$output_name,
       output_subtitle = row$output_subtitle,
+      output_title_english = output_title_english,
+      output_title_french = output_title_french,
+      output_title_arabic = output_title_arabic,
       variables = variables,
       disaggregation = disaggregation,
       output_func_name = row$output_func_name,
@@ -195,8 +219,8 @@ outputs_validate_table_to_schema <- function(df) {
     )
 
     required_cols <- c(
-      "output_name",
       "output_title",
+      "output_name",
       "output_subtitle",
       "variables",
       "disaggregation",
@@ -264,24 +288,24 @@ outputs_validate_schema_to_table <- function(outputs_schema, origin = "outputs_v
         )
       }
 
-      # output_name
-      if (!is.character(out$output_name) || length(out$output_name) != 1) {
+      # output_title
+      if (!is.character(out$output_title) || length(out$output_title) != 1) {
         phr_error(
           origin  = origin,
-          message = phr_txt(glue::glue("`output_name` in '{name}' must be a single character string."))
+          message = phr_txt(glue::glue("`output_title` in '{name}' must be a single character string."))
         )
       }
 
-      if (out$output_name != name) {
+      if (out$output_title != name) {
         phr_error(
           origin  = origin,
           message = phr_txt(
             glue::glue(
-              "Output list name '{name}' does not match output_name field value '{out$output_name}'."
+              "Output list name '{name}' does not match output_title field value '{out$output_title}'."
             )
           ),
           hint = phr_txt(
-            "The name used in the outputs list must be identical to the output_name field value."
+            "The name used in the outputs list must be identical to the output_title field value."
           )
         )
       }

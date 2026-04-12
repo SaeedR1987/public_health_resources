@@ -758,8 +758,11 @@ MortalityDataAnalytics <- R6::R6Class(
     #'     \code{outputs_schema_deaths} is non-empty).}
     #' }
     #'
+    #' @param language Character string specifying the language for auto-generated
+    #'   titles. One of \code{"english"} (default), \code{"french"}, or
+    #'   \code{"arabic"}.
     #' @return Invisibly returns a list with \code{visualizations} and \code{tables}.
-    run_outputs = function() {
+    run_outputs = function(language = "english") {
       origin <- paste0(self$dataset_name, "$run_outputs")
 
       phr_try({
@@ -770,7 +773,7 @@ MortalityDataAnalytics <- R6::R6Class(
         self$visualizations <- list()
         self$tables         <- list()
 
-        super$run_outputs()
+        super$run_outputs(language = language)
 
         saved_viz[["household"]] <- self$visualizations
         saved_tbl[["household"]] <- self$tables
@@ -787,7 +790,8 @@ MortalityDataAnalytics <- R6::R6Class(
             data           = self$linked_ind_roster_data,
             outputs_schema = self$outputs_schema_roster,
             namespace      = "roster",
-            survey_design  = self$survey_design_roster
+            survey_design  = self$survey_design_roster,
+            language       = language
           )
 
         } else if (!is.null(self$linked_ind_roster_data)) {
@@ -803,7 +807,8 @@ MortalityDataAnalytics <- R6::R6Class(
             data           = self$linked_ind_deaths_data,
             outputs_schema = self$outputs_schema_deaths,
             namespace      = "deaths",
-            survey_design  = self$survey_design_deaths
+            survey_design  = self$survey_design_deaths,
+            language       = language
           )
 
         } else if (!is.null(self$linked_ind_deaths_data)) {
@@ -1088,7 +1093,7 @@ MortalityDataAnalytics <- R6::R6Class(
     #'   Should be pre-built and stored (e.g. \code{self$survey_design_roster}).
     #' @return Invisibly returns NULL.
     .run_outputs_for_namespace = function(data, outputs_schema, namespace,
-                                          survey_design = NULL) {
+                                          survey_design = NULL, language = "english") {
       origin <- paste0(self$dataset_name, "$.run_outputs_for_namespace[", namespace, "]")
 
       if (is.null(outputs_schema) || length(outputs_schema) == 0) {
@@ -1179,10 +1184,27 @@ MortalityDataAnalytics <- R6::R6Class(
             )
           }
 
-          label <- if (!is.null(out$output_title) && !is.na(out$output_title) && nzchar(out$output_title)) {
-            out$output_title
+          # Storage key: use output_name field; fall back to out_name (schema list key)
+          label <- if (!is.null(out$output_name) && !is.na(out$output_name) && nzchar(out$output_name)) {
+            out$output_name
           } else {
             out_name
+          }
+
+          # Auto-inject title_name unless already supplied in test_params
+          if (is.null(func_args[["title_name"]])) {
+            title_field <- switch(language,
+              "french"  = "output_title_french",
+              "arabic"  = "output_title_arabic",
+              "output_title_english"
+            )
+            auto_title <- out[[title_field]]
+            if (is.null(auto_title) || is.na(auto_title) || !nzchar(auto_title)) {
+              auto_title <- out$output_title
+            }
+            if (!is.null(auto_title) && !is.na(auto_title) && nzchar(auto_title)) {
+              func_args[["title_name"]] <- auto_title
+            }
           }
 
           phr_message(phr_txt(glue::glue(
