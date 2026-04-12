@@ -444,7 +444,7 @@ add_muac <- function(
         sam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, sam_muac),
         mam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, mam_muac),
         gam_muac_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, gam_muac),
-        nut_muac_cat_noflag = dplyr::if_else(flag_muac_extreme == 1, NA_real_, nut_muac_cat),
+        nut_muac_cat_noflag = dplyr::if_else(flag_muac_extreme == 1, factor(NA_character_, levels = levels(nut_muac_cat), ordered = TRUE), nut_muac_cat),
         nut_muac_cm_noflag = dplyr::if_else(
           flag_muac_extreme == 1,
           NA_real_,
