@@ -126,6 +126,35 @@ test_that("phr_calc_survey_prop_single returns NA for non-binary variable", {
 
 })
 
+test_that("phr_calc_survey_prop_single returns NA gracefully when all values are NA", {
+
+  # This simulates what happens with mfaz classification columns (moderate_mfaz,
+  # global_mfaz, etc.) when a subgroup contains only records outside the 6-59
+  # month age range: all values are NA_real_ and survey::svyciprop would
+  # otherwise throw "Argument mu must be a nonempty numeric vector".
+  df <- tibble(
+    moderate_mfaz = c(NA_real_, NA_real_, NA_real_),
+    wt = c(1, 1, 1)
+  )
+
+  dsgn <- df %>% as_survey(weights = wt)
+
+  out <- phr_calc_survey_prop_single(
+    design = dsgn,
+    var_name = "moderate_mfaz",
+    indicator_name = "Moderate MFAZ"
+  )
+
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_true(is.na(out$lower_ci))
+  expect_true(is.na(out$upper_ci))
+  expect_equal(out$denom_unweighted, 0)
+  expect_match(out$note, "no valid \\(non-NA\\) observations")
+
+})
+
 # Testing Survey Mean Single Calculations ####
 
 test_that("phr_calc_survey_mean_single computes weighted mean correctly", {
