@@ -958,7 +958,15 @@ plot_cumulative_distribution <- function(survey_design, data_var,
       df <- df %>% dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
+    n_before <- sum(!is.na(df[[data_var]]))
     df <- df %>% dplyr::mutate(!!rlang::sym(data_var) := as.numeric(!!rlang::sym(data_var)))
+    n_after <- sum(!is.na(df[[data_var]]))
+    if (n_after < n_before) {
+      phr_warning(
+        paste0("Coercing '", data_var, "' to numeric introduced ", n_before - n_after, " NA value(s). Check that the column contains valid numbers."),
+        origin = origin
+      )
+    }
 
     # Set defaults based on data range if not provided
     if (is.null(xlim)) {
