@@ -3927,9 +3927,16 @@ plot_grouped_bar_multiple <- function(survey_design,
   }, on_error = "warn", origin = origin)
 }
 
-# Internal helper: apply response_labels to a character vector of token strings
-# labels may be NULL (no-op), a named vector (name→label map), or a positional
-# vector (same length as tokens, applied in order).
+#' Apply response labels to a vector of token strings
+#'
+#' @param tokens Character vector of response tokens.
+#' @param labels Optional named or positional character vector of labels.
+#'   If \code{NULL}, \code{tokens} is returned unchanged.
+#'   If named, matching token names are replaced by their corresponding label.
+#'   If positional, must be the same length as \code{tokens}; otherwise a
+#'   warning is issued and \code{tokens} is returned unchanged.
+#' @return Character vector of (possibly relabelled) tokens.
+#' @noRd
 .apply_response_labels <- function(tokens, labels) {
   if (is.null(labels)) return(tokens)
   if (!is.null(names(labels))) {
@@ -3940,6 +3947,12 @@ plot_grouped_bar_multiple <- function(survey_design,
     # Positional vector: must be same length
     if (length(labels) == length(tokens)) {
       tokens <- labels
+    } else {
+      warning(paste0(
+        ".apply_response_labels: positional response_labels length (",
+        length(labels), ") does not match the number of unique tokens (",
+        length(tokens), "); labels were ignored."
+      ))
     }
   }
   tokens
