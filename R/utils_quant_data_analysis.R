@@ -1545,10 +1545,13 @@ phr_calc_multiple_choice_cat <- function(
 
   results <- purrr::map_dfr(unique_responses, function(resp) {
 
-    # Use grepl to flag records where this response token appears
+    # Escape any regex special characters in the token before building pattern
+    resp_esc <- gsub("([.\\[\\]()^$*+?{}|\\\\])", "\\\\\\1", resp, perl = TRUE)
+
+    # Use grepl to flag records where this response token appears as a whole word
     design_tmp <- design_answered
     design_tmp$variables$.tmp_mc <- as.integer(
-      grepl(pattern = paste0("(^|\\s)", resp, "(\\s|$)"),
+      grepl(pattern = paste0("(^|\\s)", resp_esc, "(\\s|$)"),
             x       = design_tmp$variables[[var_name]],
             perl    = TRUE)
     )
