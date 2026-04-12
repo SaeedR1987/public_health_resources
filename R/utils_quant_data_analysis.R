@@ -51,7 +51,7 @@ safe_lgl <- function(x) if (length(x) == 1 && !is.null(x)) as.logical(x) else NA
 #'   CI selection (e.g. logit-transformed CIs for proportions).
 #'
 #' @return A tibble of analysis results, one row per indicator (or one row per
-#'   disaggregation group plus an overall row when disaggregation is specified).
+#'   disaggregation group when disaggregation is specified).
 #' @noRd
 phr_calc_survey_from_plan <- function(design,
                                         analysis_plan,
@@ -220,9 +220,7 @@ phr_calc_survey_from_plan <- function(design,
         }
       })
 
-      overall_result <- run_single_calc(design, group_value = "Overall")
-      combined <- dplyr::bind_rows(overall_result, group_results)
-      results[[i]] <- combined
+      results[[i]] <- group_results
 
     } else {
       results[[i]] <- run_single_calc(design, group_value = "Overall")

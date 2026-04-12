@@ -490,9 +490,9 @@ test_that("phr_calc_survey_from_plan correctly performs disaggregation", {
 
   out <- phr_calc_survey_from_plan(design, plan)
 
-  # Should have: Overall + A + B = 3 rows
-  expect_equal(nrow(out), 3)
-  expect_setequal(out$disaggregation_value, c("Overall","A","B"))
+  # Should have: A + B only (no Overall when disaggregation is specified)
+  expect_equal(nrow(out), 2)
+  expect_setequal(out$disaggregation_value, c("A","B"))
 })
 
 test_that("phr_calc_survey_from_plan gracefully handles missing variables", {
@@ -720,12 +720,12 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with disaggr
 
   # ------------------------------------------------------
   # Expected rows:
-  #   PROP → 3 groups (A, B, Overall)
-  #   MEAN → 3 groups
-  #   CAT  → 3 categories × 3 groups = 9
-  #   TOTAL = 3 + 3 + 9 = 15
+  #   PROP → 2 groups (A, B)
+  #   MEAN → 2 groups
+  #   CAT  → 3 categories × 2 groups = 6
+  #   TOTAL = 2 + 2 + 6 = 10
   # ------------------------------------------------------
-  expect_equal(nrow(out), 15)
+  expect_equal(nrow(out), 10)
 
   # ------------------------------------------------------
   # Categorical indicator names expand correctly
@@ -739,10 +739,12 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with disaggr
   )))
 
   # ------------------------------------------------------
-  # Disaggregation column should exist and contain correct levels
+  # Disaggregation column should exist and contain only the group levels
+  # (no Overall row when disaggregation is requested)
   # ------------------------------------------------------
   expect_true("disaggregation_value" %in% names(out))
-  expect_true(all(c("A", "B", "Overall") %in% out$disaggregation_value))
+  expect_true(all(c("A", "B") %in% out$disaggregation_value))
+  expect_false("Overall" %in% out$disaggregation_value)
 
   # Basic structure checks
   expect_s3_class(out, "tbl_df")
@@ -801,12 +803,12 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with stratif
 
   # ------------------------------------------------------
   # Expected rows:
-  #   PROP → 3 groups (G1, G2, Overall)
-  #   MEAN → 3 groups
-  #   CAT  → 3 categories × 3 groups = 9
-  #   TOTAL = 3 + 3 + 9 = 15
+  #   PROP → 2 groups (G1, G2)
+  #   MEAN → 2 groups
+  #   CAT  → 3 categories × 2 groups = 6
+  #   TOTAL = 2 + 2 + 6 = 10
   # ------------------------------------------------------
-  expect_equal(nrow(out), 15)
+  expect_equal(nrow(out), 10)
 
   # ------------------------------------------------------
   # Confirm categorical expansion works
@@ -820,10 +822,11 @@ test_that("phr_calc_survey_from_plan handles categorical indicators with stratif
   )))
 
   # ------------------------------------------------------
-  # Check disaggregation values exist
+  # Check disaggregation values exist and no Overall row is added
   # ------------------------------------------------------
   expect_true("disaggregation_value" %in% names(out))
-  expect_true(all(c("G1", "G2", "Overall") %in% out$disaggregation_value))
+  expect_true(all(c("G1", "G2") %in% out$disaggregation_value))
+  expect_false("Overall" %in% out$disaggregation_value)
 
   # ------------------------------------------------------
   # Complex design metadata present
