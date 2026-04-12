@@ -1270,7 +1270,7 @@ DataAnalytics <- R6::R6Class(
 
       origin <- paste0(self$dataset_name, "$analysis_diagnose")
 
-      valid_calcs <- c("prop", "mean", "median", "ratio", "cat", "categorical")
+      valid_calcs <- c("prop", "mean", "median", "ratio", "cat", "categorical", "select_multiple_cat")
 
       empty_result <- tibble::tibble(
         indicator_name          = character(),
@@ -1289,11 +1289,11 @@ DataAnalytics <- R6::R6Class(
 
       phr_try({
 
-        plan_df <- if (!is.null(self$data_analysis_plan)) self$data_analysis_plan$log_df else NULL
+        schema_df <- if (!is.null(self$analysis_schema)) self$analysis_schema else NULL
 
-        if (is.null(plan_df) || nrow(plan_df) == 0) {
+        if (is.null(schema_df) || nrow(schema_df) == 0) {
           phr_warning(
-            message = "No analysis plan defined. Cannot diagnose.",
+            message = "No analysis schema defined. Cannot diagnose.",
             origin  = origin
           )
           self$analysis_plan_issues_log <- empty_result
@@ -1308,8 +1308,8 @@ DataAnalytics <- R6::R6Class(
           character(0)
         }
 
-        rows <- lapply(seq_len(nrow(plan_df)), function(i) {
-          row <- plan_df[i, ]
+        rows <- lapply(seq_len(nrow(schema_df)), function(i) {
+          row <- schema_df[i, ]
 
           # Helper: resolve a canonical name through variable_map and check availability
           resolve_var <- function(val) {
