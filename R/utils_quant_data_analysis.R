@@ -512,6 +512,30 @@ phr_calc_survey_prop_single <- function(design,
   denom_weighted     <- as.numeric(dsn_sum$denom_weighted)
   denom_unweighted   <- as.numeric(dsn_sum$denom_unweighted)
 
+  # Early return when there are no non-NA observations (e.g. all records filtered
+  # out by an age-range restriction such as mfaz columns outside 6-59 months).
+  # survey::svyciprop would otherwise throw "Argument mu must be a nonempty
+  # numeric vector".
+  if (is.na(denom_unweighted) || denom_unweighted == 0) {
+    return(tibble::tibble(
+      variable = var_name,
+      indicator_name = indicator_name,
+      indicator_unit = indicator_unit,
+      point.estimate = NA_real_,
+      lower_ci = NA_real_,
+      upper_ci = NA_real_,
+      ci_method = NA_character_,
+      n_unweighted = 0,
+      n_weighted = NA_real_,
+      denom_unweighted = 0,
+      denom_weighted = NA_real_,
+      n_eff = NA_real_,
+      deff = NA_real_,
+      group_name = group_name_label,
+      note = "no valid (non-NA) observations in this group"
+    ))
+  }
+
   # Effective sample size
   w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
