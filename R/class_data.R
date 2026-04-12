@@ -877,7 +877,14 @@ Data <- R6::R6Class(
                         }
                       }
 
-                      func_args[[arg_name]] <- resolved_elements
+                      numeric_attempt <- suppressWarnings(as.numeric(resolved_elements))
+                      if (length(resolved_elements) > 0 && !any(is.na(numeric_attempt))) {
+                        func_args[[arg_name]] <- numeric_attempt
+                      } else if (length(resolved_elements) > 0 && all(toupper(resolved_elements) %in% c("TRUE", "FALSE"))) {
+                        func_args[[arg_name]] <- as.logical(resolved_elements)
+                      } else {
+                        func_args[[arg_name]] <- resolved_elements
+                      }
                     }
                     # Resolve variable_map references (e.g., "@variable_map$fsl_fcs_cereal")
                     else if (is.character(arg_value) && grepl("^@variable_map\\$", arg_value)) {
