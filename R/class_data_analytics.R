@@ -39,6 +39,7 @@
 #' @field analysis_results Results of quantitative analysis (named list: survey_design, base)
 #' @field data_analysis_plan QuantDataAnalysisPlanLog object holding the analysis plan
 #' @field survey_design srvyr survey design object
+#' @field base_survey_design Unfiltered base srvyr survey design object (used internally for analysis)
 #' @field analysis_plan_issue_log Tibble of plan validation issues (internal)
 #' @field quality_issues_log Tibble of quality schema diagnostic results from quality_diagnose()
 #' @field analysis_plan_issues_log Tibble of analysis plan diagnostic results from analysis_diagnose()
@@ -2319,14 +2320,14 @@ DataAnalytics <- R6::R6Class(
 
   private = list(
 
-    #' Resolve @ references in test_params into concrete values for do.call()
-    #'
-    #' @param func_args Named list; positional/named args accumulated so far.
-    #' @param test_params Named list of raw parameter values (may contain @-refs).
-    #' @param out_name Character; output name used in warning messages.
-    #' @param skip_results_table Logical; if TRUE, @results_table entries are
-    #'   skipped as named args (they were already handled as first positional arg).
-    #' @return Updated func_args list.
+    # Resolve @ references in test_params into concrete values for do.call()
+    #
+    # @param func_args Named list; positional/named args accumulated so far.
+    # @param test_params Named list of raw parameter values (may contain @-refs).
+    # @param out_name Character; output name used in warning messages.
+    # @param skip_results_table Logical; if TRUE, @results_table entries are
+    #   skipped as named args (they were already handled as first positional arg).
+    # @return Updated func_args list.
     .resolve_output_params = function(func_args, test_params, out_name,
                                      skip_results_table = FALSE) {
 
@@ -2471,14 +2472,14 @@ DataAnalytics <- R6::R6Class(
       return(func_args)
     },
 
-    #' Shared implementation for outputs_diagnose
-    #'
-    #' @param schema Named list; the outputs schema to inspect.
-    #' @param schema_name Character; name used in messages.
-    #' @param log_field Character; name of the public field to store results in.
-    #' @param data_cols Character vector; column names available in the relevant data source.
-    #' @param origin Character; calling method name for error messages.
-    #' @return A tibble (invisibly).
+    # Shared implementation for outputs_diagnose
+    #
+    # @param schema Named list; the outputs schema to inspect.
+    # @param schema_name Character; name used in messages.
+    # @param log_field Character; name of the public field to store results in.
+    # @param data_cols Character vector; column names available in the relevant data source.
+    # @param origin Character; calling method name for error messages.
+    # @return A tibble (invisibly).
     .diagnose_outputs_schema = function(schema, schema_name, log_field, data_cols, origin) {
 
       phr_try({

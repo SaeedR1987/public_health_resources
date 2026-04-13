@@ -2393,57 +2393,6 @@ plot_domain_radar <- function(survey_design,
 #'     response_labels = c("barrier_no_staff" = "No Staff", "barrier_no_medicine" = "No Medicine")
 #'   )
 #' )
-#' @param color_palette Color palette to use. By default: "reach1"
-#' @param title_name Title of the plot. By default: NULL
-#' @param subtitle Subtitle of the plot. By default: NULL
-#' @param x_lab Label for x-axis. By default: "Count"
-#' @param y_lab Label for y-axis. By default: "Response"
-#'
-#' @param legend_position Position of the legend when multiple groups are present. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
-#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
-#' @return Returns a ggplot2 object.
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#'   domain_list <- list(
-#'     accessibility = list(
-#'       responses = c("barrier.distance", "barrier.costtransport"),
-#'       label = "Accessibility Barriers",
-#'       response_labels = c("barrier.distance" = "Too Far",
-#'                          "barrier.costtransport" = "Transport Cost")
-#'     ),
-#'     quality = list(
-#'       responses = c("barrier.rudestaff"),
-#'       label = "Quality Barriers",
-#'       response_labels = c("barrier.rudestaff" = "Rude Staff")
-#'     )
-#'   )
-#'   plot_domain_distribution(survey_design = data, domain_list = domain_list)
-#' }
-#' @importFrom rlang .data
-
-#' Plot Select Multiple Across Domains
-#'
-#' This functions plots a count distribution of responses for a select multiple question
-#' and shows their responses distributed against some domain categorization of those
-#' response. E.g A health barriers question with several response options, however those
-#' response options can be grouped by barriers related to availability, accessibility, or
-#' quality of services. Each response option should only belong to one domain category.
-#'
-#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
-#' @param domain_list A named list where each element represents a domain. Each domain element
-#' should be a list with:
-#'   - 'responses': character vector of column names for that domain
-#'   - 'label': (optional) display label for the domain
-#'   - 'response_labels': (optional) named vector mapping column names to display labels
-#' Example: list(
-#'   availability = list(
-#'     responses = c("barrier_no_staff", "barrier_no_medicine"),
-#'     label = "Availability Issues",
-#'     response_labels = c("barrier_no_staff" = "No Staff", "barrier_no_medicine" = "No Medicine")
-#'   )
-#' )
 #' @param show_percentage Logical. If TRUE, shows percentages instead of counts.
 #' By default: FALSE. Note: For select multiple questions, percentages may sum to >100%.
 #' @param flip_coordinates Logical. If TRUE, creates horizontal bars (flipped coordinates).
