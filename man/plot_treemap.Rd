@@ -5,7 +5,7 @@
 \title{Plot Treemap}
 \usage{
 plot_treemap(
-  df,
+  survey_design,
   category_var,
   subcategory_var = NULL,
   size_var = NULL,
@@ -13,6 +13,7 @@ plot_treemap(
   weights_col = NULL,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   label_size = 1,
   legend_position = "bottom",
@@ -20,7 +21,7 @@ plot_treemap(
 )
 }
 \arguments{
-\item{df}{Data frame containing the data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{category_var}{Character, column name for the main category (required)}
 

@@ -5,37 +5,43 @@
 \title{Plot Donut Chart}
 \usage{
 plot_donut(
-  df,
+  survey_design,
   category_var,
   value_var = NULL,
   weighted = FALSE,
   weights_col = NULL,
   show_labels = TRUE,
   label_type = "percentage",
+  label_color = "white",
   hole_size = 0.4,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   legend_label = NULL,
   legend_position = "right"
 )
 }
 \arguments{
-\item{df}{Data frame containing the data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
-\item{category_var}{Character, column for categories (required)}
+\item{category_var}{Character, column containing categories (required)}
 
-\item{value_var}{Character, optional column for values (NULL = count rows) (default: NULL)}
+\item{value_var}{Character, optional column with numeric values to sum (default: NULL)
+When provided, the donut shows sum of values by category instead of count of observations}
 
 \item{weighted}{Logical, whether to use weighted calculations (default: FALSE)}
 
 \item{weights_col}{Character, name of the weights column (required if weighted = TRUE)}
 
-\item{show_labels}{Logical, show labels on the donut (default: TRUE)}
+\item{show_labels}{Logical, show value labels on segments (default: TRUE)}
 
-\item{label_type}{Character, "percentage", "count", or "both" (default: "percentage")}
+\item{label_type}{Character, type of labels: "percentage", "count", "both" (default: "percentage")
+Note: "count" shows sum when value_var is used, otherwise shows observation count}
 
-\item{hole_size}{Numeric 0-1, size of the donut hole (default: 0.4)}
+\item{label_color}{Character, color of text labels (default: "white")}
+
+\item{hole_size}{Numeric, size of center hole (0-1, default: 0.4)}
 
 \item{color_palette}{Character, color palette type (default: "reach1")}
 
@@ -51,5 +57,5 @@ plot_donut(
 A ggplot2 donut chart
 }
 \description{
-Creates a donut chart showing proportions of a categorical variable
+Creates a donut chart showing categorical proportions
 }

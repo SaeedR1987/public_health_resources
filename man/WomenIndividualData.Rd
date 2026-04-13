@@ -27,6 +27,7 @@ specific to maternal health assessments.
 \item \href{#method-WomenIndividualData-default_women_schema}{\code{WomenIndividualData$default_women_schema()}}
 \item \href{#method-WomenIndividualData-default_indicator_schema}{\code{WomenIndividualData$default_indicator_schema()}}
 \item \href{#method-WomenIndividualData-default_dependency_schema}{\code{WomenIndividualData$default_dependency_schema()}}
+\item \href{#method-WomenIndividualData-generate_data_analytics}{\code{WomenIndividualData$generate_data_analytics()}}
 \item \href{#method-WomenIndividualData-clone}{\code{WomenIndividualData$clone()}}
 }
 }
@@ -40,7 +41,6 @@ specific to maternal health assessments.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".translate_expression"><a href='../../iphRa/html/Data.html#method-Data-.translate_expression'><code>iphRa::Data$.translate_expression()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="add_linked_dataset"><a href='../../iphRa/html/Data.html#method-Data-add_linked_dataset'><code>iphRa::Data$add_linked_dataset()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="clean"><a href='../../iphRa/html/Data.html#method-Data-clean'><code>iphRa::Data$clean()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="create_analysis"><a href='../../iphRa/html/Data.html#method-Data-create_analysis'><code>iphRa::Data$create_analysis()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="data_diagnose"><a href='../../iphRa/html/Data.html#method-Data-data_diagnose'><code>iphRa::Data$data_diagnose()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_data"><a href='../../iphRa/html/Data.html#method-Data-export_data'><code>iphRa::Data$export_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-export_dependency_schema'><code>iphRa::Data$export_dependency_schema()</code></a></span></li>
@@ -66,6 +66,7 @@ specific to maternal health assessments.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_schema"><a href='../../iphRa/html/Data.html#method-Data-import_schema'><code>iphRa::Data$import_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-import_variable_schema'><code>iphRa::Data$import_variable_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="load_object"><a href='../../iphRa/html/Data.html#method-Data-load_object'><code>iphRa::Data$load_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_labels"><a href='../../iphRa/html/Data.html#method-Data-map_schema_labels'><code>iphRa::Data$map_schema_labels()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_vars"><a href='../../iphRa/html/Data.html#method-Data-map_schema_vars'><code>iphRa::Data$map_schema_vars()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize"><a href='../../iphRa/html/Data.html#method-Data-post_standardize'><code>iphRa::Data$post_standardize()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize_domain"><a href='../../iphRa/html/Data.html#method-Data-post_standardize_domain'><code>iphRa::Data$post_standardize_domain()</code></a></span></li>
@@ -87,8 +88,6 @@ specific to maternal health assessments.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="validate"><a href='../../iphRa/html/Data.html#method-Data-validate'><code>iphRa::Data$validate()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="validate_links"><a href='../../iphRa/html/Data.html#method-Data-validate_links'><code>iphRa::Data$validate_links()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="default_schema"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-default_schema'><code>iphRa::IndividualData$default_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="generate_data_analysis"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-generate_data_analysis'><code>iphRa::IndividualData$generate_data_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="generate_data_quality"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-generate_data_quality'><code>iphRa::IndividualData$generate_data_quality()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="post_validate"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-post_validate'><code>iphRa::IndividualData$post_validate()</code></a></span></li>
 </ul>
 </details>
@@ -130,7 +129,7 @@ A new WomenIndividualData object
 \subsection{Method \code{default_women_schema()}}{
 Load the default variable schema for women's maternal health data
 
-Reads the individual_maternalhealth_variable_schema_template.xlsx file from package resources
+Reads the variable_schema_data_individual_maternalhealth_template.xlsx file from package resources
 and converts it to a nested list of variable definitions for maternal health indicators.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WomenIndividualData$default_women_schema()}\if{html}{\out{</div>}}
@@ -146,7 +145,7 @@ A list containing the women's maternal health variable schema
 \subsection{Method \code{default_indicator_schema()}}{
 Load the default indicator schema for women's maternal health data
 
-Reads the individual_maternalhealth_indicator_schema_template.xlsx file from package resources
+Reads the indicator_schema_data_individual_maternalhealth_template.xlsx file from package resources
 and converts it to a nested list of indicator definitions (e.g., ANC coverage).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WomenIndividualData$default_indicator_schema()}\if{html}{\out{</div>}}
@@ -162,7 +161,7 @@ A list containing the maternal health indicator schema
 \subsection{Method \code{default_dependency_schema()}}{
 Load the default dependency schema for women's maternal health data
 
-Reads the individual_maternalhealth_dependency_schema_template.xlsx file from package resources
+Reads the dependency_schema_data_individual_maternalhealth_template.xlsx file from package resources
 and converts it to a nested list of variable dependency rules.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WomenIndividualData$default_dependency_schema()}\if{html}{\out{</div>}}
@@ -170,6 +169,32 @@ and converts it to a nested list of variable dependency rules.
 
 \subsection{Returns}{
 A list containing the maternal health dependency schema
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WomenIndividualData-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-WomenIndividualData-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a DataAnalytics object for women individual data.
+Combines quality checks and quantitative analysis in one object.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WomenIndividualData$generate_data_analytics(
+  stage = c("standardized", "clean"),
+  analysis_config = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
+
+\item{\code{analysis_config}}{Optional data analysis plan (tibble)}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A DataAnalytics object or NULL
 }
 }
 \if{html}{\out{<hr>}}

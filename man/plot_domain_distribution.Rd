@@ -5,12 +5,13 @@
 \title{Plot Select Multiple Across Domains}
 \usage{
 plot_domain_distribution(
-  df,
+  survey_design,
   domain_list,
   show_percentage = FALSE,
   flip_coordinates = TRUE,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -20,7 +21,7 @@ plot_domain_distribution(
 )
 }
 \arguments{
-\item{df}{Inputs a dataframe.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{domain_list}{A named list where each element represents a domain. Each domain element
 should be a list with:
@@ -84,7 +85,7 @@ quality of services. Each response option should only belong to one domain categ
       response_labels = c("barrier.rudestaff" = "Rude Staff")
     )
   )
-  plot_domain_distribution(df = data, domain_list = domain_list)
+  plot_domain_distribution(survey_design = data, domain_list = domain_list)
 }
 \dontrun{
   domain_list <- list(
@@ -96,13 +97,13 @@ quality of services. Each response option should only belong to one domain categ
     )
   )
   # Horizontal bars (default)
-  plot_domain_distribution(df = data, domain_list = domain_list)
+  plot_domain_distribution(survey_design = data, domain_list = domain_list)
 
   # Vertical bars
-  plot_domain_distribution(df = data, domain_list = domain_list, flip_coordinates = FALSE,
+  plot_domain_distribution(survey_design = data, domain_list = domain_list, flip_coordinates = FALSE,
                               legend_position = "bottom")
 
   # Show percentages
-  plot_domain_distribution(df = data, domain_list = domain_list, show_percentage = TRUE)
+  plot_domain_distribution(survey_design = data, domain_list = domain_list, show_percentage = TRUE)
 }
 }

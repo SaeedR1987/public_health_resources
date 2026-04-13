@@ -5,7 +5,7 @@
 \title{Plot Age Pyramid}
 \usage{
 plot_age_pyramid(
-  .dataset,
+  survey_design,
   sex_col,
   age_years_col,
   age_grouping = FALSE,
@@ -19,6 +19,7 @@ plot_age_pyramid(
   proportional = TRUE,
   color_palette = "sex",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -26,7 +27,7 @@ plot_age_pyramid(
 )
 }
 \arguments{
-\item{.dataset}{HH_roster Data with Age and Sex of individuals}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{sex_col}{(Required) The variable name in the Data indicating the sex of the individual.}
 
@@ -79,10 +80,10 @@ Plot Age Pyramid
 }
 \examples{
 \dontrun{
-  plot_age_pyramid(.dataset = hh_roster, sex_col = "sex", age_years_col = "age_years")
-  plot_age_pyramid(.dataset = hh_roster, sex_col = "gender", age_years_col = "age",
+  plot_age_pyramid(survey_design = hh_roster, sex_col = "sex", age_years_col = "age_years")
+  plot_age_pyramid(survey_design = hh_roster, sex_col = "gender", age_years_col = "age",
                    sex_male_val = "m", sex_female_val = "f")
-  plot_age_pyramid(.dataset = hh_roster, sex_col = "sex", age_years_col = "age_years",
+  plot_age_pyramid(survey_design = hh_roster, sex_col = "sex", age_years_col = "age_years",
                    weights_col = "survey_weight", weighted_result = TRUE)
 }
 }

@@ -39,6 +39,7 @@ within a household.
 \item \href{#method-WaterContainerData-default_indicator_schema}{\code{WaterContainerData$default_indicator_schema()}}
 \item \href{#method-WaterContainerData-default_dependency_schema}{\code{WaterContainerData$default_dependency_schema()}}
 \item \href{#method-WaterContainerData-post_validate}{\code{WaterContainerData$post_validate()}}
+\item \href{#method-WaterContainerData-generate_data_analytics}{\code{WaterContainerData$generate_data_analytics()}}
 \item \href{#method-WaterContainerData-clone}{\code{WaterContainerData$clone()}}
 }
 }
@@ -52,15 +53,12 @@ within a household.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".translate_expression"><a href='../../iphRa/html/Data.html#method-Data-.translate_expression'><code>iphRa::Data$.translate_expression()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="add_linked_dataset"><a href='../../iphRa/html/Data.html#method-Data-add_linked_dataset'><code>iphRa::Data$add_linked_dataset()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="clean"><a href='../../iphRa/html/Data.html#method-Data-clean'><code>iphRa::Data$clean()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="create_analysis"><a href='../../iphRa/html/Data.html#method-Data-create_analysis'><code>iphRa::Data$create_analysis()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="data_diagnose"><a href='../../iphRa/html/Data.html#method-Data-data_diagnose'><code>iphRa::Data$data_diagnose()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_data"><a href='../../iphRa/html/Data.html#method-Data-export_data'><code>iphRa::Data$export_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-export_dependency_schema'><code>iphRa::Data$export_dependency_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_indicator_schema"><a href='../../iphRa/html/Data.html#method-Data-export_indicator_schema'><code>iphRa::Data$export_indicator_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-export_variable_schema'><code>iphRa::Data$export_variable_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="generate_cleaning_log"><a href='../../iphRa/html/Data.html#method-Data-generate_cleaning_log'><code>iphRa::Data$generate_cleaning_log()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="generate_data_analysis"><a href='../../iphRa/html/Data.html#method-Data-generate_data_analysis'><code>iphRa::Data$generate_data_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="generate_data_quality"><a href='../../iphRa/html/Data.html#method-Data-generate_data_quality'><code>iphRa::Data$generate_data_quality()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_column_info"><a href='../../iphRa/html/Data.html#method-Data-get_column_info'><code>iphRa::Data$get_column_info()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_data"><a href='../../iphRa/html/Data.html#method-Data-get_data'><code>iphRa::Data$get_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-get_dependency_schema'><code>iphRa::Data$get_dependency_schema()</code></a></span></li>
@@ -80,6 +78,7 @@ within a household.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_schema"><a href='../../iphRa/html/Data.html#method-Data-import_schema'><code>iphRa::Data$import_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-import_variable_schema'><code>iphRa::Data$import_variable_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="load_object"><a href='../../iphRa/html/Data.html#method-Data-load_object'><code>iphRa::Data$load_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_labels"><a href='../../iphRa/html/Data.html#method-Data-map_schema_labels'><code>iphRa::Data$map_schema_labels()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_vars"><a href='../../iphRa/html/Data.html#method-Data-map_schema_vars'><code>iphRa::Data$map_schema_vars()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize"><a href='../../iphRa/html/Data.html#method-Data-post_standardize'><code>iphRa::Data$post_standardize()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize_domain"><a href='../../iphRa/html/Data.html#method-Data-post_standardize_domain'><code>iphRa::Data$post_standardize_domain()</code></a></span></li>
@@ -140,7 +139,7 @@ A new WaterContainerData object
 \subsection{Method \code{default_schema()}}{
 Load the default variable schema for water container data
 
-Reads the water_container_variable_schema_template.xlsx file from package resources
+Reads the variable_schema_data_water_container_template.xlsx file from package resources
 and converts it to a nested list of variable definitions for container characteristics.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WaterContainerData$default_schema()}\if{html}{\out{</div>}}
@@ -156,7 +155,7 @@ A list containing the water container variable schema
 \subsection{Method \code{default_indicator_schema()}}{
 Load the default indicator schema for water container data
 
-Reads the water_container_indicator_schema_template.xlsx file from package resources
+Reads the indicator_schema_data_water_container_template.xlsx file from package resources
 and converts it to a nested list of indicator definitions (e.g., water quality metrics).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WaterContainerData$default_indicator_schema()}\if{html}{\out{</div>}}
@@ -172,7 +171,7 @@ A list containing the water container indicator schema
 \subsection{Method \code{default_dependency_schema()}}{
 Load the default dependency schema for water container data
 
-Reads the water_container_dependency_schema_template.xlsx file from package resources
+Reads the dependency_schema_data_water_container_template.xlsx file from package resources
 and converts it to a nested list of variable dependency rules.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{WaterContainerData$default_dependency_schema()}\if{html}{\out{</div>}}
@@ -203,6 +202,32 @@ specific to water container data (e.g., E.coli results only when tested).
 }
 \subsection{Returns}{
 TRUE if validation passed without issues, FALSE if warnings were raised
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-WaterContainerData-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-WaterContainerData-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a WaterContainerDataAnalytics object for this water container dataset.
+Combines quality checks and quantitative analysis in one object.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{WaterContainerData$generate_data_analytics(
+  stage = c("standardized", "clean"),
+  analysis_config = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
+
+\item{\code{analysis_config}}{Optional data analysis plan (tibble)}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A WaterContainerDataAnalytics object or NULL
 }
 }
 \if{html}{\out{<hr>}}

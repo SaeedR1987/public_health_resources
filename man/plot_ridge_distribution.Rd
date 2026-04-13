@@ -5,7 +5,7 @@
 \title{Plot Ridge Distribution}
 \usage{
 plot_ridge_distribution(
-  .dataset,
+  survey_design,
   numeric_cols = NULL,
   numeric_cols_labels = NULL,
   name_groups = NULL,
@@ -13,6 +13,8 @@ plot_ridge_distribution(
   grouping = NULL,
   color_palette = "reach3",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -23,7 +25,7 @@ plot_ridge_distribution(
 )
 }
 \arguments{
-\item{.dataset}{output of the create_fsl_flags functions}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{numeric_cols}{a vector of the same fsl indicator score columns
 By default: NULL.}

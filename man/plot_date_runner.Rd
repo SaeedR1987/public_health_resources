@@ -5,7 +5,7 @@
 \title{Plot Date Runner - Cumulative Statistics Over Time}
 \usage{
 plot_date_runner(
-  df,
+  survey_design,
   date_col = "date_dc_date",
   numeric_col,
   numeric_col2 = NULL,
@@ -13,7 +13,11 @@ plot_date_runner(
   grouping_col = NULL,
   reference_line = NULL,
   color_palette = "reach2",
+  show_overall = TRUE,
+  overall_label = "Overall",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = "Date",
   y_lab = NULL,
@@ -24,7 +28,7 @@ plot_date_runner(
 )
 }
 \arguments{
-\item{df}{Dataset containing date and numeric variables}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{date_col}{Column name for the date variable. By default: "date_dc_date"}
 
@@ -41,7 +45,18 @@ By default: "mean"}
 
 \item{color_palette}{Color palette to use. By default: "reach2"}
 
+\item{show_overall}{Logical. If TRUE and a grouping column is provided, adds an 'Overall' line showing
+the cumulative statistic across all data. Default: TRUE. Only applies when grouping_col is not NULL.}
+
+\item{overall_label}{Character. Label for the overall group when show_overall = TRUE. Default: "Overall".}
+
 \item{title_name}{Title of the plot. By default: NULL}
+
+\item{variable_label}{Character. Optional human-readable label for the numeric variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Character. Optional human-readable label for the grouping variable, appended
+to the auto-generated title as ", by <grouping_label>". Defaults to the column name when NULL.}
 
 \item{subtitle}{Subtitle of the plot. By default: NULL}
 
@@ -65,9 +80,10 @@ Plot Date Runner - Cumulative Statistics Over Time
   # Mean MUAC over time
   plot_date_runner(df, numeric_col = "muac", operation = "mean")
 
-  # SD of weight-for-height z-score by region
+  # SD of weight-for-height z-score by region, with auto-generated title
   plot_date_runner(df, numeric_col = "wfhz", operation = "sd",
-                   grouping_col = "region", reference_line = 1.2)
+                   grouping_col = "region", reference_line = 1.2,
+                   variable_label = "WFH Z-Score", grouping_label = "Region")
 
   # Digit preference score for weight
   plot_date_runner(df, numeric_col = "weight", operation = "dps")

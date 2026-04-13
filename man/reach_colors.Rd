@@ -30,10 +30,10 @@ organized into 4 distinct color ramps.
 \dontrun{
   # Get all colors from ramp 1 (red/pink)
   reach_colors(ramp = 1)
-  
+
   # Get 3 colors from ramp 2 (gray)
   reach_colors(ramp = 2, n = 3)
-  
+
   # Get colors in reverse order
   reach_colors(ramp = 1, reverse = TRUE)
 }

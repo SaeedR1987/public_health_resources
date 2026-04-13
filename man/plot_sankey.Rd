@@ -5,12 +5,17 @@
 \title{Plot Sankey Diagram}
 \usage{
 plot_sankey(
-  df,
+  survey_design,
   axis_vars,
+  axis_labels = NULL,
   weighted = FALSE,
   weights_col = NULL,
+  show_percentage = FALSE,
+  show_stratum_labels = TRUE,
+  show_stratum_stats = FALSE,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -19,13 +24,22 @@ plot_sankey(
 )
 }
 \arguments{
-\item{df}{Data frame containing the data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{axis_vars}{Character vector of 2+ column names representing flow axes (required)}
+
+\item{axis_labels}{Character vector of custom labels for axes (optional, default: NULL uses axis_vars)
+Must be same length as axis_vars if provided}
 
 \item{weighted}{Logical, whether to use weighted calculations (default: FALSE)}
 
 \item{weights_col}{Character, name of the weights column (required if weighted = TRUE)}
+
+\item{show_percentage}{Logical, whether to display as percentages instead of counts (default: FALSE)}
+
+\item{show_stratum_labels}{Logical, whether to show category names on strata (default: TRUE)}
+
+\item{show_stratum_stats}{Logical, whether to show XX.X% (n) on strata (default: FALSE)}
 
 \item{color_palette}{Character, color palette type (default: "reach1")}
 

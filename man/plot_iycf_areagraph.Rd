@@ -5,7 +5,7 @@
 \title{Plot IYCF Area Graph}
 \usage{
 plot_iycf_areagraph(
-  df,
+  survey_design,
   age_months_col = "age_months",
   iycf_ebf_col = "iycf_ebf",
   iycf_4_col = "iycf_4",
@@ -43,6 +43,7 @@ plot_iycf_areagraph(
   max_age_months = 24,
   color_palette = "iycf_area",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   legend_position = "bottom",
   flip_coordinates = FALSE,
@@ -51,7 +52,7 @@ plot_iycf_areagraph(
 )
 }
 \arguments{
-\item{df}{Dataset with IYCF indicators}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{age_months_col}{Column name for age in months. By default: "age_months". Must be numeric.}
 
@@ -149,11 +150,11 @@ Plot IYCF Area Graph
 }
 \examples{
 \dontrun{
-  plot_iycf_areagraph(df = iycf_data)
+  plot_iycf_areagraph(survey_design = iycf_data)
 }
 Plot IYCF Area Graph
 
 \dontrun{
-  plot_iycf_areagraph(df = iycf_data)
+  plot_iycf_areagraph(survey_design = iycf_data)
 }
 }

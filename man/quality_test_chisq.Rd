@@ -4,10 +4,10 @@
 \alias{quality_test_chisq}
 \title{Chi-Squared Test for Independence}
 \usage{
-quality_test_chisq(data, variables)
+quality_test_chisq(survey_design, variables)
 }
 \arguments{
-\item{data}{Data frame containing the variables}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector of exactly 2 variable names}
 }

@@ -71,19 +71,19 @@ Load Default Variable Schema
 
 
 
-Reads household_variable_schema_template.xlsx from package resources and converts
+Reads variable_schema_data_household_template.xlsx from package resources and converts
 to canonical nested schema structure
 Load Default Indicator Schema
 
 
 
-Reads household_indicator_schema_template.xlsx from package resources and converts
+Reads indicator_schema_data_household_template.xlsx from package resources and converts
 to canonical nested indicator schema structure. Issues warning if file not found.
 Load Default Dependency Schema
 
 
 
-Reads household_dependency_schema_template.xlsx from package resources and converts
+Reads dependency_schema_data_household_template.xlsx from package resources and converts
 to canonical nested dependency schema structure. Issues warning if file not found.
 Post-Validation Hook for Household Data
 
@@ -125,7 +125,7 @@ This hook performs three key operations:
 3. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
 
 Supported aggregations vary by dataset type (see class documentation for details)
-Get Survey Design Object
+Generate Cleaning Log for Household and Linked Datasets
 
 
 
@@ -225,9 +225,10 @@ datasets are overwritten with household values. Uses fallback logic to find avai
 \item \href{#method-HouseholdData-add_linked_dataset}{\code{HouseholdData$add_linked_dataset()}}
 \item \href{#method-HouseholdData-..get_data_with_fallback}{\code{HouseholdData$..get_data_with_fallback()}}
 \item \href{#method-HouseholdData-pre_standardize}{\code{HouseholdData$pre_standardize()}}
+\item \href{#method-HouseholdData-generate_cleaning_log}{\code{HouseholdData$generate_cleaning_log()}}
+\item \href{#method-HouseholdData-clean}{\code{HouseholdData$clean()}}
 \item \href{#method-HouseholdData-get_survey_design}{\code{HouseholdData$get_survey_design()}}
-\item \href{#method-HouseholdData-generate_data_quality}{\code{HouseholdData$generate_data_quality()}}
-\item \href{#method-HouseholdData-generate_data_analysis}{\code{HouseholdData$generate_data_analysis()}}
+\item \href{#method-HouseholdData-generate_data_analytics}{\code{HouseholdData$generate_data_analytics()}}
 \item \href{#method-HouseholdData-..aggregate_linked_data}{\code{HouseholdData$..aggregate_linked_data()}}
 \item \href{#method-HouseholdData-..aggregate_deaths_data}{\code{HouseholdData$..aggregate_deaths_data()}}
 \item \href{#method-HouseholdData-..aggregate_water_container_data}{\code{HouseholdData$..aggregate_water_container_data()}}
@@ -247,14 +248,11 @@ datasets are overwritten with household values. Uses fallback logic to find avai
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".get_expression_parse_hint"><a href='../../iphRa/html/Data.html#method-Data-.get_expression_parse_hint'><code>iphRa::Data$.get_expression_parse_hint()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".is_select_multiple"><a href='../../iphRa/html/Data.html#method-Data-.is_select_multiple'><code>iphRa::Data$.is_select_multiple()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".translate_expression"><a href='../../iphRa/html/Data.html#method-Data-.translate_expression'><code>iphRa::Data$.translate_expression()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="clean"><a href='../../iphRa/html/Data.html#method-Data-clean'><code>iphRa::Data$clean()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="create_analysis"><a href='../../iphRa/html/Data.html#method-Data-create_analysis'><code>iphRa::Data$create_analysis()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="data_diagnose"><a href='../../iphRa/html/Data.html#method-Data-data_diagnose'><code>iphRa::Data$data_diagnose()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_data"><a href='../../iphRa/html/Data.html#method-Data-export_data'><code>iphRa::Data$export_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-export_dependency_schema'><code>iphRa::Data$export_dependency_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_indicator_schema"><a href='../../iphRa/html/Data.html#method-Data-export_indicator_schema'><code>iphRa::Data$export_indicator_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-export_variable_schema'><code>iphRa::Data$export_variable_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="generate_cleaning_log"><a href='../../iphRa/html/Data.html#method-Data-generate_cleaning_log'><code>iphRa::Data$generate_cleaning_log()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_column_info"><a href='../../iphRa/html/Data.html#method-Data-get_column_info'><code>iphRa::Data$get_column_info()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_data"><a href='../../iphRa/html/Data.html#method-Data-get_data'><code>iphRa::Data$get_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-get_dependency_schema'><code>iphRa::Data$get_dependency_schema()</code></a></span></li>
@@ -274,6 +272,7 @@ datasets are overwritten with household values. Uses fallback logic to find avai
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_schema"><a href='../../iphRa/html/Data.html#method-Data-import_schema'><code>iphRa::Data$import_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-import_variable_schema'><code>iphRa::Data$import_variable_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="load_object"><a href='../../iphRa/html/Data.html#method-Data-load_object'><code>iphRa::Data$load_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_labels"><a href='../../iphRa/html/Data.html#method-Data-map_schema_labels'><code>iphRa::Data$map_schema_labels()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_vars"><a href='../../iphRa/html/Data.html#method-Data-map_schema_vars'><code>iphRa::Data$map_schema_vars()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize"><a href='../../iphRa/html/Data.html#method-Data-post_standardize'><code>iphRa::Data$post_standardize()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize_domain"><a href='../../iphRa/html/Data.html#method-Data-post_standardize_domain'><code>iphRa::Data$post_standardize_domain()</code></a></span></li>
@@ -465,6 +464,51 @@ NULL (modifies household data in place by adding aggregated columns)
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HouseholdData-generate_cleaning_log"></a>}}
+\if{latex}{\out{\hypertarget{method-HouseholdData-generate_cleaning_log}{}}}
+\subsection{Method \code{generate_cleaning_log()}}{
+Generates a cleaning log for the household dataset by calling the parent
+implementation, then propagates the call to all linked data objects so
+that each linked dataset produces its own cleaning log entries.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{HouseholdData$generate_cleaning_log(stage = "standardized", overwrite = FALSE)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{stage}}{Character string specifying the data stage to use:
+"standardized" (default), "clean", or "raw"}
+
+\item{\code{overwrite}}{Logical; if TRUE, clears the existing cleaning log before
+generating new entries (default: FALSE)}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+NULL (invisibly). Side effect: populates cleaning logs on the
+  household object and on every linked data object.
+Clean Household and Linked Datasets
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-HouseholdData-clean"></a>}}
+\if{latex}{\out{\hypertarget{method-HouseholdData-clean}{}}}
+\subsection{Method \code{clean()}}{
+Cleans the household dataset by calling the parent implementation, then
+propagates the call to all linked data objects so that each linked dataset
+is cleaned using its own cleaning and deletion logs.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{HouseholdData$clean()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+NULL (invisibly). Side effect: sets \code{clean_data} on the
+  household object and on every linked data object.
+Get Survey Design Object
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-HouseholdData-get_survey_design"></a>}}
 \if{latex}{\out{\hypertarget{method-HouseholdData-get_survey_design}{}}}
 \subsection{Method \code{get_survey_design()}}{
@@ -485,41 +529,17 @@ A srvyr survey design object, or NULL if required fields are missing
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-HouseholdData-generate_data_quality"></a>}}
-\if{latex}{\out{\hypertarget{method-HouseholdData-generate_data_quality}{}}}
-\subsection{Method \code{generate_data_quality()}}{
-Generate a thematic DataQuality object for household data.
-Overrides base Data class method to provide household-specific quality types.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{HouseholdData$generate_data_quality(
-  stage = c("standardized", "clean"),
-  type = c("fsl", "wash", "mortality", "health")
-)}\if{html}{\out{</div>}}
-}
+\if{html}{\out{<a id="method-HouseholdData-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-HouseholdData-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a thematic DataAnalytics object for household data.
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
-
-\item{\code{type}}{The type of DataQuality object to create ("fsl", "wash", "mortality", "health")}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A DataQuality object or NULL
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-HouseholdData-generate_data_analysis"></a>}}
-\if{latex}{\out{\hypertarget{method-HouseholdData-generate_data_analysis}{}}}
-\subsection{Method \code{generate_data_analysis()}}{
-Generate a thematic DataAnalysis object for household data.
-Overrides base Data class method to provide household-specific analysis types.
+Creates a unified analytics object integrating both data quality checks and
+quantitative analysis for the specified sector.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{HouseholdData$generate_data_analysis(
+\if{html}{\out{<div class="r">}}\preformatted{HouseholdData$generate_data_analytics(
   stage = c("standardized", "clean"),
-  type = c("fsl", "wash", "health", "mortality"),
+  type = c("fsl", "wash", "health", "mortality", "general"),
   analysis_config = NULL
 )}\if{html}{\out{</div>}}
 }
@@ -529,14 +549,14 @@ Overrides base Data class method to provide household-specific analysis types.
 \describe{
 \item{\code{stage}}{The data stage to use ("standardized" or "clean")}
 
-\item{\code{type}}{The type of Analysis object to create ("fsl", "wash", "health", "mortality")}
+\item{\code{type}}{The type of analytics object to create ("fsl", "wash", "health", "mortality", "general")}
 
-\item{\code{analysis_config}}{Optional analysis configuration (data analysis plan)}
+\item{\code{analysis_config}}{Optional analysis configuration (data analysis plan tibble)}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-An Analysis object or NULL
+A DataAnalytics subclass object or NULL
 Aggregate Linked Dataset Data
 }
 }

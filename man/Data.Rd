@@ -173,6 +173,21 @@ For each linked object:
 * Reports orphaned records
 
 
+Labels are sourced from the variable schema fields:
+* `variable_labels$en / $fr / $ar` — one label per variable role
+* `value_labels$en / $fr / $ar`    — one label per canonical value per role
+
+These fields are populated when the schema is loaded from an xlsx template
+that contains the `variable_label_en`, `variable_label_fr`,
+`variable_label_ar`, `value_label_en`, `value_label_fr`, and
+`value_label_ar` columns.
+
+This is a helper function to safely update the variable_map and value_map
+by accepting dataframes as input. This provides a programmatic way to
+update mappings that can be called from UI components.
+
+
+
 Future UI Integration: This method is designed to be called from a modal
 UI that allows users to manually configure variable and value mappings.
 The UI would present the user with:
@@ -249,9 +264,9 @@ Save Data Object to File
 
 \item{\code{value_map}}{List mapping canonical values to dataset values}
 
-\item{\code{label_map}}{List of variable labels}
+\item{\code{variable_label}}{Named list of presentation-ready variable labels (populated by map_schema_labels)}
 
-\item{\code{value_labels}}{List of value labels for categorical variables}
+\item{\code{value_label}}{Named list of presentation-ready value labels for categorical variables (populated by map_schema_labels)}
 
 \item{\code{variable_schema}}{Variable schema with types and allowed values}
 
@@ -327,10 +342,9 @@ Save Data Object to File
 \item \href{#method-Data-get_hash}{\code{Data$get_hash()}}
 \item \href{#method-Data-add_linked_dataset}{\code{Data$add_linked_dataset()}}
 \item \href{#method-Data-validate_links}{\code{Data$validate_links()}}
-\item \href{#method-Data-generate_data_quality}{\code{Data$generate_data_quality()}}
-\item \href{#method-Data-generate_data_analysis}{\code{Data$generate_data_analysis()}}
-\item \href{#method-Data-create_analysis}{\code{Data$create_analysis()}}
+\item \href{#method-Data-generate_data_analytics}{\code{Data$generate_data_analytics()}}
 \item \href{#method-Data-map_schema_vars}{\code{Data$map_schema_vars()}}
+\item \href{#method-Data-map_schema_labels}{\code{Data$map_schema_labels()}}
 \item \href{#method-Data-repair_maps}{\code{Data$repair_maps()}}
 \item \href{#method-Data-get_maps_as_df}{\code{Data$get_maps_as_df()}}
 \item \href{#method-Data-clone}{\code{Data$clone()}}
@@ -832,7 +846,7 @@ Sets a human-readable label for a variable
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-Invisible NULL (updates label_map internally)
+Invisible NULL (updates variable_label internally)
 Set Value Labels for Variable
 }
 }
@@ -855,7 +869,7 @@ Sets value labels (code-to-label mappings) for a variable
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-Invisible NULL (updates value_labels internally)
+Invisible NULL (updates value_label internally)
 Get Variable Label
 }
 }
@@ -1009,7 +1023,7 @@ Executes data quality checks defined in dependency_schema and generates quality 
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-DataQuality object containing check results and flags, or NULL if no dependency schema
+A list containing check results and flags, or NULL if no dependency schema
 }
 }
 \if{html}{\out{<hr>}}
@@ -1056,9 +1070,11 @@ Character vector of canonical variable names involved in the dependency, or NULL
 \if{html}{\out{<a id="method-Data-generate_cleaning_log"></a>}}
 \if{latex}{\out{\hypertarget{method-Data-generate_cleaning_log}{}}}
 \subsection{Method \code{generate_cleaning_log()}}{
-Generate cleaning log entries from data quality flags.
+Generate cleaning and deletion log entries from data quality flags.
 
 Populates the existing CleaningLog with entries for each quality flag violation.
+Populates the DeletionLog for flags with action "flag_delete" and for duplicate
+values in variables marked as unique in the variable schema.
 Must be called after run_quality_checks() has been executed.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Data$generate_cleaning_log(stage = "standardized", overwrite = FALSE)}\if{html}{\out{</div>}}
@@ -1075,6 +1091,7 @@ Must be called after run_quality_checks() has been executed.
 }
 \subsection{Returns}{
 Invisible self$cleaning_log
+INTERNAL HELPER — apply cleaning log changes (option A authoritative mode)
 }
 }
 \if{html}{\out{<hr>}}
@@ -1381,34 +1398,16 @@ Logical TRUE (invisibly) if all links valid, or list of missing foreign keys if 
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Data-generate_data_quality"></a>}}
-\if{latex}{\out{\hypertarget{method-Data-generate_data_quality}{}}}
-\subsection{Method \code{generate_data_quality()}}{
-Generate a DataQuality object for this dataset.
-This is a generic hook that should be overridden by subclasses.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Data$generate_data_quality(stage = c("standardized", "clean"))}\if{html}{\out{</div>}}
-}
+\if{html}{\out{<a id="method-Data-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-Data-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a DataAnalytics object for this dataset.
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A DataQuality object or NULL
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Data-generate_data_analysis"></a>}}
-\if{latex}{\out{\hypertarget{method-Data-generate_data_analysis}{}}}
-\subsection{Method \code{generate_data_analysis()}}{
-Generate a DataAnalysis object for this dataset.
-This is a generic hook that should be overridden by subclasses.
+Creates a unified `DataAnalytics` object that integrates both data quality
+checks and quantitative analysis. This is a generic hook that should be
+overridden by subclasses to return sector-specific DataAnalytics subclasses.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Data$generate_data_analysis(
+\if{html}{\out{<div class="r">}}\preformatted{Data$generate_data_analytics(
   stage = c("standardized", "clean"),
   analysis_config = NULL
 )}\if{html}{\out{</div>}}
@@ -1419,28 +1418,12 @@ This is a generic hook that should be overridden by subclasses.
 \describe{
 \item{\code{stage}}{The data stage to use ("standardized" or "clean")}
 
-\item{\code{analysis_config}}{Optional analysis configuration (data analysis plan)}
+\item{\code{analysis_config}}{Optional analysis configuration (data analysis plan tibble)}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-An Analysis object or NULL
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Data-create_analysis"></a>}}
-\if{latex}{\out{\hypertarget{method-Data-create_analysis}{}}}
-\subsection{Method \code{create_analysis()}}{
-Create analysis hook for subclasses.
-
-Subclasses can override this method to create domain-specific analysis
-objects or perform analysis-related initialization.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Data$create_analysis()}\if{html}{\out{</div>}}
-}
-
-\subsection{Returns}{
-NULL (subclass-specific)
+A DataAnalytics object or NULL
 }
 }
 \if{html}{\out{<hr>}}
@@ -1470,17 +1453,39 @@ is thrown if a variable or value is not found.
 }
 \subsection{Returns}{
 Invisible self for method chaining
+Map Schema Labels to variable_label and value_label
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Data-map_schema_labels"></a>}}
+\if{latex}{\out{\hypertarget{method-Data-map_schema_labels}{}}}
+\subsection{Method \code{map_schema_labels()}}{
+Reads the current `variable_map` and `value_map`, then populates the
+`variable_label` and `value_label` fields from the labels stored in
+the variable schema for the requested language. Only variables and
+values that are currently in `variable_map` / `value_map` are labelled.
+
+This method is called automatically after every `map_schema_vars()` call.
+It can also be called manually to switch languages.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Data$map_schema_labels(language = "english")}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{language}}{Character string: one of `"english"` (default), `"french"`, or `"arabic"`.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Invisible self (for method chaining)
 }
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Data-repair_maps"></a>}}
 \if{latex}{\out{\hypertarget{method-Data-repair_maps}{}}}
 \subsection{Method \code{repair_maps()}}{
-Manually repair/update the variable and value maps using dataframes.
-
-This is a helper function to safely update the variable_map and value_map
-by accepting dataframes as input. This provides a programmatic way to
-update mappings that can be called from UI components.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Data$repair_maps(
   variable_map_df = NULL,

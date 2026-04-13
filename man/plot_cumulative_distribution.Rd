@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils_quality_analyisis_outputs.R
 \name{plot_cumulative_distribution}
 \alias{plot_cumulative_distribution}
-\title{Plot Cumulative Distribution}
+\title{Plot the cumulative distribution of a numeric variable (e.g., MUAC or anthropometric z-scores).}
 \usage{
 plot_cumulative_distribution(
-  df,
+  survey_design,
   data_var,
   vline_intercepts = NULL,
   vline_colors = NULL,
@@ -16,6 +16,8 @@ plot_cumulative_distribution(
   grouping = NULL,
   color_palette = "reach2",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   legend_position = "bottom",
   flip_coordinates = FALSE,
@@ -24,7 +26,7 @@ plot_cumulative_distribution(
 )
 }
 \arguments{
-\item{df}{A data frame containing the variable to plot.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{data_var}{A character string specifying the column name containing the data to plot.}
 

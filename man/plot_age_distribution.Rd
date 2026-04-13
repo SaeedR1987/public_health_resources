@@ -5,7 +5,7 @@
 \title{Plot Age Distribution}
 \usage{
 plot_age_distribution(
-  .dataset,
+  survey_design,
   by_group_col = NULL,
   year_or_month = NULL,
   age_years_col = "age_years",
@@ -15,6 +15,8 @@ plot_age_distribution(
   breaks = NULL,
   color_palette = "reach2",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -25,7 +27,7 @@ plot_age_distribution(
 )
 }
 \arguments{
-\item{.dataset}{Dataset containing age data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{by_group_col}{Column name for grouping/faceting the plots. By default: NULL (no grouping)}
 
@@ -67,8 +69,8 @@ Plot Age Distribution
 }
 \examples{
 \dontrun{
-  plot_age_distribution(.dataset = children_data)
-  plot_age_distribution(.dataset = children_data, year_or_month = "month",
+  plot_age_distribution(survey_design = children_data)
+  plot_age_distribution(survey_design = children_data, year_or_month = "month",
                         min_age = 0, max_age = 59)
 }
 }

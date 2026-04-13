@@ -7,7 +7,7 @@
 traffic_light_colors(n = NULL, include_grey = TRUE, reverse = FALSE)
 }
 \arguments{
-\item{n}{Number of colors to return. If NULL, returns all 4 colors (green, yellow, red, grey).
+\item{n}{Number of colors to return. If NULL, returns all 4 colors (red, orange, green, grey).
 If n is less than 4, returns the first n colors in order.
 If n is greater than 4, cycles through the colors or interpolates.}
 
@@ -19,17 +19,18 @@ If n is greater than 4, cycles through the colors or interpolates.}
 A character vector of hex color codes.
 }
 \description{
-Provides a traffic light color palette with green, yellow, red, and light grey
-in that order. Useful for quality indicators, status displays, and categorical data.
+Provides a traffic light color palette with red, orange/yellow, green, and light grey
+in that order (worst to best). Useful for quality indicators, status displays, and
+categorical data where the first level is the worst outcome.
 }
 \examples{
 \dontrun{
   # Get all traffic light colors
   traffic_light_colors()
-  
-  # Get only green, yellow, red (no grey)
+
+  # Get only red, orange, green (no grey)
   traffic_light_colors(include_grey = FALSE)
-  
+
   # Get 6 colors by cycling
   traffic_light_colors(n = 6)
 }

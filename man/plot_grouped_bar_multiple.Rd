@@ -32,18 +32,25 @@ that contains the space-separated select-multiple responses.}
 
 \item{response_labels}{Optional named or positional character vector for
 mapping response tokens to display labels.
-If \code{NULL} (default), the raw token strings are used as labels.
-If a \strong{named} vector, names must match the unique response tokens.
-If an \strong{unnamed} positional vector, it must have the same length as
-the number of unique tokens (sorted alphabetically).}
+\itemize{
+  \item If \code{NULL} (default), the raw token strings are used as labels.
+  \item If a \strong{named} vector, names must match the unique response
+    tokens; each matching token is replaced by its label.
+  \item If an \strong{unnamed} positional vector, it must have the same
+    length as the number of unique tokens (tokens are sorted alphabetically
+    by \code{phr_calc_multiple_choice_cat}) and is applied in that order.
+}}
 
 \item{grouping}{Optional character scalar; column name to use for
-disaggregation.  If \code{NULL}, an overall plot is produced.}
+disaggregation.  When supplied, separate bars per group are shown side by
+side for each response token.  If \code{NULL}, an overall plot is produced.}
 
 \item{calc_percentage}{Logical; if \code{TRUE} (default) bars show the
-survey-weighted percentage.  If \code{FALSE}, bars show the unweighted count.}
+survey-weighted percentage of respondents who selected each token.  If
+\code{FALSE}, bars show the unweighted count.}
 
-\item{flip_coordinates}{Logical; if \code{TRUE} (default) creates horizontal bars.}
+\item{flip_coordinates}{Logical; if \code{TRUE} (default) creates horizontal
+bars (easier to read long response labels).}
 
 \item{color_palette}{Character; color palette to use.  Options:
 \code{"reach1"}, \code{"reach2"}, \code{"reach3"}, \code{"reach4"},
@@ -55,31 +62,38 @@ survey-weighted percentage.  If \code{FALSE}, bars show the unweighted count.}
 title when \code{title_name} is \code{NULL}.}
 
 \item{grouping_label}{Optional character scalar; human-readable label for the
-grouping variable.}
+grouping variable, appended to the auto-generated title.}
 
-\item{subtitle}{Optional character scalar appended to the auto-generated subtitle.}
+\item{subtitle}{Optional character scalar appended to the auto-generated
+subtitle (which shows \emph{n}).}
 
-\item{x_label}{Character scalar for the x-axis label (default: \code{"Response Options"}).}
+\item{x_label}{Character scalar for the x-axis label (default:
+\code{"Response Options"}).}
 
-\item{y_label}{Optional character scalar for the y-axis label.}
+\item{y_label}{Optional character scalar for the y-axis label.  Defaults to
+\code{"Percentage"} or \code{"Count"} based on \code{calc_percentage}.}
 
-\item{legend_label}{Optional character scalar for the legend title.}
+\item{legend_label}{Optional character scalar for the legend title.  Defaults
+to the grouping column name.}
 
-\item{show_labels}{Logical; if \code{TRUE}, value labels are shown on the bars (default: \code{FALSE}).}
+\item{show_labels}{Logical; if \code{TRUE}, percentage or count labels are
+shown on the bars (default: \code{FALSE}).}
 
 \item{legend_position}{Position of the legend.  Default \code{"bottom"}.
-Options: \code{"bottom"}, \code{"top"}, \code{"left"}, \code{"right"}, \code{"none"}.}
+Options: \code{"bottom"}, \code{"top"}, \code{"left"}, \code{"right"},
+\code{"none"}.}
 }
 \value{
-Returns a ggplot2 object showing the grouped bar chart.
+A \code{ggplot2} object showing the grouped bar chart.
 }
 \description{
-Creates grouped bar charts for select-multiple (multi-select) survey columns
-where each cell contains space-separated response tokens (e.g.
+Creates grouped bar charts for select-multiple (multi-select) survey columns where
+each cell contains space-separated response tokens (e.g.
 \code{"barrier_cost barrier_distance"}).  Survey-weighted proportions for each
-unique response token are computed via \code{\link{phr_calc_multiple_choice_cat}},
-so the weights embedded in \code{survey_design} are applied automatically.
-Bars do not add up to 100\% because respondents may select more than one option.
+unique response token are computed via
+\code{\link{phr_calc_multiple_choice_cat}}, so the weights embedded in
+\code{survey_design} are applied automatically.  Bars do not add up to 100\%
+because respondents may select more than one option.
 }
 \examples{
 \dontrun{

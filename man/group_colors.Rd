@@ -25,10 +25,10 @@ visual contrast and avoid light or similar tones that make distinctions difficul
 \dontrun{
   # Get all group comparison colors
   group_colors()
-  
+
   # Get 5 colors for 5 groups
   group_colors(n = 5)
-  
+
   # Get colors in reverse order
   group_colors(reverse = TRUE)
 }

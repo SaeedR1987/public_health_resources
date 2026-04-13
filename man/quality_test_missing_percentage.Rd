@@ -4,10 +4,10 @@
 \alias{quality_test_missing_percentage}
 \title{Missing Data Percentage Test}
 \usage{
-quality_test_missing_percentage(data, variables)
+quality_test_missing_percentage(survey_design, variables)
 }
 \arguments{
-\item{data}{Data frame containing the variables}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector of variable names}
 }

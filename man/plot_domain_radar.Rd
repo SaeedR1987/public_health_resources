@@ -5,13 +5,15 @@
 \title{Plot Domain Radar Chart}
 \usage{
 plot_domain_radar(
-  df,
+  survey_design,
   domain_cols,
   domain_labels = NULL,
   grouping = NULL,
   max_value = NULL,
   color_palette = "reach2",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   legend_position = "bottom",
   flip_coordinates = FALSE,
@@ -20,7 +22,7 @@ plot_domain_radar(
 )
 }
 \arguments{
-\item{df}{Dataset with domain indicators}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{domain_cols}{Vector of column names representing domains (binary 0/1 values)}
 
@@ -52,7 +54,7 @@ Plot Domain Radar Chart
 }
 \examples{
 \dontrun{
-  plot_domain_radar(df = data,
+  plot_domain_radar(survey_design = data,
                     domain_cols = c("food", "water", "health"),
                     domain_labels = c("Food Security", "WASH", "Health"))
 }

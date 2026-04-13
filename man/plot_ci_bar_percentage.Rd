@@ -5,7 +5,7 @@
 \title{Plot Bar Chart with Confidence Intervals for Percentages}
 \usage{
 plot_ci_bar_percentage(
-  df,
+  survey_design,
   category_var,
   grouping = NULL,
   weighted = FALSE,
@@ -14,6 +14,8 @@ plot_ci_bar_percentage(
   show_labels = FALSE,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = "Percentage (\%)",
@@ -23,23 +25,31 @@ plot_ci_bar_percentage(
 )
 }
 \arguments{
-\item{df}{Data frame containing the data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{category_var}{Character, column containing categories (required)}
 
 \item{grouping}{Character, optional grouping variable (default: NULL)}
 
-\item{weighted}{Logical, whether to use weighted calculations (default: FALSE)}
+\item{weighted}{Logical, whether to use weighted calculations when \code{df}
+is a plain data frame (default: FALSE). Ignored when \code{df} is a
+survey design object.}
 
-\item{weights_col}{Character, name of the weights column (required if weighted = TRUE)}
+\item{weights_col}{Character, name of the weights column (required if
+\code{weighted = TRUE} and \code{df} is a data frame)}
 
-\item{conf_level}{Numeric, confidence level (default: 0.95)}
+\item{conf_level}{Numeric, confidence level used for plain data frame CI
+calculations (default: 0.95). Ignored for survey design objects.}
 
 \item{show_labels}{Logical, show value labels on bars (default: FALSE)}
 
 \item{color_palette}{Character, color palette type (default: "reach1")}
 
 \item{title_name}{Character, plot title (default: NULL)}
+
+\item{variable_label}{Character, variable label used in auto-title (default: NULL)}
+
+\item{grouping_label}{Character, grouping label used in auto-title (default: NULL)}
 
 \item{subtitle}{Character, additional subtitle text (default: NULL)}
 
@@ -57,5 +67,11 @@ plot_ci_bar_percentage(
 A ggplot2 bar chart with confidence intervals
 }
 \description{
-Creates a bar chart showing percentages with confidence intervals
+Creates a bar chart showing percentages with confidence intervals.
+When a survey design object (class \code{tbl_svy} / \code{survey.design} /
+\code{svyrep.design}) is supplied as \code{df}, the function uses
+\code{\link{phr_calc_survey_categorical_single}} to compute survey-design-
+corrected confidence intervals that account for clustering, stratification
+and probability weights. When a plain data frame is supplied the original
+binomial (or weighted) computation is used.
 }

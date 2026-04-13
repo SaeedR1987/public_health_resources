@@ -43,6 +43,7 @@ rates and validating death timing information.
 \item \href{#method-DeathIndividualData-default_schema}{\code{DeathIndividualData$default_schema()}}
 \item \href{#method-DeathIndividualData-default_indicator_schema}{\code{DeathIndividualData$default_indicator_schema()}}
 \item \href{#method-DeathIndividualData-default_dependency_schema}{\code{DeathIndividualData$default_dependency_schema()}}
+\item \href{#method-DeathIndividualData-generate_data_analytics}{\code{DeathIndividualData$generate_data_analytics()}}
 \item \href{#method-DeathIndividualData-clone}{\code{DeathIndividualData$clone()}}
 }
 }
@@ -56,7 +57,6 @@ rates and validating death timing information.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".translate_expression"><a href='../../iphRa/html/Data.html#method-Data-.translate_expression'><code>iphRa::Data$.translate_expression()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="add_linked_dataset"><a href='../../iphRa/html/Data.html#method-Data-add_linked_dataset'><code>iphRa::Data$add_linked_dataset()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="clean"><a href='../../iphRa/html/Data.html#method-Data-clean'><code>iphRa::Data$clean()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="create_analysis"><a href='../../iphRa/html/Data.html#method-Data-create_analysis'><code>iphRa::Data$create_analysis()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="data_diagnose"><a href='../../iphRa/html/Data.html#method-Data-data_diagnose'><code>iphRa::Data$data_diagnose()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_data"><a href='../../iphRa/html/Data.html#method-Data-export_data'><code>iphRa::Data$export_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-export_dependency_schema'><code>iphRa::Data$export_dependency_schema()</code></a></span></li>
@@ -82,6 +82,7 @@ rates and validating death timing information.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_schema"><a href='../../iphRa/html/Data.html#method-Data-import_schema'><code>iphRa::Data$import_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-import_variable_schema'><code>iphRa::Data$import_variable_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="load_object"><a href='../../iphRa/html/Data.html#method-Data-load_object'><code>iphRa::Data$load_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_labels"><a href='../../iphRa/html/Data.html#method-Data-map_schema_labels'><code>iphRa::Data$map_schema_labels()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_vars"><a href='../../iphRa/html/Data.html#method-Data-map_schema_vars'><code>iphRa::Data$map_schema_vars()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize"><a href='../../iphRa/html/Data.html#method-Data-post_standardize'><code>iphRa::Data$post_standardize()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize_domain"><a href='../../iphRa/html/Data.html#method-Data-post_standardize_domain'><code>iphRa::Data$post_standardize_domain()</code></a></span></li>
@@ -102,8 +103,6 @@ rates and validating death timing information.
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="update_metadata"><a href='../../iphRa/html/Data.html#method-Data-update_metadata'><code>iphRa::Data$update_metadata()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="validate"><a href='../../iphRa/html/Data.html#method-Data-validate'><code>iphRa::Data$validate()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="validate_links"><a href='../../iphRa/html/Data.html#method-Data-validate_links'><code>iphRa::Data$validate_links()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="generate_data_analysis"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-generate_data_analysis'><code>iphRa::IndividualData$generate_data_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="generate_data_quality"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-generate_data_quality'><code>iphRa::IndividualData$generate_data_quality()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="IndividualData" data-id="post_validate"><a href='../../iphRa/html/IndividualData.html#method-IndividualData-post_validate'><code>iphRa::IndividualData$post_validate()</code></a></span></li>
 </ul>
 </details>
@@ -154,7 +153,7 @@ A new DeathIndividualData object
 \subsection{Method \code{default_schema()}}{
 Load the default variable schema for death data
 
-Reads the individual_death_variable_schema_template.xlsx file from package resources
+Reads the variable_schema_data_individual_death_template.xlsx file from package resources
 and converts it to a nested list of variable definitions.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{DeathIndividualData$default_schema()}\if{html}{\out{</div>}}
@@ -170,7 +169,7 @@ A list containing the death data variable schema
 \subsection{Method \code{default_indicator_schema()}}{
 Load the default indicator schema for death data
 
-Reads the individual_death_indicator_schema_template.xlsx file from package resources
+Reads the indicator_schema_data_individual_death_template.xlsx file from package resources
 and converts it to a nested list of indicator definitions (e.g., mortality rates).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{DeathIndividualData$default_indicator_schema()}\if{html}{\out{</div>}}
@@ -186,7 +185,7 @@ A list containing the death data indicator schema
 \subsection{Method \code{default_dependency_schema()}}{
 Load the default dependency schema for death data
 
-Reads the individual_death_dependency_schema_template.xlsx file from package resources
+Reads the dependency_schema_data_individual_death_template.xlsx file from package resources
 and converts it to a nested list of variable dependency rules.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{DeathIndividualData$default_dependency_schema()}\if{html}{\out{</div>}}
@@ -194,6 +193,32 @@ and converts it to a nested list of variable dependency rules.
 
 \subsection{Returns}{
 A list containing the death data dependency schema
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-DeathIndividualData-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-DeathIndividualData-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a DataAnalytics object for death individual data.
+Combines quality checks and quantitative analysis in one object.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{DeathIndividualData$generate_data_analytics(
+  stage = c("standardized", "clean"),
+  analysis_config = NULL
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
+
+\item{\code{analysis_config}}{Optional data analysis plan (tibble)}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+A DataAnalytics object or NULL
 }
 }
 \if{html}{\out{<hr>}}

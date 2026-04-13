@@ -30,19 +30,19 @@ Load Default Variable Schema
 
 
 
-Reads individual_roster_variable_schema_template.xlsx from package resources and converts
+Reads variable_schema_data_individual_roster_template.xlsx from package resources and converts
 to canonical nested schema structure
 Load Default Indicator Schema
 
 
 
-Reads individual_roster_indicator_schema_template.xlsx from package resources and converts
+Reads indicator_schema_data_individual_roster_template.xlsx from package resources and converts
 to canonical nested indicator schema structure. Issues warning if file not found.
 Load Default Dependency Schema
 
 
 
-Reads individual_roster_dependency_schema_template.xlsx from package resources and converts
+Reads dependency_schema_data_individual_roster_template.xlsx from package resources and converts
 to canonical nested dependency schema structure. Issues warning if file not found.
 Post-Validation Hook for Individual Data
 
@@ -76,8 +76,7 @@ Performs individual-specific checks:
 \item \href{#method-IndividualData-default_indicator_schema}{\code{IndividualData$default_indicator_schema()}}
 \item \href{#method-IndividualData-default_dependency_schema}{\code{IndividualData$default_dependency_schema()}}
 \item \href{#method-IndividualData-post_validate}{\code{IndividualData$post_validate()}}
-\item \href{#method-IndividualData-generate_data_quality}{\code{IndividualData$generate_data_quality()}}
-\item \href{#method-IndividualData-generate_data_analysis}{\code{IndividualData$generate_data_analysis()}}
+\item \href{#method-IndividualData-generate_data_analytics}{\code{IndividualData$generate_data_analytics()}}
 \item \href{#method-IndividualData-clone}{\code{IndividualData$clone()}}
 }
 }
@@ -91,7 +90,6 @@ Performs individual-specific checks:
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".translate_expression"><a href='../../iphRa/html/Data.html#method-Data-.translate_expression'><code>iphRa::Data$.translate_expression()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="add_linked_dataset"><a href='../../iphRa/html/Data.html#method-Data-add_linked_dataset'><code>iphRa::Data$add_linked_dataset()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="clean"><a href='../../iphRa/html/Data.html#method-Data-clean'><code>iphRa::Data$clean()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="create_analysis"><a href='../../iphRa/html/Data.html#method-Data-create_analysis'><code>iphRa::Data$create_analysis()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="data_diagnose"><a href='../../iphRa/html/Data.html#method-Data-data_diagnose'><code>iphRa::Data$data_diagnose()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_data"><a href='../../iphRa/html/Data.html#method-Data-export_data'><code>iphRa::Data$export_data()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-export_dependency_schema'><code>iphRa::Data$export_dependency_schema()</code></a></span></li>
@@ -117,6 +115,7 @@ Performs individual-specific checks:
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_schema"><a href='../../iphRa/html/Data.html#method-Data-import_schema'><code>iphRa::Data$import_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-import_variable_schema'><code>iphRa::Data$import_variable_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="load_object"><a href='../../iphRa/html/Data.html#method-Data-load_object'><code>iphRa::Data$load_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_labels"><a href='../../iphRa/html/Data.html#method-Data-map_schema_labels'><code>iphRa::Data$map_schema_labels()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_vars"><a href='../../iphRa/html/Data.html#method-Data-map_schema_vars'><code>iphRa::Data$map_schema_vars()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize"><a href='../../iphRa/html/Data.html#method-Data-post_standardize'><code>iphRa::Data$post_standardize()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize_domain"><a href='../../iphRa/html/Data.html#method-Data-post_standardize_domain'><code>iphRa::Data$post_standardize_domain()</code></a></span></li>
@@ -232,39 +231,13 @@ Logical indicating validation success (TRUE if no issues, FALSE if warnings occu
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-IndividualData-generate_data_quality"></a>}}
-\if{latex}{\out{\hypertarget{method-IndividualData-generate_data_quality}{}}}
-\subsection{Method \code{generate_data_quality()}}{
-Generate a Demographics DataQuality object for individual data.
-Overrides base Data class method to provide demographics quality.
+\if{html}{\out{<a id="method-IndividualData-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-IndividualData-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a DemographicsDataAnalytics object for individual data.
+Unifies quality checks and quantitative analysis in one object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{IndividualData$generate_data_quality(
-  stage = c("standardized", "clean"),
-  type = c("demographics")
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
-
-\item{\code{type}}{The type of DataQuality object to create ("demographics")}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A DataQuality object or NULL
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-IndividualData-generate_data_analysis"></a>}}
-\if{latex}{\out{\hypertarget{method-IndividualData-generate_data_analysis}{}}}
-\subsection{Method \code{generate_data_analysis()}}{
-Generate a Demographics Analysis object for individual data.
-Overrides base Data class method to provide demographics analysis.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{IndividualData$generate_data_analysis(
+\if{html}{\out{<div class="r">}}\preformatted{IndividualData$generate_data_analytics(
   stage = c("standardized", "clean"),
   type = c("demographics"),
   analysis_config = NULL
@@ -276,14 +249,14 @@ Overrides base Data class method to provide demographics analysis.
 \describe{
 \item{\code{stage}}{The data stage to use ("standardized" or "clean")}
 
-\item{\code{type}}{The type of Analysis object to create ("demographics")}
+\item{\code{type}}{The type of analytics to create (currently "demographics")}
 
-\item{\code{analysis_config}}{Optional analysis configuration (data analysis plan)}
+\item{\code{analysis_config}}{Optional data analysis plan (tibble)}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-An Analysis object or NULL
+A DataAnalytics subclass object or NULL
 }
 }
 \if{html}{\out{<hr>}}

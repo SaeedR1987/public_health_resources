@@ -36,15 +36,11 @@ add_mfaz(
 \item{grouping}{Optional character vector of column names for grouping mean and SD calculations for `flag_sd_mfaz`.}
 }
 \value{
-A data frame with the following new columns:
-- **mfaz**
-- **severe_mfaz**
-- **moderate_mfaz**
-- **global_mfaz**
-- **flag_sd_mfaz**
+A data frame with the added MFA-Z score, classifications, flags, no-flag variants, and categorical variables.
 }
 \description{
-Calculates severe, moderate, and global MFA-Z classifications, as well as flags for extreme MFA-Z values.
+Calculates severe, moderate, and global MFA-Z classifications, flags extreme MFA-Z values,
+and provides "no-flag" versions of MFA-Z outputs (set to `NA` when flagged).
 }
 \details{
 The function adds the following columns to the dataset:
@@ -53,14 +49,21 @@ The function adds the following columns to the dataset:
 - **moderate_mfaz**: Moderate malnutrition (1 = moderate, 0 = not moderate).
 - **global_mfaz**: Global malnutrition (1 = global, 0 = not global).
 - **flag_sd_mfaz**: 1 if the MFA-Z value is less than `mean - 4 * SD` or greater than `mean + 3 * SD`, 0 otherwise.
+- **mfaz_noflag**: Same as `mfaz`, but `NA` if `flag_sd_mfaz == 1`.
+- **severe_mfaz_noflag**: Same as `severe_mfaz`, but `NA` if `flag_sd_mfaz == 1`.
+- **moderate_mfaz_noflag**: Same as `moderate_mfaz`, but `NA` if `flag_sd_mfaz == 1`.
+- **global_mfaz_noflag**: Same as `global_mfaz`, but `NA` if `flag_sd_mfaz == 1`.
+- **nut_mfaz_cat**: Ordered factor with levels `"Normal"`, `"MAM"`, `"SAM"`, based on MFA-Z classification.
+- **nut_mfaz_cat_noflag**: Same as `nut_mfaz_cat`, but `NA` if `flag_sd_mfaz == 1`.
 
-The function avoids overwriting any existing `sex` column in the dataset by creating a temporary internal column (`temp_sex_for_zscorer`) for sex recoding (1 for male, 2 for female).
-This column is used for calculations with `zscorer` and is removed from the dataset after processing.
+The function avoids overwriting any existing `sex` column in the dataset by creating a temporary
+internal column (`temp_sex_for_zscorer`) for sex recoding (1 for male, 2 for female). This column
+is used for calculations with `zscorer` and is removed from the dataset after processing.
 
-If a `grouping` argument is provided, the mean and standard deviation of MFA-Z values are calculated within these groups for determining the flag for extreme values (`flag_sd_mfaz`).
+If `grouping` is provided, the mean and standard deviation of MFA-Z values are calculated within
+those groups for determining `flag_sd_mfaz`.
 }
 \examples{
-# Example dataset
 df <- data.frame(
   nut_muac_cm = c(12.5, 10.5, 14.0),
   child_sex = c("m", "f", "f"),
@@ -68,7 +71,6 @@ df <- data.frame(
   nut_edema_confirm = c("yes", NA, "no")
 )
 
-# Add MFA-Z classifications and flags
 df_result <- add_mfaz(
   .dataset = df,
   nut_muac_cm_col = "nut_muac_cm",
@@ -79,7 +81,5 @@ df_result <- add_mfaz(
   female_sex_val = "f",
   edema_confirm_val = "yes"
 )
-
-print(df_result)
 
 }

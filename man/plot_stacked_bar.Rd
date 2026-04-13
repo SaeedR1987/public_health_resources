@@ -5,25 +5,30 @@
 \title{Plot 100% Stacked Bar Chart}
 \usage{
 plot_stacked_bar(
-  df,
+  survey_design,
   category_var,
   grouping = NULL,
   fill_var = NULL,
   weighted = FALSE,
   weights_col = NULL,
+  show_overall = TRUE,
+  overall_label = "Overall",
   flip_coordinates = FALSE,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_label = NULL,
   y_label = "Percentage",
   legend_label = NULL,
   show_labels = FALSE,
+  show_NA = FALSE,
   legend_position = "bottom"
 )
 }
 \arguments{
-\item{df}{Inputs a dataframe containing the categorical data.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{category_var}{Inputs a character value specifying the column name for the categorical variable to plot.}
 
@@ -38,12 +43,24 @@ If NULL, uses category_var as the fill variable.}
 \item{weights_col}{Character value specifying the column name containing survey weights.
 Required if weighted = TRUE. Default: NULL.}
 
-\item{flip_coordinates}{Logical. If TRUE, flips the coordinate axes. By default: FALSE.}
+\item{show_overall}{Logical. When grouping is provided, if TRUE, adds an "Overall" bar (leftmost)
+showing the overall distribution across all groups. Default: TRUE. Only applies when grouping is not NULL.}
+
+\item{overall_label}{Character. Label for the overall bar when show_overall = TRUE. Default: "Overall".}
+
+\item{flip_coordinates}{Logical. If TRUE, creates horizontal bars (flipped coordinates).
+By default: FALSE (vertical bars).}
 
 \item{color_palette}{Inputs an optional character value specifying the color palette to use.
 Options: "reach1", "reach2", "reach3", "reach4", "traffic_light", "default". Default is "reach1".}
 
 \item{title_name}{Inputs an optional character value for the title of the plot.}
+
+\item{variable_label}{Character. Optional human-readable label for the category variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Character. Optional human-readable label for the grouping variable, appended
+to the auto-generated title as ", by <grouping_label>". Defaults to the column name when NULL.}
 
 \item{subtitle}{Inputs an optional character value for the subtitle of the plot.
 If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.}
@@ -56,6 +73,9 @@ If NULL, automatically displays n (number of records). Custom subtitle will be a
 If NULL, uses fill_var as the legend title.}
 
 \item{show_labels}{Inputs a logical value indicating whether to show percentage labels on bars (default: FALSE).}
+
+\item{show_NA}{Logical. If TRUE, missing values in the fill variable are shown as an explicit `"NA"` category.
+If FALSE (default), rows with missing fill values are excluded from the plotted distribution.}
 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
 }
@@ -73,9 +93,17 @@ Supports survey weights for proper representation of weighted surveys.
   plot_stacked_bar(df, category_var = "response_type", grouping = "district",
                    title_name = "Response Distribution by District")
 
+  # With overall bar for comparison
+  plot_stacked_bar(df, category_var = "response_type", grouping = "district",
+                   show_overall = TRUE, title_name = "Response Distribution by District")
+
   # Weighted, horizontal bars
   plot_stacked_bar(df, category_var = "response_type", grouping = "district",
                    weighted = TRUE, weights_col = "survey_weight",
                    flip_coordinates = TRUE, legend_label = "Response Type")
+
+  # Show NA as an explicit category
+  plot_stacked_bar(df, category_var = "response_type",
+                   show_NA = TRUE, title_name = "Response Distribution (including NA)")
 }
 }

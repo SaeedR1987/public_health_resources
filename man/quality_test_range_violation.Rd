@@ -5,14 +5,14 @@
 \title{Range Violation Test}
 \usage{
 quality_test_range_violation(
-  data,
+  survey_design,
   variables,
   min_value = -Inf,
   max_value = Inf
 )
 }
 \arguments{
-\item{data}{Data frame containing the variable}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector with 1 variable name}
 

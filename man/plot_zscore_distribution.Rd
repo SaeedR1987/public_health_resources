@@ -5,7 +5,7 @@
 \title{Plot Z-Score Distribution}
 \usage{
 plot_zscore_distribution(
-  df,
+  survey_design,
   zscore_var,
   vline_intercepts = c(-3, -2, 2, 3),
   vline_colors = c("red", "orange", "orange", "red"),
@@ -13,6 +13,8 @@ plot_zscore_distribution(
   grouping = NULL,
   color_palette = "reach3",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   y_lab = NULL,
   legend_position = "bottom",
@@ -22,7 +24,7 @@ plot_zscore_distribution(
 )
 }
 \arguments{
-\item{df}{A data frame containing the z-score data.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{zscore_var}{A character string specifying the column name containing z-scores to plot.}
 

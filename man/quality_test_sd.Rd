@@ -4,10 +4,10 @@
 \alias{quality_test_sd}
 \title{Standard Deviation Test}
 \usage{
-quality_test_sd(data, variables)
+quality_test_sd(survey_design, variables)
 }
 \arguments{
-\item{data}{Data frame containing the variable}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector with 1 variable name}
 }

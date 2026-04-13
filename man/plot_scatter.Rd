@@ -5,7 +5,7 @@
 \title{Plot Scatter Plot}
 \usage{
 plot_scatter(
-  df,
+  survey_design,
   x_var,
   y_var,
   grouping = NULL,
@@ -15,6 +15,8 @@ plot_scatter(
   smooth_method = "lm",
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -25,7 +27,7 @@ plot_scatter(
 )
 }
 \arguments{
-\item{df}{Data frame containing the data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{x_var}{Character, column for x-axis (required)}
 
