@@ -3,7 +3,7 @@
 #' @param data Data frame or tibble containing the data.
 #' @param age_col Name of the column containing age data (character string).
 #' @param sex_col Name of the column containing sex data (character string).
-#' @param title Title of the plot. Defaults to "Age–Sex Pyramid (%)".
+#' @param title Title of the plot. Defaults to "Age–Sex Pyramid (\%)".
 #' @return A ggplot object representing the age–sex pyramid plot.
 plot_age_sex_pyramid <- function(data, age_col, sex_col, title = "Age–Sex Pyramid (%)") {
   if (is.null(age_col) || !age_col %in% names(data))

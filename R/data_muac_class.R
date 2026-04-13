@@ -752,7 +752,7 @@ MUACDataset <- R6::R6Class(
     #' @param disaggregate_by Character; optional grouping variable (e.g., "group")
     #' @param weight_by_age Logical; if TRUE, applies age weighting to prevalence estimates
     #' @param pop_under24_prop Numeric; expected population proportion under 24 months (default: 0.333)
-    #' @param conf_level Numeric; confidence level for intervals (default: 0.95 for 95% CI)
+    #' @param conf_level Numeric; confidence level for intervals (default: 0.95 for 95\% CI)
     #'
     #' @return A wide-format tibble with prevalence estimates and confidence intervals by:
     #'   * Status (SAM, MAM, GAM)

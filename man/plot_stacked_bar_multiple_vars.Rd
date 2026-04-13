@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_quality_analyisis_outputs.R
 \name{plot_stacked_bar_multiple_vars}
 \alias{plot_stacked_bar_multiple_vars}
-\title{Plot 100% Stacked Bar Chart for Multiple Variables}
+\title{Plot 100\% Stacked Bar Chart for Multiple Variables}
 \usage{
 plot_stacked_bar_multiple_vars(
   survey_design,
@@ -83,10 +83,10 @@ Higher values create more space between different variables.}
 Creates visual separation between different variables' grouped bars.}
 }
 \value{
-Returns a ggplot2 object showing the 100% stacked bar chart with multiple variables.
+Returns a ggplot2 object showing the 100\% stacked bar chart with multiple variables.
 }
 \description{
-Creates a 100% stacked bar chart showing multiple categorical variables in the same plot.
+Creates a 100\% stacked bar chart showing multiple categorical variables in the same plot.
 Each variable is represented as a separate bar, optionally grouped together.
 The plot shows the relative proportions of each category as a percentage of the total.
 Supports survey weights for proper representation of weighted surveys.

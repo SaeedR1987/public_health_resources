@@ -368,7 +368,7 @@ confidence intervals, and optional disaggregation by sex and grouping variables
 
 \item{\code{pop_under24_prop}}{Numeric; expected population proportion under 24 months (default: 0.333)}
 
-\item{\code{conf_level}}{Numeric; confidence level for intervals (default: 0.95 for 95% CI)}
+\item{\code{conf_level}}{Numeric; confidence level for intervals (default: 0.95 for 95\% CI)}
 }
 \if{html}{\out{</div>}}
 }

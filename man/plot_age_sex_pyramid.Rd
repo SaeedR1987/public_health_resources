@@ -13,7 +13,7 @@ plot_age_sex_pyramid(data, age_col, sex_col, title = "Age–Sex Pyramid (\%)")
 
 \item{sex_col}{Name of the column containing sex data (character string).}
 
-\item{title}{Title of the plot. Defaults to "Age–Sex Pyramid (%)".}
+\item{title}{Title of the plot. Defaults to "Age–Sex Pyramid (\%)".}
 }
 \value{
 A ggplot object representing the age–sex pyramid plot.
