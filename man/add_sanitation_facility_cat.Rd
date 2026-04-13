@@ -44,9 +44,9 @@ The function performs the following:
 - Categorizes the values in the `sanitation_facility_col` column based on the provided classifications.
 - Adds a new column `wash_sanitation_facility_cat` to the dataset with recoded categories:
   \describe{
-    \item{"Improved"}{Corresponding to entries from \code{improved_facilities}.}
-    \item{"Unimproved"}{Corresponding to entries from \code{unimproved_facilities}.}
-    \item{"Open Defecation"}{Matching entries from \code{open_defecation_facilities}.}
+    \item{"Improved"}{Corresponding to entries from `improved_facilities`.}
+    \item{"Unimproved"}{Corresponding to entries from `unimproved_facilities`.}
+    \item{"Open Defecation"}{Matching entries from `open_defecation_facilities`.}
     \item{NA}{Any value not matching the above categories.}
   }
 
