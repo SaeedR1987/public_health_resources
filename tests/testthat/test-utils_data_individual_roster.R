@@ -134,6 +134,44 @@ test_that("add_age_months_cat() — valid dataset creates age month categories",
   expect_equal(as.character(out$age_months_cat[1]), "0-5 months")
   expect_equal(as.character(out$age_months_cat[3]), "6-11 months")
   expect_equal(as.character(out$age_months_cat[4]), "12-17 months")
+
+  # Check roster_age_6_29m and roster_age_30_59m columns exist
+  expect_true("roster_age_6_29m" %in% names(out))
+  expect_true("roster_age_30_59m" %in% names(out))
+})
+
+test_that("add_age_months_cat() — roster_age_6_29m and roster_age_30_59m values are correct", {
+
+  df <- tibble::tibble(
+    age_months = c(0, 5, 6, 29, 30, 59, 60)
+  )
+
+  out <- add_age_months_cat(
+    .dataset = df,
+    age_months_col = "age_months"
+  )
+
+  # Under 6 months → NA for both columns
+  expect_true(is.na(out$roster_age_6_29m[1]))
+  expect_true(is.na(out$roster_age_6_29m[2]))
+  expect_true(is.na(out$roster_age_30_59m[1]))
+  expect_true(is.na(out$roster_age_30_59m[2]))
+
+  # 6-29 months → roster_age_6_29m = 1, roster_age_30_59m = 0
+  expect_equal(out$roster_age_6_29m[3], 1)
+  expect_equal(out$roster_age_6_29m[4], 1)
+  expect_equal(out$roster_age_30_59m[3], 0)
+  expect_equal(out$roster_age_30_59m[4], 0)
+
+  # 30-59 months → roster_age_6_29m = 0, roster_age_30_59m = 1
+  expect_equal(out$roster_age_6_29m[5], 0)
+  expect_equal(out$roster_age_6_29m[6], 0)
+  expect_equal(out$roster_age_30_59m[5], 1)
+  expect_equal(out$roster_age_30_59m[6], 1)
+
+  # 60+ months → NA for both columns
+  expect_true(is.na(out$roster_age_6_29m[7]))
+  expect_true(is.na(out$roster_age_30_59m[7]))
 })
 
 test_that("add_age_months_cat() — NA values are handled correctly", {
@@ -473,6 +511,55 @@ test_that("add_standardized_age uses only existing date columns in coalesce", {
   expect_equal(result$calc_date_birth_final, as.Date(c("2013-01-01", "2003-01-01", "1993-01-01")))
 })
 
+test_that("add_standardized_age — calc_date_birth_final is NA when all birth date columns are NA", {
+  # Regression test: death date columns exist and have values, but birth date columns are all NA.
+  # calc_date_birth_final should remain NA for all records, NOT pick up values from death date columns.
+  df <- tibble::tibble(
+    age_years = c(5, 10, 30),
+    dob_exact = as.Date(c(NA, NA, NA)),
+    dob_approx = as.Date(c(NA, NA, NA)),
+    date_death_exact = as.Date(c("2023-01-01", "2023-02-01", "2023-03-01")),
+    date_death_approx = as.Date(c(NA, "2023-02-15", NA))
+  )
+
+  result <- add_standardized_age(
+    .dataset = df,
+    age_years_col = "age_years",
+    date_birth_exact_col = "dob_exact",
+    date_birth_approx_col = "dob_approx",
+    date_death_exact_col = "date_death_exact",
+    date_death_approx_col = "date_death_approx"
+  )
+
+  # calc_date_birth_final should be NA for all rows — death dates must not bleed into birth dates
+  expect_true("calc_date_birth_final" %in% names(result))
+  expect_true(all(is.na(result$calc_date_birth_final)))
+})
+
+test_that("add_standardized_age — calc_date_death_final uses exact death date when approx is NA", {
+  # Regression test: when date_death_exact_col and date_death_approx_col point to different columns,
+  # calc_date_death_final should prefer the exact date and fall back to approx only when exact is NA.
+  df <- tibble::tibble(
+    age_years = c(5, 10, 30),
+    date_death_exact = as.Date(c("2023-01-01", NA, "2023-03-01")),
+    date_death_approx = as.Date(c(NA, "2023-02-15", "2023-03-20"))
+  )
+
+  result <- add_standardized_age(
+    .dataset = df,
+    age_years_col = "age_years",
+    date_death_exact_col = "date_death_exact",
+    date_death_approx_col = "date_death_approx"
+  )
+
+  # Row 1: exact date available — use it
+  expect_equal(result$calc_date_death_final[1], as.Date("2023-01-01"))
+  # Row 2: only approx available — use approx
+  expect_equal(result$calc_date_death_final[2], as.Date("2023-02-15"))
+  # Row 3: both available — prefer exact
+  expect_equal(result$calc_date_death_final[3], as.Date("2023-03-01"))
+})
+
 
 # add_standardized_roster_demographics ####
 
@@ -495,6 +582,9 @@ test_that("add_standardized_roster_demographics creates canonical columns", {
   # Check all canonical columns exist
   expect_true("roster_child_under2" %in% names(result))
   expect_true("roster_child_under5" %in% names(result))
+  expect_true("roster_2to5" %in% names(result))
+  expect_true("roster_5plus" %in% names(result))
+  expect_true("roster_5_10" %in% names(result))
   expect_true("roster_male" %in% names(result))
   expect_true("roster_female" %in% names(result))
   expect_true("roster_woman_15to49" %in% names(result))
@@ -502,6 +592,9 @@ test_that("add_standardized_roster_demographics creates canonical columns", {
   # Check values
   expect_equal(result$roster_child_under2, c(1, 0, 0, 0, 0, 0))
   expect_equal(result$roster_child_under5, c(1, 1, 0, 0, 0, 0))
+  expect_equal(result$roster_2to5, c(0, 1, 0, 0, 0, 0))
+  expect_equal(result$roster_5plus, c(0, 0, 1, 1, 1, 1))
+  expect_equal(result$roster_5_10, c(0, 0, 1, NA, NA, NA))
   expect_equal(result$roster_male, c(1, 0, 1, 0, 0, 0))
   expect_equal(result$roster_female, c(0, 1, 0, 1, 1, 1))
   expect_equal(result$roster_woman_15to49, c(0, 0, 0, 1, 1, 1))
@@ -530,6 +623,9 @@ test_that("add_standardized_roster_demographics handles missing sex column", {
   # Age-based columns should still work
   expect_equal(result$roster_child_under2, c(1, 0, 0))
   expect_equal(result$roster_child_under5, c(1, 1, 0))
+  expect_equal(result$roster_2to5, c(0, 1, 0))
+  expect_equal(result$roster_5plus, c(0, 0, 1))
+  expect_equal(result$roster_5_10, c(0, 0, 1))
 })
 
 test_that("add_standardized_roster_demographics handles NA values", {
@@ -551,10 +647,45 @@ test_that("add_standardized_roster_demographics handles NA values", {
   # NA age should result in 0 for age-based indicators
   expect_equal(result$roster_child_under2, c(1, 0, 0, 0))
   expect_equal(result$roster_child_under5, c(1, 0, 0, 0))
+  expect_equal(result$roster_2to5, c(0, 0, 0, 0))
+  expect_equal(result$roster_5plus, c(0, 0, 1, 1))
+  # NA age → NA for roster_5_10; age >= 10 → NA
+  expect_equal(result$roster_5_10, c(0, NA, NA, NA))
 
   # NA sex should result in 0 for sex-based indicators
   expect_equal(result$roster_male, c(1, 0, 0, 0))
   expect_equal(result$roster_female, c(0, 1, 0, 1))
+})
+
+test_that("add_standardized_roster_demographics roster_2to5 boundary values", {
+
+  df <- tibble::tibble(
+    person_id = 1:5,
+    calc_age_years = c(1.9, 2, 4.9, 5, 6)
+  )
+
+  result <- add_standardized_roster_demographics(
+    .dataset = df,
+    age_years_col = "calc_age_years"
+  )
+
+  expect_equal(result$roster_2to5, c(0, 1, 1, 0, 0))
+  expect_equal(result$roster_5plus, c(0, 0, 0, 1, 1))
+})
+
+test_that("add_standardized_roster_demographics roster_5_10 boundary values", {
+
+  df <- tibble::tibble(
+    person_id = 1:6,
+    calc_age_years = c(4.9, 5, 7, 9.9, 10, 25)
+  )
+
+  result <- add_standardized_roster_demographics(
+    .dataset = df,
+    age_years_col = "calc_age_years"
+  )
+
+  expect_equal(result$roster_5_10, c(0, 1, 1, 1, NA, NA))
 })
 
 test_that("add_standardized_roster_demographics error on missing age column", {

@@ -89,10 +89,10 @@ quality_schema_to_table <- function(qc_schema) {
 #' @export
 quality_table_to_schema <- function(df) {
 
-  iphra_validate_dataframe(df, origin = "quality_table_to_schema", soft = FALSE)
+  phr_validate_dataframe(df, origin = "quality_table_to_schema", soft = FALSE)
   quality_validate_table_to_schema(df)
 
-  iphra_validate_columns(
+  phr_validate_columns(
     df,
     required_cols = c(
       "check_name",
@@ -104,7 +104,7 @@ quality_table_to_schema <- function(df) {
       "test_params"
     ),
     origin = "quality_table_to_schema",
-    hint = iphra_txt("Quality table must include all required schema fields."),
+    hint = phr_txt("Quality table must include all required schema fields."),
     soft = FALSE
   )
 
@@ -186,9 +186,9 @@ quality_table_to_schema <- function(df) {
 #' @export
 quality_validate_table_to_schema <- function(df, data_obj = NULL) {
 
-  iphra_try({
+  phr_try({
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       df,
       origin = "quality_validate_table_to_schema",
       soft = FALSE
@@ -207,32 +207,32 @@ quality_validate_table_to_schema <- function(df, data_obj = NULL) {
 
     # Required column check (delegated)
 
-    iphra_validate_columns(
+    phr_validate_columns(
       df,
       required_cols = required_cols,
       origin = "quality_validate_table_to_schema",
-      hint = iphra_txt("QC schema table must include all required fields."),
+      hint = phr_txt("QC schema table must include all required fields."),
       soft = FALSE
     )
 
 
     # Required NA check (delegated)
 
-    iphra_validate_required_na(
+    phr_validate_required_na(
       df,
       required_cols = required_cols[required_cols != "test_params"],
       origin = "quality_validate_table_to_schema",
-      hint = iphra_txt("QC schema table cannot contain missing values in required fields."),
+      hint = phr_txt("QC schema table cannot contain missing values in required fields."),
       soft = FALSE
     )
 
 
     # Duplicate identical row check
 
-    iphra_validate_no_duplicates(
+    phr_validate_no_duplicates(
       df,
       origin = "quality_validate_table_to_schema",
-      hint   = iphra_txt("Each QC rule row must be unique."),
+      hint   = phr_txt("Each QC rule row must be unique."),
       soft   = FALSE
     )
 
@@ -246,9 +246,9 @@ quality_validate_table_to_schema <- function(df, data_obj = NULL) {
 
       missing_vars <- setdiff(vars, names(data_obj$raw_data))
       if (length(missing_vars) > 0) {
-        iphra_warning(
+        phr_warning(
           "QC Schema",
-          iphra_txt(
+          phr_txt(
             "QC schema references missing variables: {paste(missing_vars, collapse=', ')}"
           )
         )
@@ -279,23 +279,23 @@ quality_validate_table_to_schema <- function(df, data_obj = NULL) {
 #' @export
 quality_validate_schema_to_table <- function(qc_schema, origin = "quality_validate_schema_to_table") {
 
-  iphra_try({
+  phr_try({
 
     # 1. Top-level structure check
 
     if (is.null(qc_schema) || !is.list(qc_schema)) {
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Quality schema must be a list object."),
-        hint    = iphra_txt("Ensure qc_schema is a named list with a `checks` element.")
+        message = phr_txt("Quality schema must be a list object."),
+        hint    = phr_txt("Ensure qc_schema is a named list with a `checks` element.")
       )
     }
 
     if (is.null(qc_schema) || !is.list(qc_schema)) {
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Quality schema must contain a `checks` list."),
-        hint    = iphra_txt("Structure should be qc_schema$checks = list(check1 = list(...), ...).")
+        message = phr_txt("Quality schema must contain a `checks` list."),
+        hint    = phr_txt("Structure should be qc_schema$checks = list(check1 = list(...), ...).")
       )
     }
 
@@ -304,9 +304,9 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
     purrr::iwalk(qc_schema, function(chk, name) {
 
       if (!is.list(chk)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("Check '{name}' must be a list."))
+          message = phr_txt(glue::glue("Check '{name}' must be a list."))
         )
       }
 
@@ -324,14 +324,14 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
 
       missing <- setdiff(required_fields, names(chk))
       if (length(missing) > 0) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(
+          message = phr_txt(
             glue::glue(
               "Check '{name}' is missing required fields: {paste(missing, collapse = ', ')}."
             )
           ),
-          hint = iphra_txt(
+          hint = phr_txt(
             glue::glue(
               "Ensure each check defines: {paste(required_fields, collapse = ', ')}."
             )
@@ -341,21 +341,21 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
 
       # check_name
       if (!is.character(chk$check_name) || length(chk$check_name) != 1) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`check_name` in '{name}' must be a single character string."))
+          message = phr_txt(glue::glue("`check_name` in '{name}' must be a single character string."))
         )
       }
 
       if (chk$check_name != name) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(
+          message = phr_txt(
             glue::glue(
               "Check list name '{name}' does not match check_name field value '{chk$check_name}'."
             )
           ),
-          hint = iphra_txt(
+          hint = phr_txt(
             "The name used in the checks list (qc_schema$checks$<name>) must be identical to the check_name field value within that check."
           )
         )
@@ -363,26 +363,26 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
 
       # check_label
       if (!is.character(chk$check_label) || length(chk$check_label) != 1) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`check_label` in '{name}' must be a single character string."))
+          message = phr_txt(glue::glue("`check_label` in '{name}' must be a single character string."))
         )
       }
 
       # variables (optional)
       if (!is.null(chk$variables) &&
           !(is.character(chk$variables) && is.atomic(chk$variables))) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`variables` in '{name}' must be a character vector."))
+          message = phr_txt(glue::glue("`variables` in '{name}' must be a character vector."))
         )
       }
 
       # statistical_test
       if (!is.character(chk$statistical_test) || length(chk$statistical_test) != 1) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`statistical_test` in '{name}' must be a single character string."))
+          message = phr_txt(glue::glue("`statistical_test` in '{name}' must be a single character string."))
         )
       }
 
@@ -390,18 +390,18 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
       # NEW: thresholds validation (paired structure)
 
       if (!is.list(chk$thresholds)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`thresholds` in '{name}' must be a list."))
+          message = phr_txt(glue::glue("`thresholds` in '{name}' must be a list."))
         )
       }
 
       purrr::iwalk(chk$thresholds, function(thr, i) {
 
         if (!is.list(thr)) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt(glue::glue("Each threshold in '{name}' must be a list."))
+            message = phr_txt(glue::glue("Each threshold in '{name}' must be a list."))
           )
         }
 
@@ -409,9 +409,9 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
         missing_thr <- setdiff(required_thr_fields, names(thr))
 
         if (length(missing_thr) > 0) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt(
+            message = phr_txt(
               glue::glue(
                 "Threshold {i} in '{name}' is missing fields: {paste(missing_thr, collapse = ', ')}."
               )
@@ -422,21 +422,21 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
         # threshold_expression
         if (!is.character(thr$threshold_expression) ||
             length(thr$threshold_expression) != 1) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt(
+            message = phr_txt(
               "threshold_expression in threshold {i} of '{name}' must be a single character string."
             )
           )
         }
 
         if (!.is_logical_expression(thr$threshold_expression)) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt(
+            message = phr_txt(
               "threshold_expression in threshold {i} of '{name}' must be a valid logical expression."
             ),
-            hint = iphra_txt(
+            hint = phr_txt(
               "Use logical comparisons or functions like `is.na()` or `grepl()`."
             )
           )
@@ -444,9 +444,9 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
 
         # penalty_score
         if (!is.numeric(thr$penalty_score) || length(thr$penalty_score) != 1) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt(
+            message = phr_txt(
               "penalty_score in threshold {i} of '{name}' must be a single numeric value."
             )
           )
@@ -455,18 +455,18 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
 
       # test_params
       if (!is.null(chk$test_params) && !is.list(chk$test_params)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`test_params` in '{name}' must be a list."))
+          message = phr_txt(glue::glue("`test_params` in '{name}' must be a list."))
         )
       }
 
       # check_group (optional)
       if (!is.null(chk$check_group) &&
           !(is.character(chk$check_group) && length(chk$check_group) == 1)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt(glue::glue("`check_group` in '{name}' must be a single character string or NULL."))
+          message = phr_txt(glue::glue("`check_group` in '{name}' must be a single character string or NULL."))
         )
       }
     })

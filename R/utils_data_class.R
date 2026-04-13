@@ -344,7 +344,7 @@ data_schema_to_table <- function(schema_list) {
 #' @export
 data_table_to_schema <- function(df) {
 
-  iphra_validate_dataframe(df, origin = "data_table_to_schema", soft = FALSE)
+  phr_validate_dataframe(df, origin = "data_table_to_schema", soft = FALSE)
 
   # Validate the table format
   data_validate_table_to_schema(df)
@@ -480,10 +480,10 @@ data_table_to_schema <- function(df) {
 #' @export
 data_validate_table_to_schema <- function(df, data_obj = NULL) {
 
-  iphra_try({
+  phr_try({
 
     # Validate dataframe
-    iphra_validate_dataframe(df, origin = "data_validate_table_to_schema", soft = FALSE)
+    phr_validate_dataframe(df, origin = "data_validate_table_to_schema", soft = FALSE)
 
     # Fixed required columns - now includes "value" column
     required_cols <- c(
@@ -493,7 +493,7 @@ data_validate_table_to_schema <- function(df, data_obj = NULL) {
       "question_type","is_other","other_column_link"
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       df,
       required_cols = required_cols,
       origin = "data_validate_table_to_schema",
@@ -505,8 +505,8 @@ data_validate_table_to_schema <- function(df, data_obj = NULL) {
     valid_rules <- c("variable","dependency","soft_dependency")
     bad <- setdiff(unique(df$rule_type), valid_rules)
     if (length(bad) > 0) {
-      iphra_error("data_validate_table_to_schema",
-                  iphra_txt("Invalid rule_type values: {paste(bad, collapse=', ')}."))
+      phr_error("data_validate_table_to_schema",
+                  phr_txt("Invalid rule_type values: {paste(bad, collapse=', ')}."))
     }
 
     # duplicate (variable, value) pairs should warn
@@ -524,9 +524,9 @@ data_validate_table_to_schema <- function(df, data_obj = NULL) {
 
     dups <- var_value_key[duplicated(var_value_key)]
     if (length(dups) > 0) {
-      iphra_warning(
+      phr_warning(
         origin  = "data_validate_table_to_schema",
-        message = iphra_txt("Duplicate (variable, value) rows detected: {paste(unique(dups), collapse=', ')}."),
+        message = phr_txt("Duplicate (variable, value) rows detected: {paste(unique(dups), collapse=', ')}."),
         hint    = "Only the last row per (variable, value) pair will be retained."
       )
     }
@@ -545,59 +545,59 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
   # 0. BASIC STRUCTURE
   # ------------------------------------------
   if (is.null(schema_list) || !is.list(schema_list)) {
-    iphra_error(origin, "Schema must be a list object.")
+    phr_error(origin, "Schema must be a list object.")
   }
 
   # required
   required <- schema_list$required %||% character(0)
   if (!is.character(required)) {
-    iphra_error(origin, "`required` must be a character vector.")
+    phr_error(origin, "`required` must be a character vector.")
   }
 
   # types
   types <- schema_list$types %||% list()
   if (!is.list(types)) {
-    iphra_error(origin, "`types` must be a list.")
+    phr_error(origin, "`types` must be a list.")
   }
 
   # must be a *named* list
   if (length(types) > 0 && (is.null(names(types)) || any(names(types) == ""))) {
-    iphra_error(origin, "`types` must be a named list.")
+    phr_error(origin, "`types` must be a named list.")
   }
 
   # allowed
   allowed <- schema_list$allowed_values %||% list()
   if (!is.list(allowed)) {
-    iphra_error(origin, "`allowed_values` must be a list.")
+    phr_error(origin, "`allowed_values` must be a list.")
   }
 
   # col_names (possible column name alternatives for auto-mapping)
   col_names <- schema_list$col_names %||% list()
   if (!is.list(col_names)) {
-    iphra_error(origin, "`col_names` must be a list.")
+    phr_error(origin, "`col_names` must be a list.")
   }
 
   # patterns
   patterns <- schema_list$patterns %||% list()
   if (!is.list(patterns)) {
-    iphra_error(origin, "`patterns` must be a list.")
+    phr_error(origin, "`patterns` must be a list.")
   }
 
   # must be a *named* list
   if (length(patterns) > 0 && (is.null(names(patterns)) || any(names(patterns) == ""))) {
-    iphra_error(origin, "`patterns` must be a named list.")
+    phr_error(origin, "`patterns` must be a named list.")
   }
 
   # ranges
   ranges <- schema_list$ranges %||% list()
   if (!is.list(ranges)) {
-    iphra_error(origin, "`ranges` must be a list.")
+    phr_error(origin, "`ranges` must be a list.")
   }
 
   # precision limits
   precision <- schema_list$precision_limits %||% list()
   if (!is.list(precision)) {
-    iphra_error(origin, "`precision_limits` must be a list.")
+    phr_error(origin, "`precision_limits` must be a list.")
   }
 
   # ------------------------------------------
@@ -609,7 +609,7 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
     "character",
     "logical",
     "factor",
-    "date", "Date", "POSIXct"
+    "date", "Date", "POSIXct", "POSIXlt", "datetime"
   )
 
   purrr::iwalk(types, function(val, varname) {
@@ -621,10 +621,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 
       bad_val <- paste0(capture.output(str(val)), collapse = " ")
 
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Invalid type entry for variable '{varname}'."),
-        hint    = iphra_txt(
+        message = phr_txt("Invalid type entry for variable '{varname}'."),
+        hint    = phr_txt(
           "Expected one of: {paste(valid_type_strings, collapse=', ')}. Received: {bad_val}"
         )
       )
@@ -639,10 +639,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
   purrr::iwalk(allowed, function(val, varname) {
     if (!is.atomic(val)) {
       bad_val <- paste0(capture.output(str(val)), collapse = " ")
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Allowed values for '{varname}' must be atomic."),
-        hint    = iphra_txt("Received: {bad_val}")
+        message = phr_txt("Allowed values for '{varname}' must be atomic."),
+        hint    = phr_txt("Received: {bad_val}")
       )
     }
   })
@@ -654,30 +654,30 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 
   value_map <- schema_list$value_map %||% list()
   if (!is.list(value_map)) {
-    iphra_error(origin, "`value_map` must be a list.")
+    phr_error(origin, "`value_map` must be a list.")
   }
 
   # value_map must be a named list where each entry is also a named list
   if (length(value_map) > 0) {
     if (is.null(names(value_map)) || any(names(value_map) == "")) {
-      iphra_error(origin, "`value_map` must be a named list (variable names).")
+      phr_error(origin, "`value_map` must be a named list (variable names).")
     }
 
     # Each variable's value_map must be a named list
     purrr::iwalk(value_map, function(val_mappings, varname) {
       if (!is.list(val_mappings)) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt("value_map for '{varname}' must be a list."),
-          hint    = iphra_txt("Expected: list(canonical_val = c(dataset_vals, ...))")
+          message = phr_txt("value_map for '{varname}' must be a list."),
+          hint    = phr_txt("Expected: list(canonical_val = c(dataset_vals, ...))")
         )
       }
 
       if (is.null(names(val_mappings)) || any(names(val_mappings) == "")) {
-        iphra_error(
+        phr_error(
           origin  = origin,
-          message = iphra_txt("value_map for '{varname}' must be a named list (canonical values)."),
-          hint    = iphra_txt("Expected: list(canonical_val = c(dataset_vals, ...))")
+          message = phr_txt("value_map for '{varname}' must be a named list (canonical values)."),
+          hint    = phr_txt("Expected: list(canonical_val = c(dataset_vals, ...))")
         )
       }
 
@@ -685,10 +685,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
       purrr::iwalk(val_mappings, function(dataset_vals, canonical_val) {
         if (!is.atomic(dataset_vals)) {
           bad_val <- paste0(capture.output(str(dataset_vals)), collapse = " ")
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt("value_map['{varname}']['{canonical_val}'] must be atomic."),
-            hint    = iphra_txt("Received: {bad_val}")
+            message = phr_txt("value_map['{varname}']['{canonical_val}'] must be atomic."),
+            hint    = phr_txt("Received: {bad_val}")
           )
         }
       })
@@ -703,10 +703,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
   purrr::iwalk(col_names, function(val, varname) {
     if (!is.atomic(val) || !is.character(val)) {
       bad_val <- paste0(capture.output(str(val)), collapse = " ")
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("col_names for '{varname}' must be a character vector."),
-        hint    = iphra_txt("Received: {bad_val}")
+        message = phr_txt("col_names for '{varname}' must be a character vector."),
+        hint    = phr_txt("Received: {bad_val}")
       )
     }
   })
@@ -724,10 +724,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 
         bad_val <- paste0(capture.output(str(val)), collapse = " ")
 
-        iphra_warning(
+        phr_warning(
           origin  = origin,
-          message = iphra_txt("Pattern for '{varname}' should be a single regex string. Note: patterns have moved to dependency_schema."),
-          hint    = iphra_txt("Received: {bad_val}")
+          message = phr_txt("Pattern for '{varname}' should be a single regex string. Note: patterns have moved to dependency_schema."),
+          hint    = phr_txt("Received: {bad_val}")
         )
       }
     })
@@ -746,10 +746,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 
       bad_val <- paste0(capture.output(str(val)), collapse = " ")
 
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Range for '{varname}' must be numeric of length 2 (min, max)."),
-        hint    = iphra_txt("Received: {bad_val}")
+        message = phr_txt("Range for '{varname}' must be numeric of length 2 (min, max)."),
+        hint    = phr_txt("Received: {bad_val}")
       )
     }
   })
@@ -767,10 +767,10 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 
       bad_val <- paste0(capture.output(str(val)), collapse = " ")
 
-      iphra_error(
+      phr_error(
         origin  = origin,
-        message = iphra_txt("Precision limit for '{varname}' must be a numeric value."),
-        hint    = iphra_txt("Received: {bad_val}")
+        message = phr_txt("Precision limit for '{varname}' must be a numeric value."),
+        hint    = phr_txt("Received: {bad_val}")
       )
     }
   })
@@ -781,26 +781,26 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
   variable_labels <- schema_list$variable_labels %||% list()
   if (length(variable_labels) > 0) {
     if (!is.list(variable_labels)) {
-      iphra_error(origin, "`variable_labels` must be a named list keyed by language code (en/fr/ar).")
+      phr_error(origin, "`variable_labels` must be a named list keyed by language code (en/fr/ar).")
     }
     valid_langs <- c("en", "fr", "ar")
     bad_langs <- setdiff(names(variable_labels), valid_langs)
     if (length(bad_langs) > 0) {
-      iphra_warning(
+      phr_warning(
         origin  = origin,
-        message = iphra_txt("Unexpected language keys in `variable_labels`: {paste(bad_langs, collapse=', ')}."),
-        hint    = iphra_txt("Expected keys: {paste(valid_langs, collapse=', ')}.")
+        message = phr_txt("Unexpected language keys in `variable_labels`: {paste(bad_langs, collapse=', ')}."),
+        hint    = phr_txt("Expected keys: {paste(valid_langs, collapse=', ')}.")
       )
     }
     purrr::iwalk(variable_labels, function(lang_labels, lang) {
       if (!is.list(lang_labels)) {
-        iphra_error(origin, iphra_txt("`variable_labels${lang}` must be a named list."))
+        phr_error(origin, phr_txt("`variable_labels${lang}` must be a named list."))
       }
       purrr::iwalk(lang_labels, function(lbl, varname) {
         if (!is.character(lbl) || length(lbl) != 1) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt("variable_labels${lang}${varname} must be a single character string.")
+            message = phr_txt("variable_labels${lang}${varname} must be a single character string.")
           )
         }
       })
@@ -813,17 +813,17 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
   schema_value_labels <- schema_list$value_labels %||% list()
   if (length(schema_value_labels) > 0) {
     if (!is.list(schema_value_labels)) {
-      iphra_error(origin, "`value_labels` in schema must be a named list keyed by language code (en/fr/ar).")
+      phr_error(origin, "`value_labels` in schema must be a named list keyed by language code (en/fr/ar).")
     }
     purrr::iwalk(schema_value_labels, function(lang_labels, lang) {
       if (!is.list(lang_labels)) {
-        iphra_error(origin, iphra_txt("`value_labels${lang}` must be a named list."))
+        phr_error(origin, phr_txt("`value_labels${lang}` must be a named list."))
       }
       purrr::iwalk(lang_labels, function(val_labels, varname) {
         if (!is.character(val_labels)) {
-          iphra_error(
+          phr_error(
             origin  = origin,
-            message = iphra_txt("value_labels${lang}${varname} must be a named character vector.")
+            message = phr_txt("value_labels${lang}${varname} must be a named character vector.")
           )
         }
       })
@@ -982,7 +982,7 @@ indicator_schema_to_table <- function(indicator_schema_list) {
 
   # Validate input
   if (is.null(indicator_schema_list) || !is.list(indicator_schema_list)) {
-    iphra_error("indicator_schema_to_table", "Indicator schema must be a list object.")
+    phr_error("indicator_schema_to_table", "Indicator schema must be a list object.")
   }
 
   # Fixed column set for indicator schema export
@@ -1120,7 +1120,7 @@ indicator_schema_to_table <- function(indicator_schema_list) {
 #' @export
 indicator_table_to_schema <- function(df) {
 
-  iphra_validate_dataframe(df, origin = "indicator_table_to_schema", soft = FALSE)
+  phr_validate_dataframe(df, origin = "indicator_table_to_schema", soft = FALSE)
 
   # Validate the table format
   indicator_validate_table_to_schema(df)
@@ -1196,10 +1196,10 @@ indicator_table_to_schema <- function(df) {
 #' @export
 indicator_validate_table_to_schema <- function(df) {
 
-  iphra_try({
+  phr_try({
 
     # Validate dataframe
-    iphra_validate_dataframe(df, origin = "indicator_validate_table_to_schema", soft = FALSE)
+    phr_validate_dataframe(df, origin = "indicator_validate_table_to_schema", soft = FALSE)
 
     # Required columns
     required_cols <- c(
@@ -1211,7 +1211,7 @@ indicator_validate_table_to_schema <- function(df) {
       "comment"
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       df,
       required_cols = required_cols,
       origin = "indicator_validate_table_to_schema",
@@ -1223,9 +1223,9 @@ indicator_validate_table_to_schema <- function(df) {
     ind_names <- df$indicator_name[!is.na(df$indicator_name) & df$indicator_name != ""]
     dups <- ind_names[duplicated(ind_names)]
     if (length(dups) > 0) {
-      iphra_warning(
+      phr_warning(
         origin  = "indicator_validate_table_to_schema",
-        message = iphra_txt("Duplicate indicator names detected: {paste(unique(dups), collapse=', ')}."),
+        message = phr_txt("Duplicate indicator names detected: {paste(unique(dups), collapse=', ')}."),
         hint    = "Only the last row per indicator name will be retained."
       )
     }
@@ -1335,7 +1335,7 @@ dependency_schema_to_table <- function(dependency_schema_list) {
 #' @export
 dependency_table_to_schema <- function(df) {
 
-  iphra_validate_dataframe(df, origin = "dependency_table_to_schema", soft = FALSE)
+  phr_validate_dataframe(df, origin = "dependency_table_to_schema", soft = FALSE)
 
   # Validate the table format
   dependency_validate_table_to_schema(df)
@@ -1408,10 +1408,10 @@ dependency_table_to_schema <- function(df) {
 #' @export
 dependency_validate_table_to_schema <- function(df) {
 
-  iphra_try({
+  phr_try({
 
     # Validate dataframe
-    iphra_validate_dataframe(df, origin = "dependency_validate_table_to_schema", soft = FALSE)
+    phr_validate_dataframe(df, origin = "dependency_validate_table_to_schema", soft = FALSE)
 
     # Required columns
     required_cols <- c(
@@ -1425,7 +1425,7 @@ dependency_validate_table_to_schema <- function(df) {
       "comment"
     )
 
-    iphra_validate_columns(
+    phr_validate_columns(
       df,
       required_cols = required_cols,
       origin = "dependency_validate_table_to_schema",
@@ -1437,8 +1437,8 @@ dependency_validate_table_to_schema <- function(df) {
     valid_rules <- c("dependency", "soft_dependency")
     bad <- setdiff(unique(df$rule_type), valid_rules)
     if (length(bad) > 0) {
-      iphra_error("dependency_validate_table_to_schema",
-                  iphra_txt("Invalid rule_type values: {paste(bad, collapse=', ')}. Expected: dependency or soft_dependency."))
+      phr_error("dependency_validate_table_to_schema",
+                  phr_txt("Invalid rule_type values: {paste(bad, collapse=', ')}. Expected: dependency or soft_dependency."))
     }
 
     # Check for duplicate dependency names within each rule type
@@ -1448,9 +1448,9 @@ dependency_validate_table_to_schema <- function(df) {
         dep_names <- rule_rows$dep_name[!is.na(rule_rows$dep_name) & rule_rows$dep_name != ""]
         dups <- dep_names[duplicated(dep_names)]
         if (length(dups) > 0) {
-          iphra_warning(
+          phr_warning(
             origin  = "dependency_validate_table_to_schema",
-            message = iphra_txt("Duplicate {rule_type} names detected: {paste(unique(dups), collapse=', ')}."),
+            message = phr_txt("Duplicate {rule_type} names detected: {paste(unique(dups), collapse=', ')}."),
             hint    = "Only the last row per dependency name will be retained."
           )
         }
@@ -1472,29 +1472,29 @@ dependency_validate_schema_to_table <- function(dependency_schema_list, origin =
   # 0. BASIC STRUCTURE
   # ------------------------------------------
   if (is.null(dependency_schema_list) || !is.list(dependency_schema_list)) {
-    iphra_error(origin, "Dependency schema must be a list object.")
+    phr_error(origin, "Dependency schema must be a list object.")
   }
 
   # dependencies
   deps <- dependency_schema_list$dependencies %||% list()
   if (!is.list(deps)) {
-    iphra_error(origin, "`dependencies` must be a list.")
+    phr_error(origin, "`dependencies` must be a list.")
   }
 
   # must be a *named* list if not empty
   if (length(deps) > 0 && (is.null(names(deps)) || any(names(deps) == ""))) {
-    iphra_error(origin, "`dependencies` must be a named list.")
+    phr_error(origin, "`dependencies` must be a named list.")
   }
 
   # soft_dependencies
   soft <- dependency_schema_list$soft_dependencies %||% list()
   if (!is.list(soft)) {
-    iphra_error(origin, "`soft_dependencies` must be a list.")
+    phr_error(origin, "`soft_dependencies` must be a list.")
   }
 
   # must be a *named* list if not empty
   if (length(soft) > 0 && (is.null(names(soft)) || any(names(soft) == ""))) {
-    iphra_error(origin, "`soft_dependencies` must be a named list.")
+    phr_error(origin, "`soft_dependencies` must be a named list.")
   }
 
 
@@ -1505,41 +1505,41 @@ dependency_validate_schema_to_table <- function(dependency_schema_list, origin =
   validate_dependency <- function(d, dep_name) {
 
     if (!is.list(d)) {
-      iphra_error(origin, "Each dependency must be a list.")
+      phr_error(origin, "Each dependency must be a list.")
     }
 
     # variables
     if (is.null(d[["variables"]]) || !is.character(d[["variables"]])) {
-      iphra_error(origin, iphra_txt("Dependency '{dep_name}' must include character `variables`."))
+      phr_error(origin, phr_txt("Dependency '{dep_name}' must include character `variables`."))
     }
 
     # condition_if condition
     if (!is.null(d[["condition_if"]]) && !is.character(d[["condition_if"]])) {
       bad_val <- paste0(capture.output(str(d[["condition_if"]])), collapse = " ")
-      iphra_error(
+      phr_error(
         origin,
-        iphra_txt("Dependency '{dep_name}' `condition_if` must be a character string."),
-        hint = iphra_txt("Received: {bad_val}")
+        phr_txt("Dependency '{dep_name}' `condition_if` must be a character string."),
+        hint = phr_txt("Received: {bad_val}")
       )
     }
 
     # then condition
     if (!is.null(d[["then"]]) && !is.character(d[["then"]])) {
       bad_val <- paste0(capture.output(str(d[["then"]])), collapse = " ")
-      iphra_error(
+      phr_error(
         origin,
-        iphra_txt("Dependency '{dep_name}' `then` must be a character string."),
-        hint = iphra_txt("Received: {bad_val}")
+        phr_txt("Dependency '{dep_name}' `then` must be a character string."),
+        hint = phr_txt("Received: {bad_val}")
       )
     }
 
     # action (optional)
     if (!is.null(d[["action"]]) && !is.character(d[["action"]])) {
       bad_val <- paste0(capture.output(str(d[["action"]])), collapse = " ")
-      iphra_error(
+      phr_error(
         origin,
-        iphra_txt("Dependency '{dep_name}' `action` must be a character string if provided."),
-        hint = iphra_txt("Received: {bad_val}")
+        phr_txt("Dependency '{dep_name}' `action` must be a character string if provided."),
+        hint = phr_txt("Received: {bad_val}")
       )
     }
   }

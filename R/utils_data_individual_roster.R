@@ -32,39 +32,39 @@ add_age_cat <- function(
 ) {
   origin <- "add_age_cat"
 
-  iphra_try({
+  phr_try({
 
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
 
     # Validate input column
 
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       age_years_col,
       origin = origin,
-      hint = iphra_txt("Ensure the specified `age_years_col` exists in the dataset."),
+      hint = phr_txt("Ensure the specified `age_years_col` exists in the dataset."),
       soft = FALSE
     )
 
-    iphra_validate_all_numeric(
+    phr_validate_all_numeric(
       .dataset[[age_years_col]],
       origin = origin,
-      hint = iphra_txt("The `age_years_col` column must contain numeric values."),
+      hint = phr_txt("The `age_years_col` column must contain numeric values."),
       soft = TRUE
     )
 
@@ -74,9 +74,9 @@ add_age_cat <- function(
     output_column <- "age_cat"
 
     if (output_column %in% names(.dataset)) {
-      iphra_warning(
+      phr_warning(
         origin = origin,
-        message = iphra_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
+        message = phr_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
       )
     }
 
@@ -94,14 +94,14 @@ add_age_cat <- function(
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Age categories successfully calculated.")
+      message = phr_txt("Age categories successfully calculated.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure `age_years_col` exists and contains valid numeric data."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure `age_years_col` exists and contains valid numeric data."))
 }
 
 #' @title Add Age Categories in Months
@@ -147,59 +147,61 @@ add_age_months_cat <- function(
 ) {
   origin <- "add_age_months_cat"
 
-  iphra_try({
+  phr_try({
 
 
     # Validate dataset
 
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
 
     # Validate input column
 
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       age_months_col,
       origin = origin,
-      hint = iphra_txt("Ensure the specified `age_months_col` exists in the dataset."),
+      hint = phr_txt("Ensure the specified `age_months_col` exists in the dataset."),
       soft = FALSE
     )
 
     # Check if all values in the specified column are NA
-    iphra_assert(
+    phr_assert(
       !all(is.na(.dataset[[age_months_col]])),
       origin = origin,
-      iphra_txt(paste("The column", age_months_col, "contains only NA values. Ensure it contains valid numeric data."))
+      phr_txt(paste("The column", age_months_col, "contains only NA values. Ensure it contains valid numeric data."))
     )
 
-    iphra_validate_all_numeric(
+    phr_validate_all_numeric(
       .dataset[[age_months_col]],
       origin = origin,
-      hint = iphra_txt("The `age_months_col` column must contain numeric values."),
+      hint = phr_txt("The `age_months_col` column must contain numeric values."),
       soft = TRUE
     )
 
 
-    # Overwrite warning for existing output column
+    # Overwrite warning for existing output columns
 
-    output_column <- "age_months_cat"
+    output_columns <- c("age_months_cat", "roster_age_6_29m", "roster_age_30_59m")
 
-    if (output_column %in% names(.dataset)) {
-      iphra_warning(
-        origin = origin,
-        message = iphra_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
-      )
+    for (output_column in output_columns) {
+      if (output_column %in% names(.dataset)) {
+        phr_warning(
+          origin = origin,
+          message = phr_txt(glue::glue("The column `{output_column}` already exists and will be overwritten."))
+        )
+      }
     }
 
 
@@ -216,17 +218,29 @@ add_age_months_cat <- function(
             "24-29 months", "30-35 months", "36-41 months", "42-47 months",
             "48-53 months", "54-59 months"
           )
+        ),
+        roster_age_6_29m = dplyr::case_when(
+          .data[[age_months_col]] < 6 ~ NA_real_,
+          .data[[age_months_col]] >= 6 & .data[[age_months_col]] <= 29 ~ 1,
+          .data[[age_months_col]] >= 30 & .data[[age_months_col]] <= 59 ~ 0,
+          TRUE ~ NA_real_
+        ),
+        roster_age_30_59m = dplyr::case_when(
+          .data[[age_months_col]] < 6 ~ NA_real_,
+          .data[[age_months_col]] >= 6 & .data[[age_months_col]] <= 29 ~ 0,
+          .data[[age_months_col]] >= 30 & .data[[age_months_col]] <= 59 ~ 1,
+          TRUE ~ NA_real_
         )
       )
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Age categories in months successfully calculated.")
+      message = phr_txt("Age categories in months successfully calculated.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure `age_months_col` exists and contains valid numeric data."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure `age_months_col` exists and contains valid numeric data."))
 }
 
 #' @title Add Standardized Age Calculations to a Dataset
@@ -315,30 +329,30 @@ add_standardized_age <- function(
 
   origin <- "add_standardized_age"
 
-  iphra_try({
+  phr_try({
 
     # Validate the dataset
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
     # Validate mandatory and optional columns
     mandatory_cols <- c(age_years_col)
 
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       mandatory_cols,
       origin = origin,
-      hint = iphra_txt("Ensure the age years column exists in the dataset."),
+      hint = phr_txt("Ensure the age years column exists in the dataset."),
       soft = FALSE
     )
 
@@ -384,11 +398,11 @@ add_standardized_age <- function(
     )
 
     if (length(optional_cols) > 0) {
-      iphra_validate_columns(
+      phr_validate_columns(
         .dataset,
         optional_cols,
         origin = origin,
-        hint = iphra_txt("Ensure optional columns for age, birth, death, and recall dates exist if provided."),
+        hint = phr_txt("Ensure optional columns for age, birth, death, and recall dates exist if provided."),
         soft = TRUE
       )
     }
@@ -408,7 +422,7 @@ add_standardized_age <- function(
     if (length(cols_to_convert) > 0) {
       .dataset <- .dataset %>%
         dplyr::mutate(
-          dplyr::across(all_of(cols_to_convert), ~ iphra_convert_date(.x))
+          dplyr::across(all_of(cols_to_convert), ~ phr_convert_date(.x))
         )
     }
 
@@ -416,40 +430,78 @@ add_standardized_age <- function(
     output_cols <- c("calc_date_birth_final", "calc_date_death_final", "calc_age_years", "calc_age_months", "calc_age_days", "roster_birth")
     for (col in output_cols) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Variable {col} already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Variable {col} already exists and will be overwritten."))
         )
       }
     }
 
-    # Compute `calc_date_birth_final` taking into account final columns
-    # Only include columns that are not NULL and exist in the dataset
-    birth_cols <- c(
-      if (!is.null(date_birth_exact_col) && date_birth_exact_col %in% names(.dataset)) date_birth_exact_col,
-      if (!is.null(date_birth_approx_col) && date_birth_approx_col %in% names(.dataset)) date_birth_approx_col,
-      if (!is.null(date_birth_final_col) && date_birth_final_col %in% names(.dataset)) date_birth_final_col
-    )
+    # flags for whether each candidate column is usable
+    has_exact <- !is.null(date_birth_exact_col) && date_birth_exact_col %in% names(.dataset)
+    has_approx <- !is.null(date_birth_approx_col) && date_birth_approx_col %in% names(.dataset)
+    has_final <- !is.null(date_birth_final_col) && date_birth_final_col %in% names(.dataset)
 
-    if (length(birth_cols) > 0) {
+    if (has_exact && has_approx) {
       .dataset <- .dataset %>%
         dplyr::mutate(
-          calc_date_birth_final = dplyr::coalesce(!!!rlang::syms(birth_cols))
+          calc_date_birth_final = dplyr::if_else(
+            !is.na(.data[[date_birth_exact_col]]),
+            .data[[date_birth_exact_col]],
+            .data[[date_birth_approx_col]]
+          )
+        )
+
+    } else if (has_exact) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_birth_final = .data[[date_birth_exact_col]]
+        )
+
+    } else if (has_approx) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_birth_final = .data[[date_birth_approx_col]]
+        )
+
+    } else if (has_final) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_birth_final = .data[[date_birth_final_col]]
         )
     }
 
-    # Compute `calc_date_death_final` taking into account final columns
-    # Only include columns that are not NULL and exist in the dataset
-    death_cols <- c(
-      if (!is.null(date_death_exact_col) && date_death_exact_col %in% names(.dataset)) date_death_exact_col,
-      if (!is.null(date_death_approx_col) && date_death_approx_col %in% names(.dataset)) date_death_approx_col,
-      if (!is.null(date_death_final_col) && date_death_final_col %in% names(.dataset)) date_death_final_col
-    )
+    # flags for whether each candidate column is usable
+    has_exact_death <- !is.null(date_death_exact_col) && date_death_exact_col %in% names(.dataset)
+    has_approx_death <- !is.null(date_death_approx_col) && date_death_approx_col %in% names(.dataset)
+    has_final_death <- !is.null(date_death_final_col) && date_death_final_col %in% names(.dataset)
 
-    if (length(death_cols) > 0) {
+    if (has_exact_death && has_approx_death) {
       .dataset <- .dataset %>%
         dplyr::mutate(
-          calc_date_death_final = dplyr::coalesce(!!!rlang::syms(death_cols))
+          calc_date_death_final = dplyr::if_else(
+            !is.na(.data[[date_death_exact_col]]),
+            .data[[date_death_exact_col]],
+            .data[[date_death_approx_col]]
+          )
+        )
+
+    } else if (has_exact_death) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_death_final = .data[[date_death_exact_col]]
+        )
+
+    } else if (has_approx_death) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_death_final = .data[[date_death_approx_col]]
+        )
+
+    } else if (has_final_death) {
+      .dataset <- .dataset %>%
+        dplyr::mutate(
+          calc_date_death_final = .data[[date_death_final_col]]
         )
     }
 
@@ -533,9 +585,9 @@ add_standardized_age <- function(
 
     # Calculate `roster_birth` column if `calc_date_birth_final` is valid and `date_recall_col` is provided
     if ((!"calc_date_birth_final" %in% names(.dataset) && is.null(date_birth_final_col)) || is.null(date_recall_col)) {
-      iphra_message(
+      phr_message(
         origin = origin,
-        message = iphra_txt("roster_birth calculation skipped as required birth or recall date information is missing.")
+        message = phr_txt("roster_birth calculation skipped as required birth or recall date information is missing.")
       )
     } else {
       .dataset <- .dataset %>%
@@ -549,14 +601,14 @@ add_standardized_age <- function(
         )
     }
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Standardized age columns and roster_birth added successfully.")
+      message = phr_txt("Standardized age columns and roster_birth added successfully.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure input data and columns are valid."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure input data and columns are valid."))
 }
 
 
@@ -570,6 +622,9 @@ add_standardized_age <- function(
 #' The function creates the following canonical columns for roster data:
 #' - **roster_child_under2**: `1` if age < 2 years, `0` otherwise
 #' - **roster_child_under5**: `1` if age < 5 years, `0` otherwise
+#' - **roster_2to5**: `1` if 2 <= age < 5 years, `0` otherwise
+#' - **roster_5plus**: `1` if age >= 5 years, `0` otherwise
+#' - **roster_5_10**: `1` if 5 <= age < 10 years, `0` if age < 5 years, `NA` if age >= 10 years or age is NA
 #' - **roster_male**: `1` if sex matches male value, `0` otherwise
 #' - **roster_female**: `1` if sex matches female value, `0` otherwise
 #' - **roster_woman_15to49**: `1` if female aged 15-49, `0` otherwise
@@ -610,28 +665,28 @@ add_standardized_roster_demographics <- function(
 
   origin <- "add_standardized_roster_demographics"
 
-  iphra_try({
+  phr_try({
 
     # Validate dataset
-    iphra_validate_dataframe(
+    phr_validate_dataframe(
       .dataset,
       origin = origin,
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
+      hint = phr_txt("Ensure you pass a valid data frame or tibble to `.dataset`."),
       soft = FALSE
     )
 
-    iphra_assert(
+    phr_assert(
       nrow(.dataset) > 0,
       origin = origin,
-      iphra_txt("Dataset is empty.")
+      phr_txt("Dataset is empty.")
     )
 
     # Validate age column
-    iphra_validate_columns(
+    phr_validate_columns(
       .dataset,
       age_years_col,
       origin = origin,
-      hint = iphra_txt("Ensure age_years_col exists. Run add_standardized_age first."),
+      hint = phr_txt("Ensure age_years_col exists. Run add_standardized_age first."),
       soft = FALSE
     )
 
@@ -642,14 +697,15 @@ add_standardized_roster_demographics <- function(
     # Warn about overwriting existing columns
     output_cols <- c(
       "roster_child_under2", "roster_child_under5",
+      "roster_2to5", "roster_5plus", "roster_5_10",
       "roster_male", "roster_female", "roster_woman_15to49"
     )
 
     for (col in output_cols) {
       if (col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin = origin,
-          message = iphra_txt(glue::glue("Column `{col}` already exists and will be overwritten."))
+          message = phr_txt(glue::glue("Column `{col}` already exists and will be overwritten."))
         )
       }
     }
@@ -664,6 +720,20 @@ add_standardized_roster_demographics <- function(
         roster_child_under5 = dplyr::if_else(
           !is.na(.data[[age_years_col]]) & .data[[age_years_col]] < 5,
           1, 0
+        ),
+        roster_2to5 = dplyr::if_else(
+          !is.na(.data[[age_years_col]]) & .data[[age_years_col]] >= 2 & .data[[age_years_col]] < 5,
+          1, 0
+        ),
+        roster_5plus = dplyr::if_else(
+          !is.na(.data[[age_years_col]]) & .data[[age_years_col]] >= 5,
+          1, 0
+        ),
+        roster_5_10 = dplyr::case_when(
+          is.na(.data[[age_years_col]]) ~ NA_real_,
+          .data[[age_years_col]] < 5 ~ 0,
+          .data[[age_years_col]] < 10 ~ 1,
+          TRUE ~ NA_real_
         )
       )
 
@@ -699,9 +769,9 @@ add_standardized_roster_demographics <- function(
 
     } else {
       # If no sex column, create columns with 0
-      iphra_warning(
+      phr_warning(
         origin = origin,
-        message = iphra_txt("Sex column not provided or not found. Sex-based columns will be set to 0.")
+        message = phr_txt("Sex column not provided or not found. Sex-based columns will be set to 0.")
       )
 
       .dataset <- .dataset %>%
@@ -712,13 +782,13 @@ add_standardized_roster_demographics <- function(
         )
     }
 
-    iphra_message(
+    phr_message(
       origin = origin,
-      message = iphra_txt("Standardized roster demographic columns added successfully.")
+      message = phr_txt("Standardized roster demographic columns added successfully.")
     )
 
     return(.dataset)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure age and sex columns are valid."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure age and sex columns are valid."))
 }
 

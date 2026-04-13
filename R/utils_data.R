@@ -9,7 +9,7 @@
 #' @return Date vector of same length as input, with NAs preserved.
 #' @export
 convert_date <- function(x, origin = NULL, origin_label = NULL) {
-  iphra_try({
+  phr_try({
     # Already date
     if (inherits(x, "Date")) return(x)
     if (inherits(x, "POSIXct") || inherits(x, "POSIXlt")) return(as.Date(x))
@@ -20,7 +20,7 @@ convert_date <- function(x, origin = NULL, origin_label = NULL) {
         origin <- if (all(x > 20000 & x < 60000, na.rm = TRUE)) "1899-12-30" else "1970-01-01"
         origin_label <- origin
       }
-      iphra_message(iphra_txt(glue::glue("Converting numeric dates using origin: {origin_label}.")))
+      phr_message(phr_txt(glue::glue("Converting numeric dates using origin: {origin_label}.")))
       return(as.Date(x, origin = origin))
     }
     
@@ -30,7 +30,7 @@ convert_date <- function(x, origin = NULL, origin_label = NULL) {
       if (is.null(origin)) {
         origin <- if (all(x_num > 20000 & x_num < 60000, na.rm = TRUE)) "1899-12-30" else "1970-01-01"
       }
-      iphra_message(iphra_txt(glue::glue("Converting numeric-like strings using origin: {origin}.")))
+      phr_message(phr_txt(glue::glue("Converting numeric-like strings using origin: {origin}.")))
       return(as.Date(x_num, origin = origin))
     }
     
@@ -47,7 +47,7 @@ convert_date <- function(x, origin = NULL, origin_label = NULL) {
     x_clean <- sub("T.*$", "", x_clean)
     
     if (any(grepl("\\d{2}:\\d{2}:\\d{2}", x_to_parse))) {
-      iphra_warning(iphra_txt("Time components detected and will be removed during date conversion."))
+      phr_warning(phr_txt("Time components detected and will be removed during date conversion."))
     }
     
     # Parse using lubridate
@@ -66,8 +66,8 @@ convert_date <- function(x, origin = NULL, origin_label = NULL) {
     # Identify unparsed values
     if (any(is.na(parsed))) {
       invalid_vals <- unique(x_to_parse[is.na(parsed)])
-      iphra_error(
-        message = iphra_txt(
+      phr_error(
+        message = phr_txt(
           "Could not convert the following values to Date: {paste0('\"', invalid_vals, '\"', collapse = ', ')}."
         ),
         origin = "convert_date",

@@ -10,7 +10,7 @@
 #' * All visualizations/tables via outputs_schema
 #' * A default empty analysis schema (no sector-specific quantitative template)
 #'
-#' @seealso [DataAnalytics], [IYCFDataQuality]
+#' @seealso [DataAnalytics]
 #' @export
 IYCFDataAnalytics <- R6::R6Class(
   classname = "IYCFDataAnalytics",
@@ -59,8 +59,8 @@ IYCFDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      iphra_message(
-        iphra_txt(glue::glue("{dataset_name} initialized as IYCFDataAnalytics object."))
+      phr_message(
+        phr_txt(glue::glue("{dataset_name} initialized as IYCFDataAnalytics object."))
       )
     },
 
@@ -84,9 +84,9 @@ IYCFDataAnalytics <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "IYCFDataAnalytics$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_iycf_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_iycf_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -122,7 +122,7 @@ IYCFDataAnalytics <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "IYCFDataAnalytics$default_outputs_schema",

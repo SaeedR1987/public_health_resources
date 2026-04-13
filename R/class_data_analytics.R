@@ -46,7 +46,7 @@
 #' @field overall_score Overall data quality score
 #' @field metadata Free-form metadata list
 #'
-#' @seealso [DataQuality], [QuantDataAnalysis], [FSLDataAnalytics]
+#' @seealso [FSLDataAnalytics]
 #' @export
 DataAnalytics <- R6::R6Class(
   classname = "DataAnalytics",
@@ -78,6 +78,7 @@ DataAnalytics <- R6::R6Class(
     # Analysis-specific fields
     data_analysis_plan = NULL,
     survey_design = NULL,
+    base_survey_design = NULL,
     analysis_results = NULL,      # Quantitative analysis results
     analysis_plan_issue_log = NULL,
     analysis_schema = NULL,
@@ -90,9 +91,9 @@ DataAnalytics <- R6::R6Class(
     tables = NULL,
 
 
-    # =========================================================================
+
     # Initialization
-    # =========================================================================
+
 
     #' @description
     #' Initialize a new DataAnalytics object
@@ -123,9 +124,9 @@ DataAnalytics <- R6::R6Class(
                           quality_schema = NULL) {
 
       origin <- paste0(dataset_name, "$initialize")
-      iphra_message(origin, "Initializing DataAnalytics class...")
+      phr_message(origin, "Initializing DataAnalytics class...")
 
-      # --- Common fields -------------------------------------------------------
+      # --- Common fields
       self$parent_data_object <- parent_data_object
       self$dataset_name       <- dataset_name
       self$data_stage_name    <- data_stage_name
@@ -135,13 +136,13 @@ DataAnalytics <- R6::R6Class(
       self$variable_label     <- variable_label %||% list()
       self$value_label        <- value_label   %||% list()
 
-      # --- Shared output containers -------------------------------------------
+      # --- Shared output containers
       self$visualizations         <- list()
       self$tables                 <- list()
 
-      # --- Quality-specific initialization (from DataQuality) -----------------
+      # --- Quality-specific initialization (from DataQuality
       if (!is.null(data)) {
-        iphra_validate_dataframe(data, origin = origin, soft = FALSE)
+        phr_validate_dataframe(data, origin = origin, soft = FALSE)
         self$data <- data
       }
 
@@ -171,15 +172,23 @@ DataAnalytics <- R6::R6Class(
       # Load quality outputs schema
       self$outputs_schema <- self$default_outputs_schema()
 
-      # --- Analysis-specific initialization (from QuantDataAnalysis) ----------
+      # --- Analysis-specific initialization (from QuantDataAnalysis)
       self$analysis_results        <- list()
       self$analysis_plan_issue_log <- tibble::tibble()
 
       # 1. Load analysis schema
       self$analysis_schema <- self$default_analysis_schema()
 
-      # 2. Create survey design from data + variable_map
+      # 2. Create survey design objects from data + variable_map.
+      #    base_survey_design: simple unweighted design (ids = 1, no weights/strata/clusters)
+      #    survey_design: full weighted design considering clusters, weights, and strata
       if (!is.null(data)) {
+        self$base_survey_design <- phr_try(
+          srvyr::as_survey_design(.data = data, ids = 1),
+          on_error = "warn",
+          origin   = origin,
+          hint     = "Could not create base (unweighted) survey design from data."
+        )
         self$survey_design <- self$create_survey_design()
       }
 
@@ -202,14 +211,14 @@ DataAnalytics <- R6::R6Class(
       # 4. Load outputs schema (combined quality and analysis outputs)
       # (already loaded above, no separate analysis outputs schema needed)
 
-      iphra_message(origin, "Initialization complete.")
+      phr_message(origin, "Initialization complete.")
       invisible(self)
     },
 
 
-    # =========================================================================
+
     # Default schema loaders
-    # =========================================================================
+
 
     #' @description Load the default quality schema from template file
     #' @return A list of quality checks
@@ -231,9 +240,9 @@ DataAnalytics <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DataAnalytics$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -272,9 +281,9 @@ DataAnalytics <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DataAnalytics$default_outputs_schema",
-            message = iphra_txt(glue::glue("Failed to read outputs_schema_data_analytics_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read outputs_schema_data_analytics_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -312,7 +321,7 @@ DataAnalytics <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "DataAnalytics$default_analysis_schema",
@@ -335,19 +344,19 @@ DataAnalytics <- R6::R6Class(
     },
 
 
-    # =========================================================================
+
     # Quality Schema Management
-    # =========================================================================
+
 
     #' @description Set the quality check schema
     #' @param schema A list defining quality checks, thresholds, and penalties
     set_quality_schema = function(schema) {
 
-      iphra_try({
+      phr_try({
         self$validate_quality_schema(schema)
         self$quality_schema <- schema
-        iphra_message(
-          iphra_txt(glue::glue("Quality schema set for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Quality schema set for {self$dataset_name}."))
         )
       }, on_error = "abort", origin = paste0(self$dataset_name, "$set_quality_schema"))
     },
@@ -363,10 +372,10 @@ DataAnalytics <- R6::R6Class(
     #' @return TRUE if valid, throws error otherwise
     validate_quality_schema = function(schema) {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(schema) || !is.list(schema)) {
-          iphra_error(
+          phr_error(
             message = "Quality schema must be a list.",
             origin  = self$dataset_name
           )
@@ -376,8 +385,8 @@ DataAnalytics <- R6::R6Class(
           check <- schema[[check_name]]
 
           if (!is.list(check)) {
-            iphra_error(
-              message = iphra_txt(glue::glue("Check '{check_name}' must be a list.")),
+            phr_error(
+              message = phr_txt(glue::glue("Check '{check_name}' must be a list.")),
               origin  = self$dataset_name
             )
           }
@@ -386,8 +395,8 @@ DataAnalytics <- R6::R6Class(
           missing <- setdiff(required_fields, names(check))
 
           if (length(missing) > 0) {
-            iphra_warning(
-              message = iphra_txt(glue::glue(
+            phr_warning(
+              message = phr_txt(glue::glue(
                 "Check '{check_name}' is missing recommended fields: {paste(missing, collapse=', ')}."
               )),
               origin = self$dataset_name
@@ -405,7 +414,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     set_outputs_schema = function(schema) {
 
-      iphra_try({
+      phr_try({
         outputs_validate_schema_to_table(
           outputs_schema = schema,
           origin = paste0(self$dataset_name, "$set_outputs_schema")
@@ -413,8 +422,8 @@ DataAnalytics <- R6::R6Class(
         tbl <- outputs_schema_to_table(schema)
         outputs_validate_table_to_schema(df = tbl)
         self$outputs_schema <- schema
-        iphra_message(
-          iphra_txt(glue::glue("Outputs schema set for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Outputs schema set for {self$dataset_name}."))
         )
       }, on_error = "abort", origin = paste0(self$dataset_name, "$set_outputs_schema"))
 
@@ -431,10 +440,10 @@ DataAnalytics <- R6::R6Class(
     #' @return A tibble representing the outputs schema, or NULL
     export_outputs_schema = function() {
 
-      iphra_try({
+      phr_try({
         if (is.null(self$outputs_schema) || length(self$outputs_schema) == 0) {
-          iphra_warning(
-            iphra_txt(glue::glue("No outputs schema defined for {self$dataset_name}.")),
+          phr_warning(
+            phr_txt(glue::glue("No outputs schema defined for {self$dataset_name}.")),
             origin = self$dataset_name
           )
           return(NULL)
@@ -448,12 +457,12 @@ DataAnalytics <- R6::R6Class(
     #' @return The imported schema (invisibly)
     import_outputs_schema = function(df) {
 
-      iphra_try({
-        iphra_validate_dataframe(df, origin = "import_outputs_schema", soft = FALSE)
+      phr_try({
+        phr_validate_dataframe(df, origin = "import_outputs_schema", soft = FALSE)
         new_schema <- outputs_table_to_schema(df)
         self$outputs_schema <- new_schema
-        iphra_message(
-          iphra_txt(glue::glue(
+        phr_message(
+          phr_txt(glue::glue(
             "Outputs schema imported for {self$dataset_name} ({length(new_schema)} output(s))."
           ))
         )
@@ -468,19 +477,19 @@ DataAnalytics <- R6::R6Class(
     export_quality_schema = function(path, format = "xlsx") {
       origin <- paste0(self$dataset_name, "$export_quality_schema")
 
-      iphra_try({
+      phr_try({
         if (is.null(self$quality_schema) || length(self$quality_schema) == 0) {
-          iphra_warning(origin, "No quality schema to export.")
+          phr_warning(origin, "No quality schema to export.")
           return(invisible(self))
         }
         tbl <- quality_schema_to_table(list(checks = self$quality_schema))
-        iphra_message(origin, paste("Exporting quality schema to:", path))
+        phr_message(origin, paste("Exporting quality schema to:", path))
         if (format == "xlsx") {
           openxlsx::write.xlsx(tbl, path)
         } else if (format == "csv") {
           readr::write_csv(tbl, path)
         } else {
-          iphra_warning(origin, paste("Unsupported export format:", format))
+          phr_warning(origin, paste("Unsupported export format:", format))
         }
       },
       on_error = "warn",
@@ -495,11 +504,11 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     import_quality_schema = function(path) {
       origin <- paste0(self$dataset_name, "$import_quality_schema")
-      iphra_message(origin, paste("Importing quality schema from:", path))
+      phr_message(origin, paste("Importing quality schema from:", path))
 
-      iphra_try({
+      phr_try({
         if (!file.exists(path)) {
-          iphra_error(origin, paste("File not found:", path))
+          phr_error(origin, paste("File not found:", path))
           return(invisible(self))
         }
 
@@ -510,7 +519,7 @@ DataAnalytics <- R6::R6Class(
           "xlsx" = readxl::read_xlsx(path),
           "rds"  = readRDS(path),
           {
-            iphra_error(origin, paste("Unsupported file type:", ext))
+            phr_error(origin, paste("Unsupported file type:", ext))
             return(invisible(self))
           }
         )
@@ -518,9 +527,9 @@ DataAnalytics <- R6::R6Class(
         parsed <- quality_table_to_schema(schema_tbl)
         if (!is.null(parsed$checks)) {
           self$quality_schema <- parsed$checks
-          iphra_message(origin, paste("Quality schema imported with", length(parsed$checks), "check(s)."))
+          phr_message(origin, paste("Quality schema imported with", length(parsed$checks), "check(s)."))
         } else {
-          iphra_warning(origin, "Imported file did not produce a valid quality schema.")
+          phr_warning(origin, "Imported file did not produce a valid quality schema.")
         }
       },
       on_error = "warn",
@@ -536,12 +545,12 @@ DataAnalytics <- R6::R6Class(
     set_analysis_schema = function(schema) {
       origin <- paste0(self$dataset_name, "$set_analysis_schema")
 
-      iphra_try({
+      phr_try({
         if (!is.data.frame(schema)) {
-          iphra_error(origin, "Analysis schema must be a data frame or tibble.")
+          phr_error(origin, "Analysis schema must be a data frame or tibble.")
         }
         self$analysis_schema <- schema
-        iphra_message(origin, paste("Analysis schema set with", nrow(schema), "row(s)."))
+        phr_message(origin, paste("Analysis schema set with", nrow(schema), "row(s)."))
       }, on_error = "abort", origin = origin)
 
       invisible(self)
@@ -553,19 +562,16 @@ DataAnalytics <- R6::R6Class(
       self$analysis_schema
     },
 
-
-    # =========================================================================
     # Quality Checks
-    # =========================================================================
 
     #' @description Run all quality checks defined in the quality schema
     #' @return A list of check results (invisibly)
     run_quality_checks = function() {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$quality_schema) || length(self$quality_schema) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No quality checks defined in schema.",
             origin  = self$dataset_name
           )
@@ -583,7 +589,7 @@ DataAnalytics <- R6::R6Class(
         self$plausibility_results <- results
         self$calculate_overall_score()
 
-        # --- Plausibility tables -------------------------------------------
+        # --- Plausibility tables
         if (is.null(self$tables[["plausibility"]])) {
           self$tables[["plausibility"]] <- list()
         }
@@ -642,8 +648,8 @@ DataAnalytics <- R6::R6Class(
           }
         }
 
-        iphra_message(
-          iphra_txt(glue::glue("Ran {length(results)} quality checks for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Ran {length(results)} quality checks for {self$dataset_name}."))
         )
 
         invisible(results)
@@ -656,7 +662,7 @@ DataAnalytics <- R6::R6Class(
     #' @return A list containing the check result
     execute_check = function(check) {
 
-      iphra_try({
+      phr_try({
 
         result <- list(
           check_name            = check$check_name     %||% "unknown",
@@ -713,9 +719,14 @@ DataAnalytics <- R6::R6Class(
           return(result)
         }
 
-        test_args   <- list(data = self$data, variables = available_vars)
+        test_args   <- list(survey_design = self$base_survey_design %||% self$survey_design, variables = available_vars)
         if (!is.null(test_params)) {
-          test_args <- c(test_args, test_params)
+          test_args <- private$.resolve_output_params(
+            func_args           = test_args,
+            test_params         = test_params,
+            out_name            = check$check_name %||% "unknown",
+            skip_results_table  = TRUE
+          )
         }
 
         test_result <- do.call(test_function, test_args)
@@ -781,7 +792,7 @@ DataAnalytics <- R6::R6Class(
 
         if (is.null(expression) || is.na(expression) || !nzchar(expression)) next
 
-        iphra_try({
+        phr_try({
           eval_env               <- new.env()
           eval_env$test_statistic <- test_statistic
           eval_env$p_value       <- p_value
@@ -816,7 +827,7 @@ DataAnalytics <- R6::R6Class(
     #' @return The overall quality score (0-100)
     calculate_overall_score = function() {
 
-      iphra_try({
+      phr_try({
         if (length(self$plausibility_results) == 0) {
           self$overall_score <- NA_real_
           return(NA_real_)
@@ -860,7 +871,7 @@ DataAnalytics <- R6::R6Class(
     #' @return A tibble with quality check results
     results_to_table = function() {
 
-      iphra_try({
+      phr_try({
         if (length(self$plausibility_results) == 0) {
           return(tibble::tibble(
             check_name           = character(),
@@ -905,11 +916,11 @@ DataAnalytics <- R6::R6Class(
     #' @param df A data frame representing the quality schema
     import_schema_from_table = function(df) {
 
-      iphra_try({
+      phr_try({
         schema <- quality_table_to_schema(df)
         self$set_quality_schema(schema)
-        iphra_message(
-          iphra_txt(glue::glue("Imported quality schema from table for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Imported quality schema from table for {self$dataset_name}."))
         )
         invisible(TRUE)
       }, on_error = "abort", origin = paste0(self$dataset_name, "$import_schema_from_table"))
@@ -919,8 +930,8 @@ DataAnalytics <- R6::R6Class(
     #' @param type The type of visualization
     #' @return A plot object or NULL
     visualize = function(type = "summary") {
-      iphra_message(
-        iphra_txt("Visualization not implemented in base DataAnalytics class.")
+      phr_message(
+        phr_txt("Visualization not implemented in base DataAnalytics class.")
       )
       invisible(NULL)
     },
@@ -964,7 +975,7 @@ DataAnalytics <- R6::R6Class(
     #' @return A tibble with per-group check results, or NULL
     .compute_results_by_group = function(group_col) {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(group_col) || !nzchar(group_col) ||
             !group_col %in% names(self$data)) {
@@ -1014,7 +1025,7 @@ DataAnalytics <- R6::R6Class(
     #' @return A list containing the full quality report
     generate_report = function() {
 
-      iphra_try({
+      phr_try({
         if (length(self$plausibility_results) == 0) self$run_quality_checks()
 
         report <- list(
@@ -1026,8 +1037,8 @@ DataAnalytics <- R6::R6Class(
           generated_at  = Sys.time()
         )
 
-        iphra_message(
-          iphra_txt(glue::glue("Generated quality report for {self$dataset_name}."))
+        phr_message(
+          phr_txt(glue::glue("Generated quality report for {self$dataset_name}."))
         )
 
         report
@@ -1039,7 +1050,7 @@ DataAnalytics <- R6::R6Class(
     #' @return A list containing detailed plausibility assessment
     generate_plausibility_report = function() {
 
-      iphra_try({
+      phr_try({
         if (length(self$plausibility_results) == 0) self$run_quality_checks()
 
         test_summary <- data.frame(
@@ -1093,8 +1104,8 @@ DataAnalytics <- R6::R6Class(
           schema_version        = self$quality_schema$metadata$version %||% "3.0.0"
         )
 
-        iphra_message(
-          iphra_txt(glue::glue(
+        phr_message(
+          phr_txt(glue::glue(
             "Generated plausibility report for {self$dataset_name}. Score: {round(plausibility_score, 2)}"
           ))
         )
@@ -1104,9 +1115,9 @@ DataAnalytics <- R6::R6Class(
       }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_plausibility_report"))
     },
 
-    # =========================================================================
+
     # Diagnose Methods
-    # =========================================================================
+
 
     #' @description
     #' Diagnose issues in the quality schema against the current dataset.
@@ -1124,10 +1135,10 @@ DataAnalytics <- R6::R6Class(
 
       origin <- paste0(self$dataset_name, "$quality_diagnose")
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$quality_schema) || length(self$quality_schema) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No quality_schema defined. Cannot diagnose.",
             origin  = origin
           )
@@ -1155,7 +1166,7 @@ DataAnalytics <- R6::R6Class(
         for (check_name in names(self$quality_schema)) {
           check <- self$quality_schema[[check_name]]
 
-          # --- basic fields ---------------------------------------------------
+          # --- basic fields
           check_group      <- check$check_group      %||% NA_character_
           check_label      <- check$check_label      %||% NA_character_
           statistical_test <- check$statistical_test %||% NA_character_
@@ -1163,12 +1174,12 @@ DataAnalytics <- R6::R6Class(
           test_params      <- check$test_params      %||% list()
           thresholds       <- check$thresholds       %||% list()
 
-          # --- 1. variables present in data -----------------------------------
+          # --- 1. variables present in data
           mapped_vars <- self$.translate_canonical_to_actual_vars(variables)
           missing_vars <- setdiff(mapped_vars, data_cols)
           vars_in_data <- length(missing_vars) == 0
 
-          # --- 2. test function available -------------------------------------
+          # --- 2. test function available
           func_available <- FALSE
           if (!is.na(statistical_test) && nzchar(statistical_test)) {
             func_name <- paste0("quality_test_", statistical_test)
@@ -1185,7 +1196,7 @@ DataAnalytics <- R6::R6Class(
             }
           }
 
-          # --- 3. threshold expressions parseable ----------------------------
+          # --- 3. threshold expressions parseable
           thresholds_valid <- TRUE
           if (length(thresholds) > 0) {
             for (thr in thresholds) {
@@ -1200,7 +1211,7 @@ DataAnalytics <- R6::R6Class(
             }
           }
 
-          # --- build status string -------------------------------------------
+          # --- build status string
           issues <- character(0)
           if (!vars_in_data)     issues <- c(issues, paste0("missing variables: ", paste(missing_vars, collapse = ", ")))
           if (!func_available)   issues <- c(issues, paste0("function not found: quality_test_", statistical_test %||% "NA"))
@@ -1234,7 +1245,7 @@ DataAnalytics <- R6::R6Class(
         self$quality_issues_log <- result
 
         n_issues <- sum(result$status != "ok", na.rm = TRUE)
-        iphra_message(iphra_txt(glue::glue(
+        phr_message(phr_txt(glue::glue(
           "quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {self$dataset_name}."
         )))
 
@@ -1259,7 +1270,7 @@ DataAnalytics <- R6::R6Class(
 
       origin <- paste0(self$dataset_name, "$analysis_diagnose")
 
-      valid_calcs <- c("prop", "mean", "median", "ratio", "categorical")
+      valid_calcs <- c("prop", "mean", "median", "ratio", "cat", "categorical", "select_multiple_cat")
 
       empty_result <- tibble::tibble(
         indicator_name          = character(),
@@ -1276,13 +1287,13 @@ DataAnalytics <- R6::R6Class(
         status                  = character()
       )
 
-      iphra_try({
+      phr_try({
 
-        plan_df <- if (!is.null(self$data_analysis_plan)) self$data_analysis_plan$log_df else NULL
+        schema_df <- if (!is.null(self$analysis_schema)) self$analysis_schema else NULL
 
-        if (is.null(plan_df) || nrow(plan_df) == 0) {
-          iphra_warning(
-            message = "No analysis plan defined. Cannot diagnose.",
+        if (is.null(schema_df) || nrow(schema_df) == 0) {
+          phr_warning(
+            message = "No analysis schema defined. Cannot diagnose.",
             origin  = origin
           )
           self$analysis_plan_issues_log <- empty_result
@@ -1297,16 +1308,25 @@ DataAnalytics <- R6::R6Class(
           character(0)
         }
 
-        rows <- lapply(seq_len(nrow(plan_df)), function(i) {
-          row <- plan_df[i, ]
+        rows <- lapply(seq_len(nrow(schema_df)), function(i) {
+          row <- schema_df[i, ]
+
+          # Helper: resolve a canonical name through variable_map and check availability
+          resolve_var <- function(val) {
+            v <- val %||% NA_character_
+            if (is.na(v) || !nzchar(v)) return(v)
+            resolved <- self$.translate_canonical_to_actual_vars(v)
+            if (length(resolved) > 0) resolved[[1]] else v
+          }
 
           # Helper: an optional variable field is ok if blank/NA, or if the col exists in data
           optional_var_ok <- function(val) {
             v <- val %||% NA_character_
-            is.na(v) || !nzchar(v) || v %in% available_vars
+            is.na(v) || !nzchar(v) || resolve_var(v) %in% available_vars
           }
 
-          var_name_ok  <- !is.na(row$var_name) && nzchar(row$var_name) && row$var_name %in% available_vars
+          resolved_var_name <- resolve_var(row$var_name)
+          var_name_ok  <- !is.na(row$var_name) && nzchar(row$var_name) && resolved_var_name %in% available_vars
           denom_ok     <- optional_var_ok(row$denom_var)
           disagg_ok    <- optional_var_ok(row$disaggregation)
           calc_valid   <- !is.na(row$calculation) && row$calculation %in% valid_calcs
@@ -1338,7 +1358,7 @@ DataAnalytics <- R6::R6Class(
         self$analysis_plan_issues_log <- result
 
         n_issues <- sum(result$status != "ok", na.rm = TRUE)
-        iphra_message(iphra_txt(glue::glue(
+        phr_message(phr_txt(glue::glue(
           "analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {self$dataset_name}."
         )))
 
@@ -1353,7 +1373,7 @@ DataAnalytics <- R6::R6Class(
     #' For every output defined in \code{self$outputs_schema}, this method checks
     #' that (a) the output function exists, (b) any \code{variables} listed exist
     #' in the data or survey design, and (c) required schema fields
-    #' (\code{output_name}, \code{output_func_name}, \code{output_type}) are
+    #' (\code{output_title}, \code{output_func_name}, \code{output_type}) are
     #' non-empty. The results mirror the outputs schema table and add a
     #' \code{status} column. Results are stored in \code{self$outputs_issues_log}.
     #'
@@ -1384,31 +1404,45 @@ DataAnalytics <- R6::R6Class(
     #' \code{@value_map}, \code{@variable_label}, \code{@value_label}, and
     #' \code{@results_table} references in \code{test_params}, determines the
     #' first positional argument from \code{dataset_type} (defaulting to
-    #' \code{"data"}), calls the specified output function, and stores results
+    #' \code{"base"}), calls the specified output function, and stores results
     #' in \code{self$visualizations} or \code{self$tables}.
+    #'
+    #' The \code{output_name} field in each schema entry controls the key used
+    #' when storing results in \code{visualizations} or \code{tables}. The
+    #' \code{output_title} field (matching the schema list key) and the
+    #' language-specific title fields (\code{output_title_english},
+    #' \code{output_title_french}, \code{output_title_arabic}) are used to
+    #' auto-generate the \code{title_name} argument passed to \code{plot_*} or
+    #' \code{table_*} functions. The language-specific title for the chosen
+    #' \code{language} takes precedence; if absent the generic
+    #' \code{output_title} value is used as a fallback.
     #'
     #' Supported \code{dataset_type} values:
     #' \describe{
-    #'   \item{"data"}{uses \code{self$data} (default)}
-    #'   \item{"survey_design"}{uses \code{self$survey_design}}
+    #'   \item{"base"}{uses \code{self$base_survey_design} (unweighted; default for all quality outputs)}
+    #'   \item{"survey_design"}{uses \code{self$survey_design} (weighted)}
     #'   \item{"analysis_results_surveydesign"}{uses \code{self$analysis_results$survey_design}}
     #'   \item{"analysis_results_base"}{uses \code{self$analysis_results$base}}
     #' }
     #'
+    #' @param language Character string specifying the language for auto-generated
+    #'   titles. One of \code{"english"} (default), \code{"french"}, or
+    #'   \code{"arabic"}. Falls back to the generic \code{output_title} when the
+    #'   language-specific field is absent.
     #' @return Invisibly returns a list with \code{visualizations} and \code{tables}
-    run_outputs = function() {
+    run_outputs = function(language = "english") {
 
-      iphra_try({
+      phr_try({
 
         if (is.null(self$outputs_schema) || length(self$outputs_schema) == 0) {
-          iphra_warning(
+          phr_warning(
             message = "No outputs defined in outputs_schema.",
             origin  = self$dataset_name
           )
           return(invisible(list(visualizations = self$visualizations, tables = self$tables)))
         }
 
-        iphra_message(iphra_txt(glue::glue(
+        phr_message(phr_txt(glue::glue(
           "Running {length(self$outputs_schema)} output(s) for {self$dataset_name}..."
         )))
 
@@ -1416,12 +1450,12 @@ DataAnalytics <- R6::R6Class(
 
           out <- self$outputs_schema[[out_name]]
 
-          iphra_try({
+          phr_try({
 
             func_name <- out$output_func_name
             if (is.null(func_name) || is.na(func_name) || !nzchar(func_name)) {
-              iphra_warning(
-                message = iphra_txt(glue::glue(
+              phr_warning(
+                message = phr_txt(glue::glue(
                   "Output '{out_name}' has no output_func_name specified. Skipping."
                 )),
                 origin = self$dataset_name
@@ -1446,8 +1480,8 @@ DataAnalytics <- R6::R6Class(
               }, error = function(e) NULL)
             }
             if (is.null(output_function)) {
-              iphra_warning(
-                message = iphra_txt(glue::glue(
+              phr_warning(
+                message = phr_txt(glue::glue(
                   "Function '{func_name}' for output '{out_name}' not found. Skipping."
                 )),
                 origin = self$dataset_name
@@ -1457,21 +1491,22 @@ DataAnalytics <- R6::R6Class(
 
             # Determine first positional argument based on dataset_type column.
             # Supported values:
-            #   "data"                          – self$data (default)
-            #   "survey_design"                 – self$survey_design
+            #   "base"                          – self$base_survey_design (unweighted)
+            #   "survey_design"                 – self$survey_design (weighted)
             #   "analysis_results_surveydesign" – self$analysis_results$survey_design
             #   "analysis_results_base"         – self$analysis_results$base
             dataset_type <- if (!is.null(out$dataset_type) &&
                                   !is.na(out$dataset_type) &&
                                   nzchar(out$dataset_type)) {
               out$dataset_type
-            } else "data"
+            } else "base"
 
             first_arg <- switch(dataset_type,
+              "base"                          = self$base_survey_design,
               "survey_design"                 = self$survey_design,
               "analysis_results_surveydesign" = if (!is.null(self$analysis_results)) self$analysis_results$survey_design else NULL,
               "analysis_results_base"         = if (!is.null(self$analysis_results)) self$analysis_results$base else NULL,
-              self$data  # default: "data"
+              self$base_survey_design  # default: "base" (unweighted survey design)
             )
 
             func_args <- list(first_arg)
@@ -1496,10 +1531,27 @@ DataAnalytics <- R6::R6Class(
               )
             }
 
-            label <- if (!is.null(out$output_title) && !is.na(out$output_title) && nzchar(out$output_title)) {
-              out$output_title
+            # Storage key: use output_name field; fall back to out_name (schema list key)
+            label <- if (!is.null(out$output_name) && !is.na(out$output_name) && nzchar(out$output_name)) {
+              out$output_name
             } else {
               out_name
+            }
+
+            # Auto-inject title_name unless already supplied in test_params
+            if (is.null(func_args[["title_name"]])) {
+              title_field <- switch(language,
+                "french"  = "output_title_french",
+                "arabic"  = "output_title_arabic",
+                "output_title_english"
+              )
+              auto_title <- out[[title_field]]
+              if (is.null(auto_title) || is.na(auto_title) || !nzchar(auto_title)) {
+                auto_title <- out$output_title
+              }
+              if (!is.null(auto_title) && !is.na(auto_title) && nzchar(auto_title)) {
+                func_args[["title_name"]] <- auto_title
+              }
             }
 
             group <- if (!is.null(out$outputs_group) && !is.na(out$outputs_group) && nzchar(out$outputs_group)) {
@@ -1514,7 +1566,7 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$tables[[key]] <- result
                 }
-                iphra_message(iphra_txt(glue::glue("Table '{key}' stored successfully.")))
+                phr_message(phr_txt(glue::glue("Table '{key}' stored successfully.")))
               } else if (!is.null(out$output_type) && out$output_type == "visualization") {
                 if (!is.null(group)) {
                   if (is.null(self$visualizations[[group]])) self$visualizations[[group]] <- list()
@@ -1522,10 +1574,10 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$visualizations[[key]] <- result
                 }
-                iphra_message(iphra_txt(glue::glue("Visualization '{key}' stored successfully.")))
+                phr_message(phr_txt(glue::glue("Visualization '{key}' stored successfully.")))
               } else {
-                iphra_warning(
-                  message = iphra_txt(glue::glue(
+                phr_warning(
+                  message = phr_txt(glue::glue(
                     "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
                     "Expected 'visualization' or 'table'. Result not stored."
                   )),
@@ -1545,8 +1597,8 @@ DataAnalytics <- R6::R6Class(
                 col_name  <- self$variable_map[[role]]
                 var_label <- role
                 if (is.null(col_name)) {
-                  iphra_warning(
-                    message = iphra_txt(glue::glue(
+                  phr_warning(
+                    message = phr_txt(glue::glue(
                       "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
                     )),
                     origin = self$dataset_name
@@ -1559,34 +1611,37 @@ DataAnalytics <- R6::R6Class(
               }
 
               # Determine the data frame used for finding unique group values.
-              # For survey_design types, use the variables data frame.
+              # All survey_design types: extract variables tibble.
               source_df <- switch(dataset_type,
-                "data"                          = self$data,
                 "analysis_results_surveydesign" = if (!is.null(self$analysis_results)) self$analysis_results$survey_design else NULL,
                 "analysis_results_base"         = if (!is.null(self$analysis_results)) self$analysis_results$base else NULL,
-                # default: survey_design – extract variables tibble
-                if (!is.null(self$survey_design)) {
-                  tryCatch(self$survey_design$variables, error = function(e) NULL)
-                } else NULL
+                # default: base or survey_design – extract variables tibble
+                {
+                  design_obj <- if (dataset_type == "survey_design") self$survey_design else self$base_survey_design
+                  if (!is.null(design_obj)) {
+                    tryCatch(design_obj$variables, error = function(e) NULL)
+                  } else NULL
+                }
               )
 
-              is_survey_design_type <- !(dataset_type %in% c("data", "analysis_results_surveydesign", "analysis_results_base"))
+              is_survey_design_type <- !(dataset_type %in% c("analysis_results_surveydesign", "analysis_results_base"))
 
               if (!is.null(col_name) && !is.null(source_df) && col_name %in% names(source_df)) {
                 unique_vals <- unique(source_df[[col_name]])
                 unique_vals <- unique_vals[!is.na(unique_vals)]
 
-                iphra_message(iphra_txt(glue::glue(
+                phr_message(phr_txt(glue::glue(
                   "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
                 )))
 
                 for (val in unique_vals) {
                   if (is_survey_design_type) {
+                    design_to_filter <- if (dataset_type == "survey_design") self$survey_design else self$base_survey_design
                     filtered_first_arg <- tryCatch(
-                      dplyr::filter(self$survey_design, !!rlang::sym(col_name) == val),
+                      dplyr::filter(design_to_filter, !!rlang::sym(col_name) == val),
                       error = function(e) {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue(
+                        phr_warning(
+                          message = phr_txt(glue::glue(
                             "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
                           )),
                           origin = self$dataset_name
@@ -1598,8 +1653,8 @@ DataAnalytics <- R6::R6Class(
                     filtered_first_arg <- tryCatch(
                       source_df %>% dplyr::filter(!!rlang::sym(col_name) == val),
                       error = function(e) {
-                        iphra_warning(
-                          message = iphra_txt(glue::glue(
+                        phr_warning(
+                          message = phr_txt(glue::glue(
                             "Failed to filter data for '{var_label}' == '{val}': {e$message}"
                           )),
                           origin = self$dataset_name
@@ -1615,7 +1670,7 @@ DataAnalytics <- R6::R6Class(
                   per_group_args[[1]] <- filtered_first_arg
                   amended_label       <- paste0(label, "-", var_label, ".", val)
 
-                  iphra_try({
+                  phr_try({
                     output_result <- do.call(output_function, per_group_args)
                     store_result(output_result, amended_label)
                   }, on_error = "warn",
@@ -1623,8 +1678,8 @@ DataAnalytics <- R6::R6Class(
                 }
 
               } else if (!is.null(col_name)) {
-                iphra_warning(
-                  message = iphra_txt(glue::glue(
+                phr_warning(
+                  message = phr_txt(glue::glue(
                     "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
                   )),
                   origin = self$dataset_name
@@ -1632,7 +1687,7 @@ DataAnalytics <- R6::R6Class(
               }
 
             } else {
-              iphra_message(iphra_txt(glue::glue("Calling {func_name} for output '{out_name}'...")))
+              phr_message(phr_txt(glue::glue("Calling {func_name} for output '{out_name}'...")))
               output_result <- do.call(output_function, func_args)
               store_result(output_result, label)
             }
@@ -1641,7 +1696,7 @@ DataAnalytics <- R6::R6Class(
              origin = paste0(self$dataset_name, "$run_outputs$", out_name))
         }
 
-        iphra_message(iphra_txt(glue::glue(
+        phr_message(phr_txt(glue::glue(
           "run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s)."
         )))
 
@@ -1651,9 +1706,9 @@ DataAnalytics <- R6::R6Class(
     },
 
 
-    # =========================================================================
+
     # Analysis Methods (from QuantDataAnalysis)
-    # =========================================================================
+
 
     #' @description
     #' Create a survey design object from the stored data and variable_map.
@@ -1662,12 +1717,12 @@ DataAnalytics <- R6::R6Class(
       origin <- paste0(self$dataset_name, "$create_survey_design")
 
       if (!requireNamespace("srvyr", quietly = TRUE)) {
-        iphra_warning(origin, "Package 'srvyr' must be installed to create survey design objects.")
+        phr_warning(origin, "Package 'srvyr' must be installed to create survey design objects.")
         return(NULL)
       }
 
       if (is.null(self$data)) {
-        iphra_warning(origin, "No data available to create survey design.")
+        phr_warning(origin, "No data available to create survey design.")
         return(NULL)
       }
 
@@ -1691,7 +1746,7 @@ DataAnalytics <- R6::R6Class(
       if (is.null(fpc_col) || !fpc_col %in% data_cols) fpc_col <- NULL
 
       if (is.null(cluster_col)) {
-        iphra_message(origin, "No cluster column found; using ids = 1 (simple random sample design).")
+        phr_message(origin, "No cluster column found; using ids = 1 (simple random sample design).")
       }
 
       ids_sym    <- if (!is.null(cluster_col)) rlang::sym(cluster_col) else 1
@@ -1699,7 +1754,7 @@ DataAnalytics <- R6::R6Class(
       weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
       fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
 
-      design <- iphra_try(
+      design <- phr_try(
         srvyr::as_survey_design(
           .data   = self$data,
           ids     = !!ids_sym,
@@ -1714,7 +1769,7 @@ DataAnalytics <- R6::R6Class(
       )
 
       if (!is.null(design)) {
-        iphra_message(origin, "Survey design created successfully.")
+        phr_message(origin, "Survey design created successfully.")
       }
 
       return(design)
@@ -1742,7 +1797,7 @@ DataAnalytics <- R6::R6Class(
                                  note = NULL) {
       origin <- paste0(self$dataset_name, "$add_indicator_dap")
 
-      iphra_try({
+      phr_try({
         self$data_analysis_plan$add_indicator(
           indicator_name = indicator_name,
           calculation    = calculation,
@@ -1752,7 +1807,7 @@ DataAnalytics <- R6::R6Class(
           multiplier     = multiplier,
           indicator_unit = indicator_unit
         )
-        iphra_message(origin, paste("Added indicator:", indicator_name))
+        phr_message(origin, paste("Added indicator:", indicator_name))
       },
       on_error = "warn",
       origin = origin,
@@ -1765,15 +1820,15 @@ DataAnalytics <- R6::R6Class(
     remove_indicator_dap = function(indicator_name) {
       origin <- paste0(self$dataset_name, "$remove_indicator_dap")
 
-      iphra_try({
+      phr_try({
         if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
-          iphra_warning(origin, "No data_analysis_plan loaded.")
+          phr_warning(origin, "No data_analysis_plan loaded.")
           return(invisible(self))
         }
         self$data_analysis_plan$log_df <-
           self$data_analysis_plan$log_df[
             self$data_analysis_plan$log_df$indicator_name != indicator_name, ]
-        iphra_message(origin, paste("Removed indicator:", indicator_name))
+        phr_message(origin, paste("Removed indicator:", indicator_name))
       },
       on_error = "warn",
       origin = origin,
@@ -1784,11 +1839,11 @@ DataAnalytics <- R6::R6Class(
     #' @return A named list of indicator specification lists
     to_list_schema = function() {
       origin <- paste0(self$dataset_name, "$to_list_schema")
-      iphra_message(origin, "Converting indicator schema tibble to named list...")
+      phr_message(origin, "Converting indicator schema tibble to named list...")
 
-      result <- iphra_try({
+      result <- phr_try({
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
-          iphra_warning(origin, "No analysis_schema loaded to convert.")
+          phr_warning(origin, "No analysis_schema loaded to convert.")
           return(list())
         }
         purrr::pmap(self$analysis_schema, function(...) list(...)) %>%
@@ -1798,7 +1853,7 @@ DataAnalytics <- R6::R6Class(
       origin = origin,
       hint = "Ensure analysis_schema is a valid tibble with 'indicator_name' column.")
 
-      iphra_message(origin, "Conversion complete.")
+      phr_message(origin, "Conversion complete.")
       return(result)
     },
 
@@ -1806,15 +1861,15 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     generate_dap_from_schema = function() {
       origin <- paste0(self$dataset_name, "$generate_dap_from_schema")
-      iphra_message(origin, "Generating data_analysis_plan from schema...")
+      phr_message(origin, "Generating data_analysis_plan from schema...")
 
-      iphra_try({
+      phr_try({
         if (!is.null(self$survey_design)) {
           available_vars <- names(self$survey_design$variables)
         } else if (!is.null(self$data)) {
           available_vars <- names(self$data)
         } else {
-          iphra_error(origin, "Neither survey_design nor data is available.")
+          phr_error(origin, "Neither survey_design nor data is available.")
           return(invisible(self))
         }
 
@@ -1828,7 +1883,7 @@ DataAnalytics <- R6::R6Class(
         }
 
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
-          iphra_warning(origin, "analysis_schema is empty; data_analysis_plan will remain empty.")
+          phr_warning(origin, "analysis_schema is empty; data_analysis_plan will remain empty.")
           return(invisible(self))
         }
 
@@ -1877,9 +1932,9 @@ DataAnalytics <- R6::R6Class(
             self$analysis_plan_issue_log,
             issues
           )
-          iphra_warning(origin, paste0(nrow(issues), " indicators skipped due to missing variables."))
+          phr_warning(origin, paste0(nrow(issues), " indicators skipped due to missing variables."))
         } else {
-          iphra_message(origin, "All schema indicators found and added to data_analysis_plan.")
+          phr_message(origin, "All schema indicators found and added to data_analysis_plan.")
         }
       },
       on_error = "warn",
@@ -1893,18 +1948,18 @@ DataAnalytics <- R6::R6Class(
     #' @return TRUE if validation passes, FALSE otherwise.
     validate_schema = function() {
       origin <- paste0(self$dataset_name, "$validate_schema")
-      iphra_message(origin, "Validating indicator schema...")
+      phr_message(origin, "Validating indicator schema...")
 
       issues <- tibble::tibble(indicator_name = character(), issue = character())
 
-      iphra_try({
+      phr_try({
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
           issues <- dplyr::bind_rows(issues, tibble::tibble(
             indicator_name = NA_character_,
             issue = "Indicator schema is empty."
           ))
           self$analysis_plan_issue_log <- issues
-          iphra_warning(origin, "Schema validation FAILED: schema empty.")
+          phr_warning(origin, "Schema validation FAILED: schema empty.")
           return(invisible(FALSE))
         }
 
@@ -1956,11 +2011,11 @@ DataAnalytics <- R6::R6Class(
       self$analysis_plan_issue_log <- issues
 
       if (nrow(issues) > 0) {
-        iphra_warning(origin, paste("Schema validation FAILED with", nrow(issues), "issue(s)."))
+        phr_warning(origin, paste("Schema validation FAILED with", nrow(issues), "issue(s)."))
         return(FALSE)
       }
 
-      iphra_message(origin, "Schema validation PASSED.")
+      phr_message(origin, "Schema validation PASSED.")
       return(TRUE)
     },
 
@@ -1968,11 +2023,11 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     validate_plan = function() {
       origin <- paste0(self$dataset_name, "$validate_plan")
-      iphra_message(origin, "Validating analysis plan...")
+      phr_message(origin, "Validating analysis plan...")
 
       issues <- tibble::tibble(indicator_name = character(), issue = character())
 
-      iphra_try({
+      phr_try({
         if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
           issues <- dplyr::bind_rows(issues, tibble::tibble(
             indicator_name = NA_character_,
@@ -2007,9 +2062,9 @@ DataAnalytics <- R6::R6Class(
 
       self$analysis_plan_issue_log <- issues
       if (nrow(issues) > 0) {
-        iphra_warning(origin, paste("Validation found", nrow(issues), "issue(s)."))
+        phr_warning(origin, paste("Validation found", nrow(issues), "issue(s)."))
       } else {
-        iphra_message(origin, "Analysis plan validation passed with no issues.")
+        phr_message(origin, "Analysis plan validation passed with no issues.")
       }
       invisible(self)
     },
@@ -2024,20 +2079,20 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     run_analysis = function() {
       origin <- paste0(self$dataset_name, "$run_analysis")
-      iphra_message(origin, "Running analysis plan...")
+      phr_message(origin, "Running analysis plan...")
 
       if (is.null(self$survey_design)) {
-        iphra_error(origin, "Survey design not set.")
+        phr_error(origin, "Survey design not set.")
         return(invisible(self))
       }
 
       if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
-        iphra_error(origin, "No data_analysis_plan provided.")
+        phr_error(origin, "No data_analysis_plan provided.")
         return(invisible(self))
       }
 
-      survey_design_results <- iphra_try(
-        iphra_calc_survey_from_plan(
+      survey_design_results <- phr_try(
+        phr_calc_survey_from_plan(
           design       = self$survey_design,
           analysis_plan = self$data_analysis_plan$log_df
         ),
@@ -2048,7 +2103,7 @@ DataAnalytics <- R6::R6Class(
 
       base_results <- NULL
       if (!is.null(self$data)) {
-        base_design <- iphra_try(
+        base_design <- phr_try(
           srvyr::as_survey_design(.data = self$data, ids = 1),
           on_error = "warn",
           origin = origin,
@@ -2056,8 +2111,8 @@ DataAnalytics <- R6::R6Class(
         )
 
         if (!is.null(base_design)) {
-          base_results <- iphra_try(
-            iphra_calc_survey_from_plan(
+          base_results <- phr_try(
+            phr_calc_survey_from_plan(
               design       = base_design,
               analysis_plan = self$data_analysis_plan$log_df
             ),
@@ -2073,7 +2128,7 @@ DataAnalytics <- R6::R6Class(
         base          = base_results
       )
 
-      iphra_message(origin, "Analysis completed successfully.")
+      phr_message(origin, "Analysis completed successfully.")
       invisible(self)
     },
 
@@ -2081,10 +2136,10 @@ DataAnalytics <- R6::R6Class(
     #' @return A named list with elements survey_design and base, or NULL
     get_results = function() {
       origin <- paste0(self$dataset_name, "$get_results")
-      iphra_message(origin, "Retrieving analysis results...")
+      phr_message(origin, "Retrieving analysis results...")
 
       if (is.null(self$analysis_results) || length(self$analysis_results) == 0) {
-        iphra_warning(origin, "No analysis results available yet. Run run_analysis() first.")
+        phr_warning(origin, "No analysis results available yet. Run run_analysis() first.")
       }
       return(self$analysis_results)
     },
@@ -2096,13 +2151,13 @@ DataAnalytics <- R6::R6Class(
     export_results = function(path, format = "xlsx") {
       origin <- paste0(self$dataset_name, "$export_results")
 
-      iphra_try({
+      phr_try({
         if (is.null(self$analysis_results) || length(self$analysis_results) == 0) {
-          iphra_warning(origin, "No analysis results to export.")
+          phr_warning(origin, "No analysis results to export.")
           return(invisible(self))
         }
 
-        iphra_message(origin, paste("Exporting analysis results to:", path))
+        phr_message(origin, paste("Exporting analysis results to:", path))
 
         if (format == "xlsx") {
           sheets <- list()
@@ -2117,7 +2172,7 @@ DataAnalytics <- R6::R6Class(
           tbl <- self$analysis_results$survey_design %||% tibble::tibble()
           readr::write_csv(tbl, path)
         } else {
-          iphra_warning(origin, paste("Unsupported export format:", format))
+          phr_warning(origin, paste("Unsupported export format:", format))
         }
       },
       on_error = "warn",
@@ -2141,6 +2196,7 @@ DataAnalytics <- R6::R6Class(
         visualizations               = self$visualizations,
         tables                       = self$tables,
         survey_design                = self$survey_design,
+        base_survey_design           = self$base_survey_design,
         quality_issues_log           = self$quality_issues_log,
         analysis_plan_issues_log     = self$analysis_plan_issues_log,
         outputs_issues_log           = self$outputs_issues_log
@@ -2178,6 +2234,9 @@ DataAnalytics <- R6::R6Class(
       if (!is.null(state$survey_design)) {
         self$survey_design <- state$survey_design
       }
+      if (!is.null(state$base_survey_design)) {
+        self$base_survey_design <- state$base_survey_design
+      }
 
       invisible(self)
     },
@@ -2189,18 +2248,18 @@ DataAnalytics <- R6::R6Class(
     export_analysis_schema = function(path, format = "xlsx") {
       origin <- paste0(self$dataset_name, "$export_analysis_schema")
 
-      iphra_try({
+      phr_try({
         if (is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0) {
-          iphra_warning(origin, "No analysis schema to export.")
+          phr_warning(origin, "No analysis schema to export.")
           return(invisible(self))
         }
-        iphra_message(origin, paste("Exporting analysis schema to:", path))
+        phr_message(origin, paste("Exporting analysis schema to:", path))
         if (format == "xlsx") {
           openxlsx::write.xlsx(self$analysis_schema, path)
         } else if (format == "csv") {
           readr::write_csv(self$analysis_schema, path)
         } else {
-          iphra_warning(origin, paste("Unsupported export format:", format))
+          phr_warning(origin, paste("Unsupported export format:", format))
         }
       },
       on_error = "warn",
@@ -2215,11 +2274,11 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     import_analysis_schema = function(path) {
       origin <- paste0(self$dataset_name, "$import_analysis_schema")
-      iphra_message(origin, paste("Importing analysis schema from:", path))
+      phr_message(origin, paste("Importing analysis schema from:", path))
 
-      iphra_try({
+      phr_try({
         if (!file.exists(path)) {
-          iphra_error(origin, paste("File not found:", path))
+          phr_error(origin, paste("File not found:", path))
           return(invisible(self))
         }
 
@@ -2230,7 +2289,7 @@ DataAnalytics <- R6::R6Class(
           "xlsx" = readxl::read_xlsx(path),
           "rds"  = readRDS(path),
           {
-            iphra_error(origin, paste("Unsupported file type:", ext))
+            phr_error(origin, paste("Unsupported file type:", ext))
             return(invisible(self))
           }
         )
@@ -2239,11 +2298,11 @@ DataAnalytics <- R6::R6Class(
                            "denom_var", "disaggregation", "multiplier", "indicator_unit")
         missing_cols  <- setdiff(required_cols, names(schema_tbl))
         if (length(missing_cols) > 0) {
-          iphra_warning(origin, paste("Imported schema missing columns:", paste(missing_cols, collapse = ", ")))
+          phr_warning(origin, paste("Imported schema missing columns:", paste(missing_cols, collapse = ", ")))
         }
 
         self$analysis_schema <- schema_tbl
-        iphra_message(origin, paste("Analysis schema imported with", nrow(schema_tbl), "row(s)."))
+        phr_message(origin, paste("Analysis schema imported with", nrow(schema_tbl), "row(s)."))
       },
       on_error = "warn",
       origin = origin,
@@ -2254,9 +2313,9 @@ DataAnalytics <- R6::R6Class(
 
   ),
 
-  # ===========================================================================
+
   # Private helpers
-  # ===========================================================================
+
 
   private = list(
 
@@ -2288,8 +2347,8 @@ DataAnalytics <- R6::R6Class(
               if (!is.null(resolved)) {
                 resolved_elements <- c(resolved_elements, resolved)
               } else {
-                iphra_warning(
-                  message = iphra_txt(glue::glue("Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                phr_warning(
+                  message = phr_txt(glue::glue("Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
                   origin = self$dataset_name
                 )
               }
@@ -2306,17 +2365,67 @@ DataAnalytics <- R6::R6Class(
                   }
                 }
               }
+            } else if (grepl("^@variable_label\\$", elem)) {
+              role     <- sub("^@variable_label\\$", "", elem)
+              resolved <- self$variable_label[[role]]
+              if (!is.null(resolved)) {
+                resolved_elements <- c(resolved_elements, resolved)
+              } else {
+                phr_warning(
+                  message = phr_txt(glue::glue("Variable label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                  origin = self$dataset_name
+                )
+              }
+            } else if (grepl("^@value_label\\$", elem)) {
+              parts <- strsplit(sub("^@value_label\\$", "", elem), "\\$")[[1]]
+              if (length(parts) >= 1) {
+                role <- parts[1]
+                if (!is.null(self$value_label[[role]])) {
+                  if (length(parts) == 2) {
+                    resolved <- self$value_label[[role]][[parts[2]]]
+                    if (!is.null(resolved)) {
+                      resolved_elements <- c(resolved_elements, resolved)
+                    } else {
+                      phr_warning(
+                        message = phr_txt(glue::glue("Value label '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                        origin = self$dataset_name
+                      )
+                    }
+                  } else {
+                    resolved_elements <- c(resolved_elements, unlist(self$value_label[[role]], use.names = FALSE))
+                  }
+                } else {
+                  phr_warning(
+                    message = phr_txt(glue::glue("Value label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'.")),
+                    origin = self$dataset_name
+                  )
+                }
+              }
             } else {
               resolved_elements <- c(resolved_elements, gsub("^['\"]|['\"]$", "", elem))
             }
           }
 
-          func_args[[arg_name]] <- resolved_elements
+          numeric_attempt <- suppressWarnings(as.numeric(resolved_elements))
+          if (length(resolved_elements) > 0 && !any(is.na(numeric_attempt))) {
+            func_args[[arg_name]] <- numeric_attempt
+          } else if (length(resolved_elements) > 0 && all(toupper(resolved_elements) %in% c("TRUE", "FALSE"))) {
+            func_args[[arg_name]] <- as.logical(resolved_elements)
+          } else {
+            func_args[[arg_name]] <- resolved_elements
+          }
 
         } else if (is.character(arg_value) && grepl("^@variable_label\\$", arg_value)) {
           role     <- sub("^@variable_label\\$", "", arg_value)
           resolved <- self$variable_label[[role]]
-          if (!is.null(resolved)) func_args[[arg_name]] <- resolved
+          if (!is.null(resolved)) {
+            func_args[[arg_name]] <- resolved
+          } else {
+            phr_warning(
+              message = phr_txt(glue::glue("Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'.")),
+              origin = self$dataset_name
+            )
+          }
 
         } else if (is.character(arg_value) && arg_value == "@results_table") {
           if (!skip_results_table) {
@@ -2372,11 +2481,11 @@ DataAnalytics <- R6::R6Class(
     #' @return A tibble (invisibly).
     .diagnose_outputs_schema = function(schema, schema_name, log_field, data_cols, origin) {
 
-      iphra_try({
+      phr_try({
 
         empty_result <- tibble::tibble(
-          output_name        = character(),
           output_title       = character(),
+          output_name        = character(),
           output_func_name   = character(),
           output_type        = character(),
           variables          = character(),
@@ -2390,8 +2499,8 @@ DataAnalytics <- R6::R6Class(
         )
 
         if (is.null(schema) || length(schema) == 0) {
-          iphra_warning(
-            message = iphra_txt(glue::glue("No {schema_name} defined. Cannot diagnose.")),
+          phr_warning(
+            message = phr_txt(glue::glue("No {schema_name} defined. Cannot diagnose.")),
             origin  = origin
           )
           self[[log_field]] <- empty_result
@@ -2405,16 +2514,16 @@ DataAnalytics <- R6::R6Class(
 
           func_name      <- out$output_func_name %||% NA_character_
           output_type    <- out$output_type      %||% NA_character_
-          output_title   <- out$output_title     %||% NA_character_
+          output_name    <- out$output_name      %||% NA_character_
           outputs_group  <- out$outputs_group    %||% NA_character_
           variables      <- out$variables        %||% character(0)
           test_params    <- out$test_params      %||% list()
 
-          # --- 1. required fields present ------------------------------------
+          # --- 1. required fields present
           req_ok <- !is.null(func_name) && !is.na(func_name) && nzchar(func_name) &&
                     !is.null(output_type) && !is.na(output_type) && nzchar(output_type)
 
-          # --- 2. function available -----------------------------------------
+          # --- 2. function available
           func_available <- FALSE
           if (req_ok) {
             if (requireNamespace("iphRa", quietly = TRUE)) {
@@ -2430,13 +2539,14 @@ DataAnalytics <- R6::R6Class(
             }
           }
 
-          # --- 3. variables present in data ----------------------------------
-          # Only check literal variable refs (skip @variable_map and @value_map)
+          # --- 3. variables present in data
+          # Skip @variable_map and @value_map refs; resolve canonical names via variable_map
           literal_vars <- variables[!grepl("^@", variables)]
-          missing_vars <- setdiff(literal_vars, data_cols)
+          resolved_vars <- self$.translate_canonical_to_actual_vars(literal_vars)
+          missing_vars <- setdiff(resolved_vars, data_cols)
           vars_in_data <- length(missing_vars) == 0
 
-          # --- build status --------------------------------------------------
+          # --- build status
           issues <- character(0)
           if (!req_ok)        issues <- c(issues, "missing required fields (output_func_name or output_type)")
           if (!func_available && req_ok) issues <- c(issues, paste0("function '", func_name, "' not found"))
@@ -2444,8 +2554,8 @@ DataAnalytics <- R6::R6Class(
           status <- if (length(issues) == 0) "ok" else paste(issues, collapse = "; ")
 
           rows[[length(rows) + 1]] <- tibble::tibble(
-            output_name        = out_name,
-            output_title       = output_title,
+            output_title       = out_name,
+            output_name        = output_name %||% NA_character_,
             output_func_name   = func_name %||% NA_character_,
             output_type        = output_type %||% NA_character_,
             variables          = if (length(variables) > 0) paste(variables, collapse = ", ") else NA_character_,
@@ -2463,7 +2573,7 @@ DataAnalytics <- R6::R6Class(
         self[[log_field]] <- result
 
         n_issues <- sum(result$status != "ok", na.rm = TRUE)
-        iphra_message(iphra_txt(glue::glue(
+        phr_message(phr_txt(glue::glue(
           "{schema_name} diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {self$dataset_name}."
         )))
 

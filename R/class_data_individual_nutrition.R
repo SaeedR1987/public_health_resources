@@ -28,7 +28,7 @@ NutritionIndividualData <- R6::R6Class(
                           metadata = NULL,
                           variable_map = NULL) {
 
-      iphra_try({
+      phr_try({
 
         nutrition_map <- list(
           # Demographics (use generic names that map to data columns)
@@ -56,8 +56,8 @@ NutritionIndividualData <- R6::R6Class(
         default_ind_schema <- self$default_indicator_schema()
         if (length(default_ind_schema) > 0) {
           self$set_indicator_schema(default_ind_schema)
-          iphra_message(
-            iphra_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+          phr_message(
+            phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
           )
         }
 
@@ -65,13 +65,13 @@ NutritionIndividualData <- R6::R6Class(
         default_dep_schema <- self$default_dependency_schema()
         if (length(default_dep_schema$dependencies) > 0) {
           self$set_dependency_schema(default_dep_schema)
-          iphra_message(
-            iphra_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+          phr_message(
+            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )
         }
 
-        iphra_message(
-          iphra_txt("{dataset_name} initialized as NutritionIndividualData object.")
+        phr_message(
+          phr_txt("{dataset_name} initialized as NutritionIndividualData object.")
         )
 
       }, on_error = "abort", origin = "NutritionIndividualData$initialize")
@@ -94,10 +94,10 @@ NutritionIndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_error(
+        phr_error(
           origin  = "NutritionIndividualData$default_nutrition_schema",
-          message = iphra_txt("variable_schema_data_individual_nutrition_template.xlsx not found in package resources."),
-          hint    = iphra_txt("Place the schema file under inst/resources/ before building the package.")
+          message = phr_txt("variable_schema_data_individual_nutrition_template.xlsx not found in package resources."),
+          hint    = phr_txt("Place the schema file under inst/resources/ before building the package.")
         )
       }
 
@@ -105,9 +105,9 @@ NutritionIndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_error(
+          phr_error(
             origin  = "NutritionIndividualData$default_nutrition_schema",
-            message = iphra_txt("Failed to read variable_schema_data_individual_nutrition_template.xlsx"),
+            message = phr_txt("Failed to read variable_schema_data_individual_nutrition_template.xlsx"),
             hint    = e$message
           )
         }
@@ -135,9 +135,9 @@ NutritionIndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "NutritionIndividualData$default_indicator_schema",
-          message = iphra_txt("indicator_schema_data_individual_nutrition_template.xlsx not found in package resources. Continuing without default indicator schema.")
+          message = phr_txt("indicator_schema_data_individual_nutrition_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
         return(list())
       }
@@ -146,9 +146,9 @@ NutritionIndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "NutritionIndividualData$default_indicator_schema",
-            message = iphra_txt("Failed to read indicator_schema_data_individual_nutrition_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read indicator_schema_data_individual_nutrition_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -178,9 +178,9 @@ NutritionIndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "NutritionIndividualData$default_dependency_schema",
-          message = iphra_txt("dependency_schema_data_individual_nutrition_template.xlsx not found in package resources. Continuing without default dependency schema.")
+          message = phr_txt("dependency_schema_data_individual_nutrition_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
         return(list(dependencies = list()))
       }
@@ -189,9 +189,9 @@ NutritionIndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "NutritionIndividualData$default_dependency_schema",
-            message = iphra_txt("Failed to read dependency_schema_data_individual_nutrition_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read dependency_schema_data_individual_nutrition_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -203,132 +203,6 @@ NutritionIndividualData <- R6::R6Class(
       dependency_schema <- dependency_table_to_schema(df)
 
       return(dependency_schema)
-    },
-
-
-    #' @description
-    #' Generate a thematic DataQuality object for nutrition data.
-    #' Overrides base Data class method to provide nutrition-specific quality types.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param type The type of DataQuality object to create ("anthropometric", "iycf")
-    #' @return A DataQuality object or NULL
-    generate_data_quality = function(stage = c("standardized", "clean"),
-                                     type = c("anthropometric", "iycf")) {
-
-      stage <- match.arg(stage)
-      type <- match.arg(type)
-
-      iphra_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          iphra_warning(
-            self$dataset_name,
-            iphra_txt("No {stage} data available for DataQuality generation.")
-          )
-          return(NULL)
-        }
-
-        # Get hash, variable_map, and value_map from Data object
-        data_hash <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map <- self$value_map
-
-        # Create the appropriate DataQuality subclass based on type
-        dq <- switch(
-          type,
-          "anthropometric" = AnthropometricDataQuality$new(
-            data = df,
-            parent_data_object = self,
-            dataset_name = paste0(self$dataset_name, "_AnthropometricDataQuality"),
-            data_stage_name = stage,
-            data_hash = data_hash,
-            variable_map = variable_map,
-            value_map = value_map,
-            variable_label = self$variable_label,
-            value_label = self$value_label
-          ),
-          "iycf" = IYCFDataQuality$new(
-            data = df,
-            parent_data_object = self,
-            dataset_name = paste0(self$dataset_name, "_IYCFDataQuality"),
-            data_stage_name = stage,
-            data_hash = data_hash,
-            variable_map = variable_map,
-            value_map = value_map,
-            variable_label = self$variable_label,
-            value_label = self$value_label
-          ),
-          # Default: error with iphra_error
-          iphra_error(
-            origin = paste0(self$dataset_name, "$generate_data_quality"),
-            message = iphra_txt("Unknown quality type '{type}' for NutritionIndividualData. Valid types: anthropometric, iycf")
-          )
-        )
-
-        iphra_message(
-          iphra_txt("Generated {type} DataQuality object for {self$dataset_name}.")
-        )
-
-        return(dq)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_quality"))
-    },
-
-
-    #' @description
-    #' Generate a NutritionAnalysis object for nutrition data.
-    #' Overrides base Data class method to provide nutrition-specific analysis.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param analysis_config Optional analysis configuration (data analysis plan)
-    #' @return A NutritionAnalysis object or NULL
-    generate_data_analysis = function(stage = c("standardized", "clean"),
-                                      analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-
-      iphra_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          iphra_warning(
-            self$dataset_name,
-            iphra_txt("No {stage} data available for Analysis generation.")
-          )
-          return(NULL)
-        }
-
-        # Get hash, variable_map, and value_map from Data object
-        data_hash <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map <- self$value_map
-
-        # Create NutritionAnalysis object.
-        # The analysis class creates its own survey design from data + variable_map.
-        analysis <- NutritionAnalysis$new(
-          dap = analysis_config,
-          parent_data_object = self,
-          dataset_name = paste0(self$dataset_name, "_NutritionAnalysis"),
-          data = df,
-          data_stage_name = stage,
-          data_hash = data_hash,
-          variable_map = variable_map,
-          value_map = value_map,
-          variable_label = self$variable_label,
-          value_label = self$value_label
-        )
-
-        iphra_message(
-          iphra_txt("Generated NutritionAnalysis object for {self$dataset_name}.")
-        )
-
-        return(analysis)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analysis"))
     },
 
 
@@ -349,14 +223,14 @@ NutritionIndividualData <- R6::R6Class(
       stage <- match.arg(stage)
       type  <- match.arg(type)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataAnalytics generation.")
+            phr_txt("No {stage} data available for DataAnalytics generation.")
           )
           return(NULL)
         }
@@ -403,14 +277,14 @@ NutritionIndividualData <- R6::R6Class(
             variable_label     = self$variable_label,
             value_label        = self$value_label
           ),
-          iphra_error(
+          phr_error(
             origin  = paste0(self$dataset_name, "$generate_data_analytics"),
-            message = iphra_txt("Unknown analytics type '{type}' for NutritionIndividualData. Valid types: nutrition, iycf")
+            message = phr_txt("Unknown analytics type '{type}' for NutritionIndividualData. Valid types: nutrition, iycf")
           )
         )
 
-        iphra_message(
-          iphra_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
         )
 
         return(analytics)

@@ -3,7 +3,7 @@
 
 #' Snap GPS coordinates to fixed decimal precision
 hh_snap_coord <- function(x, digits = 6) {
-  iphra_try({
+  phr_try({
     if (is.null(x)) return(NULL)
     as.numeric(round(as.numeric(x), digits = digits))
   }, on_error = "warn", origin = "hh_snap_coord")
@@ -11,7 +11,7 @@ hh_snap_coord <- function(x, digits = 6) {
 
 #' Convert DMS to decimal degrees
 hh_dms_to_decimal <- function(x) {
-  iphra_try({
+  phr_try({
 
     parse_one <- function(val) {
       val <- trimws(val)
@@ -27,13 +27,13 @@ hh_dms_to_decimal <- function(x) {
   }, on_error = "warn", origin = "hh_dms_to_decimal")
 }
 
-# ====================================================================
+
 # WEIGHT UTILITIES
-# ====================================================================
+
 
 #' Identify outliers using IQR rule
 hh_flag_weight_outliers <- function(w) {
-  iphra_try({
+  phr_try({
 
     w <- suppressWarnings(as.numeric(w))
     if (length(w) == 0) return(integer(0))
@@ -49,9 +49,9 @@ hh_flag_weight_outliers <- function(w) {
     outliers <- which(w < lower | w > upper)
 
     if (length(outliers) > 0) {
-      iphra_warning(
+      phr_warning(
         "HouseholdData",
-        iphra_txt(glue::glue("Weight outliers detected at rows: {paste(outliers, collapse=', ')}"))
+        phr_txt(glue::glue("Weight outliers detected at rows: {paste(outliers, collapse=', ')}"))
       )
     }
 
@@ -62,7 +62,7 @@ hh_flag_weight_outliers <- function(w) {
 
 #' Detect invalid weights: negative, zero, missing
 hh_check_weight_integrity <- function(w) {
-  iphra_try({
+  phr_try({
 
     w <- suppressWarnings(as.numeric(w))
     issues <- list(
@@ -72,9 +72,9 @@ hh_check_weight_integrity <- function(w) {
     )
 
     if (length(unlist(issues)) > 0) {
-      iphra_warning(
+      phr_warning(
         "HouseholdData",
-        iphra_txt(
+        phr_txt(
           "Weight integrity issues: {length(issues$negative)} negative, {length(issues$zero)} zero, {length(issues$missing)} missing."
         )
       )
@@ -85,13 +85,13 @@ hh_check_weight_integrity <- function(w) {
   }, on_error = "warn", origin = "hh_check_weight_integrity")
 }
 
-# ====================================================================
+
 # ADM UNIT NORMALIZATION
-# ====================================================================
+
 
 #' Normalize administrative names
 hh_normalize_adm <- function(x) {
-  iphra_try({
+  phr_try({
     x <- trimws(as.character(x))
     x <- ifelse(x == "", NA_character_, x)
     tools::toTitleCase(tolower(x))
@@ -100,14 +100,14 @@ hh_normalize_adm <- function(x) {
 
 #' Validate admin codes/names against reference values
 hh_validate_adm <- function(x, valid) {
-  iphra_try({
+  phr_try({
 
     bad <- setdiff(unique(x), valid)
 
     if (length(bad) > 0) {
-      iphra_warning(
+      phr_warning(
         "HouseholdData",
-        iphra_txt(glue::glue("Invalid administrative units detected: {paste(bad, collapse=', ')}"))
+        phr_txt(glue::glue("Invalid administrative units detected: {paste(bad, collapse=', ')}"))
       )
     }
 
@@ -116,16 +116,16 @@ hh_validate_adm <- function(x, valid) {
   }, on_error = "warn", origin = "hh_validate_adm")
 }
 
-# ====================================================================
+
 # SKIP-LOGIC & CONSISTENCY CHECKS
-# ====================================================================
+
 
 #' Enforce consent-based skip logic
 hh_check_consent_skip <- function(df, consent_col, skip_cols) {
-  iphra_try({
+  phr_try({
 
     if (!consent_col %in% names(df)) {
-      iphra_warning("HouseholdData", iphra_txt(glue::glue("Consent column '{consent_col}' not found.")))
+      phr_warning("HouseholdData", phr_txt(glue::glue("Consent column '{consent_col}' not found.")))
       return(list())
     }
 
@@ -140,9 +140,9 @@ hh_check_consent_skip <- function(df, consent_col, skip_cols) {
     }
 
     if (length(issues) > 0) {
-      iphra_warning(
+      phr_warning(
         "HouseholdData",
-        iphra_txt(glue::glue("Consent skip-logic violations detected in columns: {paste(names(issues), collapse=', ')}"))
+        phr_txt(glue::glue("Consent skip-logic violations detected in columns: {paste(names(issues), collapse=', ')}"))
       )
     }
 
@@ -153,15 +153,15 @@ hh_check_consent_skip <- function(df, consent_col, skip_cols) {
 
 #' Flag interview dates earlier than project start
 hh_flag_early_interviews <- function(dates, project_start) {
-  iphra_try({
+  phr_try({
 
-    d <- suppressWarnings(iphra_convert_date(dates))
+    d <- suppressWarnings(phr_convert_date(dates))
     bad <- which(!is.na(d) & d < project_start)
 
     if (length(bad) > 0) {
-      iphra_warning(
+      phr_warning(
         "HouseholdData",
-        iphra_txt(glue::glue("Interview dates earlier than project start detected at rows: {paste(bad, collapse=', ')}"))
+        phr_txt(glue::glue("Interview dates earlier than project start detected at rows: {paste(bad, collapse=', ')}"))
       )
     }
 
@@ -170,9 +170,9 @@ hh_flag_early_interviews <- function(dates, project_start) {
   }, on_error = "warn", origin = "hh_flag_early_interviews")
 }
 
-# ====================================================================
+
 # INTERVIEW TIME UTILITIES
-# ====================================================================
+
 
 #' Calculate and add interview duration in minutes
 #'
@@ -202,25 +202,25 @@ add_interview_time <- function(.dataset,
 
   origin <- "add_interview_time"
 
-  iphra_try(
+  phr_try(
     expr = {
 
       # Validate dataset structure
-      iphra_validate_dataframe(.dataset, origin = origin, soft = FALSE)
-      iphra_assert(nrow(.dataset) > 0, origin, iphra_txt("Dataset must not be empty."))
+      phr_validate_dataframe(.dataset, origin = origin, soft = FALSE)
+      phr_assert(nrow(.dataset) > 0, origin, phr_txt("Dataset must not be empty."))
 
       # Validate required columns exist
-      iphra_validate_columns(.dataset, c(start_col, end_col), origin = origin, soft = FALSE)
+      phr_validate_columns(.dataset, c(start_col, end_col), origin = origin, soft = FALSE)
 
       # Validate that both columns contain datetime values
-      iphra_validate_datetime(.dataset[[start_col]], origin = origin, soft = FALSE)
-      iphra_validate_datetime(.dataset[[end_col]], origin = origin, soft = FALSE)
+      phr_validate_datetime(.dataset[[start_col]], origin = origin, soft = FALSE)
+      phr_validate_datetime(.dataset[[end_col]], origin = origin, soft = FALSE)
 
       # Warn if the output column already exists
       if (new_col %in% names(.dataset)) {
-        iphra_warning(
+        phr_warning(
           origin,
-          iphra_txt(glue::glue("Column '{new_col}' already exists and will be overwritten."))
+          phr_txt(glue::glue("Column '{new_col}' already exists and will be overwritten."))
         )
       }
 
@@ -240,9 +240,9 @@ add_interview_time <- function(.dataset,
   )
 }
 
-# ====================================================================
+
 # LINKAGE UTILITIES
-# ====================================================================
+
 
 #' Validate loop dataset counts against parent dataset
 #'
@@ -266,32 +266,32 @@ loop_count_check <- function(parent_df,
                              parent_count,
                              soft_missing_parent = TRUE) {
 
-  iphra_try({
+  phr_try({
 
-    # ============================================================
+
     # 1. Structural validation
-    # ============================================================
+
     if (!parent_uuid %in% names(parent_df)) {
-      iphra_error("LoopCheck",
-                  iphra_txt(glue::glue("Parent UUID column '{parent_uuid}' not found in parent dataset."))
+      phr_error("LoopCheck",
+                  phr_txt(glue::glue("Parent UUID column '{parent_uuid}' not found in parent dataset."))
       )
     }
 
     if (!child_uuid %in% names(child_df)) {
-      iphra_error("LoopCheck",
-                  iphra_txt(glue::glue("Child UUID column '{child_uuid}' not found in child dataset."))
+      phr_error("LoopCheck",
+                  phr_txt(glue::glue("Child UUID column '{child_uuid}' not found in child dataset."))
       )
     }
 
     if (!parent_count %in% names(parent_df)) {
-      iphra_error("LoopCheck",
-                  iphra_txt(glue::glue("Parent count column '{parent_count}' missing in parent dataset."))
+      phr_error("LoopCheck",
+                  phr_txt(glue::glue("Parent count column '{parent_count}' missing in parent dataset."))
       )
     }
 
-    # ============================================================
+
     # 2. Prepare vectors
-    # ============================================================
+
     parent_ids <- as.character(parent_df[[parent_uuid]])
     expected_counts <- parent_df[[parent_count]]
 
@@ -315,37 +315,37 @@ loop_count_check <- function(parent_df,
 
     mismatches <- c()
 
-    # ============================================================
+
     # 3. Loop UUIDs not in parent → mismatch
-    # ============================================================
+
     extra_loop_ids <- setdiff(names(table(child_ids)), parent_ids)
 
     if (length(extra_loop_ids) > 0) {
       mismatches <- c(mismatches, extra_loop_ids)
-      iphra_warning(
+      phr_warning(
         "LoopCheck",
-        iphra_txt(glue::glue("Loop dataset contains UUIDs not found in parent dataset: {paste(extra_loop_ids, collapse=', ')}"))
+        phr_txt(glue::glue("Loop dataset contains UUIDs not found in parent dataset: {paste(extra_loop_ids, collapse=', ')}"))
       )
     }
 
-    # ============================================================
+
     # 4. Parent expected = NA AND actual > 0 → mismatch
-    # ============================================================
+
     problem_na_child <- df_out$uuid[
       is.na(df_out$expected) & df_out$actual > 0
     ]
 
     if (length(problem_na_child) > 0) {
       mismatches <- c(mismatches, problem_na_child)
-      iphra_warning(
+      phr_warning(
         "LoopCheck",
-        iphra_txt(glue::glue("Parent has missing expected count but loop contains rows for: {paste(problem_na_child, collapse=', ')}"))
+        phr_txt(glue::glue("Parent has missing expected count but loop contains rows for: {paste(problem_na_child, collapse=', ')}"))
       )
     }
 
-    # ============================================================
+
     # 5. NEW RULE: Parent expected = NA AND actual = 0
-    # ============================================================
+
     if (!soft_missing_parent) {
       problem_na_soft <- df_out$uuid[
         is.na(df_out$expected) & df_out$actual == 0
@@ -353,16 +353,16 @@ loop_count_check <- function(parent_df,
 
       if (length(problem_na_soft) > 0) {
         mismatches <- c(mismatches, problem_na_soft)
-        iphra_warning(
+        phr_warning(
           "LoopCheck",
-          iphra_txt(glue::glue("Missing count detected for UUIDs with no loop rows under 'hard' rule: {paste(problem_na_soft, collapse=', ')}"))
+          phr_txt(glue::glue("Missing count detected for UUIDs with no loop rows under 'hard' rule: {paste(problem_na_soft, collapse=', ')}"))
         )
       }
     }
 
-    # ============================================================
+
     # 6. Numeric mismatch when expected is known
-    # ============================================================
+
     numeric_mismatch <- df_out$uuid[
       !is.na(df_out$expected) &
         df_out$expected != df_out$actual
@@ -370,17 +370,17 @@ loop_count_check <- function(parent_df,
 
     if (length(numeric_mismatch) > 0) {
       mismatches <- c(mismatches, numeric_mismatch)
-      iphra_warning(
+      phr_warning(
         "LoopCheck",
-        iphra_txt(glue::glue("Count mismatches detected for: {paste(numeric_mismatch, collapse=', ')}"))
+        phr_txt(glue::glue("Count mismatches detected for: {paste(numeric_mismatch, collapse=', ')}"))
       )
     }
 
     mismatches <- unique(mismatches)
 
-    # ============================================================
+
     # 7. Return results
-    # ============================================================
+
     return(list(
       ok = (length(mismatches) == 0),
       mismatches = mismatches,
@@ -392,7 +392,7 @@ loop_count_check <- function(parent_df,
 
 #' Check 1:many linkage integrity
 hh_check_roster_1_to_many <- function(hh_df, roster_df, uuid_hh, uuid_roster) {
-  iphra_try({
+  phr_try({
 
     res <- list(
       missing_households = hh_roster_link_check(hh_df, roster_df, uuid_hh, uuid_roster),
@@ -406,15 +406,15 @@ hh_check_roster_1_to_many <- function(hh_df, roster_df, uuid_hh, uuid_roster) {
 
 #' Check relationship-to-head plausibility
 hh_check_roster_relationships <- function(rel_vec) {
-  iphra_try({
+  phr_try({
 
     allowed <- c("head", "spouse", "child", "parent", "relative", "other")
     bad <- setdiff(unique(rel_vec), allowed)
 
     if (length(bad) > 0) {
-      iphra_warning(
+      phr_warning(
         "HouseholdData",
-        iphra_txt(glue::glue("Invalid relationship codes detected: {paste(bad, collapse=', ')}"))
+        phr_txt(glue::glue("Invalid relationship codes detected: {paste(bad, collapse=', ')}"))
       )
     }
 

@@ -78,7 +78,7 @@ Log <- R6::R6Class(
       }
 
       # ---- VALIDATION: must be a data.frame
-      iphra_validate_dataframe(log_df, origin = paste0(log_name, "$initialize"), soft = FALSE)
+      phr_validate_dataframe(log_df, origin = paste0(log_name, "$initialize"), soft = FALSE)
 
       # ---- Ensure required columns exist (add empty ones if missing)
       for (col in self$required_columns) {
@@ -101,7 +101,7 @@ Log <- R6::R6Class(
 
       self$issues <- list()
 
-      iphra_message(iphra_txt(glue::glue("{log_name} initialized with {nrow(log_df)} entries.")))
+      phr_message(phr_txt(glue::glue("{log_name} initialized with {nrow(log_df)} entries.")))
     },
 
     #' Set Schema
@@ -119,7 +119,7 @@ Log <- R6::R6Class(
     #' * allowed_values: named list of column_name = vector of allowed values
     set_schema = function(schema_list) {
       self$schema <- schema_list
-      iphra_message(iphra_txt(glue::glue("Schema attached to {self$log_name}.")))
+      phr_message(phr_txt(glue::glue("Schema attached to {self$log_name}.")))
       invisible(TRUE)
     },
 
@@ -143,7 +143,7 @@ Log <- R6::R6Class(
     #' Attempts safe type coercion (e.g., "123" to 123) when possible.
     validate = function(schema_override = NULL) {
 
-      iphra_try({
+      phr_try({
 
         schema_to_use <- schema_override %||% self$schema
         issues <- list()
@@ -152,7 +152,7 @@ Log <- R6::R6Class(
         # 1. BASIC STRUCTURAL VALIDATION
 
 
-        iphra_validate_dataframe(self$log_df, origin = self$log_name, soft = TRUE)
+        phr_validate_dataframe(self$log_df, origin = self$log_name, soft = TRUE)
 
         # Required columns must exist
         missing_req <- setdiff(self$required_columns, names(self$log_df))
@@ -192,7 +192,7 @@ Log <- R6::R6Class(
                     } else if (want == "logical") {
                       suppressWarnings(as.logical(self$log_df[[nm]]))
                     } else if (want == "date" || want == "Date") {
-                      iphra_convert_date(self$log_df[[nm]])
+                      phr_convert_date(self$log_df[[nm]])
                     } else {
                       self$log_df[[nm]]
                     }
@@ -202,8 +202,8 @@ Log <- R6::R6Class(
 
                 self$log_df[[nm]] <- new_vec
 
-                iphra_message(
-                  iphra_txt(glue::glue("Coerced column '{nm}' to type '{want}'."))
+                phr_message(
+                  phr_txt(glue::glue("Coerced column '{nm}' to type '{want}'."))
                 )
               }
 
@@ -241,9 +241,9 @@ Log <- R6::R6Class(
 
 
         if (length(issues) > 0) {
-          iphra_warning(
+          phr_warning(
             self$log_name,
-            iphra_txt(glue::glue("Log validation completed with issues: {paste(names(issues), collapse=', ')}"))
+            phr_txt(glue::glue("Log validation completed with issues: {paste(names(issues), collapse=', ')}"))
           )
         }
 
@@ -280,13 +280,13 @@ Log <- R6::R6Class(
     append_entry = function(row_list) {
 
       if (!is.list(row_list))
-        iphra_error(self$log_name, iphra_txt("append_entry() requires a named list."))
+        phr_error(self$log_name, phr_txt("append_entry() requires a named list."))
 
       missing_cols <- setdiff(self$required_columns, names(row_list))
       if (length(missing_cols) > 0) {
-        iphra_error(
+        phr_error(
           self$log_name,
-          iphra_txt(glue::glue("Missing required fields in new log entry: {paste(missing_cols, collapse=', ')}"))
+          phr_txt(glue::glue("Missing required fields in new log entry: {paste(missing_cols, collapse=', ')}"))
         )
       }
 
@@ -295,7 +295,7 @@ Log <- R6::R6Class(
       self$log_df <- dplyr::bind_rows(self$log_df, df_row)
 
       self$metadata$updated <- Sys.time()
-      iphra_message(iphra_txt(glue::glue("Added new entry to {self$log_name}.")))
+      phr_message(phr_txt(glue::glue("Added new entry to {self$log_name}.")))
       invisible(TRUE)
     },
 
@@ -314,7 +314,7 @@ Log <- R6::R6Class(
     clear = function() {
       self$log_df <- self$log_df[0, , drop = FALSE]
       self$metadata$updated <- Sys.time()
-      iphra_message(iphra_txt(glue::glue("{self$log_name} cleared.")))
+      phr_message(phr_txt(glue::glue("{self$log_name} cleared.")))
       invisible(TRUE)
     },
 
@@ -338,7 +338,7 @@ Log <- R6::R6Class(
     export = function(path, format = c("csv","rds","xlsx")) {
       format <- match.arg(format)
 
-      iphra_try({
+      phr_try({
 
         if (format == "csv") {
           utils::write.csv(self$log_df, path, row.names = FALSE)
@@ -348,12 +348,12 @@ Log <- R6::R6Class(
         }
         if (format == "xlsx") {
           if (!requireNamespace("openxlsx", quietly = TRUE)) {
-            iphra_error(self$log_name, iphra_txt("Package 'openxlsx' is required for XLSX export."))
+            phr_error(self$log_name, phr_txt("Package 'openxlsx' is required for XLSX export."))
           }
           openxlsx::write.xlsx(self$log_df, file = path)
         }
 
-        iphra_message(iphra_txt(glue::glue("Exported {self$log_name} to {path}.")))
+        phr_message(phr_txt(glue::glue("Exported {self$log_name} to {path}.")))
         invisible(path)
 
       }, on_error = "abort", origin = paste0(self$log_name, "$export"))
@@ -375,7 +375,7 @@ Log <- R6::R6Class(
     #' @note Requires digest package
     get_hash = function() {
       if (!requireNamespace("digest", quietly = TRUE)) {
-        iphra_error(self$log_name, iphra_txt("Package 'digest' is required for hashing."))
+        phr_error(self$log_name, phr_txt("Package 'digest' is required for hashing."))
       }
       digest::digest(self$log_df)
     },

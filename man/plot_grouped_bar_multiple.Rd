@@ -5,16 +5,16 @@
 \title{Plot Grouped Bar Chart for Select Multiple Responses}
 \usage{
 plot_grouped_bar_multiple(
-  df,
-  response_vars,
+  survey_design,
+  var_name,
   response_labels = NULL,
   grouping = NULL,
-  weighted = FALSE,
-  weights_col = NULL,
   calc_percentage = TRUE,
   flip_coordinates = TRUE,
   color_palette = "reach2",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_label = "Response Options",
   y_label = NULL,
@@ -24,62 +24,72 @@ plot_grouped_bar_multiple(
 )
 }
 \arguments{
-\item{df}{Inputs a dataframe containing the select multiple response data.}
+\item{survey_design}{A \code{srvyr} or \code{survey} design object (e.g.
+created with \code{srvyr::as_survey_design()}).}
 
-\item{response_vars}{Inputs a character vector of column names for the response options.
-Each column should be coded as binary (0/1 or TRUE/FALSE).}
+\item{var_name}{Character scalar; name of the column in \code{survey_design}
+that contains the space-separated select-multiple responses.}
 
-\item{response_labels}{Inputs an optional character vector of labels for the response variables.
-If NULL, uses the column names.}
+\item{response_labels}{Optional named or positional character vector for
+mapping response tokens to display labels.
+If \code{NULL} (default), the raw token strings are used as labels.
+If a \strong{named} vector, names must match the unique response tokens.
+If an \strong{unnamed} positional vector, it must have the same length as
+the number of unique tokens (sorted alphabetically).}
 
-\item{grouping}{Inputs an optional character value specifying the column name for grouping the data.
-If NULL, creates an overall plot. If provided, creates grouped bars for comparison.}
+\item{grouping}{Optional character scalar; column name to use for
+disaggregation.  If \code{NULL}, an overall plot is produced.}
 
-\item{weighted}{Logical. If TRUE, applies survey weights. By default: FALSE.}
+\item{calc_percentage}{Logical; if \code{TRUE} (default) bars show the
+survey-weighted percentage.  If \code{FALSE}, bars show the unweighted count.}
 
-\item{weights_col}{Character. Column name containing survey weights. Required if weighted = TRUE.}
+\item{flip_coordinates}{Logical; if \code{TRUE} (default) creates horizontal bars.}
 
-\item{calc_percentage}{Inputs a logical value indicating whether to calculate percentages (TRUE)
-or show counts (FALSE). Default is TRUE.}
+\item{color_palette}{Character; color palette to use.  Options:
+\code{"reach1"}, \code{"reach2"}, \code{"reach3"}, \code{"reach4"},
+\code{"traffic_light"}, \code{"default"}.  Default is \code{"reach2"}.}
 
-\item{flip_coordinates}{Logical. If TRUE, creates horizontal bars. By default: TRUE.}
+\item{title_name}{Optional character scalar for the plot title.}
 
-\item{color_palette}{Inputs an optional character value specifying the color palette to use.
-Options: "reach1", "reach2", "reach3", "reach4", "traffic_light", "default". Default is "reach2".}
+\item{variable_label}{Optional character scalar used to auto-generate the
+title when \code{title_name} is \code{NULL}.}
 
-\item{title_name}{Inputs an optional character value for the title of the plot.}
+\item{grouping_label}{Optional character scalar; human-readable label for the
+grouping variable.}
 
-\item{subtitle}{Inputs an optional character value for the subtitle of the plot.
-If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.}
+\item{subtitle}{Optional character scalar appended to the auto-generated subtitle.}
 
-\item{x_label}{Inputs an optional character value for the x-axis label (default: "Response Options").}
+\item{x_label}{Character scalar for the x-axis label (default: \code{"Response Options"}).}
 
-\item{y_label}{Inputs an optional character value for the y-axis label.}
+\item{y_label}{Optional character scalar for the y-axis label.}
 
-\item{legend_label}{Inputs an optional character value for the legend title. If NULL, uses grouping variable name.}
+\item{legend_label}{Optional character scalar for the legend title.}
 
-\item{show_labels}{Inputs a logical value indicating whether to show percentage/count labels on bars (default: FALSE).}
+\item{show_labels}{Logical; if \code{TRUE}, value labels are shown on the bars (default: \code{FALSE}).}
 
-\item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
+\item{legend_position}{Position of the legend.  Default \code{"bottom"}.
+Options: \code{"bottom"}, \code{"top"}, \code{"left"}, \code{"right"}, \code{"none"}.}
 }
 \value{
 Returns a ggplot2 object showing the grouped bar chart.
 }
 \description{
-Creates grouped bar charts for select multiple responses that don't add up to 100%.
-This is useful for displaying the frequency of each response option, either overall or grouped.
+Creates grouped bar charts for select-multiple (multi-select) survey columns
+where each cell contains space-separated response tokens (e.g.
+\code{"barrier_cost barrier_distance"}).  Survey-weighted proportions for each
+unique response token are computed via \code{\link{phr_calc_multiple_choice_cat}},
+so the weights embedded in \code{survey_design} are applied automatically.
+Bars do not add up to 100\% because respondents may select more than one option.
 }
 \examples{
 \dontrun{
-  response_vars <- c("barrier_cost", "barrier_distance", "barrier_availability")
+  # Column with space-separated responses, e.g. "barrier_cost barrier_distance"
+  plot_grouped_bar_multiple(survey_design, var_name = "barriers",
+                            title_name = "Health Barriers")
 
-  # Unweighted
-  plot_grouped_bar_multiple(df, response_vars = response_vars, grouping = "district",
+  # With disaggregation by district
+  plot_grouped_bar_multiple(survey_design, var_name = "barriers",
+                            grouping = "district",
                             title_name = "Health Barriers by District")
-
-  # Weighted
-  plot_grouped_bar_multiple(df, response_vars = response_vars, grouping = "district",
-                            weighted = TRUE, weights_col = "survey_weight",
-                            title_name = "Health Barriers by District (Weighted)")
 }
 }

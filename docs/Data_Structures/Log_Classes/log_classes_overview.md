@@ -199,7 +199,7 @@ Specialized class for managing quantitative data analysis plans.
 **Purpose**: Maintain structured analysis plans with schema enforcement and validation for quantitative data analysis workflows.
 
 **Key Features**:
-- Enforce column structure from `iphra_analysis_plan_template.csv`
+- Enforce column structure from `phr_analysis_plan_template.csv`
 - Validate indicator calculation types (prop, mean, median, ratio)
 - Validate multiplier values are positive
 - Track planned analyses with proper type safety

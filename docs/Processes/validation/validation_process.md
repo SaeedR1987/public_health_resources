@@ -2,7 +2,7 @@
 
 ## Overview
 
-The validation process is a critical step in the iphRa data pipeline that ensures data quality, structural integrity, and conformance to schema definitions before proceeding with standardization or cleaning. This document provides a comprehensive overview of the validation workflow, including the role of variable and value maps.
+The validation process is a critical step in the public_health_resources data pipeline that ensures data quality, structural integrity, and conformance to schema definitions before proceeding with standardization or cleaning. This document provides a comprehensive overview of the validation workflow, including the role of variable and value maps.
 
 ## Purpose
 
@@ -104,7 +104,7 @@ Data → pre_validate → Core Checks → Variable Map Checks → Value Map Chec
 pre_validate = function() {
   # Domain-specific validation setup
   if (is.null(self$metadata$survey_date)) {
-    iphra_warning(self$dataset_name, "Survey date metadata missing")
+    phr_warning(self$dataset_name, "Survey date metadata missing")
   }
 }
 ```
@@ -118,7 +118,7 @@ pre_validate = function() {
 #### Data Frame Validation
 - Confirms the data is a valid data frame structure
 - Checks that data is not NULL or corrupted
-- Uses `iphra_validate_dataframe()` for structural validation
+- Uses `phr_validate_dataframe()` for structural validation
 
 #### Required Columns Check
 - Validates that all columns in `self$required_columns` are present
@@ -285,7 +285,7 @@ post_validate = function(df) {
   # GPS validation
   if ("gps_lat" %in% names(df)) {
     if (any(abs(df$gps_lat) > 90, na.rm = TRUE)) {
-      iphra_warning(self$dataset_name, "Invalid GPS latitude values detected")
+      phr_warning(self$dataset_name, "Invalid GPS latitude values detected")
       valid <- FALSE
     }
   }
@@ -524,10 +524,10 @@ data_obj$validate(stage = "standardized")
 - `post_validate(df)` - Override in subclasses (line 294)
 
 **Key Helper Functions**:
-- `iphra_validate_dataframe()` - Core data frame validation
-- `iphra_validate_columns()` - Required columns check
-- `iphra_validate_no_missing()` - Missing value check
-- `iphra_validate_unique()` - Uniqueness check
+- `phr_validate_dataframe()` - Core data frame validation
+- `phr_validate_columns()` - Required columns check
+- `phr_validate_no_missing()` - Missing value check
+- `phr_validate_unique()` - Uniqueness check
 
 ---
 

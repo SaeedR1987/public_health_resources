@@ -5,7 +5,7 @@
 #' #' Provides standardized, Shiny-aware functions for emitting and logging
 #' #' errors, warnings, and informational messages in a user-friendly way.
 #' #' Logs are stored in a session-scoped reactive value (via `reactiveVal`)
-#' #' and can be accessed reactively with `iphra_get_logs()`.
+#' #' and can be accessed reactively with `phr_get_logs()`.
 #' #' Logs vanish automatically when the Shiny session ends.
 #' #'
 #' #' @keywords internal
@@ -22,7 +22,7 @@
 #' #'
 #' #' @return A `reactiveVal` containing an empty log data frame.
 #' #' @keywords internal
-#' iphra_init_log <- function() {
+#' phr_init_log <- function() {
 #'   shiny::reactiveVal(
 #'     data.frame(
 #'       time = character(),
@@ -35,7 +35,7 @@
 #' }
 #'
 #' # global reactiveVal handle (created per session lazily)
-#' iphra_log_store <- NULL
+#' phr_log_store <- NULL
 #'
 #' #' @title Get or Create the Session Log Store
 #' #' @description
@@ -44,22 +44,22 @@
 #' #'
 #' #' @return A `reactiveVal` object containing the log data frame.
 #' #' @keywords internal
-#' iphra_get_log_store <- function(session = shiny::getDefaultReactiveDomain()) {
+#' phr_get_log_store <- function(session = shiny::getDefaultReactiveDomain()) {
 #'   if (is.null(session)) {
 #'     stop("[IPHRA::Error] No active Shiny session found; cannot access log store.")
 #'   }
-#'   if (is.null(session$userData$iphra_log_store)) {
-#'     session$userData$iphra_log_store <- iphra_init_log()
+#'   if (is.null(session$userData$phr_log_store)) {
+#'     session$userData$phr_log_store <- phr_init_log()
 #'   }
-#'   session$userData$iphra_log_store
+#'   session$userData$phr_log_store
 #' }
 #'
 #' @title Append a Log Entry
 #' @keywords internal
-iphra_log <- function(level, message, origin = NULL) {
+phr_log <- function(level, message, origin = NULL) {
   if (!requireNamespace("shiny", quietly = TRUE) || !shiny::isRunning()) return(invisible())
   session <- shiny::getDefaultReactiveDomain()
-  log_fun <- iphra_get_log_store(session)
+  log_fun <- phr_get_log_store(session)
   current <- log_fun()
   entry <- data.frame(
     time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
@@ -75,8 +75,8 @@ iphra_log <- function(level, message, origin = NULL) {
 #' #' @title Get Current IPHRA Session Logs
 #' #' @return A reactive expression that returns the session log data frame.
 #' #' @export
-#' iphra_get_logs <- function(session = shiny::getDefaultReactiveDomain()) {
-#'   store <- iphra_get_log_store(session)
+#' phr_get_logs <- function(session = shiny::getDefaultReactiveDomain()) {
+#'   store <- phr_get_log_store(session)
 #'   shiny::reactive(store())
 #' }
 
@@ -93,7 +93,7 @@ iphra_log <- function(level, message, origin = NULL) {
 #'
 #' @return Invisibly returns `NULL`.
 #' @keywords internal
-.iphra_notify <- function(message, type = c("message", "warning", "error")) {
+.phr_notify <- function(message, type = c("message", "warning", "error")) {
   type <- match.arg(type)
   if (requireNamespace("shiny", quietly = TRUE) && shiny::isRunning()) {
     shiny::showNotification(message, type = type)
@@ -108,7 +108,7 @@ iphra_log <- function(level, message, origin = NULL) {
 }
 
 # Internal notification wrapper for testing and Shiny-safe mocking
-.iphra_showNotification <- function(message, type = "default") {
+.phr_showNotification <- function(message, type = "default") {
   if (requireNamespace("shiny", quietly = TRUE)) {
     fn <- get("showNotification", asNamespace("shiny"))
     fn(message, type = type)
@@ -134,7 +134,7 @@ iphra_log <- function(level, message, origin = NULL) {
 #'
 #' @return No return value; execution stops locally.
 #' @export
-iphra_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
+phr_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
   full_msg <- paste0(
     "[IPHRA::", type, "] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
@@ -142,10 +142,10 @@ iphra_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
     if (!is.null(hint)) paste0("\n • Hint: ", hint) else ""
   )
 
-  # iphra_log("error", full_msg, origin)
+  # phr_log("error", full_msg, origin)
 
   if (requireNamespace("shiny", quietly = TRUE) && shiny::isRunning()) {
-    .iphra_showNotification(full_msg, type = "error")
+    .phr_showNotification(full_msg, type = "error")
 
     # ✅ Skip shiny::req(FALSE) only during testing
     if (!isTRUE(getOption("IPHRA_TEST_MODE", FALSE))) {
@@ -154,7 +154,7 @@ iphra_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
       message("[IPHRA_TEST_MODE active] — skipping shiny::req(FALSE)")
     }
   } else {
-    rlang::abort(message = full_msg, class = paste0("iphra_", tolower(type)))
+    rlang::abort(message = full_msg, class = paste0("phr_", tolower(type)))
   }
 }
 
@@ -170,15 +170,15 @@ iphra_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
 #'
 #' @return Invisibly returns `NULL`.
 #' @export
-iphra_warning <- function(message, type = "Warning", origin = NULL, hint = NULL) {
+phr_warning <- function(message, type = "Warning", origin = NULL, hint = NULL) {
   full_msg <- paste0(
     "[IPHRA::", type, "] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
     message,
     if (!is.null(hint)) paste0("\n • Hint: ", hint) else ""
   )
-  # iphra_log("warning", full_msg, origin)
-  .iphra_notify(full_msg, type = "warning")
+  # phr_log("warning", full_msg, origin)
+  .phr_notify(full_msg, type = "warning")
   invisible(NULL)
 }
 
@@ -192,14 +192,14 @@ iphra_warning <- function(message, type = "Warning", origin = NULL, hint = NULL)
 #'
 #' @return Invisibly returns `NULL`.
 #' @export
-iphra_message <- function(message, origin = NULL) {
+phr_message <- function(message, origin = NULL) {
   full_msg <- paste0(
     "[IPHRA::Message] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
     message
   )
-  # iphra_log("message", full_msg, origin)
-  .iphra_notify(full_msg, type = "message")
+  # phr_log("message", full_msg, origin)
+  .phr_notify(full_msg, type = "message")
   invisible(NULL)
 }
 
@@ -216,9 +216,9 @@ iphra_message <- function(message, origin = NULL) {
 #'
 #' @return No return value. Stops execution locally if the condition fails.
 #' @export
-iphra_assert <- function(condition, message, origin = NULL, hint = NULL) {
+phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
   if (!isTRUE(condition)) {
-    iphra_error(message = message, type = "AssertionError", origin = origin, hint = hint)
+    phr_error(message = message, type = "AssertionError", origin = origin, hint = hint)
   }
 }
 
@@ -248,15 +248,15 @@ iphra_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #' \dontrun{
 #' # Outer catch-all with nested step tracking
 #' observe({
-#'   iphra_try({
+#'   phr_try({
 #'     # Validation step
-#'     result <- iphra_try({
+#'     result <- phr_try({
 #'       if (is.null(input$value)) stop("Value required")
 #'     }, on_error = "return", step = "Validation")
 #'     if (isFALSE(result$success)) return(result)
 #'
 #'     # Core logic step
-#'     result <- iphra_try({
+#'     result <- phr_try({
 #'       process_data(input$value)
 #'     }, on_error = "return", step = "Core Logic")
 #'     if (isFALSE(result$success)) return(result)
@@ -268,7 +268,7 @@ iphra_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #'   )
 #' })
 #' }
-iphra_try <- function(expr,
+phr_try <- function(expr,
                       on_error = c("warn", "return", "abort"),
                       origin = NULL,
                       hint = NULL,
@@ -289,7 +289,7 @@ iphra_try <- function(expr,
     error = function(e) {
       base_msg <- conditionMessage(e)
 
-      # Check if error came from a nested iphra_try with step info
+      # Check if error came from a nested phr_try with step info
       # If so, preserve the nested context chain
       if (grepl("\\[IPHRA::", base_msg)) {
         # Already has IPHRA structure - check if we need to add outer context
@@ -311,13 +311,13 @@ iphra_try <- function(expr,
       }
 
       # Log the failure
-      # iphra_log("error", msg, full_origin)
+      # phr_log("error", msg, full_origin)
 
       # Act according to user preference
       switch(
         on_error,
-        warn = iphra_warning(msg, origin = full_origin %||% "iphra_try", hint = hint),
-        abort = iphra_error(msg, origin = full_origin %||% "iphra_try", hint = hint),
+        warn = phr_warning(msg, origin = full_origin %||% "phr_try", hint = hint),
+        abort = phr_error(msg, origin = full_origin %||% "phr_try", hint = hint),
         return = list(success = FALSE, error = msg, origin = origin, step = step, hint = hint)
       )
     }
@@ -327,11 +327,11 @@ iphra_try <- function(expr,
 
 #' @title Lightweight Step-Level Try Wrapper for Nested Error Handling
 #' @description
-#' A convenience wrapper around `iphra_try` designed for inner try blocks
+#' A convenience wrapper around `phr_try` designed for inner try blocks
 #' within a nested error handling pattern. Always uses `on_error = "return"`
 #' so that errors bubble up to the outer handler.
 #'
-#' This function is intended for use inside an outer `iphra_try` block to
+#' This function is intended for use inside an outer `phr_try` block to
 #' provide granular step-level error context (e.g., "Validation", "Core Logic",
 #' "Result Handling").
 #'
@@ -346,14 +346,14 @@ iphra_try <- function(expr,
 #' @examples
 #' \dontrun{
 #' observe({
-#'   iphra_try({
-#'     # Use iphra_try_step for each logical step
-#'     result <- iphra_try_step({
+#'   phr_try({
+#'     # Use phr_try_step for each logical step
+#'     result <- phr_try_step({
 #'       validate_input(input$data)
 #'     }, step = "Validation")
 #'     if (isFALSE(result$success)) return(result)
 #'
-#'     result <- iphra_try_step({
+#'     result <- phr_try_step({
 #'       process_data(input$data)
 #'     }, step = "Core Logic")
 #'     if (isFALSE(result$success)) return(result)
@@ -364,8 +364,8 @@ iphra_try <- function(expr,
 #'   )
 #' })
 #' }
-iphra_try_step <- function(expr, step, hint = NULL) {
-  iphra_try(
+phr_try_step <- function(expr, step, hint = NULL) {
+  phr_try(
     expr,
     on_error = "return",
     origin = NULL,  # Let outer handler provide origin
@@ -375,23 +375,23 @@ iphra_try_step <- function(expr, step, hint = NULL) {
 }
 
 
-#' @title Check if an iphra_try Result Indicates Failure
+#' @title Check if an phr_try Result Indicates Failure
 #' @description
-#' Utility function to check if the result from `iphra_try` or `iphra_try_step`
+#' Utility function to check if the result from `phr_try` or `phr_try_step`
 #' indicates a failure. Returns TRUE if the result is a list with `success = FALSE`.
 #'
-#' @param result The result from an `iphra_try` or `iphra_try_step` call.
+#' @param result The result from an `phr_try` or `phr_try_step` call.
 #'
 #' @return TRUE if the result indicates failure, FALSE otherwise.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' result <- iphra_try_step({ stop("error") }, step = "Test")
-#' if (iphra_failed(result)) {
+#' result <- phr_try_step({ stop("error") }, step = "Test")
+#' if (phr_failed(result)) {
 #'   return(result)  # Bubble up to outer handler
 #' }
 #' }
-iphra_failed <- function(result) {
+phr_failed <- function(result) {
   is.list(result) && !is.null(result$success) && isTRUE(result$success == FALSE)
 }

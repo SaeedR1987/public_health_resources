@@ -151,62 +151,6 @@ good_deaths <- DeathIndividualData$new(
   good_hh$variable_label
   good_hh$value_label
 
-  # CHECK VALIDATE
-  good_hh$validated
-  good_hh$validate()
-  good_hh$validated
-
-  # CHECK STANDARDIZE
-  good_hh$standardize()
-  good_hh$standardized
-
-  # Checking are other columns updating
-
-  good_hh$variable_schema$is_other
-
-  other_cols <- good_hh$other_columns
-  other_cols
-
-  # Testing Cleaning Logs
-  good_hh$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
-
-  log_cl <- good_hh$cleaning_log$log_df
-
-  head(log_cl, 10)
-
-  View(log_cl)
-
-  table(log_cl$issue)
-
-  good_hh$variable_map$original_hh_size
-  good_hh$variable_map$linked_hh_size
-
-  good_hh$clean()
-
-  # View(log_cl dplyr::filter())
-
-  # Testing Deletion Log
-
-  !is.null(good_hh$deletion_log)
-  nrow(good_hh$deletion_log$log_df)
-  good_hh$generate_deletion_log()
-
-  log_dl <- good_hh$deletion_log$log_df
-
-  head(log_dl, 10)
-
-  View(log_dl)
-
-
-  col_info <- good_hh$get_column_info()
-  print(head(col_info, 10))
-
-  nrow(good_hh$raw_data)
-  ncol(good_hh$raw_data)
-  good_hh$required_columns
-
-  # table_schema <- good_hh$get_variable_schema() %>% data_schema_to_table()
-
   variable_schema <- good_hh$export_variable_schema()
   View(variable_schema)
 
@@ -216,126 +160,165 @@ good_deaths <- DeathIndividualData$new(
   indicator_schema <- good_hh$export_indicator_schema()
   head(indicator_schema)
 
+  # CHECK VALIDATE
+  good_hh$validated
+  good_hh$validate()
+  good_hh$validated
+
+  # CHECK STANDARDIZE
+  good_hh$standardize()
+  good_hh$standardized
+
+  # Testing Cleaning Logs
+  good_hh$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
+
+  log_cl <- good_hh$cleaning_log$log_df
+  head(log_cl, 10)
+  log_dl <- good_hh$deletion_log$log_df
+  head(log_dl, 10)
+
+  # TEST CLEAN()
+  good_hh$clean()
+
+  cleaneddata <- good_hh$get_data("clean")
+  View(cleaneddata)
+  # table_schema <- good_hh$get_variable_schema() %>% data_schema_to_table()
+
+
+
   # CLEAN
 
   good_hh$clean()
   good_hh$cleaned
   is.null(good_hh$clean_data)
 
-  cleaneddata <- good_hh$get_data("clean")
+
 
   standardizeddata <- good_hh$get_data("standardized")
 
   rawdata <- good_hh$get_data("raw")
 
-  diag <- good_hh$data_diagnostics
-  diag
   good_hh$data_diagnose(stage = "standardized")
   View(good_hh$data_diagnostics)
 
-  # Create Data Analytics Object ####
+  # Create FSL Data Analytics Object ####
 
-  hh_analytics <- good_hh$generate_data_analytics(stage = "standardized", type = "fsl")
+  fsl_analytics <- good_hh$generate_data_analytics(stage = "standardized", type = "fsl")
 
-  hh_analytics$data_analysis_plan$log_df
+  fsl_analytics$data_analysis_plan$log_df
 
-  hh_analytics$run_analysis()
-  hh_analytics$run_quality_checks()
-  hh_analytics$run_outputs()
+  fsl_analytics$run_analysis()
+  fsl_analytics$run_quality_checks()
+  fsl_analytics$run_outputs()
 
-  hh_analytics$analysis_results$base
-  hh_analytics$analysis_results$survey_design
+  fsl_analytics$analysis_results$base
+  fsl_analytics$analysis_results$survey_design
 
-  hh_analytics$visualizations$survey_design
+  fsl_analytics$plausibility_results$plaus_sd_fcs
 
-  hh_analytics$quality_issues_log
+  fsl_analytics$visualizations$overall$lcsi_overall
 
-  hh_analytics$tables$plausibility$penalty_summary
+  fsl_analytics$quality_issues_log
 
-  hh_analytics$visualizations$survey_design
+  fsl_analytics$tables$plausibility$penalty_summary
 
-  View(hh_analytics$analysis_results$survey_design)
+  fsl_analytics$visualizations$survey_design$fcs_score_overall2
 
-  # Create Quality Object ####
-#
-#   hh_quality <- good_hh$generate_data_quality(stage = "standardized", type = "fsl")
-#
-#   View(hh_quality$data)
-#
-#   hh_quality$variable_map
-#
-#   hh_quality$value_map
-#
-#   tab <- hh_quality$schema_to_table()
-#
-#   hh_quality$run_quality_checks()
-#
-#   hh_quality$tables
-#
-#   table_quality_penalty_summary(results_df = hh_quality$results_to_table(), show_max_penalty = T, title_name = "FSL Plausibility Report")
-#
-#   View(hh_quality$results_to_table())
-#
-#   result <- hh_quality$execute_check(hh_quality$quality_schema[[2]])
-#
-#   result
-#
-#   hh_quality$run_outputs()
-#
-#   hh_quality$tables$plausibility$penalty_summary
-#
-#   hh_quality$visualizations$enumerator$`fcs_rcsi_hhs_correlogram_enum-enum_id.2`
-#
-#   hh_quality$visualizations$rcsi_overall
-#
-#   hh_quality$visualizations$rcsi_by_strata
-#
-#   # test_plot <- plot_correlogram(hh_quality$data, c("fsl_fcs_score", "fsl_hhs_score"))
-#
-#   hh_quality$visualizations$fcs_rcsi_hhs_correlogram
-#
-#   hh_quality$visualizations$fcs_ridge
-#
-#   hh_quality$visualizations$hhs_ipc_overall
-#
-#   hh_quality$visualizations
-#
-#   # CHECKING ANALYSIS OBJECT
-#
-#   hh_analysis <- good_hh$generate_data_analysis(
-#     stage = "standardized",
-#     type = "fsl"
-#   )
-#
-#   hh_analysis$analysis_schema
-#
-#   hh_analysis$data_analysis_plan$log_df
-#
-#   hh_analysis$survey_design$variables
-#
-#
-#
-#   hh_analysis$export_outputs_schema()
-#
-#   hh_analysis$run_analysis()
-#
-#   View(hh_analysis$results$survey_design)
-#
-#   View(hh_analysis$results$base)
-#
-#   hh_analysis$export_outputs_schema()
-#
-#   hh_analysis$results
-#
-#   hh_analysis$run_outputs()
-#
-#   hh_analysis$visualizations
-#
-#   hh_analysis$tables
-#
+  View(fsl_analytics$analysis_results$survey_design)
+
+  # Create Mortality Data Analytics Object ####
+
+  mortality_analyics <- good_hh$generate_data_analytics(stage = "standardized", type = "mortality")
 
 
-# Test 2: Roster Data ####
+
+
+  mortality_analyics$analysis_diagnose()
+  View(mortality_analyics$analysis_plan_issues_log)
+  mortality_analyics$run_analysis()
+
+  mortality_analyics$quality_diagnose()
+  View(mortality_analyics$quality_issues_log)
+  mortality_analyics$run_quality_checks()
+
+  mortality_analyics$outputs_diagnose()
+  View(mortality_analyics$outputs_issues_log)
+  mortality_analyics$run_outputs()
+
+  View(mortality_analyics$analysis_results$household$survey_design)
+  View(mortality_analyics$analysis_results$deaths$base)
+
+  mortality_analyics$analysis_plan_issue_log
+
+  mortality_analyics$tables$roster$
+  mortality_analyics$visualizations$roster$age_pyramid_overall_unweighted
+  mortality_analyics$visualizations$roster$age_pyramid_overall_weighted
+  mortality_analyics$visualizations$roster$age_months_distribution_unweighted
+
+  mortality_analyics$tables$roster
+  mortality_analyics$tables$roster$basic_demo_table_weighted
+  mortality_analyics$tables$roster$basic_demo_table_strata_weighted
+
+
+  (a <- sum(mortality_analyics$data$linked_person_time))
+  (b <- sum(mortality_analyics$data$linked_person_time_female))
+  (c <- sum(mortality_analyics$data$linked_person_time_male))
+  (d <- sum(mortality_analyics$data$linked_person_time_under5))
+
+  fsl_analytics$analysis_diagnose()
+  View(fsl_analytics$analysis_plan_issues_log)
+
+  fsl_analytics$quality_diagnose()
+  View(fsl_analytics$quality_issues_log)
+
+  fsl_analytics$outputs_diagnose()
+  View(fsl_analytics$outputs_issues_log)
+
+  # Create Nutrition Data Analytics Object ####
+
+  nut_analytics <- good_nutrition$generate_data_analytics(stage = "standardized", type = "nutrition")
+
+  nut_analytics$data_analysis_plan$log_df
+  nut_analytics$analysis_diagnose()
+  View(nut_analytics$analysis_plan_issues_log)
+  nut_analytics$run_analysis()
+  View(nut_analytics$analysis_results$base)
+  View(nut_analytics$analysis_results$survey_design)
+
+
+  nut_analytics$quality_diagnose()
+  nut_analytics$quality_issues_log
+  nut_analytics$run_quality_checks()
+
+  nut_analytics$outputs_diagnose()
+  View(nut_analytics$outputs_issues_log)
+  nut_analytics$run_outputs()
+
+  nut_analytics$visualizations$enumerator
+
+
+  nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
+
+  nut_analytics$visualizations$base$mfaz_cat_overall
+  nut_analytics$visualizations$base$muac_cat_overall
+
+  nut_analytics$data$nut_ecfies_cat
+
+  nut_analytics$variable_map
+
+  nut_analytics$data_analysis_plan$log_df
+
+
+  View(nut_analytics$analysis_results$survey_design)
+
+
+  nut_analytics$quality_diagnose()
+  nut_analytics$quality_issues_log
+
+  nut_analytics$outputs_diagnose()
+  View(nut_analytics$outputs_issues_log)
+
+  # Test 2: Roster Data ####
 
 
 

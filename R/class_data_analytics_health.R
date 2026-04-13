@@ -21,7 +21,7 @@
 #' @field linked_ind_health_variable_map Variable mappings for linked health individual data
 #' @field linked_ind_health_value_map Value mappings for linked health individual data
 #'
-#' @seealso [DataAnalytics], [HealthDataQuality], [HealthAnalysis]
+#' @seealso [DataAnalytics]
 #' @export
 HealthDataAnalytics <- R6::R6Class(
   classname = "HealthDataAnalytics",
@@ -120,14 +120,14 @@ HealthDataAnalytics <- R6::R6Class(
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
       if (!is.null(linked_ind_health_data))  msg_parts <- c(msg_parts, "health individual")
       if (length(msg_parts) > 0) {
-        iphra_message(
-          iphra_txt(glue::glue(
+        phr_message(
+          phr_txt(glue::glue(
             "HealthDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data."
           ))
         )
       } else {
-        iphra_message(
-          iphra_txt(glue::glue("{dataset_name} initialized as HealthDataAnalytics object."))
+        phr_message(
+          phr_txt(glue::glue("{dataset_name} initialized as HealthDataAnalytics object."))
         )
       }
     },
@@ -152,9 +152,9 @@ HealthDataAnalytics <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "HealthDataAnalytics$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_health_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_health_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -190,7 +190,7 @@ HealthDataAnalytics <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "HealthDataAnalytics$default_outputs_schema",
@@ -221,7 +221,7 @@ HealthDataAnalytics <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "HealthDataAnalytics$default_analysis_schema",

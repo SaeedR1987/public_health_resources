@@ -1088,3 +1088,148 @@ test_that("Nutrition data aggregates canonical columns when they exist", {
 
 
 
+
+test_that("generate_cleaning_log propagates to linked data objects", {
+
+  # Create household data
+  hh_data <- HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes")
+    )
+  )
+
+  # Create a linked roster dataset
+  roster_data <- IndividualData$new(
+    data = tibble::tibble(
+      person_id = c("p1", "p2"),
+      hh_uuid = c("hh1", "hh2"),
+      age_years = c(10, 25)
+    )
+  )
+
+  hh_data$add_linked_dataset("roster", roster_data)
+  hh_data$standardize()
+
+  # Calling generate_cleaning_log on household should not error and should also
+  # attempt to run on the linked dataset
+  expect_no_error(hh_data$generate_cleaning_log())
+
+  # The linked dataset's generate_cleaning_log should have been called, which
+  # means its cleaning_log field should now be a CleaningLog object (initialised
+  # as part of the Data class construction, so it should still be a CleaningLog)
+  expect_true(inherits(roster_data$cleaning_log, "CleaningLog"))
+})
+
+test_that("clean propagates to linked data objects", {
+
+  # Create household data
+  hh_data <- HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes")
+    )
+  )
+
+  # Create a linked roster dataset
+  roster_data <- IndividualData$new(
+    data = tibble::tibble(
+      person_id = c("p1", "p2"),
+      hh_uuid = c("hh1", "hh2"),
+      age_years = c(10, 25)
+    )
+  )
+
+  hh_data$add_linked_dataset("roster", roster_data)
+  hh_data$standardize()
+
+  # Calling clean on household should also clean the linked dataset
+  expect_no_error(hh_data$clean())
+
+  # The household dataset itself should be cleaned
+  expect_true(hh_data$cleaned)
+
+  # The linked dataset should also be cleaned
+  expect_true(roster_data$cleaned)
+  expect_false(is.null(roster_data$clean_data))
+})
+
+test_that("clean and generate_cleaning_log skip non-Data linked objects gracefully", {
+
+  # Create household data
+  hh_data <- HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1"),
+      consent = c("yes")
+    )
+  )
+
+  # Manually inject a non-Data linked object to verify graceful handling
+  hh_data$linked_objects[["bad_link"]] <- list(object = list(not_a_data = TRUE))
+
+  # Both methods should warn but not abort
+  expect_no_error(suppressWarnings(hh_data$generate_cleaning_log()))
+  expect_no_error(suppressWarnings(hh_data$clean()))
+})
+
+
+# generate_data_analytics mortality ####
+
+test_that("generate_data_analytics returns MortalityDataAnalytics without error (no linked data)", {
+
+  hh_data <- HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes")
+    )
+  )
+
+  hh_data$standardize()
+
+  result <- suppressWarnings(
+    hh_data$generate_data_analytics(stage = "standardized", type = "mortality")
+  )
+
+  expect_s3_class(result, "MortalityDataAnalytics")
+})
+
+test_that("generate_data_analytics with mortality type succeeds when linked roster and deaths data are present", {
+
+  hh_data <- HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes")
+    )
+  )
+
+  roster_data <- IndividualData$new(
+    data = tibble::tibble(
+      person_id = c("p1", "p2", "p3"),
+      hh_uuid   = c("hh1", "hh1", "hh2"),
+      age       = c(10, 25, 5),
+      sex       = c("M", "F", "M")
+    )
+  )
+
+  deaths_data <- DeathIndividualData$new(
+    data = tibble::tibble(
+      death_id = c("d1"),
+      hh_uuid  = c("hh1"),
+      age_years = c(2),
+      sex       = c("M")
+    )
+  )
+
+  hh_data$add_linked_dataset("roster", roster_data)
+  hh_data$add_linked_dataset("deaths", deaths_data)
+  hh_data$standardize()
+
+  result <- suppressWarnings(
+    hh_data$generate_data_analytics(stage = "standardized", type = "mortality")
+  )
+
+  expect_s3_class(result, "MortalityDataAnalytics")
+  expect_false(is.null(result$data))
+  expect_false(is.null(result$linked_ind_roster_data))
+  expect_false(is.null(result$linked_ind_deaths_data))
+})

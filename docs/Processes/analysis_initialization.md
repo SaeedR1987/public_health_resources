@@ -51,7 +51,7 @@ The `QuantDataAnalysis` class provides the framework for quantitative data analy
 
 ### 7. Analysis Schema Loading
 - **Attempts template loading**: Tries to load analysis schema from resources
-  - Path: `system.file("resources", "quant_analysis_template.json", package = "iphRa")`
+  - Path: `system.file("resources", "quant_analysis_template.json", package = "public_health_resources")`
   - Template defines available analysis functions and parameters
 - **Error handling**: If template unavailable, creates empty schema
   - `self$analysis_schema = list()` as fallback
@@ -60,7 +60,7 @@ The `QuantDataAnalysis` class provides the framework for quantitative data analy
 
 ### 8. Data Analysis Plan (DAP) Setup
 - **Attempts DAP template loading**: Tries to load default DAP from resources
-  - Path: `system.file("resources", "data_analysis_plan_template.csv", package = "iphRa")`
+  - Path: `system.file("resources", "data_analysis_plan_template.csv", package = "public_health_resources")`
   - DAP defines which analyses to run and their parameters
 - **Accepts provided DAP**: If `data_analysis_plan` parameter provided, uses it instead
 - **Creates empty DAP**: If neither available, creates empty tibble

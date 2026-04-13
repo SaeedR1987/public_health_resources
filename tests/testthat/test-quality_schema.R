@@ -156,7 +156,7 @@ test_that("quality_validate_schema_to_table accepts empty thresholds and penalty
 
   expect_error(
     quality_validate_schema_to_table(qc_schema),
-    class = "iphra_error"
+    class = "phr_error"
   )
 })
 
@@ -668,8 +668,8 @@ test_that("outputs_schema_to_table converts a normal outputs schema correctly", 
   
   outputs_schema <- list(
     plot1 = list(
-      output_name = "plot1",
-      output_title = "Test Visualization",
+      output_title = "plot1",
+      output_name = "Test Visualization",
       output_subtitle = "A test plot",
       variables = c("age", "sex"),
       disaggregation = c("group"),
@@ -682,7 +682,7 @@ test_that("outputs_schema_to_table converts a normal outputs schema correctly", 
   tab <- outputs_schema_to_table(outputs_schema)
   
   expect_equal(nrow(tab), 1)
-  expect_equal(tab$output_name, "plot1")
+  expect_equal(tab$output_title, "plot1")
   expect_equal(tab$output_type, "visualization")
   expect_equal(tab$variables, "age,sex")
   expect_equal(tab$disaggregation, "group")
@@ -692,8 +692,8 @@ test_that("outputs_schema_to_table expands multiple outputs", {
   
   outputs_schema <- list(
     plot1 = list(
-      output_name = "plot1",
-      output_title = "Title 1",
+      output_title = "plot1",
+      output_name = "Title 1",
       output_subtitle = "Subtitle 1",
       variables = c("x"),
       disaggregation = NULL,
@@ -702,8 +702,8 @@ test_that("outputs_schema_to_table expands multiple outputs", {
       output_type = "visualization"
     ),
     table1 = list(
-      output_name = "table1",
-      output_title = "Title 2",
+      output_title = "table1",
+      output_name = "Title 2",
       output_subtitle = "Subtitle 2",
       variables = c("y", "z"),
       disaggregation = c("group"),
@@ -716,10 +716,10 @@ test_that("outputs_schema_to_table expands multiple outputs", {
   tab <- outputs_schema_to_table(outputs_schema)
   
   expect_equal(nrow(tab), 2)
-  expect_setequal(tab$output_name, c("plot1", "table1"))
-  expect_equal(tab$variables[tab$output_name == "table1"], "y,z")
-  expect_equal(tab$output_type[tab$output_name == "plot1"], "visualization")
-  expect_equal(tab$output_type[tab$output_name == "table1"], "table")
+  expect_setequal(tab$output_title, c("plot1", "table1"))
+  expect_equal(tab$variables[tab$output_title == "table1"], "y,z")
+  expect_equal(tab$output_type[tab$output_title == "plot1"], "visualization")
+  expect_equal(tab$output_type[tab$output_title == "table1"], "table")
 })
 
 
@@ -730,8 +730,8 @@ test_that("outputs_schema_to_table expands multiple outputs", {
 test_that("outputs_table_to_schema converts a normal table correctly", {
   
   df <- tibble::tibble(
-    output_name = "plot1",
-    output_title = "Test Visualization",
+    output_title = "plot1",
+    output_name = "Test Visualization",
     output_subtitle = "A test plot",
     variables = "age,sex",
     disaggregation = "group",
@@ -755,8 +755,8 @@ test_that("outputs_table_to_schema converts a normal table correctly", {
 test_that("outputs_table_to_schema converts multiple outputs correctly", {
   
   df <- tibble::tibble(
-    output_name = c("plot1", "table1"),
-    output_title = c("Title 1", "Title 2"),
+    output_title = c("plot1", "table1"),
+    output_name = c("Title 1", "Title 2"),
     output_subtitle = c("Subtitle 1", "Subtitle 2"),
     variables = c("x", "y,z"),
     disaggregation = c(NA, "group"),
@@ -777,7 +777,7 @@ test_that("outputs_table_to_schema converts multiple outputs correctly", {
 test_that("outputs_table_to_schema errors when required columns are missing", {
   
   df <- tibble::tibble(
-    output_name = "X"
+    output_title = "X"
   )
   
   expect_error(
@@ -798,8 +798,8 @@ test_that("outputs_schema_to_table and outputs_table_to_schema round-trip correc
   
   original <- list(
     plot1 = list(
-      output_name = "plot1",
-      output_title = "Title",
+      output_title = "plot1",
+      output_name = "Title",
       output_subtitle = "Subtitle",
       variables = c("x", "y"),
       disaggregation = c("group"),
@@ -821,8 +821,8 @@ test_that("outputs_schema_to_table and outputs_table_to_schema round-trip correc
 test_that("outputs_table_to_schema parses c(...) vector values in test_params correctly", {
 
   df <- tibble::tibble(
-    output_name    = "correlogram1",
-    output_title   = "Correlogram",
+    output_title   = "correlogram1",
+    output_name    = "Correlogram",
     output_subtitle = NA_character_,
     variables      = "col1,col2,col3",
     disaggregation = NA_character_,
@@ -845,8 +845,8 @@ test_that("outputs_table_to_schema parses c(...) vector values in test_params co
 test_that("outputs_table_to_schema preserves quoted strings with commas in test_params", {
 
   df <- tibble::tibble(
-    output_name    = "bar1",
-    output_title   = "Bar",
+    output_title   = "bar1",
+    output_name    = "Bar",
     output_subtitle = NA_character_,
     variables      = "cat_var",
     disaggregation = NA_character_,
@@ -865,8 +865,8 @@ test_that("outputs_table_to_schema preserves quoted strings with commas in test_
 test_that("outputs_table_to_schema converts TRUE/FALSE strings to logical in test_params", {
 
   df <- tibble::tibble(
-    output_name    = "bar2",
-    output_title   = "Bar",
+    output_title   = "bar2",
+    output_name    = "Bar",
     output_subtitle = NA_character_,
     variables      = "cat_var",
     disaggregation = NA_character_,
@@ -887,8 +887,8 @@ test_that("outputs_table_to_schema converts TRUE/FALSE strings to logical in tes
 test_that("outputs_validate_table_to_schema accepts a valid outputs table", {
   
   df <- tibble::tibble(
-    output_name = c("plot1", "table1"),
-    output_title = c("Title 1", "Title 2"),
+    output_title = c("plot1", "table1"),
+    output_name = c("Title 1", "Title 2"),
     output_subtitle = c("Subtitle 1", "Subtitle 2"),
     variables = c("age,sex", "y,z"),
     disaggregation = c("group", NA),
@@ -903,7 +903,7 @@ test_that("outputs_validate_table_to_schema accepts a valid outputs table", {
 test_that("outputs_validate_table_to_schema errors when required columns are missing", {
   
   df <- tibble::tibble(
-    output_name = "X"
+    output_title = "X"
   )
   
   expect_error(
@@ -948,8 +948,8 @@ test_that("outputs_validate_schema_to_table accepts a normal schema", {
   
   outputs_schema <- list(
     plot1 = list(
-      output_name = "plot1",
-      output_title = "Title",
+      output_title = "plot1",
+      output_name = "Title",
       output_subtitle = "Subtitle",
       variables = c("age", "sex"),
       disaggregation = NULL,
@@ -982,18 +982,18 @@ test_that("outputs_validate_schema_to_table errors when an output is not a list"
   )
 })
 
-test_that("outputs_validate_schema_to_table errors when list name does not match output_name", {
+test_that("outputs_validate_schema_to_table errors when list name does not match output_title", {
   
   outputs_schema <- list(
     list_name_here = list(
-      output_name = "different_output_name",
+      output_title = "different_output_title",
       output_type = "visualization"
     )
   )
   
   expect_error(
     outputs_validate_schema_to_table(outputs_schema),
-    regexp = "does not match output_name"
+    regexp = "does not match output_title"
   )
 })
 
@@ -1001,7 +1001,7 @@ test_that("outputs_validate_schema_to_table errors on invalid output_type", {
   
   outputs_schema <- list(
     plot1 = list(
-      output_name = "plot1",
+      output_title = "plot1",
       output_type = "invalid_type"
     )
   )

@@ -2140,7 +2140,7 @@ test_that("data_schema_to_table errors on invalid or non-character type definiti
 
   expect_error(
     data_schema_to_table(schema),
-    regexp = "Invalid type entry",   # key part of your iphra_error message
+    regexp = "Invalid type entry",   # key part of your phr_error message
     fixed  = FALSE
   )
 })

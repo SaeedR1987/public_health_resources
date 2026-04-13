@@ -2,11 +2,11 @@
 
 ## Introduction
 
-The iphRa package uses a comprehensive schema system to define, validate, and standardize survey data. This document provides an overview of the different schema types used in the system, their structure, interactions, and practical usage.
+The public_health_resources package uses a comprehensive schema system to define, validate, and standardize survey data. This document provides an overview of the different schema types used in the system, their structure, interactions, and practical usage.
 
 ## Schema Types
 
-The iphRa schema system consists of four main schema types:
+The public_health_resources schema system consists of four main schema types:
 
 1. **Variable Schema** - Defines variable types, validation rules, and value mappings
 2. **Dependency Schema** - Defines logical quality check rules between variables
@@ -485,7 +485,7 @@ To create a new indicator function:
 1. **Function signature**: Must accept `.dataset` as first parameter
 2. **Return value**: Must return a modified data frame
 3. **Naming convention**: Must start with `add_`
-4. **Error handling**: Use `iphra_try()` for graceful error handling
+4. **Error handling**: Use `phr_try()` for graceful error handling
 
 Example:
 
@@ -496,10 +496,10 @@ add_my_indicator <- function(.dataset,
   
   origin <- "add_my_indicator"
   
-  iphra_try({
+  phr_try({
     # Validate inputs
-    iphra_validate_dataframe(.dataset, origin, soft = FALSE)
-    iphra_validate_columns(.dataset, input_var, origin, soft = FALSE)
+    phr_validate_dataframe(.dataset, origin, soft = FALSE)
+    phr_validate_columns(.dataset, input_var, origin, soft = FALSE)
     
     # Compute indicator
     .dataset$my_indicator_score <- ifelse(
@@ -1025,4 +1025,4 @@ For questions or issues:
 - Review the detailed documentation for each schema type
 - Check template files in `resources/` folder
 - Examine test files in `tests/testthat/test-*_schema.R`
-- Refer to the iphRa package documentation
+- Refer to the public_health_resources package documentation

@@ -58,7 +58,7 @@ IndividualData <- R6::R6Class(
                           metadata = NULL,
                           variable_map = NULL) {
 
-      iphra_try({
+      phr_try({
         # Default mapping for individual-level data
         default_map <- list(
           uuid        = "person_id"        # unique individual ID
@@ -113,8 +113,8 @@ IndividualData <- R6::R6Class(
         default_ind_schema <- self$default_indicator_schema()
         if (length(default_ind_schema) > 0) {
           self$set_indicator_schema(default_ind_schema)
-          iphra_message(
-            iphra_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+          phr_message(
+            phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
           )
         }
 
@@ -122,12 +122,12 @@ IndividualData <- R6::R6Class(
         default_dep_schema <- self$default_dependency_schema()
         if (length(default_dep_schema$dependencies) > 0) {
           self$set_dependency_schema(default_dep_schema)
-          iphra_message(
-            iphra_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+          phr_message(
+            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )
         }
 
-        iphra_message(iphra_txt("{dataset_name} initialized as IndividualData object."))
+        phr_message(phr_txt("{dataset_name} initialized as IndividualData object."))
 
       }, on_error = "abort", origin = "IndividualData$initialize")
     },
@@ -152,10 +152,10 @@ IndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_error(
+        phr_error(
           origin  = "IndividualData$default_schema",
-          message = iphra_txt("variable_schema_data_individual_roster_template.xlsx not found in package resources."),
-          hint    = iphra_txt("Place the schema file under inst/resources/ before building the package.")
+          message = phr_txt("variable_schema_data_individual_roster_template.xlsx not found in package resources."),
+          hint    = phr_txt("Place the schema file under inst/resources/ before building the package.")
         )
       }
 
@@ -163,9 +163,9 @@ IndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_error(
+          phr_error(
             origin  = "IndividualData$default_schema",
-            message = iphra_txt("Failed to read variable_schema_data_individual_roster_template.xlsx"),
+            message = phr_txt("Failed to read variable_schema_data_individual_roster_template.xlsx"),
             hint    = e$message
           )
         }
@@ -196,9 +196,9 @@ IndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "IndividualData$default_indicator_schema",
-          message = iphra_txt("indicator_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default indicator schema.")
+          message = phr_txt("indicator_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
         return(list())
       }
@@ -207,9 +207,9 @@ IndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "IndividualData$default_indicator_schema",
-            message = iphra_txt("Failed to read indicator_schema_data_individual_roster_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read indicator_schema_data_individual_roster_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -242,9 +242,9 @@ IndividualData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        iphra_warning(
+        phr_warning(
           origin  = "IndividualData$default_dependency_schema",
-          message = iphra_txt("dependency_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default dependency schema.")
+          message = phr_txt("dependency_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
         return(list(dependencies = list()))
       }
@@ -253,9 +253,9 @@ IndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "IndividualData$default_dependency_schema",
-            message = iphra_txt("Failed to read dependency_schema_data_individual_roster_template.xlsx: {e$message}")
+            message = phr_txt("Failed to read dependency_schema_data_individual_roster_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -290,7 +290,7 @@ IndividualData <- R6::R6Class(
       # Track whether any issues occurred
       had_issues <- FALSE
 
-      iphra_try({
+      phr_try({
 
         if (is.null(df)) df <- self$get_data("raw")
 
@@ -299,7 +299,7 @@ IndividualData <- R6::R6Class(
         if (!is.null(hh_uuid_col) && hh_uuid_col %in% names(df)) {
           dup_hh <- df[[hh_uuid_col]][duplicated(df[[hh_uuid_col]])]
           if (length(dup_hh) > 0) {
-            iphra_message(nm, iphra_txt(
+            phr_message(nm, phr_txt(
               "Duplicate household linkages detected (expected for multi-member households)."
             ))
           }
@@ -309,148 +309,22 @@ IndividualData <- R6::R6Class(
         age_col <- self$variable_map$age
         if (!is.null(age_col) && age_col %in% names(df)) {
           if (any(df[[age_col]] < 0, na.rm = TRUE)) {
-            iphra_warning(nm, iphra_txt("Negative ages detected."))
+            phr_warning(nm, phr_txt("Negative ages detected."))
             had_issues <- TRUE
           }
         }
 
         # Optional link integrity check
         if (!is.null(self$household_link)) {
-          iphra_message(iphra_txt("Validating linked HouseholdData (placeholder)."))
+          phr_message(phr_txt("Validating linked HouseholdData (placeholder)."))
         }
 
-        iphra_message(iphra_txt(glue::glue("Post-validation for {nm} complete.")))
+        phr_message(phr_txt(glue::glue("Post-validation for {nm} complete.")))
 
       }, on_error = "warn", origin = paste0(self$dataset_name, "$post_validate"))
 
       # Return TRUE (good) or FALSE (warnings occurred)
       return(!had_issues)
-    },
-
-
-    #' @description
-    #' Generate a Demographics DataQuality object for individual data.
-    #' Overrides base Data class method to provide demographics quality.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param type The type of DataQuality object to create ("demographics")
-    #' @return A DataQuality object or NULL
-    generate_data_quality = function(stage = c("standardized", "clean"),
-                                     type = c("demographics")) {
-
-      stage <- match.arg(stage)
-      type <- match.arg(type)
-
-      iphra_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          iphra_warning(
-            self$dataset_name,
-            iphra_txt("No {stage} data available for DataQuality generation.")
-          )
-          return(NULL)
-        }
-
-        # Get hash, variable_map, and value_map from Data object
-        data_hash <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map <- self$value_map
-
-        # Create the appropriate DataQuality subclass based on type
-        dq <- switch(
-          type,
-          "demographics" = DemographicsDataQuality$new(
-            data = df,
-            parent_data_object = self,
-            dataset_name = paste0(self$dataset_name, "_DemographicsDataQuality"),
-            data_stage_name = stage,
-            data_hash = data_hash,
-            variable_map = variable_map,
-            value_map = value_map,
-            variable_label = self$variable_label,
-            value_label = self$value_label
-          ),
-          # Default: error with iphra_error
-          iphra_error(
-            origin = paste0(self$dataset_name, "$generate_data_quality"),
-            message = iphra_txt("Unknown quality type '{type}' for IndividualData. Valid types: demographics")
-          )
-        )
-
-        iphra_message(
-          iphra_txt("Generated {type} DataQuality object for {self$dataset_name}.")
-        )
-
-        return(dq)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_quality"))
-    },
-
-
-    #' @description
-    #' Generate a Demographics Analysis object for individual data.
-    #' Overrides base Data class method to provide demographics analysis.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param type The type of Analysis object to create ("demographics")
-    #' @param analysis_config Optional analysis configuration (data analysis plan)
-    #' @return An Analysis object or NULL
-    generate_data_analysis = function(stage = c("standardized", "clean"),
-                                      type = c("demographics"),
-                                      analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-      type <- match.arg(type)
-
-      iphra_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          iphra_warning(
-            self$dataset_name,
-            iphra_txt("No {stage} data available for Analysis generation.")
-          )
-          return(NULL)
-        }
-
-        # Get hash, variable_map, and value_map from Data object
-        data_hash <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map <- self$value_map
-
-        # Create the appropriate Analysis subclass based on type.
-        # The analysis class creates its own survey design from data + variable_map.
-        analysis <- switch(
-          type,
-          "demographics" = DemographicsAnalysis$new(
-            dap = analysis_config,
-            parent_data_object = self,
-            dataset_name = paste0(self$dataset_name, "_DemographicsAnalysis"),
-            data = df,
-            data_stage_name = stage,
-            data_hash = data_hash,
-            variable_map = variable_map,
-            value_map = value_map,
-            variable_label = self$variable_label,
-            value_label = self$value_label
-          ),
-          # Default: error with iphra_error
-          iphra_error(
-            origin = paste0(self$dataset_name, "$generate_data_analysis"),
-            message = iphra_txt("Unknown analysis type '{type}' for IndividualData. Valid types: demographics")
-          )
-        )
-
-        iphra_message(
-          iphra_txt("Generated {type} Analysis object for {self$dataset_name}.")
-        )
-
-        return(analysis)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analysis"))
     },
 
 
@@ -469,14 +343,14 @@ IndividualData <- R6::R6Class(
       stage <- match.arg(stage)
       type  <- match.arg(type)
 
-      iphra_try({
+      phr_try({
 
         df <- self$get_data(stage)
 
         if (is.null(df)) {
-          iphra_warning(
+          phr_warning(
             self$dataset_name,
-            iphra_txt("No {stage} data available for DataAnalytics generation.")
+            phr_txt("No {stage} data available for DataAnalytics generation.")
           )
           return(NULL)
         }
@@ -499,14 +373,14 @@ IndividualData <- R6::R6Class(
             variable_label     = self$variable_label,
             value_label        = self$value_label
           ),
-          iphra_error(
+          phr_error(
             origin  = paste0(self$dataset_name, "$generate_data_analytics"),
-            message = iphra_txt("Unknown analytics type '{type}' for IndividualData. Valid types: demographics")
+            message = phr_txt("Unknown analytics type '{type}' for IndividualData. Valid types: demographics")
           )
         )
 
-        iphra_message(
-          iphra_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
+        phr_message(
+          phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
         )
 
         return(analytics)

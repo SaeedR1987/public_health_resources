@@ -41,10 +41,10 @@ test_that("safe_lgl works", {
 })
 
 # Testing CI Policy Logic ######
-# For testing iphra_pick_ci_method
+# For testing phr_pick_ci_method
 
-test_that("iphra_pick_ci_method selects logit for small n", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method selects logit for small n", {
+  out <- phr_pick_ci_method(
     n_unweighted = 10,
     n_eff = 10,
     p_estimate = 0.5
@@ -52,8 +52,8 @@ test_that("iphra_pick_ci_method selects logit for small n", {
   expect_equal(out$method, "design-logit")
 })
 
-test_that("iphra_pick_ci_method selects mean-wald for numeric", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method selects mean-wald for numeric", {
+  out <- phr_pick_ci_method(
     n_unweighted = 100,
     n_eff = 80,
     is_numeric = TRUE
@@ -61,8 +61,8 @@ test_that("iphra_pick_ci_method selects mean-wald for numeric", {
   expect_equal(out$method, "mean-wald")
 })
 
-test_that("iphra_pick_ci_method ratio paths", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method ratio paths", {
+  out <- phr_pick_ci_method(
     n_unweighted = 5,
     n_eff = 5,
     is_ratio = TRUE
@@ -71,7 +71,7 @@ test_that("iphra_pick_ci_method ratio paths", {
 })
 
 # Test Survey Proportion Single Calculations ####
-test_that("iphra_calc_survey_prop_single computes correct weighted proportion", {
+test_that("phr_calc_survey_prop_single computes correct weighted proportion", {
 
   df <- tibble(
     x = c(1, 0, 1, 1, 0),
@@ -80,7 +80,7 @@ test_that("iphra_calc_survey_prop_single computes correct weighted proportion", 
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_prop_single(
+  out <- phr_calc_survey_prop_single(
     design = dsgn,
     var_name = "x",
     indicator_name = "TestProp",
@@ -96,7 +96,7 @@ test_that("iphra_calc_survey_prop_single computes correct weighted proportion", 
   expect_true(!is.na(out$upper_ci))
 })
 
-test_that("iphra_calc_survey_prop_single returns NA for non-binary variable", {
+test_that("phr_calc_survey_prop_single returns NA for non-binary variable", {
 
   df <- tibble(
     x = c(1, 2, 3, NA),
@@ -105,7 +105,7 @@ test_that("iphra_calc_survey_prop_single returns NA for non-binary variable", {
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_prop_single(
+  out <- phr_calc_survey_prop_single(
     design = dsgn,
     var_name = "x",
     indicator_name = "NonBinary"
@@ -115,7 +115,7 @@ test_that("iphra_calc_survey_prop_single returns NA for non-binary variable", {
   expect_match(out$note, "invalid input: variable not binary \\(expected 0/1/NA\\)")
 
   expect_warning(
-    iphra_calc_survey_prop_single(
+    phr_calc_survey_prop_single(
       design = dsgn,
       var_name = "x",
       indicator_name = "NonBinary"
@@ -126,9 +126,38 @@ test_that("iphra_calc_survey_prop_single returns NA for non-binary variable", {
 
 })
 
+test_that("phr_calc_survey_prop_single returns NA gracefully when all values are NA", {
+
+  # This simulates what happens with mfaz classification columns (moderate_mfaz,
+  # global_mfaz, etc.) when a subgroup contains only records outside the 6-59
+  # month age range: all values are NA_real_ and survey::svyciprop would
+  # otherwise throw "Argument mu must be a nonempty numeric vector".
+  df <- tibble(
+    moderate_mfaz = c(NA_real_, NA_real_, NA_real_),
+    wt = c(1, 1, 1)
+  )
+
+  dsgn <- df %>% as_survey(weights = wt)
+
+  out <- phr_calc_survey_prop_single(
+    design = dsgn,
+    var_name = "moderate_mfaz",
+    indicator_name = "Moderate MFAZ"
+  )
+
+  expect_s3_class(out, "tbl_df")
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_true(is.na(out$lower_ci))
+  expect_true(is.na(out$upper_ci))
+  expect_equal(out$denom_unweighted, 0)
+  expect_match(out$note, "no valid \\(non-NA\\) observations")
+
+})
+
 # Testing Survey Mean Single Calculations ####
 
-test_that("iphra_calc_survey_mean_single computes weighted mean correctly", {
+test_that("phr_calc_survey_mean_single computes weighted mean correctly", {
 
   df <- tibble(
     y  = c(10, 20, 30),
@@ -137,7 +166,7 @@ test_that("iphra_calc_survey_mean_single computes weighted mean correctly", {
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_mean_single(
+  out <- phr_calc_survey_mean_single(
     design = dsgn,
     var_name = "y",
     indicator_name = "TestMean"
@@ -149,7 +178,7 @@ test_that("iphra_calc_survey_mean_single computes weighted mean correctly", {
   expect_true(!is.na(out$upper_ci))
 })
 
-test_that("iphra_calc_survey_mean_single handles non-numeric variable", {
+test_that("phr_calc_survey_mean_single handles non-numeric variable", {
 
   df <- tibble(
     y  = c("A","B","C"),
@@ -158,7 +187,7 @@ test_that("iphra_calc_survey_mean_single handles non-numeric variable", {
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_mean_single(
+  out <- phr_calc_survey_mean_single(
     design = dsgn,
     var_name = "y",
     indicator_name = "InvalidMean"
@@ -167,7 +196,7 @@ test_that("iphra_calc_survey_mean_single handles non-numeric variable", {
   expect_true(is.na(out$point.estimate))
   expect_match(out$note, "invalid input: variable not numeric")
   expect_warning(
-    iphra_calc_survey_mean_single(
+    phr_calc_survey_mean_single(
       design = dsgn,
       var_name = "y",
       indicator_name = "InvalidMean"
@@ -179,7 +208,7 @@ test_that("iphra_calc_survey_mean_single handles non-numeric variable", {
 
 # Testing Survey Median Single Calculations ####
 
-test_that("iphra_calc_survey_median_single computes weighted median with valid CI", {
+test_that("phr_calc_survey_median_single computes weighted median with valid CI", {
 
   set.seed(123)
 
@@ -199,7 +228,7 @@ test_that("iphra_calc_survey_median_single computes weighted median with valid C
     data = df
   )
 
-  out <- iphra_calc_survey_median_single(
+  out <- phr_calc_survey_median_single(
     design = dsgn,
     var_name = "v",
     indicator_name = "TestMedian"
@@ -219,7 +248,7 @@ test_that("iphra_calc_survey_median_single computes weighted median with valid C
 
 
 
-test_that("iphra_calc_survey_median_single handles non-numeric variable", {
+test_that("phr_calc_survey_median_single handles non-numeric variable", {
 
   df <- tibble(
     v  = c("A","B","C"),
@@ -228,7 +257,7 @@ test_that("iphra_calc_survey_median_single handles non-numeric variable", {
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_median_single(
+  out <- phr_calc_survey_median_single(
     design = dsgn,
     var_name = "v",
     indicator_name = "InvalidMedian"
@@ -237,7 +266,7 @@ test_that("iphra_calc_survey_median_single handles non-numeric variable", {
   expect_true(is.na(out$point.estimate))
   expect_match(out$note, "not numeric")
   expect_warning(
-    iphra_calc_survey_median_single(
+    phr_calc_survey_median_single(
       design = dsgn,
       var_name = "v",
       indicator_name = "InvalidMedian"
@@ -249,7 +278,7 @@ test_that("iphra_calc_survey_median_single handles non-numeric variable", {
 })
 
 # Testing survey Ratio Single Calculations ####
-test_that("iphra_calc_survey_ratio_single computes Taylor ratio correctly", {
+test_that("phr_calc_survey_ratio_single computes Taylor ratio correctly", {
 
   df <- tibble(
     num = c(10, 20, 30),
@@ -259,7 +288,7 @@ test_that("iphra_calc_survey_ratio_single computes Taylor ratio correctly", {
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_ratio_single(
+  out <- phr_calc_survey_ratio_single(
     design = dsgn,
     numerator_var = "num",
     denominator_var = "den",
@@ -271,7 +300,7 @@ test_that("iphra_calc_survey_ratio_single computes Taylor ratio correctly", {
   expect_true(!is.na(out$ci_method))
 })
 
-test_that("iphra_calc_survey_ratio_single handles missing numerator or denominator", {
+test_that("phr_calc_survey_ratio_single handles missing numerator or denominator", {
 
   df <- tibble(
     num = c(1, 2, 3),
@@ -280,7 +309,7 @@ test_that("iphra_calc_survey_ratio_single handles missing numerator or denominat
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_ratio_single(
+  out <- phr_calc_survey_ratio_single(
     design = dsgn,
     numerator_var = "num",
     denominator_var = "missing_var",
@@ -291,7 +320,7 @@ test_that("iphra_calc_survey_ratio_single handles missing numerator or denominat
   expect_match(out$note, "missing variable")
 })
 
-test_that("iphra_calc_survey_ratio_single handles non-numeric inputs", {
+test_that("phr_calc_survey_ratio_single handles non-numeric inputs", {
 
   df <- tibble(
     num = c("A","B","C"),
@@ -301,7 +330,7 @@ test_that("iphra_calc_survey_ratio_single handles non-numeric inputs", {
 
   dsgn <- df %>% as_survey(weights = wt)
 
-  out <- iphra_calc_survey_ratio_single(
+  out <- phr_calc_survey_ratio_single(
     design = dsgn,
     numerator_var = "num",
     denominator_var = "den",
@@ -311,7 +340,7 @@ test_that("iphra_calc_survey_ratio_single handles non-numeric inputs", {
   expect_true(is.na(out$point.estimate))
   expect_match(out$note, "not numeric")
   expect_warning(
-    iphra_calc_survey_ratio_single(
+    phr_calc_survey_ratio_single(
       design = dsgn,
       numerator_var = "num",
       denominator_var = "den",
@@ -324,7 +353,7 @@ test_that("iphra_calc_survey_ratio_single handles non-numeric inputs", {
 
 # Testing Survey Categorical Single Calculations ####
 
-test_that("iphra_calc_survey_categorical_single extracts all categories and computes proportions", {
+test_that("phr_calc_survey_categorical_single extracts all categories and computes proportions", {
 
   df <- tibble::tibble(
     cat = factor(c("Low", "Borderline", "Acceptable", "Low")),
@@ -333,7 +362,7 @@ test_that("iphra_calc_survey_categorical_single extracts all categories and comp
 
   design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
 
-  out <- iphra_calc_survey_categorical_single(
+  out <- phr_calc_survey_categorical_single(
     design = design,
     var_name = "cat",
     indicator_name = "FCS Category"
@@ -356,7 +385,7 @@ test_that("iphra_calc_survey_categorical_single extracts all categories and comp
 
 # Testing Survey Calc from Plan ####
 
-test_that("iphra_calc_survey_from_plan runs a simple proportion indicator", {
+test_that("phr_calc_survey_from_plan runs a simple proportion indicator", {
 
   df <- tibble(
     x  = c(1, 0, 1, 1, 0),
@@ -375,7 +404,7 @@ test_that("iphra_calc_survey_from_plan runs a simple proportion indicator", {
     indicator_unit = "%"
   )
 
-  out <- iphra_calc_survey_from_plan(
+  out <- phr_calc_survey_from_plan(
     design = design,
     analysis_plan = plan
   )
@@ -386,7 +415,7 @@ test_that("iphra_calc_survey_from_plan runs a simple proportion indicator", {
   expect_true("point.estimate" %in% names(out))
 })
 
-test_that("iphra_calc_survey_from_plan runs a simple mean indicator", {
+test_that("phr_calc_survey_from_plan runs a simple mean indicator", {
 
   df <- tibble(
     y  = c(10, 20, 30),
@@ -405,7 +434,7 @@ test_that("iphra_calc_survey_from_plan runs a simple mean indicator", {
     indicator_unit = ""
   )
 
-  out <- iphra_calc_survey_from_plan(design, plan)
+  out <- phr_calc_survey_from_plan(design, plan)
 
   expect_equal(nrow(out), 1)
   expect_equal(out$indicator_name, "MeanY")
@@ -413,7 +442,7 @@ test_that("iphra_calc_survey_from_plan runs a simple mean indicator", {
   expect_equal(out$point.estimate, 22.5)
 })
 
-test_that("iphra_calc_survey_from_plan runs a ratio indicator", {
+test_that("phr_calc_survey_from_plan runs a ratio indicator", {
 
   df <- tibble(
     num = c(10, 20, 30),
@@ -433,7 +462,7 @@ test_that("iphra_calc_survey_from_plan runs a ratio indicator", {
     indicator_unit = ""
   )
 
-  out <- iphra_calc_survey_from_plan(design, plan)
+  out <- phr_calc_survey_from_plan(design, plan)
 
   expect_equal(nrow(out), 1)
   expect_equal(out$indicator_name, "RatioTest")
@@ -442,7 +471,7 @@ test_that("iphra_calc_survey_from_plan runs a ratio indicator", {
   expect_equal(out$point.estimate, 5)
 })
 
-test_that("iphra_calc_survey_from_plan handles multiple indicators", {
+test_that("phr_calc_survey_from_plan handles multiple indicators", {
 
   df <- tibble(
     x  = c(1,0,1,1,0),
@@ -462,13 +491,13 @@ test_that("iphra_calc_survey_from_plan handles multiple indicators", {
     indicator_unit = c("%", "")
   )
 
-  out <- iphra_calc_survey_from_plan(design, plan)
+  out <- phr_calc_survey_from_plan(design, plan)
 
   expect_equal(nrow(out), 2)
   expect_setequal(out$indicator_name, c("PropX", "MeanY"))
 })
 
-test_that("iphra_calc_survey_from_plan correctly performs disaggregation", {
+test_that("phr_calc_survey_from_plan correctly performs disaggregation", {
 
   df <- tibble(
     x  = c(1,0,1,0,1,0),
@@ -488,14 +517,14 @@ test_that("iphra_calc_survey_from_plan correctly performs disaggregation", {
     indicator_unit = "%"
   )
 
-  out <- iphra_calc_survey_from_plan(design, plan)
+  out <- phr_calc_survey_from_plan(design, plan)
 
-  # Should have: Overall + A + B = 3 rows
-  expect_equal(nrow(out), 3)
-  expect_setequal(out$disaggregation_value, c("Overall","A","B"))
+  # Should have: A + B only (no Overall when disaggregation is specified)
+  expect_equal(nrow(out), 2)
+  expect_setequal(out$disaggregation_value, c("A","B"))
 })
 
-test_that("iphra_calc_survey_from_plan gracefully handles missing variables", {
+test_that("phr_calc_survey_from_plan gracefully handles missing variables", {
 
   df <- tibble(
     x  = c(1,0,1),
@@ -514,7 +543,7 @@ test_that("iphra_calc_survey_from_plan gracefully handles missing variables", {
     indicator_unit = ""
   )
 
-  out <- iphra_calc_survey_from_plan(design, plan)
+  out <- phr_calc_survey_from_plan(design, plan)
 
   expect_equal(nrow(out), 1)
   expect_true(is.na(out$point.estimate))
@@ -522,7 +551,7 @@ test_that("iphra_calc_survey_from_plan gracefully handles missing variables", {
 
 })
 
-test_that("iphra_calc_survey_from_plan fails when required columns are missing", {
+test_that("phr_calc_survey_from_plan fails when required columns are missing", {
 
   df <- tibble(
     x  = c(1, 0, 1),
@@ -536,12 +565,12 @@ test_that("iphra_calc_survey_from_plan fails when required columns are missing",
   )
 
   expect_error(
-    iphra_calc_survey_from_plan(design, bad_plan),
+    phr_calc_survey_from_plan(design, bad_plan),
     regexp = "missing columns"
   )
 })
 
-test_that("iphra_calc_survey_from_plan handles unsupported calculation types gracefully", {
+test_that("phr_calc_survey_from_plan handles unsupported calculation types gracefully", {
 
   df <- tibble(
     x = c(1, 0, 1),
@@ -559,7 +588,7 @@ test_that("iphra_calc_survey_from_plan handles unsupported calculation types gra
     indicator_unit = ""
   )
 
-  out <- iphra_calc_survey_from_plan(design, bad_plan)
+  out <- phr_calc_survey_from_plan(design, bad_plan)
 
   expect_equal(nrow(out), 1)
   expect_true(is.na(out$point.estimate))
@@ -567,7 +596,7 @@ test_that("iphra_calc_survey_from_plan handles unsupported calculation types gra
 
 })
 
-test_that("iphra_calc_survey_from_plan fails when var_name column is missing", {
+test_that("phr_calc_survey_from_plan fails when var_name column is missing", {
 
   df <- tibble(
     x  = c(1, 0, 1),
@@ -582,12 +611,12 @@ test_that("iphra_calc_survey_from_plan fails when var_name column is missing", {
   )
 
   expect_error(
-    iphra_calc_survey_from_plan(design, bad_plan),
+    phr_calc_survey_from_plan(design, bad_plan),
     regexp = "missing columns"
   )
 })
 
-test_that("iphra_calc_survey_from_plan fails when var_name column is missing", {
+test_that("phr_calc_survey_from_plan fails when var_name column is missing", {
 
   df <- tibble(
     x  = c(1, 0, 1),
@@ -600,12 +629,12 @@ test_that("iphra_calc_survey_from_plan fails when var_name column is missing", {
   )
 
   expect_error(
-    iphra_calc_survey_from_plan(design, bad_plan),
+    phr_calc_survey_from_plan(design, bad_plan),
     regexp = "missing columns"   # or "var_name"
   )
 })
 
-test_that("iphra_calc_survey_from_plan handles multiple indicators including categorical", {
+test_that("phr_calc_survey_from_plan handles multiple indicators including categorical", {
 
   # -----------------------------------------
   # Dummy dataset
@@ -639,7 +668,7 @@ test_that("iphra_calc_survey_from_plan handles multiple indicators including cat
   # -----------------------------------------
   # Run
   # -----------------------------------------
-  out <- iphra_calc_survey_from_plan(
+  out <- phr_calc_survey_from_plan(
     design = design,
     analysis_plan = dap
   )
@@ -679,7 +708,7 @@ test_that("iphra_calc_survey_from_plan handles multiple indicators including cat
 
 })
 
-test_that("iphra_calc_survey_from_plan handles categorical indicators with disaggregation (large sample)", {
+test_that("phr_calc_survey_from_plan handles categorical indicators with disaggregation (large sample)", {
 
   # ------------------------------------------------------
   # Large synthetic dataset (n = 300, fully deterministic)
@@ -716,16 +745,16 @@ test_that("iphra_calc_survey_from_plan handles categorical indicators with disag
   # ------------------------------------------------------
   # Run the analysis
   # ------------------------------------------------------
-  out <- iphra_calc_survey_from_plan(design, dap)
+  out <- phr_calc_survey_from_plan(design, dap)
 
   # ------------------------------------------------------
   # Expected rows:
-  #   PROP → 3 groups (A, B, Overall)
-  #   MEAN → 3 groups
-  #   CAT  → 3 categories × 3 groups = 9
-  #   TOTAL = 3 + 3 + 9 = 15
+  #   PROP → 2 groups (A, B)
+  #   MEAN → 2 groups
+  #   CAT  → 3 categories × 2 groups = 6
+  #   TOTAL = 2 + 2 + 6 = 10
   # ------------------------------------------------------
-  expect_equal(nrow(out), 15)
+  expect_equal(nrow(out), 10)
 
   # ------------------------------------------------------
   # Categorical indicator names expand correctly
@@ -739,17 +768,19 @@ test_that("iphra_calc_survey_from_plan handles categorical indicators with disag
   )))
 
   # ------------------------------------------------------
-  # Disaggregation column should exist and contain correct levels
+  # Disaggregation column should exist and contain only the group levels
+  # (no Overall row when disaggregation is requested)
   # ------------------------------------------------------
   expect_true("disaggregation_value" %in% names(out))
-  expect_true(all(c("A", "B", "Overall") %in% out$disaggregation_value))
+  expect_true(all(c("A", "B") %in% out$disaggregation_value))
+  expect_false("Overall" %in% out$disaggregation_value)
 
   # Basic structure checks
   expect_s3_class(out, "tbl_df")
   expect_true(all(c("point.estimate", "lower_ci", "upper_ci") %in% names(out)))
 })
 
-test_that("iphra_calc_survey_from_plan handles categorical indicators with stratified + clustered design", {
+test_that("phr_calc_survey_from_plan handles categorical indicators with stratified + clustered design", {
 
   # ------------------------------------------------------
   # Build deterministic complex survey dataset
@@ -797,16 +828,16 @@ test_that("iphra_calc_survey_from_plan handles categorical indicators with strat
   # ------------------------------------------------------
   # Run the analysis
   # ------------------------------------------------------
-  out <- iphra_calc_survey_from_plan(design, dap)
+  out <- phr_calc_survey_from_plan(design, dap)
 
   # ------------------------------------------------------
   # Expected rows:
-  #   PROP → 3 groups (G1, G2, Overall)
-  #   MEAN → 3 groups
-  #   CAT  → 3 categories × 3 groups = 9
-  #   TOTAL = 3 + 3 + 9 = 15
+  #   PROP → 2 groups (G1, G2)
+  #   MEAN → 2 groups
+  #   CAT  → 3 categories × 2 groups = 6
+  #   TOTAL = 2 + 2 + 6 = 10
   # ------------------------------------------------------
-  expect_equal(nrow(out), 15)
+  expect_equal(nrow(out), 10)
 
   # ------------------------------------------------------
   # Confirm categorical expansion works
@@ -820,10 +851,11 @@ test_that("iphra_calc_survey_from_plan handles categorical indicators with strat
   )))
 
   # ------------------------------------------------------
-  # Check disaggregation values exist
+  # Check disaggregation values exist and no Overall row is added
   # ------------------------------------------------------
   expect_true("disaggregation_value" %in% names(out))
-  expect_true(all(c("G1", "G2", "Overall") %in% out$disaggregation_value))
+  expect_true(all(c("G1", "G2") %in% out$disaggregation_value))
+  expect_false("Overall" %in% out$disaggregation_value)
 
   # ------------------------------------------------------
   # Complex design metadata present
@@ -834,7 +866,7 @@ test_that("iphra_calc_survey_from_plan handles categorical indicators with strat
   expect_true(all(is.numeric(out$lower_ci) | is.na(out$lower_ci)))
 })
 
-test_that("iphra_calc_survey_from_plan returns columns in canonical order", {
+test_that("phr_calc_survey_from_plan returns columns in canonical order", {
   df <- tibble::tibble(
     x  = c(1, 0, 1, 1, 0),
     wt = c(1, 1, 2, 1, 1)
@@ -851,7 +883,7 @@ test_that("iphra_calc_survey_from_plan returns columns in canonical order", {
     indicator_unit = "%"
   )
 
-  out <- iphra_calc_survey_from_plan(design = design, analysis_plan = plan)
+  out <- phr_calc_survey_from_plan(design = design, analysis_plan = plan)
 
   col_names <- names(out)
   # plan_row must be first
@@ -866,8 +898,8 @@ test_that("iphra_calc_survey_from_plan returns columns in canonical order", {
 
 # Tests for Wilson Score CI and lower_ci floor ####
 
-test_that("iphra_pick_ci_method selects wilson for extreme proportion", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method selects wilson for extreme proportion", {
+  out <- phr_pick_ci_method(
     n_unweighted = 100,
     n_eff = 80,
     p_estimate = 0.03
@@ -876,8 +908,8 @@ test_that("iphra_pick_ci_method selects wilson for extreme proportion", {
   expect_match(out$note, "Wilson Score", ignore.case = TRUE)
 })
 
-test_that("iphra_pick_ci_method selects wilson for proportion near 1", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method selects wilson for proportion near 1", {
+  out <- phr_pick_ci_method(
     n_unweighted = 100,
     n_eff = 80,
     p_estimate = 0.97
@@ -885,8 +917,8 @@ test_that("iphra_pick_ci_method selects wilson for proportion near 1", {
   expect_equal(out$method, "wilson")
 })
 
-test_that("iphra_pick_ci_method selects design-logit for small n with non-extreme proportion", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method selects design-logit for small n with non-extreme proportion", {
+  out <- phr_pick_ci_method(
     n_unweighted = 15,
     n_eff = 12,
     p_estimate = 0.4
@@ -894,8 +926,8 @@ test_that("iphra_pick_ci_method selects design-logit for small n with non-extrem
   expect_equal(out$method, "design-logit")
 })
 
-test_that("iphra_pick_ci_method still selects wilson when extreme proportion and small n coincide", {
-  out <- iphra_pick_ci_method(
+test_that("phr_pick_ci_method still selects wilson when extreme proportion and small n coincide", {
+  out <- phr_pick_ci_method(
     n_unweighted = 15,
     n_eff = 12,
     p_estimate = 0.02
@@ -903,7 +935,7 @@ test_that("iphra_pick_ci_method still selects wilson when extreme proportion and
   expect_equal(out$method, "wilson")
 })
 
-test_that("iphra_calc_survey_prop_single uses wilson ci_method for extreme proportions", {
+test_that("phr_calc_survey_prop_single uses wilson ci_method for extreme proportions", {
   # 1 out of 50 observations = 2 %, well below 5 % threshold
   df <- tibble::tibble(
     x  = c(1L, rep(0L, 49)),
@@ -911,7 +943,7 @@ test_that("iphra_calc_survey_prop_single uses wilson ci_method for extreme propo
   )
   dsgn <- df %>% srvyr::as_survey(weights = wt)
 
-  out <- iphra_calc_survey_prop_single(
+  out <- phr_calc_survey_prop_single(
     design = dsgn,
     var_name = "x",
     indicator_name = "RareProp",
@@ -926,7 +958,7 @@ test_that("iphra_calc_survey_prop_single uses wilson ci_method for extreme propo
   expect_true(out$upper_ci <= 100)
 })
 
-test_that("iphra_calc_survey_prop_single floors lower_ci at 0", {
+test_that("phr_calc_survey_prop_single floors lower_ci at 0", {
   # A proportion very close to 0 with a large n should give lower_ci = 0
   # under Wilson; confirm it is never negative
   df <- tibble::tibble(
@@ -935,7 +967,7 @@ test_that("iphra_calc_survey_prop_single floors lower_ci at 0", {
   )
   dsgn <- df %>% srvyr::as_survey(weights = wt)
 
-  out <- iphra_calc_survey_prop_single(
+  out <- phr_calc_survey_prop_single(
     design = dsgn,
     var_name = "x",
     indicator_name = "NearZeroProp",
@@ -946,7 +978,7 @@ test_that("iphra_calc_survey_prop_single floors lower_ci at 0", {
   expect_true(out$lower_ci >= 0)
 })
 
-test_that("iphra_calc_survey_ratio_single floors lower_ci at 0", {
+test_that("phr_calc_survey_ratio_single floors lower_ci at 0", {
   # Use a larger sample so Taylor variance succeeds and produces a non-NA lower_ci.
   # The ratio ~0.1 with this design should yield a valid CI that we can confirm >= 0.
   df <- tibble::tibble(
@@ -956,7 +988,7 @@ test_that("iphra_calc_survey_ratio_single floors lower_ci at 0", {
   )
   dsgn <- df %>% srvyr::as_survey(weights = wt)
 
-  out <- iphra_calc_survey_ratio_single(
+  out <- phr_calc_survey_ratio_single(
     design = dsgn,
     numerator_var = "num",
     denominator_var = "den",
@@ -969,7 +1001,7 @@ test_that("iphra_calc_survey_ratio_single floors lower_ci at 0", {
 
 # Tests for deff computation with clustered design ####
 
-test_that("iphra_calc_survey_mean_single computes non-NA deff with cluster design", {
+test_that("phr_calc_survey_mean_single computes non-NA deff with cluster design", {
 
   set.seed(42)
   n_clusters <- 20
@@ -988,7 +1020,7 @@ test_that("iphra_calc_survey_mean_single computes non-NA deff with cluster desig
     data    = df
   )
 
-  out <- iphra_calc_survey_mean_single(
+  out <- phr_calc_survey_mean_single(
     design         = design,
     var_name       = "y",
     indicator_name = "ClusteredMean"
@@ -999,7 +1031,7 @@ test_that("iphra_calc_survey_mean_single computes non-NA deff with cluster desig
   expect_true(is.finite(out$deff), info = "deff should be a finite number with a cluster design")
 })
 
-test_that("iphra_calc_survey_prop_single computes non-NA deff with cluster design", {
+test_that("phr_calc_survey_prop_single computes non-NA deff with cluster design", {
 
   set.seed(42)
   n_clusters <- 20
@@ -1019,7 +1051,7 @@ test_that("iphra_calc_survey_prop_single computes non-NA deff with cluster desig
     data    = df
   )
 
-  out <- iphra_calc_survey_prop_single(
+  out <- phr_calc_survey_prop_single(
     design         = design,
     var_name       = "x",
     indicator_name = "ClusteredProp",
@@ -1031,7 +1063,7 @@ test_that("iphra_calc_survey_prop_single computes non-NA deff with cluster desig
   expect_true(is.finite(out$deff), info = "deff should be a finite number with a cluster design")
 })
 
-test_that("iphra_calc_survey_ratio_single computes non-NA deff with cluster design", {
+test_that("phr_calc_survey_ratio_single computes non-NA deff with cluster design", {
 
   set.seed(42)
   n_clusters <- 20
@@ -1053,7 +1085,7 @@ test_that("iphra_calc_survey_ratio_single computes non-NA deff with cluster desi
     data    = df
   )
 
-  out <- iphra_calc_survey_ratio_single(
+  out <- phr_calc_survey_ratio_single(
     design          = design,
     numerator_var   = "num",
     denominator_var = "den",
@@ -1070,7 +1102,7 @@ test_that("iphra_calc_survey_ratio_single computes non-NA deff with cluster desi
   }
 })
 
-test_that("iphra_calc_survey_categorical_single computes non-NA deff with cluster design", {
+test_that("phr_calc_survey_categorical_single computes non-NA deff with cluster design", {
 
   set.seed(42)
   n_clusters <- 20
@@ -1089,7 +1121,7 @@ test_that("iphra_calc_survey_categorical_single computes non-NA deff with cluste
     data    = df
   )
 
-  out <- iphra_calc_survey_categorical_single(
+  out <- phr_calc_survey_categorical_single(
     design         = design,
     var_name       = "cat_var",
     indicator_name = "ClusteredCat",
@@ -1112,7 +1144,172 @@ test_that("iphra_calc_survey_categorical_single computes non-NA deff with cluste
   }
 })
 
+# Tests for phr_calc_multiple_choice_cat ####
 
+test_that("phr_calc_multiple_choice_cat computes correct proportions for select-multiple variable", {
 
+  df <- tibble::tibble(
+    reasons = c(
+      "lack_of_info fed_other_milk",
+      "fed_other_milk lack_of_time",
+      "lack_of_info",
+      "lack_of_time fed_other_milk",
+      NA
+    ),
+    wt = c(1, 1, 1, 1, 1)
+  )
+
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "reasons",
+    indicator_name = "BF Lack Reasons"
+  )
+
+  expect_s3_class(out, "tbl_df")
+
+  # Unique responses: fed_other_milk, lack_of_info, lack_of_time
+  expect_equal(nrow(out), 3)
+
+  # All variable columns should refer back to the original var_name
+  expect_true(all(out$variable == "reasons"))
+
+  # Indicator names should include original name and response token
+  expect_true(any(grepl("fed_other_milk", out$indicator_name)))
+  expect_true(any(grepl("lack_of_info",   out$indicator_name)))
+  expect_true(any(grepl("lack_of_time",   out$indicator_name)))
+
+  # fed_other_milk appears in 3 of 4 answered records = 75%
+  pe_fed <- out$point.estimate[grepl("fed_other_milk", out$indicator_name)]
+  expect_equal(pe_fed, 75)
+
+  # lack_of_info appears in 2 of 4 = 50%
+  pe_info <- out$point.estimate[grepl("lack_of_info", out$indicator_name)]
+  expect_equal(pe_info, 50)
+
+  # lack_of_time appears in 2 of 4 = 50%
+  pe_time <- out$point.estimate[grepl("lack_of_time", out$indicator_name)]
+  expect_equal(pe_time, 50)
+})
+
+test_that("phr_calc_multiple_choice_cat returns NA row for invalid design", {
+
+  out <- phr_calc_multiple_choice_cat(
+    design = NULL,
+    var_name = "reasons",
+    indicator_name = "Test"
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_match(out$note, "invalid or missing survey design")
+})
+
+test_that("phr_calc_multiple_choice_cat returns NA row when variable not found", {
+
+  df <- tibble::tibble(x = c(1, 0, 1), wt = c(1, 1, 1))
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "not_in_data",
+    indicator_name = "Test"
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_match(out$note, "variable not found in dataset")
+})
+
+test_that("phr_calc_multiple_choice_cat returns NA row when all values are missing", {
+
+  df <- tibble::tibble(reasons = c(NA_character_, NA_character_), wt = c(1, 1))
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "reasons",
+    indicator_name = "Test"
+  )
+
+  expect_equal(nrow(out), 1)
+  expect_true(is.na(out$point.estimate))
+  expect_match(out$note, "no non-missing values")
+})
+
+test_that("phr_calc_multiple_choice_cat handles single-token responses", {
+
+  df <- tibble::tibble(
+    reasons = c("optionA", "optionB", "optionA", "optionA"),
+    wt = rep(1, 4)
+  )
+
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  out <- phr_calc_multiple_choice_cat(
+    design = design,
+    var_name = "reasons",
+    indicator_name = "Single Token"
+  )
+
+  expect_equal(nrow(out), 2)
+  pe_a <- out$point.estimate[grepl("optionA", out$indicator_name)]
+  pe_b <- out$point.estimate[grepl("optionB", out$indicator_name)]
+  expect_equal(pe_a, 75)
+  expect_equal(pe_b, 25)
+})
+
+test_that("phr_calc_multiple_choice_cat works via phr_calc_survey_from_plan with select_multiple_cat", {
+
+  df <- tibble::tibble(
+    reasons = c(
+      "lack_of_info fed_other_milk",
+      "fed_other_milk lack_of_time",
+      "lack_of_info",
+      "lack_of_time",
+      NA
+    ),
+    wt = c(1, 1, 1, 1, 1)
+  )
+
+  design <- survey::svydesign(ids = ~1, weights = ~wt, data = df)
+
+  plan <- tibble::tibble(
+    indicator_name = "BF Lack Reasons",
+    calculation    = "select_multiple_cat",
+    var_name       = "reasons",
+    denom_var      = NA_character_,
+    disaggregation = NA_character_,
+    multiplier     = 100,
+    indicator_unit = "%"
+  )
+
+  out <- phr_calc_survey_from_plan(design = design, analysis_plan = plan)
+
+  expect_s3_class(out, "tbl_df")
+  # 3 unique tokens = 3 rows
+  expect_equal(nrow(out), 3)
+  expect_true(all(!is.na(out$point.estimate)))
+  expect_true(all(grepl("BF Lack Reasons", out$indicator_name)))
+})
+
+test_that("QuantDataAnalysisPlanLog allows select_multiple_cat as calculation type", {
+
+  df <- tibble::tibble(
+    indicator_name = "BF Reasons",
+    calculation    = "select_multiple_cat",
+    var_name       = "nut_bf_lack_reasons",
+    denom_var      = NA_character_,
+    disaggregation = NA_character_,
+    multiplier     = 100,
+    indicator_unit = "%"
+  )
+
+  log <- QuantDataAnalysisPlanLog$new(df)
+
+  expect_silent(log$validate())
+  expect_true(log$validated)
+})
 
 

@@ -10,7 +10,7 @@
 #' * Quantitative analysis indicators via analysis_schema
 #' * All visualizations/tables (quality and analysis) via outputs_schema
 #'
-#' @seealso [DataAnalytics], [DemographicsDataQuality], [DemographicsAnalysis]
+#' @seealso [DataAnalytics]
 #' @export
 DemographicsDataAnalytics <- R6::R6Class(
   classname = "DemographicsDataAnalytics",
@@ -59,8 +59,8 @@ DemographicsDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      iphra_message(
-        iphra_txt(glue::glue("{dataset_name} initialized as DemographicsDataAnalytics object."))
+      phr_message(
+        phr_txt(glue::glue("{dataset_name} initialized as DemographicsDataAnalytics object."))
       )
     },
 
@@ -84,9 +84,9 @@ DemographicsDataAnalytics <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          iphra_warning(
+          phr_warning(
             origin  = "DemographicsDataAnalytics$default_quality_schema",
-            message = iphra_txt(glue::glue("Failed to read quality_schema_data_quality_demographics_template.xlsx: {e$message}"))
+            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_demographics_template.xlsx: {e$message}"))
           )
           return(NULL)
         }
@@ -122,7 +122,7 @@ DemographicsDataAnalytics <- R6::R6Class(
         }
       }
 
-      df <- iphra_try(
+      df <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "DemographicsDataAnalytics$default_outputs_schema",
@@ -153,7 +153,7 @@ DemographicsDataAnalytics <- R6::R6Class(
         }
       }
 
-      schema_tbl <- iphra_try(
+      schema_tbl <- phr_try(
         readxl::read_xlsx(file),
         on_error = "warn",
         origin   = "DemographicsDataAnalytics$default_analysis_schema",

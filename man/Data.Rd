@@ -314,7 +314,6 @@ Save Data Object to File
 \item \href{#method-Data-get_flag_action_from_schema}{\code{Data$get_flag_action_from_schema()}}
 \item \href{#method-Data-get_flag_variables_from_schema}{\code{Data$get_flag_variables_from_schema()}}
 \item \href{#method-Data-generate_cleaning_log}{\code{Data$generate_cleaning_log()}}
-\item \href{#method-Data-generate_deletion_log}{\code{Data$generate_deletion_log()}}
 \item \href{#method-Data-.apply_cleaning_changes}{\code{Data$.apply_cleaning_changes()}}
 \item \href{#method-Data-.extract_select_multiple_tokens}{\code{Data$.extract_select_multiple_tokens()}}
 \item \href{#method-Data-.is_select_multiple}{\code{Data$.is_select_multiple()}}
@@ -1076,38 +1075,6 @@ Must be called after run_quality_checks() has been executed.
 }
 \subsection{Returns}{
 Invisible self$cleaning_log
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Data-generate_deletion_log"></a>}}
-\if{latex}{\out{\hypertarget{method-Data-generate_deletion_log}{}}}
-\subsection{Method \code{generate_deletion_log()}}{
-Generate deletion log entries from critical data quality flags.
-
-Populates the existing DeletionLog with entries for rows that have critical issues.
-By default, only duplicate UUIDs trigger deletion, but custom flags can be specified.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Data$generate_deletion_log(
-  stage = "standardized",
-  critical_flags = NULL,
-  overwrite = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{stage}}{Data stage to use ("standardized" or "clean")}
-
-\item{\code{critical_flags}}{Vector of flag column names that warrant deletion}
-
-\item{\code{overwrite}}{If TRUE, clears existing log before adding new entries}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisible self$deletion_log
-INTERNAL HELPER — apply cleaning log changes (option A authoritative mode)
 }
 }
 \if{html}{\out{<hr>}}

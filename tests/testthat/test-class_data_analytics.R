@@ -363,10 +363,10 @@ test_that("quality_diagnose flags unavailable test function", {
   expect_false(result$status[1] == "ok")
 })
 
-test_that("analysis_diagnose returns empty tibble when no analysis plan", {
+test_that("analysis_diagnose returns empty tibble when no analysis schema", {
   df <- tibble::tibble(id = 1:5, x = 1:5)
   da <- DataAnalytics$new(data = df, dataset_name = "ADiagEmpty")
-  da$data_analysis_plan$log_df <- tibble::tibble(
+  da$analysis_schema <- tibble::tibble(
     indicator_name = character(), calculation = character(),
     var_name = character(), denom_var = character(),
     disaggregation = character(), multiplier = numeric(),
@@ -382,18 +382,18 @@ test_that("analysis_diagnose correctly identifies valid and invalid indicators",
   df <- tibble::tibble(id = 1:10, fcs_score = rnorm(10), group = rep(c("A","B"), 5))
   da <- DataAnalytics$new(data = df, dataset_name = "ADiagVars")
 
-  da$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = c("Valid", "Bad var", "Bad calc"),
-    calculation    = c("mean", "mean", "invalid_type"),
-    var_name       = c("fcs_score", "nonexistent", "fcs_score"),
-    denom_var      = c(NA_character_, NA_character_, NA_character_),
-    disaggregation = c(NA_character_, NA_character_, NA_character_),
-    multiplier     = c(1, 1, 1),
-    indicator_unit = c("%", "%", "%")
+  da$analysis_schema <- tibble::tibble(
+    indicator_name = c("Valid", "Bad var", "Bad calc", "Select Multiple"),
+    calculation    = c("mean", "mean", "invalid_type", "select_multiple_cat"),
+    var_name       = c("fcs_score", "nonexistent", "fcs_score", "fcs_score"),
+    denom_var      = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    disaggregation = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    multiplier     = c(1, 1, 1, 1),
+    indicator_unit = c("%", "%", "%", "%")
   )
 
   result <- da$analysis_diagnose()
-  expect_equal(nrow(result), 3)
+  expect_equal(nrow(result), 4)
   expect_true("var_name_in_data"  %in% names(result))
   expect_true("calculation_valid" %in% names(result))
   expect_true("status"            %in% names(result))
@@ -401,9 +401,10 @@ test_that("analysis_diagnose correctly identifies valid and invalid indicators",
   expect_equal(result$status[result$indicator_name == "Valid"], "ok")
   expect_false(result$status[result$indicator_name == "Bad var"] == "ok")
   expect_false(result$status[result$indicator_name == "Bad calc"] == "ok")
+  expect_equal(result$status[result$indicator_name == "Select Multiple"], "ok")
 
   # Stored in field
-  expect_equal(nrow(da$analysis_plan_issues_log), 3)
+  expect_equal(nrow(da$analysis_plan_issues_log), 4)
 })
 
 test_that("outputs_diagnose returns empty tibble when no schema", {
@@ -423,7 +424,7 @@ test_that("outputs_diagnose flags unavailable function", {
 
   da$outputs_schema <- list(
     out1 = list(
-      output_name = "out1", output_title = "Out 1",
+      output_title = "out1", output_name = "Out 1",
       output_func_name = "this_func_does_not_exist_xyz",
       output_type = "visualization",
       variables = c("val"), test_params = list(), outputs_group = NULL
@@ -442,7 +443,7 @@ test_that("outputs_diagnose flags missing variable", {
 
   da$outputs_schema <- list(
     out_missing = list(
-      output_name = "out_missing", output_title = "Missing var output",
+      output_title = "out_missing", output_name = "Missing var output",
       output_func_name = "plot_stacked_bar",
       output_type = "visualization",
       variables = c("nonexistent_col"), test_params = list(), outputs_group = NULL
@@ -456,6 +457,46 @@ test_that("outputs_diagnose flags missing variable", {
 
   # Stored in field
   expect_equal(nrow(da$outputs_issues_log), 1)
+})
+
+test_that("analysis_diagnose resolves canonical var names via variable_map", {
+  df <- tibble::tibble(id = 1:5, actual_score = 1:5)
+  da <- DataAnalytics$new(data = df, dataset_name = "ADiagVarMap")
+  da$variable_map <- list(canonical_score = "actual_score")
+
+  da$analysis_schema <- tibble::tibble(
+    indicator_name = c("Mapped var"),
+    calculation    = c("mean"),
+    var_name       = c("canonical_score"),
+    denom_var      = c(NA_character_),
+    disaggregation = c(NA_character_),
+    multiplier     = c(1),
+    indicator_unit = c("%")
+  )
+
+  result <- da$analysis_diagnose()
+  expect_equal(nrow(result), 1)
+  expect_true(result$var_name_in_data[1])
+  expect_equal(result$status[1], "ok")
+})
+
+test_that("outputs_diagnose resolves canonical var names via variable_map", {
+  df <- tibble::tibble(id = 1:5, actual_col = 1:5)
+  da <- DataAnalytics$new(data = df, dataset_name = "ODiagVarMap")
+  da$variable_map <- list(canonical_col = "actual_col")
+
+  da$outputs_schema <- list(
+    out_mapped = list(
+      output_title = "out_mapped", output_name = "Mapped var output",
+      output_func_name = "plot_stacked_bar",
+      output_type = "visualization",
+      variables = c("canonical_col"), test_params = list(), outputs_group = NULL
+    )
+  )
+
+  result <- da$outputs_diagnose()
+  expect_equal(nrow(result), 1)
+  expect_true(result$variables_in_data[1])
 })
 
 # ============================================================================
@@ -488,8 +529,8 @@ test_that("set_outputs_schema and get_outputs_schema work", {
 
   new_schema <- list(
     test_out = list(
-      output_name = "test_out",
-      output_title = "Test output",
+      output_title = "test_out",
+      output_name = "Test output",
       output_subtitle = NA_character_,
       variables = c("id"),
       disaggregation = NULL,
@@ -504,7 +545,7 @@ test_that("set_outputs_schema and get_outputs_schema work", {
   da$set_outputs_schema(new_schema)
   result <- da$get_outputs_schema()
   expect_equal(length(result), 1)
-  expect_equal(result$test_out$output_name, "test_out")
+  expect_equal(result$test_out$output_title, "test_out")
 })
 
 test_that("get_quality_schema returns current quality schema", {
@@ -561,4 +602,49 @@ test_that("load_state_object restores plausibility_results", {
   da2   <- DataAnalytics$new(data = df, dataset_name = "PRLoad2")
   da2$load_state_object(state)
   expect_equal(da2$plausibility_results, da$plausibility_results)
+})
+
+# ============================================================================
+# NutritionDataAnalytics – quality_diagnose
+# ============================================================================
+
+test_that("NutritionDataAnalytics$quality_diagnose returns a tibble covering both schemas", {
+  df <- tibble::tibble(id = 1:5, age_months = 6:10, weight_kg = c(7, 8, 9, 10, 11))
+  nut <- NutritionDataAnalytics$new(data = df, dataset_name = "NutQDiag")
+
+  nut$quality_schema_anthro <- list(
+    check_anthro = list(
+      check_name = "check_anthro", check_label = "Anthro check",
+      statistical_test = "range_violation",
+      variables = c("age_months"),
+      thresholds = list(), test_params = list()
+    )
+  )
+  nut$quality_schema_iycf <- list(
+    check_iycf = list(
+      check_name = "check_iycf", check_label = "IYCF check",
+      statistical_test = "range_violation",
+      variables = c("weight_kg"),
+      thresholds = list(), test_params = list()
+    )
+  )
+
+  result <- nut$quality_diagnose()
+
+  expect_true(tibble::is_tibble(result))
+  expect_true(nrow(result) >= 2)
+  expect_true("schema_type" %in% names(result))
+  expect_true("anthropometric" %in% result$schema_type)
+  expect_true("iycf"           %in% result$schema_type)
+  expect_true(tibble::is_tibble(nut$quality_issues_log))
+})
+
+test_that("NutritionDataAnalytics$quality_diagnose does not error when schemas are empty", {
+  df <- tibble::tibble(id = 1:5)
+  nut <- NutritionDataAnalytics$new(data = df, dataset_name = "NutQDiagEmpty")
+  nut$quality_schema_anthro <- list()
+  nut$quality_schema_iycf   <- list()
+
+  expect_warning(result <- nut$quality_diagnose(), NA)
+  expect_true(is.null(result) || tibble::is_tibble(result))
 })

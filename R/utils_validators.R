@@ -51,19 +51,19 @@ ensure_value <- function(value, default) {
 .is_select_multiple_allowed <- function(variable, allowable_values) {
   origin <- "is_select_multiple_allowed"
 
-  iphra_try({
+  phr_try({
     # Validate `variable`
-    iphra_assert(
+    phr_assert(
       is.vector(variable) && (is.character(variable) || is.factor(variable)),
       origin = origin,
-      hint = iphra_txt("`variable` must be a character or factor vector.")
+      hint = phr_txt("`variable` must be a character or factor vector.")
     )
 
     # Validate `allowable_values`
-    iphra_assert(
+    phr_assert(
       is.vector(allowable_values) && is.character(allowable_values),
       origin = origin,
-      hint = iphra_txt("`allowable_values` must be a character vector.")
+      hint = phr_txt("`allowable_values` must be a character vector.")
     )
 
     # Convert `variable` to character if it's a factor
@@ -73,10 +73,10 @@ ensure_value <- function(value, default) {
     allowable_values <- allowable_values[!is.na(allowable_values)]
 
     # Validate that `allowable_values` is not empty after removing NAs
-    iphra_assert(
+    phr_assert(
       length(allowable_values) > 0,
       origin = origin,
-      hint = iphra_txt("`allowable_values` must contain at least one valid value.")
+      hint = phr_txt("`allowable_values` must contain at least one valid value.")
     )
 
     # Helper function to check if all values in a cell are valid
@@ -91,7 +91,7 @@ ensure_value <- function(value, default) {
 
     return(result)
 
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure `variable` contains valid select multiple responses, and `allowable_values` defines the allowed options."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure `variable` contains valid select multiple responses, and `allowable_values` defines the allowed options."))
 }
 
 #' @title Check if a Select Multiple Input has More Than One Selection
@@ -127,15 +127,15 @@ ensure_value <- function(value, default) {
 .is_greater_than_one_selection <- function(select_multiple_input, select_multiple_col = NULL) {
   origin <- "is_greater_than_one_selection"
 
-  iphra_try({
+  phr_try({
     # Handle input validation
     if (is.data.frame(select_multiple_input)) {
       # Validate column
-      iphra_validate_columns(
+      phr_validate_columns(
         select_multiple_input,
         select_multiple_col,
         origin = origin,
-        hint = iphra_txt("Ensure the column for testing multiple selections exists in the dataset."),
+        hint = phr_txt("Ensure the column for testing multiple selections exists in the dataset."),
         soft = FALSE
       )
 
@@ -143,10 +143,10 @@ ensure_value <- function(value, default) {
     }
 
     # Ensure the input is a character or factor vector
-    iphra_assert(
+    phr_assert(
       is.character(select_multiple_input) || is.factor(select_multiple_input),
       origin = origin,
-      iphra_txt("The input must be a character or factor vector.")
+      phr_txt("The input must be a character or factor vector.")
     )
 
     # Check condition: more than one selection
@@ -158,7 +158,7 @@ ensure_value <- function(value, default) {
     )
 
     return(result)
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure the input contains valid select multiple responses delimited by spaces."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure the input contains valid select multiple responses delimited by spaces."))
 }
 
 #' @title Check if a Select Multiple Input has More Than Three Selections
@@ -194,15 +194,15 @@ ensure_value <- function(value, default) {
 .is_greater_than_three_selection <- function(select_multiple_input, select_multiple_col = NULL) {
   origin <- "is_greater_than_three_selection"
 
-  iphra_try({
+  phr_try({
     # Handle input validation
     if (is.data.frame(select_multiple_input)) {
       # Validate column
-      iphra_validate_columns(
+      phr_validate_columns(
         select_multiple_input,
         select_multiple_col,
         origin = origin,
-        hint = iphra_txt("Ensure the column for testing multiple selections exists in the dataset."),
+        hint = phr_txt("Ensure the column for testing multiple selections exists in the dataset."),
         soft = FALSE
       )
 
@@ -210,10 +210,10 @@ ensure_value <- function(value, default) {
     }
 
     # Ensure the input is a character or factor vector
-    iphra_assert(
+    phr_assert(
       is.character(select_multiple_input) || is.factor(select_multiple_input),
       origin = origin,
-      iphra_txt("The input must be a character or factor vector.")
+      phr_txt("The input must be a character or factor vector.")
     )
 
     # Check condition: more than three selections
@@ -225,7 +225,7 @@ ensure_value <- function(value, default) {
     )
 
     return(result)
-  }, on_error = "abort", origin = origin, hint = iphra_txt("Ensure the input contains valid select multiple responses delimited by spaces."))
+  }, on_error = "abort", origin = origin, hint = phr_txt("Ensure the input contains valid select multiple responses delimited by spaces."))
 }
 
 
@@ -339,17 +339,17 @@ ensure_value <- function(value, default) {
 #' @param origin Optional name of the calling function for context.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
-#' @return Invisibly TRUE if valid; otherwise throws [iphra_error()] or [iphra_warning()].
+#' @return Invisibly TRUE if valid; otherwise throws [phr_error()] or [phr_warning()].
 #' @export
-iphra_validate_not_null <- function(x, origin = NULL, soft) {
+phr_validate_not_null <- function(x, origin = NULL, soft) {
   if (is.null(x)) {
     msg <- "Received NULL input, expected a valid object."
     hint <- "Ensure the object exists before validation."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint)
+      phr_warning(message = msg, origin = origin, hint = hint)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint)
+    phr_error(msg, origin = origin, hint = hint)
   }
 
   # Only check for NA if x is atomic (vector, not list/data.frame)
@@ -357,10 +357,10 @@ iphra_validate_not_null <- function(x, origin = NULL, soft) {
     msg <- "Received NA input, expected a non-missing value."
     hint <- "Ensure missing values are handled before validation."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint)
+      phr_warning(message = msg, origin = origin, hint = hint)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint)
+    phr_error(msg, origin = origin, hint = hint)
   }
 
   invisible(TRUE)
@@ -375,18 +375,18 @@ iphra_validate_not_null <- function(x, origin = NULL, soft) {
 #' @param origin Optional name of originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_numeric <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_numeric <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   if (!is.numeric(x) || is.logical(x)) {
     msg <- "Expected a strictly numeric value."
     hint_txt <- hint %||% "Ensure input is of type 'numeric'. Logical or character values are not accepted."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -399,18 +399,18 @@ iphra_validate_numeric <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional name of originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_character <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_character <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   if (!is.character(x)) {
     msg <- "Expected a character input (string)."
     hint_txt <- hint %||% "Ensure the input variable is of type 'character'. Factors or numerics are not allowed."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -423,18 +423,18 @@ iphra_validate_character <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional name of originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_logical <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_logical <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   if (!is.logical(x)) {
     msg <- "Expected a logical (TRUE/FALSE) value."
     hint_txt <- hint %||% "Convert numeric indicators (0/1) to TRUE/FALSE explicitly."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -457,10 +457,10 @@ iphra_validate_logical <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param hint Optional corrective hint to display on failure.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
-#' @return Invisibly returns TRUE if valid. Triggers `iphra_error()` or `iphra_warning()` if invalid.
+#' @return Invisibly returns TRUE if valid. Triggers `phr_error()` or `phr_warning()` if invalid.
 #' @export
-iphra_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
 
   # Accept existing Date or POSIX objects outright
   if (inherits(x, c("Date", "POSIXct", "POSIXlt"))) {
@@ -486,11 +486,21 @@ iphra_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
   msg <- "Expected a valid date or datetime convertible to 'YYYY-MM-DD'."
   hint_txt <- hint %||% "Ensure input is a Date, POSIX, or correctly formatted string (e.g. '2025-10-16')."
   if (soft) {
-    iphra_warning(message = msg, origin = origin, hint = hint_txt)
+    phr_warning(message = msg, origin = origin, hint = hint_txt)
     return(invisible(FALSE))
   }
-  iphra_error(msg, origin = origin, hint = hint_txt)
+  phr_error(msg, origin = origin, hint = hint_txt)
 }
+
+# Shared datetime format strings used by phr_validate_datetime(),
+# .is_safely_coercible(), and phr_convert_datetime().
+.phr_datetime_formats <- c(
+  "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
+  "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ", "%Y-%m-%dT%H:%M:%OS%z",
+  "%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %I:%M:%S %p",
+  "%m/%d/%Y %I:%M:%S %p", "%d/%m/%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
+  "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%d/%m/%Y %H:%M"
+)
 
 # ---- Validate Datetime ----------------------------------------------
 
@@ -500,7 +510,7 @@ iphra_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
 #' or a character string that can be parsed as a datetime with both date
 #' and time components.
 #'
-#' Unlike `iphra_validate_date`, this function rejects bare `Date` objects
+#' Unlike `phr_validate_date`, this function rejects bare `Date` objects
 #' and date-only strings without a time component.
 #'
 #' Supported inputs include:
@@ -513,10 +523,10 @@ iphra_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param hint Optional corrective hint to display on failure.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
-#' @return Invisibly returns TRUE if valid. Triggers `iphra_error()` or `iphra_warning()` if invalid.
+#' @return Invisibly returns TRUE if valid. Triggers `phr_error()` or `phr_warning()` if invalid.
 #' @export
-iphra_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
 
   # POSIXct or POSIXlt are datetime objects — accept directly
   if (inherits(x, c("POSIXct", "POSIXlt"))) {
@@ -525,15 +535,7 @@ iphra_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
 
   # Check character strings that include a time component
   if (is.character(x)) {
-    datetime_formats <- c(
-      "%Y-%m-%d %H:%M:%S", "%Y/%m/%d %H:%M:%S",
-      "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ", "%Y-%m-%dT%H:%M:%OS%z",
-      "%Y-%m-%d %H:%M:%OS", "%Y-%m-%d %I:%M:%S %p",
-      "%m/%d/%Y %I:%M:%S %p", "%d/%m/%Y %H:%M:%S", "%d-%m-%Y %H:%M:%S",
-      "%Y-%m-%d %H:%M", "%Y/%m/%d %H:%M", "%d/%m/%Y %H:%M"
-    )
-
-    for (fmt in datetime_formats) {
+    for (fmt in .phr_datetime_formats) {
       parsed <- suppressWarnings(as.POSIXct(x, format = fmt, tz = "UTC"))
       if (!any(is.na(parsed))) {
         return(invisible(TRUE))
@@ -545,10 +547,10 @@ iphra_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
   msg <- "Expected a datetime object (POSIXct or POSIXlt) or a string with date and time components."
   hint_txt <- hint %||% "Ensure input is POSIXct, POSIXlt, or a datetime string like '2025-10-16 14:32:00'."
   if (soft) {
-    iphra_warning(message = msg, origin = origin, hint = hint_txt)
+    phr_warning(message = msg, origin = origin, hint = hint_txt)
     return(invisible(FALSE))
   }
-  iphra_error(msg, origin = origin, hint = hint_txt)
+  phr_error(msg, origin = origin, hint = hint_txt)
 }
 
 # ---- Validate Factor ------------------------------------------------
@@ -560,18 +562,18 @@ iphra_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_factor <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_factor <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   if (!is.factor(x)) {
     msg <- "Expected a factor variable."
     hint_txt <- hint %||% "Use factor() to convert character or numeric inputs before validation."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -586,28 +588,28 @@ iphra_validate_factor <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if all columns are present; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if all columns are present; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_columns <- function(df, required_cols, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(df, origin, soft)
-  iphra_validate_not_null(required_cols, origin, soft)
+phr_validate_columns <- function(df, required_cols, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(df, origin, soft)
+  phr_validate_not_null(required_cols, origin, soft)
   if (!is.data.frame(df)) {
     msg <- "Input must be a data frame for column validation."
     if (soft) {
-      iphra_warning(message = msg, origin = origin)
+      phr_warning(message = msg, origin = origin)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin)
+    phr_error(msg, origin = origin)
   }
   missing <- setdiff(required_cols, names(df))
   if (length(missing) > 0) {
     msg <- paste0("Missing required columns: ", paste(missing, collapse = ", "))
     hint_txt <- hint %||% "Ensure the data frame includes all required fields."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -622,20 +624,20 @@ iphra_validate_columns <- function(df, required_cols, origin = NULL, hint = NULL
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_dataframe <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_dataframe <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
 
   # Must be a data.frame
   if (!is.data.frame(x)) {
     msg <- "Expected a data frame (or tibble)."
     hint_txt <- hint %||% "Ensure the object is created with data.frame(), tibble(), or similar."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
 
   # --- NEW: Validate all columns are atomic (no list columns) ---
@@ -647,13 +649,51 @@ iphra_validate_dataframe <- function(x, origin = NULL, hint = NULL, soft) {
     )
     hint_txt <- "Flatten, unnest, or otherwise convert these columns to atomic vectors before use."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
 
   invisible(TRUE)
+}
+
+# ---- Get Data From Survey Design ------------------------------------
+
+#' Extract Data Frame from Survey Design Object
+#'
+#' Validates that the input is a srvyr or survey design object and extracts
+#' the underlying data frame.
+#'
+#' @param survey_design A srvyr or survey design object (e.g., created with
+#'   \code{srvyr::as_survey_design()}).
+#' @param origin Optional character string indicating where this function was called from.
+#'
+#' @return The underlying data frame extracted from the survey design object.
+#' @export
+phr_get_data_from_design <- function(survey_design, origin = NULL) {
+  valid_classes <- c("tbl_svy", "survey.design", "survey.design2", "svyrep.design")
+
+  if (!inherits(survey_design, valid_classes)) {
+    phr_error(
+      message = phr_txt(
+        "survey_design must be a survey design object (e.g. created with srvyr::as_survey_design())."
+      ),
+      origin = origin,
+      hint = "Use srvyr::as_survey_design() to create a survey design from your data frame."
+    )
+  }
+
+  df <- survey_design$variables
+
+  if (!is.data.frame(df)) {
+    phr_error(
+      message = phr_txt("Could not extract a valid data frame from the survey design object."),
+      origin = origin
+    )
+  }
+
+  df
 }
 
 # ---- Validate List --------------------------------------------------
@@ -669,20 +709,20 @@ iphra_validate_dataframe <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
 #' @return Invisibly returns TRUE if the object is a list (and not a data frame).
-#' Otherwise, triggers [iphra_error()] or [iphra_warning()].
+#' Otherwise, triggers [phr_error()] or [phr_warning()].
 #' @export
-iphra_validate_list <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_list <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
 
   # Reject anything that isn't a list, or that is a data.frame
   if (!is.list(x) || is.data.frame(x)) {
     msg <- "Expected a list (not a data frame or tibble)."
     hint_txt <- hint %||% "Ensure the input is a plain list structure (not a data.frame)."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
 
   invisible(TRUE)
@@ -699,25 +739,25 @@ iphra_validate_list <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param exact_length Optional integer specifying exact expected length.
 #' @param origin Optional name of the originating function.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_vector_length <- function(x, min_length = 1, exact_length = NULL, origin = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_vector_length <- function(x, min_length = 1, exact_length = NULL, origin = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   len <- length(x)
   if (!is.null(exact_length) && len != exact_length) {
     msg <- paste0("Expected vector of length ", exact_length, ", got length ", len, ".")
     if (soft) {
-      iphra_warning(message = msg, origin = origin)
+      phr_warning(message = msg, origin = origin)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin)
+    phr_error(msg, origin = origin)
   } else if (len < min_length) {
     msg <- paste0("Expected vector of length ≥ ", min_length, ", got ", len, ".")
     if (soft) {
-      iphra_warning(message = msg, origin = origin)
+      phr_warning(message = msg, origin = origin)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin)
+    phr_error(msg, origin = origin)
   }
   invisible(TRUE)
 }
@@ -731,20 +771,20 @@ iphra_validate_vector_length <- function(x, min_length = 1, exact_length = NULL,
 #' @param choices Character vector of allowed values.
 #' @param origin Optional name of the originating function.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_choice <- function(x, choices, origin = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
-  iphra_validate_not_null(choices, origin, soft)
+phr_validate_choice <- function(x, choices, origin = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
+  phr_validate_not_null(choices, origin, soft)
   bad <- setdiff(x, choices)
   if (length(bad) > 0) {
     msg <- paste0("Invalid choice(s): ", paste(bad, collapse = ", "))
     hint_txt <- paste0("Allowed values are: ", paste(choices, collapse = ", "))
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_warning(msg, origin = origin, hint = hint_txt)
+    phr_warning(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -790,6 +830,18 @@ iphra_validate_choice <- function(x, choices, origin = NULL, soft) {
 
     } else if (to_type == "factor") {
       return(is.character(x) || is.factor(x))
+    } else if (to_type == "datetime" || to_type == "POSIXct" || to_type == "POSIXlt") {
+      if (inherits(x, c("POSIXct", "POSIXlt"))) return(TRUE)
+      is_convertible <- vapply(x, function(val) {
+        if (is.na(val)) {
+          TRUE
+        } else {
+          any(!is.na(sapply(.phr_datetime_formats, function(fmt) {
+            suppressWarnings(as.POSIXct(as.character(val), format = fmt, tz = "UTC"))
+          })))
+        }
+      }, logical(1))
+      return(all(is_convertible))
     } else {
       return(FALSE)
     }
@@ -854,14 +906,14 @@ iphra_validate_choice <- function(x, choices, origin = NULL, soft) {
 #' @param x Vector or data frame column to test.
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
-iphra_validate_all_numeric <- function(x,
+phr_validate_all_numeric <- function(x,
                                        origin = NULL,
                                        hint = NULL,
                                        soft) {
 
-  iphra_validate_not_null(x, origin, soft)
+  phr_validate_not_null(x, origin, soft)
 
   # Already numeric → valid
   if (is.numeric(x)) return(invisible(TRUE))
@@ -870,17 +922,17 @@ iphra_validate_all_numeric <- function(x,
   if (.is_safely_coercible(x, "numeric")) return(invisible(TRUE))
 
   # ---- Build translated message + hint ----
-  msg_txt  <- iphra_txt("Expected all values to be numeric or safely coercible to numeric.")
-  hint_txt <- hint %||% iphra_txt("Ensure values contain only digits and valid numeric strings.")
+  msg_txt  <- phr_txt("Expected all values to be numeric or safely coercible to numeric.")
+  hint_txt <- hint %||% phr_txt("Ensure values contain only digits and valid numeric strings.")
 
   # ---- SOFT MODE: warning only ----
   if (soft) {
-    iphra_warning(message = msg_txt, origin = origin, hint = hint_txt)
+    phr_warning(message = msg_txt, origin = origin, hint = hint_txt)
     return(invisible(FALSE))
   }
 
   # ---- HARD MODE: throw error ----
-  iphra_error(
+  phr_error(
     msg_txt,
     origin = origin,
     hint = hint_txt
@@ -902,20 +954,20 @@ iphra_validate_all_numeric <- function(x,
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_all_character <- function(x, allowed_values = NULL, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_all_character <- function(x, allowed_values = NULL, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
 
   # Type or coercion check
   if (!is.character(x) && !.is_safely_coercible(x, "character")) {
     msg <- "Expected all values to be character or coercible to character."
     hint_txt <- hint %||% "Use as.character() or convert factors/integers before passing."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
 
   # Allowed values check
@@ -930,10 +982,10 @@ iphra_validate_all_character <- function(x, allowed_values = NULL, origin = NULL
       )
       hint_txt <- hint %||% "Ensure all character entries match allowed options."
       if (soft) {
-        iphra_warning(message = msg, origin = origin, hint = hint_txt)
+        phr_warning(message = msg, origin = origin, hint = hint_txt)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin, hint = hint_txt)
+      phr_error(msg, origin = origin, hint = hint_txt)
     }
   }
 
@@ -951,19 +1003,19 @@ iphra_validate_all_character <- function(x, allowed_values = NULL, origin = NULL
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_all_logical <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_all_logical <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   if (is.logical(x)) return(invisible(TRUE))
   if (.is_safely_coercible(x, "logical")) return(invisible(TRUE))
   msg <- "Expected all values to be logical (TRUE/FALSE) or safely coercible."
   hint_txt <- hint %||% "Ensure inputs are TRUE/FALSE, 1/0, or equivalent character codes."
   if (soft) {
-    iphra_warning(message = msg, origin = origin, hint = hint_txt)
+    phr_warning(message = msg, origin = origin, hint = hint_txt)
     return(invisible(FALSE))
   }
-  iphra_error(msg, origin = origin, hint = hint_txt)
+  phr_error(msg, origin = origin, hint = hint_txt)
 }
 
 
@@ -977,19 +1029,19 @@ iphra_validate_all_logical <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_all_date <- function(x, origin = NULL, hint = NULL, soft) {
-  iphra_validate_not_null(x, origin, soft)
+phr_validate_all_date <- function(x, origin = NULL, hint = NULL, soft) {
+  phr_validate_not_null(x, origin, soft)
   if (inherits(x, c("Date", "POSIXct", "POSIXlt"))) return(invisible(TRUE))
   if (.is_safely_coercible(x, "Date")) return(invisible(TRUE))
   msg <- "Expected all values to be Date, POSIX, or coercible to Date format."
   hint_txt <- hint %||% "Ensure date strings follow standard formats like 'YYYY-MM-DD' or 'DD/MM/YYYY'."
   if (soft) {
-    iphra_warning(message = msg, origin = origin, hint = hint_txt)
+    phr_warning(message = msg, origin = origin, hint = hint_txt)
     return(invisible(FALSE))
   }
-  iphra_error(msg, origin = origin, hint = hint_txt)
+  phr_error(msg, origin = origin, hint = hint_txt)
 }
 
 # ---- All Factor -----------------------------------------------------
@@ -1010,7 +1062,7 @@ iphra_validate_all_date <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
 #'
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
 #' @title Validate That All Values Are Factors
 #' @description
@@ -1025,9 +1077,9 @@ iphra_validate_all_date <- function(x, origin = NULL, hint = NULL, soft) {
 #' @param hint Optional suggestion or guidance for fixing detected issues.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #'
-#' @return Invisibly returns TRUE if valid; otherwise throws an [iphra_error()] or [iphra_warning()].
+#' @return Invisibly returns TRUE if valid; otherwise throws an [phr_error()] or [phr_warning()].
 #' @export
-iphra_validate_all_factor <- function(
+phr_validate_all_factor <- function(
     x,
     allowed_levels = NULL,
     expected_order = NULL,
@@ -1035,17 +1087,17 @@ iphra_validate_all_factor <- function(
     hint = NULL,
     soft
 ) {
-  iphra_validate_not_null(x, origin, soft)
+  phr_validate_not_null(x, origin, soft)
 
   # ---- Type check ----
   if (!is.factor(x)) {
     msg <- "Expected a factor vector, but received a non-factor type."
     hint_txt <- hint %||% "Convert variable to factor before validation."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
 
   # ---- Check allowed levels ----
@@ -1059,10 +1111,10 @@ iphra_validate_all_factor <- function(
       )
       hint_txt <- hint %||% "Check factor level definitions or category spelling."
       if (soft) {
-        iphra_warning(message = msg, origin = origin, hint = hint_txt)
+        phr_warning(message = msg, origin = origin, hint = hint_txt)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin, hint = hint_txt)
+      phr_error(msg, origin = origin, hint = hint_txt)
     }
   }
 
@@ -1078,10 +1130,10 @@ iphra_validate_all_factor <- function(
       )
       hint_txt <- hint %||% "Ensure factor levels are defined in the correct order."
       if (soft) {
-        iphra_warning(message = msg, origin = origin, hint = hint_txt)
+        phr_warning(message = msg, origin = origin, hint = hint_txt)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin, hint = hint_txt)
+      phr_error(msg, origin = origin, hint = hint_txt)
     }
   }
 
@@ -1097,19 +1149,19 @@ iphra_validate_all_factor <- function(
 #' @param origin Optional name of the calling function.
 #' @param hint Optional hint for correction.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly returns TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_column_types <- function(df, expected_types, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_column_types <- function(df, expected_types, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   missing <- setdiff(names(expected_types), names(df))
   if (length(missing) > 0) {
     msg <- paste("Missing expected columns:", paste(missing, collapse = ", "))
     hint_txt <- hint %||% "Ensure all required columns are present."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   for (col in names(expected_types)) {
     actual <- class(df[[col]])[1]
@@ -1118,10 +1170,10 @@ iphra_validate_column_types <- function(df, expected_types, origin = NULL, hint 
       msg <- paste0("Column '", col, "' is of type '", actual, "' but expected '", expected, "'.")
       hint_txt <- hint %||% "Check data import or preprocessing steps."
       if (soft) {
-        iphra_warning(message = msg, origin = origin, hint = hint_txt)
+        phr_warning(message = msg, origin = origin, hint = hint_txt)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin, hint = hint_txt)
+      phr_error(msg, origin = origin, hint = hint_txt)
     }
   }
   invisible(TRUE)
@@ -1136,19 +1188,19 @@ iphra_validate_column_types <- function(df, expected_types, origin = NULL, hint 
 #' @param origin Optional function name.
 #' @param hint Optional correction hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid, otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid, otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_no_missing <- function(df, cols, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_no_missing <- function(df, cols, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   for (col in cols) {
     if (any(is.na(df[[col]]))) {
       msg <- paste0("Column '", col, "' contains missing (NA) values.")
       hint_txt <- hint %||% "Fill or remove missing data before proceeding."
       if (soft) {
-        iphra_warning(message = msg, origin = origin, hint = hint_txt)
+        phr_warning(message = msg, origin = origin, hint = hint_txt)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin, hint = hint_txt)
+      phr_error(msg, origin = origin, hint = hint_txt)
     }
   }
   invisible(TRUE)
@@ -1163,19 +1215,19 @@ iphra_validate_no_missing <- function(df, cols, origin = NULL, hint = NULL, soft
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_unique <- function(df, cols, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_unique <- function(df, cols, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   dupes <- duplicated(df[cols])
   if (any(dupes)) {
     msg <- paste("Duplicate entries detected for key columns:", paste(cols, collapse = ", "))
     hint_txt <- hint %||% "Ensure unique identifiers or combination keys."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1189,19 +1241,19 @@ iphra_validate_unique <- function(df, cols, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional origin.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_non_negative <- function(df, cols, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_non_negative <- function(df, cols, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   for (col in cols) {
     if (any(df[[col]] < 0, na.rm = TRUE)) {
       msg <- paste0("Column '", col, "' contains negative values.")
       hint_txt <- hint %||% "Ensure counts or quantities are zero or positive."
       if (soft) {
-        iphra_warning(message = msg, origin = origin, hint = hint_txt)
+        phr_warning(message = msg, origin = origin, hint = hint_txt)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin, hint = hint_txt)
+      phr_error(msg, origin = origin, hint = hint_txt)
     }
   }
   invisible(TRUE)
@@ -1217,9 +1269,9 @@ iphra_validate_non_negative <- function(df, cols, origin = NULL, hint = NULL, so
 #' @param max Maximum acceptable value.
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
-iphra_validate_range <- function(df,
+phr_validate_range <- function(df,
                                  col,
                                  min,
                                  max,
@@ -1227,7 +1279,7 @@ iphra_validate_range <- function(df,
                                  hint = NULL,
                                  soft) {
 
-  iphra_validate_dataframe(df, origin, soft)
+  phr_validate_dataframe(df, origin, soft)
 
   vals <- df[[col]]
   out_of_range <- vals < min | vals > max
@@ -1242,10 +1294,10 @@ iphra_validate_range <- function(df,
       # -----------------------------------------
       # NEW: Soft mode (warning only)
       # -----------------------------------------
-      iphra_warning(
-        message = iphra_txt(msg),
+      phr_warning(
+        message = phr_txt(msg),
         origin = origin,
-        hint = hint %||% iphra_txt("Check data entry or range filters.")
+        hint = hint %||% phr_txt("Check data entry or range filters.")
       )
       return(invisible(FALSE))  # return FALSE for caller logic
     }
@@ -1253,10 +1305,10 @@ iphra_validate_range <- function(df,
     # -----------------------------------------
     # Original behavior: hard error
     # -----------------------------------------
-    iphra_error(
+    phr_error(
       message = msg,
       origin = origin,
-      hint = hint %||% iphra_txt("Check data entry or range filters.")
+      hint = hint %||% phr_txt("Check data entry or range filters.")
     )
   }
 
@@ -1273,20 +1325,20 @@ iphra_validate_range <- function(df,
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_pattern <- function(df, col, pattern, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_pattern <- function(df, col, pattern, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   vals <- df[[col]]
   bad <- !grepl(pattern, vals[!is.na(vals)])
   if (any(bad)) {
     msg <- paste0("Some values in '", col, "' do not match the required pattern: ", pattern)
     hint_txt <- hint %||% "Verify field formatting and encoding."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1301,18 +1353,18 @@ iphra_validate_pattern <- function(df, col, pattern, origin = NULL, hint = NULL,
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_date_order <- function(df, start_col, end_col, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_date_order <- function(df, start_col, end_col, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   if (any(df[[start_col]] > df[[end_col]], na.rm = TRUE)) {
     msg <- paste0("Start date in column '", start_col, "' exceeds end date in '", end_col, "'.")
     hint_txt <- hint %||% "Ensure start and end dates are in logical order."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1327,19 +1379,19 @@ iphra_validate_date_order <- function(df, start_col, end_col, origin = NULL, hin
 #' @param origin Optional origin.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_dependency <- function(df, col_a, col_b, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_dependency <- function(df, col_a, col_b, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   missing_dep <- !is.na(df[[col_a]]) & is.na(df[[col_b]])
   if (any(missing_dep)) {
     msg <- paste0("Rows where '", col_a, "' is filled but '", col_b, "' is missing.")
     hint_txt <- hint %||% paste0("Ensure '", col_b, "' is provided when '", col_a, "' is non-missing.")
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1353,19 +1405,19 @@ iphra_validate_dependency <- function(df, col_a, col_b, origin = NULL, hint = NU
 #' @param origin Optional origin.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_mutually_exclusive <- function(df, cols, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_mutually_exclusive <- function(df, cols, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   count_true <- rowSums(df[cols] == TRUE | df[cols] == 1, na.rm = TRUE)
   if (any(count_true > 1)) {
     msg <- paste0("Multiple TRUE/1 values found across mutually exclusive columns: ", paste(cols, collapse = ", "))
     hint_txt <- hint %||% "Ensure only one column is TRUE per record."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1378,18 +1430,18 @@ iphra_validate_mutually_exclusive <- function(df, cols, origin = NULL, hint = NU
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_no_duplicates <- function(df, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_no_duplicates <- function(df, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   if (any(duplicated(df))) {
     msg <- "Duplicate rows detected in the dataset."
     hint_txt <- hint %||% "Use distinct() or unique() to remove duplicates."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1402,19 +1454,19 @@ iphra_validate_no_duplicates <- function(df, origin = NULL, hint = NULL, soft) {
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_no_constant_columns <- function(df, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_no_constant_columns <- function(df, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   const_cols <- names(df)[sapply(df, function(x) length(unique(na.omit(x))) <= 1)]
   if (length(const_cols) > 0) {
     msg <- paste0("Constant (uninformative) columns detected: ", paste(const_cols, collapse = ", "))
     hint_txt <- hint %||% "Consider removing or reviewing these columns."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1429,19 +1481,19 @@ iphra_validate_no_constant_columns <- function(df, origin = NULL, hint = NULL, s
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_reference_values <- function(df, col, ref_values, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_reference_values <- function(df, col, ref_values, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   invalid <- setdiff(unique(df[[col]]), ref_values)
   if (length(invalid) > 0) {
     msg <- paste0("Values in '", col, "' not found in reference list: ", paste(invalid, collapse = ", "))
     hint_txt <- hint %||% "Check code lists or join keys for consistency."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1456,20 +1508,20 @@ iphra_validate_reference_values <- function(df, col, ref_values, origin = NULL, 
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_join_keys <- function(df, ref_df, key_col, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
-  iphra_validate_dataframe(ref_df, origin, soft)
+phr_validate_join_keys <- function(df, ref_df, key_col, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
+  phr_validate_dataframe(ref_df, origin, soft)
   missing_keys <- setdiff(unique(df[[key_col]]), unique(ref_df[[key_col]]))
   if (length(missing_keys) > 0) {
     msg <- paste0("Join key values in '", key_col, "' not found in reference data: ", paste(missing_keys, collapse = ", "))
     hint_txt <- hint %||% "Check for mismatched or missing join identifiers."
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
-    iphra_error(msg, origin = origin, hint = hint_txt)
+    phr_error(msg, origin = origin, hint = hint_txt)
   }
   invisible(TRUE)
 }
@@ -1488,28 +1540,28 @@ iphra_validate_join_keys <- function(df, ref_df, key_col, origin = NULL, hint = 
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
-#' @return Invisibly TRUE if valid; otherwise triggers `iphra_error()` or `iphra_warning()`.
+#' @return Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 #' @export
-iphra_validate_schema <- function(df, schema, origin = NULL, hint = NULL, soft) {
-  iphra_validate_dataframe(df, origin, soft)
+phr_validate_schema <- function(df, schema, origin = NULL, hint = NULL, soft) {
+  phr_validate_dataframe(df, origin, soft)
   for (col in names(schema)) {
     if (!col %in% names(df)) {
       msg <- paste("Missing expected column:", col)
       if (soft) {
-        iphra_warning(message = msg, origin = origin)
+        phr_warning(message = msg, origin = origin)
         return(invisible(FALSE))
       }
-      iphra_error(msg, origin = origin)
+      phr_error(msg, origin = origin)
     }
     spec <- schema[[col]]
     if (!is.null(spec$type)) {
-      iphra_validate_column_types(df[, col, drop = FALSE], setNames(list(spec$type), col), origin = origin, soft = soft)
+      phr_validate_column_types(df[, col, drop = FALSE], setNames(list(spec$type), col), origin = origin, soft = soft)
     }
     if (!is.null(spec$allowed_values)) {
-      iphra_validate_all_character(df[[col]], allowed_values = spec$allowed_values, origin = origin, soft = soft)
+      phr_validate_all_character(df[[col]], allowed_values = spec$allowed_values, origin = origin, soft = soft)
     }
     if (!is.null(spec$range) && length(spec$range) == 2 && is.numeric(df[[col]])) {
-      iphra_validate_range(df, col, spec$range[1], spec$range[2], origin = origin, soft = soft)
+      phr_validate_range(df, col, spec$range[1], spec$range[2], origin = origin, soft = soft)
     }
   }
   invisible(TRUE)
@@ -1530,12 +1582,12 @@ iphra_validate_schema <- function(df, schema, origin = NULL, hint = NULL, soft) 
 #'   or a list with detailed info if `return_details = TRUE`.
 #'
 #' @examples
-#' iphra_infer_column_type(c("12", "5", "9"))
-#' iphra_infer_column_type(c("TRUE", "FALSE", "TRUE"))
-#' iphra_infer_column_type(c("2024-05-03", "2024-05-04"))
-#' iphra_infer_column_type(c("North", "South"))
+#' phr_infer_column_type(c("12", "5", "9"))
+#' phr_infer_column_type(c("TRUE", "FALSE", "TRUE"))
+#' phr_infer_column_type(c("2024-05-03", "2024-05-04"))
+#' phr_infer_column_type(c("North", "South"))
 
-iphra_infer_column_type <- function(x, name = NULL, return_details = FALSE) {
+phr_infer_column_type <- function(x, name = NULL, return_details = FALSE) {
   # --- Prepare input ---
   x_clean <- trimws(as.character(x))
   x_clean <- x_clean[!is.na(x_clean) & x_clean != ""]
@@ -1611,7 +1663,7 @@ iphra_infer_column_type <- function(x, name = NULL, return_details = FALSE) {
 #' @return TRUE (invisibly) if validation passes; otherwise issues an IPHRA warning or error.
 #'
 #' @examples
-#' iphra_validate_date_order_vectors(
+#' phr_validate_date_order_vectors(
 #'   as.Date(c("2024-01-01", "2024-02-01")),
 #'   as.Date(c("2024-03-01", "2024-01-15")),
 #'   origin = "MortalityHouseholdData",
@@ -1619,14 +1671,14 @@ iphra_infer_column_type <- function(x, name = NULL, return_details = FALSE) {
 #' )
 #' # Issues a warning for the second pair.
 
-iphra_validate_date_order_vectors <- function(start, end, origin = NULL, soft) {
+phr_validate_date_order_vectors <- function(start, end, origin = NULL, soft) {
   # --- Defensive checks ---
   if (length(start) != length(end)) {
-    msg <- iphra_txt(glue::glue("Start and end date vectors differ in length. Comparing first {min(length(start), length(end))} pairs."))
+    msg <- phr_txt(glue::glue("Start and end date vectors differ in length. Comparing first {min(length(start), length(end))} pairs."))
     if (soft) {
-      iphra_warning(message = msg, origin = origin)
+      phr_warning(message = msg, origin = origin)
     } else {
-      iphra_error(msg, origin = origin)
+      phr_error(msg, origin = origin)
     }
     n <- min(length(start), length(end))
     start <- start[seq_len(n)]
@@ -1642,27 +1694,27 @@ iphra_validate_date_order_vectors <- function(start, end, origin = NULL, soft) {
   # Identify invalid coercions
   invalid_pairs <- which(is.na(start_date) | is.na(end_date))
   if (length(invalid_pairs) > 0) {
-    msg <- iphra_txt(glue::glue("Found {length(invalid_pairs)} records with invalid or missing start/end dates."))
+    msg <- phr_txt(glue::glue("Found {length(invalid_pairs)} records with invalid or missing start/end dates."))
     if (soft) {
-      iphra_warning(message = msg, origin = origin)
+      phr_warning(message = msg, origin = origin)
     } else {
-      iphra_error(msg, origin = origin)
+      phr_error(msg, origin = origin)
     }
   }
 
   # Identify reversed (chronologically invalid) pairs
   reversed <- which(start_date > end_date)
   if (length(reversed) > 0) {
-    msg <- iphra_txt(glue::glue("Found {length(reversed)} records where recall_start occurs after recall_end."))
+    msg <- phr_txt(glue::glue("Found {length(reversed)} records where recall_start occurs after recall_end."))
     if (soft) {
-      iphra_warning(message = msg, origin = origin)
+      phr_warning(message = msg, origin = origin)
       return(invisible(FALSE))
     } else {
-      iphra_error(msg, origin = origin)
+      phr_error(msg, origin = origin)
     }
   }
 
-  iphra_message(iphra_txt(glue::glue("Date order validation passed for {length(start_date)} records.")))
+  phr_message(phr_txt(glue::glue("Date order validation passed for {length(start_date)} records.")))
   return(invisible(TRUE))
 }
 
@@ -1671,7 +1723,7 @@ iphra_validate_date_order_vectors <- function(start, end, origin = NULL, soft) {
 #' @param x Character, Date, numeric, or POSIX vector.
 #' @return A Date vector in YYYY-MM-DD format.
 #' @export
-iphra_convert_date <- function(x, origin = "1970-01-01") {
+phr_convert_date <- function(x, origin = "1970-01-01") {
 
   # Excel keyword
   if (identical(origin, "excel")) {
@@ -1731,7 +1783,7 @@ iphra_convert_date <- function(x, origin = "1970-01-01") {
 
   # Warn if time-of-day present
   if (any(grepl("\\d{2}:\\d{2}:\\d{2}", x_chr[!is_na]))) {
-    warning("Time components detected and removed by iphra_convert_date().")
+    warning("Time components detected and removed by phr_convert_date().")
   }
 
   # Try to parse human-readable dates
@@ -1761,9 +1813,61 @@ iphra_convert_date <- function(x, origin = "1970-01-01") {
   return(out)
 }
 
-iphra_validate_required_na <- function(df, required_cols, origin = NULL, hint = NULL, soft) {
+#' Convert character, numeric, Date, or POSIX values to POSIXct (datetime)
+#'
+#' Converts various input types to a `POSIXct` vector, preserving time
+#' information. Unlike `phr_convert_date()`, this function does not strip the
+#' time component.
+#'
+#' @param x Character, Date, numeric (Unix timestamp), or POSIX vector.
+#' @param tz Time zone to use for the output POSIXct vector. Defaults to `"UTC"`.
+#' @return A `POSIXct` vector.
+#' @export
+phr_convert_datetime <- function(x, tz = "UTC") {
 
-  iphra_validate_dataframe(df, origin = origin, soft = soft)
+  # Already POSIXct — return as-is (re-stamp tz to be safe)
+  if (inherits(x, "POSIXct")) return(as.POSIXct(as.numeric(x), origin = "1970-01-01", tz = tz))
+
+  # POSIXlt → POSIXct
+  if (inherits(x, "POSIXlt")) return(as.POSIXct(x, tz = tz))
+
+  # Date → POSIXct (midnight)
+  if (inherits(x, "Date")) return(as.POSIXct(as.character(x), format = "%Y-%m-%d", tz = tz))
+
+  # Numeric — treat as Unix timestamp
+  if (is.numeric(x)) return(as.POSIXct(x, origin = "1970-01-01", tz = tz))
+
+  # Character — try known datetime formats
+  x_chr <- as.character(x)
+  is_na <- is.na(x_chr)
+  to_parse <- trimws(x_chr[!is_na])
+
+  parsed <- NULL
+  for (fmt in .phr_datetime_formats) {
+    converted <- suppressWarnings(as.POSIXct(to_parse, format = fmt, tz = tz))
+    if (all(!is.na(converted))) {
+      parsed <- converted
+      break
+    }
+  }
+
+  if (is.null(parsed) || any(is.na(parsed))) {
+    invalid_vals <- if (is.null(parsed)) unique(to_parse) else unique(to_parse[is.na(parsed)])
+    stop(
+      "Could not convert values to datetime (POSIXct): ",
+      paste0("'", invalid_vals, "'", collapse = ", "),
+      ". Expected formats like '2025-10-16 14:32:00' or ISO 8601."
+    )
+  }
+
+  out <- as.POSIXct(rep(NA_real_, length(x_chr)), origin = "1970-01-01", tz = tz)
+  out[!is_na] <- parsed
+  return(out)
+}
+
+phr_validate_required_na <- function(df, required_cols, origin = NULL, hint = NULL, soft) {
+
+  phr_validate_dataframe(df, origin = origin, soft = soft)
 
   na_rows <- which(
     apply(df[required_cols], 1, function(x) any(is.na(x)))
@@ -1777,11 +1881,11 @@ iphra_validate_required_na <- function(df, required_cols, origin = NULL, hint = 
     hint_txt <- hint %||% "Ensure all required fields are populated."
 
     if (soft) {
-      iphra_warning(message = msg, origin = origin, hint = hint_txt)
+      phr_warning(message = msg, origin = origin, hint = hint_txt)
       return(invisible(FALSE))
     }
 
-    iphra_error(message = msg, origin = origin, hint = hint_txt)
+    phr_error(message = msg, origin = origin, hint = hint_txt)
   }
 
   invisible(TRUE)

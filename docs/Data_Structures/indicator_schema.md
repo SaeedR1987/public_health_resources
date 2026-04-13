@@ -238,10 +238,10 @@ add_my_indicator <- function(.dataset,
   
   origin <- "add_my_indicator"
   
-  iphra_try({
+  phr_try({
     # Validate inputs
-    iphra_validate_dataframe(.dataset, origin, soft = FALSE)
-    iphra_validate_columns(.dataset, input_var, origin, soft = FALSE)
+    phr_validate_dataframe(.dataset, origin, soft = FALSE)
+    phr_validate_columns(.dataset, input_var, origin, soft = FALSE)
     
     # Compute indicator
     .dataset$my_indicator_score <- ifelse(
@@ -262,7 +262,7 @@ The indicator system handles errors gracefully:
 
 - **Missing Function**: Warning logged, standardization continues
 - **Missing Function Name**: Warning logged, indicator skipped
-- **Function Error**: Warning logged via `iphra_try`, standardization continues
+- **Function Error**: Warning logged via `phr_try`, standardization continues
 - **Invalid Return Value**: Warning logged if function doesn't return data frame
 
 ## Testing

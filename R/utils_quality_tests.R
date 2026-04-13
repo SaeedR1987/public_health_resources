@@ -11,17 +11,19 @@ NULL
 #'
 #' Calculate correlation coefficient between two numeric variables
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 variable names
 #' @param method Correlation method: "pearson", "spearman", or "kendall"
 #' @return List with statistic (correlation coefficient) and p_value
 #' @export
-quality_test_correlation <- function(data, variables, method = "pearson") {
+quality_test_correlation <- function(survey_design, variables, method = "pearson") {
 
-  iphra_try({
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) != 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_correlation",
         message = "Correlation test requires exactly 2 variables"
       )
@@ -31,7 +33,7 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
     var2 <- variables[2]
 
     if (!var1 %in% names(data) || !var2 %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_correlation",
         message = "One or both variables not found in data"
       )
@@ -44,7 +46,7 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
     # Remove pairs with missing values
     complete_cases <- complete.cases(x, y)
     if (sum(complete_cases) < 3) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_correlation",
         message = "Insufficient complete cases for correlation"
       )
@@ -66,18 +68,20 @@ quality_test_correlation <- function(data, variables, method = "pearson") {
 #'
 #' Perform a one-sample t-test or two-sample t-test
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of 1 or 2 variable names
 #' @param mu Expected mean for one-sample test (default: 0)
 #' @param paired Logical, whether to perform paired t-test for two variables
 #' @return List with statistic (t-value) and p-value
 #' @export
-quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
+quality_test_ttest <- function(survey_design, variables, mu = 0, paired = FALSE) {
 
-  iphra_try({
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) == 0 || length(variables) > 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_ttest",
         message = "T-test requires 1 or 2 variables"
       )
@@ -86,7 +90,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
     var1 <- variables[1]
 
     if (!var1 %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_ttest",
         message = "Variable not found in data"
       )
@@ -97,7 +101,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
     x <- x[!is.na(x)]
 
     if (length(x) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_ttest",
         message = "Insufficient data for t-test"
       )
@@ -111,7 +115,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
       # Two-sample t-test
       var2 <- variables[2]
       if (!var2 %in% names(data)) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_ttest",
           message = "Second variable not found in data"
         )
@@ -122,7 +126,7 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
       y <- y[!is.na(y)]
 
       if (length(y) < 2) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_ttest",
           message = "Insufficient data in second variable"
         )
@@ -144,16 +148,18 @@ quality_test_ttest <- function(data, variables, mu = 0, paired = FALSE) {
 #'
 #' Perform chi-squared test of independence between two categorical variables
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of exactly 2 variable names
 #' @return List with statistic (chi-squared value) and p-value
 #' @export
-quality_test_chisq <- function(data, variables) {
+quality_test_chisq <- function(survey_design, variables) {
 
-  iphra_try({
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) != 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_chisq",
         message = "Chi-squared test requires exactly 2 variables"
       )
@@ -163,7 +169,7 @@ quality_test_chisq <- function(data, variables) {
     var2 <- variables[2]
 
     if (!var1 %in% names(data) || !var2 %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_chisq",
         message = "One or both variables not found in data"
       )
@@ -179,7 +185,7 @@ quality_test_chisq <- function(data, variables) {
     y <- y[complete_cases]
 
     if (length(x) < 5) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_chisq",
         message = "Insufficient data for chi-squared test"
       )
@@ -191,7 +197,7 @@ quality_test_chisq <- function(data, variables) {
 
     # Check if table has sufficient cells
     if (any(dim(cont_table) < 2)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_chisq",
         message = "Contingency table too small for chi-squared test"
       )
@@ -212,17 +218,19 @@ quality_test_chisq <- function(data, variables) {
 #'
 #' Calculate the percentage of records with a specific flag value
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @param flag_value The value to count (default: TRUE or 1)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
+quality_test_flag_percentage <- function(survey_design, variables, flag_value = TRUE) {
 
-  iphra_try({
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_flag_percentage",
         message = "Flag percentage test requires exactly 1 variable"
       )
@@ -231,7 +239,7 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_flag_percentage",
         message = "Variable not found in data"
       )
@@ -242,7 +250,7 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
     x <- x[!is.na(x)]
 
     if (length(x) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_flag_percentage",
         message = "No non-missing values found"
       )
@@ -265,16 +273,18 @@ quality_test_flag_percentage <- function(data, variables, flag_value = TRUE) {
 #'
 #' Calculate the percentage of missing values across specified variables
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of variable names
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_missing_percentage <- function(data, variables) {
+quality_test_missing_percentage <- function(survey_design, variables) {
 
-  iphra_try({
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
 
     if (length(variables) == 0) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_missing_percentage",
         message = "Missing percentage test requires at least 1 variable"
       )
@@ -284,7 +294,7 @@ quality_test_missing_percentage <- function(data, variables) {
     existing_vars <- intersect(variables, names(data))
 
     if (length(existing_vars) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_missing_percentage",
         message = "No specified variables found in data"
       )
@@ -319,26 +329,20 @@ quality_test_missing_percentage <- function(data, variables) {
 #'
 #' Calculate the percentage of outliers based on z-score threshold
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @param z_threshold Z-score threshold (default: 3)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
+quality_test_outlier_percentage <- function(survey_design, variables, z_threshold = 3) {
 
-  iphra_try({
+  phr_try({
 
-    # Validate data is a data frame
-    iphra_validate_dataframe(
-      data,
-      origin = "quality_test_outlier_percentage",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "Outlier test requires exactly 1 variable"
       )
@@ -346,7 +350,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "Variable name must be a character string"
       )
@@ -354,14 +358,14 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Validate z_threshold is numeric and positive
     if (!is.numeric(z_threshold) || length(z_threshold) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "z_threshold must be a single numeric value"
       )
     }
 
     if (is.na(z_threshold) || z_threshold <= 0) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_outlier_percentage",
         message = "z_threshold must be a positive number"
       )
@@ -370,7 +374,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Variable not found in data"
       )
@@ -378,10 +382,10 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_outlier_percentage",
-      hint = iphra_txt("Outlier detection requires numeric data for z-score calculations."),
+      hint = phr_txt("Outlier detection requires numeric data for z-score calculations."),
       soft = TRUE
     )
 
@@ -394,7 +398,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
     x <- x[!is.na(x)]
 
     if (length(x) < 3) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Insufficient data for outlier detection (need at least 3 non-missing values)"
       )
@@ -403,7 +407,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Check for zero variance (all values identical)
     if (sd(x) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Variable has zero variance (all values are identical)"
       )
@@ -415,7 +419,7 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 
     # Additional safety check for Inf/NaN in z-scores
     if (any(is.infinite(z_scores)) || any(is.nan(z_scores))) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_outlier_percentage",
         message = "Unable to calculate valid z-scores"
       )
@@ -437,25 +441,19 @@ quality_test_outlier_percentage <- function(data, variables, z_threshold = 3) {
 #'
 #' Calculate the coefficient of variation (CV) for a numeric variable
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @return List with statistic (CV percentage) and p_value (NA)
 #' @export
-quality_test_coefficient_variation <- function(data, variables) {
+quality_test_coefficient_variation <- function(survey_design, variables) {
 
-  iphra_try({
+  phr_try({
 
-    # Validate data is a data frame
-    iphra_validate_dataframe(
-      data,
-      origin = "quality_test_coefficient_variation",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_coefficient_variation",
         message = "CV test requires exactly 1 variable"
       )
@@ -463,7 +461,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_coefficient_variation",
         message = "Variable name must be a character string"
       )
@@ -472,7 +470,7 @@ quality_test_coefficient_variation <- function(data, variables) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Variable not found in data"
       )
@@ -480,10 +478,10 @@ quality_test_coefficient_variation <- function(data, variables) {
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_coefficient_variation",
-      hint = iphra_txt("CV calculation requires numeric data."),
+      hint = phr_txt("CV calculation requires numeric data."),
       soft = TRUE
     )
 
@@ -496,7 +494,7 @@ quality_test_coefficient_variation <- function(data, variables) {
     x <- x[!is.na(x)]
 
     if (length(x) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Insufficient data for CV calculation (need at least 2 non-missing values)"
       )
@@ -508,7 +506,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Check for zero variance (all values identical)
     if (sd_x == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Variable has zero variance (all values are identical), CV is 0"
       )
@@ -517,7 +515,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Check for zero mean
     if (mean_x == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Mean is zero, CV is undefined"
       )
@@ -528,7 +526,7 @@ quality_test_coefficient_variation <- function(data, variables) {
 
     # Additional safety check for Inf/NaN in CV
     if (is.infinite(cv) || is.nan(cv)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_coefficient_variation",
         message = "Unable to calculate valid CV"
       )
@@ -547,27 +545,21 @@ quality_test_coefficient_variation <- function(data, variables) {
 #'
 #' Calculate the percentage of values outside the specified range
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @param min_value Minimum allowed value (default: -Inf)
 #' @param max_value Maximum allowed value (default: Inf)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_range_violation <- function(data, variables, min_value = -Inf, max_value = Inf) {
+quality_test_range_violation <- function(survey_design, variables, min_value = -Inf, max_value = Inf) {
 
-  iphra_try({
+  phr_try({
 
-    # Validate data is a data frame
-    iphra_validate_dataframe(
-      data,
-      origin = "quality_test_range_violation",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "Range test requires exactly 1 variable"
       )
@@ -575,7 +567,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "Variable name must be a character string"
       )
@@ -583,7 +575,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate min_value is numeric
     if (!is.numeric(min_value) || length(min_value) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "min_value must be a single numeric value"
       )
@@ -591,7 +583,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate max_value is numeric
     if (!is.numeric(max_value) || length(max_value) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "max_value must be a single numeric value"
       )
@@ -599,14 +591,14 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Check that min_value and max_value are not NA
     if (is.na(min_value)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "min_value cannot be NA"
       )
     }
 
     if (is.na(max_value)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "max_value cannot be NA"
       )
@@ -614,7 +606,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Validate that min_value <= max_value
     if (min_value > max_value) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_range_violation",
         message = "min_value must be less than or equal to max_value"
       )
@@ -623,7 +615,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_range_violation",
         message = "Variable not found in data"
       )
@@ -631,10 +623,10 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_range_violation",
-      hint = iphra_txt("Range violation test requires numeric data."),
+      hint = phr_txt("Range violation test requires numeric data."),
       soft = TRUE
     )
 
@@ -647,7 +639,7 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
     x <- x[!is.na(x)]
 
     if (length(x) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_range_violation",
         message = "No non-missing values found"
       )
@@ -656,14 +648,14 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 
     # Check for infinite values in the data
     if (any(is.infinite(x))) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_range_violation",
         message = "Variable contains infinite values which will be excluded from range check"
       )
       x <- x[is.finite(x)]
 
       if (length(x) == 0) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_range_violation",
           message = "No finite values found after removing infinite values"
         )
@@ -686,25 +678,19 @@ quality_test_range_violation <- function(data, variables, min_value = -Inf, max_
 #'
 #' Calculate the standard deviation for a numeric variable
 #'
-#' @param data Data frame containing the variable
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector with 1 variable name
 #' @return List with statistic (standard deviation) and p_value (NA)
 #' @export
-quality_test_sd <- function(data, variables) {
+quality_test_sd <- function(survey_design, variables) {
 
-  iphra_try({
+  phr_try({
 
-    # Validate data is a data frame
-    iphra_validate_dataframe(
-      data,
-      origin = "quality_test_sd",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has correct length
     if (is.null(variables) || length(variables) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd",
         message = "Standard deviation test requires exactly 1 variable"
       )
@@ -712,7 +698,7 @@ quality_test_sd <- function(data, variables) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd",
         message = "Variable name must be a character string"
       )
@@ -721,7 +707,7 @@ quality_test_sd <- function(data, variables) {
     var <- variables[1]
 
     if (!var %in% names(data)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd",
         message = "Variable not found in data"
       )
@@ -729,10 +715,10 @@ quality_test_sd <- function(data, variables) {
     }
 
     # Validate that the variable is numeric
-    is_valid <- iphra_validate_numeric(
+    is_valid <- phr_validate_numeric(
       data[[var]],
       origin = "quality_test_sd",
-      hint = iphra_txt("Standard deviation calculation requires numeric data."),
+      hint = phr_txt("Standard deviation calculation requires numeric data."),
       soft = TRUE
     )
 
@@ -745,7 +731,7 @@ quality_test_sd <- function(data, variables) {
     x <- x[!is.na(x)]
 
     if (length(x) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd",
         message = "Insufficient data for standard deviation calculation (need at least 2 non-missing values)"
       )
@@ -756,7 +742,7 @@ quality_test_sd <- function(data, variables) {
 
     # Additional safety check for Inf/NaN in standard deviation
     if (is.infinite(sd_x) || is.nan(sd_x)) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd",
         message = "Unable to calculate valid standard deviation"
       )
@@ -776,26 +762,20 @@ quality_test_sd <- function(data, variables) {
 #' Calculate the percentage of rows where the standard deviation across
 #' specified columns falls below a threshold value
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of variable names (minimum 2)
 #' @param threshold Threshold value for SD comparison (default: 0.8)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) {
+quality_test_sd_across_percentage <- function(survey_design, variables, threshold = 0.8) {
 
-  iphra_try({
+  phr_try({
 
-    # Validate data is a data frame
-    iphra_validate_dataframe(
-      data,
-      origin = "quality_test_sd_across_percentage",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has at least 2 variables
     if (is.null(variables) || length(variables) < 2) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "SD across percentage test requires at least 2 variables"
       )
@@ -803,7 +783,7 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "Variable names must be a character vector"
       )
@@ -811,14 +791,14 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Validate threshold is numeric and positive
     if (!is.numeric(threshold) || length(threshold) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "threshold must be a single numeric value"
       )
     }
 
     if (is.na(threshold) || threshold < 0) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_sd_across_percentage",
         message = "threshold must be a non-negative number"
       )
@@ -829,14 +809,14 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
     missing_vars <- setdiff(variables, names(data))
 
     if (length(missing_vars) > 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = paste0("Variables not found in data: ", paste(missing_vars, collapse = ", "))
       )
     }
 
     if (length(existing_vars) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = "At least 2 variables must exist in data for SD calculation"
       )
@@ -845,15 +825,15 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Validate that all existing variables are numeric
     for (var in existing_vars) {
-      is_valid <- iphra_validate_numeric(
+      is_valid <- phr_validate_numeric(
         data[[var]],
         origin = "quality_test_sd_across_percentage",
-        hint = iphra_txt(paste0("Variable '", var, "' must be numeric for SD calculation.")),
+        hint = phr_txt(paste0("Variable '", var, "' must be numeric for SD calculation.")),
         soft = TRUE
       )
 
       if (isFALSE(is_valid)) {
-        iphra_warning(
+        phr_warning(
           origin = "quality_test_sd_across_percentage",
           message = paste0("Variable '", var, "' is not numeric and will be excluded")
         )
@@ -863,7 +843,7 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 
     # Check again after removing non-numeric variables
     if (length(existing_vars) < 2) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = "At least 2 numeric variables required after validation"
       )
@@ -894,7 +874,7 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
     valid_rows <- !is.na(row_sd)
 
     if (sum(valid_rows) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_sd_across_percentage",
         message = "No rows with sufficient non-missing values for SD calculation"
       )
@@ -921,26 +901,20 @@ quality_test_sd_across_percentage <- function(data, variables, threshold = 0.8) 
 #' Calculate the percentage of rows where at least one of the specified
 #' variables has the flag value
 #'
-#' @param data Data frame containing the variables
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param variables Character vector of variable names (minimum 1)
 #' @param flag_value The value to check for (default: 1)
 #' @return List with statistic (percentage 0-100) and p_value (NA)
 #' @export
-quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
+quality_test_any_flag_percentage <- function(survey_design, variables, flag_value = 1) {
 
-  iphra_try({
+  phr_try({
 
-    # Validate data is a data frame
-    iphra_validate_dataframe(
-      data,
-      origin = "quality_test_any_flag_percentage",
-      hint = iphra_txt("Ensure you pass a valid data frame or tibble."),
-      soft = FALSE
-    )
+    data <- phr_get_data_from_design(survey_design)
 
     # Validate variables is not NULL and has at least 1 variable
     if (is.null(variables) || length(variables) < 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_any_flag_percentage",
         message = "Any flag percentage test requires at least 1 variable"
       )
@@ -948,7 +922,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
     # Validate variables is character
     if (!is.character(variables)) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_any_flag_percentage",
         message = "Variable names must be a character vector"
       )
@@ -956,7 +930,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
     # Validate flag_value is provided and not NULL
     if (is.null(flag_value) || length(flag_value) != 1) {
-      iphra_error(
+      phr_error(
         origin = "quality_test_any_flag_percentage",
         message = "flag_value must be a single value"
       )
@@ -967,14 +941,14 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
     missing_vars <- setdiff(variables, names(data))
 
     if (length(missing_vars) > 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = paste0("Variables not found in data: ", paste(missing_vars, collapse = ", "))
       )
     }
 
     if (length(existing_vars) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = "No specified variables found in data"
       )
@@ -986,7 +960,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
 
     # Check if we have any rows
     if (nrow(subset_data) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = "Data has no rows"
       )
@@ -1015,7 +989,7 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
     valid_rows <- !is.na(flag_column)
 
     if (sum(valid_rows) == 0) {
-      iphra_warning(
+      phr_warning(
         origin = "quality_test_any_flag_percentage",
         message = "No rows with non-missing values for flag calculation"
       )
@@ -1032,4 +1006,830 @@ quality_test_any_flag_percentage <- function(data, variables, flag_value = 1) {
     ))
 
   }, on_error = "warn", origin = "quality_test_any_flag_percentage")
+}
+
+#' Sex Ratio Test (Male:Female)
+#'
+#' Perform a chi-squared goodness-of-fit test comparing the observed male/female
+#' counts to an expected male:female ratio (default 1:1).
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character scalar. Name of the sex column in `data`
+#' @param male_val Value in `variables` that indicates "male"
+#' @param female_val Value in `variables` that indicates "female"
+#' @param expected_ratio_val Single positive numeric giving expected male:female ratio.
+#'   Default 1 (i.e., 1:1).
+#' @return List with statistic (observed male:female ratio) and p-value
+#' @export
+quality_test_sexratio <- function(
+    survey_design,
+    variables,
+    male_val,
+    female_val,
+    expected_ratio_val = 1
+) {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 1L) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`variables` must be a single character column name"
+      )
+    }
+
+    if (!variables %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Sex column not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    if (!is.numeric(expected_ratio_val) || length(expected_ratio_val) != 1L) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`expected_ratio_val` must be a single numeric value (male:female)"
+      )
+    }
+
+    if (!is.finite(expected_ratio_val) || expected_ratio_val <= 0) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`expected_ratio_val` must be a finite positive number"
+      )
+    }
+
+    if (identical(male_val, female_val)) {
+      phr_error(
+        origin = "quality_test_sexratio",
+        message = "`male_val` and `female_val` must be different"
+      )
+    }
+
+    s <- data[[variables]]
+    s <- s[!is.na(s)]
+
+    if (length(s) < 5) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Insufficient data for sex ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # Exclude values other than male_val/female_val, and warn if any are found
+    is_mf <- (s == male_val) | (s == female_val)
+    n_excluded <- sum(!is_mf)
+
+    if (n_excluded > 0) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = paste0(
+          "Excluding ", n_excluded,
+          " record(s) with sex values not equal to `male_val` or `female_val`"
+        )
+      )
+    }
+
+    s <- s[is_mf]
+
+    if (length(s) < 5) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Insufficient male/female data for sex ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    obs_male <- sum(s == male_val, na.rm = TRUE)
+    obs_female <- sum(s == female_val, na.rm = TRUE)
+
+    if (obs_male == 0L || obs_female == 0L) {
+      phr_warning(
+        origin = "quality_test_sexratio",
+        message = "Only one sex category present; cannot test sex ratio"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    obs <- c(male = obs_male, female = obs_female)
+
+    # expected_ratio_val is male:female
+    p_male <- expected_ratio_val / (expected_ratio_val + 1)
+    p_female <- 1 / (expected_ratio_val + 1)
+    p <- c(p_male, p_female)
+
+    obs_ratio <- obs_male / obs_female
+
+    test_result <- chisq.test(x = obs, p = p)
+
+    return(list(
+      statistic = obs_ratio,
+      p_value = test_result$p.value
+    ))
+
+  }, on_error = "warn", origin = "quality_test_sexratio")
+}
+
+#' Age Group Ratio Test (Two Indicator Columns)
+#'
+#' Perform a chi-squared goodness-of-fit test comparing the observed counts of "yes"
+#' in two different age-group indicator columns to an expected ratio (default 1:1).
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character vector of length 2. Names of the two age-group indicator columns in `data`
+#' @param yes_val Value indicating "yes" in the indicator columns. Default 1.
+#' @param no_val Value indicating "no" in the indicator columns. Default 0.
+#' @param expected_ratio_val Single positive numeric giving expected ratio of
+#'   variables[1]:variables[2]. Default 1 (i.e., 1:1).
+#' @return List with statistic (observed col1:col2 ratio) and p-value
+#' @export
+quality_test_ageratio <- function(
+    survey_design,
+    variables,
+    yes_val = 1,
+    no_val = 0,
+    expected_ratio_val = 0.85
+) {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`variables` must be a character vector of length 2 (two column names)"
+      )
+    }
+
+    age_group_col1 <- variables[[1]]
+    age_group_col2 <- variables[[2]]
+
+    if (!age_group_col1 %in% names(data) || !age_group_col2 %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "One or both age group columns not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    if (identical(age_group_col1, age_group_col2)) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "The two column names in `variables` must be different"
+      )
+    }
+
+    if (identical(yes_val, no_val)) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`yes_val` and `no_val` must be different"
+      )
+    }
+
+    if (!is.numeric(expected_ratio_val) || length(expected_ratio_val) != 1L) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`expected_ratio_val` must be a single numeric value (col1:col2)"
+      )
+    }
+
+    if (!is.finite(expected_ratio_val) || expected_ratio_val <= 0) {
+      phr_error(
+        origin = "quality_test_ageratio",
+        message = "`expected_ratio_val` must be a finite positive number"
+      )
+    }
+
+    x <- data[[age_group_col1]]
+    y <- data[[age_group_col2]]
+
+    # Remove missing values
+    complete_cases <- complete.cases(x, y)
+    x <- x[complete_cases]
+    y <- y[complete_cases]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "Insufficient data for age ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # Exclude values not equal to yes_val/no_val in either column, and warn
+    valid_x <- (x == yes_val) | (x == no_val)
+    valid_y <- (y == yes_val) | (y == no_val)
+    valid <- valid_x & valid_y
+
+    n_excluded <- sum(!valid)
+    if (n_excluded > 0) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = paste0(
+          "Excluding ", n_excluded,
+          " record(s) with values not equal to `yes_val` or `no_val` in one or both age group columns"
+        )
+      )
+    }
+
+    x <- x[valid]
+    y <- y[valid]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "Insufficient valid data for age ratio test"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # Observed "yes" counts in each indicator column
+    yes1 <- sum(x == yes_val, na.rm = TRUE)
+    yes2 <- sum(y == yes_val, na.rm = TRUE)
+
+    if (yes1 == 0L || yes2 == 0L) {
+      phr_warning(
+        origin = "quality_test_ageratio",
+        message = "One of the age groups has zero 'yes' counts; cannot test age ratio"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    obs <- c(col1_yes = yes1, col2_yes = yes2)
+
+    # expected_ratio_val is col1:col2
+    p1 <- expected_ratio_val / (expected_ratio_val + 1)
+    p2 <- 1 / (expected_ratio_val + 1)
+    p <- c(p1, p2)
+
+    obs_ratio <- yes1 / yes2
+
+    test_result <- chisq.test(x = obs, p = p)
+
+    return(list(
+      statistic = obs_ratio,
+      p_value = test_result$p.value
+    ))
+
+  }, on_error = "warn", origin = "quality_test_ageratio")
+}
+
+#' Digit Preference Score (MUAC)
+#'
+#' Compute digit preference score for a numeric MUAC (cm) variable using nipnTK.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character scalar. Name of the MUAC (cm) column in `data`
+#' @return List with statistic (digit preference score) and p_value (NA_real_)
+#' @export
+quality_test_digit_preference <- function(survey_design, variables) {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 1L) {
+      phr_error(
+        origin = "quality_test_digit_preference",
+        message = "`variables` must be a single character column name"
+      )
+    }
+
+    if (!variables %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_digit_preference",
+        message = "Variable not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    x <- data[[variables]]
+
+    # Remove missing values
+    x <- x[!is.na(x)]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_digit_preference",
+        message = "Insufficient data for digit preference calculation"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    if (!is.numeric(x)) {
+      phr_warning(
+        origin = "quality_test_digit_preference",
+        message = "Variable is not numeric; cannot compute digit preference score"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    # nipnTK::digitPreference() returns a list; first element is the score
+    dp <- nipnTK::digitPreference(x)[[1]]
+
+    return(list(
+      statistic = as.numeric(dp),
+      p_value = NA_real_
+    ))
+
+  }, on_error = "warn", origin = "quality_test_digit_preference")
+}
+
+#' ANOVA Test
+#'
+#' Perform a one-way analysis of variance (ANOVA) to compare group means
+#' across two or more groups.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the numeric outcome column and the second is the grouping
+#'   column (must have at least 2 distinct levels).
+#' @return List with statistic (F-value) and p_value
+#' @export
+quality_test_anova <- function(survey_design, variables) {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_anova",
+        message = "`variables` must be a character vector of exactly 2 column names (outcome, group)"
+      )
+    }
+
+    outcome_col <- variables[1]
+    group_col   <- variables[2]
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_anova",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    is_valid <- phr_validate_numeric(
+      data[[outcome_col]],
+      origin = "quality_test_anova",
+      hint = phr_txt("ANOVA requires a numeric outcome variable."),
+      soft = TRUE
+    )
+
+    if (isFALSE(is_valid)) {
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    outcome <- as.numeric(data[[outcome_col]])
+    group   <- data[[group_col]]
+
+    complete_cases <- complete.cases(outcome, group)
+    outcome <- outcome[complete_cases]
+    group   <- group[complete_cases]
+
+    if (length(outcome) < 3) {
+      phr_warning(
+        origin = "quality_test_anova",
+        message = "Insufficient data for ANOVA (need at least 3 non-missing observations)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    group <- as.factor(group)
+
+    if (nlevels(group) < 2) {
+      phr_warning(
+        origin = "quality_test_anova",
+        message = "Group column must have at least 2 distinct levels for ANOVA"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    model       <- aov(outcome ~ group, data = data.frame(outcome = outcome, group = group))
+    anova_table <- summary(model)[[1]]
+
+    return(list(
+      statistic = as.numeric(anova_table[["F value"]][1]),
+      p_value   = as.numeric(anova_table[["Pr(>F)"]][1])
+    ))
+
+  }, on_error = "warn", origin = "quality_test_anova")
+}
+
+#' Chi-Squared Test with Binary Contingency Table
+#'
+#' Perform a chi-squared test of independence between two categorical columns in
+#' the dataset. The contingency table is built internally from the raw data.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character vector of exactly 2 variable names. The first
+#'   element is the first categorical column and the second element is the
+#'   second categorical column. A contingency table is formed from their
+#'   cross-tabulation.
+#' @return List with statistic (chi-squared value) and p_value
+#' @export
+quality_test_chisq_binary <- function(survey_design, variables) {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_chisq_binary",
+        message = "`variables` must be a character vector of exactly 2 column names"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    cat1_col <- variables[1]
+    cat2_col <- variables[2]
+
+    x <- data[[cat1_col]]
+    y <- data[[cat2_col]]
+
+    complete_cases <- complete.cases(x, y)
+    x <- x[complete_cases]
+    y <- y[complete_cases]
+
+    if (length(x) < 5) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = "Insufficient data for chi-squared binary test (need at least 5 complete observations)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    contingency_table <- table(x, y)
+
+    if (any(dim(contingency_table) < 2)) {
+      phr_warning(
+        origin = "quality_test_chisq_binary",
+        message = "Contingency table too small for chi-squared test (each variable must have at least 2 distinct levels)"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    test_result <- chisq.test(contingency_table)
+
+    return(list(
+      statistic = as.numeric(test_result$statistic),
+      p_value   = test_result$p.value
+    ))
+
+  }, on_error = "warn", origin = "quality_test_chisq_binary")
+}
+
+#' Binomial Ratio Test (Row-wise)
+#'
+#' Perform a row-wise exact binomial proportion test comparing the observed
+#' success rate against an expected ratio, appending a p-value column to the
+#' data frame.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the column containing the number of successes (non-negative
+#'   integer) and the second is the column containing the total number of
+#'   trials (positive integer \eqn{\geq} success count).
+#' @param expected_ratio Numeric scalar. Expected proportion under the null
+#'   hypothesis (default: 0.5; must be strictly between 0 and 1)
+#' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
+#'   \code{"greater"}, or \code{"less"} (default: \code{"two.sided"})
+#' @param pval_colname Character scalar. Name for the new p-value column
+#'   (default: \code{"p_value"})
+#' @return Data frame with an additional column containing the row-wise
+#'   binomial test p-values (rounded to 5 decimal places); rows with missing
+#'   or invalid values receive \code{NA}
+#' @export
+quality_test_binomial_ratio_rowwise <- function(survey_design,
+                                                variables,
+                                                expected_ratio = 0.5,
+                                                alternative    = "two.sided",
+                                                pval_colname   = "p_value") {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`variables` must be a character vector of exactly 2 column names (success, total)"
+      )
+    }
+
+    if (!is.numeric(expected_ratio) || length(expected_ratio) != 1L ||
+        is.na(expected_ratio) || expected_ratio <= 0 || expected_ratio >= 1) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`expected_ratio` must be a single numeric value strictly between 0 and 1"
+      )
+    }
+
+    if (!alternative %in% c("two.sided", "greater", "less")) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
+      )
+    }
+
+    if (!is.character(pval_colname) || length(pval_colname) != 1L) {
+      phr_error(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = "`pval_colname` must be a single character string"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_binomial_ratio_rowwise",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(data)
+    }
+
+    success_col  <- variables[1]
+    total_col    <- variables[2]
+    success_vals <- data[[success_col]]
+    total_vals   <- data[[total_col]]
+
+    p_values <- vapply(seq_len(nrow(data)), function(i) {
+      s <- success_vals[i]
+      n <- total_vals[i]
+
+      if (is.na(s) || is.na(n) || s < 0 || n <= 0 || n < s ||
+          n != floor(n) || s != floor(s)) {
+        return(NA_real_)
+      }
+
+      tryCatch(
+        round(
+          binom.test(
+            x           = as.integer(s),
+            n           = as.integer(n),
+            p           = expected_ratio,
+            alternative = alternative
+          )$p.value,
+          digits = 5
+        ),
+        error = function(e) NA_real_
+      )
+    }, numeric(1))
+
+    data[[pval_colname]] <- p_values
+    return(data)
+
+  }, on_error = "warn", origin = "quality_test_binomial_ratio_rowwise")
+}
+
+#' One-Sample T-Test from Actual Data (Row-wise Across Columns)
+#'
+#' Perform a row-wise one-sample t-test on the actual data values. For each
+#' row, the values across the columns specified in \code{variables} are
+#' extracted and used to compute a one-sample t-test against
+#' \code{expected_mean}. A p-value column is appended to the data frame.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character vector of column names whose values are used
+#'   row-wise for the t-test. At least 2 columns must be provided so that a
+#'   standard deviation can be estimated.
+#' @param expected_mean Numeric scalar. Hypothesised population mean under the
+#'   null hypothesis (default: 0)
+#' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
+#'   \code{"greater"}, or \code{"less"} (default: \code{"two.sided"})
+#' @param pval_colname Character scalar. Name for the new p-value column
+#'   (default: \code{"p_value"})
+#' @return Data frame with an additional column containing the row-wise
+#'   t-test p-values (rounded to 3 decimal places); rows with fewer than 2
+#'   non-missing values receive \code{NA}
+#' @export
+quality_test_ttest_summary_rowwise <- function(survey_design,
+                                               variables,
+                                               expected_mean = 0,
+                                               alternative   = "two.sided",
+                                               pval_colname  = "p_value") {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) < 2L) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`variables` must be a character vector of at least 2 column names"
+      )
+    }
+
+    if (!is.numeric(expected_mean) || length(expected_mean) != 1L || is.na(expected_mean)) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`expected_mean` must be a single non-missing numeric value"
+      )
+    }
+
+    if (!alternative %in% c("two.sided", "greater", "less")) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
+      )
+    }
+
+    if (!is.character(pval_colname) || length(pval_colname) != 1L) {
+      phr_error(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = "`pval_colname` must be a single character string"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_ttest_summary_rowwise",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(data)
+    }
+
+    existing_vars <- intersect(variables, names(data))
+
+    subset_mat <- as.matrix(as.data.frame(lapply(data[, existing_vars, drop = FALSE], as.numeric)))
+
+    p_values <- vapply(seq_len(nrow(subset_mat)), function(i) {
+      row_vals <- subset_mat[i, ]
+      row_vals <- row_vals[!is.na(row_vals)]
+
+      if (length(row_vals) < 2) {
+        return(NA_real_)
+      }
+
+      tryCatch(
+        round(
+          t.test(row_vals, mu = expected_mean, alternative = alternative)$p.value,
+          digits = 3
+        ),
+        error = function(e) NA_real_
+      )
+    }, numeric(1))
+
+    data[[pval_colname]] <- p_values
+    return(data)
+
+  }, on_error = "warn", origin = "quality_test_ttest_summary_rowwise")
+}
+
+#' Poisson Rate Test (Row-wise)
+#'
+#' Perform a row-wise exact Poisson test comparing an observed event count
+#' against an expected rate, appending a p-value column to the data frame.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character vector of exactly 2 column names. The first
+#'   element is the column containing the number of events (non-negative
+#'   integer) and the second is the column containing the exposure units
+#'   (positive numeric, e.g., person-time or number of households).
+#' @param expected_rate Numeric scalar. Expected event rate per unit exposure
+#'   under the null hypothesis (default: 0.02; must be positive)
+#' @param alternative Character scalar. Alternative hypothesis: \code{"two.sided"},
+#'   \code{"greater"}, or \code{"less"} (default: \code{"two.sided"})
+#' @param pval_colname Character scalar. Name for the new p-value column
+#'   (default: \code{"p_value"})
+#' @return Data frame with an additional column containing the row-wise
+#'   Poisson test p-values (rounded to 5 decimal places); rows with missing
+#'   or invalid values receive \code{NA}
+#' @export
+quality_test_poisson_ratio_rowwise <- function(survey_design,
+                                               variables,
+                                               expected_rate = 0.02,
+                                               alternative   = "two.sided",
+                                               pval_colname  = "p_value") {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 2L) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`variables` must be a character vector of exactly 2 column names (events, exposure)"
+      )
+    }
+
+    if (!is.numeric(expected_rate) || length(expected_rate) != 1L ||
+        is.na(expected_rate) || expected_rate <= 0) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`expected_rate` must be a single positive numeric value"
+      )
+    }
+
+    if (!alternative %in% c("two.sided", "greater", "less")) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
+      )
+    }
+
+    if (!is.character(pval_colname) || length(pval_colname) != 1L) {
+      phr_error(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = "`pval_colname` must be a single character string"
+      )
+    }
+
+    missing_cols <- setdiff(variables, names(data))
+    if (length(missing_cols) > 0) {
+      phr_warning(
+        origin = "quality_test_poisson_ratio_rowwise",
+        message = paste0("Columns not found in data: ", paste(missing_cols, collapse = ", "))
+      )
+      return(data)
+    }
+
+    event_col     <- variables[1]
+    exposure_col  <- variables[2]
+    event_vals    <- data[[event_col]]
+    exposure_vals <- data[[exposure_col]]
+
+    p_values <- vapply(seq_len(nrow(data)), function(i) {
+      ev  <- event_vals[i]
+      exp <- exposure_vals[i]
+
+      if (is.na(ev) || is.na(exp) || exp <= 0 || ev < 0 || ev != floor(ev)) {
+        return(NA_real_)
+      }
+
+      tryCatch(
+        round(
+          poisson.test(
+            x           = as.integer(ev),
+            T           = exp,
+            r           = expected_rate,
+            alternative = alternative
+          )$p.value,
+          digits = 5
+        ),
+        error = function(e) NA_real_
+      )
+    }, numeric(1))
+
+    data[[pval_colname]] <- p_values
+    return(data)
+
+  }, on_error = "warn", origin = "quality_test_poisson_ratio_rowwise")
+}
+
+#' Non-missing Count Test
+#'
+#' Return the number of non-missing (non-NA) values in a specified column.
+#'
+#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
+#' @param variables Character scalar. Name of the column to count non-missing values for
+#' @return List with statistic (non-missing count) and p_value (NA_real_)
+#' @export
+quality_test_count <- function(survey_design, variables) {
+
+  phr_try({
+
+    data <- phr_get_data_from_design(survey_design)
+
+    if (!is.character(variables) || length(variables) != 1L) {
+      phr_error(
+        origin = "quality_test_count",
+        message = "`variables` must be a single character column name"
+      )
+    }
+
+    if (!variables %in% names(data)) {
+      phr_warning(
+        origin = "quality_test_count",
+        message = "Column not found in data"
+      )
+      return(list(statistic = NA_real_, p_value = NA_real_))
+    }
+
+    x <- data[[variables]]
+    n_non_missing <- sum(!is.na(x))
+
+    return(list(
+      statistic = as.numeric(n_non_missing),
+      p_value = NA_real_
+    ))
+
+  }, on_error = "warn", origin = "quality_test_count")
 }

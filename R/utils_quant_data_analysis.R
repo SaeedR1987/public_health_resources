@@ -51,19 +51,19 @@ safe_lgl <- function(x) if (length(x) == 1 && !is.null(x)) as.logical(x) else NA
 #'   CI selection (e.g. logit-transformed CIs for proportions).
 #'
 #' @return A tibble of analysis results, one row per indicator (or one row per
-#'   disaggregation group plus an overall row when disaggregation is specified).
+#'   disaggregation group when disaggregation is specified).
 #' @noRd
-iphra_calc_survey_from_plan <- function(design,
+phr_calc_survey_from_plan <- function(design,
                                         analysis_plan,
                                         high_design_complexity = FALSE) {
-  origin <- "iphra_calc_survey_from_plan"
-  iphra_message(origin, "Starting execution of data analysis plan...")
+  origin <- "phr_calc_survey_from_plan"
+  phr_message(origin, "Starting execution of data analysis plan...")
 
-  # --- Validation ------------------------------------------------------------
-  iphra_try({
-    if (is.null(design)) iphra_error(origin, "Survey design object is NULL.")
+  # --- Validation
+  phr_try({
+    if (is.null(design)) phr_error(origin, "Survey design object is NULL.")
     if (!inherits(analysis_plan, "data.frame")) {
-      iphra_error(origin, "analysis_plan must be a data.frame or tibble.")
+      phr_error(origin, "analysis_plan must be a data.frame or tibble.")
     }
 
     required_cols <- c(
@@ -72,17 +72,17 @@ iphra_calc_survey_from_plan <- function(design,
     )
     missing_cols <- setdiff(required_cols, names(analysis_plan))
     if (length(missing_cols) > 0) {
-      iphra_error(origin, paste("Analysis plan missing columns:", paste(missing_cols, collapse = ", ")))
+      phr_error(origin, paste("Analysis plan missing columns:", paste(missing_cols, collapse = ", ")))
     }
   },
   on_error = "abort",
   origin = origin,
   hint = "Check that your data_analysis_plan follows the expected template.")
 
-  # --- Initialize results holder --------------------------------------------
+  # --- Initialize results holder
   results <- list()
 
-  # --- Loop through analysis plan -------------------------------------------
+  # --- Loop through analysis plan
   for (i in seq_len(nrow(analysis_plan))) {
     row <- analysis_plan[i, ]
     indicator <- row$indicator_name
@@ -93,13 +93,13 @@ iphra_calc_survey_from_plan <- function(design,
     mult      <- ifelse(is.null(row$multiplier) || is.na(row$multiplier), 1, row$multiplier)
     unit      <- ifelse(is.null(row$indicator_unit) || is.na(row$indicator_unit), "", row$indicator_unit)
 
-    iphra_message(origin, paste0("Running [", i, "/", nrow(analysis_plan), "]: ", indicator, " (", calc_type, ")"))
+    phr_message(origin, paste0("Running [", i, "/", nrow(analysis_plan), "]: ", indicator, " (", calc_type, ")"))
 
-    # --- Internal helper for one calculation ----------------------
+    # --- Internal helper for one calculation
     run_single_calc <- function(design_subset, group_value = NA_character_) {
-      result_i <- iphra_try({
+      result_i <- phr_try({
         if (calc_type %in% c("prop", "proportion")) {
-          iphra_calc_survey_prop_single(
+          phr_calc_survey_prop_single(
             design = design_subset,
             var_name = var_name,
             indicator_name = indicator,
@@ -110,7 +110,7 @@ iphra_calc_survey_from_plan <- function(design,
           )
 
         } else if (calc_type %in% c("mean", "average")) {
-          iphra_calc_survey_mean_single(
+          phr_calc_survey_mean_single(
             design = design_subset,
             var_name = var_name,
             indicator_name = indicator,
@@ -121,7 +121,7 @@ iphra_calc_survey_from_plan <- function(design,
           )
 
         } else if (calc_type %in% c("median")) {
-          iphra_calc_survey_median_single(
+          phr_calc_survey_median_single(
             design = design_subset,
             var_name = var_name,
             indicator_name = indicator,
@@ -132,7 +132,7 @@ iphra_calc_survey_from_plan <- function(design,
           )
 
         } else if (calc_type %in% c("ratio", "rate")) {
-          iphra_calc_survey_ratio_single(
+          phr_calc_survey_ratio_single(
             design = design_subset,
             numerator_var = var_name,
             denominator_var = denom_var,
@@ -145,7 +145,17 @@ iphra_calc_survey_from_plan <- function(design,
 
         }
         else if (calc_type %in% c("categorical", "category", "cat")) {
-          iphra_calc_survey_categorical_single(
+          phr_calc_survey_categorical_single(
+            design = design_subset,
+            var_name = var_name,
+            indicator_name = indicator,
+            indicator_unit = unit,
+            multiplier = mult,
+            group_name_label = group_value,
+            high_design_complexity = high_design_complexity
+          )
+        } else if (calc_type %in% c("select_multiple_cat")) {
+          phr_calc_multiple_choice_cat(
             design = design_subset,
             var_name = var_name,
             indicator_name = indicator,
@@ -155,7 +165,7 @@ iphra_calc_survey_from_plan <- function(design,
             high_design_complexity = high_design_complexity
           )
         } else {
-          iphra_warning(origin, paste("Unknown calculation type for indicator:", indicator))
+          phr_warning(origin, paste("Unknown calculation type for indicator:", indicator))
           tibble::tibble(
             variable = var_name,
             indicator_name = indicator,
@@ -200,16 +210,16 @@ iphra_calc_survey_from_plan <- function(design,
       result_i[c(present, extra)]
     }
 
-    # --- Handle disaggregated analysis --------------------------------------
+    # --- Handle disaggregated analysis
     if (!is.null(disagg) && disagg %in% names(design$variables)) {
       group_levels <- unique(na.omit(design$variables[[disagg]]))
-      iphra_message(origin, paste("Disaggregating by:", disagg, "(", length(group_levels), "groups )"))
+      phr_message(origin, paste("Disaggregating by:", disagg, "(", length(group_levels), "groups )"))
 
       group_results <- purrr::map_dfr(group_levels, function(g) {
         subset_design <- tryCatch(
           subset(design, design$variables[[disagg]] == g),
           error = function(e) {
-            iphra_warning(origin, paste("Subset failed for", disagg, "=", g))
+            phr_warning(origin, paste("Subset failed for", disagg, "=", g))
             NULL
           }
         )
@@ -220,25 +230,23 @@ iphra_calc_survey_from_plan <- function(design,
         }
       })
 
-      overall_result <- run_single_calc(design, group_value = "Overall")
-      combined <- dplyr::bind_rows(overall_result, group_results)
-      results[[i]] <- combined
+      results[[i]] <- group_results
 
     } else {
       results[[i]] <- run_single_calc(design, group_value = "Overall")
     }
   }
 
-  # --- Bind and return ------------------------------------------------------
+  # --- Bind and return
   out <- tryCatch(
     dplyr::bind_rows(results),
     error = function(e) {
-      iphra_warning(origin, paste("Binding failed:", e$message))
+      phr_warning(origin, paste("Binding failed:", e$message))
       dplyr::tibble()
     }
   )
 
-  iphra_message(origin, paste("Completed", nrow(analysis_plan), "indicators successfully."))
+  phr_message(origin, paste("Completed", nrow(analysis_plan), "indicators successfully."))
   return(out)
 }
 
@@ -272,7 +280,7 @@ iphra_calc_survey_from_plan <- function(design,
 #'     \item{\code{flags}}{Named list of logical diagnostic flags.}
 #'   }
 #' @noRd
-iphra_pick_ci_method <- function(n_unweighted = NULL,
+phr_pick_ci_method <- function(n_unweighted = NULL,
                                  n_eff = NULL,
                                  p_estimate = NULL,
                                  deff = NULL,
@@ -281,7 +289,7 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
                                  is_numeric = FALSE,
                                  is_ratio = FALSE) {
 
-  # --- Initialize --------------------------------------------
+  # --- Initialize
   flags <- c(
     flag_small_n    = FALSE,
     flag_low_neff   = FALSE,
@@ -292,20 +300,20 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
   )
   notes <- c()
 
-  # --- Handle missing inputs gracefully ----------------------
+  # --- Handle missing inputs gracefully
   if (is.null(n_unweighted)) n_unweighted <- NA_real_
   if (is.null(n_eff)) n_eff <- NA_real_
   if (is.null(p_estimate)) p_estimate <- NA_real_
   if (is.null(deff)) deff <- NA_real_
 
-  # --- Lonely PSU handling -----------------------------------
+  # --- Lonely PSU handling
   if (isTRUE(lonely_psu)) {
     options(survey.lonely.psu = "adjust")
     flags["flag_lonely_psu"] <- TRUE
     notes <- c(notes, "lonely PSU adjusted (variance mode = 'adjust')")
   }
 
-  # --- Trigger checks ----------------------------------------
+  # --- Trigger checks
   if (is.finite(n_unweighted) && n_unweighted < 30) {
     flags["flag_small_n"] <- TRUE
     notes <- c(notes, "small sample size (n < 30)")
@@ -347,9 +355,9 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
       notes <- c(notes, "Wald CI (default) selected")
     }
   } else {
-    #----------------------------------------------------------
+
     # Decision logic for RATIO cases
-    #----------------------------------------------------------
+
 
     # Default: Taylor-linearized (survey::svyratio)
     method <- "design-taylor"
@@ -383,7 +391,7 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
 #' Calculate a survey-weighted proportion for a single binary variable
 #'
 #' Validates that the variable is binary (0/1/NA), selects the appropriate CI
-#' method via \code{\link{iphra_pick_ci_method}}, and estimates the weighted
+#' method via \code{\link{phr_pick_ci_method}}, and estimates the weighted
 #' proportion using \code{survey::svyciprop()}.
 #'
 #' @param design A \code{srvyr} or \code{survey} design object.
@@ -395,7 +403,7 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
 #' @param group_name_label Character; label identifying the disaggregation
 #'   group (e.g. \code{"Overall"} or a specific stratum value).
 #' @param high_design_complexity Logical; passed to
-#'   \code{\link{iphra_pick_ci_method}}.
+#'   \code{\link{phr_pick_ci_method}}.
 #'
 #' @return A one-row tibble with columns \code{variable}, \code{indicator_name},
 #'   \code{indicator_unit}, \code{point.estimate}, \code{lower_ci},
@@ -403,15 +411,15 @@ iphra_pick_ci_method <- function(n_unweighted = NULL,
 #'   \code{denom_unweighted}, \code{denom_weighted}, \code{n_eff}, \code{deff},
 #'   \code{group_name}, and \code{note}.
 #' @noRd
-iphra_calc_survey_prop_single <- function(design,
+phr_calc_survey_prop_single <- function(design,
                                           var_name,
                                           indicator_name = "Proportion",
                                           indicator_unit = "%",
                                           multiplier = 100,
                                           group_name_label = "Overall",
                                           high_design_complexity = FALSE) {
-  origin <- "iphra_calc_survey_prop_single"
-  iphra_message(origin, paste("Starting proportion calculation for:", indicator_name))
+  origin <- "phr_calc_survey_prop_single"
+  phr_message(origin, paste("Starting proportion calculation for:", indicator_name))
 
 
   # 1. Input Validation
@@ -465,7 +473,7 @@ iphra_calc_survey_prop_single <- function(design,
   unique_vals <- unique(stats::na.omit(data[[var_name]]))
   valid_binary <- all(unique_vals %in% c(0, 1))
   if (!valid_binary) {
-    iphra_warning(origin, paste0("Variable '", var_name,
+    phr_warning(origin, paste0("Variable '", var_name,
                                  "' is not binary (contains values other than 0, 1, or NA)."))
     return(tibble::tibble(
       variable = var_name,
@@ -504,6 +512,30 @@ iphra_calc_survey_prop_single <- function(design,
   denom_weighted     <- as.numeric(dsn_sum$denom_weighted)
   denom_unweighted   <- as.numeric(dsn_sum$denom_unweighted)
 
+  # Early return when there are no non-NA observations (e.g. all records filtered
+  # out by an age-range restriction such as mfaz columns outside 6-59 months).
+  # survey::svyciprop would otherwise throw "Argument mu must be a nonempty
+  # numeric vector".
+  if (is.na(denom_unweighted) || denom_unweighted == 0) {
+    return(tibble::tibble(
+      variable = var_name,
+      indicator_name = indicator_name,
+      indicator_unit = indicator_unit,
+      point.estimate = NA_real_,
+      lower_ci = NA_real_,
+      upper_ci = NA_real_,
+      ci_method = NA_character_,
+      n_unweighted = 0,
+      n_weighted = NA_real_,
+      denom_unweighted = 0,
+      denom_weighted = NA_real_,
+      n_eff = NA_real_,
+      deff = NA_real_,
+      group_name = group_name_label,
+      note = "no valid (non-NA) observations in this group"
+    ))
+  }
+
   # Effective sample size
   w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
@@ -520,7 +552,7 @@ iphra_calc_survey_prop_single <- function(design,
     any(tapply(ids_vec, strata_vec, function(x) length(unique(x)) == 1))
   }, error = function(e) FALSE)
 
-  policy <- iphra_pick_ci_method(
+  policy <- phr_pick_ci_method(
     n_unweighted = denom_unweighted,
     n_eff = n_eff,
     p_estimate = quick_est,
@@ -534,7 +566,7 @@ iphra_calc_survey_prop_single <- function(design,
   # For "wilson", use method="mean" to obtain the weighted point estimate;
   # CI bounds are computed analytically in step 7.
 
-  est <- iphra_try({
+  est <- phr_try({
     fmla <- as.formula(paste0("~I(", var_name, " == 1)"))
     suppressWarnings({
       if (policy$method == "design-logit") {
@@ -636,14 +668,14 @@ iphra_calc_survey_prop_single <- function(design,
     note               = safe_chr(policy$note)
   )
 
-  iphra_message(origin, paste("Completed proportion estimate for:", indicator_name))
+  phr_message(origin, paste("Completed proportion estimate for:", indicator_name))
   return(out)
 }
 
 #' Calculate a survey-weighted mean for a single numeric variable
 #'
 #' Validates that the variable is numeric, selects the CI method via
-#' \code{\link{iphra_pick_ci_method}} (always \code{"mean-wald"} for numeric
+#' \code{\link{phr_pick_ci_method}} (always \code{"mean-wald"} for numeric
 #' variables), and estimates the weighted mean using
 #' \code{survey::svymean()}.
 #'
@@ -656,7 +688,7 @@ iphra_calc_survey_prop_single <- function(design,
 #' @param group_name_label Character; label identifying the disaggregation
 #'   group (e.g. \code{"Overall"} or a specific stratum value).
 #' @param high_design_complexity Logical; passed to
-#'   \code{\link{iphra_pick_ci_method}}.
+#'   \code{\link{phr_pick_ci_method}}.
 #'
 #' @return A one-row tibble with columns \code{variable}, \code{indicator_name},
 #'   \code{indicator_unit}, \code{point.estimate}, \code{lower_ci},
@@ -664,15 +696,15 @@ iphra_calc_survey_prop_single <- function(design,
 #'   \code{denom_unweighted}, \code{denom_weighted}, \code{n_eff}, \code{deff},
 #'   \code{group_name}, and \code{note}.
 #' @noRd
-iphra_calc_survey_mean_single <- function(design,
+phr_calc_survey_mean_single <- function(design,
                                           var_name,
                                           indicator_name = "Mean",
                                           indicator_unit = "",
                                           multiplier = 1,
                                           group_name_label = "Overall",
                                           high_design_complexity = FALSE) {
-  origin <- "iphra_calc_survey_mean_single"
-  iphra_message(origin, paste("Starting mean calculation for:", indicator_name))
+  origin <- "phr_calc_survey_mean_single"
+  phr_message(origin, paste("Starting mean calculation for:", indicator_name))
 
 
   # 1. Input Validation
@@ -724,7 +756,7 @@ iphra_calc_survey_mean_single <- function(design,
   # 2. Numeric Validation for Means
 
   if (!is.numeric(data[[var_name]])) {
-    iphra_warning(origin, paste0("Variable '", var_name, "' is not numeric."))
+    phr_warning(origin, paste0("Variable '", var_name, "' is not numeric."))
     return(tibble::tibble(
       variable = var_name,
       indicator_name = indicator_name,
@@ -778,7 +810,7 @@ iphra_calc_survey_mean_single <- function(design,
     any(tapply(ids_vec, strata_vec, function(x) length(unique(x)) == 1))
   }, error = function(e) FALSE)
 
-  policy <- iphra_pick_ci_method(
+  policy <- phr_pick_ci_method(
     n_unweighted = denom_unweighted,
     n_eff = n_eff,
     p_estimate = quick_est,
@@ -791,7 +823,7 @@ iphra_calc_survey_mean_single <- function(design,
 
   # 5. Estimate weighted mean
 
-  est <- iphra_try({
+  est <- phr_try({
     fmla <- as.formula(paste0("~", var_name))
     suppressWarnings({
       survey::svymean(fmla, design, na.rm = TRUE, deff = "replace")
@@ -856,14 +888,14 @@ iphra_calc_survey_mean_single <- function(design,
     note               = safe_chr(policy$note)
   )
 
-  iphra_message(origin, paste("Completed mean estimate for:", indicator_name))
+  phr_message(origin, paste("Completed mean estimate for:", indicator_name))
   return(out)
 }
 
 #' Calculate a survey-weighted median for a single numeric variable
 #'
 #' Validates that the variable is numeric, selects the CI method via
-#' \code{\link{iphra_pick_ci_method}}, and estimates the weighted median using
+#' \code{\link{phr_pick_ci_method}}, and estimates the weighted median using
 #' \code{survey::svyquantile()} at quantile 0.5.
 #'
 #' @param design A \code{srvyr} or \code{survey} design object.
@@ -875,7 +907,7 @@ iphra_calc_survey_mean_single <- function(design,
 #' @param group_name_label Character; label identifying the disaggregation
 #'   group (e.g. \code{"Overall"} or a specific stratum value).
 #' @param high_design_complexity Logical; passed to
-#'   \code{\link{iphra_pick_ci_method}}.
+#'   \code{\link{phr_pick_ci_method}}.
 #'
 #' @return A one-row tibble with columns \code{variable}, \code{indicator_name},
 #'   \code{indicator_unit}, \code{point.estimate}, \code{lower_ci},
@@ -883,15 +915,15 @@ iphra_calc_survey_mean_single <- function(design,
 #'   \code{denom_unweighted}, \code{denom_weighted}, \code{n_eff}, \code{deff},
 #'   \code{group_name}, and \code{note}.
 #' @noRd
-iphra_calc_survey_median_single <- function(design,
+phr_calc_survey_median_single <- function(design,
                                             var_name,
                                             indicator_name = "Median",
                                             indicator_unit = "",
                                             multiplier = 1,
                                             group_name_label = "Overall",
                                             high_design_complexity = FALSE) {
-  origin <- "iphra_calc_survey_median_single"
-  iphra_message(origin, paste("Starting median calculation for:", indicator_name))
+  origin <- "phr_calc_survey_median_single"
+  phr_message(origin, paste("Starting median calculation for:", indicator_name))
 
 
 
@@ -944,7 +976,7 @@ iphra_calc_survey_median_single <- function(design,
   # 2. Numeric Validation
 
   if (!is.numeric(data[[var_name]])) {
-    iphra_warning(origin, paste0("Variable '", var_name, "' is not numeric."))
+    phr_warning(origin, paste0("Variable '", var_name, "' is not numeric."))
     return(tibble::tibble(
       variable = var_name,
       indicator_name = indicator_name,
@@ -998,7 +1030,7 @@ iphra_calc_survey_median_single <- function(design,
     any(tapply(ids_vec, strata_vec, function(x) length(unique(x)) == 1))
   }, error = function(e) FALSE)
 
-  policy <- iphra_pick_ci_method(
+  policy <- phr_pick_ci_method(
     n_unweighted = denom_unweighted,
     n_eff = n_eff,
     p_estimate = quick_est,
@@ -1011,7 +1043,7 @@ iphra_calc_survey_median_single <- function(design,
 
   # 5. Estimate weighted median (survey quantile)
 
-  est <- iphra_try({
+  est <- phr_try({
     fmla <- as.formula(paste0("~", var_name))
     suppressWarnings({
       survey::svyquantile(fmla, design, quantiles = 0.5, ci = TRUE, na.rm = TRUE)[[1]]
@@ -1085,7 +1117,7 @@ iphra_calc_survey_median_single <- function(design,
     note               = safe_chr(policy$note)
   )
 
-  iphra_message(origin, paste("Completed median estimate for:", indicator_name))
+  phr_message(origin, paste("Completed median estimate for:", indicator_name))
   return(out)
 }
 
@@ -1106,7 +1138,7 @@ iphra_calc_survey_median_single <- function(design,
 #' @param group_name_label Character; label identifying the disaggregation
 #'   group (e.g. \code{"Overall"} or a specific stratum value).
 #' @param high_design_complexity Logical; passed to
-#'   \code{\link{iphra_pick_ci_method}}.
+#'   \code{\link{phr_pick_ci_method}}.
 #'
 #' @return A one-row tibble with columns \code{variable}, \code{indicator_name},
 #'   \code{indicator_unit}, \code{point.estimate}, \code{lower_ci},
@@ -1114,7 +1146,7 @@ iphra_calc_survey_median_single <- function(design,
 #'   \code{denom_unweighted}, \code{denom_weighted}, \code{n_eff}, \code{deff},
 #'   \code{group_name}, and \code{note}.
 #' @noRd
-iphra_calc_survey_ratio_single <- function(design,
+phr_calc_survey_ratio_single <- function(design,
                                            numerator_var,
                                            denominator_var,
                                            indicator_name = "Ratio",
@@ -1122,8 +1154,8 @@ iphra_calc_survey_ratio_single <- function(design,
                                            multiplier = 1,
                                            group_name_label = "Overall",
                                            high_design_complexity = FALSE) {
-  origin <- "iphra_calc_survey_ratio_single"
-  iphra_message(origin, paste("Starting ratio calculation for:", indicator_name))
+  origin <- "phr_calc_survey_ratio_single"
+  phr_message(origin, paste("Starting ratio calculation for:", indicator_name))
 
 
   # 1. Validation
@@ -1178,7 +1210,7 @@ iphra_calc_survey_ratio_single <- function(design,
   # 2. Numeric validation
 
   if (!is.numeric(data[[numerator_var]]) || !is.numeric(data[[denominator_var]])) {
-    iphra_warning(origin, paste("Numerator and denominator must be numeric:", numerator_var, denominator_var))
+    phr_warning(origin, paste("Numerator and denominator must be numeric:", numerator_var, denominator_var))
     return(tibble::tibble(
       variable = paste0(numerator_var, "/", denominator_var),
       indicator_name = indicator_name,
@@ -1187,9 +1219,9 @@ iphra_calc_survey_ratio_single <- function(design,
       lower_ci = NA_real_,
       upper_ci = NA_real_,
       ci_method = NA_character_,
-      n_unweighted = sum(!is.na(data[[numerator_var]]) & !is.na(data[[denominator_var]])),
+      n_unweighted = NA_real_,
       n_weighted = NA_real_,
-      denom_unweighted = sum(!is.na(data[[denominator_var]])),
+      denom_unweighted = NA_real_,
       denom_weighted = NA_real_,
       n_eff = NA_real_,
       deff = NA_real_,
@@ -1205,10 +1237,10 @@ iphra_calc_survey_ratio_single <- function(design,
 
   dsn_sum <- design_srvyr %>%
     srvyr::summarise(
-      n_weighted       = srvyr::survey_total(!is.na(!!num_sym) & !is.na(!!den_sym), vartype = NULL, na.rm = TRUE),
-      n_unweighted     = sum(!is.na(!!num_sym) & !is.na(!!den_sym)),
-      denom_weighted   = srvyr::survey_total(!is.na(!!den_sym), vartype = NULL, na.rm = TRUE),
-      denom_unweighted = sum(!is.na(!!den_sym))
+      n_weighted       = srvyr::survey_total(!!num_sym, vartype = NULL, na.rm = TRUE),
+      n_unweighted     = sum(!!num_sym, na.rm = TRUE),
+      denom_weighted   = srvyr::survey_total(!!den_sym, vartype = NULL, na.rm = TRUE),
+      denom_unweighted = sum(!!den_sym, na.rm = TRUE)
     )
 
   n_weighted       <- as.numeric(dsn_sum$n_weighted)
@@ -1216,7 +1248,7 @@ iphra_calc_survey_ratio_single <- function(design,
   denom_weighted   <- as.numeric(dsn_sum$denom_weighted)
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(survey::weights(design), error = function(e) rep(1, nrow(data)))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean ratio
@@ -1231,7 +1263,7 @@ iphra_calc_survey_ratio_single <- function(design,
     any(tapply(ids_vec, strata_vec, function(x) length(unique(x)) == 1))
   }, error = function(e) FALSE)
 
-  policy <- iphra_pick_ci_method(
+  policy <- phr_pick_ci_method(
     n_unweighted = denom_unweighted,
     n_eff = n_eff,
     p_estimate = quick_est,
@@ -1242,7 +1274,7 @@ iphra_calc_survey_ratio_single <- function(design,
     is_ratio = TRUE
   )
 
-  iphra_message(origin, paste("Policy decision:", policy$method))
+  phr_message(origin, paste("Policy decision:", policy$method))
 
 
   # 5. Estimation logic by method
@@ -1251,9 +1283,9 @@ iphra_calc_survey_ratio_single <- function(design,
   note <- policy$note
 
   if (policy$method == "design-taylor") {
-    iphra_message(origin, "Using Taylor-linearized variance (svyratio).")
+    phr_message(origin, "Using Taylor-linearized variance (svyratio).")
 
-    est <- iphra_try({
+    est <- phr_try({
       survey::svyratio(
         numerator = as.formula(paste0("~", numerator_var)),
         denominator = as.formula(paste0("~", denominator_var)),
@@ -1265,7 +1297,7 @@ iphra_calc_survey_ratio_single <- function(design,
     if (!is.null(est)) {
       vc <- tryCatch(vcov(est), error = function(e) NA)
       if (anyNA(vc) || any(vc <= 0)) {
-        iphra_warning(origin, "Variance estimation failed for svyratio (Taylor).")
+        phr_warning(origin, "Variance estimation failed for svyratio (Taylor).")
         policy$method <- "design-meanbased"
         note <- paste(note, "Taylor variance failed; fallback to mean-based ratio.")
       } else {
@@ -1280,10 +1312,10 @@ iphra_calc_survey_ratio_single <- function(design,
   }
 
   if (policy$method == "design-replicate") {
-    iphra_message(origin, "Attempting replicate-weight variance method.")
+    phr_message(origin, "Attempting replicate-weight variance method.")
     rep_design <- tryCatch(survey::as.svrepdesign(design, type = "bootstrap"), error = function(e) NULL)
     if (!is.null(rep_design)) {
-      est <- iphra_try({
+      est <- phr_try({
         survey::svyratio(
           numerator = as.formula(paste0("~", numerator_var)),
           denominator = as.formula(paste0("~", denominator_var)),
@@ -1300,14 +1332,14 @@ iphra_calc_survey_ratio_single <- function(design,
         deff <- tryCatch(as.numeric(attr(est$ratio, "deff")), error = function(e) NA_real_)
       }
     } else {
-      iphra_warning(origin, "Replicate design could not be created; using mean-based fallback.")
+      phr_warning(origin, "Replicate design could not be created; using mean-based fallback.")
       policy$method <- "design-meanbased"
       note <- paste(note, "Replicate design unavailable; fallback to mean-based ratio.")
     }
   }
 
   if (policy$method == "design-meanbased") {
-    iphra_message(origin, "Using fallback: mean-based ratio.")
+    phr_message(origin, "Using fallback: mean-based ratio.")
     ratio_est <- mean(data[[numerator_var]], na.rm = TRUE) / mean(data[[denominator_var]], na.rm = TRUE)
     lower_ci <- NA_real_
     upper_ci <- NA_real_
@@ -1337,14 +1369,14 @@ iphra_calc_survey_ratio_single <- function(design,
     note               = safe_chr(note)
   )
 
-  iphra_message(origin, paste("Completed ratio estimate for:", indicator_name))
+  phr_message(origin, paste("Completed ratio estimate for:", indicator_name))
   return(out)
 }
 
 #' Calculate survey-weighted proportions for all levels of a categorical variable
 #'
 #' Converts the categorical variable to a factor, then calls
-#' \code{\link{iphra_calc_survey_prop_single}} for each level using a temporary
+#' \code{\link{phr_calc_survey_prop_single}} for each level using a temporary
 #' binary indicator.
 #'
 #' @param design A \code{srvyr} or \code{survey} design object.
@@ -1356,12 +1388,12 @@ iphra_calc_survey_ratio_single <- function(design,
 #' @param group_name_label Character; label identifying the disaggregation
 #'   group (e.g. \code{"Overall"} or a specific stratum value).
 #' @param high_design_complexity Logical; passed to
-#'   \code{\link{iphra_calc_survey_prop_single}}.
+#'   \code{\link{phr_calc_survey_prop_single}}.
 #'
 #' @return A tibble with one row per category level, with the same columns as
-#'   \code{\link{iphra_calc_survey_prop_single}}.
+#'   \code{\link{phr_calc_survey_prop_single}}.
 #' @noRd
-iphra_calc_survey_categorical_single <- function(
+phr_calc_survey_categorical_single <- function(
     design,
     var_name,
     indicator_name,
@@ -1384,7 +1416,7 @@ iphra_calc_survey_categorical_single <- function(
     design_tmp <- design
     design_tmp$variables$.tmp_cat <- ifelse(data == cat, 1, 0)
 
-    out <- iphra_calc_survey_prop_single(
+    out <- phr_calc_survey_prop_single(
       design = design_tmp,
       var_name = ".tmp_cat",
       indicator_name = paste0(indicator_name, " - ", cat),
@@ -1400,5 +1432,170 @@ iphra_calc_survey_categorical_single <- function(
     out
   })
 
+  return(results)
+}
+
+#' Calculate survey-weighted proportions for each response in a select-multiple variable
+#'
+#' For select-multiple (multi-select) columns where a single cell may contain
+#' several space-separated responses (e.g. \code{"fed_other_milk lack_of_time"}),
+#' this function:
+#' \enumerate{
+#'   \item Uses \code{grepl} to identify all unique valid responses across all
+#'         non-missing values in the column.
+#'   \item Creates a temporary binary indicator per response
+#'         (1 = response present, 0 = absent) for all non-missing records.
+#'   \item Calls \code{\link{phr_calc_survey_prop_single}} for each response to
+#'         obtain the survey-weighted proportion of records that include that
+#'         response.
+#' }
+#'
+#' The denominator for each response is the number of records with a non-missing
+#' value in \code{var_name} (i.e. records that answered the question), not the
+#' total number of records.
+#'
+#' @param design A \code{srvyr} or \code{survey} design object.
+#' @param var_name Character; name of the select-multiple variable in
+#'   \code{design$variables}.  Values should be character strings of
+#'   space-separated response tokens, or \code{NA} for missing.
+#' @param indicator_name Character; human-readable label for the indicator.
+#'   Each response result is labelled as
+#'   \code{"\{indicator_name\} - \{response\}"}.
+#' @param indicator_unit Character; unit label (default \code{"\%"}).
+#' @param multiplier Numeric; scale factor applied to the point estimate and
+#'   CI bounds (default \code{100} to express as a percentage).
+#' @param group_name_label Character; label identifying the disaggregation
+#'   group (e.g. \code{"Overall"} or a specific stratum value).
+#' @param high_design_complexity Logical; passed to
+#'   \code{\link{phr_calc_survey_prop_single}}.
+#'
+#' @return A tibble with one row per unique response token, with the same
+#'   columns as \code{\link{phr_calc_survey_prop_single}}.  The
+#'   \code{variable} column always contains \code{var_name} and
+#'   \code{indicator_name} is formatted as
+#'   \code{"\{indicator_name\} - \{response\}"}.
+#'   Returns a single-row NA tibble (with an informative \code{note}) when the
+#'   design or variable is invalid, or when no valid responses are found.
+#' @noRd
+phr_calc_multiple_choice_cat <- function(
+    design,
+    var_name,
+    indicator_name = "Select Multiple",
+    indicator_unit = "%",
+    multiplier = 100,
+    group_name_label = "Overall",
+    high_design_complexity = FALSE
+) {
+  origin <- "phr_calc_multiple_choice_cat"
+  phr_message(origin, paste("Starting select-multiple calculation for:", indicator_name))
+
+  # Helper to build a standard NA result row
+  na_row <- function(note_text) {
+    tibble::tibble(
+      variable         = var_name,
+      indicator_name   = indicator_name,
+      indicator_unit   = indicator_unit,
+      point.estimate   = NA_real_,
+      lower_ci         = NA_real_,
+      upper_ci         = NA_real_,
+      ci_method        = NA_character_,
+      n_unweighted     = NA_real_,
+      n_weighted       = NA_real_,
+      denom_unweighted = NA_real_,
+      denom_weighted   = NA_real_,
+      n_eff            = NA_real_,
+      deff             = NA_real_,
+      group_name       = group_name_label,
+      note             = note_text
+    )
+  }
+
+
+  # 1. Input Validation
+
+  if (is.null(design) || !inherits(design, c("survey.design", "srvyr_svy", "tbl_svy"))) {
+    return(na_row("invalid or missing survey design"))
+  }
+
+  if (!var_name %in% names(design$variables)) {
+    return(na_row("variable not found in dataset"))
+  }
+
+  raw_values <- design$variables[[var_name]]
+
+  if (!is.character(raw_values) && !is.factor(raw_values)) {
+    phr_warning(origin, paste0("Variable '", var_name,
+                               "' is not character or factor; coercing to character."))
+  }
+  raw_values <- as.character(raw_values)
+
+
+  # 2. Identify unique responses using grepl across all non-missing values
+
+  non_missing <- raw_values[!is.na(raw_values) & nzchar(trimws(raw_values))]
+
+  if (length(non_missing) == 0) {
+    return(na_row("no non-missing values found in variable"))
+  }
+
+  # Split each record's responses on whitespace to get individual tokens
+  all_tokens <- unlist(strsplit(non_missing, "\\s+"))
+  unique_responses <- sort(unique(all_tokens[nzchar(all_tokens)]))
+
+  if (length(unique_responses) == 0) {
+    return(na_row("no valid response tokens found in variable"))
+  }
+
+  phr_message(origin, paste0("Found ", length(unique_responses),
+                              " unique response(s): ",
+                              paste(unique_responses, collapse = ", ")))
+
+
+  # 3. Subset design to respondents who answered (non-missing)
+  #    so the denominator is "those who answered", not total records.
+
+  design_answered <- tryCatch(
+    subset(design, !is.na(design$variables[[var_name]]) &
+             nzchar(trimws(as.character(design$variables[[var_name]])))),
+    error = function(e) {
+      phr_warning(origin, paste("Could not subset to non-missing respondents:", e$message))
+      design
+    }
+  )
+
+
+  # 4. For each unique response, create a binary indicator and call
+  #    phr_calc_survey_prop_single
+
+  results <- purrr::map_dfr(unique_responses, function(resp) {
+
+    # Escape any regex special characters in the token before building pattern
+    resp_esc <- gsub("([.\\[\\]()^$*+?{}|\\\\])", "\\\\\\1", resp, perl = TRUE)
+
+    # Use grepl to flag records where this response token appears as a whole word
+    design_tmp <- design_answered
+    design_tmp$variables$.tmp_mc <- as.integer(
+      grepl(pattern = paste0("(^|\\s)", resp_esc, "(\\s|$)"),
+            x       = design_tmp$variables[[var_name]],
+            perl    = TRUE)
+    )
+
+    out <- phr_calc_survey_prop_single(
+      design                = design_tmp,
+      var_name              = ".tmp_mc",
+      indicator_name        = paste0(indicator_name, " - ", resp),
+      indicator_unit        = indicator_unit,
+      multiplier            = multiplier,
+      group_name_label      = group_name_label,
+      high_design_complexity = high_design_complexity
+    )
+
+    # Restore original variable name
+    out$variable <- var_name
+
+    out
+  })
+
+  phr_message(origin, paste("Completed select-multiple calculation for:", indicator_name))
   return(results)
 }

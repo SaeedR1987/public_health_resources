@@ -22,7 +22,7 @@ The function was refactored to:
 
 ## Running the Test
 
-From the iphRa project root directory:
+From the public_health_resources project root directory:
 
 ```r
 # Option 1: Source the script in R
