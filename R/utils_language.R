@@ -62,7 +62,11 @@ phr_translations <- list(
 phr_current_lang <- "en"
 
 # ---- Safe Translation Lookup ----
-phr_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefaultReactiveDomain()) {
+phr_txt <- function(key, lang = NULL, default = NULL, session = NULL) {
+  # Lazily obtain the default Shiny reactive domain if shiny is available
+  if (is.null(session) && requireNamespace("shiny", quietly = TRUE)) {
+    session <- shiny::getDefaultReactiveDomain()
+  }
   # [🔗 FUTURE] When language reactivity is connected, use session$userData$lang()
   # If no reactive session available, fallback to phr_current_lang or "en"
 

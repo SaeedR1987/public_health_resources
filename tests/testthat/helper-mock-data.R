@@ -16,7 +16,7 @@
 #' - create_mock_death_data() → generate_died_member_dataset()
 #'
 #' This file provides helper functions to create mock data for testing
-#' the various data class implementations in the iphRa package.
+#' the various data class implementations in the phr package.
 #'
 
 # ============================================================================

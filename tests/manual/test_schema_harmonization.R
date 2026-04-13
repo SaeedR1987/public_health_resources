@@ -1,7 +1,7 @@
 # Manual test script for schema method harmonization
 # Run this script to verify the new variable schema methods work correctly
 
-library(iphRa)
+library(phr)
 
 # Create a simple test dataset
 test_df <- data.frame(

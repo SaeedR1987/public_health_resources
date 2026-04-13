@@ -6019,6 +6019,26 @@ plot_donut <- function(survey_design,
   }, on_error = "warn", origin = origin)
 }
 
+# Internal helper: expand a crosstab data frame to include all factor-level
+# combinations, filling missing cells with 0 for the specified fill columns.
+.expand_crosstab_factor_levels <- function(df_crosstab, row_var, col_var,
+                                           row_factor_levels, col_factor_levels,
+                                           fill_cols) {
+  expand_row <- if (!is.null(row_factor_levels)) row_factor_levels else unique(df_crosstab[[row_var]])
+  expand_col <- if (!is.null(col_factor_levels)) col_factor_levels else unique(df_crosstab[[col_var]])
+  full_grid <- expand.grid(
+    setNames(list(expand_row, expand_col), c(row_var, col_var)),
+    stringsAsFactors = FALSE
+  )
+  df_crosstab[[row_var]] <- as.character(df_crosstab[[row_var]])
+  df_crosstab[[col_var]] <- as.character(df_crosstab[[col_var]])
+  df_crosstab <- dplyr::left_join(full_grid, df_crosstab, by = c(row_var, col_var))
+  for (col in fill_cols) {
+    df_crosstab[[col]][is.na(df_crosstab[[col]])] <- 0
+  }
+  df_crosstab
+}
+
 #' Plot Crosstab Heatmap
 #'
 #' Creates a heatmap visualization of a contingency table (crosstab) between two categorical variables.
@@ -6061,26 +6081,6 @@ plot_donut <- function(survey_design,
 #'
 #' @return Returns a ggplot2 object showing the crosstab heatmap.
 #' @export
-
-# Internal helper: expand a crosstab data frame to include all factor-level
-# combinations, filling missing cells with 0 for the specified fill columns.
-.expand_crosstab_factor_levels <- function(df_crosstab, row_var, col_var,
-                                           row_factor_levels, col_factor_levels,
-                                           fill_cols) {
-  expand_row <- if (!is.null(row_factor_levels)) row_factor_levels else unique(df_crosstab[[row_var]])
-  expand_col <- if (!is.null(col_factor_levels)) col_factor_levels else unique(df_crosstab[[col_var]])
-  full_grid <- expand.grid(
-    setNames(list(expand_row, expand_col), c(row_var, col_var)),
-    stringsAsFactors = FALSE
-  )
-  df_crosstab[[row_var]] <- as.character(df_crosstab[[row_var]])
-  df_crosstab[[col_var]] <- as.character(df_crosstab[[col_var]])
-  df_crosstab <- dplyr::left_join(full_grid, df_crosstab, by = c(row_var, col_var))
-  for (col in fill_cols) {
-    df_crosstab[[col]][is.na(df_crosstab[[col]])] <- 0
-  }
-  df_crosstab
-}
 
 plot_crosstab <- function(survey_design,
                           row_var,
@@ -7742,7 +7742,7 @@ table_frequency <- function(survey_design,
       }
     }
 
-    # Styling — apply standard iphRa theme
+    # Styling — apply standard phr theme
     ft <- apply_phr_flextable_theme(ft, color_palette = color_palette)
 
     # Right-align numeric columns
@@ -8380,7 +8380,7 @@ table_frequency_v2 <- function(survey_design,
       }
     }
 
-    # Styling — apply standard iphRa theme
+    # Styling — apply standard phr theme
     ft <- apply_phr_flextable_theme(ft, color_palette = color_palette)
 
     # Right-align numeric columns
@@ -8626,7 +8626,7 @@ table_quality_penalty_summary <- function(results_df,
       ft <- flextable::merge_v(ft, j = "pct_group_penalty")
     }
 
-    # Styling — apply standard iphRa theme
+    # Styling — apply standard phr theme
     ft <- apply_phr_flextable_theme(ft, color_palette = color_palette)
     valign_cols <- "group_penalty"
     if (has_check_group) valign_cols <- c("check_group", valign_cols)
@@ -8833,7 +8833,7 @@ table_quality_penalty_summary_by_group <- function(results_df,
       top       = TRUE
     )
 
-    # Apply standard iphRa theme
+    # Apply standard phr theme
     ft <- apply_phr_flextable_theme(ft, color_palette = color_palette)
 
     # Align numeric (penalty / max_penalty) columns right; group_total centered

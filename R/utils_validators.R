@@ -47,7 +47,7 @@ ensure_value <- function(value, default) {
 #' .is_select_multiple_allowed(variable, allowable_values)
 #' # Output: FALSE (because "option_d" and "option_e" are invalid)
 #'
-#' @export
+#' @noRd
 .is_select_multiple_allowed <- function(variable, allowable_values) {
   origin <- "is_select_multiple_allowed"
 
@@ -123,7 +123,7 @@ ensure_value <- function(value, default) {
 #' .is_greater_than_one_selection(vec)
 #' # Output: TRUE, FALSE, TRUE, FALSE
 #'
-#' @export
+#' @noRd
 .is_greater_than_one_selection <- function(select_multiple_input, select_multiple_col = NULL) {
   origin <- "is_greater_than_one_selection"
 
@@ -190,7 +190,7 @@ ensure_value <- function(value, default) {
 #' .is_greater_than_three_selection(vec)
 #' # Output: FALSE, FALSE, TRUE, FALSE
 #'
-#' @export
+#' @noRd
 .is_greater_than_three_selection <- function(select_multiple_input, select_multiple_col = NULL) {
   origin <- "is_greater_than_three_selection"
 

@@ -1,7 +1,7 @@
 # Test to verify add_linked_dataset validation
 # This test verifies that link names are validated and class types are checked
 
-library(iphRa)
+library(phr)
 library(tibble)
 
 cat("=== Testing add_linked_dataset Validation ===\n\n")

@@ -2,7 +2,11 @@
 name: "R: lint & check"
 
 on:
-  workflow_dispatch: {}         # manual trigger
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch: {}
 
 jobs:
   lint-and-check:

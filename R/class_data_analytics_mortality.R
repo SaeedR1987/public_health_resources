@@ -312,7 +312,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "quality_schema_data_quality_mortality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -353,7 +353,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_mortality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -384,7 +384,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_mortality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -415,7 +415,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_mortality_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -446,7 +446,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_mortality_deaths_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -477,7 +477,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_mortality_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -508,7 +508,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_mortality_deaths_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -1126,9 +1126,9 @@ MortalityDataAnalytics <- R6::R6Class(
           }
 
           output_function <- NULL
-          if (requireNamespace("iphRa", quietly = TRUE)) {
+          if (requireNamespace("phr", quietly = TRUE)) {
             tryCatch({
-              ns_env <- asNamespace("iphRa")
+              ns_env <- asNamespace("phr")
               if (exists(func_name, envir = ns_env, mode = "function", inherits = FALSE)) {
                 output_function <- get(func_name, envir = ns_env, mode = "function", inherits = FALSE)
               }
