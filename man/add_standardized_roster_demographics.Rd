@@ -37,6 +37,7 @@ The function creates the following canonical columns for roster data:
 - **roster_child_under5**: `1` if age < 5 years, `0` otherwise
 - **roster_2to5**: `1` if 2 <= age < 5 years, `0` otherwise
 - **roster_5plus**: `1` if age >= 5 years, `0` otherwise
+- **roster_5_10**: `1` if 5 <= age < 10 years, `0` if age < 5 years, `NA` if age >= 10 years or age is NA
 - **roster_male**: `1` if sex matches male value, `0` otherwise
 - **roster_female**: `1` if sex matches female value, `0` otherwise
 - **roster_woman_15to49**: `1` if female aged 15-49, `0` otherwise

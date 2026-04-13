@@ -1375,7 +1375,7 @@ HouseholdData <- R6::R6Class(
         # They use fixed names as they are outputs, not inputs that need mapping
         canonical_cols <- c(
           "roster_child_under2", "roster_child_under5",
-          "roster_2to5", "roster_5plus",
+          "roster_2to5", "roster_5plus", "roster_5_10",
           "roster_male", "roster_female", "roster_woman_15to49",
           "roster_birth",
           "person_time", "person_time_under5",
