@@ -392,7 +392,7 @@ Protocol <- R6::R6Class(
   ),
   
   private = list(
-    #' @description Check for issues and discrepancies in the protocol
+    # Check for issues and discrepancies in the protocol
     check_issues = function() {
       self$issues <- list()
       
