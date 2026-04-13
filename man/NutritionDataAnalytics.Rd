@@ -19,7 +19,7 @@ Nutrition-specific quantitative analysis, including anthropometric data.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{NutritionDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{NutritionDataAnalytics}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

@@ -28,7 +28,7 @@ named sub-list.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{MortalityDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{MortalityDataAnalytics}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -76,6 +76,10 @@ named sub-list.
 \item{\code{survey_design_roster}}{srvyr survey design object for the linked roster dataset}
 
 \item{\code{survey_design_deaths}}{srvyr survey design object for the linked deaths dataset}
+
+\item{\code{base_survey_design_roster}}{Unfiltered base srvyr survey design object for the linked roster dataset}
+
+\item{\code{base_survey_design_deaths}}{Unfiltered base srvyr survey design object for the linked deaths dataset}
 }
 \if{html}{\out{</div>}}
 }
@@ -424,7 +428,6 @@ titles. One of \code{"english"} (default), \code{"french"}, or
 }
 \subsection{Returns}{
 Invisibly returns a list with \code{visualizations} and \code{tables}.
-Return the number of rows in a QuantDataAnalysisPlanLog's log_df, or 0L.
 }
 }
 \if{html}{\out{<hr>}}

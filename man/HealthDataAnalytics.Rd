@@ -18,7 +18,7 @@ integrated object.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{HealthDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{HealthDataAnalytics}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

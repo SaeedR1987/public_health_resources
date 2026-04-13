@@ -67,6 +67,8 @@ Key design principles:
 
 \item{\code{survey_design}}{srvyr survey design object}
 
+\item{\code{base_survey_design}}{Unfiltered base srvyr survey design object (used internally for analysis)}
+
 \item{\code{analysis_plan_issue_log}}{Tibble of plan validation issues (internal)}
 
 \item{\code{quality_issues_log}}{Tibble of quality schema diagnostic results from quality_diagnose()}
@@ -1020,7 +1022,6 @@ Import an analysis schema from a file
 }
 \subsection{Returns}{
 Invisibly returns self.
-Resolve @ references in test_params into concrete values for do.call()
 }
 }
 \if{html}{\out{<hr>}}

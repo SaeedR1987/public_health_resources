@@ -18,7 +18,7 @@ integrated object.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{DemographicsDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{DemographicsDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{

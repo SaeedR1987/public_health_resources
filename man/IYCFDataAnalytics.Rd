@@ -18,7 +18,7 @@ analytics object.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{IYCFDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{IYCFDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{

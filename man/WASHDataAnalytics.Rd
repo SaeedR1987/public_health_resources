@@ -18,7 +18,7 @@ analysis in a single integrated object.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{WASHDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{WASHDataAnalytics}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

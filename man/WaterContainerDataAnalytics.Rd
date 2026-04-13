@@ -17,7 +17,7 @@ water container-specific quality checks in a unified analytics object.
 [DataAnalytics], [WaterContainerData]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{WaterContainerDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{WaterContainerDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{

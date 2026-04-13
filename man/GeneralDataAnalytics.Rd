@@ -18,7 +18,7 @@ subclasses (FSL, WASH, Health, Mortality, Nutrition, Demographics).
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{GeneralDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{GeneralDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{

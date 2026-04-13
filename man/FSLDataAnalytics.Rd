@@ -18,7 +18,7 @@ analysis in a single integrated object.
 [DataAnalytics]
 }
 \section{Super class}{
-\code{iphRa::DataAnalytics} -> \code{FSLDataAnalytics}
+\code{\link[iphRa:DataAnalytics]{iphRa::DataAnalytics}} -> \code{FSLDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{
