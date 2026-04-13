@@ -624,6 +624,7 @@ add_standardized_age <- function(
 #' - **roster_child_under5**: `1` if age < 5 years, `0` otherwise
 #' - **roster_2to5**: `1` if 2 <= age < 5 years, `0` otherwise
 #' - **roster_5plus**: `1` if age >= 5 years, `0` otherwise
+#' - **roster_5_10**: `1` if 5 <= age < 10 years, `0` if age < 5 years, `NA` if age >= 10 years or age is NA
 #' - **roster_male**: `1` if sex matches male value, `0` otherwise
 #' - **roster_female**: `1` if sex matches female value, `0` otherwise
 #' - **roster_woman_15to49**: `1` if female aged 15-49, `0` otherwise
@@ -696,7 +697,7 @@ add_standardized_roster_demographics <- function(
     # Warn about overwriting existing columns
     output_cols <- c(
       "roster_child_under2", "roster_child_under5",
-      "roster_2to5", "roster_5plus",
+      "roster_2to5", "roster_5plus", "roster_5_10",
       "roster_male", "roster_female", "roster_woman_15to49"
     )
 
@@ -727,6 +728,12 @@ add_standardized_roster_demographics <- function(
         roster_5plus = dplyr::if_else(
           !is.na(.data[[age_years_col]]) & .data[[age_years_col]] >= 5,
           1, 0
+        ),
+        roster_5_10 = dplyr::case_when(
+          is.na(.data[[age_years_col]]) ~ NA_real_,
+          .data[[age_years_col]] < 5 ~ 0,
+          .data[[age_years_col]] < 10 ~ 1,
+          TRUE ~ NA_real_
         )
       )
 
