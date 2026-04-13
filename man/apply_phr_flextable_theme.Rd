@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_flextable_themes.R
 \name{apply_phr_flextable_theme}
 \alias{apply_phr_flextable_theme}
-\title{Apply Standard iphRa Flextable Theme}
+\title{Apply Standard phr Flextable Theme}
 \usage{
 apply_phr_flextable_theme(
   ft,
@@ -52,7 +52,7 @@ The themed \code{flextable} object.
 Applies a consistent, standardised theme to a \code{flextable} object using
 the Roboto Condensed font and REACH brand colour palette for column headers.
 This function centralises all common styling so that every table produced by
-iphRa looks consistent.
+phr looks consistent.
 }
 \examples{
 \dontrun{
