@@ -230,8 +230,19 @@ good_deaths <- DeathIndividualData$new(
 
   mortality_analyics <- good_hh$generate_data_analytics(stage = "standardized", type = "mortality")
 
+
+
+
+  mortality_analyics$analysis_diagnose()
+  View(mortality_analyics$analysis_plan_issues_log)
   mortality_analyics$run_analysis()
+
+  mortality_analyics$quality_diagnose()
+  View(mortality_analyics$quality_issues_log)
   mortality_analyics$run_quality_checks()
+
+  mortality_analyics$outputs_diagnose()
+  View(mortality_analyics$outputs_issues_log)
   mortality_analyics$run_outputs()
 
   View(mortality_analyics$analysis_results$household$survey_design)
@@ -283,7 +294,7 @@ good_deaths <- DeathIndividualData$new(
   View(nut_analytics$outputs_issues_log)
   nut_analytics$run_outputs()
 
-  nut_analytics$visualizations$enumerator$mfaz_cat_enum_id
+  nut_analytics$visualizations$enumerator
 
 
   nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
