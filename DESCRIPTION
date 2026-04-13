@@ -1,21 +1,52 @@
-Package: iphRa
-Title: An Amazing Shiny App
-Version: 0.0.0.9000
-Authors@R: 
-    person(given = "firstname",
-           family = "lastname",
+Package: phr
+Title: Public Health Resource Analysis Tools
+Version: 0.1.0
+Authors@R:
+    person(given = "Saeed",
+           family = "Rahman",
            role = c("aut", "cre"),
-           email = "your@email.com")
-Description: What the package does (one paragraph).
-License: What license is it under?
-Imports: 
-    config,
-    golem,
-    presentresults,
-    shiny
-Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.3.3
-Suggests: 
+           email = "saeed.rahman0@gmail.com")
+Description: Provides a suite of R6-based data classes, validation utilities,
+    quality-control tests, and visualisation helpers for public health survey
+    data.  Core functionality covers food security (FSL/FCS/HDDS/LCSI/RCSI),
+    nutrition (MUAC, z-scores, IYCF), mortality, WASH, and demographics,
+    together with standardised output schemas and a collection of ggplot2-based
+    plot functions.
+License: MIT + file LICENSE
+Depends:
+    R (>= 4.1.0)
+Imports:
+    binom,
+    digest,
+    dplyr,
+    flextable,
+    GGally,
+    ggalluvial,
+    ggnewscale,
+    ggplot2,
+    ggridges,
+    glue,
+    Hmisc,
+    lubridate,
+    nipnTK,
+    officer,
+    openxlsx,
+    purrr,
+    R6,
+    readr,
+    readxl,
+    rlang,
+    scales,
+    srvyr,
+    survey,
+    tibble,
+    tidyr,
+    tidyselect,
+    treemapify,
+    zscorer
+Suggests:
+    shiny,
     testthat (>= 3.0.0)
+Encoding: UTF-8
+RoxygenNote: 7.3.3
 Config/testthat/edition: 3

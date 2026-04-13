@@ -1,7 +1,7 @@
 # Test to verify that linked object standardization persists
 # This test verifies issue (2) from the comment
 
-library(iphRa)
+library(phr)
 library(tibble)
 
 cat("=== Testing Linked Object Standardization Persistence ===\n\n")

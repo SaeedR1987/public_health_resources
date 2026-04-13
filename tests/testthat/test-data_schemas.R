@@ -728,27 +728,27 @@ test_that(".safe_bool helper function works correctly", {
   # that are critical to data integrity and type conversion
 
   # Test logical values
-  expect_true(iphRa:::.safe_bool(TRUE))
-  expect_false(iphRa:::.safe_bool(FALSE))
+  expect_true(phr:::.safe_bool(TRUE))
+  expect_false(phr:::.safe_bool(FALSE))
 
   # Test string values
-  expect_true(iphRa:::.safe_bool("TRUE"))
-  expect_true(iphRa:::.safe_bool("true"))
-  expect_true(iphRa:::.safe_bool("True"))
-  expect_true(iphRa:::.safe_bool("T"))
-  expect_true(iphRa:::.safe_bool("1"))
-  expect_false(iphRa:::.safe_bool("FALSE"))
-  expect_false(iphRa:::.safe_bool("false"))
-  expect_false(iphRa:::.safe_bool(""))
+  expect_true(phr:::.safe_bool("TRUE"))
+  expect_true(phr:::.safe_bool("true"))
+  expect_true(phr:::.safe_bool("True"))
+  expect_true(phr:::.safe_bool("T"))
+  expect_true(phr:::.safe_bool("1"))
+  expect_false(phr:::.safe_bool("FALSE"))
+  expect_false(phr:::.safe_bool("false"))
+  expect_false(phr:::.safe_bool(""))
 
   # Test numeric values
-  expect_true(iphRa:::.safe_bool(1))
-  expect_false(iphRa:::.safe_bool(0))
+  expect_true(phr:::.safe_bool(1))
+  expect_false(phr:::.safe_bool(0))
 
   # Test NA values
-  expect_false(iphRa:::.safe_bool(NA))
-  expect_false(iphRa:::.safe_bool(NA_character_))
-  expect_false(iphRa:::.safe_bool("NA"))
+  expect_false(phr:::.safe_bool(NA))
+  expect_false(phr:::.safe_bool(NA_character_))
+  expect_false(phr:::.safe_bool("NA"))
 })
 
 

@@ -125,7 +125,7 @@ DeathIndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "variable_schema_data_individual_death_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -166,7 +166,7 @@ DeathIndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "indicator_schema_data_individual_death_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -209,7 +209,7 @@ DeathIndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "dependency_schema_data_individual_death_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {

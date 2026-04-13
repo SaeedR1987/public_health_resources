@@ -2,7 +2,7 @@
 # This test demonstrates the new specialized aggregation methods for
 # NutritionIndividualData, HealthIndividualData, and WomenIndividualData
 
-library(iphRa)
+library(phr)
 library(dplyr)
 library(tibble)
 

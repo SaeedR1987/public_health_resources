@@ -9,7 +9,7 @@
 # - Allow dynamic vertical reference lines
 # - Support custom labels
 
-library(iphRa)
+library(phr)
 library(dplyr)
 library(ggplot2)
 

@@ -2,7 +2,7 @@
 #'
 #' Functions for converting between outputs schema table and nested list format.
 #' These functions follow the same patterns as data_schema_to_table and data_table_to_schema
-#' for consistency across the iphRa package.
+#' for consistency across the phr package.
 #'
 #' @name outputs_schema_utils
 NULL

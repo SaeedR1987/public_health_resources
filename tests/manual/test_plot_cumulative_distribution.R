@@ -10,7 +10,7 @@
 # - Support custom labels and axis limits
 # - Auto-detect MUAC vs z-score data for appropriate defaults
 
-library(iphRa)
+library(phr)
 library(dplyr)
 library(ggplot2)
 

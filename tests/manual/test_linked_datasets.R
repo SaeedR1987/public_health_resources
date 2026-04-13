@@ -1,7 +1,7 @@
 # Manual test for linked datasets functionality in HouseholdData
 # This test demonstrates the linked_objects feature (inherited from Data class)
 
-library(iphRa)
+library(phr)
 library(dplyr)
 library(tibble)
 

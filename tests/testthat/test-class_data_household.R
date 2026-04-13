@@ -6,14 +6,14 @@ library(tibble)
 
 test_that("household schema template files exist in inst/resources", {
   # Check for new separated templates
-  var_path <- system.file("resources", "variable_schema_data_household_template.xlsx", package = "iphRa")
-  dep_path <- system.file("resources", "dependency_schema_data_household_template.xlsx", package = "iphRa")
+  var_path <- system.file("resources", "variable_schema_data_household_template.xlsx", package = "phr")
+  dep_path <- system.file("resources", "dependency_schema_data_household_template.xlsx", package = "phr")
 
   expect_true(file.exists(var_path), info = "variable_schema_data_household_template.xlsx should exist")
   expect_true(file.exists(dep_path), info = "dependency_schema_data_household_template.xlsx should exist")
 
   # Old combined template may still exist for backwards compatibility
-  old_path <- system.file("resources", "household_schema_template.xlsx", package = "iphRa")
+  old_path <- system.file("resources", "household_schema_template.xlsx", package = "phr")
   # Not requiring old file to exist, but if it does, that's OK
 })
 

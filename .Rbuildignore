@@ -4,4 +4,9 @@
 dev_history.R
 ^dev$
 $run_dev.*
-^.here$
+^\.here$
+^Data_standardized\.csv$
+^lintr\.txt$
+^resources$
+^docs$
+^LICENSE\.md$
