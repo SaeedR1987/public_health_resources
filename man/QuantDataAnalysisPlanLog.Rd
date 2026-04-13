@@ -151,7 +151,7 @@ Helper method to add an analysis plan entry with all required fields
 
 \item{\code{multiplier}}{Numeric; multiplier for the calculation (default: 100)}
 
-\item{\code{indicator_unit}}{Character; unit of measurement (default: "%")}
+\item{\code{indicator_unit}}{Character; unit of measurement (default: "\%")}
 }
 \if{html}{\out{</div>}}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_quality_analyisis_outputs.R
 \name{plot_stacked_bar}
 \alias{plot_stacked_bar}
-\title{Plot 100% Stacked Bar Chart}
+\title{Plot 100\% Stacked Bar Chart}
 \usage{
 plot_stacked_bar(
   survey_design,
@@ -80,10 +80,10 @@ If FALSE (default), rows with missing fill values are excluded from the plotted 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
 }
 \value{
-Returns a ggplot2 object showing the 100% stacked bar chart.
+Returns a ggplot2 object showing the 100\% stacked bar chart.
 }
 \description{
-Creates a 100% stacked bar chart for categorical or factor variables, either overall or grouped.
+Creates a 100\% stacked bar chart for categorical or factor variables, either overall or grouped.
 The plot shows the relative proportions of each category as a percentage of the total.
 Supports survey weights for proper representation of weighted surveys.
 }

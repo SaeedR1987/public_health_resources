@@ -2394,7 +2394,7 @@ plot_domain_radar <- function(survey_design,
 #'   )
 #' )
 #' @param show_percentage Logical. If TRUE, shows percentages instead of counts.
-#' By default: FALSE. Note: For select multiple questions, percentages may sum to >100%.
+#' By default: FALSE. Note: For select multiple questions, percentages may sum to >100\%.
 #' @param flip_coordinates Logical. If TRUE, creates horizontal bars (flipped coordinates).
 #' By default: TRUE.
 #' @param color_palette Color palette to use. By default: "reach1"
@@ -2693,9 +2693,9 @@ plot_domain_distribution <- function(survey_design,
   }, on_error = "warn", origin = origin)
 }
 
-#' Plot 100% Stacked Bar Chart
+#' Plot 100\% Stacked Bar Chart
 #'
-#' Creates a 100% stacked bar chart for categorical or factor variables, either overall or grouped.
+#' Creates a 100\% stacked bar chart for categorical or factor variables, either overall or grouped.
 #' The plot shows the relative proportions of each category as a percentage of the total.
 #' Supports survey weights for proper representation of weighted surveys.
 #'
@@ -2731,7 +2731,7 @@ plot_domain_distribution <- function(survey_design,
 #'   If FALSE (default), rows with missing fill values are excluded from the plotted distribution.
 #' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
 #'
-#' @return Returns a ggplot2 object showing the 100% stacked bar chart.
+#' @return Returns a ggplot2 object showing the 100\% stacked bar chart.
 #' @export
 #'
 #' @examples
@@ -3027,9 +3027,9 @@ plot_stacked_bar <- function(survey_design,
   }, on_error = "warn", origin = origin)
 }
 
-#' Plot 100% Stacked Bar Chart for Multiple Variables
+#' Plot 100\% Stacked Bar Chart for Multiple Variables
 #'
-#' Creates a 100% stacked bar chart showing multiple categorical variables in the same plot.
+#' Creates a 100\% stacked bar chart showing multiple categorical variables in the same plot.
 #' Each variable is represented as a separate bar, optionally grouped together.
 #' The plot shows the relative proportions of each category as a percentage of the total.
 #' Supports survey weights for proper representation of weighted surveys.
@@ -3068,7 +3068,7 @@ plot_stacked_bar <- function(survey_design,
 #' @param group_spacing Numeric value for spacing between bars within a variable when using grouping (default: 0.1).
 #'   Creates visual separation between different variables' grouped bars.
 #'
-#' @return Returns a ggplot2 object showing the 100% stacked bar chart with multiple variables.
+#' @return Returns a ggplot2 object showing the 100\% stacked bar chart with multiple variables.
 #' @export
 
 plot_stacked_bar_multiple_vars <- function(survey_design,
@@ -4615,7 +4615,7 @@ plot_treemap <- function(survey_design,
 #' @param weights_col Character, name of the weights column (required if weighted = TRUE)
 #' @param show_percentage Logical, whether to display as percentages instead of counts (default: FALSE)
 #' @param show_stratum_labels Logical, whether to show category names on strata (default: TRUE)
-#' @param show_stratum_stats Logical, whether to show XX.X% (n) on strata (default: FALSE)
+#' @param show_stratum_stats Logical, whether to show XX.X\% (n) on strata (default: FALSE)
 #' @param color_palette Character, color palette type (default: "reach1")
 #' @param title_name Character, plot title (default: NULL)
 #' @param subtitle Character, additional subtitle text (default: NULL)
@@ -4946,7 +4946,7 @@ plot_sankey <- function(survey_design,
 #' @param grouping_label Character, grouping label used in auto-title (default: NULL)
 #' @param subtitle Character, additional subtitle text (default: NULL)
 #' @param x_lab Character, x-axis label (default: NULL)
-#' @param y_lab Character, y-axis label (default: "Percentage (%)")
+#' @param y_lab Character, y-axis label (default: "Percentage (\%)")
 #' @param legend_label Character, legend title (default: NULL)
 #' @param legend_position Character, position of legend (default: "bottom")
 #' @param flip_coordinates Logical, whether to flip coordinates (default: FALSE)

@@ -39,7 +39,7 @@ Must be same length as axis_vars if provided}
 
 \item{show_stratum_labels}{Logical, whether to show category names on strata (default: TRUE)}
 
-\item{show_stratum_stats}{Logical, whether to show XX.X% (n) on strata (default: FALSE)}
+\item{show_stratum_stats}{Logical, whether to show XX.X\% (n) on strata (default: FALSE)}
 
 \item{color_palette}{Character, color palette type (default: "reach1")}
 

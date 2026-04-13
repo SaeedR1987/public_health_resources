@@ -55,7 +55,7 @@ calculations (default: 0.95). Ignored for survey design objects.}
 
 \item{x_lab}{Character, x-axis label (default: NULL)}
 
-\item{y_lab}{Character, y-axis label (default: "Percentage (%)")}
+\item{y_lab}{Character, y-axis label (default: "Percentage (\%)")}
 
 \item{legend_label}{Character, legend title (default: NULL)}
 

@@ -37,7 +37,7 @@ Example: list(
 )}
 
 \item{show_percentage}{Logical. If TRUE, shows percentages instead of counts.
-By default: FALSE. Note: For select multiple questions, percentages may sum to >100%.}
+By default: FALSE. Note: For select multiple questions, percentages may sum to >100\%.}
 
 \item{flip_coordinates}{Logical. If TRUE, creates horizontal bars (flipped coordinates).
 By default: TRUE.}
@@ -60,8 +60,6 @@ By default: TRUE.}
 }
 \value{
 Returns a ggplot2 object.
-
-Returns a ggplot2 object.
 }
 \description{
 This functions plots a count distribution of responses for a select multiple question
@@ -71,22 +69,6 @@ response options can be grouped by barriers related to availability, accessibili
 quality of services. Each response option should only belong to one domain category.
 }
 \examples{
-\dontrun{
-  domain_list <- list(
-    accessibility = list(
-      responses = c("barrier.distance", "barrier.costtransport"),
-      label = "Accessibility Barriers",
-      response_labels = c("barrier.distance" = "Too Far",
-                         "barrier.costtransport" = "Transport Cost")
-    ),
-    quality = list(
-      responses = c("barrier.rudestaff"),
-      label = "Quality Barriers",
-      response_labels = c("barrier.rudestaff" = "Rude Staff")
-    )
-  )
-  plot_domain_distribution(survey_design = data, domain_list = domain_list)
-}
 \dontrun{
   domain_list <- list(
     accessibility = list(
