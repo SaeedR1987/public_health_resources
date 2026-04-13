@@ -13,7 +13,7 @@ Observation tools are typically used for:
 - Community observations
 }
 \section{Super class}{
-\code{phr::Tool} -> \code{ObservationTool}
+\code{\link[phr:Tool]{phr::Tool}} -> \code{ObservationTool}
 }
 \section{Methods}{
 \subsection{Public methods}{

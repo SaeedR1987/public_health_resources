@@ -12,7 +12,7 @@ KII tools are typically used for:
 - Sector-specific expert interviews
 }
 \section{Super class}{
-\code{phr::Tool} -> \code{KeyInformantTool}
+\code{\link[phr:Tool]{phr::Tool}} -> \code{KeyInformantTool}
 }
 \section{Methods}{
 \subsection{Public methods}{

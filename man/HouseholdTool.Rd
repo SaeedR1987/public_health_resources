@@ -11,7 +11,7 @@ Household surveys typically include:
 - Sectoral questions (FSL, WASH, Health, etc.)
 }
 \section{Super class}{
-\code{phr::Tool} -> \code{HouseholdTool}
+\code{\link[phr:Tool]{phr::Tool}} -> \code{HouseholdTool}
 }
 \section{Methods}{
 \subsection{Public methods}{
