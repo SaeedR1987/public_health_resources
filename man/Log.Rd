@@ -21,7 +21,6 @@ The Log class provides:
 Requires digest package
 Get Summary
 }
-\keyword{Log}
 \keyword{internal}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

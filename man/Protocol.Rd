@@ -57,7 +57,7 @@ Allows flexible interaction with different workflow components:
 \if{html}{\out{<a id="method-Protocol-new"></a>}}
 \if{latex}{\out{\hypertarget{method-Protocol-new}{}}}
 \subsection{Method \code{new()}}{
-Initialize a new Protocol
+Creates a new Protocol object
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Protocol$new(assessment_title = NULL, country_name = NULL, month_year = NULL)}\if{html}{\out{</div>}}
 }

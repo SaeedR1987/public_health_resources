@@ -21,8 +21,6 @@ Required columns:
 * issue: Description of why the record should be deleted
 * feedback: Additional comments or resolution notes
 }
-\keyword{Deletion}
-\keyword{Log}
 \keyword{internal}
 \section{Super class}{
 \code{\link[phr:Log]{phr::Log}} -> \code{DeletionLog}
