@@ -144,8 +144,6 @@ validate_char_choices <- function(x, allowed_values) {
   return(TRUE)
 }
 
-library(lubridate)
-
 #' Convert character or POSIX dates to Date, strictly
 #'
 #' Converts input to Date, strips any time components, and errors if any value cannot be parsed.
