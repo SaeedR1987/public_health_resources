@@ -18,13 +18,4 @@ Invisibly returns `NULL`.
 Handles displaying messages, warnings, and errors either via Shiny notifications
 (if the app is running) or via console output (when outside Shiny).
 }
-\details{
-#' @title Get Current IPHRA Session Logs
-#' @return A reactive expression that returns the session log data frame.
-#' @export
-phr_get_logs <- function(session = shiny::getDefaultReactiveDomain()) {
-  store <- phr_get_log_store(session)
-  shiny::reactive(store())
-}
-}
 \keyword{internal}

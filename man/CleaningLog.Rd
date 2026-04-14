@@ -26,9 +26,6 @@ Required columns:
 * old.value: Current value in the dataset
 * new.value: Proposed new value
 }
-\keyword{Cleaning}
-\keyword{Initialize}
-\keyword{Log}
 \keyword{internal}
 \section{Super class}{
 \code{\link[phr:Log]{phr::Log}} -> \code{CleaningLog}
