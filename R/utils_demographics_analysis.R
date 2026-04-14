@@ -1,11 +1,11 @@
-#' @title Plot Age–Sex Pyramid
-#' @description Create an age–sex pyramid plot (percentage version).
+#' @title Plot Age\u2013Sex Pyramid
+#' @description Create an age\u2013sex pyramid plot (percentage version).
 #' @param data Data frame or tibble containing the data.
 #' @param age_col Name of the column containing age data (character string).
 #' @param sex_col Name of the column containing sex data (character string).
-#' @param title Title of the plot. Defaults to "Age–Sex Pyramid (\%)".
-#' @return A ggplot object representing the age–sex pyramid plot.
-plot_age_sex_pyramid <- function(data, age_col, sex_col, title = "Age–Sex Pyramid (%)") {
+#' @param title Title of the plot. Defaults to "Age\u2013Sex Pyramid (\%)".
+#' @return A ggplot object representing the age\u2013sex pyramid plot.
+plot_age_sex_pyramid <- function(data, age_col, sex_col, title = "Age\u2013Sex Pyramid (%)") {
   if (is.null(age_col) || !age_col %in% names(data))
     stop("Age column not found in the provided data.")
   if (is.null(sex_col) || !sex_col %in% names(data))
@@ -66,7 +66,7 @@ plot_age_sex_pyramid <- function(data, age_col, sex_col, title = "Age–Sex Pyra
 #' @param age_col Name of the column containing age data (character string).
 #' @param range Numeric vector of length 2 specifying the range of ages to include in the histogram. Defaults to c(0, 10).
 #' @param binwidth Numeric value specifying the width of bins. Defaults to 1.
-#' @param title Title of the plot. Defaults to "Age distribution (<min–max> years)".
+#' @param title Title of the plot. Defaults to "Age distribution (<min\u2013max> years)".
 #' @return A ggplot object representing the age histogram.
 plot_age_histogram <- function(data, age_col, range = c(0, 10), binwidth = 1, title = NULL) {
   if (is.null(age_col) || !age_col %in% names(data))
@@ -94,7 +94,7 @@ plot_age_histogram <- function(data, age_col, range = c(0, 10), binwidth = 1, ti
       limits = range
     ) +
     ggplot2::labs(
-      title = title %||% paste0("Age distribution (", range[1], "–", range[2], " years)"),
+      title = title %||% paste0("Age distribution (", range[1], "\u2013", range[2], " years)"),
       x = "Age (years)",
       y = "Count"
     ) +

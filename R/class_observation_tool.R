@@ -1,6 +1,6 @@
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 # R6 Class: ObservationTool (Subclass of Tool)
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 #
 # This module provides the ObservationTool R6 class for managing observation/checklist
 # XLSForms used in Kobo, ODK, and other data collection applications.
@@ -10,7 +10,7 @@
 # classification.
 #
 # XLSForm Reference: https://xlsform.org/en/
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 
 #' @title ObservationTool R6 Class
 #' @description
@@ -115,7 +115,7 @@ public = list(
   #' Print summary of the observation tool.
   print = function() {
     cat("XLSForm Observation Tool\n")
-    cat("──────────────────────────\n")
+    cat("--------------------------\n")
     cat("Name:", private$.name, "\n")
     cat("Type:", private$.tool_type, "\n")
     cat("Observation Type:", private$.observation_type, "\n")

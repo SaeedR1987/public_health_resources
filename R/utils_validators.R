@@ -528,7 +528,7 @@ phr_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
 phr_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
   phr_validate_not_null(x, origin, soft)
 
-  # POSIXct or POSIXlt are datetime objects — accept directly
+  # POSIXct or POSIXlt are datetime objects \u2014 accept directly
   if (inherits(x, c("POSIXct", "POSIXlt"))) {
     return(invisible(TRUE))
   }
@@ -543,7 +543,7 @@ phr_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
     }
   }
 
-  # Nothing matched — raise structured error or warning
+  # Nothing matched \u2014 raise structured error or warning
   msg <- "Expected a datetime object (POSIXct or POSIXlt) or a string with date and time components."
   hint_txt <- hint %||% "Ensure input is POSIXct, POSIXlt, or a datetime string like '2025-10-16 14:32:00'."
   if (soft) {
@@ -752,7 +752,7 @@ phr_validate_vector_length <- function(x, min_length = 1, exact_length = NULL, o
     }
     phr_error(msg, origin = origin)
   } else if (len < min_length) {
-    msg <- paste0("Expected vector of length ≥ ", min_length, ", got ", len, ".")
+    msg <- paste0("Expected vector of length \u2265 ", min_length, ", got ", len, ".")
     if (soft) {
       phr_warning(message = msg, origin = origin)
       return(invisible(FALSE))
@@ -915,10 +915,10 @@ phr_validate_all_numeric <- function(x,
 
   phr_validate_not_null(x, origin, soft)
 
-  # Already numeric → valid
+  # Already numeric \u2192 valid
   if (is.numeric(x)) return(invisible(TRUE))
 
-  # Safely coercible → valid
+  # Safely coercible \u2192 valid
   if (.is_safely_coercible(x, "numeric")) return(invisible(TRUE))
 
   # ---- Build translated message + hint ----
@@ -1346,7 +1346,7 @@ phr_validate_pattern <- function(df, col, pattern, origin = NULL, hint = NULL, s
 
 #' @title Validate Date Order
 #' @description
-#' Ensures that all rows have start_date ≤ end_date.
+#' Ensures that all rows have start_date \u2264 end_date.
 #' @param df Data frame containing the two date columns.
 #' @param start_col Name of the start date column.
 #' @param end_col Name of the end date column.
@@ -1731,12 +1731,12 @@ phr_convert_date <- function(x, origin = "1970-01-01") {
   }
 
   today <- Sys.Date()
-  future_limit <- today + 365 * 5   # numeric→date more than 5 years in the future is suspicious
+  future_limit <- today + 365 * 5   # numeric\u2192date more than 5 years in the future is suspicious
 
   # Already Date
   if (inherits(x, "Date")) return(x)
 
-  # POSIX → Date
+  # POSIX \u2192 Date
   if (inherits(x, "POSIXct") || inherits(x, "POSIXlt")) {
     return(as.Date(x))
   }
@@ -1825,19 +1825,19 @@ phr_convert_date <- function(x, origin = "1970-01-01") {
 #' @export
 phr_convert_datetime <- function(x, tz = "UTC") {
 
-  # Already POSIXct — return as-is (re-stamp tz to be safe)
+  # Already POSIXct \u2014 return as-is (re-stamp tz to be safe)
   if (inherits(x, "POSIXct")) return(as.POSIXct(as.numeric(x), origin = "1970-01-01", tz = tz))
 
-  # POSIXlt → POSIXct
+  # POSIXlt \u2192 POSIXct
   if (inherits(x, "POSIXlt")) return(as.POSIXct(x, tz = tz))
 
-  # Date → POSIXct (midnight)
+  # Date \u2192 POSIXct (midnight)
   if (inherits(x, "Date")) return(as.POSIXct(as.character(x), format = "%Y-%m-%d", tz = tz))
 
-  # Numeric — treat as Unix timestamp
+  # Numeric \u2014 treat as Unix timestamp
   if (is.numeric(x)) return(as.POSIXct(x, origin = "1970-01-01", tz = tz))
 
-  # Character — try known datetime formats
+  # Character \u2014 try known datetime formats
   x_chr <- as.character(x)
   is_na <- is.na(x_chr)
   to_parse <- trimws(x_chr[!is_na])

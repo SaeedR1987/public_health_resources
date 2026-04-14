@@ -59,7 +59,7 @@ phr_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
     "[IPHRA::", type, "] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
     message,
-    if (!is.null(hint)) paste0("\n • Hint: ", hint) else ""
+    if (!is.null(hint)) paste0("\n \u2022 Hint: ", hint) else ""
   )
 
   # phr_log("error", full_msg, origin)
@@ -67,11 +67,11 @@ phr_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
   if (requireNamespace("shiny", quietly = TRUE) && shiny::isRunning()) {
     .phr_showNotification(full_msg, type = "error")
 
-    # ✅ Skip shiny::req(FALSE) only during testing
+    # \u2705 Skip shiny::req(FALSE) only during testing
     if (!isTRUE(getOption("IPHRA_TEST_MODE", FALSE))) {
       shiny::req(FALSE)
     } else {
-      message("[IPHRA_TEST_MODE active] — skipping shiny::req(FALSE)")
+      message("[IPHRA_TEST_MODE active] \u2014 skipping shiny::req(FALSE)")
     }
   } else {
     rlang::abort(message = full_msg, class = paste0("phr_", tolower(type)))
@@ -95,7 +95,7 @@ phr_warning <- function(message, type = "Warning", origin = NULL, hint = NULL) {
     "[IPHRA::", type, "] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
     message,
-    if (!is.null(hint)) paste0("\n • Hint: ", hint) else ""
+    if (!is.null(hint)) paste0("\n \u2022 Hint: ", hint) else ""
   )
   # phr_log("warning", full_msg, origin)
   .phr_notify(full_msg, type = "warning")
@@ -150,7 +150,7 @@ phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #'
 #' Supports nested error handling via the `step` parameter, which allows
 #' inner try blocks to add sub-context to error messages. When `step` is
-#' provided alongside `origin`, messages are formatted as "origin → step".
+#' provided alongside `origin`, messages are formatted as "origin \u2192 step".
 #'
 #' @param expr Expression to evaluate.
 #' @param on_error One of "warn", "return", or "abort".
@@ -158,7 +158,7 @@ phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #' @param hint Optional corrective hint to show in case of error.
 #' @param step Optional string identifying the step within a larger operation.
 #'   When provided, adds sub-context to error messages for nested try blocks.
-#'   If both `origin` and `step` are provided, the full origin becomes "origin → step".
+#'   If both `origin` and `step` are provided, the full origin becomes "origin \u2192 step".
 #'
 #' @return If `on_error = "return"`, returns list(success = FALSE, error = message, origin = ..., step = ..., hint = ...).
 #'   On success, returns the result of `expr` (or NULL if no explicit return).
@@ -197,7 +197,7 @@ phr_try <- function(expr,
 
   # Build full origin with step context if provided
   full_origin <- if (!is.null(step) && !is.null(origin)) {
-    paste0(origin, " \u2192 ", step)  # Unicode arrow →
+    paste0(origin, " \u2192 ", step)  # Unicode arrow \u2192
   } else if (!is.null(step)) {
     step
   } else {

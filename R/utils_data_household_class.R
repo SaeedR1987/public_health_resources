@@ -15,7 +15,7 @@ hh_dms_to_decimal <- function(x) {
 
     parse_one <- function(val) {
       val <- trimws(val)
-      val <- gsub("[°'\"\\\"]", " ", val)
+      val <- gsub("[\u00b0'\"\\\"]", " ", val)
 
       nums <- suppressWarnings(as.numeric(strsplit(val, "\\s+")[[1]]))
       if (length(nums) == 3) nums[1] + nums[2] / 60 + nums[3] / 3600
@@ -299,7 +299,7 @@ loop_count_check <- function(parent_df,
     child_ids <- as.character(child_df[[child_uuid]])
     actual_counts <- table(child_ids)
 
-    # Convert table → numeric vector
+    # Convert table \u2192 numeric vector
     actual_counts <- as.numeric(actual_counts)
     names(actual_counts) <- names(table(child_ids))
 
@@ -316,7 +316,7 @@ loop_count_check <- function(parent_df,
     mismatches <- c()
 
 
-    # 3. Loop UUIDs not in parent → mismatch
+    # 3. Loop UUIDs not in parent \u2192 mismatch
 
     extra_loop_ids <- setdiff(names(table(child_ids)), parent_ids)
 
@@ -329,7 +329,7 @@ loop_count_check <- function(parent_df,
     }
 
 
-    # 4. Parent expected = NA AND actual > 0 → mismatch
+    # 4. Parent expected = NA AND actual > 0 \u2192 mismatch
 
     problem_na_child <- df_out$uuid[
       is.na(df_out$expected) & df_out$actual > 0
