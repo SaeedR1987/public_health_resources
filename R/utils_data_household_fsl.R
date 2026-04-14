@@ -196,7 +196,7 @@ add_fcs <- function(.dataset,
     },
     on_error = "abort",
     origin = origin,
-    hint = phr_txt("Ensure FCS component variables contain numeric values 0–7.")
+    hint = phr_txt("Ensure FCS component variables contain numeric values 0\u20137.")
   )
 }
 
@@ -487,7 +487,7 @@ add_rcsi <- function(.dataset,
       }
 
 
-      # Enforce allowed 0–7 range using phr_validate_range()
+      # Enforce allowed 0\u20137 range using phr_validate_range()
 
       for (v in rcsi_vars) {
         phr_validate_all_numeric(.dataset[[v]], origin, soft = TRUE)
@@ -605,7 +605,7 @@ add_rcsi <- function(.dataset,
     },
     on_error = "abort",
     origin = origin,
-    hint = phr_txt("Ensure all RCSI fields exist and contain integer values 0–7.")
+    hint = phr_txt("Ensure all RCSI fields exist and contain integer values 0\u20137.")
   )
 }
 
@@ -1058,7 +1058,7 @@ add_hdds <- function(.dataset,
 
     # Compute HDDS Score
     # Treat invalid values (not yes/no) as NA
-    # Apply strict NA rule: if any HDDS variable is NA or invalid → score = NA
+    # Apply strict NA rule: if any HDDS variable is NA or invalid \u2192 score = NA
 
     .dataset <- .dataset |>
       dplyr::rowwise() |>
@@ -1656,28 +1656,28 @@ add_fclcm_phase <- function(
     # 1. EMBEDDED LOOKUP TABLES
     lookup_fclcm_4 <- dplyr::tribble(
       ~fc_phase, ~lcsi,        ~cell, ~cat,
-      # None: 1–5
+      # None: 1\u20135
       p1_val, lcsi_none_val,        1,  p1_val,
       p2_val, lcsi_none_val,        2,  p2_val,
       p3_val, lcsi_none_val,        3,  p3_val,
       p4_val, lcsi_none_val,        4,  p4_val,
       p5_val, lcsi_none_val,        5,  p5_val,
 
-      # Stress: 6–10
+      # Stress: 6\u201310
       p1_val, lcsi_stress_val,      6,  p1_val,
       p2_val, lcsi_stress_val,      7,  p2_val,
       p3_val, lcsi_stress_val,      8,  p3_val,
       p4_val, lcsi_stress_val,      9,  p4_val,
       p5_val, lcsi_stress_val,     10,  p5_val,
 
-      # Crisis: 11–15
+      # Crisis: 11\u201315
       p1_val, lcsi_crisis_val,     11,  p1_val,
       p2_val, lcsi_crisis_val,     12,  p2_val,
       p3_val, lcsi_crisis_val,     13,  p3_val,
       p4_val, lcsi_crisis_val,     14,  p4_val,
       p5_val, lcsi_crisis_val,     15,  p5_val,
 
-      # Emergency: 16–20
+      # Emergency: 16\u201320
       p1_val, lcsi_emergency_val,  16,  p1_val,
       p2_val, lcsi_emergency_val,  17,  p2_val,
       p3_val, lcsi_emergency_val,  18,  p3_val,
@@ -1688,35 +1688,35 @@ add_fclcm_phase <- function(
     # -------- 5-category LCSI (+ Exhaustion)
     lookup_fclcm_5 <- dplyr::tribble(
       ~fc_phase, ~lcsi,        ~cell, ~cat,
-      # None: 1–5
+      # None: 1\u20135
       p1_val, lcsi_none_val,       1, p1_val,
       p2_val, lcsi_none_val,       2, p2_val,
       p3_val, lcsi_none_val,       3, p3_val,
       p4_val, lcsi_none_val,       4, p4_val,
       p5_val, lcsi_none_val,       5, p5_val,
 
-      # Stress: 6–10
+      # Stress: 6\u201310
       p1_val, lcsi_stress_val,     6, p1_val,
       p2_val, lcsi_stress_val,     7, p2_val,
       p3_val, lcsi_stress_val,     8, p3_val,
       p4_val, lcsi_stress_val,     9, p4_val,
       p5_val, lcsi_stress_val,    10, p5_val,
 
-      # Crisis: 11–15
+      # Crisis: 11\u201315
       p1_val, lcsi_crisis_val,    11, p1_val,
       p2_val, lcsi_crisis_val,    12, p2_val,
       p3_val, lcsi_crisis_val,    13, p3_val,
       p4_val, lcsi_crisis_val,    14, p4_val,
       p5_val, lcsi_crisis_val,    15, p5_val,
 
-      # Emergency: 16–20
+      # Emergency: 16\u201320
       p1_val, lcsi_emergency_val, 16, p1_val,
       p2_val, lcsi_emergency_val, 17, p2_val,
       p3_val, lcsi_emergency_val, 18, p3_val,
       p4_val, lcsi_emergency_val, 19, p4_val,
       p5_val, lcsi_emergency_val, 20, p5_val,
 
-      # Exhaustion: 21–25
+      # Exhaustion: 21\u201325
       p1_val, lcsi_exhaustion_val,21, p1_val,
       p2_val, lcsi_exhaustion_val,22, p2_val,
       p3_val, lcsi_exhaustion_val,23, p3_val,

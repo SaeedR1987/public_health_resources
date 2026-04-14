@@ -1,6 +1,6 @@
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 # R6 Class: HouseholdTool (Subclass of Tool)
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 #
 # This module provides the HouseholdTool R6 class for managing household survey
 # XLSForms used in Kobo, ODK, and other data collection applications.
@@ -9,7 +9,7 @@
 # household surveys, including roster/repeat group management.
 #
 # XLSForm Reference: https://xlsform.org/en/
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 
 #' @title HouseholdTool R6 Class
 #' @description
@@ -114,7 +114,7 @@ public = list(
   #' Print summary of the household tool.
   print = function() {
     cat("XLSForm Household Tool\n")
-    cat("────────────────────────\n")
+    cat("------------------------\n")
     cat("Name:", private$.name, "\n")
     cat("Type:", private$.tool_type, "\n")
     cat("Created:", format(private$.created_at, "%Y-%m-%d %H:%M:%S"), "\n")

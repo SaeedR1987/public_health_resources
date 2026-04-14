@@ -1,6 +1,6 @@
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 # R6 Class: KeyInformantTool (Subclass of Tool)
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 #
 # This module provides the KeyInformantTool R6 class for managing key informant
 # interview (KII) XLSForms used in Kobo, ODK, and other data collection applications.
@@ -9,7 +9,7 @@
 # KII surveys, including KII type classification.
 #
 # XLSForm Reference: https://xlsform.org/en/
-# ────────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------------------
 
 #' @title KeyInformantTool R6 Class
 #' @description
@@ -95,7 +95,7 @@ public = list(
   #' Print summary of the KII tool.
   print = function() {
     cat("XLSForm Key Informant Tool\n")
-    cat("────────────────────────────\n")
+    cat("----------------------------\n")
     cat("Name:", private$.name, "\n")
     cat("Type:", private$.tool_type, "\n")
     cat("KII Type:", private$.kii_type, "\n")
