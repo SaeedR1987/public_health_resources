@@ -22,7 +22,6 @@ Required columns:
 * feedback: Additional comments or resolution notes
 }
 \keyword{Deletion}
-\keyword{Initialize}
 \keyword{Log}
 \keyword{internal}
 \section{Super class}{

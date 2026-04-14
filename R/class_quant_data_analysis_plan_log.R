@@ -28,8 +28,6 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
 
   public = list(
 
-    #' Initialize Quant Data Analysis Plan Log
-    #'
     #' @description
     #' Creates a new QuantDataAnalysisPlanLog with default schema and required columns
     #'

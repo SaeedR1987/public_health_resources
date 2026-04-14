@@ -31,8 +31,6 @@ IndividualData <- R6::R6Class(
     optional_columns = NULL,
 
 
-    #' Initialize IndividualData
-    #'
     #' @description
     #' Creates a new IndividualData object with person-level survey data
     #'

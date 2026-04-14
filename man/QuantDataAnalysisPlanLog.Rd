@@ -26,7 +26,6 @@ Required columns (matching phr_analysis_plan_template.csv):
 }
 \keyword{Analysis}
 \keyword{Data}
-\keyword{Initialize}
 \keyword{Log}
 \keyword{Plan}
 \keyword{Quant}
