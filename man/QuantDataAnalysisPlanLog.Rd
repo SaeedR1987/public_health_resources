@@ -24,6 +24,12 @@ Required columns (matching phr_analysis_plan_template.csv):
 * multiplier: Multiplier for the calculation (e.g., 100 for percentages)
 * indicator_unit: Unit of measurement for the indicator
 }
+\keyword{Analysis}
+\keyword{Data}
+\keyword{Initialize}
+\keyword{Log}
+\keyword{Plan}
+\keyword{Quant}
 \keyword{internal}
 \section{Super class}{
 \code{\link[phr:Log]{phr::Log}} -> \code{QuantDataAnalysisPlanLog}
