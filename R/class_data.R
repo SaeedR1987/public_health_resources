@@ -105,8 +105,6 @@ Data <- R6::R6Class(
     linked_objects = list(),    # For dependency linking (name -> list(obj, by_self, by_other))
 
 
-    #' Initialize Data Object
-    #'
     #' @description
     #' Initialize a new Data object with survey data
     #'

@@ -48,7 +48,8 @@ Protocol <- R6::R6Class(
       protocol_version = "1.0"
     ),
     
-    #' @description Initialize a new Protocol
+    #' @description
+    #' Creates a new Protocol object
     #' @param assessment_title Character. Title of the assessment
     #' @param country_name Character. Country where assessment takes place
     #' @param month_year Character. Month and year of data collection (e.g., "January 2024")

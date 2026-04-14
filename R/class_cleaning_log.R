@@ -30,8 +30,6 @@ CleaningLog <- R6::R6Class(
 
   public = list(
 
-    #' Initialize Cleaning Log
-    #'
     #' @description
     #' Creates a new CleaningLog with default schema and required columns
     #'

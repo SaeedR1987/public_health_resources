@@ -74,8 +74,6 @@ HouseholdData <- R6::R6Class(
     optional_columns = NULL,  # non-required but commonly present columns
 
 
-    #' Initialize HouseholdData
-    #'
     #' @description
     #' Creates a new HouseholdData object with household-level survey data
     #'

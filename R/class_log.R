@@ -44,8 +44,6 @@ Log <- R6::R6Class(
     issues = NULL,     # <- must be declared here
 
 
-    #' Initialize Log
-    #'
     #' @description
     #' Creates a new Log object with optional initial data, required columns, and schema
     #'

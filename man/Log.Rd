@@ -21,7 +21,6 @@ The Log class provides:
 Requires digest package
 Get Summary
 }
-\keyword{Initialize}
 \keyword{Log}
 \keyword{internal}
 \section{Public fields}{

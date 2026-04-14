@@ -26,8 +26,6 @@ DeletionLog <- R6::R6Class(
   public = list(
 
 
-    #' Initialize Deletion Log
-    #'
     #' @description
     #' Creates a new DeletionLog with default schema and required columns
     #'

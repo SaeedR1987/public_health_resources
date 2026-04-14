@@ -27,7 +27,6 @@ Required columns:
 * new.value: Proposed new value
 }
 \keyword{Cleaning}
-\keyword{Initialize}
 \keyword{Log}
 \keyword{internal}
 \section{Super class}{
