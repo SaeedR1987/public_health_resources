@@ -5,8 +5,6 @@
 library(testthat)
 library(tibble)
 
-# Source generate_household_samples.R from dev directory
-source(file.path(here::here(), "dev", "generate_household_samples.R"))
 
 
 # 1. INITIALIZATION TESTS
