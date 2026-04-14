@@ -15,7 +15,7 @@ plot_age_histogram(data, age_col, range = c(0, 10), binwidth = 1, title = NULL)
 
 \item{binwidth}{Numeric value specifying the width of bins. Defaults to 1.}
 
-\item{title}{Title of the plot. Defaults to "Age distribution (<min–max> years)".}
+\item{title}{Title of the plot. Defaults to "Age distribution (<min-max> years)".}
 }
 \value{
 A ggplot object representing the age histogram.

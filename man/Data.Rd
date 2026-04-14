@@ -5,10 +5,10 @@
 \title{IPHRA Base Data Class}
 \description{
 This class defines the full data lifecycle within the IPHRA toolkit:
-* `raw_data` — immutable imported data
-* `standardized_data` — after standardization (names, types, values)
-* `clean_data` — after cleaning and validation
-* `metadata` — synchronized dataset attributes
+* `raw_data` -- immutable imported data
+* `standardized_data` -- after standardization (names, types, values)
+* `clean_data` -- after cleaning and validation
+* `metadata` -- synchronized dataset attributes
 }
 \details{
 The `Data` R6 class is the foundational structure for all IPHRA datasets.
@@ -174,8 +174,8 @@ For each linked object:
 
 
 Labels are sourced from the variable schema fields:
-* `variable_labels$en / $fr / $ar` — one label per variable role
-* `value_labels$en / $fr / $ar`    — one label per canonical value per role
+* `variable_labels$en / $fr / $ar` -- one label per variable role
+* `value_labels$en / $fr / $ar`    -- one label per canonical value per role
 
 These fields are populated when the schema is loaded from an xlsx template
 that contains the `variable_label_en`, `variable_label_fr`,
@@ -1091,7 +1091,7 @@ Must be called after run_quality_checks() has been executed.
 }
 \subsection{Returns}{
 Invisible self$cleaning_log
-INTERNAL HELPER — apply cleaning log changes (option A authoritative mode)
+INTERNAL HELPER -- apply cleaning log changes (option A authoritative mode)
 }
 }
 \if{html}{\out{<hr>}}
@@ -1116,7 +1116,7 @@ Internal helper to apply cleaning changes from a log data frame to a dataset
 }
 \subsection{Returns}{
 Modified data frame with cleaning changes applied
-INTERNAL HELPER — extract tokens from select_multiple values
+INTERNAL HELPER -- extract tokens from select_multiple values
 }
 }
 \if{html}{\out{<hr>}}
@@ -1138,7 +1138,7 @@ in select_multiple columns.
 }
 \subsection{Returns}{
 Character vector of unique tokens
-INTERNAL HELPER — check if variable is select_multiple type
+INTERNAL HELPER -- check if variable is select_multiple type
 }
 }
 \if{html}{\out{<hr>}}
@@ -1160,7 +1160,7 @@ in the schema.
 }
 \subsection{Returns}{
 Logical indicating if variable is select_multiple
-INTERNAL HELPER — provide hints for expression parse errors
+INTERNAL HELPER -- provide hints for expression parse errors
 }
 }
 \if{html}{\out{<hr>}}
@@ -1183,7 +1183,7 @@ Internal helper to provide helpful hints for common syntax errors in dependency 
 }
 \subsection{Returns}{
 Character string with a helpful error message including hints
-INTERNAL HELPER — translate expression to use mapped column names and values
+INTERNAL HELPER -- translate expression to use mapped column names and values
 }
 }
 \if{html}{\out{<hr>}}
