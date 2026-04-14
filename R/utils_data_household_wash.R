@@ -464,12 +464,10 @@ add_liters_per_person_per_day <- function(
 #' - Categorizes the values in the `drinking_water_source` column based on the provided classifications.
 #' - Adds a new column `wash_drinking_water_source_cat` to the dataset with the recoded categories:
 #'   \describe{
-#'     \item{Categories:}{
-#'       \item{"Improved": Corresponding to entries from `drinking_water_source_cat_improved`.}
-#'       \item{"Unimproved": Corresponding to entries from `drinking_water_source_cat_unimproved`.}
-#'       \item{"Surface Water": Matching `drinking_water_source_cat_surface_water`.}
-#'       \item{"Undefined": Matching `drinking_water_source_cat_undefined`.}
-#'     }
+#'     \item{Improved}{Corresponding to entries from `drinking_water_source_cat_improved`.}
+#'     \item{Unimproved}{Corresponding to entries from `drinking_water_source_cat_unimproved`.}
+#'     \item{Surface Water}{Matching `drinking_water_source_cat_surface_water`.}
+#'     \item{Undefined}{Matching `drinking_water_source_cat_undefined`.}
 #'   }
 #'
 #' If the output column `wash_drinking_water_source_cat` already exists, a warning is issued, and
