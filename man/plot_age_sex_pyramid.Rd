@@ -2,9 +2,9 @@
 % Please edit documentation in R/utils_demographics_analysis.R
 \name{plot_age_sex_pyramid}
 \alias{plot_age_sex_pyramid}
-\title{Plot Age–Sex Pyramid}
+\title{Plot Age-Sex Pyramid}
 \usage{
-plot_age_sex_pyramid(data, age_col, sex_col, title = "Age–Sex Pyramid (\%)")
+plot_age_sex_pyramid(data, age_col, sex_col, title = "Age-Sex Pyramid (\%)")
 }
 \arguments{
 \item{data}{Data frame or tibble containing the data.}
@@ -13,11 +13,11 @@ plot_age_sex_pyramid(data, age_col, sex_col, title = "Age–Sex Pyramid (\%)")
 
 \item{sex_col}{Name of the column containing sex data (character string).}
 
-\item{title}{Title of the plot. Defaults to "Age–Sex Pyramid (\%)".}
+\item{title}{Title of the plot. Defaults to "Age-Sex Pyramid (\%)".}
 }
 \value{
-A ggplot object representing the age–sex pyramid plot.
+A ggplot object representing the age-sex pyramid plot.
 }
 \description{
-Create an age–sex pyramid plot (percentage version).
+Create an age-sex pyramid plot (percentage version).
 }

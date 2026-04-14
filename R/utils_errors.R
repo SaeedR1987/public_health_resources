@@ -150,7 +150,7 @@ phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #'
 #' Supports nested error handling via the `step` parameter, which allows
 #' inner try blocks to add sub-context to error messages. When `step` is
-#' provided alongside `origin`, messages are formatted as "origin \u2192 step".
+#' provided alongside `origin`, messages are formatted as "origin -> step".
 #'
 #' @param expr Expression to evaluate.
 #' @param on_error One of "warn", "return", or "abort".
@@ -158,7 +158,7 @@ phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #' @param hint Optional corrective hint to show in case of error.
 #' @param step Optional string identifying the step within a larger operation.
 #'   When provided, adds sub-context to error messages for nested try blocks.
-#'   If both `origin` and `step` are provided, the full origin becomes "origin \u2192 step".
+#'   If both `origin` and `step` are provided, the full origin becomes "origin -> step".
 #'
 #' @return If `on_error = "return"`, returns list(success = FALSE, error = message, origin = ..., step = ..., hint = ...).
 #'   On success, returns the result of `expr` (or NULL if no explicit return).

@@ -30,5 +30,5 @@ phr_validate_date_order(
 Invisibly TRUE if valid; otherwise triggers `phr_error()` or `phr_warning()`.
 }
 \description{
-Ensures that all rows have start_date ≤ end_date.
+Ensures that all rows have start_date <= end_date.
 }

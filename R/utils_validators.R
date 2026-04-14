@@ -1349,7 +1349,7 @@ phr_validate_pattern <- function(df, col, pattern, origin = NULL, hint = NULL, s
 
 #' @title Validate Date Order
 #' @description
-#' Ensures that all rows have start_date \u2264 end_date.
+#' Ensures that all rows have start_date <= end_date.
 #' @param df Data frame containing the two date columns.
 #' @param start_col Name of the start date column.
 #' @param end_col Name of the end date column.

@@ -8,10 +8,10 @@
 #'
 #' @description
 #' This class defines the full data lifecycle within the IPHRA toolkit:
-#' * `raw_data` \u2014 immutable imported data
-#' * `standardized_data` \u2014 after standardization (names, types, values)
-#' * `clean_data` \u2014 after cleaning and validation
-#' * `metadata` \u2014 synchronized dataset attributes
+#' * `raw_data` -- immutable imported data
+#' * `standardized_data` -- after standardization (names, types, values)
+#' * `clean_data` -- after cleaning and validation
+#' * `metadata` -- synchronized dataset attributes
 #'
 #' @details
 #' Key functionalities include:
@@ -2877,7 +2877,7 @@ Data <- R6::R6Class(
       }, on_error = "abort", origin = paste0(self$dataset_name, "$generate_cleaning_log"))
     },
 
-    #' INTERNAL HELPER \u2014 apply cleaning log changes (option A authoritative mode)
+    #' INTERNAL HELPER -- apply cleaning log changes (option A authoritative mode)
     #'
     #' @description
     #' Internal helper to apply cleaning changes from a log data frame to a dataset
@@ -2907,7 +2907,7 @@ Data <- R6::R6Class(
       df
     },
 
-    #' INTERNAL HELPER \u2014 extract tokens from select_multiple values
+    #' INTERNAL HELPER -- extract tokens from select_multiple values
     #'
     #' @description
     #' Internal helper to extract individual tokens from space-separated values
@@ -2930,7 +2930,7 @@ Data <- R6::R6Class(
       unique(unlist(token_list, use.names = FALSE))
     },
 
-    #' INTERNAL HELPER \u2014 check if variable is select_multiple type
+    #' INTERNAL HELPER -- check if variable is select_multiple type
     #'
     #' @description
     #' Internal helper to check if a variable role is marked as select_multiple
@@ -2946,7 +2946,7 @@ Data <- R6::R6Class(
              question_types[[var_role]] == "select_multiple")
     },
 
-    #' INTERNAL HELPER \u2014 provide hints for expression parse errors
+    #' INTERNAL HELPER -- provide hints for expression parse errors
     #'
     #' @description
     #' Internal helper to provide helpful hints for common syntax errors in dependency expressions.
@@ -2994,7 +2994,7 @@ Data <- R6::R6Class(
       ))
     },
 
-    #' INTERNAL HELPER \u2014 translate expression to use mapped column names and values
+    #' INTERNAL HELPER -- translate expression to use mapped column names and values
     #'
     #' @description
     #' Internal helper to translate quality check expressions from canonical names/values
@@ -3887,8 +3887,8 @@ Data <- R6::R6Class(
     #'
     #' @details
     #' Labels are sourced from the variable schema fields:
-    #' * `variable_labels$en / $fr / $ar` \u2014 one label per variable role
-    #' * `value_labels$en / $fr / $ar`    \u2014 one label per canonical value per role
+    #' * `variable_labels$en / $fr / $ar` -- one label per variable role
+    #' * `value_labels$en / $fr / $ar`    -- one label per canonical value per role
     #'
     #' These fields are populated when the schema is loaded from an xlsx template
     #' that contains the `variable_label_en`, `variable_label_fr`,
