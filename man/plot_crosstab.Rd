@@ -84,12 +84,6 @@ Default: "all".}
 
 \item{title_name}{Inputs an optional character value for the title of the plot.}
 
-\item{variable_label}{Optional character string. Human-readable label for the row variable, used to
-auto-generate the plot title when title_name is NULL. Default: NULL.}
-
-\item{variable_label2}{Optional character string. Human-readable label for the column variable, appended
-to the auto-generated title. Default: NULL.}
-
 \item{subtitle}{Inputs an optional character value for the subtitle of the plot.
 If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.}
 

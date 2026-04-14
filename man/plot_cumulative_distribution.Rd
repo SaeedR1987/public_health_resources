@@ -40,6 +40,8 @@ Must be same length as vline_intercepts. Default is c("red", "orange").}
 
 \item{x_label}{Optional character string for the x-axis label. If NULL, uses data_var name.}
 
+\item{y_label}{Optional character string for the y-axis label. Default: "% Cumulative Proportion".}
+
 \item{xlim}{Optional numeric vector of length 2 specifying x-axis limits. If NULL, auto-detects based on data type.}
 
 \item{breaks_by}{Optional numeric value for x-axis breaks interval. If NULL, auto-detects based on data type.}
@@ -57,8 +59,6 @@ auto-generate the plot title when title_name is NULL. Default: NULL.}
 to the auto-generated title. Defaults to the column name when NULL.}
 
 \item{subtitle}{Optional character string for additional subtitle text (will be appended to auto-generated n counts).}
-
-\item{y_label}{Optional character string for the y-axis label. Default: "\% Cumulative Proportion".}
 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
 
