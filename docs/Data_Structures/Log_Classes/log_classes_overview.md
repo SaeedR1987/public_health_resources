@@ -249,12 +249,12 @@ if (analysis_plan$validated) {
 analysis_plan$export(file = "analysis_plan.csv", format = "csv")
 ```
 
-**Integration with QuantDataAnalysis**:
+**Integration with QuantDataAnalysis and DataAnalytics**:
 
-The QuantDataAnalysisPlanLog is owned by QuantDataAnalysis objects:
+The `QuantDataAnalysisPlanLog` is owned by both `QuantDataAnalysis` objects (legacy) and `DataAnalytics` objects (unified):
 
 ```r
-# QuantDataAnalysis creates a QuantDataAnalysisPlanLog on initialization
+# Legacy: QuantDataAnalysis creates a QuantDataAnalysisPlanLog on initialization
 qda <- QuantDataAnalysis$new()
 
 # Access the analysis plan log
@@ -271,6 +271,11 @@ qda$add_indicator_dap(
 
 # Access the underlying data frame
 qda$data_analysis_plan$log_df  # The actual data frame with indicators
+
+# Unified: DataAnalytics also owns a QuantDataAnalysisPlanLog
+analytics <- data$generate_data_analytics(stage = "clean")
+analytics$data_analysis_plan         # QuantDataAnalysisPlanLog object
+analytics$data_analysis_plan$log_df  # Underlying data frame
 ```
 
 ## Common Functionality
@@ -601,7 +606,8 @@ cleaned_data <- cleaning_log$apply_to_data(data)
 ## Related Documentation
 
 - [Data Classes Overview](../Data_Classes/data_classes_overview.md) - Data objects that own Log objects
-- [Analysis Classes Overview](../Analysis_Classes/analysis_classes_overview.md) - Analysis objects that own QuantDataAnalysisPlanLog
+- [Analytics Classes Overview](../Analytics_Classes/analytics_classes_overview.md) - Unified analytics objects that own QuantDataAnalysisPlanLog
+- [Analysis Classes Overview](../Analysis_Classes/analysis_classes_overview.md) - Legacy analysis objects that own QuantDataAnalysisPlanLog
 - [Quality Classes Overview](../Quality_Classes/quality_classes_overview.md) - Quality checks that generate log entries
 - [Cleaning Process](../../Processes/cleaning/cleaning_process.md) - Cleaning workflows using logs
 - [Error Handling](../../Processes/error_handling/error_handling.md) - Error handling patterns
