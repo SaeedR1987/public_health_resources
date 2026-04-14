@@ -407,7 +407,7 @@ add_standardized_age <- function(
       )
     }
 
-    # Convert dates using the custom `convert_date` function for only the provided date-related columns
+    # Convert dates using phr_convert_date for only the provided date-related columns
     cols_to_convert <- c(
       if (!is.null(date_birth_approx_col)) date_birth_approx_col,
       if (!is.null(date_birth_exact_col)) date_birth_exact_col,
