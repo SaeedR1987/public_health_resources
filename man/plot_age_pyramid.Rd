@@ -62,6 +62,9 @@ Options: "sex" (default for male/female comparison), "reach1", "reach2", "reach3
 
 \item{title_name}{Title of the plot. By default: NULL.}
 
+\item{variable_label}{Optional character string. Human-readable label for the variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
 \item{subtitle}{Inputs an optional character value for the subtitle of the plot.
 If NULL, automatically displays n by sex (e.g., "Male (n=X); Female (n=Y)"). Custom subtitle will be appended to n display.}
 

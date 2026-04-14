@@ -35,6 +35,12 @@ plot_ridge_distribution_by_group(
 
 \item{title_name}{Optional title of the plot.}
 
+\item{variable_label}{Optional character string. Human-readable label for the numeric variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Optional subtitle (appended to auto-generated n counts).}
 
 \item{x_lab}{Optional x-axis label. Defaults to the column name.}

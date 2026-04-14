@@ -428,9 +428,9 @@ add_liters_per_person_per_day <- function(
 #' column `wash_drinking_water_source_cat` to the dataset.
 #'
 #' @param .dataset A data frame or tibble containing the input data.
-#' @param drinking_water_source The column name for the drinking water source variable
-#'   in the dataset. Defaults to `"wash_drinking_water_source"`.
-#' @param drinking_water_source_cat_improved A character vector of values classified as
+#' @param drinking_water_source_col The column name for the drinking water source variable
+#'   in the dataset. Defaults to `"wash_water_source"`.
+#' @param drinking_water_source_cat_improved_val A character vector of values classified as
 #'   "Improved" drinking water sources. Defaults to:
 #'   \describe{
 #'     \item{Includes:}{
@@ -440,16 +440,16 @@ add_liters_per_person_per_day <- function(
 #'       "kiosk", "bottled_water", "sachet_water"
 #'     }
 #'   }
-#' @param drinking_water_source_cat_unimproved A character vector of values classified as
+#' @param drinking_water_source_cat_unimproved_val A character vector of values classified as
 #'   "Unimproved" drinking water sources. Defaults to:
 #'   \describe{
 #'     \item{Includes:}{
 #'       "unprotected_well", "unprotected_spring"
 #'     }
 #'   }
-#' @param drinking_water_source_cat_surface_water A character value classified as
+#' @param drinking_water_source_cat_surface_water_val A character value classified as
 #'   "Surface Water". Defaults to `"surface_water"`.
-#' @param drinking_water_source_cat_undefined A character vector of values classified as
+#' @param drinking_water_source_cat_undefined_val A character vector of values classified as
 #'   "Undefined". Defaults to:
 #'   \describe{
 #'     \item{Includes:}{
@@ -460,14 +460,14 @@ add_liters_per_person_per_day <- function(
 #' @details
 #' The function performs the following steps:
 #' - Validates that the `.dataset` is a valid data frame or tibble and is not empty.
-#' - Verifies that the `drinking_water_source` column exists in the dataset and contains valid responses.
-#' - Categorizes the values in the `drinking_water_source` column based on the provided classifications.
+#' - Verifies that the `drinking_water_source_col` column exists in the dataset and contains valid responses.
+#' - Categorizes the values in the `drinking_water_source_col` column based on the provided classifications.
 #' - Adds a new column `wash_drinking_water_source_cat` to the dataset with the recoded categories:
 #'   \describe{
-#'     \item{Improved}{Corresponding to entries from `drinking_water_source_cat_improved`.}
-#'     \item{Unimproved}{Corresponding to entries from `drinking_water_source_cat_unimproved`.}
-#'     \item{Surface Water}{Matching `drinking_water_source_cat_surface_water`.}
-#'     \item{Undefined}{Matching `drinking_water_source_cat_undefined`.}
+#'     \item{Improved}{Corresponding to entries from `drinking_water_source_cat_improved_val`.}
+#'     \item{Unimproved}{Corresponding to entries from `drinking_water_source_cat_unimproved_val`.}
+#'     \item{Surface Water}{Matching `drinking_water_source_cat_surface_water_val`.}
+#'     \item{Undefined}{Matching `drinking_water_source_cat_undefined_val`.}
 #'   }
 #'
 #' If the output column `wash_drinking_water_source_cat` already exists, a warning is issued, and
@@ -484,7 +484,7 @@ add_liters_per_person_per_day <- function(
 #' # Add drinking water source categories
 #' result <- add_drinking_water_source_cat(
 #'   .dataset = example_data,
-#'   drinking_water_source = "wash_drinking_water_source"
+#'   drinking_water_source_col = "wash_drinking_water_source"
 #' )
 #'
 #' @importFrom dplyr mutate
@@ -898,12 +898,13 @@ add_any_water_treatment <- function(
 #' @param .dataset A data frame or tibble containing the input data.
 #' @param sanitation_facility_col The column name for the sanitation facility variable
 #'   in the dataset. Defaults to `"wash_sanitation_facility"`.
-#' @param improved_facilities A character vector of values classified as
+#' @param improved_facilities_val A character vector of values classified as
 #'   "Improved" sanitation facilities.
-#' @param unimproved_facilities A character vector of values classified as
+#' @param unimproved_facilities_val A character vector of values classified as
 #'   "Unimproved" sanitation facilities.
-#' @param open_defecation_facilities A character vector of values classified as
+#' @param open_defecation_val A character vector of values classified as
 #'   "Open Defecation" practices.
+#' @param undefined_val A character vector of values classified as "Undefined" sanitation facilities.
 #'
 #' @details
 #' The function performs the following:
@@ -912,9 +913,9 @@ add_any_water_treatment <- function(
 #' - Categorizes the values in the `sanitation_facility_col` column based on the provided classifications.
 #' - Adds a new column `wash_sanitation_facility_cat` to the dataset with recoded categories:
 #'   \describe{
-#'     \item{"Improved"}{Corresponding to entries from `improved_facilities`.}
-#'     \item{"Unimproved"}{Corresponding to entries from `unimproved_facilities`.}
-#'     \item{"Open Defecation"}{Matching entries from `open_defecation_facilities`.}
+#'     \item{"Improved"}{Corresponding to entries from `improved_facilities_val`.}
+#'     \item{"Unimproved"}{Corresponding to entries from `unimproved_facilities_val`.}
+#'     \item{"Open Defecation"}{Matching entries from `open_defecation_val`.}
 #'     \item{NA}{Any value not matching the above categories.}
 #'   }
 #'
@@ -933,9 +934,9 @@ add_any_water_treatment <- function(
 #' result <- add_sanitation_facility_cat(
 #'   .dataset = example_data,
 #'   sanitation_facility_col = "wash_sanitation_facility",
-#'   improved_facilities = c("flush_to_piped", "flush_to_septic", "flush_to_pit"),
-#'   unimproved_facilities = c("pit_lat", "bucket"),
-#'   open_defecation_facilities = c("open_defecation")
+#'   improved_facilities_val = c("flush_to_piped", "flush_to_septic", "flush_to_pit"),
+#'   unimproved_facilities_val = c("pit_lat", "bucket"),
+#'   open_defecation_val = c("open_defecation")
 #' )
 #'
 #' @importFrom dplyr mutate case_when

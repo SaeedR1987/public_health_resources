@@ -18,6 +18,8 @@ phr_validate_range(df, col, min, max, origin = NULL, hint = NULL, soft)
 \item{origin}{Optional origin function.}
 
 \item{hint}{Optional hint.}
+
+\item{soft}{Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.}
 }
 \value{
 Invisibly TRUE if valid; otherwise triggers `phr_error()`.

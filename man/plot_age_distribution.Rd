@@ -47,6 +47,12 @@ plot_age_distribution(
 
 \item{title_name}{Title of the plot. By default: NULL}
 
+\item{variable_label}{Optional character string. Human-readable label for the age variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Subtitle of the plot. By default: NULL (auto-generates n count)}
 
 \item{x_lab}{Label for x-axis. By default: NULL (auto-generates based on year_or_month)}

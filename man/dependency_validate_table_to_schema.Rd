@@ -6,6 +6,9 @@
 \usage{
 dependency_validate_table_to_schema(df)
 }
+\arguments{
+\item{df}{A data frame or tibble in the flat dependency schema table format to validate.}
+}
 \description{
 Validate whether a dependency schema table is safe to convert
 }

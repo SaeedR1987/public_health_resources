@@ -260,7 +260,8 @@ ensure_value <- function(value, default) {
 #'   \item Arbitrary function calls or side-effect expressions
 #' }
 #'
-#' @param expr A language object (typically produced by `parse(text = ...)[[1]]`).
+#' @param expr_chr A single character string containing a logical expression
+#'   (typically the text of an expression to be parsed and evaluated).
 #'
 #' @return Logical scalar:
 #' \itemize{
@@ -906,6 +907,7 @@ phr_validate_choice <- function(x, choices, origin = NULL, soft) {
 #' @param x Vector or data frame column to test.
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
+#' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
 phr_validate_all_numeric <- function(x,
@@ -1269,6 +1271,7 @@ phr_validate_non_negative <- function(df, cols, origin = NULL, hint = NULL, soft
 #' @param max Maximum acceptable value.
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
+#' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #' @return Invisibly TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
 phr_validate_range <- function(df,
@@ -1721,6 +1724,9 @@ phr_validate_date_order_vectors <- function(start, end, origin = NULL, soft) {
 #' Convert character, numeric, or POSIX dates to standard Date (YYYY-MM-DD)
 #'
 #' @param x Character, Date, numeric, or POSIX vector.
+#' @param origin Character string specifying the origin date for numeric input conversion.
+#'   Use `"excel"` for Excel serial dates (treated as `"1899-12-30"`), or any date string
+#'   in `"YYYY-MM-DD"` format (default: `"1970-01-01"` for Unix epoch).
 #' @return A Date vector in YYYY-MM-DD format.
 #' @export
 phr_convert_date <- function(x, origin = "1970-01-01") {

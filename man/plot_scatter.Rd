@@ -47,6 +47,12 @@ plot_scatter(
 
 \item{title_name}{Character, plot title (default: NULL)}
 
+\item{variable_label}{Optional character string. Human-readable label for the x/y variables, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Character, additional subtitle text (default: NULL)}
 
 \item{x_lab}{Character, x-axis label (default: NULL)}

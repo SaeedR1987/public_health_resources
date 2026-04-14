@@ -6,6 +6,10 @@
 \usage{
 dependency_schema_to_table(dependency_schema_list)
 }
+\arguments{
+\item{dependency_schema_list}{A named list representing the canonical dependency schema, as produced by
+\code{dependency_table_to_schema()} or constructed manually.}
+}
 \description{
 Convert a dependency schema list into a flat table format
 }

@@ -19,10 +19,10 @@ add_drinking_water_source_cat(
 \arguments{
 \item{.dataset}{A data frame or tibble containing the input data.}
 
-\item{drinking_water_source}{The column name for the drinking water source variable
-in the dataset. Defaults to `"wash_drinking_water_source"`.}
+\item{drinking_water_source_col}{The column name for the drinking water source variable
+in the dataset. Defaults to \code{"wash_water_source"}.}
 
-\item{drinking_water_source_cat_improved}{A character vector of values classified as
+\item{drinking_water_source_cat_improved_val}{A character vector of values classified as
 "Improved" drinking water sources. Defaults to:
 \describe{
   \item{Includes:}{
@@ -33,7 +33,7 @@ in the dataset. Defaults to `"wash_drinking_water_source"`.}
   }
 }}
 
-\item{drinking_water_source_cat_unimproved}{A character vector of values classified as
+\item{drinking_water_source_cat_unimproved_val}{A character vector of values classified as
 "Unimproved" drinking water sources. Defaults to:
 \describe{
   \item{Includes:}{
@@ -41,10 +41,10 @@ in the dataset. Defaults to `"wash_drinking_water_source"`.}
   }
 }}
 
-\item{drinking_water_source_cat_surface_water}{A character value classified as
-"Surface Water". Defaults to `"surface_water"`.}
+\item{drinking_water_source_cat_surface_water_val}{A character value classified as
+"Surface Water". Defaults to \code{"surface_water"}.}
 
-\item{drinking_water_source_cat_undefined}{A character vector of values classified as
+\item{drinking_water_source_cat_undefined_val}{A character vector of values classified as
 "Undefined". Defaults to:
 \describe{
   \item{Includes:}{
@@ -64,14 +64,14 @@ column `wash_drinking_water_source_cat` to the dataset.
 \details{
 The function performs the following steps:
 - Validates that the `.dataset` is a valid data frame or tibble and is not empty.
-- Verifies that the `drinking_water_source` column exists in the dataset and contains valid responses.
-- Categorizes the values in the `drinking_water_source` column based on the provided classifications.
-- Adds a new column `wash_drinking_water_source_cat` to the dataset with the recoded categories:
+- Verifies that the \code{drinking_water_source_col} column exists in the dataset and contains valid responses.
+- Categorizes the values in the \code{drinking_water_source_col} column based on the provided classifications.
+- Adds a new column \code{wash_drinking_water_source_cat} to the dataset with the recoded categories:
   \describe{
-    \item{Improved}{Corresponding to entries from `drinking_water_source_cat_improved`.}
-    \item{Unimproved}{Corresponding to entries from `drinking_water_source_cat_unimproved`.}
-    \item{Surface Water}{Matching `drinking_water_source_cat_surface_water`.}
-    \item{Undefined}{Matching `drinking_water_source_cat_undefined`.}
+    \item{Improved}{Corresponding to entries from \code{drinking_water_source_cat_improved_val}.}
+    \item{Unimproved}{Corresponding to entries from \code{drinking_water_source_cat_unimproved_val}.}
+    \item{Surface Water}{Matching \code{drinking_water_source_cat_surface_water_val}.}
+    \item{Undefined}{Matching \code{drinking_water_source_cat_undefined_val}.}
   }
 
 If the output column `wash_drinking_water_source_cat` already exists, a warning is issued, and
@@ -86,7 +86,7 @@ example_data <- data.frame(
 # Add drinking water source categories
 result <- add_drinking_water_source_cat(
   .dataset = example_data,
-  drinking_water_source = "wash_drinking_water_source"
+  drinking_water_source_col = "wash_drinking_water_source"
 )
 
 }

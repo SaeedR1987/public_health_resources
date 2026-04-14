@@ -6,6 +6,9 @@
 \usage{
 indicator_validate_table_to_schema(df)
 }
+\arguments{
+\item{df}{A data frame or tibble in the flat indicator schema table format to validate.}
+}
 \description{
 Validate whether an indicator schema table is safe to convert
 }

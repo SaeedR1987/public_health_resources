@@ -24,6 +24,7 @@
 #' @param availability_barriers_val A character vector of values indicating "availability barriers."
 #' @param other_barriers_val A character vector of values indicating "other barriers."
 #' @param no_barriers_val A character vector of values indicating "no barriers."
+#' @param did_not_need_val A character vector of values indicating "did not need" health services.
 #'
 #' @return A data frame with the following new binary columns:
 #' * **health_barrier_any.physical**

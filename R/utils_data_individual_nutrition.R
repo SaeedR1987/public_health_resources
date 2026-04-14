@@ -11,7 +11,14 @@
 #'    - `"Severe Food Insecurity"`: Score between 7 and 8.
 #'
 #' @param .dataset A data frame or tibble containing the EC-FIES columns.
-#' @param nut_ecfies_so1_col, ..., nut_ecfies_so8_col Column names (character) of the 8 EC-FIES survey questions.
+#' @param nut_ecfies_so1_col Column name (character) of EC-FIES survey question 1.
+#' @param nut_ecfies_so2_col Column name (character) of EC-FIES survey question 2.
+#' @param nut_ecfies_so3_col Column name (character) of EC-FIES survey question 3.
+#' @param nut_ecfies_so4_col Column name (character) of EC-FIES survey question 4.
+#' @param nut_ecfies_so5_col Column name (character) of EC-FIES survey question 5.
+#' @param nut_ecfies_so6_col Column name (character) of EC-FIES survey question 6.
+#' @param nut_ecfies_so7_col Column name (character) of EC-FIES survey question 7.
+#' @param nut_ecfies_so8_col Column name (character) of EC-FIES survey question 8.
 #' @param yes_val Character string indicating a "yes" response, contributing 1 point to the score.
 #' @param no_val Character string indicating a "no" response, contributing 0 points to the score.
 #' @param dont_know_val Character string indicating the "don't know" response, contributing 0 points to the score.

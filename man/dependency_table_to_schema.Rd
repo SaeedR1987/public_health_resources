@@ -6,6 +6,10 @@
 \usage{
 dependency_table_to_schema(df)
 }
+\arguments{
+\item{df}{A data frame or tibble in the flat dependency schema table format (as produced by
+\code{dependency_schema_to_table()}).}
+}
 \description{
 Convert a dependency schema table into a canonical nested list
 }

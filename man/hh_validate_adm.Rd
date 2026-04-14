@@ -6,6 +6,11 @@
 \usage{
 hh_validate_adm(x, valid)
 }
+\arguments{
+\item{x}{Character vector of administrative unit values to validate.}
+
+\item{valid}{Character vector of valid/accepted administrative unit values.}
+}
 \description{
 Validate admin codes/names against reference values
 }
