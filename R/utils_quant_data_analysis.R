@@ -289,7 +289,6 @@ phr_pick_ci_method <- function(n_unweighted = NULL,
                                  is_numeric = FALSE,
                                  is_ratio = FALSE) {
 
-  # --- Initialize
   flags <- c(
     flag_small_n    = FALSE,
     flag_low_neff   = FALSE,

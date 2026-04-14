@@ -105,8 +105,8 @@ Data <- R6::R6Class(
     linked_objects = list(),    # For dependency linking (name -> list(obj, by_self, by_other))
 
 
-    # Initialize
-
+    #' Initialize Data Object
+    #'
     #' @description
     #' Initialize a new Data object with survey data
     #'
@@ -2880,7 +2880,7 @@ Data <- R6::R6Class(
     },
 
     #' INTERNAL HELPER — apply cleaning log changes (option A authoritative mode)
-    #' 
+    #'
     #' @description
     #' Internal helper to apply cleaning changes from a log data frame to a dataset
     #'
