@@ -6,6 +6,9 @@
 \usage{
 hh_normalize_adm(x)
 }
+\arguments{
+\item{x}{Character vector of administrative unit names to normalize.}
+}
 \description{
 Normalize administrative names
 }

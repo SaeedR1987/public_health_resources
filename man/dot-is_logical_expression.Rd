@@ -7,7 +7,8 @@
 .is_logical_expression(expr_chr)
 }
 \arguments{
-\item{expr}{A language object (typically produced by `parse(text = ...)[[1]]`).}
+\item{expr_chr}{A single character string containing a logical expression
+(typically the text of an expression to be parsed and evaluated).}
 }
 \value{
 Logical scalar:

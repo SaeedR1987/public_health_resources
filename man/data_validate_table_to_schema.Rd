@@ -6,6 +6,11 @@
 \usage{
 data_validate_table_to_schema(df, data_obj = NULL)
 }
+\arguments{
+\item{df}{A data frame or tibble in the flat schema table format to validate.}
+
+\item{data_obj}{Optional data object used for additional contextual validation. Default: NULL.}
+}
 \description{
 Validate whether a schema table is safe to convert
 }

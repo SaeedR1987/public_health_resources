@@ -6,6 +6,15 @@
 \usage{
 hh_check_roster_1_to_many(hh_df, roster_df, uuid_hh, uuid_roster)
 }
+\arguments{
+\item{hh_df}{A data frame containing household-level data.}
+
+\item{roster_df}{A data frame containing roster (individual-level) data.}
+
+\item{uuid_hh}{Character string specifying the UUID column name in the household data frame.}
+
+\item{uuid_roster}{Character string specifying the UUID column name in the roster data frame that links to households.}
+}
 \description{
 Check 1:many linkage integrity
 }

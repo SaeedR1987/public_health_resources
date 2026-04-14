@@ -12,6 +12,8 @@ phr_validate_all_numeric(x, origin = NULL, hint = NULL, soft)
 \item{origin}{Optional name of the originating function.}
 
 \item{hint}{Optional corrective hint.}
+
+\item{soft}{Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.}
 }
 \value{
 Invisibly returns TRUE if valid; otherwise triggers `phr_error()`.

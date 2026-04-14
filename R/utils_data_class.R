@@ -1,4 +1,6 @@
 #' Convert a canonical schema list into a flat table format
+#' @param schema_list A named list representing the canonical data schema, as produced by
+#'   \code{data_table_to_schema()} or constructed manually.
 #' @export
 data_schema_to_table <- function(schema_list) {
   # 0. VALIDATE SCHEMA FIRST (fixes failing tests)
@@ -341,6 +343,8 @@ data_schema_to_table <- function(schema_list) {
 }
 
 #' Convert a schema table into a canonical nested schema list
+#' @param df A data frame or tibble in the flat schema table format (as produced by
+#'   \code{data_schema_to_table()}).
 #' @export
 data_table_to_schema <- function(df) {
 
@@ -477,6 +481,8 @@ data_table_to_schema <- function(df) {
 }
 
 #' Validate whether a schema table is safe to convert
+#' @param df A data frame or tibble in the flat schema table format to validate.
+#' @param data_obj Optional data object used for additional contextual validation. Default: NULL.
 #' @export
 data_validate_table_to_schema <- function(df, data_obj = NULL) {
 
@@ -977,6 +983,8 @@ process_select_multiple_columns <- function(data, schema) {
 # INDICATOR SCHEMA FUNCTIONS ####
 
 #' Convert an indicator schema list into a flat table format
+#' @param indicator_schema_list A named list representing the canonical indicator schema, as produced by
+#'   \code{indicator_table_to_schema()} or constructed manually.
 #' @export
 indicator_schema_to_table <- function(indicator_schema_list) {
 
@@ -1117,6 +1125,8 @@ indicator_schema_to_table <- function(indicator_schema_list) {
 
 
 #' Convert an indicator schema table into a canonical nested list
+#' @param df A data frame or tibble in the flat indicator schema table format (as produced by
+#'   \code{indicator_schema_to_table()}).
 #' @export
 indicator_table_to_schema <- function(df) {
 
@@ -1193,6 +1203,7 @@ indicator_table_to_schema <- function(df) {
 
 
 #' Validate whether an indicator schema table is safe to convert
+#' @param df A data frame or tibble in the flat indicator schema table format to validate.
 #' @export
 indicator_validate_table_to_schema <- function(df) {
 
@@ -1240,6 +1251,8 @@ indicator_validate_table_to_schema <- function(df) {
 # DEPENDENCY SCHEMA FUNCTIONS ####
 
 #' Convert a dependency schema list into a flat table format
+#' @param dependency_schema_list A named list representing the canonical dependency schema, as produced by
+#'   \code{dependency_table_to_schema()} or constructed manually.
 #' @export
 dependency_schema_to_table <- function(dependency_schema_list) {
 
@@ -1332,6 +1345,8 @@ dependency_schema_to_table <- function(dependency_schema_list) {
 
 
 #' Convert a dependency schema table into a canonical nested list
+#' @param df A data frame or tibble in the flat dependency schema table format (as produced by
+#'   \code{dependency_schema_to_table()}).
 #' @export
 dependency_table_to_schema <- function(df) {
 
@@ -1405,6 +1420,7 @@ dependency_table_to_schema <- function(df) {
 
 
 #' Validate whether a dependency schema table is safe to convert
+#' @param df A data frame or tibble in the flat dependency schema table format to validate.
 #' @export
 dependency_validate_table_to_schema <- function(df) {
 

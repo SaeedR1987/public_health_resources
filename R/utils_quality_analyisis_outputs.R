@@ -7,6 +7,9 @@
 #' @param numeric_cols a vector of the fsl indicator scores.
 #' By default: c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score")
 #' @param title_name Title of the plot
+#' @param variable_label Optional character string. Human-readable label for the variables, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param subtitle Optional character string appended to the auto-generated n count subtitle. Default: NULL.
 #'
 #' @return a Correlogram plot
 #' @export
@@ -72,6 +75,8 @@ plot_correlogram <- function (survey_design, numeric_cols = c("fsl_fcs_score",  
 #' @param color_palette Inputs an optional character value specifying the color palette to use.
 #'   Options: "sex" (default for male/female comparison), "reach1", "reach2", "reach3", "reach4", "traffic_light", "default".
 #' @param title_name Title of the plot. By default: NULL.
+#' @param variable_label Optional character string. Human-readable label for the variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Inputs an optional character value for the subtitle of the plot.
 #'   If NULL, automatically displays n by sex (e.g., "Male (n=X); Female (n=Y)"). Custom subtitle will be appended to n display.
 #' @param x_lab Label for the x-axis. By default: NULL.
@@ -374,6 +379,10 @@ plot_age_pyramid <- function (survey_design,
 #' @param breaks Bin width for histogram. By default: NULL (1 for years, 12 for months)
 #' @param color_palette Color palette to use. By default: "reach2"
 #' @param title_name Title of the plot. By default: NULL
+#' @param variable_label Optional character string. Human-readable label for the age variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Subtitle of the plot. By default: NULL (auto-generates n count)
 #' @param x_lab Label for x-axis. By default: NULL (auto-generates based on year_or_month)
 #' @param y_lab Label for y-axis. By default: NULL (falls back to "Count")
@@ -597,7 +606,15 @@ plot_age_distribution <- function (survey_design,
 #' @param grouping Variable name from the output create_fsl_flags for grouping
 #' @param color_palette Color palette to use. By default: "reach3"
 #' @param title_name Title of the plot
+#' @param variable_label Optional character string. Human-readable label for the numeric variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Subtitle of the plot
+#' @param x_lab Label for x-axis. By default: NULL (uses name_units).
+#' @param y_lab Label for y-axis. By default: NULL (uses name_groups).
+#' @param legend_position Position of the legend. By default: "none". Options: "bottom", "top", "left", "right", "none".
+#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 #' @param weights_col Character string. Name of the column containing survey weights. Required when weighted = TRUE.
 #'
@@ -739,6 +756,10 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
 #' @param overall_label Character. Label for the overall distribution ridge. Default: "Overall".
 #' @param color_palette Color palette to use. By default: "reach3".
 #' @param title_name Optional title of the plot.
+#' @param variable_label Optional character string. Human-readable label for the numeric variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Optional subtitle (appended to auto-generated n counts).
 #' @param x_lab Optional x-axis label. Defaults to the column name.
 #' @param y_lab Optional y-axis label. Defaults to the grouping column name.
@@ -894,7 +915,14 @@ plot_ridge_distribution_by_group <- function(survey_design,
 #' @param grouping Optional character string specifying a column name to group/color the curves by.
 #' @param color_palette Character string specifying the color palette to use (default: "reach2").
 #' @param title_name Optional character string for the plot title.
+#' @param variable_label Optional character string. Human-readable label for the data variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Optional character string for additional subtitle text (will be appended to auto-generated n counts).
+#' @param y_label Optional character string for the y-axis label. Default: "% Cumulative Proportion".
+#' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
+#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 #' @param weights_col Character string. Name of the column containing survey weights. Required when weighted = TRUE.
 #'
@@ -1118,7 +1146,12 @@ plot_cumulative_distribution <- function(survey_design, data_var,
 #' @param grouping Optional character string specifying a column name to group/color the density curves by.
 #' @param color_palette Character string specifying the color palette to use (default: "reach3").
 #' @param title_name Optional character string for the plot title.
+#' @param variable_label Optional character string. Human-readable label for the z-score variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Optional character string for additional subtitle text (will be appended to auto-generated n counts).
+#' @param y_lab Optional character string for the y-axis label. Default: NULL (auto-generated).
 #'
 #' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
 #' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
@@ -1350,62 +1383,8 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
 #' @param max_age_months Maximum age in months to include (exclusive). By default: 24
 #' @param color_palette Color palette to use. Options include "iycf_area" (default), "reach1", "reach2", "reach3", "reach4", "traffic_light", "sex", "group", "default". See [get_color_palette()] for all available palettes.
 #' @param title_name Title of the plot. By default: NULL
-#' @param subtitle Subtitle of the plot. By default: NULL
-#'
-#' @param y_lab Label for the y-axis. By default: NULL (falls back to "Density").
-#' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
-#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
-#' @return An area graph showing IYCF feeding practices by age group
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#'   plot_iycf_areagraph(survey_design = iycf_data)
-#' }
-
-#' Plot IYCF Area Graph
-#'
-#' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
-#' @param age_months_col Column name for age in months. By default: "age_months". Must be numeric.
-#' @param iycf_ebf_col Column name for exclusive breastfeeding indicator. By default: "iycf_ebf"
-#' @param iycf_4_col Column name for currently breastfeeding indicator (IYCF 4). By default: "iycf_4"
-#'
-#' @param iycf_6a_col Column name for plain water consumption (IYCF 6a). By default: "iycf_6a"
-#' @param iycf_6b_col Column name for infant formula consumption frequency (IYCF 6b). By default: "iycf_6b". Must be numeric.
-#' @param iycf_6c_col Column name for animal milk consumption frequency (IYCF 6c). By default: "iycf_6c". Must be numeric.
-#' @param iycf_6d_col Column name for powdered milk consumption frequency (IYCF 6d). By default: "iycf_6d". Must be numeric.
-#' @param iycf_6e_col Column name for juice consumption (IYCF 6e). By default: "iycf_6e"
-#' @param iycf_6f_col Column name for broth consumption (IYCF 6f). By default: "iycf_6f"
-#' @param iycf_6g_col Column name for yogurt drink consumption (IYCF 6g). By default: "iycf_6g"
-#' @param iycf_6h_col Column name for thin porridge consumption (IYCF 6h). By default: "iycf_6h"
-#' @param iycf_6i_col Column name for other liquids consumption (IYCF 6i). By default: "iycf_6i"
-#' @param iycf_6j_col Column name for tea/coffee consumption (IYCF 6j). By default: "iycf_6j"
-#'
-#' @param iycf_7a_col Column name for yogurt (solid) consumption frequency (IYCF 7a). By default: "iycf_7a". Must be numeric.
-#' @param iycf_7b_col Column name for grains/roots/tubers consumption (IYCF 7b). By default: "iycf_7b"
-#' @param iycf_7c_col Column name for legumes/nuts consumption (IYCF 7c). By default: "iycf_7c"
-#' @param iycf_7d_col Column name for dairy products consumption (IYCF 7d). By default: "iycf_7d"
-#' @param iycf_7e_col Column name for meat/poultry consumption (IYCF 7e). By default: "iycf_7e"
-#' @param iycf_7f_col Column name for eggs consumption (IYCF 7f). By default: "iycf_7f"
-#' @param iycf_7g_col Column name for vitamin A rich fruits consumption (IYCF 7g). By default: "iycf_7g"
-#' @param iycf_7h_col Column name for other fruits consumption (IYCF 7h). By default: "iycf_7h"
-#' @param iycf_7i_col Column name for vitamin A rich vegetables consumption (IYCF 7i). By default: "iycf_7i"
-#' @param iycf_7j_col Column name for other vegetables consumption (IYCF 7j). By default: "iycf_7j"
-#' @param iycf_7k_col Column name for red palm oil consumption (IYCF 7k). By default: "iycf_7k"
-#' @param iycf_7l_col Column name for oil/fats consumption (IYCF 7l). By default: "iycf_7l"
-#' @param iycf_7m_col Column name for sweets consumption (IYCF 7m). By default: "iycf_7m"
-#' @param iycf_7n_col Column name for condiments consumption (IYCF 7n). By default: "iycf_7n"
-#' @param iycf_7o_col Column name for insects/grubs consumption (IYCF 7o). By default: "iycf_7o"
-#' @param iycf_7p_col Column name for fish/seafood consumption (IYCF 7p). By default: "iycf_7p"
-#' @param iycf_7q_col Column name for organ meat consumption (IYCF 7q). By default: "iycf_7q"
-#' @param iycf_7r_col Column name for other foods consumption (IYCF 7r). By default: "iycf_7r"
-#'
-#' @param yes_val Value indicating "yes" in IYCF indicator columns. By default: 1
-#' @param no_val Value indicating "no" in IYCF indicator columns. By default: 0
-#' @param min_age_months Minimum age in months to include. By default: 0
-#' @param max_age_months Maximum age in months to include (exclusive). By default: 24
-#' @param color_palette Color palette to use. Options include "iycf_area" (default), "reach1", "reach2", "reach3", "reach4", "traffic_light", "sex", "group", "default". See [get_color_palette()] for all available palettes.
-#' @param title_name Title of the plot. By default: NULL
+#' @param variable_label Optional character string. Human-readable label for the plot variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Subtitle of the plot. By default: NULL
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 #' @param weights_col Character string. Name of the column containing survey weights. Required when weighted = TRUE.

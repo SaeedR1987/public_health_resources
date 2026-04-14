@@ -64,6 +64,10 @@ to the auto-generated title as ", by <grouping_label>". Defaults to the column n
 
 \item{y_lab}{Label for y-axis. By default: NULL (auto-generated based on operation)}
 
+\item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
+
+\item{flip_coordinates}{Logical. If TRUE, flips the coordinate axes. By default: FALSE.}
+
 \item{weighted}{Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 Note: Weighting is only supported for "mean" and "sd" operations.}
 

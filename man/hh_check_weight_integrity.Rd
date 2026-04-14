@@ -6,6 +6,9 @@
 \usage{
 hh_check_weight_integrity(w)
 }
+\arguments{
+\item{w}{Numeric vector of weight values to check for integrity issues.}
+}
 \description{
 Detect invalid weights: negative, zero, missing
 }

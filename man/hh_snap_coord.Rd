@@ -6,6 +6,11 @@
 \usage{
 hh_snap_coord(x, digits = 6)
 }
+\arguments{
+\item{x}{Numeric vector of GPS coordinate values to round.}
+
+\item{digits}{Integer specifying the number of decimal places to round to. Default: 6.}
+}
 \description{
 Snap GPS coordinates to fixed decimal precision
 }

@@ -42,7 +42,15 @@ Must be same length as vline_intercepts. Default is c("red", "orange", "orange",
 
 \item{title_name}{Optional character string for the plot title.}
 
+\item{variable_label}{Optional character string. Human-readable label for the z-score variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Optional character string for additional subtitle text (will be appended to auto-generated n counts).}
+
+\item{y_lab}{Optional character string for the y-axis label. Default: NULL (auto-generated).}
 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
 

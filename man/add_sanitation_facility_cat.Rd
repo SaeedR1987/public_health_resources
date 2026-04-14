@@ -19,14 +19,16 @@ add_sanitation_facility_cat(
 \item{sanitation_facility_col}{The column name for the sanitation facility variable
 in the dataset. Defaults to `"wash_sanitation_facility"`.}
 
-\item{improved_facilities}{A character vector of values classified as
+\item{improved_facilities_val}{A character vector of values classified as
 "Improved" sanitation facilities.}
 
-\item{unimproved_facilities}{A character vector of values classified as
+\item{unimproved_facilities_val}{A character vector of values classified as
 "Unimproved" sanitation facilities.}
 
-\item{open_defecation_facilities}{A character vector of values classified as
+\item{open_defecation_val}{A character vector of values classified as
 "Open Defecation" practices.}
+
+\item{undefined_val}{A character vector of values classified as "Undefined" sanitation facilities.}
 }
 \value{
 A data frame or tibble with an additional column `wash_sanitation_facility_cat`.
@@ -44,9 +46,9 @@ The function performs the following:
 - Categorizes the values in the `sanitation_facility_col` column based on the provided classifications.
 - Adds a new column `wash_sanitation_facility_cat` to the dataset with recoded categories:
   \describe{
-    \item{"Improved"}{Corresponding to entries from `improved_facilities`.}
-    \item{"Unimproved"}{Corresponding to entries from `unimproved_facilities`.}
-    \item{"Open Defecation"}{Matching entries from `open_defecation_facilities`.}
+    \item{"Improved"}{Corresponding to entries from \code{improved_facilities_val}.}
+    \item{"Unimproved"}{Corresponding to entries from \code{unimproved_facilities_val}.}
+    \item{"Open Defecation"}{Matching entries from \code{open_defecation_val}.}
     \item{NA}{Any value not matching the above categories.}
   }
 
@@ -63,9 +65,9 @@ example_data <- data.frame(
 result <- add_sanitation_facility_cat(
   .dataset = example_data,
   sanitation_facility_col = "wash_sanitation_facility",
-  improved_facilities = c("flush_to_piped", "flush_to_septic", "flush_to_pit"),
-  unimproved_facilities = c("pit_lat", "bucket"),
-  open_defecation_facilities = c("open_defecation")
+  improved_facilities_val = c("flush_to_piped", "flush_to_septic", "flush_to_pit"),
+  unimproved_facilities_val = c("pit_lat", "bucket"),
+  open_defecation_val = c("open_defecation")
 )
 
 }

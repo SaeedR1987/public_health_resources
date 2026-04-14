@@ -19,6 +19,11 @@ plot_correlogram(
 By default: c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score")}
 
 \item{title_name}{Title of the plot}
+
+\item{variable_label}{Optional character string. Human-readable label for the variables, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{subtitle}{Optional character string appended to the auto-generated n count subtitle. Default: NULL.}
 }
 \value{
 a Correlogram plot

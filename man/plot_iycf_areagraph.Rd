@@ -128,6 +128,9 @@ plot_iycf_areagraph(
 
 \item{title_name}{Title of the plot. By default: NULL}
 
+\item{variable_label}{Optional character string. Human-readable label for the plot variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
 \item{subtitle}{Subtitle of the plot. By default: NULL}
 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
@@ -137,23 +140,14 @@ plot_iycf_areagraph(
 \item{weighted}{Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.}
 
 \item{weights_col}{Character string. Name of the column containing survey weights. Required when weighted = TRUE.}
-
-\item{y_lab}{Label for the y-axis. By default: NULL (falls back to "Density").}
 }
 \value{
-An area graph showing IYCF feeding practices by age group
-
 An area graph showing IYCF feeding practices by age group
 }
 \description{
 Plot IYCF Area Graph
 }
 \examples{
-\dontrun{
-  plot_iycf_areagraph(survey_design = iycf_data)
-}
-Plot IYCF Area Graph
-
 \dontrun{
   plot_iycf_areagraph(survey_design = iycf_data)
 }

@@ -6,6 +6,10 @@
 \usage{
 indicator_schema_to_table(indicator_schema_list)
 }
+\arguments{
+\item{indicator_schema_list}{A named list representing the canonical indicator schema, as produced by
+\code{indicator_table_to_schema()} or constructed manually.}
+}
 \description{
 Convert an indicator schema list into a flat table format
 }

@@ -50,7 +50,19 @@ Must be same length as vline_intercepts. Default is c("red", "orange").}
 
 \item{title_name}{Optional character string for the plot title.}
 
+\item{variable_label}{Optional character string. Human-readable label for the data variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Optional character string for additional subtitle text (will be appended to auto-generated n counts).}
+
+\item{y_label}{Optional character string for the y-axis label. Default: "\% Cumulative Proportion".}
+
+\item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
+
+\item{flip_coordinates}{Logical. If TRUE, flips the coordinate axes. By default: FALSE.}
 
 \item{weighted}{Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.}
 
