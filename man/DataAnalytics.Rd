@@ -11,10 +11,10 @@ This class provides:
 * Shared `visualizations` and `tables` containers for all outputs
 }
 \details{
-The `DataAnalytics` R6 class integrates the functionality of both
-`DataQuality` and `QuantDataAnalysis` into a single unified analytics
-object. It maintains separate schemas for quality checks and quantitative
-analysis, while sharing common output containers.
+The `DataAnalytics` R6 class provides unified data quality checks and
+quantitative analysis in a single analytics object. It maintains separate
+schemas for quality checks and quantitative analysis, while sharing common
+output containers.
 
 
 Key design principles:
