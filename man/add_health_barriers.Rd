@@ -15,7 +15,7 @@ add_health_barriers(
   availability_barriers_val,
   other_barriers_val,
   no_barriers_val,
-  did_not_need_val
+  did_not_need_val = NULL
 )
 }
 \arguments{
