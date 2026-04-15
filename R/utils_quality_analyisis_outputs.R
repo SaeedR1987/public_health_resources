@@ -237,8 +237,8 @@ plot_age_pyramid <- function (survey_design,
 
     # Filter data to only include specified sex values and remove NA values
     plot_data <- plot_data |>
-      dplyr::filter(sex_plot %in% c(as.character(sex_male_val), as.character(sex_female_val))) |>
-      dplyr::filter(!is.na(age_group_plot), !is.na(sex_plot))
+      dplyr::filter(.data$sex_plot %in% c(as.character(sex_male_val), as.character(sex_female_val))) |>
+      dplyr::filter(!is.na(.data$age_group_plot), !is.na(.data$sex_plot))
 
     # Check if data is empty after filtering
     if (nrow(plot_data) == 0) {
@@ -255,41 +255,41 @@ plot_age_pyramid <- function (survey_design,
     if (use_weights) {
       # Weighted counts
       age_sex_counts <- plot_data |>
-        dplyr::group_by(age_group_plot, sex_plot) |>
-        dplyr::summarise(count = sum(weight_plot, na.rm = TRUE), .groups = "drop")
+        dplyr::group_by(.data$age_group_plot, .data$sex_plot) |>
+        dplyr::summarise(count = sum(.data$weight_plot, na.rm = TRUE), .groups = "drop")
     } else {
       # Unweighted counts
       age_sex_counts <- plot_data |>
-        dplyr::group_by(age_group_plot, sex_plot) |>
+        dplyr::group_by(.data$age_group_plot, .data$sex_plot) |>
         dplyr::summarise(count = dplyr::n(), .groups = "drop")
     }
 
     # Calculate percentage across ALL age and sex categories (sums to 100% total)
     age_sex_counts <- age_sex_counts |>
-      dplyr::mutate(pct = count / sum(count, na.rm = TRUE) * 100) |>
-      dplyr::mutate(pct = ifelse(sex_plot == as.character(sex_male_val), -pct, pct))
+      dplyr::mutate(pct = .data$count / sum(.data$count, na.rm = TRUE) * 100) |>
+      dplyr::mutate(pct = ifelse(.data$sex_plot == as.character(sex_male_val), -.data$pct, .data$pct))
 
     # Apply sex labels
     age_sex_counts <- age_sex_counts |>
-      dplyr::mutate(sex_label = dplyr::recode(sex_plot, !!!sex_values))
+      dplyr::mutate(sex_label = dplyr::recode(.data$sex_plot, !!!sex_values))
 
     # Determine what to plot: percentages or counts
     if (proportional) {
       age_sex_counts <- age_sex_counts |>
-        dplyr::mutate(plot_value = pct)
+        dplyr::mutate(plot_value = .data$pct)
     } else {
       # For counts, make male counts negative
       age_sex_counts <- age_sex_counts |>
-        dplyr::mutate(plot_value = ifelse(sex_plot == as.character(sex_male_val), -count, count))
+        dplyr::mutate(plot_value = ifelse(.data$sex_plot == as.character(sex_male_val), -.data$count, .data$count))
     }
 
     # Create subtitle with n by sex (unweighted count for n display)
     n_by_sex <- plot_data |>
-      dplyr::group_by(sex_plot) |>
+      dplyr::group_by(.data$sex_plot) |>
       dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-      dplyr::mutate(sex_label = dplyr::recode(sex_plot, !!!sex_values)) |>
-      dplyr::mutate(sex_label = sprintf("%s (n=%d)", sex_label, n)) |>
-      dplyr::arrange(sex_plot)
+      dplyr::mutate(sex_label = dplyr::recode(.data$sex_plot, !!!sex_values)) |>
+      dplyr::mutate(sex_label = sprintf("%s (n=%d)", .data$sex_label, .data$n)) |>
+      dplyr::arrange(.data$sex_plot)
 
     auto_subtitle <- paste(n_by_sex$sex_label, collapse = "; ")
 
@@ -332,9 +332,9 @@ plot_age_pyramid <- function (survey_design,
     }
 
     # Create the plot
-    g <- ggplot2::ggplot(age_sex_counts, ggplot2::aes(x = age_group_plot,
-                                                      y = plot_value,
-                                                      fill = sex_label)) +
+    g <- ggplot2::ggplot(age_sex_counts, ggplot2::aes(x = .data$age_group_plot,
+                                                      y = .data$plot_value,
+                                                      fill = .data$sex_label)) +
       ggplot2::geom_bar(stat = "identity", width = 0.8) +
       ggplot2::coord_flip() +
       ggplot2::scale_y_continuous(
@@ -496,7 +496,7 @@ plot_age_distribution <- function (survey_design,
         n_by_group <- df |>
           dplyr::group_by(!!rlang::sym(by_group_col)) |>
           dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-          dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(by_group_col), n))
+          dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(by_group_col), .data$n))
 
         auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
         if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -559,7 +559,7 @@ plot_age_distribution <- function (survey_design,
         n_by_group <- df |>
           dplyr::group_by(!!rlang::sym(by_group_col)) |>
           dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-          dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(by_group_col), n))
+          dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(by_group_col), .data$n))
 
         auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
         if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -703,7 +703,7 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
       n_by_group <- df |>
         dplyr::group_by(!!rlang::sym(grouping)) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
+        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), .data$n))
 
       auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -843,7 +843,7 @@ plot_ridge_distribution_by_group <- function(survey_design,
     n_by_group <- df |>
       dplyr::group_by(!!rlang::sym(grouping)) |>
       dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-      dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
+      dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), .data$n))
     auto_subtitle <- paste(c(sprintf("Overall (n=%d)", total_n),
                              n_by_group$group_label), collapse = "; ")
     if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -860,7 +860,7 @@ plot_ridge_distribution_by_group <- function(survey_design,
       dplyr::select(dplyr::all_of(c(numeric_col, grouping,
                                     if (weighted) weights_col else character(0)))) |>
       dplyr::rename(.group_label = !!rlang::sym(grouping)) |>
-      dplyr::mutate(.group_label = as.character(.group_label))
+      dplyr::mutate(.group_label = as.character(.data$.group_label))
 
     # Combine overall and grouped data; overall appears as the topmost ridge
     df_combined <- dplyr::bind_rows(df_overall, df_grouped)
@@ -883,13 +883,13 @@ plot_ridge_distribution_by_group <- function(survey_design,
       df_combined,
       if (weighted)
         ggplot2::aes(x = !!rlang::sym(numeric_col),
-                     y = .group_label,
-                     fill = .group_label,
+                     y = .data$.group_label,
+                     fill = .data$.group_label,
                      weight = !!rlang::sym(weights_col))
       else
         ggplot2::aes(x = !!rlang::sym(numeric_col),
-                     y = .group_label,
-                     fill = .group_label)
+                     y = .data$.group_label,
+                     fill = .data$.group_label)
     ) +
       ggridges::geom_density_ridges() +
       ggplot2::scale_fill_manual(values = colors) +
@@ -1058,7 +1058,7 @@ plot_cumulative_distribution <- function(survey_design, data_var,
         dplyr::filter(!is.na(!!rlang::sym(data_var))) |>
         dplyr::group_by(!!rlang::sym(grouping)) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
+        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), .data$n))
 
       auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -1075,7 +1075,7 @@ plot_cumulative_distribution <- function(survey_design, data_var,
           .w = !!rlang::sym(weights_col) / sum(!!rlang::sym(weights_col), na.rm = TRUE),
           .ecdf_val = cumsum(.w)
         )
-      g <- ggplot2::ggplot(df_ecdf, ggplot2::aes(x = !!rlang::sym(data_var), y = .ecdf_val, color = "Overall")) +
+      g <- ggplot2::ggplot(df_ecdf, ggplot2::aes(x = !!rlang::sym(data_var), y = .data$.ecdf_val, color = "Overall")) +
         ggplot2::geom_step()
     } else {
       g <- ggplot2::ggplot(df, ggplot2::aes(x = !!rlang::sym(data_var), color = "Overall")) +
@@ -1103,7 +1103,7 @@ plot_cumulative_distribution <- function(survey_design, data_var,
           dplyr::ungroup()
         g <- g + ggplot2::geom_step(data = df_ecdf_grouped,
                                      ggplot2::aes(x = !!rlang::sym(data_var),
-                                                  y = .ecdf_val,
+                                                  y = .data$.ecdf_val,
                                                   color = as.factor(!!rlang::sym(grouping)),
                                                   group = !!rlang::sym(grouping)))
       } else {
@@ -1301,7 +1301,7 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
         dplyr::filter(!is.na(!!rlang::sym(zscore_var))) |>
         dplyr::group_by(!!rlang::sym(grouping)) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), n))
+        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping), .data$n))
 
       auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -1682,18 +1682,18 @@ plot_iycf_areagraph <- function(survey_design,
 
     # Summarize by category and age group
     df <- df |>
-      dplyr::group_by(category, age_group) |>
+      dplyr::group_by(.data$category, .data$age_group) |>
       dplyr::summarize(
         n = if (weighted) sum(!!rlang::sym(weights_col), na.rm = TRUE) else sum(!is.na(!!rlang::sym(iycf_4_col))),
         .groups = "drop"
       ) |>
-      dplyr::group_by(age_group) |>
+      dplyr::group_by(.data$age_group) |>
       dplyr::mutate(
-        percentage = (n / sum(n)) * 100,
+        percentage = (.data$n / sum(.data$n)) * 100,
         n = NULL
       ) |>
-      dplyr::filter(!is.na(category)) |>
-      arrange(percentage)
+      dplyr::filter(!is.na(.data$category)) |>
+      dplyr::arrange(.data$percentage)
 
     # Expand grid to include all combinations
     df <- merge(df,
@@ -1949,7 +1949,7 @@ plot_date_runner <- function(survey_design,
       group_val <- groups[i]
 
       df_group <- df |>
-        dplyr::filter(plot_group == group_val)
+        dplyr::filter(.data$plot_group == group_val)
 
       if (operation == "ratio") {
         # For ratio operation, calculate cumulative sums and then divide
@@ -1961,7 +1961,7 @@ plot_date_runner <- function(survey_design,
             cumsum_den = cumsum(!!rlang::sym(numeric_col2)),
             !!rlang::sym(result_col_name) := cumsum_num / cumsum_den
           ) |>
-          dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
+          dplyr::select(!!rlang::sym(date_col), "plot_group", !!rlang::sym(result_col_name)) |>
           dplyr::group_by(!!rlang::sym(date_col)) |>
           dplyr::slice_tail(n = 1) |>
           dplyr::ungroup()
@@ -1971,7 +1971,7 @@ plot_date_runner <- function(survey_design,
           dplyr::filter(!is.na(!!rlang::sym(numeric_col))) |>
           dplyr::arrange(!!rlang::sym(date_col)) |>
           dplyr::mutate(!!rlang::sym(result_col_name) := expanding_window(!!rlang::sym(numeric_col), runner_func)) |>
-          dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
+          dplyr::select(!!rlang::sym(date_col), "plot_group", !!rlang::sym(result_col_name)) |>
           dplyr::group_by(!!rlang::sym(date_col)) |>
           dplyr::slice_tail(n = 1) |>
           dplyr::ungroup()
@@ -2001,7 +2001,7 @@ plot_date_runner <- function(survey_design,
 
         df_processed <- vals |>
           dplyr::mutate(!!rlang::sym(result_col_name) := result_vals) |>
-          dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
+          dplyr::select(!!rlang::sym(date_col), "plot_group", !!rlang::sym(result_col_name)) |>
           dplyr::group_by(!!rlang::sym(date_col)) |>
           dplyr::slice_tail(n = 1) |>
           dplyr::ungroup()
@@ -2011,7 +2011,7 @@ plot_date_runner <- function(survey_design,
           dplyr::filter(!is.na(!!rlang::sym(numeric_col))) |>
           dplyr::arrange(!!rlang::sym(date_col)) |>
           dplyr::mutate(!!rlang::sym(result_col_name) := expanding_window(!!rlang::sym(numeric_col), runner_func)) |>
-          dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
+          dplyr::select(!!rlang::sym(date_col), "plot_group", !!rlang::sym(result_col_name)) |>
           dplyr::group_by(!!rlang::sym(date_col)) |>
           dplyr::slice_tail(n = 1) |>
           dplyr::ungroup()
@@ -2024,7 +2024,7 @@ plot_date_runner <- function(survey_design,
     df_plot <- dplyr::bind_rows(df_list) |>
       dplyr::mutate(
         !!rlang::sym(result_col_name) := as.numeric(!!rlang::sym(result_col_name)),
-        plot_group = as.factor(plot_group)
+        plot_group = as.factor(.data$plot_group)
       )
 
     # Ensure "Overall" group appears first in the legend when show_overall is active
@@ -2041,10 +2041,10 @@ plot_date_runner <- function(survey_design,
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
     } else {
       n_by_group <- df_plot |>
-        dplyr::filter(!show_overall | plot_group != overall_label) |>
-        dplyr::group_by(plot_group) |>
+        dplyr::filter(!show_overall | .data$plot_group != overall_label) |>
+        dplyr::group_by(.data$plot_group) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::mutate(group_label = sprintf("%s (n=%d)", plot_group, n))
+        dplyr::mutate(group_label = sprintf("%s (n=%d)", .data$plot_group, .data$n))
 
       auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -2345,10 +2345,10 @@ plot_domain_radar <- function(survey_design,
     if (show_labels) {
       # Extract values for labeling
       label_data <- summary |>
-        tidyr::pivot_longer(cols = -group, names_to = "domain", values_to = "value") |>
+        tidyr::pivot_longer(cols = -"group", names_to = "domain", values_to = "value") |>
         dplyr::mutate(
-          percentage_label = paste0(round(value * 100, 1), "%"),
-          domain_label = factor(domain, levels = domain_cols, labels = domain_labels)
+          percentage_label = paste0(round(.data$value * 100, 1), "%"),
+          domain_label = factor(.data$domain, levels = domain_cols, labels = domain_labels)
         )
 
       # Calculate positions for labels (slightly outside the points)
@@ -2363,19 +2363,21 @@ plot_domain_radar <- function(survey_design,
       # Create label positions (extend slightly beyond the data points)
       label_data <- label_data |>
         dplyr::mutate(
-          angle = angles_adjusted[match(domain, domain_cols)],
+          angle = angles_adjusted[match(.data$domain, domain_cols)],
           # Position labels slightly beyond the actual values
           # Scale to ggradar's coordinate system (0 to grid.max)
-          label_radius = value * 1.15,
-          x = label_radius * cos(angle),
-          y = label_radius * sin(angle)
+          label_radius = .data$value * 1.15
+        ) |>
+        dplyr::mutate(
+          x = .data$label_radius * cos(.data$angle),
+          y = .data$label_radius * sin(.data$angle)
         )
 
       # Add text labels
       g <- g +
         ggplot2::geom_text(
           data = label_data,
-          ggplot2::aes(x = x, y = y, label = percentage_label),
+          ggplot2::aes(x = .data$x, y = .data$y, label = .data$percentage_label),
           size = 3.5,
           fontface = "bold",
           color = colors[1],
@@ -2393,7 +2395,7 @@ plot_domain_radar <- function(survey_design,
       n_by_group <- df |>
         dplyr::group_by(!!rlang::sym(grouping_var)) |>
         dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping_var), n))
+        dplyr::mutate(group_label = sprintf("%s (n=%d)", !!rlang::sym(grouping_var), .data$n))
 
       auto_subtitle <- paste(n_by_group$group_label, collapse = "; ")
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
@@ -2591,8 +2593,8 @@ plot_domain_distribution <- function(survey_design,
           names_to = "response",
           values_to = "value"
         ) |>
-        dplyr::filter(!is.na(value) & value != 0) |>
-        dplyr::group_by(response) |>
+        dplyr::filter(!is.na(.data$value) & .data$value != 0) |>
+        dplyr::group_by(.data$response) |>
         dplyr::summarise(
           count = sum(!!rlang::sym(weights_col), na.rm = TRUE),
           .groups = "drop"
@@ -2605,15 +2607,15 @@ plot_domain_distribution <- function(survey_design,
           names_to = "response",
           values_to = "value"
         ) |>
-        dplyr::filter(!is.na(value) & value != 0) |>
-        dplyr::group_by(response) |>
+        dplyr::filter(!is.na(.data$value) & .data$value != 0) |>
+        dplyr::group_by(.data$response) |>
         dplyr::summarise(count = dplyr::n(), .groups = "drop")
     }
 
     # Calculate percentage if requested
     if (show_percentage) {
       response_counts <- response_counts |>
-        dplyr::mutate(percentage = (count / total_respondents) * 100)
+        dplyr::mutate(percentage = (.data$count / total_respondents) * 100)
     }
 
     # Join with domain mapping
@@ -6405,16 +6407,16 @@ plot_crosstab <- function(survey_design,
         total_n <- sum(df_crosstab$n[df_crosstab[[row_var]] != margins_label &
                                        df_crosstab[[col_var]] != margins_label])
         df_crosstab <- df_crosstab |>
-          dplyr::mutate(percentage = n / total_n * 100)
+          dplyr::mutate(percentage = .data$n / total_n * 100)
       } else if (percentage_by == "row") {
         df_crosstab <- df_crosstab |>
           dplyr::group_by(!!row_sym) |>
-          dplyr::mutate(percentage = n / sum(n[!!col_sym != margins_label]) * 100) |>
+          dplyr::mutate(percentage = .data$n / sum(.data$n[!!col_sym != margins_label]) * 100) |>
           dplyr::ungroup()
       } else if (percentage_by == "column") {
         df_crosstab <- df_crosstab |>
           dplyr::group_by(!!col_sym) |>
-          dplyr::mutate(percentage = n / sum(n[!!row_sym != margins_label]) * 100) |>
+          dplyr::mutate(percentage = .data$n / sum(.data$n[!!row_sym != margins_label]) * 100) |>
           dplyr::ungroup()
       }
 
@@ -7557,7 +7559,7 @@ table_frequency <- function(survey_design,
       # Add Unit column after n (if show_unit = TRUE)
       if (show_unit) {
         results_df <- results_df |>
-          dplyr::mutate(Unit = unit_label, .after = n)
+          dplyr::mutate(Unit = unit_label, .after = "n")
       }
 
       if (n_vars > 1) {
@@ -8225,7 +8227,7 @@ table_frequency_v2 <- function(survey_design,
       # Add Unit column after n (if show_unit = TRUE)
       if (show_unit) {
         results_df <- results_df |>
-          dplyr::mutate(Unit = unit_label, .after = n)
+          dplyr::mutate(Unit = unit_label, .after = "n")
       }
 
       if (n_vars > 1) {
