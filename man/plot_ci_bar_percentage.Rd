@@ -70,7 +70,7 @@ A ggplot2 bar chart with confidence intervals
 Creates a bar chart showing percentages with confidence intervals.
 When a survey design object (class \code{tbl_svy} / \code{survey.design} /
 \code{svyrep.design}) is supplied as \code{df}, the function uses
-\code{\link{phr_calc_survey_categorical_single}} to compute survey-design-
+\code{phr_calc_survey_categorical_single} to compute survey-design-
 corrected confidence intervals that account for clustering, stratification
 and probability weights. When a plain data frame is supplied the original
 binomial (or weighted) computation is used.

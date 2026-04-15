@@ -36,7 +36,7 @@ plot_ci_point_mean(
 
 \item{numeric_var2}{Character, optional second numeric variable for ratio
 (\code{numeric_var / numeric_var2}). When set, uses
-\code{\link{phr_calc_survey_ratio_single}} for survey design objects.
+\code{phr_calc_survey_ratio_single} for survey design objects.
 (default: NULL)}
 
 \item{weighted}{Logical, whether to use weighted calculations when \code{df}
@@ -81,8 +81,8 @@ A ggplot2 point chart with confidence intervals
 Creates a point chart showing means or ratios with confidence intervals.
 When a survey design object (class \code{tbl_svy} / \code{survey.design} /
 \code{svyrep.design}) is supplied as \code{df}, the function uses
-\code{\link{phr_calc_survey_mean_single}} (or
-\code{\link{phr_calc_survey_ratio_single}} when \code{numeric_var2} is
+\code{phr_calc_survey_mean_single} (or
+\code{phr_calc_survey_ratio_single} when \code{numeric_var2} is
 provided) to compute survey-design-corrected confidence intervals that
 account for clustering, stratification and probability weights. When a plain
 data frame is supplied the original Wald CI computation is used.

@@ -3568,7 +3568,7 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
 #' each cell contains space-separated response tokens (e.g.
 #' \code{"barrier_cost barrier_distance"}).  Survey-weighted proportions for each
 #' unique response token are computed via
-#' \code{\link{phr_calc_multiple_choice_cat}}, so the weights embedded in
+#' \code{phr_calc_multiple_choice_cat}, so the weights embedded in
 #' \code{survey_design} are applied automatically.  Bars do not add up to 100\%
 #' because respondents may select more than one option.
 #'
@@ -4903,7 +4903,7 @@ plot_sankey <- function(survey_design,
 #' Creates a bar chart showing percentages with confidence intervals.
 #' When a survey design object (class \code{tbl_svy} / \code{survey.design} /
 #' \code{svyrep.design}) is supplied as \code{df}, the function uses
-#' \code{\link{phr_calc_survey_categorical_single}} to compute survey-design-
+#' \code{phr_calc_survey_categorical_single} to compute survey-design-
 #' corrected confidence intervals that account for clustering, stratification
 #' and probability weights. When a plain data frame is supplied the original
 #' binomial (or weighted) computation is used.
@@ -5245,8 +5245,8 @@ plot_ci_bar_percentage <- function(survey_design,
 #' Creates a point chart showing means or ratios with confidence intervals.
 #' When a survey design object (class \code{tbl_svy} / \code{survey.design} /
 #' \code{svyrep.design}) is supplied as \code{df}, the function uses
-#' \code{\link{phr_calc_survey_mean_single}} (or
-#' \code{\link{phr_calc_survey_ratio_single}} when \code{numeric_var2} is
+#' \code{phr_calc_survey_mean_single} (or
+#' \code{phr_calc_survey_ratio_single} when \code{numeric_var2} is
 #' provided) to compute survey-design-corrected confidence intervals that
 #' account for clustering, stratification and probability weights. When a plain
 #' data frame is supplied the original Wald CI computation is used.
@@ -5256,7 +5256,7 @@ plot_ci_bar_percentage <- function(survey_design,
 #' @param grouping Character, optional grouping variable (default: NULL)
 #' @param numeric_var2 Character, optional second numeric variable for ratio
 #'   (\code{numeric_var / numeric_var2}). When set, uses
-#'   \code{\link{phr_calc_survey_ratio_single}} for survey design objects.
+#'   \code{phr_calc_survey_ratio_single} for survey design objects.
 #'   (default: NULL)
 #' @param weighted Logical, whether to use weighted calculations when \code{df}
 #'   is a plain data frame (default: FALSE). Ignored for survey design objects.
