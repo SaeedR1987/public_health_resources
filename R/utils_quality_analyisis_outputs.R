@@ -915,7 +915,7 @@ plot_ridge_distribution_by_group <- function(survey_design,
 #' @param vline_colors Optional character vector specifying colors for vertical reference lines.
 #'   Must be same length as vline_intercepts. Default is c("red", "orange").
 #' @param x_label Optional character string for the x-axis label. If NULL, uses data_var name.
-#' @param y_label Optional character string for the y-axis label. Default: "% Cumulative Proportion".
+#' @param y_label Optional character string for the y-axis label. Default: "\% Cumulative Proportion".
 #' @param xlim Optional numeric vector of length 2 specifying x-axis limits. If NULL, auto-detects based on data type.
 #' @param breaks_by Optional numeric value for x-axis breaks interval. If NULL, auto-detects based on data type.
 #' @param grouping Optional character string specifying a column name to group/color the curves by.
