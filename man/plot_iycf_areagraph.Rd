@@ -133,6 +133,10 @@ auto-generate the plot title when title_name is NULL. Default: NULL.}
 
 \item{subtitle}{Subtitle of the plot. By default: NULL}
 
+\item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
+
+\item{flip_coordinates}{Logical. If TRUE, flips the coordinate axes. By default: FALSE.}
+
 \item{weighted}{Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.}
 
 \item{weights_col}{Character string. Name of the column containing survey weights. Required when weighted = TRUE.}

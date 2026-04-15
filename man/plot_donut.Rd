@@ -47,6 +47,9 @@ Note: "count" shows sum when value_var is used, otherwise shows observation coun
 
 \item{title_name}{Character, plot title (default: NULL)}
 
+\item{variable_label}{Optional character string. Human-readable label for the category variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
 \item{subtitle}{Character, additional subtitle text (default: NULL)}
 
 \item{legend_label}{Character, legend title (default: NULL)}

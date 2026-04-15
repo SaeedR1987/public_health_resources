@@ -36,6 +36,12 @@ plot_domain_radar(
 
 \item{title_name}{Title of the plot. By default: NULL}
 
+\item{variable_label}{Optional character string. Human-readable label for the domain variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Subtitle of the plot. By default: NULL}
 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
