@@ -40,7 +40,7 @@ Must be same length as vline_intercepts. Default is c("red", "orange").}
 
 \item{x_label}{Optional character string for the x-axis label. If NULL, uses data_var name.}
 
-\item{y_label}{Optional character string for the y-axis label. Default: "% Cumulative Proportion".}
+\item{y_label}{Optional character string for the y-axis label. Default: "\% Cumulative Proportion".}
 
 \item{xlim}{Optional numeric vector of length 2 specifying x-axis limits. If NULL, auto-detects based on data type.}
 

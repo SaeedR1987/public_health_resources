@@ -607,7 +607,7 @@ phr_calc_survey_prop_single <- function(design,
 
   prop_deff <- tryCatch({
     deff_est <- survey::svymean(
-      as.formula(paste0("~I(", var_name, " == 1)")),
+      as.formula(paste0("~", var_name)),
       design,
       na.rm = TRUE,
       deff = "replace"

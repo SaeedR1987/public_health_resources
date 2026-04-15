@@ -1230,7 +1230,7 @@ add_fcm_phase <- function(
 
 
     # 1. EMBEDDED LOOKUP TABLES
-    lookup_fcs_rcsi <- tribble(
+    lookup_fcs_rcsi <- tibble::tribble(
       ~fcs,          ~rcsi,      ~cell, ~cat,
       fcs_acceptable_val,  rcsi_low_val,       1, "P1",
       fcs_acceptable_val,  rcsi_medium_val,   2, "P2",
@@ -1243,7 +1243,7 @@ add_fcm_phase <- function(
       fcs_poor_val,         rcsi_high_val,    9, "P4",
     )
 
-    lookup_hdds_rcsi <- tribble(
+    lookup_hdds_rcsi <- tibble::tribble(
       ~hdds,     ~rcsi,     ~cell, ~cat,
       hdds_high_val,    rcsi_low_val,        1,   "P1",
       hdds_high_val,    rcsi_medium_val,     2,   "P2",
@@ -1256,7 +1256,7 @@ add_fcm_phase <- function(
       hdds_low_val,     rcsi_high_val,       9,   "P4"
     )
 
-    lookup_hhs_fcs <- tribble(
+    lookup_hhs_fcs <- tibble::tribble(
       ~hhs,          ~fcs,          ~cell, ~cat,
       hhs_none_val,        fcs_acceptable_val,     1, "P1",
       hhs_none_val,        fcs_borderline_val,     6, "P1",
@@ -1275,7 +1275,7 @@ add_fcm_phase <- function(
       hhs_very_severe_val, fcs_poor_val,          15, "P5"
     )
 
-    lookup_hhs_hdds <- tribble(
+    lookup_hhs_hdds <- tibble::tribble(
       ~hhs,          ~hdds,      ~cell, ~cat,
       hhs_none_val,        hdds_high_val,        1, "P1",
       hhs_none_val,        hdds_medium_val,      6, "P1",
@@ -1294,7 +1294,7 @@ add_fcm_phase <- function(
       hhs_very_severe_val, hdds_low_val,        15, "P5"
     )
 
-    lookup_hhs_rcsi_fcs_sorted2 <- tribble(
+    lookup_hhs_rcsi_fcs_sorted2 <- tibble::tribble(
       ~hhs,          ~rcsi,      ~fcs,          ~cell, ~cat,
 
       # HHS = None
