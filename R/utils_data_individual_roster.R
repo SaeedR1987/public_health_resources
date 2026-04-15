@@ -310,7 +310,6 @@ add_age_months_cat <- function(
 #' # Print result
 #' print(result)
 #'
-#' @importFrom lubridate interval year month
 #' @importFrom dplyr mutate case_when
 #' @export
 add_standardized_age <- function(
