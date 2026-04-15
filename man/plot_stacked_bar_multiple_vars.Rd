@@ -62,6 +62,12 @@ If FALSE, uses single combined legend. Default: FALSE. Requires ggnewscale packa
 
 \item{title_name}{Inputs an optional character value for the title of the plot.}
 
+\item{variable_label}{Optional character string. Human-readable label for the variables, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Inputs an optional character value for the subtitle of the plot.
 If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.}
 

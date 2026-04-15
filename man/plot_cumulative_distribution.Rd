@@ -72,7 +72,9 @@ to the auto-generated title. Defaults to the column name when NULL.}
 Returns a ggplot2 object.
 }
 \description{
-Plot the cumulative distribution of a numeric variable (e.g., MUAC or anthropometric z-scores).
+Creates a cumulative distribution function (CDF) plot for a numeric variable such as MUAC or
+anthropometric z-scores. Supports optional vertical reference lines (e.g., at clinical cutoffs),
+grouping by a categorical variable, survey weighting, and axis customisation.
 }
 \examples{
 \dontrun{

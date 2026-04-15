@@ -901,6 +901,11 @@ plot_ridge_distribution_by_group <- function(survey_design,
 
 #' Plot the cumulative distribution of a numeric variable (e.g., MUAC or anthropometric z-scores).
 #'
+#' @description
+#' Creates a cumulative distribution function (CDF) plot for a numeric variable such as MUAC or
+#' anthropometric z-scores. Supports optional vertical reference lines (e.g., at clinical cutoffs),
+#' grouping by a categorical variable, survey weighting, and axis customisation.
+#'
 #' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
 #' @param data_var A character string specifying the column name containing the data to plot.
 #' @param vline_intercepts Optional numeric vector specifying positions for vertical reference lines.
@@ -910,6 +915,7 @@ plot_ridge_distribution_by_group <- function(survey_design,
 #' @param vline_colors Optional character vector specifying colors for vertical reference lines.
 #'   Must be same length as vline_intercepts. Default is c("red", "orange").
 #' @param x_label Optional character string for the x-axis label. If NULL, uses data_var name.
+#' @param y_label Optional character string for the y-axis label. Default: "% Cumulative Proportion".
 #' @param xlim Optional numeric vector of length 2 specifying x-axis limits. If NULL, auto-detects based on data type.
 #' @param breaks_by Optional numeric value for x-axis breaks interval. If NULL, auto-detects based on data type.
 #' @param grouping Optional character string specifying a column name to group/color the curves by.
@@ -920,7 +926,6 @@ plot_ridge_distribution_by_group <- function(survey_design,
 #' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
 #'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Optional character string for additional subtitle text (will be appended to auto-generated n counts).
-#' @param y_label Optional character string for the y-axis label. Default: "% Cumulative Proportion".
 #' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
 #' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
@@ -1386,6 +1391,8 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
 #' @param variable_label Optional character string. Human-readable label for the plot variable, used to
 #'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Subtitle of the plot. By default: NULL
+#' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
+#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 #' @param weights_col Character string. Name of the column containing survey weights. Required when weighted = TRUE.
 #'
@@ -1759,6 +1766,8 @@ plot_iycf_areagraph <- function(survey_design,
 #' @param subtitle Subtitle of the plot. By default: NULL
 #' @param x_lab Label for x-axis. By default: "Date"
 #' @param y_lab Label for y-axis. By default: NULL (auto-generated based on operation)
+#' @param legend_position Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".
+#' @param flip_coordinates Logical. If TRUE, flips the coordinate axes. By default: FALSE.
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 #'   Note: Weighting is only supported for "mean" and "sd" operations.
 #' @param weights_col Character string. Name of the column containing survey weights. Required when weighted = TRUE.
@@ -2126,6 +2135,10 @@ helper_runner_dps <- function(x) {
 #' @param max_value Maximum value for radar scale. By default: NULL (auto-calculated)
 #' @param color_palette Color palette to use. By default: "reach2"
 #' @param title_name Title of the plot. By default: NULL
+#' @param variable_label Optional character string. Human-readable label for the domain variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Subtitle of the plot. By default: NULL
 #' @param weighted Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.
 #' @param weights_col Character string. Name of the column containing survey weights. Required when weighted = TRUE.
@@ -2378,6 +2391,8 @@ plot_domain_radar <- function(survey_design,
 #' By default: TRUE.
 #' @param color_palette Color palette to use. By default: "reach1"
 #' @param title_name Title of the plot. By default: NULL
+#' @param variable_label Optional character string. Human-readable label for the domain variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Subtitle of the plot. By default: NULL
 #' @param x_lab Label for x-axis. By default: NULL (auto-generated based on show_percentage and flip_coordinates)
 #' @param y_lab Label for y-axis. By default: NULL (auto-generated based on flip_coordinates)
@@ -3034,6 +3049,10 @@ plot_stacked_bar <- function(survey_design,
 #' @param separate_legends Logical. If TRUE, creates truly separate legend for each variable using ggnewscale.
 #'   If FALSE, uses single combined legend. Default: FALSE. Requires ggnewscale package when TRUE.
 #' @param title_name Inputs an optional character value for the title of the plot.
+#' @param variable_label Optional character string. Human-readable label for the variables, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Inputs an optional character value for the subtitle of the plot.
 #'   If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.
 #' @param x_label Inputs an optional character value for the x-axis label.
@@ -4278,6 +4297,8 @@ plot_boxplot <- function(survey_design,
 #' @param weights_col Character, name of the weights column (required if weighted = TRUE)
 #' @param color_palette Character, color palette type (default: "reach1")
 #' @param title_name Character, plot title (default: NULL)
+#' @param variable_label Optional character string. Human-readable label for the category variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Character, additional subtitle text (default: NULL)
 #' @param label_size Numeric, label size in the treemap (default: 1)
 #' @param legend_position Character, position of legend (default: "bottom")
@@ -4597,6 +4618,8 @@ plot_treemap <- function(survey_design,
 #' @param show_stratum_stats Logical, whether to show XX.X\% (n) on strata (default: FALSE)
 #' @param color_palette Character, color palette type (default: "reach1")
 #' @param title_name Character, plot title (default: NULL)
+#' @param variable_label Optional character string. Human-readable label for the flow variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Character, additional subtitle text (default: NULL)
 #' @param x_lab Character, x-axis label (default: NULL)
 #' @param y_lab Character, y-axis label (default: NULL)
@@ -5631,6 +5654,10 @@ plot_ci_point_mean <- function(survey_design,
 #' @param smooth_method Character, smooth method ("lm", "loess") (default: "lm")
 #' @param color_palette Character, color palette type (default: "reach1")
 #' @param title_name Character, plot title (default: NULL)
+#' @param variable_label Optional character string. Human-readable label for the x variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param grouping_label Optional character string. Human-readable label for the grouping variable, appended
+#'   to the auto-generated title. Defaults to the column name when NULL.
 #' @param subtitle Character, additional subtitle text (default: NULL)
 #' @param x_lab Character, x-axis label (default: NULL)
 #' @param y_lab Character, y-axis label (default: NULL)
@@ -5786,6 +5813,8 @@ plot_scatter <- function(survey_design,
 #' @param hole_size Numeric, size of center hole (0-1, default: 0.4)
 #' @param color_palette Character, color palette type (default: "reach1")
 #' @param title_name Character, plot title (default: NULL)
+#' @param variable_label Optional character string. Human-readable label for the category variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
 #' @param subtitle Character, additional subtitle text (default: NULL)
 #' @param legend_label Character, legend title (default: NULL)
 #' @param legend_position Character, position of legend (default: "right")
@@ -6050,6 +6079,11 @@ plot_donut <- function(survey_design,
 #' @param highlight_color Character specifying default color for cell highlighting. Default: "red".
 #' @param highlight_size Numeric specifying default line width for cell highlighting. Default: 2.
 #' @param title_name Inputs an optional character value for the title of the plot.
+#' @param variable_label Optional character string. Human-readable label for the row variable, used to
+#'   auto-generate the plot title when title_name is NULL. Default: NULL.
+#' @param variable_label2 Optional character string. Human-readable label for the column variable, used
+#'   alongside variable_label to auto-generate the title as "variable_label vs. variable_label2".
+#'   Defaults to the col_var column name when NULL. Default: NULL.
 #' @param subtitle Inputs an optional character value for the subtitle of the plot.
 #'   If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.
 #' @param x_label Inputs an optional character value for the x-axis label.

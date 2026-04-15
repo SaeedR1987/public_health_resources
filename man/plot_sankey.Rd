@@ -45,6 +45,9 @@ Must be same length as axis_vars if provided}
 
 \item{title_name}{Character, plot title (default: NULL)}
 
+\item{variable_label}{Optional character string. Human-readable label for the flow variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
 \item{subtitle}{Character, additional subtitle text (default: NULL)}
 
 \item{x_lab}{Character, x-axis label (default: NULL)}

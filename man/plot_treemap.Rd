@@ -38,6 +38,9 @@ When provided, creates a hierarchical treemap showing subcategories nested withi
 
 \item{title_name}{Character, plot title (default: NULL)}
 
+\item{variable_label}{Optional character string. Human-readable label for the category variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
 \item{subtitle}{Character, additional subtitle text (default: NULL)}
 
 \item{label_size}{Numeric, label size in the treemap (default: 1)}
