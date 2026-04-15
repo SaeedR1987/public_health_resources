@@ -980,7 +980,7 @@ Data <- R6::R6Class(
         # If cluster_id is mapped, create a safe numeric cluster identifier
         # that maps each unique cluster to an integer from 1 to n clusters.
         # This column is stored as "cluster_id_numeric" and used by
-        # QuantDataAnalysis$create_survey_design() for reliable survey design creation.
+        # DataAnalytics$create_survey_design() for reliable survey design creation.
         result <- phr_try_step({
           cluster_col <- self$variable_map[["cluster_id"]]
           if (!is.null(cluster_col) && cluster_col %in% names(data_copy)) {

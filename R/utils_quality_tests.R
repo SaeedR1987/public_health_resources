@@ -1,6 +1,6 @@
 #' Statistical Quality Test Functions
 #'
-#' This file contains statistical test functions used by the DataQuality class
+#' This file contains statistical test functions used by the DataAnalytics class
 #' for plausibility testing. Each function returns a test statistic or metric
 #' that can be compared against thresholds to determine data quality.
 #'

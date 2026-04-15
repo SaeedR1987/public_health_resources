@@ -156,21 +156,16 @@ quality_table <- read.xlsx("resources/quality_schema_template.xlsx")
 # Convert to nested list schema
 quality_schema <- quality_table_to_schema(quality_table)
 
-# Create DataQuality object
-dq <- DataQuality$new(
-  data = my_data,
-  quality_schema = quality_schema
-)
+# Create DataAnalytics object and set quality schema
+analytics <- data$generate_data_analytics(stage = "standardized")
+analytics$set_quality_schema(quality_schema)
 
 # Run checks
-dq$run_quality_checks()
-
-# Generate report
-report <- dq$generate_plausibility_report()
+analytics$run_quality_checks()
 
 # View results
-print(report$plausibility_score)
-print(report$test_results)
+print(analytics$overall_score)
+print(analytics$quality_results)
 ```
 
 ### 3. Understand Results
@@ -318,7 +313,7 @@ quality_schema <- list(
 
 ## Related Files
 
-- `R/class_data_quality.R` - DataQuality class with expression evaluation
+- `R/class_data_analytics.R` - DataAnalytics class with expression evaluation
 - `R/utils_quality_tests.R` - Statistical test functions
 - `R/utils_data_class.R` - Schema conversion utilities (table ↔ list)
 

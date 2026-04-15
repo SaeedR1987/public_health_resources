@@ -1,9 +1,9 @@
 #' IPHRA DataAnalytics Class
 #'
-#' The `DataAnalytics` R6 class integrates the functionality of both
-#' `DataQuality` and `QuantDataAnalysis` into a single unified analytics
-#' object. It maintains separate schemas for quality checks and quantitative
-#' analysis, while sharing common output containers.
+#' The `DataAnalytics` R6 class provides unified data quality checks and
+#' quantitative analysis in a single analytics object. It maintains separate
+#' schemas for quality checks and quantitative analysis, while sharing common
+#' output containers.
 #'
 #' @description
 #' This class provides:
@@ -141,7 +141,7 @@ DataAnalytics <- R6::R6Class(
       self$visualizations         <- list()
       self$tables                 <- list()
 
-      # --- Quality-specific initialization (from DataQuality
+      # --- Quality-specific initialization
       if (!is.null(data)) {
         phr_validate_dataframe(data, origin = origin, soft = FALSE)
         self$data <- data
@@ -173,7 +173,7 @@ DataAnalytics <- R6::R6Class(
       # Load quality outputs schema
       self$outputs_schema <- self$default_outputs_schema()
 
-      # --- Analysis-specific initialization (from QuantDataAnalysis)
+      # --- Analysis-specific initialization
       self$analysis_results        <- list()
       self$analysis_plan_issue_log <- tibble::tibble()
 
@@ -1708,7 +1708,7 @@ DataAnalytics <- R6::R6Class(
 
 
 
-    # Analysis Methods (from QuantDataAnalysis)
+    # Analysis Methods
 
 
     #' @description

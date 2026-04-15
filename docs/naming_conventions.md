@@ -39,8 +39,7 @@ Standard variable names use **underscore (`_`)** as word separator:
 
 Base classes use PascalCase without prefixes:
 - `Data` - Base class for all data structures
-- `DataQuality` - Base class for quality assessment
-- `QuantDataAnalysis` - Base class for quantitative analysis
+- `DataAnalytics` - Base class for quality and quantitative analytics
 - `Log` - Base class for logging
 
 ### Subclasses
@@ -48,8 +47,7 @@ Base classes use PascalCase without prefixes:
 Subclasses use PascalCase with descriptive suffixes:
 - `HouseholdData`, `IndividualData`
 - `WomenIndividualData`, `HealthIndividualData`
-- `HealthDataQuality`, `DemographicsDataQuality`
-- `HealthAnalysis`, `MortalityAnalysis`
+- `FSLDataAnalytics`, `HealthDataAnalytics`
 - `CleaningLog`, `DeletionLog`
 
 ## Function Naming

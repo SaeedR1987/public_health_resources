@@ -18,8 +18,6 @@ For detailed initialization steps for each object type, see:
 
 - **[Data Object Initialization](data_initialization.md)** - Base class for all data structures
 - **[Log Object Initialization](log_initialization.md)** - Base class for logging mechanisms (CleaningLog, DeletionLog)
-- **[DataQuality Object Initialization](quality_initialization.md)** - Quality assessment for Data objects
-- **[QuantDataAnalysis Object Initialization](analysis_initialization.md)** - Quantitative data analysis framework
 
 ## Common Initialization Patterns
 
@@ -36,13 +34,13 @@ Most objects include validation flags:
 - Used to control workflow progression
 
 ### Parent-Child Relationships
-Quality and Analysis objects:
+Analytics objects:
 - Link to parent Data objects
 - Access parent's mappings and schema
 - Coordinate operations with parent state
 
 ### Schema Loading
-Quality and Analysis objects:
+Analytics objects:
 - Attempt to load templates from package resources
 - Provide fallback to empty schemas
 - Allow custom schema configuration after initialization
@@ -65,15 +63,14 @@ Many objects use templates from `system.file("resources", ...)`:
 │  • Initializes mapping structures                       │
 └────────────────────┬────────────────────────────────────┘
                      │
-                     ├─────────────────────────────────────┐
-                     │                                     │
-                     ▼                                     ▼
-         ┌───────────────────────┐          ┌────────────────────────┐
-         │ DataQuality Created   │          │ QuantDataAnalysis      │
-         │  • Links to parent    │          │  • Links to parent     │
-         │  • Loads QC schema    │          │  • Loads analysis      │
-         │  • Prepares results   │          │    schema and DAP      │
-         └───────────────────────┘          └────────────────────────┘
+                     ▼
+         ┌───────────────────────────────────────┐
+         │         DataAnalytics Created          │
+         │  • Links to parent                    │
+         │  • Loads quality schema               │
+         │  • Loads analysis schema and DAP      │
+         │  • Prepares result containers         │
+         └───────────────────────────────────────┘
 ```
 
 ## General Initialization Pattern

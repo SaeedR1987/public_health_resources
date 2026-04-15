@@ -65,8 +65,6 @@ Full documentation lives in the [`docs/`](docs/README.md) folder:
 |-------|------|
 | Data classes | [docs/Data_Structures/Data_Classes/](docs/Data_Structures/Data_Classes/data_classes_overview.md) |
 | Analytics classes | [docs/Data_Structures/Analytics_Classes/](docs/Data_Structures/Analytics_Classes/analytics_classes_overview.md) |
-| Quality classes | [docs/Data_Structures/Quality_Classes/](docs/Data_Structures/Quality_Classes/quality_classes_overview.md) |
-| Analysis classes | [docs/Data_Structures/Analysis_Classes/](docs/Data_Structures/Analysis_Classes/analysis_classes_overview.md) |
 | Log classes | [docs/Data_Structures/Log_Classes/](docs/Data_Structures/Log_Classes/log_classes_overview.md) |
 | Tool classes | [docs/Data_Structures/Tool_Classes/](docs/Data_Structures/Tool_Classes/tool_classes_overview.md) |
 | Protocol class | [docs/Data_Structures/Protocol_Class/](docs/Data_Structures/Protocol_Class/protocol_overview.md) |
@@ -104,23 +102,6 @@ DataAnalytics (base — unified quality + analysis)
 ├── IYCFDataAnalytics
 ├── GeneralDataAnalytics
 └── WaterContainerDataAnalytics
-
-DataQuality (base — legacy quality-only objects)
-├── HealthDataQuality
-├── DemographicsDataQuality
-├── MortalityDataQuality
-├── WASHDataQuality
-├── AnthropometricDataQuality
-├── FSLDataQuality
-└── IYCFDataQuality
-
-QuantDataAnalysis (base — legacy analysis-only objects)
-├── HealthAnalysis
-├── DemographicsAnalysis
-├── MortalityAnalysis
-├── WASHAnalysis
-├── NutritionAnalysis
-└── QuantDataAnalysisFSL
 
 Log (base)
 ├── CleaningLog

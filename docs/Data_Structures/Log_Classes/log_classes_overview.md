@@ -249,30 +249,12 @@ if (analysis_plan$validated) {
 analysis_plan$export(file = "analysis_plan.csv", format = "csv")
 ```
 
-**Integration with QuantDataAnalysis and DataAnalytics**:
+**Integration with DataAnalytics**:
 
-The `QuantDataAnalysisPlanLog` is owned by both `QuantDataAnalysis` objects (legacy) and `DataAnalytics` objects (unified):
+The `QuantDataAnalysisPlanLog` is owned by `DataAnalytics` objects:
 
 ```r
-# Legacy: QuantDataAnalysis creates a QuantDataAnalysisPlanLog on initialization
-qda <- QuantDataAnalysis$new()
-
-# Access the analysis plan log
-qda$data_analysis_plan  # This is a QuantDataAnalysisPlanLog object
-
-# Add indicators through the QuantDataAnalysis interface
-qda$add_indicator_dap(
-  indicator_name = "Prevalence",
-  calculation = "prop",
-  var_name = "indicator_var",
-  multiplier = 100,
-  indicator_unit = "%"
-)
-
-# Access the underlying data frame
-qda$data_analysis_plan$log_df  # The actual data frame with indicators
-
-# Unified: DataAnalytics also owns a QuantDataAnalysisPlanLog
+# DataAnalytics creates a QuantDataAnalysisPlanLog on initialization
 analytics <- data$generate_data_analytics(stage = "clean")
 analytics$data_analysis_plan         # QuantDataAnalysisPlanLog object
 analytics$data_analysis_plan$log_df  # Underlying data frame
@@ -451,24 +433,17 @@ timeline <- deletion_log$get_deletion_timeline()
 cleaning_log <- CleaningLog$new()
 
 # 2. Identify issues through quality checks
-quality <- DataQuality$new(data = data)
-quality$run_quality_checks()
-flags <- quality$get_flagged_records()
+analytics <- data$generate_data_analytics(stage = "standardized")
+analytics$run_quality_checks()
 
 # 3. Review and document cleaning decisions
-for (flag in flags) {
-  # Review flag and determine action
-  if (action_needed) {
-    cleaning_log$add_entry(
-      uuid = flag$uuid,
-      variable = flag$variable,
-      old_value = flag$current_value,
-      new_value = corrected_value,
-      reason = flag$issue,
-      rule = flag$rule_id
-    )
-  }
-}
+cleaning_log$add_entry(
+  uuid = flag$uuid,
+  variable = flag$variable,
+  old_value = flag$current_value,
+  new_value = corrected_value,
+  reason = flag$issue
+)
 
 # 4. Apply cleaning actions
 cleaned_data <- cleaning_log$apply_to_data(data$standardized_data)
@@ -515,20 +490,13 @@ data <- HouseholdData$new(data = df, uuid = "uuid")
 data$standardize()
 
 # Run quality checks
-quality <- DataQuality$new(data = data)
-quality$run_quality_checks()
+analytics <- data$generate_data_analytics(stage = "standardized")
+analytics$run_quality_checks()
 
 # Handle flagged records
-flags <- quality$get_flagged_records()
-for (flag in flags) {
-  if (should_clean(flag)) {
-    # Log cleaning action
-    cleaning_log$add_entry(...)
-  } else if (should_delete(flag)) {
-    # Log deletion action
-    deletion_log$add_deletion(...)
-  }
-}
+# ... apply cleaning and deletion decisions ...
+cleaning_log$add_entry(...)
+deletion_log$add_deletion(...)
 
 # Apply changes
 cleaned_data <- cleaning_log$apply_to_data(data$standardized_data)
@@ -606,8 +574,6 @@ cleaned_data <- cleaning_log$apply_to_data(data)
 ## Related Documentation
 
 - [Data Classes Overview](../Data_Classes/data_classes_overview.md) - Data objects that own Log objects
-- [Analytics Classes Overview](../Analytics_Classes/analytics_classes_overview.md) - Unified analytics objects that own QuantDataAnalysisPlanLog
-- [Analysis Classes Overview](../Analysis_Classes/analysis_classes_overview.md) - Legacy analysis objects that own QuantDataAnalysisPlanLog
-- [Quality Classes Overview](../Quality_Classes/quality_classes_overview.md) - Quality checks that generate log entries
+- [Analytics Classes Overview](../Analytics_Classes/analytics_classes_overview.md) - Analytics objects that own QuantDataAnalysisPlanLog
 - [Cleaning Process](../../Processes/cleaning/cleaning_process.md) - Cleaning workflows using logs
 - [Error Handling](../../Processes/error_handling/error_handling.md) - Error handling patterns

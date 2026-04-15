@@ -4,8 +4,6 @@
 
 The `DataAnalytics` class hierarchy provides unified R6 classes that combine **data quality checks** and **quantitative analysis** into a single object.  Each subclass is domain-specific and inherits a default quality schema, analysis schema, and outputs schema from the base class, all of which can be customised.
 
-`DataAnalytics` supersedes the older, separate `DataQuality` and `QuantDataAnalysis` hierarchies for new workflows.  The legacy classes remain available for backwards compatibility.
-
 ## Base Class: DataAnalytics
 
 The `DataAnalytics` class defines the shared interface for all analytics objects.  It provides:
