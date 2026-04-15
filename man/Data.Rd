@@ -145,7 +145,7 @@ Export Data to File
 
 
 
-If file_path is NULL, generates filename as: {dataset_name}_{stage}.{format}
+If file_path is NULL, generates filename as: \{dataset_name\}_\{stage\}.\{format\}
 Update Metadata
 
 

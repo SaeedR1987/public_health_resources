@@ -850,7 +850,7 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 #' @param column_name The name of the original column (used for naming dummies)
 #' @param separator The separator used in the select_multiple values (default: " ")
 #'
-#' @return A data frame with dummy columns named {column_name}_{value} containing 1
+#' @return A data frame with dummy columns named \{column_name\}_\{value\} containing 1
 #'   if value present, 0 if not. Returns empty data frame (0 rows, 0 columns) if no
 #'   valid values found.
 #'

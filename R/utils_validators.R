@@ -1324,7 +1324,7 @@ phr_validate_range <- function(df,
 #' Ensures all non-missing values in a character column match a regular expression.
 #' @param df Data frame to validate.
 #' @param col Character column name.
-#' @param pattern Regular expression pattern (e.g., `"^[0-9]{10}$"`).
+#' @param pattern Regular expression pattern (e.g., `"^[0-9]\{10\}$"`).
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.

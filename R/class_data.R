@@ -3325,7 +3325,7 @@ Data <- R6::R6Class(
     #' @return File path (invisibly)
     #'
     #' @details
-    #' If file_path is NULL, generates filename as: {dataset_name}_{stage}.{format}
+    #' If file_path is NULL, generates filename as: \{dataset_name\}_\{stage\}.\{format\}
     export_data = function(stage = c("clean","standardized","raw"),
                            format = c("csv","rds","xlsx"),
                            file_path = NULL) {
