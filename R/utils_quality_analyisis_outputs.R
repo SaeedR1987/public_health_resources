@@ -1937,8 +1937,8 @@ plot_date_runner <- function(survey_design,
           dplyr::filter(!is.na(!!rlang::sym(numeric_col)) & !is.na(!!rlang::sym(numeric_col2))) |>
           dplyr::arrange(!!rlang::sym(date_col)) |>
           dplyr::mutate(
-            cumsum_num = runner::runner(x = !!rlang::sym(numeric_col), f = sum, na_rm = TRUE),
-            cumsum_den = runner::runner(x = !!rlang::sym(numeric_col2), f = sum, na_rm = TRUE),
+            cumsum_num = cumsum(!!rlang::sym(numeric_col)),
+            cumsum_den = cumsum(!!rlang::sym(numeric_col2)),
             !!rlang::sym(result_col_name) := cumsum_num / cumsum_den
           ) |>
           dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
@@ -1950,7 +1950,7 @@ plot_date_runner <- function(survey_design,
         df_processed <- df_group |>
           dplyr::filter(!is.na(!!rlang::sym(numeric_col))) |>
           dplyr::arrange(!!rlang::sym(date_col)) |>
-          dplyr::mutate(!!rlang::sym(result_col_name) := runner::runner(x = !!rlang::sym(numeric_col), f = runner_func)) |>
+          dplyr::mutate(!!rlang::sym(result_col_name) := expanding_window(!!rlang::sym(numeric_col), runner_func)) |>
           dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
           dplyr::group_by(!!rlang::sym(date_col)) |>
           dplyr::slice_tail(n = 1) |>
@@ -1990,7 +1990,7 @@ plot_date_runner <- function(survey_design,
         df_processed <- df_group |>
           dplyr::filter(!is.na(!!rlang::sym(numeric_col))) |>
           dplyr::arrange(!!rlang::sym(date_col)) |>
-          dplyr::mutate(!!rlang::sym(result_col_name) := runner::runner(x = !!rlang::sym(numeric_col), f = runner_func)) |>
+          dplyr::mutate(!!rlang::sym(result_col_name) := expanding_window(!!rlang::sym(numeric_col), runner_func)) |>
           dplyr::select(!!rlang::sym(date_col), plot_group, !!rlang::sym(result_col_name)) |>
           dplyr::group_by(!!rlang::sym(date_col)) |>
           dplyr::slice_tail(n = 1) |>
@@ -2102,14 +2102,32 @@ plot_date_runner <- function(survey_design,
   }, on_error = "warn", origin = origin)
 }
 
+#' Expanding Window Application (internal helper)
+#'
+#' Applies a function cumulatively over an expanding window: for position `i`,
+#' calls `f(x[1:i])` and returns the scalar result. This is equivalent to the
+#' expanding-window behaviour of `runner::runner(x, f)` without the `k`
+#' argument.
+#'
+#' @param x Numeric vector (NAs should be removed beforehand).
+#' @param f A function that takes a numeric vector and returns a single numeric
+#'   value (e.g. `mean`, `sd`, `length`, `helper_runner_dps`).
+#'
+#' @return A numeric vector of length `length(x)`.
+#'
+#' @noRd
+expanding_window <- function(x, f) {
+  vapply(seq_along(x), function(i) as.numeric(f(x[seq_len(i)])), numeric(1L))
+}
+
 #' Helper Runner DPS
 #'
 #' Helper function for plot_date_runner function. Calculates digit preference
-#' scores and feeds them into the runner::runner function.
+#' scores over an expanding window.
 #'
 #' @param x A numeric vector
 #'
-#' @return A vector of digit preference scores
+#' @return A numeric digit preference score
 #' @export
 #'
 #' @examples
@@ -2118,10 +2136,7 @@ helper_runner_dps <- function(x) {
 
   x <- as.numeric(format(round(x, 1), nsmall = 1))
 
-  vect <- nipnTK::digitPreference(x/10)[1]
-
-  return(vect)
-
+  digit_preference_score(x / 10)
 
 }
 

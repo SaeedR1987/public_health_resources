@@ -1972,3 +1972,81 @@ test_that("quality_test_poisson_ratio_rowwise warns with non-positive expected_r
 })
 
 
+# 13. DIGIT PREFERENCE SCORE TEST ####
+
+test_that("digit_preference_score returns a single numeric value", {
+  set.seed(1)
+  x <- round(rnorm(100, mean = 12.5, sd = 1.5), 1)
+  result <- phr:::digit_preference_score(x)
+  expect_true(is.numeric(result))
+  expect_length(result, 1L)
+  expect_false(is.na(result))
+  expect_true(result >= 0)
+})
+
+test_that("digit_preference_score matches nipnTK::digitPreference on common data", {
+  skip_if_not_installed("nipnTK")
+  set.seed(42)
+  x <- round(rnorm(200, mean = 125, sd = 10))  # MUAC in mm
+  expected <- as.numeric(nipnTK::digitPreference(x)[[1]])
+  actual   <- phr:::digit_preference_score(x)
+  expect_equal(actual, expected, tolerance = 1e-9)
+})
+
+test_that("digit_preference_score detects strong digit preference (all 0s)", {
+  # All values end in 0 -> perfect preference for digit 0 -> high DPS
+  x <- seq(100, 200, by = 10)
+  result <- phr:::digit_preference_score(x)
+  expect_true(result > 20, info = "Strong preference for 0 should yield DPS > 20 (Problematic)")
+})
+
+test_that("digit_preference_score is near 0 for perfectly uniform digits", {
+  # Each digit 0-9 appears exactly once -> chi-squared statistic is 0
+  x <- 0:9
+  result <- phr:::digit_preference_score(x, digits = 0)
+  expect_equal(result, 0)
+})
+
+test_that("quality_test_digit_preference returns list with statistic and p_value", {
+  set.seed(7)
+  df <- tibble::tibble(muac = round(rnorm(50, 12.5, 1.5), 1))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  result <- quality_test_digit_preference(sdesign, "muac")
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.na(result$p_value))
+})
+
+test_that("quality_test_digit_preference warns for insufficient data", {
+  df <- tibble::tibble(muac = c(12.5, 11.0, 13.0))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  expect_warning(
+    result <- quality_test_digit_preference(sdesign, "muac"),
+    regexp = "Insufficient data"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_digit_preference warns for missing variable", {
+  df <- tibble::tibble(muac = c(12.5, 11.0))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  expect_warning(
+    result <- quality_test_digit_preference(sdesign, "nonexistent"),
+    regexp = "Variable not found"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_digit_preference result matches nipnTK on same data", {
+  skip_if_not_installed("nipnTK")
+  set.seed(99)
+  x <- round(rnorm(100, 12.5, 1.5), 1)
+  df <- tibble::tibble(muac = x)
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  result <- quality_test_digit_preference(sdesign, "muac")
+  expected <- as.numeric(nipnTK::digitPreference(x)[[1]])
+  expect_equal(result$statistic, expected, tolerance = 1e-9)
+})
+

@@ -2127,3 +2127,61 @@ test_that("table_quality_penalty_summary_by_group group_total is per check_group
   ][1]
   expect_equal(grp2_total, "5/20")
 })
+
+
+# --- helper_runner_dps and expanding_window ---
+
+test_that("helper_runner_dps returns a single numeric value", {
+  set.seed(1)
+  x <- round(rnorm(50, 125, 10))
+  result <- helper_runner_dps(x)
+  expect_true(is.numeric(result))
+  expect_length(result, 1L)
+  expect_false(is.na(result))
+  expect_true(result >= 0)
+})
+
+test_that("helper_runner_dps matches nipnTK::digitPreference on same data", {
+  skip_if_not_installed("nipnTK")
+  set.seed(11)
+  x <- round(rnorm(80, 125, 10))
+  x_fmt <- as.numeric(format(round(x, 1), nsmall = 1))
+  expected <- as.numeric(nipnTK::digitPreference(x_fmt / 10)[[1]])
+  actual   <- helper_runner_dps(x)
+  expect_equal(actual, expected, tolerance = 1e-9)
+})
+
+test_that("expanding_window is equivalent to runner::runner expanding window", {
+  skip_if_not_installed("runner")
+  set.seed(5)
+  x <- round(rnorm(30, 125, 10))
+
+  # mean
+  expected_mean <- runner::runner(x, f = mean)
+  actual_mean   <- phr:::expanding_window(x, mean)
+  expect_equal(actual_mean, expected_mean, tolerance = 1e-9)
+
+  # length (cumulative count)
+  expected_len <- runner::runner(x, f = length)
+  actual_len   <- phr:::expanding_window(x, length)
+  expect_equal(actual_len, as.numeric(expected_len), tolerance = 1e-9)
+})
+
+test_that("plot_date_runner with operation='dps' still produces a ggplot", {
+  df <- create_test_date_data()
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  g <- plot_date_runner(sdesign, date_col = "date_col", numeric_col = "muac",
+                        operation = "dps")
+  expect_s3_class(g, "ggplot")
+})
+
+test_that("plot_date_runner with operation='ratio' still produces a ggplot", {
+  df <- create_test_date_data()
+  df$deaths <- round(runif(nrow(df), 0, 5))
+  df$population <- round(runif(nrow(df), 100, 500))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  g <- plot_date_runner(sdesign, date_col = "date_col",
+                        numeric_col = "deaths", numeric_col2 = "population",
+                        operation = "ratio")
+  expect_s3_class(g, "ggplot")
+})
