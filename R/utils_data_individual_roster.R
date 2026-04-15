@@ -83,7 +83,7 @@ add_age_cat <- function(
 
     # Create age categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         age_cat = cut(
           .data[[age_years_col]],
