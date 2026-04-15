@@ -45,8 +45,11 @@ Imports:
     treemapify,
     zscorer
 Suggests:
+    mockery,
     shiny,
-    testthat (>= 3.0.0)
+    stringr,
+    testthat (>= 3.0.0),
+    withr
 Encoding: UTF-8
 RoxygenNote: 7.3.3
 Config/testthat/edition: 3
