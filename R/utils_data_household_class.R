@@ -238,7 +238,7 @@ add_interview_time <- function(.dataset,
       }
 
       # Calculate interview duration in minutes, rounded to 2 decimal places
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           !!new_col := round(
             as.numeric(difftime(.data[[end_col]], .data[[start_col]], units = "mins")),

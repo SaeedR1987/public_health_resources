@@ -935,7 +935,7 @@ MortalityDataAnalytics <- R6::R6Class(
         return(canonical_name)
       }
 
-      schema_valid <- analysis_schema %>%
+      schema_valid <- analysis_schema |>
         dplyr::mutate(
           var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
           denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
@@ -945,11 +945,11 @@ MortalityDataAnalytics <- R6::R6Class(
             .data$denom_var_actual %in% available_vars,
             TRUE
           )
-        ) %>%
+        ) |>
         dplyr::mutate(include = .data$var_exists & .data$denom_exists)
 
-      issues <- schema_valid %>%
-        dplyr::filter(!.data$include) %>%
+      issues <- schema_valid |>
+        dplyr::filter(!.data$include) |>
         dplyr::transmute(
           dataset        = dataset_label,
           indicator_name = .data$indicator_name,
@@ -964,8 +964,8 @@ MortalityDataAnalytics <- R6::R6Class(
           )
         )
 
-      dap_df <- schema_valid %>%
-        dplyr::filter(.data$include) %>%
+      dap_df <- schema_valid |>
+        dplyr::filter(.data$include) |>
         dplyr::transmute(
           indicator_name = .data$indicator_name,
           calculation    = .data$calculation,
@@ -1026,7 +1026,7 @@ MortalityDataAnalytics <- R6::R6Class(
         return(canonical_name)
       }
 
-      schema_valid <- analysis_schema %>%
+      schema_valid <- analysis_schema |>
         dplyr::mutate(
           var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
           denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
@@ -1036,7 +1036,7 @@ MortalityDataAnalytics <- R6::R6Class(
             .data$denom_var_actual %in% available_vars,
             TRUE
           )
-        ) %>%
+        ) |>
         dplyr::filter(.data$var_exists & .data$denom_exists)
 
       if (nrow(schema_valid) == 0) {
@@ -1044,7 +1044,7 @@ MortalityDataAnalytics <- R6::R6Class(
         return(list(survey_design = NULL, base = NULL))
       }
 
-      dap_df <- schema_valid %>%
+      dap_df <- schema_valid |>
         dplyr::transmute(
           indicator_name = .data$indicator_name,
           calculation    = .data$calculation,

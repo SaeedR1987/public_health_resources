@@ -141,7 +141,7 @@ add_standardized_deaths <- function(
     if (!is.null(date_of_birth_col)) date_cols_to_convert <- c(date_cols_to_convert, date_of_birth_col)
     
     if (length(date_cols_to_convert) > 0) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           across(
             all_of(date_cols_to_convert),
@@ -169,7 +169,7 @@ add_standardized_deaths <- function(
 
     # Create the `death` column based on date_of_death and recall_date availability
     if (!is.null(date_of_death_col) && !is.null(recall_date_col)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death = dplyr::case_when(
             !is.na(.data[[date_of_death_col]]) & !is.na(.data[[recall_date_col]]) & .data[[date_of_death_col]] > .data[[recall_date_col]] ~ 1,
@@ -178,7 +178,7 @@ add_standardized_deaths <- function(
           )
         )
     } else {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death = 1
         )
@@ -186,7 +186,7 @@ add_standardized_deaths <- function(
 
     # Age-based death classification (optional)
     if (!is.null(age_years_col)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death_under5 = dplyr::case_when(
             .data[[age_years_col]] < 5 ~ 1,
@@ -198,7 +198,7 @@ add_standardized_deaths <- function(
 
     # Sex-based death classification (optional)
     if (!is.null(sex_col) && !is.null(male_val) && !is.null(female_val)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death_male = dplyr::case_when(
             .data[[sex_col]] == male_val ~ 1,
@@ -215,7 +215,7 @@ add_standardized_deaths <- function(
 
     # Cause of death columns (optional)
     if (!is.null(cause_of_death_col) && !is.null(non_trauma_vals)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death_non_trauma = dplyr::case_when(
             .data[[cause_of_death_col]] %in% non_trauma_vals ~ 1,
@@ -225,7 +225,7 @@ add_standardized_deaths <- function(
     }
 
     if (!is.null(cause_of_death_col) && !is.null(trauma_vals)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death_trauma = dplyr::case_when(
             .data[[cause_of_death_col]] %in% trauma_vals ~ 1,
@@ -235,7 +235,7 @@ add_standardized_deaths <- function(
     }
 
     if (!is.null(cause_of_death_col) && !is.null(other_vals)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death_other = dplyr::case_when(
             .data[[cause_of_death_col]] %in% other_vals ~ 1,
@@ -247,7 +247,7 @@ add_standardized_deaths <- function(
     # Location of death columns (optional)
     if (!is.null(location_of_death_col)) {
       if (!is.null(current_location_residence_vals)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             death_current_location = dplyr::case_when(
               .data[[location_of_death_col]] %in% current_location_residence_vals ~ 1,
@@ -257,7 +257,7 @@ add_standardized_deaths <- function(
       }
 
       if (!is.null(migration_vals)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             death_migration = dplyr::case_when(
               .data[[location_of_death_col]] %in% migration_vals ~ 1,
@@ -267,7 +267,7 @@ add_standardized_deaths <- function(
       }
 
       if (!is.null(last_location_residence_vals)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             death_last_location = dplyr::case_when(
               .data[[location_of_death_col]] %in% last_location_residence_vals ~ 1,
@@ -280,7 +280,7 @@ add_standardized_deaths <- function(
     # Birth classification (optional)
     # death_birth: 1 if individual was born after recall_date, 0 otherwise
     if (!is.null(date_of_birth_col) && !is.null(recall_date_col)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           death_birth = dplyr::case_when(
             !is.na(.data[[date_of_birth_col]]) & !is.na(.data[[recall_date_col]]) & .data[[date_of_birth_col]] > .data[[recall_date_col]] ~ 1,
@@ -419,7 +419,7 @@ add_persontime <- function(
     available_columns <- c(required_columns, valid_optional_columns)
 
     # Convert valid columns to Date
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         across(
           all_of(available_columns),
@@ -428,7 +428,7 @@ add_persontime <- function(
       )
 
     # Step 3: Calculate Entry Date
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         entry_date = pmax(
           as.Date(.data[[recall_date_col]]),
@@ -439,7 +439,7 @@ add_persontime <- function(
       )
 
     # Step 4: Calculate Exit Date
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         exit_date = pmin(
           as.Date(.data[[survey_date_col]]),
@@ -463,7 +463,7 @@ add_persontime <- function(
     )
 
     # Step 5: Calculate Person Time
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         person_time = as.numeric(exit_date - entry_date),  # Calculate person time in days
         person_time = dplyr::if_else(person_time < 0, 0, person_time),  # Ensure non-negative values
@@ -481,7 +481,7 @@ add_persontime <- function(
 
     # Add person_time_under5 if age_years_col is provided and exists in dataset
     if (!is.null(age_years_col) && age_years_col %in% colnames(.dataset)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           person_time_under5 = dplyr::case_when(
             .data[[age_years_col]] < 5 ~ person_time,
@@ -492,7 +492,7 @@ add_persontime <- function(
 
     # Add person_time_male if sex_col is provided and exists in dataset
     if (!is.null(sex_col) && sex_col %in% colnames(.dataset)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           person_time_male = dplyr::case_when(
             .data[[sex_col]] == male_val ~ person_time,
@@ -503,7 +503,7 @@ add_persontime <- function(
 
     # Add person_time_female if sex_col is provided and exists in dataset
     if (!is.null(sex_col) && sex_col %in% colnames(.dataset)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           person_time_female = dplyr::case_when(
             .data[[sex_col]] == female_val ~ person_time,
