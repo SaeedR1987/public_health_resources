@@ -35,15 +35,15 @@ plot_age_sex_pyramid <- function(data, age_col, sex_col, title = "Age-Sex Pyrami
 
   # --- Aggregate and compute percentages ---
   pop_perc <- df |>
-    dplyr::group_by(age_group, !!rlang::sym(sex_col)) |>
+    dplyr::group_by(.data$age_group, !!rlang::sym(sex_col)) |>
     dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
     dplyr::group_by(!!rlang::sym(sex_col)) |>
-    dplyr::mutate(percent = 100 * n / sum(n, na.rm = TRUE)) |>
+    dplyr::mutate(percent = 100 * .data$n / sum(.data$n, na.rm = TRUE)) |>
     dplyr::ungroup() |>
-    dplyr::mutate(percent = ifelse(!!rlang::sym(sex_col) == "Male", -percent, percent))
+    dplyr::mutate(percent = ifelse(!!rlang::sym(sex_col) == "Male", -.data$percent, .data$percent))
 
   # --- Plot ---
-  ggplot2::ggplot(pop_perc, ggplot2::aes(x = age_group, y = percent, fill = !!rlang::sym(sex_col))) +
+  ggplot2::ggplot(pop_perc, ggplot2::aes(x = .data$age_group, y = .data$percent, fill = !!rlang::sym(sex_col))) +
     ggplot2::geom_col(width = 0.9, color = "white") +
     ggplot2::coord_flip() +
     ggplot2::scale_y_continuous(

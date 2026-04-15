@@ -472,8 +472,8 @@ NutritionDataAnalytics <- R6::R6Class(
               gv_label   <- as.character(gv)
               gv_safe    <- gsub("[^A-Za-z0-9]", "_", gv_label)
               gv_results <- per_group_df |>
-                dplyr::filter(group_value == gv) |>
-                dplyr::select(-group_value)
+              dplyr::filter(.data$group_value == gv) |>
+                dplyr::select(-"group_value")
               gv_title <- if (role == "enum_id") {
                 glue::glue("{schema_label} Data Quality Penalty Summary - Enumerator: {gv_label}")
               } else {
