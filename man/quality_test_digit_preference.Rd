@@ -9,11 +9,11 @@ quality_test_digit_preference(survey_design, variables)
 \arguments{
 \item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
-\item{variables}{Character scalar. Name of the MUAC (cm) column in `data`}
+\item{variables}{Character scalar. Name of the column in `data`}
 }
 \value{
 List with statistic (digit preference score) and p_value (NA_real_)
 }
 \description{
-Compute digit preference score for a numeric MUAC (cm) variable using nipnTK.
+Compute digit preference score for a numeric variable.
 }

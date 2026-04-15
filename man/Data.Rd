@@ -213,27 +213,16 @@ Placeholder: UI modal implementation will be developed in a separate branch.
   d$save_object("ExampleData.rds")
 }
 
-
-## ------------------------------------------------
-## Method `Data$.translate_expression`
-## ------------------------------------------------
-
-\dontrun{
-# Given:
-# variable_map = list(fever = "fever_col")
-# value_map = list(fever = list(yes = c("yes", "y", "oui"), no = c("no", "n")))
-#
-# Input:  "fever == 'yes' & !is.na(temperature)"
-# Output: "fever_col \%in\% c('yes', 'y', 'oui') & !is.na(temperature)"
-#
-# Input:  "fever \%in\% c('yes', 'no')"
-# Output: "fever_col \%in\% c('yes', 'y', 'oui', 'no', 'n')"
-}
-
 }
 \seealso{
 [HouseholdData], [MortalityHouseholdData], [RosterData]
 }
+\keyword{Data}
+\keyword{File}
+\keyword{Object}
+\keyword{Save}
+\keyword{internal}
+\keyword{to}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
@@ -1211,25 +1200,6 @@ Translation occurs in two steps:
 \subsection{Returns}{
 Translated expression as a character string
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-# Given:
-# variable_map = list(fever = "fever_col")
-# value_map = list(fever = list(yes = c("yes", "y", "oui"), no = c("no", "n")))
-#
-# Input:  "fever == 'yes' & !is.na(temperature)"
-# Output: "fever_col \%in\% c('yes', 'y', 'oui') & !is.na(temperature)"
-#
-# Input:  "fever \%in\% c('yes', 'no')"
-# Output: "fever_col \%in\% c('yes', 'y', 'oui', 'no', 'n')"
-}
-
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Data-save_object"></a>}}
