@@ -191,7 +191,7 @@ add_hwise <- function(
 
       # Scoring for wash_hwise-4
 
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           dplyr::across(
             .cols = hwise4_cols,
@@ -205,8 +205,8 @@ add_hwise <- function(
             ),
             .names = "{.col}_score"
           )
-        ) %>%
-        dplyr::rowwise() %>%
+        ) |>
+        dplyr::rowwise() |>
         dplyr::mutate(
           wash_hwise4_score = sum(dplyr::c_across(dplyr::all_of(paste0(hwise4_cols, "_score"))), na.rm = FALSE),
           wash_hwise4_severity_cat = dplyr::case_when(
@@ -222,14 +222,14 @@ add_hwise <- function(
             wash_hwise4_score >= 4 & wash_hwise4_score <= 12 ~ phr_txt("Water Insecure"),
             TRUE ~ NA_character_
           )
-        ) %>%
+        ) |>
         dplyr::ungroup()
 
 
       # Scoring for wash_hwise-12 (if applicable)
 
       if (length(hwise12_cols) > 0) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             dplyr::across(
               .cols = hwise12_cols,
@@ -243,8 +243,8 @@ add_hwise <- function(
               ),
               .names = "{.col}_score"
             )
-          ) %>%
-          dplyr::rowwise() %>%
+          ) |>
+          dplyr::rowwise() |>
           dplyr::mutate(
             wash_hwise12_score = sum(c_across(ends_with("_score")), na.rm = FALSE),
             wash_hwise12_severity_cat = dplyr::case_when(
@@ -254,7 +254,7 @@ add_hwise <- function(
               wash_hwise12_score >= 24 & wash_hwise12_score <= 36 ~ phr_txt("High"),
               TRUE ~ NA_character_
             )
-          ) %>%
+          ) |>
           dplyr::ungroup()
       }
 
@@ -339,7 +339,7 @@ add_liters_per_person_per_day <- function(
 
       # Adjust num_days_column if NULL
       if (is.null(num_days_col)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(temp_num_days_col = 1)  # Add a temporary column with default value 1
         num_days_col <- "temp_num_days_col"  # Use this temporary column as num_days_col
       }
@@ -364,7 +364,7 @@ add_liters_per_person_per_day <- function(
       }
 
       # Calculations
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           # Calculate liters per person per day
           liters_pppd = .data[[total_liters_col]] /
@@ -400,7 +400,7 @@ add_liters_per_person_per_day <- function(
 
       # Remove temporary column if created
       if ("temp_num_days_col" %in% names(.dataset)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::select(-temp_num_days_col)
       }
 
@@ -583,7 +583,7 @@ add_drinking_water_source_cat <- function(
 
     # Recode drinking water source categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_drinking_water_source_cat = dplyr::case_when(
           .data[[drinking_water_source_col]] %in% drinking_water_source_cat_surface_water_val ~ phr_txt("Surface Water"),
@@ -1011,7 +1011,7 @@ add_sanitation_facility_cat <- function(
 
     # Recode sanitation facility categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_sanitation_facility_cat = dplyr::case_when(
           .data[[sanitation_facility_col]] %in% open_defecation_val ~ phr_txt("Open Defecation"),
@@ -1179,7 +1179,7 @@ add_sanitation_facility_shared <- function(
     if (!is.null(num_households_col) && !is.null(shared_response_col)) {
 
       # Both `num_households_col` and `shared_response_col` are present
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_sanitation_facility_shared_cat = dplyr::case_when(
             !is.na(.data[[num_households_col]]) & .data[[num_households_col]] >= shared_threshold ~ "yes",
@@ -1192,7 +1192,7 @@ add_sanitation_facility_shared <- function(
     } else if (!is.null(num_households_col)) {
 
       # Only `num_households_col` is present
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_sanitation_facility_shared_cat = dplyr::case_when(
             !is.na(.data[[num_households_col]]) & .data[[num_households_col]] >= shared_threshold ~ "yes",
@@ -1203,7 +1203,7 @@ add_sanitation_facility_shared <- function(
     } else if (!is.null(shared_response_col)) {
 
       # Only `shared_response_col` is present
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_sanitation_facility_shared_cat = dplyr::case_when(
             !is.na(.data[[shared_response_col]]) & .data[[shared_response_col]] %in% shared_values ~ phr_txt("yes"),
@@ -1313,7 +1313,7 @@ add_drinking_water_jmp_ladder <- function(
     drinking_water_time_over_30min_val <- ensure_value(drinking_water_time_over_30min_val, "0")
 
     # JMP ladder categorization
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_drinking_water_cat = dplyr::case_when(
           as.character(.data[[drinking_water_source_cat_col]]) == drinking_water_source_cat_surface_water_val ~ phr_txt("Surface Water"),
@@ -1327,7 +1327,7 @@ add_drinking_water_jmp_ladder <- function(
       )
 
     # Convert to an ordered factor
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_drinking_water_cat = factor(
           wash_jmp_ladder_drinking_water_cat,
@@ -1448,7 +1448,7 @@ add_sanitation_jmp_ladder <- function(
     shared_sanitation_no_val <- ensure_value(shared_sanitation_no_val, "no")
 
     # Recoding to JMP ladder categories
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_sanitation_cat = dplyr::case_when(
           as.character(.data[[sanitation_facility_cat_col]]) == sanitation_facility_open_defecation_val ~ phr_txt("Open Defecation"),
@@ -1462,7 +1462,7 @@ add_sanitation_jmp_ladder <- function(
       )
 
     # Convert to factor with ordered levels
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_sanitation_cat = factor(
           wash_jmp_ladder_sanitation_cat,
@@ -1664,7 +1664,7 @@ add_sqm_per_person <- function(
 
     # Calculate square meters, square meters per person, and categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Calculate area based on shelter shape
         area_sqm = dplyr::case_when(
@@ -1698,7 +1698,7 @@ add_sqm_per_person <- function(
           sqm_per_person >= 4.5 & sqm_per_person < 5.5 ~ phr_txt("4.5 - < 5.5 sqm per person"),
           sqm_per_person >= 5.5 ~ phr_txt(">= 5.5 sqm per person"),
           TRUE ~ NA_character_
-        ) %>%
+        ) |>
           factor(
             levels = c(
               phr_txt("<3.5 sqm per person"),

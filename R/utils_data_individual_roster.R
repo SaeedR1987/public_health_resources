@@ -207,7 +207,7 @@ add_age_months_cat <- function(
 
     # Create age categories in months
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         age_months_cat = cut(
           .data[[age_months_col]],
@@ -420,7 +420,7 @@ add_standardized_age <- function(
     )
 
     if (length(cols_to_convert) > 0) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           dplyr::across(all_of(cols_to_convert), ~ phr_convert_date(.x))
         )
@@ -443,7 +443,7 @@ add_standardized_age <- function(
     has_final <- !is.null(date_birth_final_col) && date_birth_final_col %in% names(.dataset)
 
     if (has_exact && has_approx) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_birth_final = dplyr::if_else(
             !is.na(.data[[date_birth_exact_col]]),
@@ -453,19 +453,19 @@ add_standardized_age <- function(
         )
 
     } else if (has_exact) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_birth_final = .data[[date_birth_exact_col]]
         )
 
     } else if (has_approx) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_birth_final = .data[[date_birth_approx_col]]
         )
 
     } else if (has_final) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_birth_final = .data[[date_birth_final_col]]
         )
@@ -477,7 +477,7 @@ add_standardized_age <- function(
     has_final_death <- !is.null(date_death_final_col) && date_death_final_col %in% names(.dataset)
 
     if (has_exact_death && has_approx_death) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_death_final = dplyr::if_else(
             !is.na(.data[[date_death_exact_col]]),
@@ -487,19 +487,19 @@ add_standardized_age <- function(
         )
 
     } else if (has_exact_death) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_death_final = .data[[date_death_exact_col]]
         )
 
     } else if (has_approx_death) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_death_final = .data[[date_death_approx_col]]
         )
 
     } else if (has_final_death) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_date_death_final = .data[[date_death_final_col]]
         )
@@ -510,7 +510,7 @@ add_standardized_age <- function(
       if (!is.null(survey_date_col)) {
         # Check if both survey_date_col and calc_date_death_final are available
         if ("calc_date_death_final" %in% names(.dataset)) {
-          .dataset <- .dataset %>%
+          .dataset <- .dataset |>
             dplyr::mutate(
               calc_age_years = dplyr::case_when(
                 !is.na(calc_date_birth_final) & !is.na(calc_date_death_final) ~
@@ -535,14 +535,14 @@ add_standardized_age <- function(
               )
             )
           if (!is.null(age_months_col)) {
-            .dataset <- .dataset %>%
+            .dataset <- .dataset |>
               dplyr::mutate(
                 calc_age_months = dplyr::coalesce(calc_age_months, ceiling(.data[[age_months_col]])),
                 calc_age_days = dplyr::coalesce(calc_age_days, floor(as.numeric(.data[[age_months_col]] * 30.44)))
               )
           }
         } else {
-          .dataset <- .dataset %>%
+          .dataset <- .dataset |>
             dplyr::mutate(
               calc_age_years = dplyr::case_when(
                 !is.na(calc_date_birth_final) ~
@@ -561,7 +561,7 @@ add_standardized_age <- function(
               )
             )
           if (!is.null(age_months_col)) {
-            .dataset <- .dataset %>%
+            .dataset <- .dataset |>
               dplyr::mutate(
                 calc_age_months = dplyr::coalesce(calc_age_months, ceiling(.data[[age_months_col]])),
                 calc_age_days = dplyr::coalesce(calc_age_days, floor(as.numeric(.data[[age_months_col]] * 30.44)))
@@ -570,12 +570,12 @@ add_standardized_age <- function(
         }
       }
     } else {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           calc_age_years = .data[[age_years_col]]
         )
       if (!is.null(age_months_col)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             calc_age_months = ceiling(.data[[age_months_col]]),
             calc_age_days = floor(as.numeric(.data[[age_months_col]] * 30.44))
@@ -590,7 +590,7 @@ add_standardized_age <- function(
         message = phr_txt("roster_birth calculation skipped as required birth or recall date information is missing.")
       )
     } else {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           roster_birth = dplyr::case_when(
             !is.na(calc_date_birth_final) & !is.na(.data[[date_recall_col]]) &
@@ -711,7 +711,7 @@ add_standardized_roster_demographics <- function(
     }
 
     # Add age-based columns
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         roster_child_under2 = dplyr::if_else(
           !is.na(.data[[age_years_col]]) & .data[[age_years_col]] < 2,
@@ -741,13 +741,13 @@ add_standardized_roster_demographics <- function(
     if (!is.null(sex_col) && sex_col %in% names(.dataset)) {
 
       # Standardize sex values for comparison
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           .sex_std = tolower(trimws(as.character(.data[[sex_col]])))
         )
 
       # Create sex columns
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           roster_male = dplyr::if_else(
             .sex_std %in% tolower(male_val),
@@ -764,7 +764,7 @@ add_standardized_roster_demographics <- function(
               .data[[age_years_col]] <= 49,
             1, 0
           )
-        ) %>%
+        ) |>
         dplyr::select(-.sex_std)
 
     } else {
@@ -774,7 +774,7 @@ add_standardized_roster_demographics <- function(
         message = phr_txt("Sex column not provided or not found. Sex-based columns will be set to 0.")
       )
 
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           roster_male = 0,
           roster_female = 0,

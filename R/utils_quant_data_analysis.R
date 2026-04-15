@@ -498,7 +498,7 @@ phr_calc_survey_prop_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_event_weighted   = srvyr::survey_total(!!var_sym, vartype = NULL, na.rm = TRUE),
       n_event_unweighted = sum(!!var_sym, na.rm = TRUE),
@@ -780,7 +780,7 @@ phr_calc_survey_mean_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_weighted       = srvyr::survey_total(!is.na(!!var_sym), vartype = NULL, na.rm = TRUE),
       n_unweighted     = sum(!is.na(!!var_sym)),
@@ -1000,7 +1000,7 @@ phr_calc_survey_median_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_weighted       = srvyr::survey_total(!is.na(!!var_sym), vartype = NULL, na.rm = TRUE),
       n_unweighted     = sum(!is.na(!!var_sym)),
@@ -1234,7 +1234,7 @@ phr_calc_survey_ratio_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_weighted       = srvyr::survey_total(!!num_sym, vartype = NULL, na.rm = TRUE),
       n_unweighted     = sum(!!num_sym, na.rm = TRUE),

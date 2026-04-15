@@ -631,8 +631,8 @@ DataAnalytics <- R6::R6Class(
               for (gv in group_values) {
                 gv_label   <- as.character(gv)
                 gv_safe    <- gsub("[^A-Za-z0-9]", "_", gv_label)
-                gv_results <- per_group_df %>%
-                  dplyr::filter(group_value == gv) %>%
+                gv_results <- per_group_df |>
+                  dplyr::filter(group_value == gv) |>
                   dplyr::select(-group_value)
                 gv_title <- if (role == "enum_id") {
                   paste0("Data Quality Penalty Summary - Enumerator: ", gv_label)
@@ -1652,7 +1652,7 @@ DataAnalytics <- R6::R6Class(
                     )
                   } else {
                     filtered_first_arg <- tryCatch(
-                      source_df %>% dplyr::filter(!!rlang::sym(col_name) == val),
+                      source_df |> dplyr::filter(!!rlang::sym(col_name) == val),
                       error = function(e) {
                         phr_warning(
                           message = phr_txt(glue::glue(
@@ -1847,7 +1847,7 @@ DataAnalytics <- R6::R6Class(
           phr_warning(origin, "No analysis_schema loaded to convert.")
           return(list())
         }
-        purrr::pmap(self$analysis_schema, function(...) list(...)) %>%
+        purrr::pmap(self$analysis_schema, function(...) list(...)) |>
           purrr::set_names(self$analysis_schema$indicator_name)
       },
       on_error = "warn",
@@ -1888,7 +1888,7 @@ DataAnalytics <- R6::R6Class(
           return(invisible(self))
         }
 
-        schema_valid <- self$analysis_schema %>%
+        schema_valid <- self$analysis_schema |>
           dplyr::mutate(
             var_name_actual   = purrr::map_chr(.data$var_name,   translate_var),
             denom_var_actual  = purrr::map_chr(.data$denom_var,  translate_var),
@@ -1896,11 +1896,11 @@ DataAnalytics <- R6::R6Class(
             denom_exists      = ifelse(!is.na(.data$denom_var_actual),
                                        .data$denom_var_actual %in% available_vars,
                                        TRUE)
-          ) %>%
+          ) |>
           dplyr::mutate(include = .data$var_exists & .data$denom_exists)
 
-        issues <- schema_valid %>%
-          dplyr::filter(!.data$include) %>%
+        issues <- schema_valid |>
+          dplyr::filter(!.data$include) |>
           dplyr::transmute(
             indicator_name = .data$indicator_name,
             issue = paste0(
@@ -1914,8 +1914,8 @@ DataAnalytics <- R6::R6Class(
             )
           )
 
-        dap_df <- schema_valid %>%
-          dplyr::filter(.data$include) %>%
+        dap_df <- schema_valid |>
+          dplyr::filter(.data$include) |>
           dplyr::transmute(
             indicator_name = .data$indicator_name,
             calculation    = .data$calculation,
@@ -1981,7 +1981,7 @@ DataAnalytics <- R6::R6Class(
           ))
         } else {
           available_vars <- names(self$survey_design$variables)
-          var_issues     <- self$analysis_schema %>%
+          var_issues     <- self$analysis_schema |>
             dplyr::mutate(
               var_exists   = .data$var_name %in% available_vars,
               denom_exists = ifelse(
@@ -1989,11 +1989,11 @@ DataAnalytics <- R6::R6Class(
                 .data$denom_var %in% available_vars,
                 TRUE
               )
-            ) %>%
+            ) |>
             dplyr::filter(!.data$var_exists | !.data$denom_exists)
 
           if (nrow(var_issues) > 0) {
-            issues <- dplyr::bind_rows(issues, var_issues %>%
+            issues <- dplyr::bind_rows(issues, var_issues |>
               dplyr::transmute(
                 indicator_name,
                 issue = paste0(
@@ -2046,7 +2046,7 @@ DataAnalytics <- R6::R6Class(
             ))
           }
 
-          invalid_calc <- self$data_analysis_plan$log_df %>%
+          invalid_calc <- self$data_analysis_plan$log_df |>
             dplyr::filter(!.data$calculation %in% c("prop", "mean", "median", "ratio"))
 
           if (nrow(invalid_calc) > 0) {

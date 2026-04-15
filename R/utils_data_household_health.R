@@ -144,7 +144,7 @@ add_health_barriers <- function(
 
     # Detect barriers using grepl
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Physical access barriers
         health_barrier_any.physical = ifelse(
@@ -348,7 +348,7 @@ add_healthcare_access_one_hour <- function(
 
     # Calculate healthcare access within one hour
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         health_healthcare_access_one_hour = dplyr::case_when(
           # Use numeric minutes if available
