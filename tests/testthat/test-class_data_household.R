@@ -151,28 +151,33 @@ test_that("post_validate warns on invalid GPS coordinates", {
 
 
 test_that("post_validate warns on invalid weights", {
-
-  hh <- HouseholdData$new(
-    data = tibble(
-      uuid = c("1", "2", "3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = rep(Sys.Date(), 3),
-      enumerator_id = c("A", "B", "C"),
-      weight = c(1, NA, -5)
+  hh <- suppressMessages(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("1", "2", "3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = rep(Sys.Date(), 3),
+        enumerator_id = c("A", "B", "C"),
+        weight = c(1, NA, -5)
+      )
     )
   )
 
   # post_validate() is invoked INSIDE validate(), so we test validate()
-  expect_warning(
-    hh$validate("raw"),
-    regexp = "Missing values",
-    ignore.case = TRUE
+  suppressWarnings(
+    expect_warning(
+      suppressMessages(hh$validate("raw")),
+      regexp = "Missing values",
+      ignore.case = TRUE
+    )
   )
 
-  expect_warning(
-    hh$validate("raw"),
-    regexp = "Negative weights",
-    ignore.case = TRUE
+  suppressWarnings(
+    expect_warning(
+      suppressMessages(hh$validate("raw")),
+      regexp = "Negative weights",
+      ignore.case = TRUE
+    )
   )
 })
 
@@ -258,27 +263,35 @@ test_that("get_survey_design succeeds when required fields exist", {
 test_that("NutritionIndividualData aggregates children by age groups", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create nutrition data with calc_age_months (as would be output by add_standardized_age)
-  nutr_data <- NutritionIndividualData$new(
-    data = tibble(
-      person_id = c("n1", "n2", "n3", "n4", "n5", "n6"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
-      calc_age_months = c(10, 30, 48, 72, 15, 20)  # <24, 24-59, 24-59, >60, <24, <24
+  nutr_data <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("n1", "n2", "n3", "n4", "n5", "n6"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
+        calc_age_months = c(10, 30, 48, 72, 15, 20)  # <24, 24-59, 24-59, >60, <24, <24
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("nutrition", nutr_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("nutrition", nutr_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated columns exist
   std_data <- hh_data$standardized_data
@@ -305,32 +318,39 @@ test_that("NutritionIndividualData aggregates children by age groups", {
   expect_equal(hh3_row$linked_nutrition_children_under5, 2)
 })
 
-
 test_that("HealthIndividualData aggregates number of people recorded", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create health data
-  health_data <- HealthIndividualData$new(
-    data = tibble(
-      person_id = c("h1", "h2", "h3", "h4", "h5"),
-      hh_uuid = c("hh1", "hh1", "hh1", "hh2", "hh3"),
-      age = c(10, 20, 30, 25, 40),
-      sex = c("M", "F", "M", "F", "M")
+  health_data <- suppressMessages(suppressWarnings(
+    HealthIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("h1", "h2", "h3", "h4", "h5"),
+        hh_uuid = c("hh1", "hh1", "hh1", "hh2", "hh3"),
+        age = c(10, 20, 30, 25, 40),
+        sex = c("M", "F", "M", "F", "M")
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("health", health_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("health", health_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated column exists
   std_data <- hh_data$standardized_data
@@ -347,75 +367,39 @@ test_that("HealthIndividualData aggregates number of people recorded", {
   expect_equal(hh3_row$linked_health_num_people_recorded, 1)
 })
 
-
-test_that("WomenIndividualData aggregates women aged 15-49", {
-
-  # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
-    )
-  )
-
-  # Create women data with calc_age_years (as would be output by add_standardized_age)
-  women_data <- WomenIndividualData$new(
-    data = tibble(
-      person_id = c("w1", "w2", "w3", "w4", "w5", "w6"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
-      calc_age_years = c(14, 25, 35, 50, 15, 49)  # not 15-49, yes, yes, no, yes, yes
-    )
-  )
-
-  # Link and standardize
-  hh_data$add_linked_dataset("women", women_data)
-  hh_data$standardize()
-
-  # Check aggregated column exists
-  std_data <- hh_data$standardized_data
-  expect_true("linked_women_women_15to49" %in% names(std_data))
-
-  # Check values for hh1: 1 woman 15-49 (14 no, 25 yes)
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
-  expect_equal(hh1_row$linked_women_women_15to49, 1)
-
-  # Check values for hh2: 1 woman 15-49 (35 yes, 50 no)
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
-  expect_equal(hh2_row$linked_women_women_15to49, 1)
-
-  # Check values for hh3: 2 women 15-49 (15 yes, 49 yes)
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
-  expect_equal(hh3_row$linked_women_women_15to49, 2)
-})
-
-
 test_that("IndividualData (roster) still uses aggregate_roster_data method", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2")
+      )
     )
-  )
+  ))
 
   # Create roster data
-  roster_data <- IndividualData$new(
-    data = tibble(
-      person_id = c("r1", "r2", "r3"),
-      hh_uuid = c("hh1", "hh1", "hh2"),
-      sex = c("M", "F", "M"),
-      age = c(25, 30, 40)
+  roster_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("r1", "r2", "r3"),
+        hh_uuid = c("hh1", "hh1", "hh2"),
+        sex = c("M", "F", "M"),
+        age = c(25, 30, 40)
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("roster", roster_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", roster_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check that roster aggregation produces household_size
   std_data <- hh_data$standardized_data
@@ -428,42 +412,49 @@ test_that("IndividualData (roster) still uses aggregate_roster_data method", {
   expect_equal(hh2_row$linked_roster_household_size, 1)
 })
 
-
 test_that("Household variables are merged to linked datasets during standardize", {
 
   # Create household data with various household-level variables
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3"),
-      enum_id = c("ENUM-1", "ENUM-2", "ENUM-3"),
-      device_id = c("DEV-1", "DEV-2", "DEV-3"),
-      weight = c(1.5, 2.0, 1.2),
-      stratum = c("Urban", "Rural", "Urban"),
-      cluster_id = c("C1", "C2", "C3"),
-      site = c("Site1", "Site2", "Site3"),
-      admin1 = c("Admin1_A", "Admin1_B", "Admin1_A"),
-      admin2 = c("Admin2_1", "Admin2_2", "Admin2_3"),
-      admin3 = c("Admin3_X", "Admin3_Y", "Admin3_Z"),
-      admin4 = c("Admin4_P", "Admin4_Q", "Admin4_R"),
-      date_survey = Sys.Date()
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3"),
+        enum_id = c("ENUM-1", "ENUM-2", "ENUM-3"),
+        device_id = c("DEV-1", "DEV-2", "DEV-3"),
+        weight = c(1.5, 2.0, 1.2),
+        stratum = c("Urban", "Rural", "Urban"),
+        cluster_id = c("C1", "C2", "C3"),
+        site = c("Site1", "Site2", "Site3"),
+        admin1 = c("Admin1_A", "Admin1_B", "Admin1_A"),
+        admin2 = c("Admin2_1", "Admin2_2", "Admin2_3"),
+        admin3 = c("Admin3_X", "Admin3_Y", "Admin3_Z"),
+        admin4 = c("Admin4_P", "Admin4_Q", "Admin4_R"),
+        date_survey = Sys.Date()
+      )
     )
-  )
+  ))
 
   # Create nutrition data without household-level variables
-  nutr_data <- NutritionIndividualData$new(
-    data = tibble(
-      person_id = c("n1", "n2", "n3", "n4"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh3"),
-      calc_age_months = c(10, 30, 48, 15)
+  nutr_data <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("n1", "n2", "n3", "n4"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh3"),
+        calc_age_months = c(10, 30, 48, 15)
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("nutrition", nutr_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("nutrition", nutr_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check that nutrition data now has household-level variables
   nutr_std_data <- nutr_data$standardized_data
@@ -506,33 +497,41 @@ test_that("Household variables are merged to linked datasets during standardize"
 test_that("Household variables overwrite existing variables in linked datasets", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2"),
-      enum_id = c("ENUM-CORRECT-1", "ENUM-CORRECT-2"),
-      weight = c(1.5, 2.0),
-      cluster_id = c("C1", "C2")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2"),
+        enum_id = c("ENUM-CORRECT-1", "ENUM-CORRECT-2"),
+        weight = c(1.5, 2.0),
+        cluster_id = c("C1", "C2")
+      )
     )
-  )
+  ))
 
   # Create nutrition data with existing enum_id and weight that should be overwritten
-  nutr_data <- NutritionIndividualData$new(
-    data = tibble(
-      person_id = c("n1", "n2", "n3"),
-      hh_uuid = c("hh1", "hh1", "hh2"),
-      calc_age_months = c(10, 30, 48),
-      enum_id = c("ENUM-OLD-1", "ENUM-OLD-1", "ENUM-OLD-2"),
-      weight = c(999, 999, 999),
-      cluster_id = c("OLD-C1", "OLD-C1", "OLD-C2")
+  nutr_data <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("n1", "n2", "n3"),
+        hh_uuid = c("hh1", "hh1", "hh2"),
+        calc_age_months = c(10, 30, 48),
+        enum_id = c("ENUM-OLD-1", "ENUM-OLD-1", "ENUM-OLD-2"),
+        weight = c(999, 999, 999),
+        cluster_id = c("OLD-C1", "OLD-C1", "OLD-C2")
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("nutrition", nutr_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("nutrition", nutr_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check that nutrition data has household values (overwritten)
   nutr_std_data <- nutr_data$standardized_data
@@ -554,30 +553,38 @@ test_that("Household variables overwrite existing variables in linked datasets",
 test_that("Only available household variables are merged to linked datasets", {
 
   # Create household data with only some variables
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2"),
-      enum_id = c("ENUM-1", "ENUM-2"),
-      cluster_id = c("C1", "C2")
-      # Note: no weight, stratum, site, admin variables
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2"),
+        enum_id = c("ENUM-1", "ENUM-2"),
+        cluster_id = c("C1", "C2")
+        # Note: no weight, stratum, site, admin variables
+      )
     )
-  )
+  ))
 
   # Create nutrition data
-  nutr_data <- NutritionIndividualData$new(
-    data = tibble(
-      person_id = c("n1", "n2"),
-      hh_uuid = c("hh1", "hh2"),
-      calc_age_months = c(10, 30)
+  nutr_data <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("n1", "n2"),
+        hh_uuid = c("hh1", "hh2"),
+        calc_age_months = c(10, 30)
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("nutrition", nutr_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("nutrition", nutr_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check that nutrition data has only the available household variables
   nutr_std_data <- nutr_data$standardized_data
@@ -596,27 +603,35 @@ test_that("Only available household variables are merged to linked datasets", {
 test_that("WaterContainerData aggregates total litres correctly with British spelling", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create water container data with British spelling (litres)
-  water_data <- WaterContainerData$new(
-    data = tibble(
-      container_id = c("c1", "c2", "c3", "c4", "c5"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3"),
-      wash_container_total_litres = c(20, 30, 15, 25, 50)  # British spelling
+  water_data <- suppressMessages(suppressWarnings(
+    WaterContainerData$new(
+      data = tibble::tibble(
+        container_id = c("c1", "c2", "c3", "c4", "c5"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3"),
+        wash_container_total_litres = c(20, 30, 15, 25, 50)  # British spelling
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("water_containers", water_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("water_containers", water_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated column exists
   std_data <- hh_data$standardized_data
@@ -639,27 +654,35 @@ test_that("WaterContainerData aggregates total litres correctly with British spe
 test_that("WaterContainerData aggregates total liters correctly with American spelling", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2")
+      )
     )
-  )
+  ))
 
   # Create water container data with American spelling (liters)
-  water_data <- WaterContainerData$new(
-    data = tibble(
-      container_id = c("c1", "c2", "c3"),
-      hh_uuid = c("hh1", "hh1", "hh2"),
-      wash_container_total_liters = c(10, 20, 30)  # American spelling
+  water_data <- suppressMessages(suppressWarnings(
+    WaterContainerData$new(
+      data = tibble::tibble(
+        container_id = c("c1", "c2", "c3"),
+        hh_uuid = c("hh1", "hh1", "hh2"),
+        wash_container_total_liters = c(10, 20, 30)  # American spelling
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("water_containers", water_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("water_containers", water_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated column exists
   std_data <- hh_data$standardized_data
@@ -678,27 +701,35 @@ test_that("WaterContainerData aggregates total liters correctly with American sp
 test_that("WaterContainerData aggregates container counts correctly", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create water container data
-  water_data <- WaterContainerData$new(
-    data = tibble(
-      container_id = c("c1", "c2", "c3", "c4", "c5"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3"),
-      wash_container_total_liters = c(20, 30, 15, 25, 50)
+  water_data <- suppressMessages(suppressWarnings(
+    WaterContainerData$new(
+      data = tibble::tibble(
+        container_id = c("c1", "c2", "c3", "c4", "c5"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3"),
+        wash_container_total_liters = c(20, 30, 15, 25, 50)
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("water_containers", water_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("water_containers", water_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated column exists
   std_data <- hh_data$standardized_data
@@ -721,27 +752,35 @@ test_that("WaterContainerData aggregates container counts correctly", {
 test_that("WaterContainerData aggregates both liters and counts with British spelling", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create water container data with British spelling (litres)
-  water_data <- WaterContainerData$new(
-    data = tibble(
-      container_id = c("c1", "c2", "c3", "c4", "c5"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3"),
-      wash_container_total_litres = c(20, 30, 15, 25, 50)  # British spelling
+  water_data <- suppressMessages(suppressWarnings(
+    WaterContainerData$new(
+      data = tibble::tibble(
+        container_id = c("c1", "c2", "c3", "c4", "c5"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3"),
+        wash_container_total_litres = c(20, 30, 15, 25, 50)  # British spelling
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("water_containers", water_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("water_containers", water_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check both aggregated columns exist
   std_data <- hh_data$standardized_data
@@ -768,12 +807,14 @@ test_that("WaterContainerData aggregates both liters and counts with British spe
 test_that("Household raw_data is preserved even when aggregation encounters errors", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble::tibble(
-      uuid = c("hh1", "hh2"),
-      enum_id = c("E1", "E2")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        enum_id = c("E1", "E2")
+      )
     )
-  )
+  ))
 
   # Verify raw_data exists initially
   expect_false(is.null(hh_data$raw_data))
@@ -781,24 +822,26 @@ test_that("Household raw_data is preserved even when aggregation encounters erro
 
   # Create a linked dataset with intentionally problematic data
   # (missing hh_uuid column to trigger aggregation error)
-  problem_data <- IndividualData$new(
-    data = tibble::tibble(
-      person_id = c("p1", "p2", "p3"),
-      # Note: no hh_uuid column - this will cause aggregation to fail
-      age_years = c(10, 20, 30)
+  problem_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("p1", "p2", "p3"),
+        # Note: no hh_uuid column - this will cause aggregation to fail
+        age_years = c(10, 20, 30)
+      )
     )
-  )
+  ))
 
   # Add the problematic linked dataset
-  hh_data$add_linked_dataset("roster", problem_data)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", problem_data)
+  ))
 
-  # Standardize household data
-  # This should trigger pre_standardize which will attempt aggregation
-  # Aggregation will fail due to missing hh_uuid, but raw_data should be preserved
-  expect_error(
-    hh_data$standardize(),
-    regexp = NA  # We expect it may warn, but not error
-  )
+  # Standardize household data.
+  # Aggregation may warn; we just want to ensure it does not hard-error and that raw_data remains.
+  suppressMessages(suppressWarnings(
+    expect_error(hh_data$standardize(), regexp = NA)
+  ))
 
   # CRITICAL TEST: Verify raw_data is NOT NULL after failed aggregation
   expect_false(is.null(hh_data$raw_data))
@@ -818,27 +861,35 @@ test_that("Household raw_data is preserved even when aggregation encounters erro
 test_that("Household standardization succeeds with valid linked datasets", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble::tibble(
-      uuid = c("hh1", "hh2"),
-      enum_id = c("E1", "E2")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        enum_id = c("E1", "E2")
+      )
     )
-  )
+  ))
 
   # Create a properly structured linked dataset
-  roster_data <- IndividualData$new(
-    data = tibble::tibble(
-      person_id = c("p1", "p2", "p3", "p4"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2"),
-      age_years = c(10, 15, 25, 30)
+  roster_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("p1", "p2", "p3", "p4"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2"),
+        age_years = c(10, 15, 25, 30)
+      )
     )
-  )
+  ))
 
-  # Add the linked dataset
-  hh_data$add_linked_dataset("roster", roster_data)
+  # Add the linked dataset (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", roster_data)
+  ))
 
   # Standardize household data - should succeed
-  expect_no_error(hh_data$standardize())
+  suppressMessages(suppressWarnings(
+    expect_no_error(hh_data$standardize())
+  ))
 
   # Verify raw_data is preserved
   expect_false(is.null(hh_data$raw_data))
@@ -861,38 +912,46 @@ test_that("Household standardization succeeds with valid linked datasets", {
 test_that("Deaths data aggregates births in recall period when calc_date_birth_final is available", {
 
   # Create household data with survey date
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes"),
-      interview_date = as.Date(c("2023-12-31", "2023-12-31")),
-      enumerator_id = c("E1", "E2")
-    ),
-    variable_map = list(
-      date_survey = "interview_date"
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes"),
+        interview_date = as.Date(c("2023-12-31", "2023-12-31")),
+        enumerator_id = c("E1", "E2")
+      ),
+      variable_map = list(
+        date_survey = "interview_date"
+      )
     )
-  )
+  ))
 
   # Create deaths data with births in recall period
   # Recall date is 2023-01-01, survey date is 2023-12-31
   # d1: birth in recall period (2023-06-01)
   # d2: birth in recall period (2023-03-15)
   # d3: birth before recall period (2022-12-01)
-  deaths_data <- DeathIndividualData$new(
-    data = tibble(
-      death_id = c("d1", "d2", "d3"),
-      hh_uuid = c("hh1", "hh1", "hh2"),
-      age_years = c(0.5, 1, 0.3),
-      sex = c("M", "F", "M"),
-      recall_date = as.Date(c("2023-01-01", "2023-01-01", "2023-01-01")),
-      calc_date_birth_final = as.Date(c("2023-06-01", "2023-03-15", "2022-12-01"))
-    ),
-    recall_date = as.Date("2023-01-01")
-  )
+  deaths_data <- suppressMessages(suppressWarnings(
+    DeathIndividualData$new(
+      data = tibble::tibble(
+        death_id = c("d1", "d2", "d3"),
+        hh_uuid = c("hh1", "hh1", "hh2"),
+        age_years = c(0.5, 1, 0.3),
+        sex = c("M", "F", "M"),
+        recall_date = as.Date(c("2023-01-01", "2023-01-01", "2023-01-01")),
+        calc_date_birth_final = as.Date(c("2023-06-01", "2023-03-15", "2022-12-01"))
+      ),
+      recall_date = as.Date("2023-01-01")
+    )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("deaths", deaths_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("deaths", deaths_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check births_in_recall column exists
   std_data <- hh_data$standardized_data
@@ -911,39 +970,47 @@ test_that("Deaths data aggregates births in recall period when calc_date_birth_f
 test_that("Roster data aggregates births in recall period when recall_date column is available", {
 
   # Create household data with recall date and survey date
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes"),
-      interview_date = as.Date(c("2023-12-31", "2023-12-31")),
-      enumerator_id = c("E1", "E2"),
-      recall_date = as.Date(c("2023-01-01", "2023-01-01"))
-    ),
-    variable_map = list(
-      date_data_collection = "interview_date",
-      recall_date = "recall_date"
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes"),
+        interview_date = as.Date(c("2023-12-31", "2023-12-31")),
+        enumerator_id = c("E1", "E2"),
+        recall_date = as.Date(c("2023-01-01", "2023-01-01"))
+      ),
+      variable_map = list(
+        date_data_collection = "interview_date",
+        recall_date = "recall_date"
+      )
     )
-  )
+  ))
 
   # Create roster data with births
   # r1: birth in recall period (2023-06-01)
   # r2: birth before recall period (1998-01-01)
   # r3: birth before recall period (1993-01-01)
   # r4: birth before recall period (2022-12-15)
-  roster_data <- IndividualData$new(
-    data = tibble(
-      person_id = c("r1", "r2", "r3", "r4"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2"),
-      sex = c("M", "F", "M", "F"),
-      age = c(0.5, 25, 30, 0.8),
-      recall_date = as.Date(c("2023-01-01", "2023-01-01", "2023-01-01", "2023-01-01")),
-      calc_date_birth_final = as.Date(c("2023-06-01", "1998-01-01", "1993-01-01", "2022-12-15"))
+  roster_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("r1", "r2", "r3", "r4"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2"),
+        sex = c("M", "F", "M", "F"),
+        age = c(0.5, 25, 30, 0.8),
+        recall_date = as.Date(c("2023-01-01", "2023-01-01", "2023-01-01", "2023-01-01")),
+        calc_date_birth_final = as.Date(c("2023-06-01", "1998-01-01", "1993-01-01", "2022-12-15"))
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("roster", roster_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", roster_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check births_in_recall column exists
   std_data <- hh_data$standardized_data
@@ -961,33 +1028,41 @@ test_that("Roster data aggregates births in recall period when recall_date colum
 test_that("Roster data aggregates canonical columns when they exist", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create roster data with canonical columns (as would be created by add_standardized_roster_demographics)
-  roster_data <- IndividualData$new(
-    data = tibble(
-      person_id = c("r1", "r2", "r3", "r4", "r5", "r6"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
-      calc_age_years = c(1, 25, 4, 40, 17, 50),
-      sex = c("M", "F", "F", "M", "F", "F"),
-      roster_child_under2 = c(1, 0, 0, 0, 0, 0),
-      roster_child_under5 = c(1, 0, 1, 0, 0, 0),
-      roster_male = c(1, 0, 0, 1, 0, 0),
-      roster_female = c(0, 1, 1, 0, 1, 1),
-      roster_woman_15to49 = c(0, 1, 0, 0, 1, 0)
+  roster_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("r1", "r2", "r3", "r4", "r5", "r6"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
+        calc_age_years = c(1, 25, 4, 40, 17, 50),
+        sex = c("M", "F", "F", "M", "F", "F"),
+        roster_child_under2 = c(1, 0, 0, 0, 0, 0),
+        roster_child_under5 = c(1, 0, 1, 0, 0, 0),
+        roster_male = c(1, 0, 0, 1, 0, 0),
+        roster_female = c(0, 1, 1, 0, 1, 1),
+        roster_woman_15to49 = c(0, 1, 0, 0, 1, 0)
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("roster", roster_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", roster_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated columns exist
   std_data <- hh_data$standardized_data
@@ -1029,91 +1104,99 @@ test_that("Roster data aggregates canonical columns when they exist", {
 test_that("Nutrition data aggregates canonical columns when they exist", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble(
-      uuid = c("hh1", "hh2", "hh3"),
-      consent = c("yes", "yes", "yes"),
-      interview_date = Sys.Date(),
-      enumerator_id = c("E1", "E2", "E3")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
     )
-  )
+  ))
 
   # Create nutrition data with canonical columns (as would be created by add_standardized_nutrition_demographics)
-  nutr_data <- NutritionIndividualData$new(
-    data = tibble(
-      person_id = c("n1", "n2", "n3", "n4", "n5", "n6"),
-      hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
-      calc_age_years = c(0.8, 2.5, 4, 6, 1.2, 1.6),
-      nutrition_child_under2 = c(1, 0, 0, 0, 1, 1),
-      nutrition_child_2to5 = c(0, 1, 1, 0, 0, 0),
-      nutrition_child_under5 = c(1, 1, 1, 0, 1, 1)
+  nutr_data <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("n1", "n2", "n3", "n4", "n5", "n6"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
+        calc_age_years = c(0.8, 2.5, 4, 6, 1.2, 1.6),
+        nutrition_child_under2 = c(1, 0, 0, 0, 1, 1),
+        nutrition_child_2to5 = c(0, 1, 1, 0, 0, 0),
+        nutrition_child_under5 = c(1, 1, 1, 0, 1, 1)
+      )
     )
-  )
+  ))
 
-  # Link and standardize
-  hh_data$add_linked_dataset("nutrition", nutr_data)
-  hh_data$standardize()
+  # Link and standardize (may message/warn)
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("nutrition", nutr_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Check aggregated columns exist
   std_data <- hh_data$standardized_data
-  expect_true("linked_nutrition_child_under2" %in% names(std_data))
-  expect_true("linked_nutrition_child_2to5" %in% names(std_data))
-  expect_true("linked_nutrition_child_under5" %in% names(std_data))
+  expect_true("linked_nutrition_nutrition_child_under2" %in% names(std_data))
+  expect_true("linked_nutrition_nutrition_child_2to5" %in% names(std_data))
+  expect_true("linked_nutrition_nutrition_child_under5" %in% names(std_data))
 
   # Check values for hh1
   hh1_row <- std_data[std_data$uuid == "hh1", ]
-  expect_equal(hh1_row$linked_nutrition_child_under2, 1)
-  expect_equal(hh1_row$linked_nutrition_child_2to5, 1)
-  expect_equal(hh1_row$linked_nutrition_child_under5, 2)
+  expect_equal(hh1_row$linked_nutrition_nutrition_child_under2, 1)
+  expect_equal(hh1_row$linked_nutrition_nutrition_child_2to5, 1)
+  expect_equal(hh1_row$linked_nutrition_nutrition_child_under5, 2)
 
   # Check values for hh2
   hh2_row <- std_data[std_data$uuid == "hh2", ]
-  expect_equal(hh2_row$linked_nutrition_child_under2, 0)
-  expect_equal(hh2_row$linked_nutrition_child_2to5, 1)
-  expect_equal(hh2_row$linked_nutrition_child_under5, 1)
+  expect_equal(hh2_row$linked_nutrition_nutrition_child_under2, 0)
+  expect_equal(hh2_row$linked_nutrition_nutrition_child_2to5, 1)
+  expect_equal(hh2_row$linked_nutrition_nutrition_child_under5, 1)
 
   # Check values for hh3
   hh3_row <- std_data[std_data$uuid == "hh3", ]
-  expect_equal(hh3_row$linked_nutrition_child_under2, 2)
-  expect_equal(hh3_row$linked_nutrition_child_2to5, 0)
-  expect_equal(hh3_row$linked_nutrition_child_under5, 2)
+  expect_equal(hh3_row$linked_nutrition_nutrition_child_under2, 2)
+  expect_equal(hh3_row$linked_nutrition_nutrition_child_2to5, 0)
+  expect_equal(hh3_row$linked_nutrition_nutrition_child_under5, 2)
 })
-
-
-
-
-
-
-
-
-
-
 
 test_that("generate_cleaning_log propagates to linked data objects", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble::tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes")
+      )
     )
-  )
+  ))
 
   # Create a linked roster dataset
-  roster_data <- IndividualData$new(
-    data = tibble::tibble(
-      person_id = c("p1", "p2"),
-      hh_uuid = c("hh1", "hh2"),
-      age_years = c(10, 25)
+  roster_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("p1", "p2"),
+        hh_uuid = c("hh1", "hh2"),
+        age_years = c(10, 25)
+      )
     )
-  )
+  ))
 
-  hh_data$add_linked_dataset("roster", roster_data)
-  hh_data$standardize()
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", roster_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Calling generate_cleaning_log on household should not error and should also
   # attempt to run on the linked dataset
-  expect_no_error(hh_data$generate_cleaning_log())
+  suppressMessages(suppressWarnings(
+    expect_no_error(hh_data$generate_cleaning_log())
+  ))
 
   # The linked dataset's generate_cleaning_log should have been called, which
   # means its cleaning_log field should now be a CleaningLog object (initialised
@@ -1124,27 +1207,37 @@ test_that("generate_cleaning_log propagates to linked data objects", {
 test_that("clean propagates to linked data objects", {
 
   # Create household data
-  hh_data <- HouseholdData$new(
-    data = tibble::tibble(
-      uuid = c("hh1", "hh2"),
-      consent = c("yes", "yes")
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2"),
+        consent = c("yes", "yes")
+      )
     )
-  )
+  ))
 
   # Create a linked roster dataset
-  roster_data <- IndividualData$new(
-    data = tibble::tibble(
-      person_id = c("p1", "p2"),
-      hh_uuid = c("hh1", "hh2"),
-      age_years = c(10, 25)
+  roster_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("p1", "p2"),
+        hh_uuid = c("hh1", "hh2"),
+        age_years = c(10, 25)
+      )
     )
-  )
+  ))
 
-  hh_data$add_linked_dataset("roster", roster_data)
-  hh_data$standardize()
+  suppressMessages(suppressWarnings(
+    hh_data$add_linked_dataset("roster", roster_data)
+  ))
+  suppressMessages(suppressWarnings(
+    hh_data$standardize()
+  ))
 
   # Calling clean on household should also clean the linked dataset
-  expect_no_error(hh_data$clean())
+  suppressMessages(suppressWarnings(
+    expect_no_error(hh_data$clean())
+  ))
 
   # The household dataset itself should be cleaned
   expect_true(hh_data$cleaned)

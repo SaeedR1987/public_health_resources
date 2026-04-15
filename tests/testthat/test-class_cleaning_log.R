@@ -125,7 +125,7 @@ test_that("CleaningLog validate warns on empty required fields and sets validate
 
 test_that("CleaningLog validate checks allowed values for changed", {
 
-  df <- tibble(
+  df <- tibble::tibble(
     uuid = "u1",
     enum_id = "e",
     device_id = "d",
@@ -139,10 +139,18 @@ test_that("CleaningLog validate checks allowed values for changed", {
 
   log <- CleaningLog$new(df)
 
-  issues <- log$validate()
+  # Run once to get issues (suppress the expected warning output)
+  issues <- suppressWarnings(log$validate())
   expect_false(log$validated)
   expect_true("disallowed_values" %in% names(issues))
-  expect_warning(log$validate(), regexp = "Log validation completed with issues")
+
+  # Assert the warning exists, but don't print it
+  suppressWarnings(
+    expect_warning(
+      log$validate(),
+      regexp = "Log validation completed with issues"
+    )
+  )
 })
 
 test_that("CleaningLog validate coerces safely coercible types", {
