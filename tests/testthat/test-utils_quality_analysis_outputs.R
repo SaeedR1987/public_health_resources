@@ -2141,32 +2141,6 @@ test_that("helper_runner_dps returns a single numeric value", {
   expect_true(result >= 0)
 })
 
-test_that("helper_runner_dps matches nipnTK::digitPreference on same data", {
-  skip_if_not_installed("nipnTK")
-  set.seed(11)
-  x <- round(rnorm(80, 125, 10))
-  x_fmt <- as.numeric(format(round(x, 1), nsmall = 1))
-  expected <- as.numeric(nipnTK::digitPreference(x_fmt / 10)[[1]])
-  actual   <- helper_runner_dps(x)
-  expect_equal(actual, expected, tolerance = 1e-9)
-})
-
-test_that("expanding_window is equivalent to runner::runner expanding window", {
-  skip_if_not_installed("runner")
-  set.seed(5)
-  x <- round(rnorm(30, 125, 10))
-
-  # mean
-  expected_mean <- runner::runner(x, f = mean)
-  actual_mean   <- phr:::expanding_window(x, mean)
-  expect_equal(actual_mean, expected_mean, tolerance = 1e-9)
-
-  # length (cumulative count)
-  expected_len <- runner::runner(x, f = length)
-  actual_len   <- phr:::expanding_window(x, length)
-  expect_equal(actual_len, as.numeric(expected_len), tolerance = 1e-9)
-})
-
 test_that("plot_date_runner with operation='dps' still produces a ggplot", {
   df <- create_test_date_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)

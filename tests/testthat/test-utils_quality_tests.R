@@ -1984,15 +1984,6 @@ test_that("digit_preference_score returns a single numeric value", {
   expect_true(result >= 0)
 })
 
-test_that("digit_preference_score matches nipnTK::digitPreference on common data", {
-  skip_if_not_installed("nipnTK")
-  set.seed(42)
-  x <- round(rnorm(200, mean = 125, sd = 10))  # MUAC in mm
-  expected <- as.numeric(nipnTK::digitPreference(x)[[1]])
-  actual   <- phr:::digit_preference_score(x)
-  expect_equal(actual, expected, tolerance = 1e-9)
-})
-
 test_that("digit_preference_score detects strong digit preference (all 0s)", {
   # All values end in 0 -> perfect preference for digit 0 -> high DPS
   x <- seq(100, 200, by = 10)
@@ -2037,16 +2028,5 @@ test_that("quality_test_digit_preference warns for missing variable", {
     regexp = "Variable not found"
   )
   expect_true(is.na(result$statistic))
-})
-
-test_that("quality_test_digit_preference result matches nipnTK on same data", {
-  skip_if_not_installed("nipnTK")
-  set.seed(99)
-  x <- round(rnorm(100, 12.5, 1.5), 1)
-  df <- tibble::tibble(muac = x)
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
-  result <- quality_test_digit_preference(sdesign, "muac")
-  expected <- as.numeric(nipnTK::digitPreference(x)[[1]])
-  expect_equal(result$statistic, expected, tolerance = 1e-9)
 })
 

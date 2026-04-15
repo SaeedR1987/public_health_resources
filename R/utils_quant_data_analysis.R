@@ -536,7 +536,7 @@ phr_calc_survey_prop_single <- function(design,
   }
 
   # Effective sample size
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean estimate (for CI policy decision)
@@ -794,7 +794,7 @@ phr_calc_survey_mean_single <- function(design,
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
   # Effective sample size
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean estimate (for CI policy decision)
@@ -1014,7 +1014,7 @@ phr_calc_survey_median_single <- function(design,
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
   # Effective sample size
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick numeric summary for CI policy
@@ -1247,7 +1247,7 @@ phr_calc_survey_ratio_single <- function(design,
   denom_weighted   <- as.numeric(dsn_sum$denom_weighted)
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, nrow(data)))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, nrow(data)))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean ratio

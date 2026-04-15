@@ -2240,7 +2240,9 @@ plot_domain_radar <- function(survey_design,
     phr_validate_columns(df, domain_cols, origin = origin,
                            hint = phr_txt("Ensure all domain columns exist in the dataset"), soft = FALSE)
 
-    library(ggradar)
+    if (!requireNamespace("ggradar", quietly = TRUE)) {
+      stop("Package 'ggradar' is required for this plot. Install it with: install.packages('ggradar')")
+    }
 
     # Handle grouping
     has_grouping <- !is.null(grouping) && !missing(grouping)
@@ -2316,7 +2318,7 @@ plot_domain_radar <- function(survey_design,
     show_labels <- !has_grouping || n_groups == 1
 
     # ggradar handles multiple groups internally - only pass valid parameters
-    g <- ggradar(
+    g <- ggradar::ggradar(
       summary,
       grid.max = max_value,
       base.size = 1,
