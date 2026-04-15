@@ -91,7 +91,7 @@ Creates grouped bar charts for select-multiple (multi-select) survey columns whe
 each cell contains space-separated response tokens (e.g.
 \code{"barrier_cost barrier_distance"}).  Survey-weighted proportions for each
 unique response token are computed via
-\code{\link{phr_calc_multiple_choice_cat}}, so the weights embedded in
+\code{phr_calc_multiple_choice_cat}), so the weights embedded in
 \code{survey_design} are applied automatically.  Bars do not add up to 100\%
 because respondents may select more than one option.
 }
