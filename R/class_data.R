@@ -2094,7 +2094,7 @@ Data <- R6::R6Class(
 
         if (is.null(df)) {
           phr_error(
-            msg    = "No dataset is available at the selected stage.",
+            message = "No dataset is available at the selected stage.",
             origin = paste0(self$dataset_name, "$run_quality_checks")
           )
         }
@@ -3024,18 +3024,7 @@ Data <- R6::R6Class(
     #' - Variable names in functions (e.g., is.na(var)) are translated
     #' - Special regex characters in names/values are automatically escaped
     #'
-    #' @examples
-    #' \dontrun{
-    #' # Given:
-    #' # variable_map = list(fever = "fever_col")
-    #' # value_map = list(fever = list(yes = c("yes", "y", "oui"), no = c("no", "n")))
-    #' #
-    #' # Input:  "fever == 'yes' & !is.na(temperature)"
-    #' # Output: "fever_col %in% c('yes', 'y', 'oui') & !is.na(temperature)"
-    #' #
-    #' # Input:  "fever %in% c('yes', 'no')"
-    #' # Output: "fever_col %in% c('yes', 'y', 'oui', 'no', 'n')"
-    #' }
+    #' @keywords internal
     .translate_expression = function(expr, stage = "standardized") {
 
       if (is.null(expr) || expr == "") return(expr)

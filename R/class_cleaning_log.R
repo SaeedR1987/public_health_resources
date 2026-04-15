@@ -225,7 +225,7 @@ CleaningLog <- R6::R6Class(
 
       if (!uuid_col %in% names(df)) {
         phr_error(
-          msg = paste0("Dataset missing UUID column '", uuid_col, "'."),
+          message = paste0("Dataset missing UUID column '", uuid_col, "'."),
           origin = "CleaningLog$post_validate"
         )
       }
