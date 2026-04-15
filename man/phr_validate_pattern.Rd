@@ -11,7 +11,7 @@ phr_validate_pattern(df, col, pattern, origin = NULL, hint = NULL, soft)
 
 \item{col}{Character column name.}
 
-\item{pattern}{Regular expression pattern (e.g., \code{"^[0-9]\{10\}$"}).}
+\item{pattern}{Regular expression pattern (e.g., `"^[0-9]\{10\}$"`).}
 
 \item{origin}{Optional origin function.}
 

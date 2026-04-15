@@ -75,7 +75,7 @@ df_result_cm <- add_muac(
 
 # Example dataset with MUAC values in millimeters
 df_mm <- data.frame(
-  nut_muac_cm = c(48, 125, 210), # Actually in millimeters
+  nut_muac_cm = c(80, 125, 210), # Actually in millimeters
   child_age_months = c(14, 54, 30),
   nut_edema_confirm = c("yes", NA, "no")
 )
