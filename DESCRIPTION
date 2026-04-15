@@ -16,17 +16,11 @@ License: MIT + file LICENSE
 Depends:
     R (>= 4.1.0)
 Imports:
-    binom,
     digest,
     dplyr,
     flextable,
-    GGally,
-    ggalluvial,
-    ggnewscale,
     ggplot2,
-    ggridges,
     glue,
-    Hmisc,
     lubridate,
     officer,
     openxlsx,
@@ -40,14 +34,17 @@ Imports:
     survey,
     tibble,
     tidyr,
-    tidyselect,
-    treemapify,
     zscorer
 Suggests:
+    GGally,
+    ggalluvial,
+    ggnewscale,
+    ggridges,
     mockery,
     shiny,
     stringr,
     testthat (>= 3.0.0),
+    treemapify,
     withr
 Encoding: UTF-8
 RoxygenNote: 7.3.3

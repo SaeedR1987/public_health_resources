@@ -24,6 +24,11 @@ plot_correlogram <- function (survey_design, numeric_cols = c("fsl_fcs_score",  
 
   phr_try({
 
+    if (!requireNamespace("GGally", quietly = TRUE)) {
+      phr_error(phr_txt("Package 'GGally' is required for plot_correlogram(). Install it with: install.packages('GGally')"),
+                  origin = origin)
+    }
+
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
     phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
@@ -642,6 +647,11 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
 
   phr_try({
 
+    if (!requireNamespace("ggridges", quietly = TRUE)) {
+      phr_error(phr_txt("Package 'ggridges' is required for plot_ridge_distribution(). Install it with: install.packages('ggridges')"),
+                  origin = origin)
+    }
+
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
@@ -701,8 +711,8 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
     select_cols <- if (weighted) c(grouping, numeric_cols, weights_col) else c(grouping, numeric_cols)
-    df <- df |> dplyr::select(dplyr::all_of(select_cols)) |> tidyr::gather(key = !!name_groups,
-                                                                                     value = !!name_units, numeric_cols)
+    df <- df |> dplyr::select(dplyr::all_of(select_cols)) |>
+      tidyr::pivot_longer(cols = dplyr::all_of(numeric_cols), names_to = name_groups, values_to = name_units)
 
     # Apply custom labels if provided
     if (!is.null(numeric_cols_labels)) {
@@ -795,6 +805,11 @@ plot_ridge_distribution_by_group <- function(survey_design,
   origin <- "plot_ridge_distribution_by_group"
 
   phr_try({
+
+    if (!requireNamespace("ggridges", quietly = TRUE)) {
+      phr_error(phr_txt("Package 'ggridges' is required for plot_ridge_distribution_by_group(). Install it with: install.packages('ggridges')"),
+                  origin = origin)
+    }
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
@@ -1461,6 +1476,11 @@ plot_iycf_areagraph <- function(survey_design,
 
   phr_try({
 
+    if (!requireNamespace("ggnewscale", quietly = TRUE)) {
+      phr_error(phr_txt("Package 'ggnewscale' is required for plot_iycf_areagraph(). Install it with: install.packages('ggnewscale')"),
+                  origin = origin)
+    }
+
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
     phr_validate_character(legend_position, origin = origin, soft = FALSE)
@@ -2118,6 +2138,30 @@ plot_date_runner <- function(survey_design,
 #' @noRd
 expanding_window <- function(x, f) {
   vapply(seq_along(x), function(i) as.numeric(f(x[seq_len(i)])), numeric(1L))
+}
+
+#' Weighted Sample Quantile (internal helper)
+#'
+#' Computes weighted quantiles using a weighted empirical CDF, equivalent
+#' to \code{Hmisc::wtd.quantile(x, weights = w, probs = p)}.
+#' The CDF is defined at midpoints of each weight interval, matching the
+#' Hmisc default interpolation method.
+#'
+#' @param x Numeric vector of values.
+#' @param weights Numeric vector of non-negative weights (same length as \code{x}).
+#' @param probs Single probability in [0, 1].
+#'
+#' @return A single numeric quantile value.
+#' @noRd
+wtd_quantile <- function(x, weights, probs) {
+  ok <- !is.na(x) & !is.na(weights)
+  x <- x[ok]
+  w <- weights[ok]
+  ord <- order(x)
+  x <- x[ord]
+  w <- w[ord]
+  cdf <- (cumsum(w) - w / 2) / sum(w)
+  stats::approx(cdf, x, xout = probs, method = "linear", rule = 2)$y
 }
 
 #' Helper Runner DPS
@@ -4047,12 +4091,6 @@ plot_boxplot <- function(survey_design,
 
     # For weighted boxplots, we need to calculate weighted quantiles manually
     if (weighted) {
-      # Load Hmisc for wtd.quantile
-      if (!requireNamespace("Hmisc", quietly = TRUE)) {
-        phr_error(phr_txt("Package 'Hmisc' is required for weighted boxplots. Please install it."),
-                    origin = origin)
-      }
-
       # Calculate weighted quantiles
       if (is.null(grouping)) {
         df_clean <- df |>
@@ -4060,11 +4098,11 @@ plot_boxplot <- function(survey_design,
 
         weighted_stats <- data.frame(
           group = "Overall",
-          ymin = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0),
-          lower = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.25),
-          middle = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.50),
-          upper = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.75),
-          ymax = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 1)
+          ymin = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0),
+          lower = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.25),
+          middle = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.50),
+          upper = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.75),
+          ymax = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 1)
         )
       } else {
         df_clean <- df |>
@@ -4073,11 +4111,11 @@ plot_boxplot <- function(survey_design,
         weighted_stats <- df_clean |>
           dplyr::group_by(!!rlang::sym(grouping)) |>
           dplyr::summarise(
-            ymin = Hmisc::wtd.quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0),
-            lower = Hmisc::wtd.quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0.25),
-            middle = Hmisc::wtd.quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0.50),
-            upper = Hmisc::wtd.quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0.75),
-            ymax = Hmisc::wtd.quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 1),
+            ymin = wtd_quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0),
+            lower = wtd_quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0.25),
+            middle = wtd_quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0.50),
+            upper = wtd_quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 0.75),
+            ymax = wtd_quantile(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col), probs = 1),
             .groups = "drop"
           )
         weighted_stats <- weighted_stats |>
@@ -4089,11 +4127,11 @@ plot_boxplot <- function(survey_design,
           if (!is.character(overall_label)) overall_label <- "Overall"
           overall_ws_row <- data.frame(
             group = overall_label,
-            ymin   = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0),
-            lower  = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.25),
-            middle = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.50),
-            upper  = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.75),
-            ymax   = Hmisc::wtd.quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 1)
+            ymin   = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0),
+            lower  = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.25),
+            middle = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.50),
+            upper  = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 0.75),
+            ymax   = wtd_quantile(df_clean[[numeric_var]], weights = df_clean[[weights_col]], probs = 1)
           )
           weighted_stats <- dplyr::bind_rows(overall_ws_row, weighted_stats)
           other_ws_groups <- setdiff(as.character(weighted_stats$group), overall_label)
@@ -4251,7 +4289,7 @@ plot_boxplot <- function(survey_design,
     if (show_mean) {
       if (is.null(grouping)) {
         if (weighted) {
-          mean_val <- Hmisc::wtd.mean(df_plot[[numeric_var]], weights = df_plot[[weights_col]])
+          mean_val <- stats::weighted.mean(df_plot[[numeric_var]], w = df_plot[[weights_col]], na.rm = TRUE)
           mean_df <- data.frame(group = "Overall", mean_val = mean_val)
         } else {
           mean_df <- df_plot |>
@@ -4267,7 +4305,7 @@ plot_boxplot <- function(survey_design,
           mean_df <- df_plot |>
             dplyr::group_by(!!rlang::sym(grouping)) |>
             dplyr::summarise(
-              mean_val = Hmisc::wtd.mean(!!rlang::sym(numeric_var), weights = !!rlang::sym(weights_col)),
+              mean_val = stats::weighted.mean(!!rlang::sym(numeric_var), w = !!rlang::sym(weights_col), na.rm = TRUE),
               .groups = "drop"
             )
         } else {
@@ -4346,6 +4384,11 @@ plot_treemap <- function(survey_design,
   origin <- "plot_treemap"
 
   phr_try({
+
+    if (!requireNamespace("treemapify", quietly = TRUE)) {
+      phr_error(phr_txt("Package 'treemapify' is required for plot_treemap(). Install it with: install.packages('treemapify')"),
+                  origin = origin)
+    }
 
     df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value to all potentially NULL arguments early with appropriate non-NULL defaults
@@ -4662,6 +4705,11 @@ plot_sankey <- function(survey_design,
   origin <- "plot_sankey"
 
   phr_try({
+
+    if (!requireNamespace("ggalluvial", quietly = TRUE)) {
+      phr_error(phr_txt("Package 'ggalluvial' is required for plot_sankey(). Install it with: install.packages('ggalluvial')"),
+                  origin = origin)
+    }
 
     df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
@@ -7593,9 +7641,9 @@ table_frequency <- function(survey_design,
       # Pivot to wide format
       results_df <- results_df |>
         tidyr::pivot_wider(
-          id_cols = tidyselect::all_of(id_cols),
-          names_from = tidyselect::all_of(first_disagg),
-          values_from = tidyselect::all_of(value_cols),
+          id_cols = dplyr::all_of(id_cols),
+          names_from = dplyr::all_of(first_disagg),
+          values_from = dplyr::all_of(value_cols),
           names_sep = "_"
         )
 
@@ -7654,7 +7702,7 @@ table_frequency <- function(survey_design,
       if (disaggregation_wide) {
         n_cols <- grep("^n_", names(results_df), value = TRUE)
         if (length(n_cols) > 0) {
-          results_df <- results_df |> dplyr::select(-tidyselect::all_of(n_cols))
+          results_df <- results_df |> dplyr::select(-dplyr::all_of(n_cols))
         }
       } else {
         results_df <- results_df |> dplyr::select(-n)
@@ -8247,9 +8295,9 @@ table_frequency_v2 <- function(survey_design,
 
       results_df <- results_df |>
         tidyr::pivot_wider(
-          id_cols     = tidyselect::all_of(id_cols),
-          names_from  = tidyselect::all_of(first_disagg),
-          values_from = tidyselect::all_of(value_cols),
+          id_cols     = dplyr::all_of(id_cols),
+          names_from  = dplyr::all_of(first_disagg),
+          values_from = dplyr::all_of(value_cols),
           names_sep   = "_"
         )
 
@@ -8301,7 +8349,7 @@ table_frequency_v2 <- function(survey_design,
       if (disaggregation_wide) {
         n_cols <- grep("^n_", names(results_df), value = TRUE)
         if (length(n_cols) > 0) {
-          results_df <- results_df |> dplyr::select(-tidyselect::all_of(n_cols))
+          results_df <- results_df |> dplyr::select(-dplyr::all_of(n_cols))
         }
       } else {
         results_df <- results_df |> dplyr::select(-n)
