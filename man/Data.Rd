@@ -229,7 +229,6 @@ Placeholder: UI modal implementation will be developed in a separate branch.
 # Input:  "fever \%in\% c('yes', 'no')"
 # Output: "fever_col \%in\% c('yes', 'y', 'oui', 'no', 'n')"
 }
-Save Data Object to File
 
 }
 \seealso{
@@ -1225,7 +1224,6 @@ Translated expression as a character string
 # Input:  "fever \%in\% c('yes', 'no')"
 # Output: "fever_col \%in\% c('yes', 'y', 'oui', 'no', 'n')"
 }
-Save Data Object to File
 
 }
 \if{html}{\out{</div>}}
