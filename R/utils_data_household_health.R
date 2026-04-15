@@ -72,7 +72,7 @@ add_health_barriers <- function(
     availability_barriers_val,
     other_barriers_val,
     no_barriers_val,
-    did_not_need_val
+    did_not_need_val = NULL
 ) {
 
   origin <- "add_health_barriers"
