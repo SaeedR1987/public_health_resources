@@ -258,7 +258,7 @@ add_ecfies <- function(
 #'
 #' # Example dataset with MUAC values in millimeters
 #' df_mm <- data.frame(
-#'   nut_muac_cm = c(48, 125, 210), # Actually in millimeters
+#'   nut_muac_cm = c(80, 125, 210), # Actually in millimeters
 #'   child_age_months = c(14, 54, 30),
 #'   nut_edema_confirm = c("yes", NA, "no")
 #' )
@@ -355,7 +355,8 @@ add_muac <- function(
       }
       .dataset <- .dataset |>
         dplyr::mutate(
-          `nut_muac_cm` = .data[[nut_muac_cm_col]] / 10
+          `nut_muac_cm` = .data[[nut_muac_cm_col]] / 10,
+          nut_muac_mm = as.numeric(.data[[nut_muac_cm_col]])
         )
 
       phr_message(
@@ -367,6 +368,13 @@ add_muac <- function(
         origin = origin,
         message = phr_txt("MUAC values could not be clearly identified as centimeters or millimeters. No additional unit columns created.")
       )
+      # Ensure required downstream columns exist
+      if (!"nut_muac_mm" %in% names(.dataset)) {
+        .dataset[["nut_muac_mm"]] <- NA_real_
+      }
+      if (!"nut_muac_cm" %in% names(.dataset)) {
+        .dataset[["nut_muac_cm"]] <- NA_real_
+      }
     }
 
 
