@@ -15,7 +15,9 @@ test_that("WomenIndividualData initializes with minimal valid data", {
     hh_uuid = "hh_1"
   )
 
-  women <- WomenIndividualData$new(data = df)
+  women <- suppressMessages(suppressWarnings(
+    WomenIndividualData$new(data = df)
+  ))
 
   expect_s3_class(women, "WomenIndividualData")
   expect_s3_class(women, "IndividualData")
@@ -30,10 +32,12 @@ test_that("WomenIndividualData initializes with custom dataset name", {
     hh_uuid = "hh_1"
   )
 
-  women <- WomenIndividualData$new(
-    data = df,
-    dataset_name = "CustomWomenData"
-  )
+  women <- suppressMessages(suppressWarnings(
+    WomenIndividualData$new(
+      data = df,
+      dataset_name = "CustomWomenData"
+    )
+  ))
 
   expect_equal(women$dataset_name, "CustomWomenData")
 })
@@ -45,7 +49,9 @@ test_that("WomenIndividualData loads default schemas on initialization", {
     hh_uuid = "hh_1"
   )
 
-  women <- WomenIndividualData$new(data = df)
+  women <- suppressMessages(suppressWarnings(
+    WomenIndividualData$new(data = df)
+  ))
 
   # Should have variable schema
   expect_true(length(women$variable_schema) > 0)
@@ -70,7 +76,9 @@ test_that("WomenIndividualData completes validation", {
     age = rep(25, 10)
   )
 
-  women <- WomenIndividualData$new(data = df)
+  women <- suppressMessages(suppressWarnings(
+    WomenIndividualData$new(data = df)
+  ))
 
   # Validation
   expect_no_error(women$validate())
@@ -87,8 +95,12 @@ test_that("WomenIndividualData can link to HouseholdData", {
     age = sample(15:49, 30, replace = TRUE)
   )
 
-  hh <- HouseholdData$new(data = hh_df)
-  women <- WomenIndividualData$new(data = women_df)
+  hh <- suppressMessages(suppressWarnings(
+    HouseholdData$new(data = hh_df)
+  ))
+  women <- suppressMessages(suppressWarnings(
+    WomenIndividualData$new(data = women_df)
+  ))
 
   # Link women data to households
   women$add_linked_dataset("household", hh, by_self_role = "hh_uuid", by_other_role = "uuid")
@@ -109,7 +121,9 @@ test_that("WomenIndividualData handles women of reproductive age", {
     age = sample(15:49, n, replace = TRUE)
   )
 
-  women <- WomenIndividualData$new(data = df)
+  women <- suppressMessages(suppressWarnings(
+    WomenIndividualData$new(data = df)
+  ))
 
   expect_no_error({
     women$validate("raw")
