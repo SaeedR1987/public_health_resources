@@ -6,6 +6,11 @@
 \usage{
 hh_flag_early_interviews(dates, project_start)
 }
+\arguments{
+\item{dates}{Character, Date, or numeric vector of interview dates to check.}
+
+\item{project_start}{A Date or character value specifying the project start date.}
+}
 \description{
 Flag interview dates earlier than project start
 }

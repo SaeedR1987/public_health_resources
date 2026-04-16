@@ -14,7 +14,7 @@ expand_select_multiple(column, column_name, separator = " ")
 \item{separator}{The separator used in the select_multiple values (default: " ")}
 }
 \value{
-A data frame with dummy columns named {column_name}_{value} containing 1
+A data frame with dummy columns named \{column_name\}_\{value\} containing 1
   if value present, 0 if not. Returns empty data frame (0 rows, 0 columns) if no
   valid values found.
 }

@@ -4,10 +4,10 @@
 \alias{quality_test_outlier_percentage}
 \title{Outlier Detection Test (Z-Score Method)}
 \usage{
-quality_test_outlier_percentage(data, variables, z_threshold = 3)
+quality_test_outlier_percentage(survey_design, variables, z_threshold = 3)
 }
 \arguments{
-\item{data}{Data frame containing the variable}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector with 1 variable name}
 

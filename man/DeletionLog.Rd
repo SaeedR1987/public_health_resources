@@ -21,12 +21,9 @@ Required columns:
 * issue: Description of why the record should be deleted
 * feedback: Additional comments or resolution notes
 }
-\keyword{Deletion}
-\keyword{Initialize}
-\keyword{Log}
 \keyword{internal}
 \section{Super class}{
-\code{\link[iphRa:Log]{iphRa::Log}} -> \code{DeletionLog}
+\code{\link[phr:Log]{phr::Log}} -> \code{DeletionLog}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -41,13 +38,13 @@ Required columns:
 \if{html}{\out{
 <details><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="append_entry"><a href='../../iphRa/html/Log.html#method-Log-append_entry'><code>iphRa::Log$append_entry()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="clear"><a href='../../iphRa/html/Log.html#method-Log-clear'><code>iphRa::Log$clear()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="export"><a href='../../iphRa/html/Log.html#method-Log-export'><code>iphRa::Log$export()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="get_hash"><a href='../../iphRa/html/Log.html#method-Log-get_hash'><code>iphRa::Log$get_hash()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="pre_validate"><a href='../../iphRa/html/Log.html#method-Log-pre_validate'><code>iphRa::Log$pre_validate()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="set_schema"><a href='../../iphRa/html/Log.html#method-Log-set_schema'><code>iphRa::Log$set_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Log" data-id="summary"><a href='../../iphRa/html/Log.html#method-Log-summary'><code>iphRa::Log$summary()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>phr::Log$append_entry()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>phr::Log$clear()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>phr::Log$export()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get_hash"><a href='../../phr/html/Log.html#method-Log-get_hash'><code>phr::Log$get_hash()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="pre_validate"><a href='../../phr/html/Log.html#method-Log-pre_validate'><code>phr::Log$pre_validate()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set_schema"><a href='../../phr/html/Log.html#method-Log-set_schema'><code>phr::Log$set_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="summary"><a href='../../phr/html/Log.html#method-Log-summary'><code>phr::Log$summary()</code></a></span></li>
 </ul>
 </details>
 }}

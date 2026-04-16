@@ -82,7 +82,7 @@ add_lppd_correction_factor <- function(
 
     # Calculate lppd_correction_factor
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         lppd_correction_factor = dplyr::case_when(
           # Values within the valid range [0, 7]
@@ -233,7 +233,7 @@ add_total_daily_liters <- function(
 
     # Calculate total daily litres
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_container_total_litres = dplyr::case_when(
           !is.na(.data[[wash_container_size_liters_col]]) & !is.na(.data[[wash_container_num_journeys_col]]) ~
@@ -244,7 +244,7 @@ add_total_daily_liters <- function(
 
     # If correction_factor_col is provided, apply correction factor
     if (!is.null(correction_factor_col)) {
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_container_total_litres = dplyr::case_when(
             !is.na(wash_container_total_litres) & !is.na(.data[[correction_factor_col]]) ~

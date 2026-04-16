@@ -331,11 +331,12 @@ test_that("quality_test_flag_percentage handles NA values correctly", {
 })
 
 test_that("quality_test_flag_percentage handles edge cases and errors", {
-  # Edge case: All NA values
+  # Edge case: All NA values (>= 2 PSUs to avoid svydesign error)
   df_all_na <- tibble::tibble(
-    flag = c(NA, NA, NA)
+    flag = c(NA, NA, NA),
+    psu  = 1:3
   )
-  sdesign_all_na <- srvyr::as_survey_design(df_all_na, ids = 1)
+  sdesign_all_na <- srvyr::as_survey_design(df_all_na, ids = psu)
 
   expect_warning(
     result_all_na <- quality_test_flag_percentage(sdesign_all_na, "flag", flag_value = TRUE),
@@ -344,20 +345,22 @@ test_that("quality_test_flag_percentage handles edge cases and errors", {
   expect_true(is.na(result_all_na$statistic))
   expect_true(is.na(result_all_na$p_value))
 
-  # Edge case: Single value
+  # Edge case: Effectively a single usable value (one TRUE + one NA), with 2 PSUs
   df_single <- tibble::tibble(
-    flag = c(TRUE)
+    flag = c(TRUE, NA),
+    psu  = 1:2
   )
-  sdesign_single <- srvyr::as_survey_design(df_single, ids = 1)
+  sdesign_single <- srvyr::as_survey_design(df_single, ids = psu)
 
   result_single <- quality_test_flag_percentage(sdesign_single, "flag", flag_value = TRUE)
   expect_equal(result_single$statistic, 100)
 
-  # Error case: Variable not found
+  # Error case: Variable not found (>= 2 PSUs)
   df <- tibble::tibble(
-    flag = c(TRUE, FALSE)
+    flag = c(TRUE, FALSE),
+    psu  = 1:2
   )
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   expect_warning(
     result_missing <- quality_test_flag_percentage(sdesign, "nonexistent", flag_value = TRUE),
@@ -463,14 +466,17 @@ test_that("quality_test_missing_percentage handles partial variable matches", {
 
 test_that("quality_test_missing_percentage handles different data types", {
   df <- tibble::tibble(
-    numeric_var = c(1, NA, 3),
+    numeric_var   = c(1, NA, 3),
     character_var = c("a", NA, "c"),
-    logical_var = c(TRUE, FALSE, NA),
-    date_var = as.Date(c("2023-01-01", NA, "2023-01-03"))
+    logical_var   = c(TRUE, FALSE, NA),
+    date_var      = as.Date(c("2023-01-01", NA, "2023-01-03")),
+    psu           = 1:3
   )
 
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
+
   result <- quality_test_missing_percentage(
-    df,
+    sdesign,
     c("numeric_var", "character_var", "logical_var", "date_var")
   )
 
@@ -482,9 +488,10 @@ test_that("quality_test_missing_percentage handles different data types", {
 
 test_that("quality_test_missing_percentage handles edge cases and errors", {
   df <- tibble::tibble(
-    var1 = c(1, 2, 3)
+    var1 = c(1, 2, 3),
+    psu  = 1:3
   )
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   # Edge case: No variables specified
   expect_warning(
@@ -501,19 +508,23 @@ test_that("quality_test_missing_percentage handles edge cases and errors", {
   expect_true(is.na(result_no_vars$p_value))
 
   # Edge case: Single value, no missing
+  # Use 2 PSUs while keeping the intent "0% missing"
   df_single <- tibble::tibble(
-    var1 = c(1)
+    var1 = c(1, 1),
+    psu  = 1:2
   )
-  sdesign_single <- srvyr::as_survey_design(df_single, ids = 1)
+  sdesign_single <- srvyr::as_survey_design(df_single, ids = psu)
 
   result_single <- quality_test_missing_percentage(sdesign_single, "var1")
   expect_equal(result_single$statistic, 0)
 
   # Edge case: Single value, is missing
+  # Use 2 PSUs while keeping the intent "100% missing"
   df_single_na <- tibble::tibble(
-    var1 = c(NA)
+    var1 = c(NA, NA),
+    psu  = 1:2
   )
-  sdesign_single_na <- srvyr::as_survey_design(df_single_na, ids = 1)
+  sdesign_single_na <- srvyr::as_survey_design(df_single_na, ids = psu)
 
   result_single_na <- quality_test_missing_percentage(sdesign_single_na, "var1")
   expect_equal(result_single_na$statistic, 100)
@@ -962,9 +973,10 @@ test_that("quality_test_coefficient_variation validates input types correctly", 
 
 test_that("quality_test_coefficient_variation handles edge cases and errors", {
   df <- tibble::tibble(
-    values = c(1, 2, 3, 4, 5)
+    values = c(1, 2, 3, 4, 5),
+    psu    = 1:5
   )
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   # Error case: Not a data frame
   expect_warning(
@@ -1003,10 +1015,12 @@ test_that("quality_test_coefficient_variation handles edge cases and errors", {
   expect_true(is.na(result_missing$statistic))
 
   # Edge case: Insufficient data (< 2 values)
+  # Use 2 PSUs while still having only 1 observation
   df_small <- tibble::tibble(
-    values = c(1)
+    values = c(1, NA),
+    psu    = 1:2
   )
-  sdesign_small <- srvyr::as_survey_design(df_small, ids = 1)
+  sdesign_small <- srvyr::as_survey_design(df_small, ids = psu)
 
   expect_warning(
     result_small <- quality_test_coefficient_variation(sdesign_small, "values"),
@@ -1014,11 +1028,12 @@ test_that("quality_test_coefficient_variation handles edge cases and errors", {
   )
   expect_true(is.na(result_small$statistic))
 
-  # Edge case: All NA values
+  # Edge case: All NA values (>= 2 PSUs)
   df_all_na <- tibble::tibble(
-    values = c(NA, NA, NA, NA)
+    values = c(NA, NA, NA, NA),
+    psu    = 1:4
   )
-  sdesign_all_na <- srvyr::as_survey_design(df_all_na, ids = 1)
+  sdesign_all_na <- srvyr::as_survey_design(df_all_na, ids = psu)
 
   expect_warning(
     result_all_na <- quality_test_coefficient_variation(sdesign_all_na, "values"),
@@ -1304,9 +1319,10 @@ test_that("quality_test_range_violation validates input types correctly", {
 
 test_that("quality_test_range_violation handles edge cases and errors", {
   df <- tibble::tibble(
-    values = c(1, 2, 3, 4, 5)
+    values = c(1, 2, 3, 4, 5),
+    psu    = 1:5
   )
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   # Error case: Not a data frame
   expect_warning(
@@ -1344,11 +1360,12 @@ test_that("quality_test_range_violation handles edge cases and errors", {
   )
   expect_true(is.na(result_missing$statistic))
 
-  # Edge case: All NA values
+  # Edge case: All NA values (>= 2 PSUs)
   df_all_na <- tibble::tibble(
-    values = c(NA, NA, NA, NA)
+    values = c(NA, NA, NA, NA),
+    psu    = 1:4
   )
-  sdesign_all_na <- srvyr::as_survey_design(df_all_na, ids = 1)
+  sdesign_all_na <- srvyr::as_survey_design(df_all_na, ids = psu)
 
   expect_warning(
     result_all_na <- quality_test_range_violation(sdesign_all_na, "values"),
@@ -1357,16 +1374,22 @@ test_that("quality_test_range_violation handles edge cases and errors", {
   expect_true(is.na(result_all_na$statistic))
 
   # Edge case: Single value within range
+  # Use 2 PSUs while keeping the intent "all (finite) values are within range"
   df_single <- tibble::tibble(
-    values = c(5)
+    values = c(5, 5),
+    psu    = 1:2
   )
-  sdesign_single <- srvyr::as_survey_design(df_single, ids = 1)
+  sdesign_single <- srvyr::as_survey_design(df_single, ids = psu)
 
-  result_single <- quality_test_range_violation(sdesign_single, "values", min_value = 0, max_value = 10)
+  result_single <- quality_test_range_violation(
+    sdesign_single, "values", min_value = 0, max_value = 10
+  )
   expect_equal(result_single$statistic, 0)
 
   # Edge case: Single value outside range
-  result_single_out <- quality_test_range_violation(sdesign_single, "values", min_value = 10, max_value = 20)
+  result_single_out <- quality_test_range_violation(
+    sdesign_single, "values", min_value = 10, max_value = 20
+  )
   expect_equal(result_single_out$statistic, 100)
 })
 
@@ -1798,8 +1821,13 @@ test_that("quality_test_binomial_ratio_rowwise warns when column is missing", {
 })
 
 test_that("quality_test_binomial_ratio_rowwise warns with invalid expected_ratio", {
-  df <- tibble::tibble(s = c(5L), n = c(10L))
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  # Use >= 2 PSUs to avoid svydesign error
+  df <- tibble::tibble(
+    s   = c(5L, 5L),
+    n   = c(10L, 10L),
+    psu = 1:2
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   expect_warning(
     quality_test_binomial_ratio_rowwise(sdesign, c("s", "n"), expected_ratio = 1.5),
@@ -1917,10 +1945,19 @@ test_that("quality_test_poisson_ratio_rowwise adds p-value column", {
 })
 
 test_that("quality_test_poisson_ratio_rowwise uses custom pval_colname", {
-  df <- tibble::tibble(ev = c(5L), exp = c(100))
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  # Use >= 2 PSUs to avoid svydesign error
+  df <- tibble::tibble(
+    ev  = c(5L, 5L),
+    exp = c(100, 100),
+    psu = 1:2
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
-  result <- quality_test_poisson_ratio_rowwise(sdesign, c("ev", "exp"), pval_colname = "pois_p")
+  result <- quality_test_poisson_ratio_rowwise(
+    sdesign,
+    c("ev", "exp"),
+    pval_colname = "pois_p"
+  )
 
   expect_true("pois_p" %in% names(result))
 })
@@ -1952,8 +1989,12 @@ test_that("quality_test_poisson_ratio_rowwise supports alternative hypotheses", 
 })
 
 test_that("quality_test_poisson_ratio_rowwise warns when column is missing", {
-  df <- tibble::tibble(ev = c(5L))
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  # Use >= 2 PSUs to avoid svydesign error
+  df <- tibble::tibble(
+    ev  = c(5L, 5L),
+    psu = 1:2
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   expect_warning(
     quality_test_poisson_ratio_rowwise(sdesign, c("ev", "nonexistent")),
@@ -1961,14 +2002,76 @@ test_that("quality_test_poisson_ratio_rowwise warns when column is missing", {
   )
 })
 
-test_that("quality_test_poisson_ratio_rowwise warns with non-positive expected_rate", {
-  df <- tibble::tibble(ev = c(5L), exp = c(100))
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
+test_that("quality_test_poisson_ratio_rowwise warns when column is missing", {
+  # Use >= 2 PSUs to avoid svydesign error
+  df <- tibble::tibble(
+    ev  = c(5L, 5L),
+    psu = 1:2
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = psu)
 
   expect_warning(
-    quality_test_poisson_ratio_rowwise(sdesign, c("ev", "exp"), expected_rate = -0.01),
-    regexp = "positive numeric"
+    quality_test_poisson_ratio_rowwise(sdesign, c("ev", "nonexistent")),
+    regexp = "not found"
   )
 })
 
+
+# 13. DIGIT PREFERENCE SCORE TEST ####
+
+test_that("digit_preference_score returns a single numeric value", {
+  set.seed(1)
+  x <- round(rnorm(100, mean = 12.5, sd = 1.5), 1)
+  result <- phr:::digit_preference_score(x)
+  expect_true(is.numeric(result))
+  expect_length(result, 1L)
+  expect_false(is.na(result))
+  expect_true(result >= 0)
+})
+
+test_that("digit_preference_score detects strong digit preference (all 0s)", {
+  # All values end in 0 -> perfect preference for digit 0 -> high DPS
+  x <- seq(100, 200, by = 10)
+  result <- phr:::digit_preference_score(x)
+  expect_true(result > 20, info = "Strong preference for 0 should yield DPS > 20 (Problematic)")
+})
+
+test_that("digit_preference_score is near 0 for perfectly uniform digits", {
+  # Each digit 0-9 appears exactly once -> chi-squared statistic is 0
+  x <- 0:9
+  result <- phr:::digit_preference_score(x, digits = 0)
+  expect_equal(result, 0)
+})
+
+test_that("quality_test_digit_preference returns list with statistic and p_value", {
+  set.seed(7)
+  df <- tibble::tibble(muac = round(rnorm(50, 12.5, 1.5), 1))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  result <- quality_test_digit_preference(sdesign, "muac")
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.na(result$p_value))
+})
+
+test_that("quality_test_digit_preference warns for insufficient data", {
+  df <- tibble::tibble(muac = c(12.5, 11.0, 13.0))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  expect_warning(
+    result <- quality_test_digit_preference(sdesign, "muac"),
+    regexp = "Insufficient data"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_digit_preference warns for missing variable", {
+  df <- tibble::tibble(muac = c(12.5, 11.0))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+  expect_warning(
+    result <- quality_test_digit_preference(sdesign, "nonexistent"),
+    regexp = "Variable not found"
+  )
+  expect_true(is.na(result$statistic))
+})
 

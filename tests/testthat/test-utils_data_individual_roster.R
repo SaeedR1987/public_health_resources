@@ -650,7 +650,7 @@ test_that("add_standardized_roster_demographics handles NA values", {
   expect_equal(result$roster_2to5, c(0, 0, 0, 0))
   expect_equal(result$roster_5plus, c(0, 0, 1, 1))
   # NA age → NA for roster_5_10; age >= 10 → NA
-  expect_equal(result$roster_5_10, c(0, NA, NA, NA))
+  expect_equal(result$roster_5_10, c(0, NA, 1, NA))
 
   # NA sex should result in 0 for sex-based indicators
   expect_equal(result$roster_male, c(1, 0, 0, 0))

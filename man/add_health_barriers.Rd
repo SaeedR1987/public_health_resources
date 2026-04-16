@@ -15,7 +15,7 @@ add_health_barriers(
   availability_barriers_val,
   other_barriers_val,
   no_barriers_val,
-  did_not_need_val
+  did_not_need_val = NULL
 )
 }
 \arguments{
@@ -38,6 +38,8 @@ add_health_barriers(
 \item{other_barriers_val}{A character vector of values indicating "other barriers."}
 
 \item{no_barriers_val}{A character vector of values indicating "no barriers."}
+
+\item{did_not_need_val}{A character vector of values indicating "did not need" health services.}
 }
 \value{
 A data frame with the following new binary columns:

@@ -2,10 +2,10 @@
 % Please edit documentation in R/utils_quality_analyisis_outputs.R
 \name{plot_cumulative_distribution}
 \alias{plot_cumulative_distribution}
-\title{Plot Cumulative Distribution}
+\title{Plot the cumulative distribution of a numeric variable (e.g., MUAC or anthropometric z-scores).}
 \usage{
 plot_cumulative_distribution(
-  df,
+  survey_design,
   data_var,
   vline_intercepts = NULL,
   vline_colors = NULL,
@@ -16,6 +16,8 @@ plot_cumulative_distribution(
   grouping = NULL,
   color_palette = "reach2",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   legend_position = "bottom",
   flip_coordinates = FALSE,
@@ -24,7 +26,7 @@ plot_cumulative_distribution(
 )
 }
 \arguments{
-\item{df}{A data frame containing the variable to plot.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{data_var}{A character string specifying the column name containing the data to plot.}
 
@@ -38,6 +40,8 @@ Must be same length as vline_intercepts. Default is c("red", "orange").}
 
 \item{x_label}{Optional character string for the x-axis label. If NULL, uses data_var name.}
 
+\item{y_label}{Optional character string for the y-axis label. Default: "\% Cumulative Proportion".}
+
 \item{xlim}{Optional numeric vector of length 2 specifying x-axis limits. If NULL, auto-detects based on data type.}
 
 \item{breaks_by}{Optional numeric value for x-axis breaks interval. If NULL, auto-detects based on data type.}
@@ -48,7 +52,17 @@ Must be same length as vline_intercepts. Default is c("red", "orange").}
 
 \item{title_name}{Optional character string for the plot title.}
 
+\item{variable_label}{Optional character string. Human-readable label for the data variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Optional character string for additional subtitle text (will be appended to auto-generated n counts).}
+
+\item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
+
+\item{flip_coordinates}{Logical. If TRUE, flips the coordinate axes. By default: FALSE.}
 
 \item{weighted}{Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.}
 
@@ -58,7 +72,9 @@ Must be same length as vline_intercepts. Default is c("red", "orange").}
 Returns a ggplot2 object.
 }
 \description{
-Plot the cumulative distribution of a numeric variable (e.g., MUAC or anthropometric z-scores).
+Creates a cumulative distribution function (CDF) plot for a numeric variable such as MUAC or
+anthropometric z-scores. Supports optional vertical reference lines (e.g., at clinical cutoffs),
+grouping by a categorical variable, survey weighting, and axis customisation.
 }
 \examples{
 \dontrun{

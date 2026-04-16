@@ -3,17 +3,15 @@
 test_that("quality_schema_to_table converts a normal QC schema correctly", {
 
   qc_schema <- list(
-    checks = list(
-      completeness = list(
-        check_name  = "completeness",
-        check_label = "Check completeness",
-        variables   = c("age", "sex"),
-        statistical_test = "missing_prop",
-        thresholds = list(
-          list(threshold_expression = "x < 5", penalty_score = 5)
-        ),
-        test_params = list()
-      )
+    completeness = list(
+      check_name  = "completeness",
+      check_label = "Check completeness",
+      variables   = c("age", "sex"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic < 5", penalty_score = 5)
+      ),
+      test_params = list()
     )
   )
 
@@ -29,46 +27,43 @@ test_that("quality_schema_to_table converts a normal QC schema correctly", {
   expect_equal(tab$variables,  "age,sex")
 
   # Methods + thresholds
-  expect_equal(tab$statistical_test, "missing_prop")
-  expect_true(grepl("x < 5", tab$threshold_expression))
+  expect_equal(tab$statistical_test, "missing_percentage")
+  expect_true(grepl("test_statistic < 5", tab$threshold_expression))
 
 })
 
-# MISSING CHECKS LIST
+# EMPTY SCHEMA
 
-test_that("quality_schema_to_table errors when `checks` list is missing", {
+test_that("quality_schema_to_table returns an empty table for an empty schema", {
 
   qc_schema <- list()  # no checks
 
-  expect_error(
-    quality_schema_to_table(qc_schema),
-    regexp = "Quality schema must contain"
-  )
+  tab <- quality_schema_to_table(qc_schema)
+  expect_equal(nrow(tab), 0)
 })
 
 test_that("quality_schema_to_table expands multiple QC checks", {
 
   qc_schema <- list(
-    checks = list(
-      CheckA = list(
-        check_name  = "CheckA",
-        check_label = "A label",
-        variables   = c("x"),
-        statistical_test = "missing_prop",
-        thresholds = list(
-          list(threshold_expression = "test_statistic < 1", penalty_score = 2)
-        ),
-        test_params = list()
+    CheckA = list(
+      check_name  = "CheckA",
+      check_label = "A label",
+      variables   = c("x"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic < 1", penalty_score = 2)
       ),
-      CheckB = list(
-        check_name  = "CheckB",
-        check_label = "B label",
-        variables   = c("y", "z"),
-        statistical_test = "methodB",
-        thresholds = list(
-          list(threshold_expression = "test_statistic < 2", penalty_score = 4)
-        ),
-        test_params = list()      )
+      test_params = list()
+    ),
+    CheckB = list(
+      check_name  = "CheckB",
+      check_label = "B label",
+      variables   = c("y", "z"),
+      statistical_test = "flag_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic < 2", penalty_score = 4)
+      ),
+      test_params = list()
     )
   )
 
@@ -90,17 +85,15 @@ test_that("quality_schema_to_table expands multiple QC checks", {
 test_that("quality_validate_schema_to_table accepts a normal schema", {
 
   qc_schema <- list(
-    checks = list(
-      Completeness = list(
-        check_name  = "Completeness",
-        check_label = "Label",
-        variables   = c("age", "sex"),
-        statistical_test = "missing_prop",
-        thresholds = list(
-          list(threshold_expression = "max == 0.1", penalty_score = 4)
-        ),
-        test_params = list()
-      )
+    Completeness = list(
+      check_name  = "Completeness",
+      check_label = "Label",
+      variables   = c("age", "sex"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic <= 0.1", penalty_score = 4)
+      ),
+      test_params = list()
     )
   )
 
@@ -110,52 +103,50 @@ test_that("quality_validate_schema_to_table accepts a normal schema", {
 test_that("quality_validate_schema_to_table accepts multiple checks", {
 
   qc_schema <- list(
-    checks = list(
-      A = list(
-        check_name  = "A",
-        check_label = "Check A",
-        variables   = c("x"),
-        statistical_test = "methodA",
-        thresholds = list(
-          list(threshold_expression = "th == 1", penalty_score = 2)
-        ),
-        test_params = list()
+    A = list(
+      check_name  = "A",
+      check_label = "Check A",
+      variables   = c("x"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic == 1", penalty_score = 2)
       ),
-      B = list(
-        check_name  = "B",
-        check_label = "Label B",
-        variables   = c("y", "z"),
-        statistical_test = "methodB",
-        thresholds = list(
-          list(threshold_expression = "th < 5", penalty_score = 5)
-        ),
-        test_params = list()
-      )
+      test_params = list()
+    ),
+    B = list(
+      check_name  = "B",
+      check_label = "Label B",
+      variables   = c("y", "z"),
+      statistical_test = "flag_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic < 5", penalty_score = 5)
+      ),
+      test_params = list()
     )
   )
 
   expect_silent(quality_validate_schema_to_table(qc_schema))
 })
 
-test_that("quality_validate_schema_to_table accepts empty thresholds and penalty", {
+test_that("quality_validate_schema_to_table errors on empty threshold_expression", {
 
   qc_schema <- list(
-    checks = list(
-      EmptyCase = list(
-        check_name  = "EmptyCase",
-        check_label = "Empty thresholds",
-        variables   = NULL,
-        statistical_test = "method",
-        thresholds = list(
-          list(threshold_expression = character(0), penalty_score = numeric(0))
-        ),              # allowed empty
-        test_params = list()
-      )
+    EmptyCase = list(
+      check_name  = "EmptyCase",
+      check_label = "Empty thresholds",
+      variables   = NULL,
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        # character(0) and numeric(0) are invalid — threshold_expression must be a single string
+        list(threshold_expression = character(0), penalty_score = numeric(0))
+      ),
+      test_params = list()
     )
   )
 
   expect_error(
     quality_validate_schema_to_table(qc_schema),
+    regexp = "threshold_expression.*must be a single character string",
     class = "phr_error"
   )
 })
@@ -168,22 +159,17 @@ test_that("quality_validate_schema_to_table errors if top-level is not a list", 
   )
 })
 
-test_that("quality_validate_schema_to_table errors when checks list is missing", {
+test_that("quality_validate_schema_to_table returns TRUE for empty schema", {
 
   qc_schema <- list()
 
-  expect_error(
-    quality_validate_schema_to_table(qc_schema),
-    regexp = "must contain a `checks` list"
-  )
+  expect_true(quality_validate_schema_to_table(qc_schema))
 })
 
 test_that("quality_validate_schema_to_table errors when a check is not a list", {
 
   qc_schema <- list(
-    checks = list(
-      invalid = "not a list"
-    )
+    invalid = "not a list"
   )
 
   expect_error(
@@ -195,11 +181,9 @@ test_that("quality_validate_schema_to_table errors when a check is not a list", 
 test_that("quality_validate_schema_to_table errors when required fields are missing", {
 
   qc_schema <- list(
-    checks = list(
-      BadCase = list(
-        check_name = "BadCase"
-        # missing check_label, statistical_test, thresholds, penalty_score_range
-      )
+    BadCase = list(
+      check_name = "BadCase"
+      # missing check_label, statistical_test, thresholds, test_params
     )
   )
 
@@ -212,17 +196,15 @@ test_that("quality_validate_schema_to_table errors when required fields are miss
 test_that("quality_validate_schema_to_table errors when list name does not match check_name", {
 
   qc_schema <- list(
-    checks = list(
-      list_name_here = list(
-        check_name  = "different_check_name",
-        check_label = "Label",
-        variables   = c("x"),
-        statistical_test = "m",
-        thresholds = list(
-          list(threshold_expression = "test_statistic < 1", penalty_score = 5)
-        ),
-        test_params = list()
-      )
+    list_name_here = list(
+      check_name  = "different_check_name",
+      check_label = "Label",
+      variables   = c("x"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic < 1", penalty_score = 5)
+      ),
+      test_params = list()
     )
   )
 
@@ -235,17 +217,15 @@ test_that("quality_validate_schema_to_table errors when list name does not match
 test_that("quality_validate_schema_to_table errors on wrong type for check_name", {
 
   qc_schema <- list(
-    checks = list(
-      t1 = list(
-        check_name  = 123,  # invalid
-        check_label = "label",
-        variables = c("x"),
-        statistical_test = "m",
-        thresholds = list(
-          list(threshold_expression = "test_statistic == 1", penalty_score = 5)
-        ),
-        test_params = list()
-      )
+    t1 = list(
+      check_name  = 123,  # invalid
+      check_label = "label",
+      variables = c("x"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic == 1", penalty_score = 5)
+      ),
+      test_params = list()
     )
   )
 
@@ -258,19 +238,15 @@ test_that("quality_validate_schema_to_table errors on wrong type for check_name"
 test_that("quality_validate_schema_to_table errors on wrong type for variables", {
 
   qc_schema <- list(
-    checks = list(
-      A = list(
-        check_name  = "A",
-        check_label = "Label",
-        variables   = list(a = 1),  # invalid
-        statistical_test = "m",
-        thresholds = list(
-          list(threshold_expression = "test_statistic == 1", penalty_score = 5)
-        ),
-        threshold_expression  = list(),
-        penalty_score = 1,
-        test_params = list()
-      )
+    A = list(
+      check_name  = "A",
+      check_label = "Label",
+      variables   = list(a = 1),  # invalid: must be character vector
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic == 1", penalty_score = 5)
+      ),
+      test_params = list()
     )
   )
 
@@ -283,20 +259,16 @@ test_that("quality_validate_schema_to_table errors on wrong type for variables",
 test_that("quality_validate_schema_to_table errors on wrong type for threshold expression", {
 
   qc_schema <- list(
-    checks = list(
-      Bad = list(
-        check_name  = "Bad",
-        check_label = "Label",
-        variables = c("x"),
-        statistical_test = "m",
-        thresholds = list(
-          list(threshold_expression = list(),  # invalid
-               penalty_score = 5)
-        ),
-        threshold_expression  = list(),   # invalid
-        penalty_score = 1,
-        test_params = list()
-      )
+    Bad = list(
+      check_name  = "Bad",
+      check_label = "Label",
+      variables = c("x"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = list(),  # invalid: must be character string
+             penalty_score = 5)
+      ),
+      test_params = list()
     )
   )
 
@@ -309,20 +281,18 @@ test_that("quality_validate_schema_to_table errors on wrong type for threshold e
 test_that("quality_validate_schema_to_table errors on wrong type for penalty_score", {
 
   qc_schema <- list(
-    checks = list(
-      Bad = list(
-        check_name  = "Bad",
-        check_label = "Label",
-        variables = c("x"),
-        statistical_test = "m",
-        thresholds = list(
-          list(
-            threshold_expression = "test_statistic < 1",
-            penalty_score = "not numeric"   # invalid
-          )
-        ),
-        test_params = list()
-      )
+    Bad = list(
+      check_name  = "Bad",
+      check_label = "Label",
+      variables = c("x"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(
+          threshold_expression = "test_statistic < 1",
+          penalty_score = "not numeric"   # invalid
+        )
+      ),
+      test_params = list()
     )
   )
 
@@ -340,8 +310,8 @@ test_that("quality_table_to_schema converts a normal table correctly", {
     check_name  = "completeness",
     check_label = "Check completeness",
     variables   = "age,sex",
-    statistical_test = "missing_prop",
-    threshold_expression  = "max_missing == 0.1",
+    statistical_test = "missing_percentage",
+    threshold_expression  = "test_statistic <= 5",
     penalty_score = 5,
     test_params = NA
   )
@@ -355,14 +325,14 @@ test_that("quality_table_to_schema converts a normal table correctly", {
 
   expect_equal(chk$check_label, "Check completeness")
   expect_equal(chk$variables, c("age", "sex"))
-  expect_equal(chk$statistical_test, "missing_prop")
+  expect_equal(chk$statistical_test, "missing_percentage")
   # --- revised expectations for thresholds ---
   expect_true(is.list(chk$thresholds))
   expect_length(chk$thresholds, 1)
 
   expect_equal(
     chk$thresholds[[1]]$threshold_expression,
-    "max_missing == 0.1"
+    "test_statistic <= 5"
   )
   expect_equal(
     chk$thresholds[[1]]$penalty_score,
@@ -376,8 +346,8 @@ test_that("quality_table_to_schema converts multiple checks correctly", {
     check_name  = c("A", "A", "B"),
     check_label = c("Label A", "Label A", "Label B"),
     variables   = c("x,y", "x,y", "p,q,r"),
-    statistical_test = c("methodA", "methodA", "methodB"),
-    threshold_expression = c("t > 1", "t > 2", "t > 3"),
+    statistical_test = c("missing_percentage", "missing_percentage", "flag_percentage"),
+    threshold_expression = c("test_statistic <= 5", "test_statistic > 5", "test_statistic < 10"),
     penalty_score = c(1, 2, 5),
     test_params = NA
   )
@@ -394,7 +364,7 @@ test_that("quality_table_to_schema converts multiple checks correctly", {
 
   expect_equal(
     out$checks$A$thresholds[[1]]$threshold_expression,
-    "t > 1"
+    "test_statistic <= 5"
   )
   expect_equal(
     out$checks$A$thresholds[[1]]$penalty_score,
@@ -460,18 +430,16 @@ test_that("quality_table_to_schema handles empty tables", {
 test_that("quality_schema_to_table and quality_table_to_schema round-trip correctly", {
 
   original <- list(
-    checks = list(
-      A = list(
-        check_name  = "A",
-        check_label = "Label A",
-        variables = c("x","y"),
-        statistical_test = "meth",
-        thresholds = list(
-          list(threshold_expression = "x > 1", penalty_score = 1),
-          list(threshold_expression = "x > 2", penalty_score = 3)
-        ),
-        test_params = NULL
-      )
+    A = list(
+      check_name  = "A",
+      check_label = "Label A",
+      variables = c("x","y"),
+      statistical_test = "missing_percentage",
+      thresholds = list(
+        list(threshold_expression = "test_statistic <= 5", penalty_score = 1),
+        list(threshold_expression = "test_statistic > 5", penalty_score = 3)
+      ),
+      test_params = NULL
     )
   )
 
@@ -499,8 +467,8 @@ test_that("quality_validate_table_to_schema accepts a valid QC table", {
     check_name  = c("CheckA", "CheckB"),
     check_label = c("Label A", "Label B"),
     variables   = c("age,sex", "y,z"),
-    statistical_test = c("missing_prop", "ratio"),
-    threshold_expression = c("max_missing <= 0.1", "limit > 5"),
+    statistical_test = c("missing_percentage", "flag_percentage"),
+    threshold_expression = c("test_statistic <= 5", "test_statistic < 10"),
     penalty_score = c(1, 2),
     test_params = c(NA, NA)
   )
@@ -526,8 +494,8 @@ test_that("quality_validate_table_to_schema errors on duplicate identical rows",
     check_name  = c("A", "A"),
     check_label = c("Label A", "Label A"),
     variables   = c("v1", "v1"),
-    statistical_test = c("m1", "m1"),
-    threshold_expression = c("t > 1", "t > 1"),
+    statistical_test = c("missing_percentage", "missing_percentage"),
+    threshold_expression = c("test_statistic < 5", "test_statistic < 5"),
     penalty_score = c(1, 1),
     test_params = c(NA, NA)
   )
@@ -544,8 +512,8 @@ test_that("quality_validate_table_to_schema errors on NA values in required fiel
     check_name  = "CheckX",
     check_label = "Label X",
     variables   = NA_character_,
-    statistical_test = "ratio",
-    threshold_expression = "limit > 5",
+    statistical_test = "flag_percentage",
+    threshold_expression = "test_statistic < 10",
     penalty_score = 4,
     test_params = NA
   )
@@ -570,7 +538,7 @@ test_that("quality_validate_table_to_schema errors on NA threshold_expression an
     check_name  = "C1",
     check_label = "Label",
     variables   = "x,y",
-    statistical_test = "ratio",
+    statistical_test = "flag_percentage",
     threshold_expression = NA_character_,
     penalty_score = NA_real_,
     test_params = NA

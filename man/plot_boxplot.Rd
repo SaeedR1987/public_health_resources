@@ -5,16 +5,20 @@
 \title{Plot Box and Whisker Plot}
 \usage{
 plot_boxplot(
-  df,
+  survey_design,
   numeric_var,
   grouping = NULL,
   weighted = FALSE,
   weights_col = NULL,
   show_outliers = TRUE,
   show_mean = FALSE,
+  show_overall = TRUE,
+  overall_label = "Overall",
   flip_coordinates = FALSE,
   color_palette = "reach3",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_label = NULL,
   y_label = NULL,
@@ -25,7 +29,7 @@ plot_boxplot(
 )
 }
 \arguments{
-\item{df}{Inputs a dataframe containing the numeric data.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{numeric_var}{Inputs a character value specifying the column name for the numeric variable to plot.}
 
@@ -41,6 +45,11 @@ Note: Weighted box plots show weighted quantiles and may differ from unweighted 
 
 \item{show_mean}{Inputs a logical value indicating whether to show mean as a point (default: FALSE).}
 
+\item{show_overall}{Logical. If TRUE and a grouping column is provided, adds an 'Overall' box showing
+the distribution across all data. Default: TRUE. Only applies when grouping is not NULL.}
+
+\item{overall_label}{Character. Label for the overall group when show_overall = TRUE. Default: "Overall".}
+
 \item{flip_coordinates}{Logical. If TRUE, creates horizontal box plots. By default: FALSE.}
 
 \item{color_palette}{Inputs an optional character value specifying the color palette to use.
@@ -48,6 +57,12 @@ Options: "reach1", "reach2", "reach3", "reach4", "traffic_light", "default". Def
 Only used when fill_color is NULL.}
 
 \item{title_name}{Inputs an optional character value for the title of the plot.}
+
+\item{variable_label}{Character. Optional human-readable label for the numeric variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Character. Optional human-readable label for the grouping variable, appended
+to the auto-generated title as ", by <grouping_label>". Defaults to the column name when NULL.}
 
 \item{subtitle}{Inputs an optional character value for the subtitle of the plot.
 If NULL, automatically displays n (number of records). Custom subtitle will be appended to n display.}
@@ -74,9 +89,9 @@ either overall or grouped by a categorical variable. Supports survey weights.
 }
 \examples{
 \dontrun{
-  # Unweighted
+  # Unweighted with auto-generated title
   plot_boxplot(df, numeric_var = "muac", grouping = "district",
-               title_name = "MUAC Distribution by District")
+               variable_label = "MUAC (cm)", grouping_label = "District")
 
   # Weighted
   plot_boxplot(df, numeric_var = "muac", grouping = "district",

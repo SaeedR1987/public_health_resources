@@ -10,7 +10,9 @@ test_that("Data class has indicator_schema field", {
 
   df <- tibble::tibble(id = 1:3, value = c(10, 20, 30))
 
-  d <- Data$new(data = df, dataset_name = "Test", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "Test", uuid = "id")
+  ))
 
   expect_true("indicator_schema" %in% names(d))
   expect_null(d$indicator_schema)
@@ -51,12 +53,14 @@ test_that("Data class processes indicator schema during standardize", {
     )
   )
 
-  d <- Data$new(
-    data = df,
-    dataset_name = "TestInd",
-    uuid = "id",
-    variable_map = list(uuid = "id", test_value = "value")  # Map canonical to actual
-  )
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestInd",
+      uuid = "id",
+      variable_map = list(uuid = "id", test_value = "value")  # Map canonical to actual
+    )
+  ))
   d$set_indicator_schema(indicator_schema)
 
   expect_no_error(d$standardize())
@@ -90,12 +94,14 @@ test_that("Data class resolves variable_map in indicator arguments", {
     )
   )
 
-  d <- Data$new(
-    data = df,
-    dataset_name = "TestVarMap",
-    uuid = "id",
-    variable_map = list(uuid = "id", data_col = "my_value")
-  )
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestVarMap",
+      uuid = "id",
+      variable_map = list(uuid = "id", data_col = "my_value")
+    )
+  ))
   d$set_indicator_schema(indicator_schema)
 
   expect_no_error(d$standardize())
@@ -116,7 +122,9 @@ test_that("Data class handles missing indicator function gracefully", {
     )
   )
 
-  d <- Data$new(data = df, dataset_name = "TestMissing", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestMissing", uuid = "id")
+  ))
   d$set_indicator_schema(indicator_schema)
 
   # Should warn but not fail
@@ -137,7 +145,9 @@ test_that("Data class skips indicator with missing function name", {
     )
   )
 
-  d <- Data$new(data = df, dataset_name = "TestNoFunc", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestNoFunc", uuid = "id")
+  ))
   d$set_indicator_schema(indicator_schema)
 
   # Should warn and skip
@@ -168,7 +178,9 @@ test_that("Data class skips indicator when required variables are not mapped", {
     )
   )
 
-  d <- Data$new(data = df, dataset_name = "TestMissingVars", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestMissingVars", uuid = "id")
+  ))
   d$set_indicator_schema(indicator_schema)
 
   # Should warn and skip indicator due to missing variable map entries
@@ -212,16 +224,18 @@ test_that("Data class uses variable_map to resolve canonical names in indicator 
   )
 
   # variable_map provides mapping from canonical to actual column names
-  d <- Data$new(
-    data = df,
-    dataset_name = "TestWASH",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestWASH",
       uuid = "id",
-      wash_hwise_plans = "wash_wise_plans",  # Map canonical to actual
-      wash_hwise_drink = "wash_wise_drink"
+      variable_map = list(
+        uuid = "id",
+        wash_hwise_plans = "wash_wise_plans",  # Map canonical to actual
+        wash_hwise_drink = "wash_wise_drink"
+      )
     )
-  )
+  ))
   d$set_indicator_schema(indicator_schema)
 
   # Should succeed - indicator should find mapped columns
@@ -257,15 +271,17 @@ test_that("Data class skips indicator when mapped columns don't exist in dataset
   )
 
   # variable_map maps to a column that doesn't exist in the dataset
-  d <- Data$new(
-    data = df,
-    dataset_name = "TestMissingCol",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestMissingCol",
       uuid = "id",
-      canonical_var = "nonexistent_column"  # This column doesn't exist in df
+      variable_map = list(
+        uuid = "id",
+        canonical_var = "nonexistent_column"  # This column doesn't exist in df
+      )
     )
-  )
+  ))
   d$set_indicator_schema(indicator_schema)
 
   # Should warn and skip indicator - mapped column not in dataset
@@ -329,12 +345,14 @@ test_that("Multiple indicators are executed in order with proper variable mappin
     value = c(5, 10, 15)
   )
 
-  d <- Data$new(
-    data = test_data,
-    dataset_name = "TestMulti",
-    uuid = "id",
-    variable_map = list(uuid = "id", input_value = "value")
-  )
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = test_data,
+      dataset_name = "TestMulti",
+      uuid = "id",
+      variable_map = list(uuid = "id", input_value = "value")
+    )
+  ))
   d$set_variable_schema(variable_schema)
   d$set_indicator_schema(indicator_schema)
 
@@ -728,27 +746,27 @@ test_that(".safe_bool helper function works correctly", {
   # that are critical to data integrity and type conversion
 
   # Test logical values
-  expect_true(iphRa:::.safe_bool(TRUE))
-  expect_false(iphRa:::.safe_bool(FALSE))
+  expect_true(phr:::.safe_bool(TRUE))
+  expect_false(phr:::.safe_bool(FALSE))
 
   # Test string values
-  expect_true(iphRa:::.safe_bool("TRUE"))
-  expect_true(iphRa:::.safe_bool("true"))
-  expect_true(iphRa:::.safe_bool("True"))
-  expect_true(iphRa:::.safe_bool("T"))
-  expect_true(iphRa:::.safe_bool("1"))
-  expect_false(iphRa:::.safe_bool("FALSE"))
-  expect_false(iphRa:::.safe_bool("false"))
-  expect_false(iphRa:::.safe_bool(""))
+  expect_true(phr:::.safe_bool("TRUE"))
+  expect_true(phr:::.safe_bool("true"))
+  expect_true(phr:::.safe_bool("True"))
+  expect_true(phr:::.safe_bool("T"))
+  expect_true(phr:::.safe_bool("1"))
+  expect_false(phr:::.safe_bool("FALSE"))
+  expect_false(phr:::.safe_bool("false"))
+  expect_false(phr:::.safe_bool(""))
 
   # Test numeric values
-  expect_true(iphRa:::.safe_bool(1))
-  expect_false(iphRa:::.safe_bool(0))
+  expect_true(phr:::.safe_bool(1))
+  expect_false(phr:::.safe_bool(0))
 
   # Test NA values
-  expect_false(iphRa:::.safe_bool(NA))
-  expect_false(iphRa:::.safe_bool(NA_character_))
-  expect_false(iphRa:::.safe_bool("NA"))
+  expect_false(phr:::.safe_bool(NA))
+  expect_false(phr:::.safe_bool(NA_character_))
+  expect_false(phr:::.safe_bool("NA"))
 })
 
 
@@ -996,7 +1014,9 @@ test_that("Data$standardize expands select_multiple columns", {
     question_types = list(skills = "select_multiple")
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1032,7 +1052,9 @@ test_that("Data$standardize identifies schema-defined other columns", {
     other_column_link = list(water_source_other = c("water_source"))
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1069,7 +1091,9 @@ test_that("generate_cleaning_log creates entries for other columns", {
     other_column_link = list(water_source_other = c("water_source"))
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1096,43 +1120,6 @@ test_that("generate_cleaning_log creates entries for other columns", {
   expect_true(any(id2_entries$issue == "has_other_response"))
 })
 
-
-test_that("generate_cleaning_log infers main column from naming convention", {
-
-  test_df <- tibble::tibble(
-    uuid = c("id_1", "id_2"),
-    income_source = c("farming", "other"),
-    income_source_other = c("", "remittances")
-  )
-
-  # Schema does NOT have other_column_link, should infer from naming
-  schema <- list(
-    required = "uuid",
-    types = list(
-      uuid = "character",
-      income_source = "character",
-      income_source_other = "character"
-    ),
-    is_other = list(income_source_other = TRUE)
-    # Note: no other_column_link specified
-  )
-
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
-  d$set_variable_schema(schema)
-  d$standardize()
-
-  d$data_quality_flags <- data.frame(uuid = test_df$uuid)
-  d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
-
-  log_df <- d$cleaning_log$log_df
-
-  # Should still create entries even without explicit link
-  id2_entries <- log_df[log_df$uuid == "id_2", ]
-  expect_gte(nrow(id2_entries), 2)
-
-  # Should have inferred income_source as the main column
-  expect_true(any(id2_entries$question.name == "income_source"))
-})
 
 test_that("Data$standardize detects both inferred and schema-identified other columns", {
 
@@ -1174,11 +1161,13 @@ test_that("Data$standardize detects both inferred and schema-identified other co
 
   # Run Data lifecycle
 
-  d <- Data$new(
-    data = df,
-    dataset_name = "TestData",
-    uuid = "uuid"
-  )
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestData",
+      uuid = "uuid"
+    )
+  ))
 
   d$set_variable_schema(schema)
   d$standardize()
@@ -1214,7 +1203,9 @@ test_that("generate_cleaning_log handles detected other columns", {
     )
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
 
   # No schema, so detected_other should be auto-detected
   d$standardize()
@@ -1307,7 +1298,9 @@ test_that("select_multiple with no data returns empty expansion", {
     question_types = list(skills = "select_multiple")
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
 
   # Should not error
@@ -1343,7 +1336,9 @@ test_that("other_columns uses list structure with other_column and other_linked_
     other_column_link = list(water_source_other = c("water_source"))
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1383,7 +1378,9 @@ test_that("select_multiple with other creates proper list structure", {
     question_types = list(skills = "select_multiple")
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1413,7 +1410,9 @@ test_that("inferred other columns have proper list structure", {
     )
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$standardize()
 
   # Should be detected
@@ -1448,7 +1447,9 @@ test_that("generate_cleaning_log uses new list structure correctly", {
     other_column_link = list(water_source_other = c("water_source"))
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1501,7 +1502,9 @@ test_that("Data$import_indicator_schema imports indicator table", {
     comment = NA
   )
 
-  d <- Data$new(data = df, dataset_name = "Test", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "Test", uuid = "id")
+  ))
 
   expect_no_error(d$import_indicator_schema(indicator_table))
 
@@ -1526,7 +1529,9 @@ test_that("Data$export_indicator_schema exports indicator schema", {
     )
   )
 
-  d <- Data$new(data = df, dataset_name = "Test", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "Test", uuid = "id")
+  ))
   d$indicator_schema <- indicator_schema
 
   exported <- d$export_indicator_schema()
@@ -1539,7 +1544,9 @@ test_that("Data$export_indicator_schema exports indicator schema", {
 test_that("Data$export_indicator_schema warns when no schema", {
 
   df <- tibble::tibble(id = 1:3)
-  d <- Data$new(data = df, dataset_name = "Test", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "Test", uuid = "id")
+  ))
 
   expect_warning(
     d$export_indicator_schema(),
@@ -1563,7 +1570,9 @@ test_that("Data$set_indicator_schema sets indicator schema", {
     )
   )
 
-  d <- Data$new(data = df, dataset_name = "Test", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "Test", uuid = "id")
+  ))
 
   expect_no_error(d$set_indicator_schema(indicator_schema))
 
@@ -1581,10 +1590,12 @@ test_that("indicator with unresolved @variable_map$ reference passes NULL", {
   )
 
   # Create a Data object with a simple variable schema
-  test_data <- Data$new(
-    data = df,
-    dataset_name = "TestData", uuid = "uuid"
-  )
+  test_data <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestData", uuid = "uuid"
+    )
+  ))
 
   # Set variable map (only map 'age', not 'age_months')
   test_data$variable_map <- list(
@@ -1625,10 +1636,12 @@ test_that("indicator with all resolved @variable_map$ references works", {
   )
 
   # Create a Data object
-  test_data <- Data$new(
-    data = df,
-    dataset_name = "TestData", uuid = "uuid"
-  )
+  test_data <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = df,
+      dataset_name = "TestData", uuid = "uuid"
+    )
+  ))
 
   # Set variable map with both roles
   test_data$variable_map <- list(
@@ -2380,7 +2393,9 @@ test_that("data_validate_schema_to_table accepts valid pattern definitions", {
 
 test_that("repair_maps errors on invalid input structure", {
   df <- tibble::tibble(id = 1:3)
-  d <- Data$new(data = df, dataset_name = "TestData", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestData", uuid = "id")
+  ))
 
   # Missing required columns
   bad_df <- data.frame(

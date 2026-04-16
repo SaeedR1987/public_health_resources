@@ -6,6 +6,10 @@
 \usage{
 data_schema_to_table(schema_list)
 }
+\arguments{
+\item{schema_list}{A named list representing the canonical data schema, as produced by
+\code{data_table_to_schema()} or constructed manually.}
+}
 \description{
 Convert a canonical schema list into a flat table format
 }

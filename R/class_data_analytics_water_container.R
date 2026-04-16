@@ -70,7 +70,7 @@ WaterContainerDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "quality_schema_data_quality_water_container_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -111,7 +111,7 @@ WaterContainerDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_water_container_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {

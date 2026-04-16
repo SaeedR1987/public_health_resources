@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(iphRa)
+library(phr)
 
-test_check("iphRa")
+test_check("phr")

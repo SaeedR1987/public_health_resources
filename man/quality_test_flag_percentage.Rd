@@ -4,10 +4,10 @@
 \alias{quality_test_flag_percentage}
 \title{Flag Percentage Test}
 \usage{
-quality_test_flag_percentage(data, variables, flag_value = TRUE)
+quality_test_flag_percentage(survey_design, variables, flag_value = TRUE)
 }
 \arguments{
-\item{data}{Data frame containing the variable}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector with 1 variable name}
 

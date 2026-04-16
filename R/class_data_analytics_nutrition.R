@@ -147,9 +147,9 @@ NutritionDataAnalytics <- R6::R6Class(
             func_available <- FALSE
             if (!is.na(statistical_test) && nzchar(statistical_test)) {
               func_name <- paste0("quality_test_", statistical_test)
-              if (requireNamespace("iphRa", quietly = TRUE)) {
+              if (requireNamespace("phr", quietly = TRUE)) {
                 tryCatch({
-                  ns <- asNamespace("iphRa")
+                  ns <- asNamespace("phr")
                   func_available <- exists(func_name, envir = ns, mode = "function", inherits = FALSE)
                 }, error = function(e) {})
               }
@@ -223,7 +223,7 @@ NutritionDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "quality_schema_data_quality_anthropometric_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -260,7 +260,7 @@ NutritionDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "quality_schema_data_quality_iycf_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -341,7 +341,7 @@ NutritionDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_nutrition_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -372,7 +372,7 @@ NutritionDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_nutrition_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -471,9 +471,9 @@ NutritionDataAnalytics <- R6::R6Class(
             for (gv in group_values) {
               gv_label   <- as.character(gv)
               gv_safe    <- gsub("[^A-Za-z0-9]", "_", gv_label)
-              gv_results <- per_group_df %>%
-                dplyr::filter(group_value == gv) %>%
-                dplyr::select(-group_value)
+              gv_results <- per_group_df |>
+              dplyr::filter(.data$group_value == gv) |>
+                dplyr::select(-"group_value")
               gv_title <- if (role == "enum_id") {
                 glue::glue("{schema_label} Data Quality Penalty Summary - Enumerator: {gv_label}")
               } else {

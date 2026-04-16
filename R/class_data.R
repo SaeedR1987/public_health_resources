@@ -8,10 +8,10 @@
 #'
 #' @description
 #' This class defines the full data lifecycle within the IPHRA toolkit:
-#' * `raw_data` — immutable imported data
-#' * `standardized_data` — after standardization (names, types, values)
-#' * `clean_data` — after cleaning and validation
-#' * `metadata` — synchronized dataset attributes
+#' * `raw_data` -- immutable imported data
+#' * `standardized_data` -- after standardization (names, types, values)
+#' * `clean_data` -- after cleaning and validation
+#' * `metadata` -- synchronized dataset attributes
 #'
 #' @details
 #' Key functionalities include:
@@ -104,8 +104,6 @@ Data <- R6::R6Class(
     autosave = FALSE,           # If TRUE, snapshot on key steps
     linked_objects = list(),    # For dependency linking (name -> list(obj, by_self, by_other))
 
-
-    # Initialize
 
     #' @description
     #' Initialize a new Data object with survey data
@@ -549,7 +547,7 @@ Data <- R6::R6Class(
             } else if (identical(inferred, "date") && .is_safely_coercible(col, "Date")) {
               new <- phr_convert_date(col)
 
-              # fallback → clean character
+              # fallback \u2192 clean character
             } else {
               new <- trimws(as.character(col))
             }
@@ -784,14 +782,14 @@ Data <- R6::R6Class(
                 # Indicator arguments can reference mapped variables and values using
                 # explicit @ syntax:
                 #
-                # 1. @variable_map$role → Resolves to dataset column name
-                #    Example: "@variable_map$fever" → "q7_fever_column"
+                # 1. @variable_map$role \u2192 Resolves to dataset column name
+                #    Example: "@variable_map$fever" \u2192 "q7_fever_column"
                 #
-                # 2. @value_map$role$canonical_value → Resolves to dataset values
-                #    Example: "@value_map$fever$yes" → c("yes", "y", "oui")
+                # 2. @value_map$role$canonical_value \u2192 Resolves to dataset values
+                #    Example: "@value_map$fever$yes" \u2192 c("yes", "y", "oui")
                 #
-                # 3. @value_map$role → Resolves to entire value mapping
-                #    Example: "@value_map$fever" → list(yes = c(...), no = c(...))
+                # 3. @value_map$role \u2192 Resolves to entire value mapping
+                #    Example: "@value_map$fever" \u2192 list(yes = c(...), no = c(...))
                 #
                 # This explicit syntax ensures clarity about which arguments are mapped
                 # vs literal values, which is important for function parameters.
@@ -982,7 +980,7 @@ Data <- R6::R6Class(
         # If cluster_id is mapped, create a safe numeric cluster identifier
         # that maps each unique cluster to an integer from 1 to n clusters.
         # This column is stored as "cluster_id_numeric" and used by
-        # QuantDataAnalysis$create_survey_design() for reliable survey design creation.
+        # DataAnalytics$create_survey_design() for reliable survey design creation.
         result <- phr_try_step({
           cluster_col <- self$variable_map[["cluster_id"]]
           if (!is.null(cluster_col) && cluster_col %in% names(data_copy)) {
@@ -1284,7 +1282,7 @@ Data <- R6::R6Class(
 
         phr_validate_dataframe(df, origin = "import_variable_schema", soft = FALSE)
 
-        # Convert table → structured schema list
+        # Convert table \u2192 structured schema list
         new_schema <- data_table_to_schema(df)
 
         # Assign schema
@@ -1334,7 +1332,7 @@ Data <- R6::R6Class(
           return(NULL)
         }
 
-        # Convert variable schema list → table
+        # Convert variable schema list \u2192 table
         variable_table <- data_schema_to_table(self$variable_schema)
 
         phr_message(
@@ -1425,7 +1423,7 @@ Data <- R6::R6Class(
 
         phr_validate_dataframe(df, origin = "import_indicator_schema", soft = FALSE)
 
-        # Convert table → structured indicator schema list
+        # Convert table \u2192 structured indicator schema list
         new_indicator_schema <- indicator_table_to_schema(df)
 
         # Assign indicator schema
@@ -1456,7 +1454,7 @@ Data <- R6::R6Class(
           return(NULL)
         }
 
-        # Convert indicator schema list → table
+        # Convert indicator schema list \u2192 table
         indicator_table <- indicator_schema_to_table(self$indicator_schema)
 
         phr_message(
@@ -1510,7 +1508,7 @@ Data <- R6::R6Class(
 
         phr_validate_dataframe(df, origin = "import_dependency_schema", soft = FALSE)
 
-        # Convert table → structured dependency schema list
+        # Convert table \u2192 structured dependency schema list
         new_dependency_schema <- dependency_table_to_schema(df)
 
         # Assign dependency schema
@@ -1541,7 +1539,7 @@ Data <- R6::R6Class(
           return(NULL)
         }
 
-        # Convert dependency schema list → table
+        # Convert dependency schema list \u2192 table
         dependency_table <- dependency_schema_to_table(self$dependency_schema)
 
         phr_message(
@@ -1659,7 +1657,7 @@ Data <- R6::R6Class(
         phr_warning(self$dataset_name, phr_txt("Variable '{var}' not found when setting label."))
       }
       self$variable_label[[var]] <- as.character(label)
-      phr_message(phr_txt("Set label for '{var}' → '{label}'."))
+      phr_message(phr_txt("Set label for '{var}' \u2192 '{label}'."))
     },
 
     #' Set Value Labels for Variable
@@ -1746,7 +1744,7 @@ Data <- R6::R6Class(
       # --- Set the variable map ---
       self$variable_map[[role]] <- column_name
 
-      phr_message(phr_txt("Mapped role '{role}' → '{column_name}' (checked on {stage} data)."))
+      phr_message(phr_txt("Mapped role '{role}' \u2192 '{column_name}' (checked on {stage} data)."))
     },
 
     #' Get Variable Column Name by Role
@@ -2096,7 +2094,7 @@ Data <- R6::R6Class(
 
         if (is.null(df)) {
           phr_error(
-            msg    = "No dataset is available at the selected stage.",
+            message = "No dataset is available at the selected stage.",
             origin = paste0(self$dataset_name, "$run_quality_checks")
           )
         }
@@ -2342,7 +2340,7 @@ Data <- R6::R6Class(
                     # Calculate flag for this rule.
                     # When 'then' is present: flag rows where cond_if is TRUE but cond_then is FALSE.
                     # When 'then' is absent (flag_delete with condition_if only): flag rows where
-                    # cond_if is TRUE — those rows are the ones to be deleted.
+                    # cond_if is TRUE \u2014 those rows are the ones to be deleted.
                     # Note: NA positions in flag_vec are converted to 1 (flagged) since we cannot
                     # confirm the condition is met when the evaluation result is NA.
                     flag_vec <- rep(0, nrow(df))
@@ -2879,8 +2877,8 @@ Data <- R6::R6Class(
       }, on_error = "abort", origin = paste0(self$dataset_name, "$generate_cleaning_log"))
     },
 
-    #' INTERNAL HELPER — apply cleaning log changes (option A authoritative mode)
-    #' 
+    #' INTERNAL HELPER -- apply cleaning log changes (option A authoritative mode)
+    #'
     #' @description
     #' Internal helper to apply cleaning changes from a log data frame to a dataset
     #'
@@ -2909,7 +2907,7 @@ Data <- R6::R6Class(
       df
     },
 
-    #' INTERNAL HELPER — extract tokens from select_multiple values
+    #' INTERNAL HELPER -- extract tokens from select_multiple values
     #'
     #' @description
     #' Internal helper to extract individual tokens from space-separated values
@@ -2932,7 +2930,7 @@ Data <- R6::R6Class(
       unique(unlist(token_list, use.names = FALSE))
     },
 
-    #' INTERNAL HELPER — check if variable is select_multiple type
+    #' INTERNAL HELPER -- check if variable is select_multiple type
     #'
     #' @description
     #' Internal helper to check if a variable role is marked as select_multiple
@@ -2948,7 +2946,7 @@ Data <- R6::R6Class(
              question_types[[var_role]] == "select_multiple")
     },
 
-    #' INTERNAL HELPER — provide hints for expression parse errors
+    #' INTERNAL HELPER -- provide hints for expression parse errors
     #'
     #' @description
     #' Internal helper to provide helpful hints for common syntax errors in dependency expressions.
@@ -2996,7 +2994,7 @@ Data <- R6::R6Class(
       ))
     },
 
-    #' INTERNAL HELPER — translate expression to use mapped column names and values
+    #' INTERNAL HELPER -- translate expression to use mapped column names and values
     #'
     #' @description
     #' Internal helper to translate quality check expressions from canonical names/values
@@ -3026,18 +3024,7 @@ Data <- R6::R6Class(
     #' - Variable names in functions (e.g., is.na(var)) are translated
     #' - Special regex characters in names/values are automatically escaped
     #'
-    #' @examples
-    #' \dontrun{
-    #' # Given:
-    #' # variable_map = list(fever = "fever_col")
-    #' # value_map = list(fever = list(yes = c("yes", "y", "oui"), no = c("no", "n")))
-    #' #
-    #' # Input:  "fever == 'yes' & !is.na(temperature)"
-    #' # Output: "fever_col %in% c('yes', 'y', 'oui') & !is.na(temperature)"
-    #' #
-    #' # Input:  "fever %in% c('yes', 'no')"
-    #' # Output: "fever_col %in% c('yes', 'y', 'oui', 'no', 'n')"
-    #' }
+    #' @keywords internal
     .translate_expression = function(expr, stage = "standardized") {
 
       if (is.null(expr) || expr == "") return(expr)
@@ -3338,7 +3325,7 @@ Data <- R6::R6Class(
     #' @return File path (invisibly)
     #'
     #' @details
-    #' If file_path is NULL, generates filename as: {dataset_name}_{stage}.{format}
+    #' If file_path is NULL, generates filename as: \{dataset_name\}_\{stage\}.\{format\}
     export_data = function(stage = c("clean","standardized","raw"),
                            format = c("csv","rds","xlsx"),
                            file_path = NULL) {
@@ -3559,7 +3546,7 @@ Data <- R6::R6Class(
           }
         }
 
-        # If no problems → TRUE
+        # If no problems \u2192 TRUE
         if (length(problems) == 0) {
           phr_message(phr_txt("All links validated successfully for {self$dataset_name}."))
           return(invisible(TRUE))
@@ -3889,8 +3876,8 @@ Data <- R6::R6Class(
     #'
     #' @details
     #' Labels are sourced from the variable schema fields:
-    #' * `variable_labels$en / $fr / $ar` — one label per variable role
-    #' * `value_labels$en / $fr / $ar`    — one label per canonical value per role
+    #' * `variable_labels$en / $fr / $ar` -- one label per variable role
+    #' * `value_labels$en / $fr / $ar`    -- one label per canonical value per role
     #'
     #' These fields are populated when the schema is loaded from an xlsx template
     #' that contains the `variable_label_en`, `variable_label_fr`,

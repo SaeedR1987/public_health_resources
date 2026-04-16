@@ -11,7 +11,14 @@
 #'    - `"Severe Food Insecurity"`: Score between 7 and 8.
 #'
 #' @param .dataset A data frame or tibble containing the EC-FIES columns.
-#' @param nut_ecfies_so1_col, ..., nut_ecfies_so8_col Column names (character) of the 8 EC-FIES survey questions.
+#' @param nut_ecfies_so1_col Column name (character) of EC-FIES survey question 1.
+#' @param nut_ecfies_so2_col Column name (character) of EC-FIES survey question 2.
+#' @param nut_ecfies_so3_col Column name (character) of EC-FIES survey question 3.
+#' @param nut_ecfies_so4_col Column name (character) of EC-FIES survey question 4.
+#' @param nut_ecfies_so5_col Column name (character) of EC-FIES survey question 5.
+#' @param nut_ecfies_so6_col Column name (character) of EC-FIES survey question 6.
+#' @param nut_ecfies_so7_col Column name (character) of EC-FIES survey question 7.
+#' @param nut_ecfies_so8_col Column name (character) of EC-FIES survey question 8.
 #' @param yes_val Character string indicating a "yes" response, contributing 1 point to the score.
 #' @param no_val Character string indicating a "no" response, contributing 0 points to the score.
 #' @param dont_know_val Character string indicating the "don't know" response, contributing 0 points to the score.
@@ -151,7 +158,7 @@ add_ecfies <- function(
 
     # Calculate ECFIES score and category
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Calculate numeric score
         nut_ecfies_score = rowSums(dplyr::across(c(
@@ -251,7 +258,7 @@ add_ecfies <- function(
 #'
 #' # Example dataset with MUAC values in millimeters
 #' df_mm <- data.frame(
-#'   nut_muac_cm = c(48, 125, 210), # Actually in millimeters
+#'   nut_muac_cm = c(80, 125, 210), # Actually in millimeters
 #'   child_age_months = c(14, 54, 30),
 #'   nut_edema_confirm = c("yes", NA, "no")
 #' )
@@ -329,7 +336,7 @@ add_muac <- function(
           message = phr_txt("The column `nut_muac_mm` already exists and will be overwritten.")
         )
       }
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           nut_muac_mm = .data[[nut_muac_cm_col]] * 10
         )
@@ -346,9 +353,10 @@ add_muac <- function(
           message = phr_txt("The column `nut_muac_cm` already exists and will be overwritten.")
         )
       }
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
-          `nut_muac_cm` = .data[[nut_muac_cm_col]] / 10
+          `nut_muac_cm` = .data[[nut_muac_cm_col]] / 10,
+          nut_muac_mm = as.numeric(.data[[nut_muac_cm_col]])
         )
 
       phr_message(
@@ -360,6 +368,13 @@ add_muac <- function(
         origin = origin,
         message = phr_txt("MUAC values could not be clearly identified as centimeters or millimeters. No additional unit columns created.")
       )
+      # Ensure required downstream columns exist
+      if (!"nut_muac_mm" %in% names(.dataset)) {
+        .dataset[["nut_muac_mm"]] <- NA_real_
+      }
+      if (!"nut_muac_cm" %in% names(.dataset)) {
+        .dataset[["nut_muac_cm"]] <- NA_real_
+      }
     }
 
 
@@ -385,7 +400,7 @@ add_muac <- function(
 
     # Calculate SAM, MAM, GAM categories and flag extreme MUAC values
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Calculate age in months
         age_months = as.numeric(.data[[child_age_months_col]]),
@@ -613,7 +628,7 @@ add_mfaz <- function(
     }
 
     # Create internal `temp_sex_col` for zscorer (1 = male, 2 = female)
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         {{ temp_sex_col }} := dplyr::case_when(
           .data[[child_sex_col]] == male_sex_val ~ 1,
@@ -625,13 +640,13 @@ add_mfaz <- function(
 
     # Calculate MFA-Z scores using zscorer
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Ensure numeric conversion and calculate age in days
         !!rlang::sym(nut_muac_cm_col) := as.numeric(.data[[nut_muac_cm_col]]),
         age_months = as.numeric(.data[[child_age_months_col]]),
         age_days = age_months * 30.25
-      ) %>%
+      ) |>
       zscorer::addWGSR(
         sex = temp_sex_col,
         firstPart = nut_muac_cm_col,
@@ -642,7 +657,7 @@ add_mfaz <- function(
 
     # Calculate Severe, Moderate, and Global MFAZ classifications
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         severe_mfaz = dplyr::case_when(
           is.na(mfaz) ~ NA_real_,
@@ -679,7 +694,7 @@ add_mfaz <- function(
       mean_mfaz <- mean(df$mfaz, na.rm = TRUE)
       sd_mfaz <- sd(df$mfaz, na.rm = TRUE)
 
-      df <- df %>%
+      df <- df |>
         dplyr::mutate(
           flag_sd_mfaz = dplyr::case_when(
             is.na(mfaz) ~ 0,
@@ -693,16 +708,16 @@ add_mfaz <- function(
     if (is.null(grouping)) {
       .dataset <- calculate_flags(.dataset)
     } else {
-      .dataset <- .dataset %>%
-        dplyr::group_by(across(all_of(grouping))) %>%
-        dplyr::group_modify(~ calculate_flags(.x)) %>%
+      .dataset <- .dataset |>
+        dplyr::group_by(across(all_of(grouping))) |>
+        dplyr::group_modify(~ calculate_flags(.x)) |>
         dplyr::ungroup()
     }
 
 
     # Add no-flag versions and categorical MFAZ variables
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         mfaz_noflag = dplyr::if_else(flag_sd_mfaz == 1, NA_real_, mfaz),
 
@@ -739,7 +754,7 @@ add_mfaz <- function(
 
     # Clean up temporary columns
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::select(-all_of(temp_sex_col))
 
     phr_message(
@@ -831,7 +846,7 @@ add_standardized_nutrition_demographics <- function(
     }
 
     # Add age-based columns
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         nutrition_child_under2 = dplyr::if_else(
           !is.na(.data[[age_years_col]]) & .data[[age_years_col]] < 2,

@@ -30,19 +30,19 @@ Load Default Variable Schema
 
 
 
-Reads individual_roster_variable_schema_template.xlsx from package resources and converts
+Reads variable_schema_data_individual_roster_template.xlsx from package resources and converts
 to canonical nested schema structure
 Load Default Indicator Schema
 
 
 
-Reads individual_roster_indicator_schema_template.xlsx from package resources and converts
+Reads indicator_schema_data_individual_roster_template.xlsx from package resources and converts
 to canonical nested indicator schema structure. Issues warning if file not found.
 Load Default Dependency Schema
 
 
 
-Reads individual_roster_dependency_schema_template.xlsx from package resources and converts
+Reads dependency_schema_data_individual_roster_template.xlsx from package resources and converts
 to canonical nested dependency schema structure. Issues warning if file not found.
 Post-Validation Hook for Individual Data
 
@@ -57,7 +57,7 @@ Performs individual-specific checks:
 [Data], [HouseholdData]
 }
 \section{Super class}{
-\code{\link[iphRa:Data]{iphRa::Data}} -> \code{IndividualData}
+\code{\link[phr:Data]{phr::Data}} -> \code{IndividualData}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -76,67 +76,66 @@ Performs individual-specific checks:
 \item \href{#method-IndividualData-default_indicator_schema}{\code{IndividualData$default_indicator_schema()}}
 \item \href{#method-IndividualData-default_dependency_schema}{\code{IndividualData$default_dependency_schema()}}
 \item \href{#method-IndividualData-post_validate}{\code{IndividualData$post_validate()}}
-\item \href{#method-IndividualData-generate_data_quality}{\code{IndividualData$generate_data_quality()}}
-\item \href{#method-IndividualData-generate_data_analysis}{\code{IndividualData$generate_data_analysis()}}
+\item \href{#method-IndividualData-generate_data_analytics}{\code{IndividualData$generate_data_analytics()}}
 \item \href{#method-IndividualData-clone}{\code{IndividualData$clone()}}
 }
 }
 \if{html}{\out{
 <details><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".apply_cleaning_changes"><a href='../../iphRa/html/Data.html#method-Data-.apply_cleaning_changes'><code>iphRa::Data$.apply_cleaning_changes()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".extract_select_multiple_tokens"><a href='../../iphRa/html/Data.html#method-Data-.extract_select_multiple_tokens'><code>iphRa::Data$.extract_select_multiple_tokens()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".get_expression_parse_hint"><a href='../../iphRa/html/Data.html#method-Data-.get_expression_parse_hint'><code>iphRa::Data$.get_expression_parse_hint()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".is_select_multiple"><a href='../../iphRa/html/Data.html#method-Data-.is_select_multiple'><code>iphRa::Data$.is_select_multiple()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id=".translate_expression"><a href='../../iphRa/html/Data.html#method-Data-.translate_expression'><code>iphRa::Data$.translate_expression()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="add_linked_dataset"><a href='../../iphRa/html/Data.html#method-Data-add_linked_dataset'><code>iphRa::Data$add_linked_dataset()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="clean"><a href='../../iphRa/html/Data.html#method-Data-clean'><code>iphRa::Data$clean()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="create_analysis"><a href='../../iphRa/html/Data.html#method-Data-create_analysis'><code>iphRa::Data$create_analysis()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="data_diagnose"><a href='../../iphRa/html/Data.html#method-Data-data_diagnose'><code>iphRa::Data$data_diagnose()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_data"><a href='../../iphRa/html/Data.html#method-Data-export_data'><code>iphRa::Data$export_data()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-export_dependency_schema'><code>iphRa::Data$export_dependency_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_indicator_schema"><a href='../../iphRa/html/Data.html#method-Data-export_indicator_schema'><code>iphRa::Data$export_indicator_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="export_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-export_variable_schema'><code>iphRa::Data$export_variable_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="generate_cleaning_log"><a href='../../iphRa/html/Data.html#method-Data-generate_cleaning_log'><code>iphRa::Data$generate_cleaning_log()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_column_info"><a href='../../iphRa/html/Data.html#method-Data-get_column_info'><code>iphRa::Data$get_column_info()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_data"><a href='../../iphRa/html/Data.html#method-Data-get_data'><code>iphRa::Data$get_data()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-get_dependency_schema'><code>iphRa::Data$get_dependency_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_flag_action_from_schema"><a href='../../iphRa/html/Data.html#method-Data-get_flag_action_from_schema'><code>iphRa::Data$get_flag_action_from_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_flag_variables_from_schema"><a href='../../iphRa/html/Data.html#method-Data-get_flag_variables_from_schema'><code>iphRa::Data$get_flag_variables_from_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_hash"><a href='../../iphRa/html/Data.html#method-Data-get_hash'><code>iphRa::Data$get_hash()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_indicator_schema"><a href='../../iphRa/html/Data.html#method-Data-get_indicator_schema'><code>iphRa::Data$get_indicator_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_label"><a href='../../iphRa/html/Data.html#method-Data-get_label'><code>iphRa::Data$get_label()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_maps_as_df"><a href='../../iphRa/html/Data.html#method-Data-get_maps_as_df'><code>iphRa::Data$get_maps_as_df()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_value_labels"><a href='../../iphRa/html/Data.html#method-Data-get_value_labels'><code>iphRa::Data$get_value_labels()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_variable"><a href='../../iphRa/html/Data.html#method-Data-get_variable'><code>iphRa::Data$get_variable()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="get_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-get_variable_schema'><code>iphRa::Data$get_variable_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_cleaning_log"><a href='../../iphRa/html/Data.html#method-Data-import_cleaning_log'><code>iphRa::Data$import_cleaning_log()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_deletion_log"><a href='../../iphRa/html/Data.html#method-Data-import_deletion_log'><code>iphRa::Data$import_deletion_log()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-import_dependency_schema'><code>iphRa::Data$import_dependency_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_indicator_schema"><a href='../../iphRa/html/Data.html#method-Data-import_indicator_schema'><code>iphRa::Data$import_indicator_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_schema"><a href='../../iphRa/html/Data.html#method-Data-import_schema'><code>iphRa::Data$import_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="import_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-import_variable_schema'><code>iphRa::Data$import_variable_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="load_object"><a href='../../iphRa/html/Data.html#method-Data-load_object'><code>iphRa::Data$load_object()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="map_schema_vars"><a href='../../iphRa/html/Data.html#method-Data-map_schema_vars'><code>iphRa::Data$map_schema_vars()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize"><a href='../../iphRa/html/Data.html#method-Data-post_standardize'><code>iphRa::Data$post_standardize()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="post_standardize_domain"><a href='../../iphRa/html/Data.html#method-Data-post_standardize_domain'><code>iphRa::Data$post_standardize_domain()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="pre_standardize"><a href='../../iphRa/html/Data.html#method-Data-pre_standardize'><code>iphRa::Data$pre_standardize()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="pre_validate"><a href='../../iphRa/html/Data.html#method-Data-pre_validate'><code>iphRa::Data$pre_validate()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="repair_maps"><a href='../../iphRa/html/Data.html#method-Data-repair_maps'><code>iphRa::Data$repair_maps()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="resolve_column"><a href='../../iphRa/html/Data.html#method-Data-resolve_column'><code>iphRa::Data$resolve_column()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="run_quality_checks"><a href='../../iphRa/html/Data.html#method-Data-run_quality_checks'><code>iphRa::Data$run_quality_checks()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="save_object"><a href='../../iphRa/html/Data.html#method-Data-save_object'><code>iphRa::Data$save_object()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="set_dependency_schema"><a href='../../iphRa/html/Data.html#method-Data-set_dependency_schema'><code>iphRa::Data$set_dependency_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="set_indicator_schema"><a href='../../iphRa/html/Data.html#method-Data-set_indicator_schema'><code>iphRa::Data$set_indicator_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="set_label"><a href='../../iphRa/html/Data.html#method-Data-set_label'><code>iphRa::Data$set_label()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="set_value_labels"><a href='../../iphRa/html/Data.html#method-Data-set_value_labels'><code>iphRa::Data$set_value_labels()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="set_variable"><a href='../../iphRa/html/Data.html#method-Data-set_variable'><code>iphRa::Data$set_variable()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="set_variable_schema"><a href='../../iphRa/html/Data.html#method-Data-set_variable_schema'><code>iphRa::Data$set_variable_schema()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="standardize"><a href='../../iphRa/html/Data.html#method-Data-standardize'><code>iphRa::Data$standardize()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="summary"><a href='../../iphRa/html/Data.html#method-Data-summary'><code>iphRa::Data$summary()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="update_metadata"><a href='../../iphRa/html/Data.html#method-Data-update_metadata'><code>iphRa::Data$update_metadata()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="validate"><a href='../../iphRa/html/Data.html#method-Data-validate'><code>iphRa::Data$validate()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="iphRa" data-topic="Data" data-id="validate_links"><a href='../../iphRa/html/Data.html#method-Data-validate_links'><code>iphRa::Data$validate_links()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id=".apply_cleaning_changes"><a href='../../phr/html/Data.html#method-Data-.apply_cleaning_changes'><code>phr::Data$.apply_cleaning_changes()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id=".extract_select_multiple_tokens"><a href='../../phr/html/Data.html#method-Data-.extract_select_multiple_tokens'><code>phr::Data$.extract_select_multiple_tokens()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id=".get_expression_parse_hint"><a href='../../phr/html/Data.html#method-Data-.get_expression_parse_hint'><code>phr::Data$.get_expression_parse_hint()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id=".is_select_multiple"><a href='../../phr/html/Data.html#method-Data-.is_select_multiple'><code>phr::Data$.is_select_multiple()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id=".translate_expression"><a href='../../phr/html/Data.html#method-Data-.translate_expression'><code>phr::Data$.translate_expression()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="add_linked_dataset"><a href='../../phr/html/Data.html#method-Data-add_linked_dataset'><code>phr::Data$add_linked_dataset()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="clean"><a href='../../phr/html/Data.html#method-Data-clean'><code>phr::Data$clean()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="data_diagnose"><a href='../../phr/html/Data.html#method-Data-data_diagnose'><code>phr::Data$data_diagnose()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="export_data"><a href='../../phr/html/Data.html#method-Data-export_data'><code>phr::Data$export_data()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="export_dependency_schema"><a href='../../phr/html/Data.html#method-Data-export_dependency_schema'><code>phr::Data$export_dependency_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="export_indicator_schema"><a href='../../phr/html/Data.html#method-Data-export_indicator_schema'><code>phr::Data$export_indicator_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="export_variable_schema"><a href='../../phr/html/Data.html#method-Data-export_variable_schema'><code>phr::Data$export_variable_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="generate_cleaning_log"><a href='../../phr/html/Data.html#method-Data-generate_cleaning_log'><code>phr::Data$generate_cleaning_log()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_column_info"><a href='../../phr/html/Data.html#method-Data-get_column_info'><code>phr::Data$get_column_info()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_data"><a href='../../phr/html/Data.html#method-Data-get_data'><code>phr::Data$get_data()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_dependency_schema"><a href='../../phr/html/Data.html#method-Data-get_dependency_schema'><code>phr::Data$get_dependency_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_flag_action_from_schema"><a href='../../phr/html/Data.html#method-Data-get_flag_action_from_schema'><code>phr::Data$get_flag_action_from_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_flag_variables_from_schema"><a href='../../phr/html/Data.html#method-Data-get_flag_variables_from_schema'><code>phr::Data$get_flag_variables_from_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_hash"><a href='../../phr/html/Data.html#method-Data-get_hash'><code>phr::Data$get_hash()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_indicator_schema"><a href='../../phr/html/Data.html#method-Data-get_indicator_schema'><code>phr::Data$get_indicator_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_label"><a href='../../phr/html/Data.html#method-Data-get_label'><code>phr::Data$get_label()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_maps_as_df"><a href='../../phr/html/Data.html#method-Data-get_maps_as_df'><code>phr::Data$get_maps_as_df()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_value_labels"><a href='../../phr/html/Data.html#method-Data-get_value_labels'><code>phr::Data$get_value_labels()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_variable"><a href='../../phr/html/Data.html#method-Data-get_variable'><code>phr::Data$get_variable()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="get_variable_schema"><a href='../../phr/html/Data.html#method-Data-get_variable_schema'><code>phr::Data$get_variable_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="import_cleaning_log"><a href='../../phr/html/Data.html#method-Data-import_cleaning_log'><code>phr::Data$import_cleaning_log()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="import_deletion_log"><a href='../../phr/html/Data.html#method-Data-import_deletion_log'><code>phr::Data$import_deletion_log()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="import_dependency_schema"><a href='../../phr/html/Data.html#method-Data-import_dependency_schema'><code>phr::Data$import_dependency_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="import_indicator_schema"><a href='../../phr/html/Data.html#method-Data-import_indicator_schema'><code>phr::Data$import_indicator_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="import_schema"><a href='../../phr/html/Data.html#method-Data-import_schema'><code>phr::Data$import_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="import_variable_schema"><a href='../../phr/html/Data.html#method-Data-import_variable_schema'><code>phr::Data$import_variable_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="load_object"><a href='../../phr/html/Data.html#method-Data-load_object'><code>phr::Data$load_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="map_schema_labels"><a href='../../phr/html/Data.html#method-Data-map_schema_labels'><code>phr::Data$map_schema_labels()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="map_schema_vars"><a href='../../phr/html/Data.html#method-Data-map_schema_vars'><code>phr::Data$map_schema_vars()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="post_standardize"><a href='../../phr/html/Data.html#method-Data-post_standardize'><code>phr::Data$post_standardize()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="post_standardize_domain"><a href='../../phr/html/Data.html#method-Data-post_standardize_domain'><code>phr::Data$post_standardize_domain()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="pre_standardize"><a href='../../phr/html/Data.html#method-Data-pre_standardize'><code>phr::Data$pre_standardize()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="pre_validate"><a href='../../phr/html/Data.html#method-Data-pre_validate'><code>phr::Data$pre_validate()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="repair_maps"><a href='../../phr/html/Data.html#method-Data-repair_maps'><code>phr::Data$repair_maps()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="resolve_column"><a href='../../phr/html/Data.html#method-Data-resolve_column'><code>phr::Data$resolve_column()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="run_quality_checks"><a href='../../phr/html/Data.html#method-Data-run_quality_checks'><code>phr::Data$run_quality_checks()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="save_object"><a href='../../phr/html/Data.html#method-Data-save_object'><code>phr::Data$save_object()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="set_dependency_schema"><a href='../../phr/html/Data.html#method-Data-set_dependency_schema'><code>phr::Data$set_dependency_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="set_indicator_schema"><a href='../../phr/html/Data.html#method-Data-set_indicator_schema'><code>phr::Data$set_indicator_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="set_label"><a href='../../phr/html/Data.html#method-Data-set_label'><code>phr::Data$set_label()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="set_value_labels"><a href='../../phr/html/Data.html#method-Data-set_value_labels'><code>phr::Data$set_value_labels()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="set_variable"><a href='../../phr/html/Data.html#method-Data-set_variable'><code>phr::Data$set_variable()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="set_variable_schema"><a href='../../phr/html/Data.html#method-Data-set_variable_schema'><code>phr::Data$set_variable_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="standardize"><a href='../../phr/html/Data.html#method-Data-standardize'><code>phr::Data$standardize()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="summary"><a href='../../phr/html/Data.html#method-Data-summary'><code>phr::Data$summary()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="update_metadata"><a href='../../phr/html/Data.html#method-Data-update_metadata'><code>phr::Data$update_metadata()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="validate"><a href='../../phr/html/Data.html#method-Data-validate'><code>phr::Data$validate()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Data" data-id="validate_links"><a href='../../phr/html/Data.html#method-Data-validate_links'><code>phr::Data$validate_links()</code></a></span></li>
 </ul>
 </details>
 }}
@@ -232,39 +231,13 @@ Logical indicating validation success (TRUE if no issues, FALSE if warnings occu
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-IndividualData-generate_data_quality"></a>}}
-\if{latex}{\out{\hypertarget{method-IndividualData-generate_data_quality}{}}}
-\subsection{Method \code{generate_data_quality()}}{
-Generate a Demographics DataQuality object for individual data.
-Overrides base Data class method to provide demographics quality.
+\if{html}{\out{<a id="method-IndividualData-generate_data_analytics"></a>}}
+\if{latex}{\out{\hypertarget{method-IndividualData-generate_data_analytics}{}}}
+\subsection{Method \code{generate_data_analytics()}}{
+Generate a DemographicsDataAnalytics object for individual data.
+Unifies quality checks and quantitative analysis in one object.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{IndividualData$generate_data_quality(
-  stage = c("standardized", "clean"),
-  type = c("demographics")
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{stage}}{The data stage to use ("standardized" or "clean")}
-
-\item{\code{type}}{The type of DataQuality object to create ("demographics")}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A DataQuality object or NULL
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-IndividualData-generate_data_analysis"></a>}}
-\if{latex}{\out{\hypertarget{method-IndividualData-generate_data_analysis}{}}}
-\subsection{Method \code{generate_data_analysis()}}{
-Generate a Demographics Analysis object for individual data.
-Overrides base Data class method to provide demographics analysis.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{IndividualData$generate_data_analysis(
+\if{html}{\out{<div class="r">}}\preformatted{IndividualData$generate_data_analytics(
   stage = c("standardized", "clean"),
   type = c("demographics"),
   analysis_config = NULL
@@ -276,14 +249,14 @@ Overrides base Data class method to provide demographics analysis.
 \describe{
 \item{\code{stage}}{The data stage to use ("standardized" or "clean")}
 
-\item{\code{type}}{The type of Analysis object to create ("demographics")}
+\item{\code{type}}{The type of analytics to create (currently "demographics")}
 
-\item{\code{analysis_config}}{Optional analysis configuration (data analysis plan)}
+\item{\code{analysis_config}}{Optional data analysis plan (tibble)}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Returns}{
-An Analysis object or NULL
+A DataAnalytics subclass object or NULL
 }
 }
 \if{html}{\out{<hr>}}

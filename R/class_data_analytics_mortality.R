@@ -42,6 +42,8 @@
 #' @field data_analysis_plan_deaths Data analysis plan for linked deaths dataset
 #' @field survey_design_roster srvyr survey design object for the linked roster dataset
 #' @field survey_design_deaths srvyr survey design object for the linked deaths dataset
+#' @field base_survey_design_roster Unfiltered base srvyr survey design object for the linked roster dataset
+#' @field base_survey_design_deaths Unfiltered base srvyr survey design object for the linked deaths dataset
 #'
 #' @seealso [DataAnalytics]
 #' @export
@@ -310,7 +312,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "quality_schema_data_quality_mortality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -351,7 +353,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_mortality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -382,7 +384,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_mortality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -413,7 +415,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_mortality_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -444,7 +446,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_mortality_deaths_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -475,7 +477,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_mortality_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -506,7 +508,7 @@ MortalityDataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_mortality_deaths_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -828,27 +830,27 @@ MortalityDataAnalytics <- R6::R6Class(
 
   private = list(
 
-    #' Return the number of rows in a QuantDataAnalysisPlanLog's log_df, or 0L.
-    #'
-    #' @param dap A QuantDataAnalysisPlanLog object (or NULL).
-    #' @return Integer row count, or 0L when dap or its log_df is NULL.
+    # Return the number of rows in a QuantDataAnalysisPlanLog's log_df, or 0L.
+    #
+    # @param dap A QuantDataAnalysisPlanLog object (or NULL).
+    # @return Integer row count, or 0L when dap or its log_df is NULL.
     .dap_row_count = function(dap) {
       if (!is.null(dap) && !is.null(dap$log_df)) nrow(dap$log_df) else 0L
     },
 
-    #' Create a proper survey design for an arbitrary data frame using variable_map.
-    #'
-    #' Applies the same logic as \code{create_survey_design()} (which operates on
-    #' \code{self$data} and \code{self$variable_map}) but accepts any data frame and
-    #' variable map. Reads \code{cluster_id_numeric} / \code{cluster_id},
-    #' \code{weight}, \code{stratum}, and \code{fpc} from \code{variable_map} and
-    #' builds an \code{srvyr} survey design accordingly. Falls back to a simple
-    #' random sample (\code{ids = 1}) when none of those columns are present.
-    #'
-    #' @param data A data frame for the linked dataset.
-    #' @param variable_map Named list mapping canonical names to actual column names.
-    #' @param origin Character; caller label used in log/warning messages.
-    #' @return An \code{srvyr} survey design object, or NULL on failure.
+    # Create a proper survey design for an arbitrary data frame using variable_map.
+    #
+    # Applies the same logic as \code{create_survey_design()} (which operates on
+    # \code{self$data} and \code{self$variable_map}) but accepts any data frame and
+    # variable map. Reads \code{cluster_id_numeric} / \code{cluster_id},
+    # \code{weight}, \code{stratum}, and \code{fpc} from \code{variable_map} and
+    # builds an \code{srvyr} survey design accordingly. Falls back to a simple
+    # random sample (\code{ids = 1}) when none of those columns are present.
+    #
+    # @param data A data frame for the linked dataset.
+    # @param variable_map Named list mapping canonical names to actual column names.
+    # @param origin Character; caller label used in log/warning messages.
+    # @return An \code{srvyr} survey design object, or NULL on failure.
     .create_survey_design_for_dataset = function(data, variable_map, origin = NULL) {
 
       origin <- origin %||% paste0(self$dataset_name, "$.create_survey_design_for_dataset")
@@ -908,17 +910,17 @@ MortalityDataAnalytics <- R6::R6Class(
       design
     },
 
-    #' Build a DAP tibble from an analysis schema, resolving canonical variable names.
-    #'
-    #' Translates each \code{var_name} and \code{denom_var} in \code{analysis_schema}
-    #' through \code{variable_map}, then keeps only indicators whose resolved columns
-    #' are present in \code{available_vars}.
-    #'
-    #' @param analysis_schema A tibble with analysis schema columns.
-    #' @param variable_map Named list mapping canonical names to actual column names.
-    #' @param available_vars Character vector of column names available in the target dataset.
-    #' @param dataset_label Character label used in the returned issues tibble (e.g. "roster").
-    #' @return A named list with elements \code{dap_df} (tibble) and \code{issues} (tibble).
+    # Build a DAP tibble from an analysis schema, resolving canonical variable names.
+    #
+    # Translates each \code{var_name} and \code{denom_var} in \code{analysis_schema}
+    # through \code{variable_map}, then keeps only indicators whose resolved columns
+    # are present in \code{available_vars}.
+    #
+    # @param analysis_schema A tibble with analysis schema columns.
+    # @param variable_map Named list mapping canonical names to actual column names.
+    # @param available_vars Character vector of column names available in the target dataset.
+    # @param dataset_label Character label used in the returned issues tibble (e.g. "roster").
+    # @return A named list with elements \code{dap_df} (tibble) and \code{issues} (tibble).
     .build_dap_from_schema = function(analysis_schema, variable_map, available_vars,
                                        dataset_label = "dataset") {
 
@@ -933,7 +935,7 @@ MortalityDataAnalytics <- R6::R6Class(
         return(canonical_name)
       }
 
-      schema_valid <- analysis_schema %>%
+      schema_valid <- analysis_schema |>
         dplyr::mutate(
           var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
           denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
@@ -943,11 +945,11 @@ MortalityDataAnalytics <- R6::R6Class(
             .data$denom_var_actual %in% available_vars,
             TRUE
           )
-        ) %>%
+        ) |>
         dplyr::mutate(include = .data$var_exists & .data$denom_exists)
 
-      issues <- schema_valid %>%
-        dplyr::filter(!.data$include) %>%
+      issues <- schema_valid |>
+        dplyr::filter(!.data$include) |>
         dplyr::transmute(
           dataset        = dataset_label,
           indicator_name = .data$indicator_name,
@@ -962,8 +964,8 @@ MortalityDataAnalytics <- R6::R6Class(
           )
         )
 
-      dap_df <- schema_valid %>%
-        dplyr::filter(.data$include) %>%
+      dap_df <- schema_valid |>
+        dplyr::filter(.data$include) |>
         dplyr::transmute(
           indicator_name = .data$indicator_name,
           calculation    = .data$calculation,
@@ -977,17 +979,17 @@ MortalityDataAnalytics <- R6::R6Class(
       list(dap_df = dap_df, issues = issues)
     },
 
-    #' Run analysis for an arbitrary dataset using a given analysis schema.
-    #'
-    #' Creates a simple SRS survey design from \code{data}, builds a DAP from
-    #' \code{analysis_schema} (resolving canonical names via \code{variable_map}),
-    #' and runs \code{phr_calc_survey_from_plan}.
-    #'
-    #' @param data A data frame.
-    #' @param analysis_schema A tibble with columns: indicator_name, calculation,
-    #'   var_name, denom_var, disaggregation, multiplier, indicator_unit.
-    #' @param variable_map Optional named list mapping canonical names to actual column names.
-    #' @return A named list with elements \code{survey_design} and \code{base}, or NULLs.
+    # Run analysis for an arbitrary dataset using a given analysis schema.
+    #
+    # Creates a simple SRS survey design from \code{data}, builds a DAP from
+    # \code{analysis_schema} (resolving canonical names via \code{variable_map}),
+    # and runs \code{phr_calc_survey_from_plan}.
+    #
+    # @param data A data frame.
+    # @param analysis_schema A tibble with columns: indicator_name, calculation,
+    #   var_name, denom_var, disaggregation, multiplier, indicator_unit.
+    # @param variable_map Optional named list mapping canonical names to actual column names.
+    # @return A named list with elements \code{survey_design} and \code{base}, or NULLs.
     .run_analysis_for_dataset = function(data, analysis_schema, variable_map = NULL) {
       origin <- paste0(self$dataset_name, "$.run_analysis_for_dataset")
 
@@ -1024,7 +1026,7 @@ MortalityDataAnalytics <- R6::R6Class(
         return(canonical_name)
       }
 
-      schema_valid <- analysis_schema %>%
+      schema_valid <- analysis_schema |>
         dplyr::mutate(
           var_name_actual  = purrr::map_chr(.data$var_name,  translate_var),
           denom_var_actual = purrr::map_chr(.data$denom_var, translate_var),
@@ -1034,7 +1036,7 @@ MortalityDataAnalytics <- R6::R6Class(
             .data$denom_var_actual %in% available_vars,
             TRUE
           )
-        ) %>%
+        ) |>
         dplyr::filter(.data$var_exists & .data$denom_exists)
 
       if (nrow(schema_valid) == 0) {
@@ -1042,7 +1044,7 @@ MortalityDataAnalytics <- R6::R6Class(
         return(list(survey_design = NULL, base = NULL))
       }
 
-      dap_df <- schema_valid %>%
+      dap_df <- schema_valid |>
         dplyr::transmute(
           indicator_name = .data$indicator_name,
           calculation    = .data$calculation,
@@ -1066,32 +1068,32 @@ MortalityDataAnalytics <- R6::R6Class(
       list(survey_design = survey_results, base = survey_results)
     },
 
-    #' Run outputs for an arbitrary dataset, storing results under a namespace sub-list.
-    #'
-    #' For each output defined in \code{outputs_schema}, the specified output function
-    #' is called with the appropriate first positional argument (determined by
-    #' \code{dataset_type} in the output entry) and any additional parameters
-    #' resolved from \code{test_params}. Results are stored in
-    #' \code{self$visualizations[[namespace]]} or \code{self$tables[[namespace]]}
-    #' depending on \code{output_type}.
-    #'
-    #' Supported \code{dataset_type} values per output entry:
-    #' \describe{
-    #'   \item{"data"}{uses \code{data} as the first argument (default)}
-    #'   \item{"survey_design"}{uses the pre-built \code{survey_design} object as the
-    #'     first argument. If \code{survey_design} is \code{NULL}, outputs requesting
-    #'     this type are skipped with a warning.}
-    #' }
-    #'
-    #' @param data A data frame for the namespace dataset.
-    #' @param outputs_schema A named list of output definitions (as produced by
-    #'   \code{outputs_table_to_schema}).
-    #' @param namespace Character; key used for the sub-list in \code{self$visualizations}
-    #'   and \code{self$tables} (e.g., "roster" or "deaths").
-    #' @param survey_design An srvyr survey design object for the namespace dataset,
-    #'   used when an output entry has \code{dataset_type = "survey_design"}.
-    #'   Should be pre-built and stored (e.g. \code{self$survey_design_roster}).
-    #' @return Invisibly returns NULL.
+    # Run outputs for an arbitrary dataset, storing results under a namespace sub-list.
+    #
+    # For each output defined in \code{outputs_schema}, the specified output function
+    # is called with the appropriate first positional argument (determined by
+    # \code{dataset_type} in the output entry) and any additional parameters
+    # resolved from \code{test_params}. Results are stored in
+    # \code{self$visualizations[[namespace]]} or \code{self$tables[[namespace]]}
+    # depending on \code{output_type}.
+    #
+    # Supported \code{dataset_type} values per output entry:
+    # \describe{
+    #   \item{"data"}{uses \code{data} as the first argument (default)}
+    #   \item{"survey_design"}{uses the pre-built \code{survey_design} object as the
+    #     first argument. If \code{survey_design} is \code{NULL}, outputs requesting
+    #     this type are skipped with a warning.}
+    # }
+    #
+    # @param data A data frame for the namespace dataset.
+    # @param outputs_schema A named list of output definitions (as produced by
+    #   \code{outputs_table_to_schema}).
+    # @param namespace Character; key used for the sub-list in \code{self$visualizations}
+    #   and \code{self$tables} (e.g., "roster" or "deaths").
+    # @param survey_design An srvyr survey design object for the namespace dataset,
+    #   used when an output entry has \code{dataset_type = "survey_design"}.
+    #   Should be pre-built and stored (e.g. \code{self$survey_design_roster}).
+    # @return Invisibly returns NULL.
     .run_outputs_for_namespace = function(data, outputs_schema, namespace,
                                           survey_design = NULL, language = "english") {
       origin <- paste0(self$dataset_name, "$.run_outputs_for_namespace[", namespace, "]")
@@ -1124,9 +1126,9 @@ MortalityDataAnalytics <- R6::R6Class(
           }
 
           output_function <- NULL
-          if (requireNamespace("iphRa", quietly = TRUE)) {
+          if (requireNamespace("phr", quietly = TRUE)) {
             tryCatch({
-              ns_env <- asNamespace("iphRa")
+              ns_env <- asNamespace("phr")
               if (exists(func_name, envir = ns_env, mode = "function", inherits = FALSE)) {
                 output_function <- get(func_name, envir = ns_env, mode = "function", inherits = FALSE)
               }

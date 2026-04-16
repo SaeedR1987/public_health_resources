@@ -1,8 +1,6 @@
 library(testthat)
 library(tibble)
 
-# Source generate_household_samples.R from dev directory
-source(file.path(here::here(), "dev", "generate_household_samples.R"))
 
 # ==============================================================================
 # NutritionIndividualData Tests
@@ -17,7 +15,9 @@ test_that("NutritionIndividualData initializes with minimal valid data", {
     hh_uuid = "hh_1"
   )
 
-  nutr <- NutritionIndividualData$new(data = df)
+  nutr <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(data = df)
+  ))
 
   expect_s3_class(nutr, "NutritionIndividualData")
   expect_s3_class(nutr, "IndividualData")
@@ -29,7 +29,9 @@ test_that("NutritionIndividualData initializes with nutrition-specific columns r
 
   df <- generate_child_nutrition_dataset(roster_data_or_n = 10)
 
-  nutr <- NutritionIndividualData$new(data = df)
+  nutr <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(data = df)
+  ))
 
   expect_true("nut_muac_mm" %in% names(nutr$variable_map))
   expect_true("ecfies_s01" %in% names(nutr$variable_map))
@@ -44,7 +46,9 @@ test_that("NutritionIndividualData completes full pipeline", {
 
   df <- generate_child_nutrition_dataset(roster_data_or_n = 50)
 
-  nutr <- NutritionIndividualData$new(data = df)
+  nutr <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(data = df)
+  ))
 
   # Validation
   expect_no_error(nutr$validate())
@@ -68,8 +72,12 @@ test_that("NutritionIndividualData can link to HouseholdData", {
   hh_df <- generate_household_dataset(n = 10)
   nutr_df <- generate_child_nutrition_dataset(roster_data_or_n = 30, hh_uuids = hh_df$uuid)
 
-  hh <- HouseholdData$new(data = hh_df)
-  nutr <- NutritionIndividualData$new(data = nutr_df)
+  hh <- suppressMessages(suppressWarnings(
+    HouseholdData$new(data = hh_df)
+  ))
+  nutr <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(data = nutr_df)
+  ))
 
   # Link nutrition data to households
   nutr$add_linked_dataset("household", hh, by_self_role = "hh_uuid", by_other_role = "uuid")
@@ -92,7 +100,9 @@ test_that("NutritionIndividualData handles realistic SMART survey data", {
     nutr_oedema = sample(c("yes", "no"), n, replace = TRUE, prob = c(0.02, 0.98))
   )
 
-  nutr <- NutritionIndividualData$new(data = df)
+  nutr <- suppressMessages(suppressWarnings(
+    NutritionIndividualData$new(data = df)
+  ))
 
   expect_no_error({
     nutr$validate()

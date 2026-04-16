@@ -24,6 +24,7 @@
 #' @param availability_barriers_val A character vector of values indicating "availability barriers."
 #' @param other_barriers_val A character vector of values indicating "other barriers."
 #' @param no_barriers_val A character vector of values indicating "no barriers."
+#' @param did_not_need_val A character vector of values indicating "did not need" health services.
 #'
 #' @return A data frame with the following new binary columns:
 #' * **health_barrier_any.physical**
@@ -71,7 +72,7 @@ add_health_barriers <- function(
     availability_barriers_val,
     other_barriers_val,
     no_barriers_val,
-    did_not_need_val
+    did_not_need_val = NULL
 ) {
 
   origin <- "add_health_barriers"
@@ -143,7 +144,7 @@ add_health_barriers <- function(
 
     # Detect barriers using grepl
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Physical access barriers
         health_barrier_any.physical = ifelse(
@@ -347,7 +348,7 @@ add_healthcare_access_one_hour <- function(
 
     # Calculate healthcare access within one hour
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         health_healthcare_access_one_hour = dplyr::case_when(
           # Use numeric minutes if available

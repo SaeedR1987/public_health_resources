@@ -10,11 +10,11 @@ helper_runner_dps(x)
 \item{x}{A numeric vector}
 }
 \value{
-A vector of digit preference scores
+A numeric digit preference score
 }
 \description{
 Helper function for plot_date_runner function. Calculates digit preference
-scores and feeds them into the runner::runner function.
+scores over an expanding window.
 }
 \examples{
 \dontrun{helper_runner_dps(muac)}

@@ -5,12 +5,13 @@
 \title{Plot Select Multiple Across Domains}
 \usage{
 plot_domain_distribution(
-  df,
+  survey_design,
   domain_list,
   show_percentage = FALSE,
   flip_coordinates = TRUE,
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -20,7 +21,7 @@ plot_domain_distribution(
 )
 }
 \arguments{
-\item{df}{Inputs a dataframe.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{domain_list}{A named list where each element represents a domain. Each domain element
 should be a list with:
@@ -36,7 +37,7 @@ Example: list(
 )}
 
 \item{show_percentage}{Logical. If TRUE, shows percentages instead of counts.
-By default: FALSE. Note: For select multiple questions, percentages may sum to >100%.}
+By default: FALSE. Note: For select multiple questions, percentages may sum to >100\%.}
 
 \item{flip_coordinates}{Logical. If TRUE, creates horizontal bars (flipped coordinates).
 By default: TRUE.}
@@ -44,6 +45,9 @@ By default: TRUE.}
 \item{color_palette}{Color palette to use. By default: "reach1"}
 
 \item{title_name}{Title of the plot. By default: NULL}
+
+\item{variable_label}{Optional character string. Human-readable label for the domain variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
 
 \item{subtitle}{Subtitle of the plot. By default: NULL}
 
@@ -58,8 +62,6 @@ By default: TRUE.}
 \item{weights_col}{Character string. Name of the column containing survey weights. Required when weighted = TRUE.}
 }
 \value{
-Returns a ggplot2 object.
-
 Returns a ggplot2 object.
 }
 \description{
@@ -77,32 +79,18 @@ quality of services. Each response option should only belong to one domain categ
       label = "Accessibility Barriers",
       response_labels = c("barrier.distance" = "Too Far",
                          "barrier.costtransport" = "Transport Cost")
-    ),
-    quality = list(
-      responses = c("barrier.rudestaff"),
-      label = "Quality Barriers",
-      response_labels = c("barrier.rudestaff" = "Rude Staff")
-    )
-  )
-  plot_domain_distribution(df = data, domain_list = domain_list)
-}
-\dontrun{
-  domain_list <- list(
-    accessibility = list(
-      responses = c("barrier.distance", "barrier.costtransport"),
-      label = "Accessibility Barriers",
-      response_labels = c("barrier.distance" = "Too Far",
-                         "barrier.costtransport" = "Transport Cost")
     )
   )
   # Horizontal bars (default)
-  plot_domain_distribution(df = data, domain_list = domain_list)
+  plot_domain_distribution(survey_design = data, domain_list = domain_list)
 
   # Vertical bars
-  plot_domain_distribution(df = data, domain_list = domain_list, flip_coordinates = FALSE,
+  plot_domain_distribution(survey_design = data, domain_list = domain_list,
+                              flip_coordinates = FALSE,
                               legend_position = "bottom")
 
   # Show percentages
-  plot_domain_distribution(df = data, domain_list = domain_list, show_percentage = TRUE)
+  plot_domain_distribution(survey_design = data, domain_list = domain_list,
+                              show_percentage = TRUE)
 }
 }

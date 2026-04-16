@@ -1,12 +1,22 @@
-# public_health_resources Documentation
+# phr Package Documentation
 
-Welcome to the public_health_resources package documentation. This documentation is organized into two main sections: **Data Structures** and **Processes**.
+Welcome to the **phr** (Public Health Resources) package documentation. This documentation is organized into two main sections: **Data Structures** and **Processes**.
+
+For installation instructions and a package overview, see the [root README](../README.md).
 
 ## Documentation Structure
 
 ### Data_Structures/
 
-Documentation for the R6 classes that form the foundation of the public_health_resources package.
+Documentation for the R6 classes that form the foundation of the phr package.
+
+#### Analytics_Classes/ *(new)*
+- **[analytics_classes_overview.md](Data_Structures/Analytics_Classes/analytics_classes_overview.md)** - Overview of the unified DataAnalytics class hierarchy
+  - Base `DataAnalytics` class (combines quality checks + quantitative analysis)
+  - `FSLDataAnalytics`, `HealthDataAnalytics`, `DemographicsDataAnalytics`
+  - `MortalityDataAnalytics`, `NutritionDataAnalytics`, `WASHDataAnalytics`
+  - `IYCFDataAnalytics`, `GeneralDataAnalytics`, `WaterContainerDataAnalytics`
+  - Relationship to parent Data objects and the DAP log
 
 #### Data_Classes/
 - **[data_classes_overview.md](Data_Structures/Data_Classes/data_classes_overview.md)** - Overview of the Data class hierarchy
@@ -14,29 +24,29 @@ Documentation for the R6 classes that form the foundation of the public_health_r
   - `HouseholdData`, `IndividualData` and subclasses
   - `WomenIndividualData`, `HealthIndividualData`, `DeathIndividualData`, `NutritionIndividualData`
   - `WaterContainerData`, `MUACDataset`
-  - Relationship to Log, Quality, and Analysis objects
-
-#### Quality_Classes/
-- **[quality_classes_overview.md](Data_Structures/Quality_Classes/quality_classes_overview.md)** - Overview of the DataQuality class hierarchy
-  - Base `DataQuality` class
-  - `HealthDataQuality`, `DemographicsDataQuality`, `MortalityDataQuality`
-  - `WASHDataQuality`, `AnthropometricDataQuality`
-  - `FSLDataQuality`, `IYCFDataQuality`
-  - Relationship to parent Data objects
-
-#### Analysis_Classes/
-- **[analysis_classes_overview.md](Data_Structures/Analysis_Classes/analysis_classes_overview.md)** - Overview of the QuantDataAnalysis class hierarchy
-  - Base `QuantDataAnalysis` class
-  - `HealthAnalysis`, `DemographicsAnalysis`, `MortalityAnalysis`
-  - `WASHAnalysis`, `NutritionAnalysis`, `QuantDataAnalysisFSL`
-  - Relationship to parent Data objects and DAP ownership
+  - Relationship to Log, Quality, and Analytics objects
 
 #### Log_Classes/
 - **[log_classes_overview.md](Data_Structures/Log_Classes/log_classes_overview.md)** - Overview of the Log class hierarchy
   - Base `Log` class
   - `CleaningLog` - Track data cleaning operations
   - `DeletionLog` - Track data deletion operations
-  - Ownership by Data objects (composition relationship)
+  - `QuantDataAnalysisPlanLog` - Manage quantitative data analysis plans
+  - Ownership by Data and Analytics objects (composition relationship)
+
+#### Tool_Classes/ *(new)*
+- **[tool_classes_overview.md](Data_Structures/Tool_Classes/tool_classes_overview.md)** - Overview of the Tool class hierarchy
+  - Base `Tool` class — XLSForm management for Kobo/ODK surveys
+  - `HouseholdTool` - Household survey XLSForms
+  - `KeyInformantTool` - Key informant interview XLSForms
+  - `ObservationTool` - Observation/checklist XLSForms
+  - Managed by `Protocol` objects
+
+#### Protocol_Class/ *(new)*
+- **[protocol_overview.md](Data_Structures/Protocol_Class/protocol_overview.md)** - Overview of the Protocol class
+  - Assessment design pipeline (objectives → sample size → sampling → tools → indicators)
+  - `Protocol` class fields and methods
+  - Sampling methods: SRS, proportional, PPS cluster, RLC, systematic
 
 #### Schema Documentation
 - **[schema_overview.md](Data_Structures/schema_overview.md)** - Comprehensive overview of all schema types
@@ -79,9 +89,10 @@ Documentation for the major processes and workflows in the public_health_resourc
 
 Start with the overview documents for each class hierarchy:
 1. Read [Data_Classes/data_classes_overview.md](Data_Structures/Data_Classes/data_classes_overview.md) to understand data management
-2. Read [Quality_Classes/quality_classes_overview.md](Data_Structures/Quality_Classes/quality_classes_overview.md) to understand quality assessment
-3. Read [Analysis_Classes/analysis_classes_overview.md](Data_Structures/Analysis_Classes/analysis_classes_overview.md) to understand analysis capabilities
-4. Read [Log_Classes/log_classes_overview.md](Data_Structures/Log_Classes/log_classes_overview.md) to understand logging
+2. Read [Analytics_Classes/analytics_classes_overview.md](Data_Structures/Analytics_Classes/analytics_classes_overview.md) to understand the unified analytics classes
+3. Read [Log_Classes/log_classes_overview.md](Data_Structures/Log_Classes/log_classes_overview.md) to understand logging
+4. Read [Tool_Classes/tool_classes_overview.md](Data_Structures/Tool_Classes/tool_classes_overview.md) to understand XLSForm tool management
+5. Read [Protocol_Class/protocol_overview.md](Data_Structures/Protocol_Class/protocol_overview.md) to understand assessment design
 
 ### 2. Understanding Schemas
 
@@ -101,7 +112,7 @@ Learn the key workflows:
 
 ## Common Workflows
 
-### Basic Data Processing Workflow
+### Basic Data Processing Workflow (using unified DataAnalytics)
 
 ```r
 # 1. Load and create data object
@@ -113,51 +124,32 @@ data$set_variable_schema(schema)
 # 3. Standardize
 data$standardize()
 
-# 4. Validate
-data$validate()
+# 4. Generate unified analytics object (quality + analysis combined)
+analytics <- data$generate_data_analytics(stage = "standardized")
 
-# 5. Quality checks
-quality <- DataQuality$new(data = data)
-quality$run_quality_checks()
+# 5. Run quality checks
+analytics$run_quality_checks()
+cat("Quality score:", analytics$overall_score)
 
-# 6. Clean data (using logs)
-cleaning_log <- CleaningLog$new()
-# ... add cleaning actions ...
-cleaned_data <- cleaning_log$apply_to_data(data$standardized_data)
+# 6. Clean data using the generated cleaning log
+data$generate_cleaning_log(stage = "standardized")
+data$clean()
 
-# 7. Analysis
-analysis <- HealthAnalysis$new(data = data)
-results <- analysis$calculate_all_indicators()
-```
+# 7. Run analysis on clean data
+analytics_clean <- data$generate_data_analytics(stage = "clean")
+analytics_clean$run_analysis()
 
-### Schema-Driven Workflow
-
-```r
-# Use schemas to automate most steps
-data <- HouseholdData$new(data = df, uuid = "uuid")
-data$set_variable_schema(variable_schema)
-data$set_dependency_schema(dependency_schema)
-data$set_indicator_schema(indicator_schema)
-data$set_quality_schema(quality_schema)
-
-# Automated processing
-data$standardize()
-data$validate()
-data$calculate_indicators()
-
-# Quality assessment
-quality <- DataQuality$new(data = data)
-quality$run_quality_checks()
-
-# Analysis
-analysis <- DemographicsAnalysis$new(data = data)
-results <- analysis$calculate_all_indicators()
+# 8. Generate outputs
+analytics_clean$run_outputs()
 ```
 
 ## Key Concepts
 
 ### R6 Classes
-public_health_resources uses R6 object-oriented programming with inheritance hierarchies for Data, Quality, Analysis, and Log classes.
+phr uses R6 object-oriented programming with inheritance hierarchies for Data, Analytics, Log, Tool, and Protocol classes.
+
+### DataAnalytics (unified)
+The `DataAnalytics` hierarchy combines quality checks and quantitative analysis into a single object per domain.  Each subclass ships with default schemas for its sector.
 
 ### Schemas
 Schemas define the structure, validation rules, and transformations for survey data. Four main types:
@@ -182,20 +174,23 @@ Systematic checking of data for:
 - Logical inconsistencies
 - Statistical anomalies
 
+### Protocol Design
+The `Protocol` class orchestrates the full assessment design lifecycle, from objective setting through sample drawing and tool management.
+
 ## Naming Conventions
 
 The package uses specific naming conventions throughout. See [naming_conventions.md](naming_conventions.md) for details on:
 - Dummy columns use **period (`.`)** separator: `skills.reading`, `skills.other`
 - Text columns use **underscore (`_`)** separator: `skills_other_text`
 - Standard variable names use **underscore (`_`)**: `household_id`, `respondent_age`
-- R6 classes use **PascalCase**: `Data`, `HouseholdData`, `DataQuality`
+- R6 classes use **PascalCase**: `Data`, `HouseholdData`, `DataAnalytics`
 - Functions use **snake_case**: `set_variable_schema()`, `standardize()`
 
 ## Additional Resources
 
 For package-level documentation, see:
 - Function reference: Use `?function_name` in R
-- Package vignettes: `browseVignettes("public_health_resources")`
+- Package vignettes: `browseVignettes("phr")`
 - GitHub repository: https://github.com/SaeedR1987/public_health_resources
 
 ## Contributing to Documentation
@@ -218,4 +213,4 @@ If you need help:
 
 ---
 
-**Last Updated**: 2026-02-10
+**Last Updated**: 2026-04-14

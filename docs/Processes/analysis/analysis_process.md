@@ -27,7 +27,7 @@ Output Generation & Export
 Before analysis, ensure data is:
 - Standardized using Data classes
 - Validated against schemas
-- Quality checked using DataQuality classes
+- Quality checked using DataAnalytics classes
 - Cleaned using CleaningLog
 
 ```r
@@ -37,8 +37,8 @@ data$set_variable_schema(schema)
 data$standardize()
 
 # Validate and check quality
-quality <- DataQuality$new(data = data)
-quality$run_quality_checks()
+analytics <- data$generate_data_analytics(stage = "standardized")
+analytics$run_quality_checks()
 ```
 
 ### 2. Indicator Calculation
@@ -59,22 +59,16 @@ data$add_wfh_zscore()
 data$calculate_indicators()
 ```
 
-### 3. Create Analysis Object
+### 3. Create Analytics Object
 
-Initialize the appropriate Analysis class:
+Initialize the appropriate DataAnalytics class:
 
 ```r
-# Choose domain-specific analysis class
-analysis <- HealthAnalysis$new(
-  data = data,
-  weights = "survey_weight"
-)
+# Generate domain-specific analytics object from data
+analytics <- data$generate_data_analytics(stage = "clean")
 
-# Or for FSL
-fsl_analysis <- QuantDataAnalysisFSL$new(
-  data = data,
-  weights = "survey_weight"
-)
+# Run analysis using the analysis plan
+analytics$run_analysis()
 ```
 
 ### 4. Calculate Prevalence and Means
@@ -210,18 +204,13 @@ nutrition_analysis$export_results("nutrition_results.xlsx")
 ### FSL Analysis
 
 ```r
-fsl_analysis <- QuantDataAnalysisFSL$new(data = data, weights = "weight")
+fsl_analytics <- data$generate_data_analytics(stage = "clean")
 
-# Calculate FSL indicators
-fcs_distribution <- fsl_analysis$calculate_fcs_distribution()
-hdds_mean <- fsl_analysis$calculate_hdds_mean()
-rcsi_mean <- fsl_analysis$calculate_rcsi_mean()
-
-# Food insecurity prevalence
-food_insecurity <- fsl_analysis$calculate_food_insecurity_prevalence()
+# Calculate FSL indicators via run_analysis()
+fsl_analytics$run_analysis()
 
 # Export
-fsl_analysis$export_results("fsl_results.xlsx")
+fsl_analytics$export_results("fsl_results.xlsx")
 ```
 
 ### WASH Analysis
@@ -259,13 +248,13 @@ weighted_prevalence <- analysis$calculate_prevalence("illness")
 
 ```r
 # Good - validate before analysis
-quality <- DataQuality$new(data = data)
-quality$run_quality_checks()
-report <- quality$get_quality_report()
+analytics <- data$generate_data_analytics(stage = "standardized")
+analytics$run_quality_checks()
 
-# Review quality report before proceeding
-if (acceptable_quality(report)) {
-  analysis <- HealthAnalysis$new(data = data)
+# Review quality score before proceeding
+if (analytics$overall_score >= 0.7) {
+  analytics_clean <- data$generate_data_analytics(stage = "clean")
+  analytics_clean$run_analysis()
 }
 ```
 

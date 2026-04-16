@@ -4,10 +4,10 @@
 \alias{quality_test_correlation}
 \title{Correlation Test}
 \usage{
-quality_test_correlation(data, variables, method = "pearson")
+quality_test_correlation(survey_design, variables, method = "pearson")
 }
 \arguments{
-\item{data}{Data frame containing the variables}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector of exactly 2 variable names}
 

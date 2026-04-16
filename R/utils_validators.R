@@ -21,7 +21,10 @@
 #' ensure_value("valid_input", "default_value")  # Returns: "valid_input"
 #'
 #' # Usage inside a pipeline or similar defensive checks
+#' some_var <- NULL
 #' some_var <- ensure_value(some_var, "fallback_value")
+#'
+#' @export
 ensure_value <- function(value, default) {
   if (is.null(value) || length(value) == 0) {
     default
@@ -47,7 +50,7 @@ ensure_value <- function(value, default) {
 #' .is_select_multiple_allowed(variable, allowable_values)
 #' # Output: FALSE (because "option_d" and "option_e" are invalid)
 #'
-#' @export
+#' @noRd
 .is_select_multiple_allowed <- function(variable, allowable_values) {
   origin <- "is_select_multiple_allowed"
 
@@ -123,7 +126,7 @@ ensure_value <- function(value, default) {
 #' .is_greater_than_one_selection(vec)
 #' # Output: TRUE, FALSE, TRUE, FALSE
 #'
-#' @export
+#' @noRd
 .is_greater_than_one_selection <- function(select_multiple_input, select_multiple_col = NULL) {
   origin <- "is_greater_than_one_selection"
 
@@ -190,7 +193,7 @@ ensure_value <- function(value, default) {
 #' .is_greater_than_three_selection(vec)
 #' # Output: FALSE, FALSE, TRUE, FALSE
 #'
-#' @export
+#' @noRd
 .is_greater_than_three_selection <- function(select_multiple_input, select_multiple_col = NULL) {
   origin <- "is_greater_than_three_selection"
 
@@ -260,7 +263,8 @@ ensure_value <- function(value, default) {
 #'   \item Arbitrary function calls or side-effect expressions
 #' }
 #'
-#' @param expr A language object (typically produced by `parse(text = ...)[[1]]`).
+#' @param expr_chr A single character string containing a logical expression
+#'   (typically the text of an expression to be parsed and evaluated).
 #'
 #' @return Logical scalar:
 #' \itemize{
@@ -269,20 +273,17 @@ ensure_value <- function(value, default) {
 #' }
 #'
 #' @examples
-#' expr <- parse(text = "age > 5 & !is.na(sex)")[[1]]
-#' .is_logical_expression(expr)
+#' \dontrun{
+#' .is_logical_expression("age > 5 & !is.na(sex)")
 #'
-#' expr <- parse(text = "grepl('a', name)")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("grepl('a', name)")
 #'
-#' expr <- parse(text = "x %in% c('a', 'b', 'c')")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("x %in% c('a', 'b', 'c')")
 #'
-#' expr <- parse(text = "is.numeric(age)")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("is.numeric(age)")
 #'
-#' expr <- parse(text = "'my name is Jack'")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("'my name is Jack'")
+#' }
 #'
 #' @keywords internal
 .is_logical_expression <- function(expr_chr) {
@@ -528,7 +529,7 @@ phr_validate_date <- function(x, origin = NULL, hint = NULL, soft) {
 phr_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
   phr_validate_not_null(x, origin, soft)
 
-  # POSIXct or POSIXlt are datetime objects — accept directly
+  # POSIXct or POSIXlt are datetime objects \u2014 accept directly
   if (inherits(x, c("POSIXct", "POSIXlt"))) {
     return(invisible(TRUE))
   }
@@ -543,7 +544,7 @@ phr_validate_datetime <- function(x, origin = NULL, hint = NULL, soft) {
     }
   }
 
-  # Nothing matched — raise structured error or warning
+  # Nothing matched \u2014 raise structured error or warning
   msg <- "Expected a datetime object (POSIXct or POSIXlt) or a string with date and time components."
   hint_txt <- hint %||% "Ensure input is POSIXct, POSIXlt, or a datetime string like '2025-10-16 14:32:00'."
   if (soft) {
@@ -752,7 +753,7 @@ phr_validate_vector_length <- function(x, min_length = 1, exact_length = NULL, o
     }
     phr_error(msg, origin = origin)
   } else if (len < min_length) {
-    msg <- paste0("Expected vector of length ≥ ", min_length, ", got ", len, ".")
+    msg <- paste0("Expected vector of length \u2265 ", min_length, ", got ", len, ".")
     if (soft) {
       phr_warning(message = msg, origin = origin)
       return(invisible(FALSE))
@@ -906,6 +907,7 @@ phr_validate_choice <- function(x, choices, origin = NULL, soft) {
 #' @param x Vector or data frame column to test.
 #' @param origin Optional name of the originating function.
 #' @param hint Optional corrective hint.
+#' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #' @return Invisibly returns TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
 phr_validate_all_numeric <- function(x,
@@ -915,10 +917,10 @@ phr_validate_all_numeric <- function(x,
 
   phr_validate_not_null(x, origin, soft)
 
-  # Already numeric → valid
+  # Already numeric \u2192 valid
   if (is.numeric(x)) return(invisible(TRUE))
 
-  # Safely coercible → valid
+  # Safely coercible \u2192 valid
   if (.is_safely_coercible(x, "numeric")) return(invisible(TRUE))
 
   # ---- Build translated message + hint ----
@@ -1269,6 +1271,7 @@ phr_validate_non_negative <- function(df, cols, origin = NULL, hint = NULL, soft
 #' @param max Maximum acceptable value.
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
+#' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
 #' @return Invisibly TRUE if valid; otherwise triggers `phr_error()`.
 #' @export
 phr_validate_range <- function(df,
@@ -1321,7 +1324,7 @@ phr_validate_range <- function(df,
 #' Ensures all non-missing values in a character column match a regular expression.
 #' @param df Data frame to validate.
 #' @param col Character column name.
-#' @param pattern Regular expression pattern (e.g., `"^[0-9]{10}$"`).
+#' @param pattern Regular expression pattern (e.g., `"^[0-9]\{10\}$"`).
 #' @param origin Optional origin function.
 #' @param hint Optional hint.
 #' @param soft Logical; if TRUE, issues a warning on failure; if FALSE, throws an error.
@@ -1346,7 +1349,7 @@ phr_validate_pattern <- function(df, col, pattern, origin = NULL, hint = NULL, s
 
 #' @title Validate Date Order
 #' @description
-#' Ensures that all rows have start_date ≤ end_date.
+#' Ensures that all rows have start_date <= end_date.
 #' @param df Data frame containing the two date columns.
 #' @param start_col Name of the start date column.
 #' @param end_col Name of the end date column.
@@ -1581,6 +1584,8 @@ phr_validate_schema <- function(df, schema, origin = NULL, hint = NULL, soft) {
 #' @return A character string ("numeric", "date", "logical", "character", or "unknown"),
 #'   or a list with detailed info if `return_details = TRUE`.
 #'
+#' @export
+#'
 #' @examples
 #' phr_infer_column_type(c("12", "5", "9"))
 #' phr_infer_column_type(c("TRUE", "FALSE", "TRUE"))
@@ -1662,6 +1667,8 @@ phr_infer_column_type <- function(x, name = NULL, return_details = FALSE) {
 #'
 #' @return TRUE (invisibly) if validation passes; otherwise issues an IPHRA warning or error.
 #'
+#' @export
+#'
 #' @examples
 #' phr_validate_date_order_vectors(
 #'   as.Date(c("2024-01-01", "2024-02-01")),
@@ -1721,6 +1728,9 @@ phr_validate_date_order_vectors <- function(start, end, origin = NULL, soft) {
 #' Convert character, numeric, or POSIX dates to standard Date (YYYY-MM-DD)
 #'
 #' @param x Character, Date, numeric, or POSIX vector.
+#' @param origin Character string specifying the origin date for numeric input conversion.
+#'   Use `"excel"` for Excel serial dates (treated as `"1899-12-30"`), or any date string
+#'   in `"YYYY-MM-DD"` format (default: `"1970-01-01"` for Unix epoch).
 #' @return A Date vector in YYYY-MM-DD format.
 #' @export
 phr_convert_date <- function(x, origin = "1970-01-01") {
@@ -1731,12 +1741,12 @@ phr_convert_date <- function(x, origin = "1970-01-01") {
   }
 
   today <- Sys.Date()
-  future_limit <- today + 365 * 5   # numeric→date more than 5 years in the future is suspicious
+  future_limit <- today + 365 * 5   # numeric\u2192date more than 5 years in the future is suspicious
 
   # Already Date
   if (inherits(x, "Date")) return(x)
 
-  # POSIX → Date
+  # POSIX \u2192 Date
   if (inherits(x, "POSIXct") || inherits(x, "POSIXlt")) {
     return(as.Date(x))
   }
@@ -1825,19 +1835,19 @@ phr_convert_date <- function(x, origin = "1970-01-01") {
 #' @export
 phr_convert_datetime <- function(x, tz = "UTC") {
 
-  # Already POSIXct — return as-is (re-stamp tz to be safe)
+  # Already POSIXct \u2014 return as-is (re-stamp tz to be safe)
   if (inherits(x, "POSIXct")) return(as.POSIXct(as.numeric(x), origin = "1970-01-01", tz = tz))
 
-  # POSIXlt → POSIXct
+  # POSIXlt \u2192 POSIXct
   if (inherits(x, "POSIXlt")) return(as.POSIXct(x, tz = tz))
 
-  # Date → POSIXct (midnight)
+  # Date \u2192 POSIXct (midnight)
   if (inherits(x, "Date")) return(as.POSIXct(as.character(x), format = "%Y-%m-%d", tz = tz))
 
-  # Numeric — treat as Unix timestamp
+  # Numeric \u2014 treat as Unix timestamp
   if (is.numeric(x)) return(as.POSIXct(x, origin = "1970-01-01", tz = tz))
 
-  # Character — try known datetime formats
+  # Character \u2014 try known datetime formats
   x_chr <- as.character(x)
   is_na <- is.na(x_chr)
   to_parse <- trimws(x_chr[!is_na])

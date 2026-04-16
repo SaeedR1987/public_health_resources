@@ -31,8 +31,6 @@ IndividualData <- R6::R6Class(
     optional_columns = NULL,
 
 
-    #' Initialize IndividualData
-    #'
     #' @description
     #' Creates a new IndividualData object with person-level survey data
     #'
@@ -148,7 +146,7 @@ IndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "variable_schema_data_individual_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -192,7 +190,7 @@ IndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "indicator_schema_data_individual_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -238,7 +236,7 @@ IndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "dependency_schema_data_individual_roster_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {

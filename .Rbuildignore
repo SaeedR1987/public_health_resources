@@ -1,7 +1,15 @@
+^renv$
+^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.lintr$
+^\.github$
 ^data-raw$
 dev_history.R
 ^dev$
 $run_dev.*
-^.here$
+^\.here$
+^lintr\.txt$
+^resources$
+^docs$
+^LICENSE\.md$

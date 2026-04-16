@@ -1,9 +1,9 @@
 #' IPHRA DataAnalytics Class
 #'
-#' The `DataAnalytics` R6 class integrates the functionality of both
-#' `DataQuality` and `QuantDataAnalysis` into a single unified analytics
-#' object. It maintains separate schemas for quality checks and quantitative
-#' analysis, while sharing common output containers.
+#' The `DataAnalytics` R6 class provides unified data quality checks and
+#' quantitative analysis in a single analytics object. It maintains separate
+#' schemas for quality checks and quantitative analysis, while sharing common
+#' output containers.
 #'
 #' @description
 #' This class provides:
@@ -39,6 +39,7 @@
 #' @field analysis_results Results of quantitative analysis (named list: survey_design, base)
 #' @field data_analysis_plan QuantDataAnalysisPlanLog object holding the analysis plan
 #' @field survey_design srvyr survey design object
+#' @field base_survey_design Unfiltered base srvyr survey design object (used internally for analysis)
 #' @field analysis_plan_issue_log Tibble of plan validation issues (internal)
 #' @field quality_issues_log Tibble of quality schema diagnostic results from quality_diagnose()
 #' @field analysis_plan_issues_log Tibble of analysis plan diagnostic results from analysis_diagnose()
@@ -140,7 +141,7 @@ DataAnalytics <- R6::R6Class(
       self$visualizations         <- list()
       self$tables                 <- list()
 
-      # --- Quality-specific initialization (from DataQuality
+      # --- Quality-specific initialization
       if (!is.null(data)) {
         phr_validate_dataframe(data, origin = origin, soft = FALSE)
         self$data <- data
@@ -172,7 +173,7 @@ DataAnalytics <- R6::R6Class(
       # Load quality outputs schema
       self$outputs_schema <- self$default_outputs_schema()
 
-      # --- Analysis-specific initialization (from QuantDataAnalysis)
+      # --- Analysis-specific initialization
       self$analysis_results        <- list()
       self$analysis_plan_issue_log <- tibble::tibble()
 
@@ -227,7 +228,7 @@ DataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "quality_schema_data_quality_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -268,7 +269,7 @@ DataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "outputs_schema_data_analytics_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -303,7 +304,7 @@ DataAnalytics <- R6::R6Class(
       file <- system.file(
         "resources",
         "analysis_schema_quant_data_analysis_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file) || file == "") {
@@ -630,9 +631,9 @@ DataAnalytics <- R6::R6Class(
               for (gv in group_values) {
                 gv_label   <- as.character(gv)
                 gv_safe    <- gsub("[^A-Za-z0-9]", "_", gv_label)
-                gv_results <- per_group_df %>%
-                  dplyr::filter(group_value == gv) %>%
-                  dplyr::select(-group_value)
+                gv_results <- per_group_df |>
+                  dplyr::filter(.data$group_value == gv) |>
+                  dplyr::select(-"group_value")
                 gv_title <- if (role == "enum_id") {
                   paste0("Data Quality Penalty Summary - Enumerator: ", gv_label)
                 } else {
@@ -697,9 +698,9 @@ DataAnalytics <- R6::R6Class(
         test_func_name <- paste0("quality_test_", test_name)
         test_function  <- NULL
 
-        if (requireNamespace("iphRa", quietly = TRUE)) {
+        if (requireNamespace("phr", quietly = TRUE)) {
           tryCatch({
-            ns <- asNamespace("iphRa")
+            ns <- asNamespace("phr")
             if (exists(test_func_name, envir = ns, mode = "function", inherits = FALSE)) {
               test_function <- get(test_func_name, envir = ns, mode = "function", inherits = FALSE)
             }
@@ -1183,9 +1184,9 @@ DataAnalytics <- R6::R6Class(
           func_available <- FALSE
           if (!is.na(statistical_test) && nzchar(statistical_test)) {
             func_name <- paste0("quality_test_", statistical_test)
-            if (requireNamespace("iphRa", quietly = TRUE)) {
+            if (requireNamespace("phr", quietly = TRUE)) {
               tryCatch({
-                ns <- asNamespace("iphRa")
+                ns <- asNamespace("phr")
                 func_available <- exists(func_name, envir = ns, mode = "function", inherits = FALSE)
               }, error = function(e) {})
             }
@@ -1464,9 +1465,9 @@ DataAnalytics <- R6::R6Class(
             }
 
             output_function <- NULL
-            if (requireNamespace("iphRa", quietly = TRUE)) {
+            if (requireNamespace("phr", quietly = TRUE)) {
               tryCatch({
-                ns <- asNamespace("iphRa")
+                ns <- asNamespace("phr")
                 if (exists(func_name, envir = ns, mode = "function", inherits = FALSE)) {
                   output_function <- get(func_name, envir = ns, mode = "function", inherits = FALSE)
                 }
@@ -1651,7 +1652,7 @@ DataAnalytics <- R6::R6Class(
                     )
                   } else {
                     filtered_first_arg <- tryCatch(
-                      source_df %>% dplyr::filter(!!rlang::sym(col_name) == val),
+                      source_df |> dplyr::filter(!!rlang::sym(col_name) == val),
                       error = function(e) {
                         phr_warning(
                           message = phr_txt(glue::glue(
@@ -1707,7 +1708,7 @@ DataAnalytics <- R6::R6Class(
 
 
 
-    # Analysis Methods (from QuantDataAnalysis)
+    # Analysis Methods
 
 
     #' @description
@@ -1846,7 +1847,7 @@ DataAnalytics <- R6::R6Class(
           phr_warning(origin, "No analysis_schema loaded to convert.")
           return(list())
         }
-        purrr::pmap(self$analysis_schema, function(...) list(...)) %>%
+        purrr::pmap(self$analysis_schema, function(...) list(...)) |>
           purrr::set_names(self$analysis_schema$indicator_name)
       },
       on_error = "warn",
@@ -1887,7 +1888,7 @@ DataAnalytics <- R6::R6Class(
           return(invisible(self))
         }
 
-        schema_valid <- self$analysis_schema %>%
+        schema_valid <- self$analysis_schema |>
           dplyr::mutate(
             var_name_actual   = purrr::map_chr(.data$var_name,   translate_var),
             denom_var_actual  = purrr::map_chr(.data$denom_var,  translate_var),
@@ -1895,11 +1896,11 @@ DataAnalytics <- R6::R6Class(
             denom_exists      = ifelse(!is.na(.data$denom_var_actual),
                                        .data$denom_var_actual %in% available_vars,
                                        TRUE)
-          ) %>%
+          ) |>
           dplyr::mutate(include = .data$var_exists & .data$denom_exists)
 
-        issues <- schema_valid %>%
-          dplyr::filter(!.data$include) %>%
+        issues <- schema_valid |>
+          dplyr::filter(!.data$include) |>
           dplyr::transmute(
             indicator_name = .data$indicator_name,
             issue = paste0(
@@ -1913,8 +1914,8 @@ DataAnalytics <- R6::R6Class(
             )
           )
 
-        dap_df <- schema_valid %>%
-          dplyr::filter(.data$include) %>%
+        dap_df <- schema_valid |>
+          dplyr::filter(.data$include) |>
           dplyr::transmute(
             indicator_name = .data$indicator_name,
             calculation    = .data$calculation,
@@ -1980,7 +1981,7 @@ DataAnalytics <- R6::R6Class(
           ))
         } else {
           available_vars <- names(self$survey_design$variables)
-          var_issues     <- self$analysis_schema %>%
+          var_issues     <- self$analysis_schema |>
             dplyr::mutate(
               var_exists   = .data$var_name %in% available_vars,
               denom_exists = ifelse(
@@ -1988,11 +1989,11 @@ DataAnalytics <- R6::R6Class(
                 .data$denom_var %in% available_vars,
                 TRUE
               )
-            ) %>%
+            ) |>
             dplyr::filter(!.data$var_exists | !.data$denom_exists)
 
           if (nrow(var_issues) > 0) {
-            issues <- dplyr::bind_rows(issues, var_issues %>%
+            issues <- dplyr::bind_rows(issues, var_issues |>
               dplyr::transmute(
                 indicator_name,
                 issue = paste0(
@@ -2045,7 +2046,7 @@ DataAnalytics <- R6::R6Class(
             ))
           }
 
-          invalid_calc <- self$data_analysis_plan$log_df %>%
+          invalid_calc <- self$data_analysis_plan$log_df |>
             dplyr::filter(!.data$calculation %in% c("prop", "mean", "median", "ratio"))
 
           if (nrow(invalid_calc) > 0) {
@@ -2319,14 +2320,14 @@ DataAnalytics <- R6::R6Class(
 
   private = list(
 
-    #' Resolve @ references in test_params into concrete values for do.call()
-    #'
-    #' @param func_args Named list; positional/named args accumulated so far.
-    #' @param test_params Named list of raw parameter values (may contain @-refs).
-    #' @param out_name Character; output name used in warning messages.
-    #' @param skip_results_table Logical; if TRUE, @results_table entries are
-    #'   skipped as named args (they were already handled as first positional arg).
-    #' @return Updated func_args list.
+    # Resolve @ references in test_params into concrete values for do.call()
+    #
+    # @param func_args Named list; positional/named args accumulated so far.
+    # @param test_params Named list of raw parameter values (may contain @-refs).
+    # @param out_name Character; output name used in warning messages.
+    # @param skip_results_table Logical; if TRUE, @results_table entries are
+    #   skipped as named args (they were already handled as first positional arg).
+    # @return Updated func_args list.
     .resolve_output_params = function(func_args, test_params, out_name,
                                      skip_results_table = FALSE) {
 
@@ -2471,14 +2472,14 @@ DataAnalytics <- R6::R6Class(
       return(func_args)
     },
 
-    #' Shared implementation for outputs_diagnose
-    #'
-    #' @param schema Named list; the outputs schema to inspect.
-    #' @param schema_name Character; name used in messages.
-    #' @param log_field Character; name of the public field to store results in.
-    #' @param data_cols Character vector; column names available in the relevant data source.
-    #' @param origin Character; calling method name for error messages.
-    #' @return A tibble (invisibly).
+    # Shared implementation for outputs_diagnose
+    #
+    # @param schema Named list; the outputs schema to inspect.
+    # @param schema_name Character; name used in messages.
+    # @param log_field Character; name of the public field to store results in.
+    # @param data_cols Character vector; column names available in the relevant data source.
+    # @param origin Character; calling method name for error messages.
+    # @return A tibble (invisibly).
     .diagnose_outputs_schema = function(schema, schema_name, log_field, data_cols, origin) {
 
       phr_try({
@@ -2526,9 +2527,9 @@ DataAnalytics <- R6::R6Class(
           # --- 2. function available
           func_available <- FALSE
           if (req_ok) {
-            if (requireNamespace("iphRa", quietly = TRUE)) {
+            if (requireNamespace("phr", quietly = TRUE)) {
               tryCatch({
-                ns <- asNamespace("iphRa")
+                ns <- asNamespace("phr")
                 func_available <- exists(func_name, envir = ns, mode = "function", inherits = FALSE)
               }, error = function(e) {})
             }

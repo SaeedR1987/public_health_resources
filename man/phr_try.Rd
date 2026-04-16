@@ -23,7 +23,7 @@ phr_try(
 
 \item{step}{Optional string identifying the step within a larger operation.
 When provided, adds sub-context to error messages for nested try blocks.
-If both `origin` and `step` are provided, the full origin becomes "origin → step".}
+If both `origin` and `step` are provided, the full origin becomes "origin -> step".}
 }
 \value{
 If `on_error = "return"`, returns list(success = FALSE, error = message, origin = ..., step = ..., hint = ...).
@@ -36,7 +36,7 @@ Preserves and passes along origin and hint metadata for better context.
 
 Supports nested error handling via the `step` parameter, which allows
 inner try blocks to add sub-context to error messages. When `step` is
-provided alongside `origin`, messages are formatted as "origin → step".
+provided alongside `origin`, messages are formatted as "origin -> step".
 }
 \examples{
 \dontrun{

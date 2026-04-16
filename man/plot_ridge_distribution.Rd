@@ -5,7 +5,7 @@
 \title{Plot Ridge Distribution}
 \usage{
 plot_ridge_distribution(
-  .dataset,
+  survey_design,
   numeric_cols = NULL,
   numeric_cols_labels = NULL,
   name_groups = NULL,
@@ -13,6 +13,8 @@ plot_ridge_distribution(
   grouping = NULL,
   color_palette = "reach3",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -23,7 +25,7 @@ plot_ridge_distribution(
 )
 }
 \arguments{
-\item{.dataset}{output of the create_fsl_flags functions}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{numeric_cols}{a vector of the same fsl indicator score columns
 By default: NULL.}
@@ -41,7 +43,21 @@ By default: NULL (uses column names).}
 
 \item{title_name}{Title of the plot}
 
+\item{variable_label}{Optional character string. Human-readable label for the numeric variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Subtitle of the plot}
+
+\item{x_lab}{Label for x-axis. By default: NULL (uses name_units).}
+
+\item{y_lab}{Label for y-axis. By default: NULL (uses name_groups).}
+
+\item{legend_position}{Position of the legend. By default: "none". Options: "bottom", "top", "left", "right", "none".}
+
+\item{flip_coordinates}{Logical. If TRUE, flips the coordinate axes. By default: FALSE.}
 
 \item{weighted}{Logical. If TRUE, applies survey weights to produce weighted results. By default: FALSE.}
 

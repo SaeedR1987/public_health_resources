@@ -4,10 +4,10 @@
 \alias{quality_test_ttest}
 \title{T-Test for Mean Comparison}
 \usage{
-quality_test_ttest(data, variables, mu = 0, paired = FALSE)
+quality_test_ttest(survey_design, variables, mu = 0, paired = FALSE)
 }
 \arguments{
-\item{data}{Data frame containing the variables}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector of 1 or 2 variable names}
 

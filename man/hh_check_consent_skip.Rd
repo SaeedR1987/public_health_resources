@@ -6,6 +6,13 @@
 \usage{
 hh_check_consent_skip(df, consent_col, skip_cols)
 }
+\arguments{
+\item{df}{A data frame containing the consent and skip columns.}
+
+\item{consent_col}{Character string specifying the column name for consent responses.}
+
+\item{skip_cols}{Character vector of column names that should be skipped when consent is "no".}
+}
 \description{
 Enforce consent-based skip logic
 }

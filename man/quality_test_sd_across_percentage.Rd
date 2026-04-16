@@ -4,10 +4,10 @@
 \alias{quality_test_sd_across_percentage}
 \title{Standard Deviation Across Columns Percentage Test}
 \usage{
-quality_test_sd_across_percentage(data, variables, threshold = 0.8)
+quality_test_sd_across_percentage(survey_design, variables, threshold = 0.8)
 }
 \arguments{
-\item{data}{Data frame containing the variables}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector of variable names (minimum 2)}
 

@@ -191,7 +191,7 @@ add_hwise <- function(
 
       # Scoring for wash_hwise-4
 
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           dplyr::across(
             .cols = hwise4_cols,
@@ -205,8 +205,8 @@ add_hwise <- function(
             ),
             .names = "{.col}_score"
           )
-        ) %>%
-        dplyr::rowwise() %>%
+        ) |>
+        dplyr::rowwise() |>
         dplyr::mutate(
           wash_hwise4_score = sum(dplyr::c_across(dplyr::all_of(paste0(hwise4_cols, "_score"))), na.rm = FALSE),
           wash_hwise4_severity_cat = dplyr::case_when(
@@ -222,14 +222,14 @@ add_hwise <- function(
             wash_hwise4_score >= 4 & wash_hwise4_score <= 12 ~ phr_txt("Water Insecure"),
             TRUE ~ NA_character_
           )
-        ) %>%
+        ) |>
         dplyr::ungroup()
 
 
       # Scoring for wash_hwise-12 (if applicable)
 
       if (length(hwise12_cols) > 0) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             dplyr::across(
               .cols = hwise12_cols,
@@ -243,8 +243,8 @@ add_hwise <- function(
               ),
               .names = "{.col}_score"
             )
-          ) %>%
-          dplyr::rowwise() %>%
+          ) |>
+          dplyr::rowwise() |>
           dplyr::mutate(
             wash_hwise12_score = sum(c_across(ends_with("_score")), na.rm = FALSE),
             wash_hwise12_severity_cat = dplyr::case_when(
@@ -254,7 +254,7 @@ add_hwise <- function(
               wash_hwise12_score >= 24 & wash_hwise12_score <= 36 ~ phr_txt("High"),
               TRUE ~ NA_character_
             )
-          ) %>%
+          ) |>
           dplyr::ungroup()
       }
 
@@ -339,7 +339,7 @@ add_liters_per_person_per_day <- function(
 
       # Adjust num_days_column if NULL
       if (is.null(num_days_col)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(temp_num_days_col = 1)  # Add a temporary column with default value 1
         num_days_col <- "temp_num_days_col"  # Use this temporary column as num_days_col
       }
@@ -364,7 +364,7 @@ add_liters_per_person_per_day <- function(
       }
 
       # Calculations
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           # Calculate liters per person per day
           liters_pppd = .data[[total_liters_col]] /
@@ -400,7 +400,7 @@ add_liters_per_person_per_day <- function(
 
       # Remove temporary column if created
       if ("temp_num_days_col" %in% names(.dataset)) {
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::select(-temp_num_days_col)
       }
 
@@ -428,9 +428,9 @@ add_liters_per_person_per_day <- function(
 #' column `wash_drinking_water_source_cat` to the dataset.
 #'
 #' @param .dataset A data frame or tibble containing the input data.
-#' @param drinking_water_source The column name for the drinking water source variable
-#'   in the dataset. Defaults to `"wash_drinking_water_source"`.
-#' @param drinking_water_source_cat_improved A character vector of values classified as
+#' @param drinking_water_source_col The column name for the drinking water source variable
+#'   in the dataset. Defaults to `"wash_water_source"`.
+#' @param drinking_water_source_cat_improved_val A character vector of values classified as
 #'   "Improved" drinking water sources. Defaults to:
 #'   \describe{
 #'     \item{Includes:}{
@@ -440,16 +440,16 @@ add_liters_per_person_per_day <- function(
 #'       "kiosk", "bottled_water", "sachet_water"
 #'     }
 #'   }
-#' @param drinking_water_source_cat_unimproved A character vector of values classified as
+#' @param drinking_water_source_cat_unimproved_val A character vector of values classified as
 #'   "Unimproved" drinking water sources. Defaults to:
 #'   \describe{
 #'     \item{Includes:}{
 #'       "unprotected_well", "unprotected_spring"
 #'     }
 #'   }
-#' @param drinking_water_source_cat_surface_water A character value classified as
+#' @param drinking_water_source_cat_surface_water_val A character value classified as
 #'   "Surface Water". Defaults to `"surface_water"`.
-#' @param drinking_water_source_cat_undefined A character vector of values classified as
+#' @param drinking_water_source_cat_undefined_val A character vector of values classified as
 #'   "Undefined". Defaults to:
 #'   \describe{
 #'     \item{Includes:}{
@@ -460,16 +460,14 @@ add_liters_per_person_per_day <- function(
 #' @details
 #' The function performs the following steps:
 #' - Validates that the `.dataset` is a valid data frame or tibble and is not empty.
-#' - Verifies that the `drinking_water_source` column exists in the dataset and contains valid responses.
-#' - Categorizes the values in the `drinking_water_source` column based on the provided classifications.
+#' - Verifies that the `drinking_water_source_col` column exists in the dataset and contains valid responses.
+#' - Categorizes the values in the `drinking_water_source_col` column based on the provided classifications.
 #' - Adds a new column `wash_drinking_water_source_cat` to the dataset with the recoded categories:
 #'   \describe{
-#'     \item{Categories:}{
-#'       \item{"Improved": Corresponding to entries from `drinking_water_source_cat_improved`.}
-#'       \item{"Unimproved": Corresponding to entries from `drinking_water_source_cat_unimproved`.}
-#'       \item{"Surface Water": Matching `drinking_water_source_cat_surface_water`.}
-#'       \item{"Undefined": Matching `drinking_water_source_cat_undefined`.}
-#'     }
+#'     \item{Improved}{Corresponding to entries from `drinking_water_source_cat_improved_val`.}
+#'     \item{Unimproved}{Corresponding to entries from `drinking_water_source_cat_unimproved_val`.}
+#'     \item{Surface Water}{Matching `drinking_water_source_cat_surface_water_val`.}
+#'     \item{Undefined}{Matching `drinking_water_source_cat_undefined_val`.}
 #'   }
 #'
 #' If the output column `wash_drinking_water_source_cat` already exists, a warning is issued, and
@@ -486,7 +484,7 @@ add_liters_per_person_per_day <- function(
 #' # Add drinking water source categories
 #' result <- add_drinking_water_source_cat(
 #'   .dataset = example_data,
-#'   drinking_water_source = "wash_drinking_water_source"
+#'   drinking_water_source_col = "wash_drinking_water_source"
 #' )
 #'
 #' @importFrom dplyr mutate
@@ -585,7 +583,7 @@ add_drinking_water_source_cat <- function(
 
     # Recode drinking water source categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_drinking_water_source_cat = dplyr::case_when(
           .data[[drinking_water_source_col]] %in% drinking_water_source_cat_surface_water_val ~ phr_txt("Surface Water"),
@@ -900,12 +898,13 @@ add_any_water_treatment <- function(
 #' @param .dataset A data frame or tibble containing the input data.
 #' @param sanitation_facility_col The column name for the sanitation facility variable
 #'   in the dataset. Defaults to `"wash_sanitation_facility"`.
-#' @param improved_facilities A character vector of values classified as
+#' @param improved_facilities_val A character vector of values classified as
 #'   "Improved" sanitation facilities.
-#' @param unimproved_facilities A character vector of values classified as
+#' @param unimproved_facilities_val A character vector of values classified as
 #'   "Unimproved" sanitation facilities.
-#' @param open_defecation_facilities A character vector of values classified as
+#' @param open_defecation_val A character vector of values classified as
 #'   "Open Defecation" practices.
+#' @param undefined_val A character vector of values classified as "Undefined" sanitation facilities. Defaults to `NULL` (no undefined category).
 #'
 #' @details
 #' The function performs the following:
@@ -914,10 +913,10 @@ add_any_water_treatment <- function(
 #' - Categorizes the values in the `sanitation_facility_col` column based on the provided classifications.
 #' - Adds a new column `wash_sanitation_facility_cat` to the dataset with recoded categories:
 #'   \describe{
-#'     \item{"Improved"}: Corresponding to entries from `improved_facilities`.
-#'     \item{"Unimproved"}: Corresponding to entries from `unimproved_facilities`.
-#'     \item{"Open Defecation"}: Matching entries from `open_defecation_facilities`.
-#'     \item{NA}: Any value not matching the above categories.
+#'     \item{"Improved"}{Corresponding to entries from `improved_facilities_val`.}
+#'     \item{"Unimproved"}{Corresponding to entries from `unimproved_facilities_val`.}
+#'     \item{"Open Defecation"}{Matching entries from `open_defecation_val`.}
+#'     \item{NA}{Any value not matching the above categories.}
 #'   }
 #'
 #' If the output column `wash_sanitation_facility_cat` already exists, a warning is issued, and
@@ -935,9 +934,9 @@ add_any_water_treatment <- function(
 #' result <- add_sanitation_facility_cat(
 #'   .dataset = example_data,
 #'   sanitation_facility_col = "wash_sanitation_facility",
-#'   improved_facilities = c("flush_to_piped", "flush_to_septic", "flush_to_pit"),
-#'   unimproved_facilities = c("pit_lat", "bucket"),
-#'   open_defecation_facilities = c("open_defecation")
+#'   improved_facilities_val = c("flush_to_piped", "flush_to_septic", "flush_to_pit"),
+#'   unimproved_facilities_val = c("pit_lat", "bucket"),
+#'   open_defecation_val = c("open_defecation")
 #' )
 #'
 #' @importFrom dplyr mutate case_when
@@ -948,7 +947,7 @@ add_sanitation_facility_cat <- function(
     improved_facilities_val,
     unimproved_facilities_val,
     open_defecation_val,
-    undefined_val
+    undefined_val = NULL
 ) {
   origin <- "add_sanitation_facility_cat"
 
@@ -1012,7 +1011,7 @@ add_sanitation_facility_cat <- function(
 
     # Recode sanitation facility categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_sanitation_facility_cat = dplyr::case_when(
           .data[[sanitation_facility_col]] %in% open_defecation_val ~ phr_txt("Open Defecation"),
@@ -1180,7 +1179,7 @@ add_sanitation_facility_shared <- function(
     if (!is.null(num_households_col) && !is.null(shared_response_col)) {
 
       # Both `num_households_col` and `shared_response_col` are present
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_sanitation_facility_shared_cat = dplyr::case_when(
             !is.na(.data[[num_households_col]]) & .data[[num_households_col]] >= shared_threshold ~ "yes",
@@ -1193,7 +1192,7 @@ add_sanitation_facility_shared <- function(
     } else if (!is.null(num_households_col)) {
 
       # Only `num_households_col` is present
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_sanitation_facility_shared_cat = dplyr::case_when(
             !is.na(.data[[num_households_col]]) & .data[[num_households_col]] >= shared_threshold ~ "yes",
@@ -1204,7 +1203,7 @@ add_sanitation_facility_shared <- function(
     } else if (!is.null(shared_response_col)) {
 
       # Only `shared_response_col` is present
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           wash_sanitation_facility_shared_cat = dplyr::case_when(
             !is.na(.data[[shared_response_col]]) & .data[[shared_response_col]] %in% shared_values ~ phr_txt("yes"),
@@ -1314,7 +1313,7 @@ add_drinking_water_jmp_ladder <- function(
     drinking_water_time_over_30min_val <- ensure_value(drinking_water_time_over_30min_val, "0")
 
     # JMP ladder categorization
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_drinking_water_cat = dplyr::case_when(
           as.character(.data[[drinking_water_source_cat_col]]) == drinking_water_source_cat_surface_water_val ~ phr_txt("Surface Water"),
@@ -1328,7 +1327,7 @@ add_drinking_water_jmp_ladder <- function(
       )
 
     # Convert to an ordered factor
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_drinking_water_cat = factor(
           wash_jmp_ladder_drinking_water_cat,
@@ -1449,7 +1448,7 @@ add_sanitation_jmp_ladder <- function(
     shared_sanitation_no_val <- ensure_value(shared_sanitation_no_val, "no")
 
     # Recoding to JMP ladder categories
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_sanitation_cat = dplyr::case_when(
           as.character(.data[[sanitation_facility_cat_col]]) == sanitation_facility_open_defecation_val ~ phr_txt("Open Defecation"),
@@ -1463,7 +1462,7 @@ add_sanitation_jmp_ladder <- function(
       )
 
     # Convert to factor with ordered levels
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         wash_jmp_ladder_sanitation_cat = factor(
           wash_jmp_ladder_sanitation_cat,
@@ -1665,7 +1664,7 @@ add_sqm_per_person <- function(
 
     # Calculate square meters, square meters per person, and categories
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Calculate area based on shelter shape
         area_sqm = dplyr::case_when(
@@ -1699,7 +1698,7 @@ add_sqm_per_person <- function(
           sqm_per_person >= 4.5 & sqm_per_person < 5.5 ~ phr_txt("4.5 - < 5.5 sqm per person"),
           sqm_per_person >= 5.5 ~ phr_txt(">= 5.5 sqm per person"),
           TRUE ~ NA_character_
-        ) %>%
+        ) |>
           factor(
             levels = c(
               phr_txt("<3.5 sqm per person"),

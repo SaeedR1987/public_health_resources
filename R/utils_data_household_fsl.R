@@ -101,8 +101,8 @@ add_fcs <- function(.dataset,
       # Out-of-range values are treated as NA during calculation ONLY
       # Original values are preserved for quality checks
 
-      .dataset <- .dataset %>%
-        dplyr::mutate(dplyr::across(dplyr::all_of(fcs_vars), as.numeric)) %>%
+      .dataset <- .dataset |>
+        dplyr::mutate(dplyr::across(dplyr::all_of(fcs_vars), as.numeric)) |>
         dplyr::mutate(
           # Create "safe" versions that treat out-of-range as NA for calculation
           # but don't modify the original columns
@@ -114,7 +114,7 @@ add_fcs <- function(.dataset,
           fcs_weight_fruit6  = ifelse(.data[[fsl_fcs_fruit]] < 0 | .data[[fsl_fcs_fruit]] > 7, NA, .data[[fsl_fcs_fruit]]) * 1,
           fcs_weight_oil7    = ifelse(.data[[fsl_fcs_oil]] < 0 | .data[[fsl_fcs_oil]] > 7, NA, .data[[fsl_fcs_oil]]) * 0.5,
           fcs_weight_sugar8  = ifelse(.data[[fsl_fcs_sugar]] < 0 | .data[[fsl_fcs_sugar]] > 7, NA, .data[[fsl_fcs_sugar]]) * 0.5
-        ) %>%
+        ) |>
         dplyr::mutate(
           fsl_fcs_score = rowSums(
             dplyr::across(c(
@@ -151,7 +151,7 @@ add_fcs <- function(.dataset,
 
       if (cutoffs == "normal") {
 
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             fsl_fcs_cat = dplyr::case_when(
               fsl_fcs_score < 21.5 ~ phr_txt("Poor"),
@@ -163,7 +163,7 @@ add_fcs <- function(.dataset,
 
       } else {
 
-        .dataset <- .dataset %>%
+        .dataset <- .dataset |>
           dplyr::mutate(
             fsl_fcs_cat = dplyr::case_when(
               fsl_fcs_score <= 28 ~ phr_txt("Poor"),
@@ -175,7 +175,7 @@ add_fcs <- function(.dataset,
       }
 
       # factorization
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           fsl_fcs_cat = factor(
             fsl_fcs_cat,
@@ -196,7 +196,7 @@ add_fcs <- function(.dataset,
     },
     on_error = "abort",
     origin = origin,
-    hint = phr_txt("Ensure FCS component variables contain numeric values 0–7.")
+    hint = phr_txt("Ensure FCS component variables contain numeric values 0\u20137.")
   )
 }
 
@@ -309,8 +309,8 @@ add_hhs <- function(
     # Construct numeric HHS components
     # Preserve original values; treat invalid as NA only during calculation
 
-    .dataset <- .dataset %>%
-      dplyr::rowwise() %>%
+    .dataset <- .dataset |>
+      dplyr::rowwise() |>
       dplyr::mutate(
         # Convert yes/no to numeric 1/0 (treat unrecognized values as NA)
         hhs_nofoodhh_numeric = dplyr::case_when(
@@ -353,11 +353,11 @@ add_hhs <- function(
         fsl_hhs_comp1 = hhs_nofoodhh_numeric * hhs_nofoodhh_freq_numeric,
         fsl_hhs_comp2 = hhs_sleephungry_numeric * hhs_sleephungry_freq_numeric,
         fsl_hhs_comp3 = hhs_alldaynight_numeric * hhs_alldaynight_freq_numeric
-      ) %>%
-      dplyr::ungroup() %>%
+      ) |>
+      dplyr::ungroup() |>
       dplyr::mutate(
         fsl_hhs_score = fsl_hhs_comp1 + fsl_hhs_comp2 + fsl_hhs_comp3
-      ) %>%
+      ) |>
       # Remove temporary numeric columns (list explicitly to avoid capturing user columns)
       dplyr::select(
         -hhs_nofoodhh_numeric,
@@ -371,7 +371,7 @@ add_hhs <- function(
 
     # Categorisation (IPC and standard) with translatable labels
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         fsl_hhs_cat_ipc = dplyr::case_when(
           fsl_hhs_score == 0 ~ phr_txt("None"),
@@ -387,7 +387,7 @@ add_hhs <- function(
           fsl_hhs_score <= 6 ~ phr_txt("Severe"),
           TRUE ~ NA_character_
         )
-      ) %>%
+      ) |>
       dplyr::mutate(
         fsl_hhs_cat = factor(fsl_hhs_cat, levels = c(
           phr_txt("Severe"),
@@ -487,7 +487,7 @@ add_rcsi <- function(.dataset,
       }
 
 
-      # Enforce allowed 0–7 range using phr_validate_range()
+      # Enforce allowed 0\u20137 range using phr_validate_range()
 
       for (v in rcsi_vars) {
         phr_validate_all_numeric(.dataset[[v]], origin, soft = TRUE)
@@ -510,8 +510,8 @@ add_rcsi <- function(.dataset,
 
       rcs_columns <- rcsi_vars
 
-      .dataset <- .dataset %>%
-        dplyr::mutate_at(dplyr::vars(rcs_columns), as.numeric) %>%
+      .dataset <- .dataset |>
+        dplyr::mutate_at(dplyr::vars(rcs_columns), as.numeric) |>
         dplyr::mutate(
           rcsi_lessquality_weighted = ifelse(
             is.na(.data[[fsl_rcsi_lessquality]]) | .data[[fsl_rcsi_lessquality]] < 0 | .data[[fsl_rcsi_lessquality]] > 7,
@@ -596,7 +596,7 @@ add_rcsi <- function(.dataset,
               phr_txt("No to Low")
             )
           )
-        ) %>%
+        ) |>
         dplyr::select(-any_weighted_na)  # Remove helper column
 
       phr_message(origin, phr_txt("RCSI successfully calculated."))
@@ -605,7 +605,7 @@ add_rcsi <- function(.dataset,
     },
     on_error = "abort",
     origin = origin,
-    hint = phr_txt("Ensure all RCSI fields exist and contain integer values 0–7.")
+    hint = phr_txt("Ensure all RCSI fields exist and contain integer values 0\u20137.")
   )
 }
 
@@ -739,7 +739,7 @@ add_lcsi <- function(.dataset,
     # 4. Main LCSI derived fields
     # Treat invalid values (not in allowed list) as causing NA in calculations
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         fsl_lcsi_stress_yes = dplyr::case_when(
           is.na(.data[[fsl_lcsi_stress1]]) |
@@ -863,10 +863,10 @@ add_lcsi <- function(.dataset,
       "fsl_lcsi_cat_yes", "fsl_lcsi_cat_exhaust", "fsl_lcsi_cat"
     )
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         complete_lcsi_inputs = complete_cases
-      ) %>%
+      ) |>
       dplyr::mutate(
         dplyr::across(
           dplyr::all_of(derived_cols),
@@ -876,16 +876,16 @@ add_lcsi <- function(.dataset,
             NA_character_
           )
         )
-      ) %>%
+      ) |>
       dplyr::select(-complete_lcsi_inputs)
 
 
     # 6. Standardize factor outputs
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         fsl_lcsi_cat_yes = factor(
-          fsl_lcsi_cat_yes,
+          .data$fsl_lcsi_cat_yes,
           levels = c(
             phr_txt("Emergency"),
             phr_txt("Crisis"),
@@ -895,7 +895,7 @@ add_lcsi <- function(.dataset,
           ordered = TRUE
         ),
         fsl_lcsi_cat_exhaust = factor(
-          fsl_lcsi_cat_exhaust,
+          .data$fsl_lcsi_cat_exhaust,
           levels = c(
             phr_txt("Emergency"),
             phr_txt("Crisis"),
@@ -905,7 +905,7 @@ add_lcsi <- function(.dataset,
           ordered = TRUE
         ),
         fsl_lcsi_cat = factor(
-          fsl_lcsi_cat,
+          .data$fsl_lcsi_cat,
           levels = c(
             phr_txt("Emergency"),
             phr_txt("Crisis"),
@@ -918,7 +918,7 @@ add_lcsi <- function(.dataset,
 
     # Add logic for flag_lcsi_na
     # Count the `not_applicable` responses across all LCSI variables dynamically
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         lcsi_count_na = apply(
           dplyr::select(.dataset, dplyr::all_of(lcsi_vars)),
@@ -1058,7 +1058,7 @@ add_hdds <- function(.dataset,
 
     # Compute HDDS Score
     # Treat invalid values (not yes/no) as NA
-    # Apply strict NA rule: if any HDDS variable is NA or invalid → score = NA
+    # Apply strict NA rule: if any HDDS variable is NA or invalid \u2192 score = NA
 
     .dataset <- .dataset |>
       dplyr::rowwise() |>
@@ -1230,7 +1230,7 @@ add_fcm_phase <- function(
 
 
     # 1. EMBEDDED LOOKUP TABLES
-    lookup_fcs_rcsi <- tribble(
+    lookup_fcs_rcsi <- tibble::tribble(
       ~fcs,          ~rcsi,      ~cell, ~cat,
       fcs_acceptable_val,  rcsi_low_val,       1, "P1",
       fcs_acceptable_val,  rcsi_medium_val,   2, "P2",
@@ -1243,7 +1243,7 @@ add_fcm_phase <- function(
       fcs_poor_val,         rcsi_high_val,    9, "P4",
     )
 
-    lookup_hdds_rcsi <- tribble(
+    lookup_hdds_rcsi <- tibble::tribble(
       ~hdds,     ~rcsi,     ~cell, ~cat,
       hdds_high_val,    rcsi_low_val,        1,   "P1",
       hdds_high_val,    rcsi_medium_val,     2,   "P2",
@@ -1256,7 +1256,7 @@ add_fcm_phase <- function(
       hdds_low_val,     rcsi_high_val,       9,   "P4"
     )
 
-    lookup_hhs_fcs <- tribble(
+    lookup_hhs_fcs <- tibble::tribble(
       ~hhs,          ~fcs,          ~cell, ~cat,
       hhs_none_val,        fcs_acceptable_val,     1, "P1",
       hhs_none_val,        fcs_borderline_val,     6, "P1",
@@ -1275,7 +1275,7 @@ add_fcm_phase <- function(
       hhs_very_severe_val, fcs_poor_val,          15, "P5"
     )
 
-    lookup_hhs_hdds <- tribble(
+    lookup_hhs_hdds <- tibble::tribble(
       ~hhs,          ~hdds,      ~cell, ~cat,
       hhs_none_val,        hdds_high_val,        1, "P1",
       hhs_none_val,        hdds_medium_val,      6, "P1",
@@ -1294,7 +1294,7 @@ add_fcm_phase <- function(
       hhs_very_severe_val, hdds_low_val,        15, "P5"
     )
 
-    lookup_hhs_rcsi_fcs_sorted2 <- tribble(
+    lookup_hhs_rcsi_fcs_sorted2 <- tibble::tribble(
       ~hhs,          ~rcsi,      ~fcs,          ~cell, ~cat,
 
       # HHS = None
@@ -1534,11 +1534,11 @@ add_fcm_phase <- function(
     # 7. OUTPUT COLUMNS
 
 
-    out <- out %>%
+    out <- out |>
       dplyr::rename(
         fsl_fc_cell = cell,
         fsl_fc_phase  = cat
-      ) %>%
+      ) |>
       dplyr::mutate(
         fsl_fc_phase = factor(fsl_fc_phase, levels = c("P5", "P4", "P3", "P2", "P1"), ordered = TRUE)
       )
@@ -1656,28 +1656,28 @@ add_fclcm_phase <- function(
     # 1. EMBEDDED LOOKUP TABLES
     lookup_fclcm_4 <- dplyr::tribble(
       ~fc_phase, ~lcsi,        ~cell, ~cat,
-      # None: 1–5
+      # None: 1\u20135
       p1_val, lcsi_none_val,        1,  p1_val,
       p2_val, lcsi_none_val,        2,  p2_val,
       p3_val, lcsi_none_val,        3,  p3_val,
       p4_val, lcsi_none_val,        4,  p4_val,
       p5_val, lcsi_none_val,        5,  p5_val,
 
-      # Stress: 6–10
+      # Stress: 6\u201310
       p1_val, lcsi_stress_val,      6,  p1_val,
       p2_val, lcsi_stress_val,      7,  p2_val,
       p3_val, lcsi_stress_val,      8,  p3_val,
       p4_val, lcsi_stress_val,      9,  p4_val,
       p5_val, lcsi_stress_val,     10,  p5_val,
 
-      # Crisis: 11–15
+      # Crisis: 11\u201315
       p1_val, lcsi_crisis_val,     11,  p1_val,
       p2_val, lcsi_crisis_val,     12,  p2_val,
       p3_val, lcsi_crisis_val,     13,  p3_val,
       p4_val, lcsi_crisis_val,     14,  p4_val,
       p5_val, lcsi_crisis_val,     15,  p5_val,
 
-      # Emergency: 16–20
+      # Emergency: 16\u201320
       p1_val, lcsi_emergency_val,  16,  p1_val,
       p2_val, lcsi_emergency_val,  17,  p2_val,
       p3_val, lcsi_emergency_val,  18,  p3_val,
@@ -1688,35 +1688,35 @@ add_fclcm_phase <- function(
     # -------- 5-category LCSI (+ Exhaustion)
     lookup_fclcm_5 <- dplyr::tribble(
       ~fc_phase, ~lcsi,        ~cell, ~cat,
-      # None: 1–5
+      # None: 1\u20135
       p1_val, lcsi_none_val,       1, p1_val,
       p2_val, lcsi_none_val,       2, p2_val,
       p3_val, lcsi_none_val,       3, p3_val,
       p4_val, lcsi_none_val,       4, p4_val,
       p5_val, lcsi_none_val,       5, p5_val,
 
-      # Stress: 6–10
+      # Stress: 6\u201310
       p1_val, lcsi_stress_val,     6, p1_val,
       p2_val, lcsi_stress_val,     7, p2_val,
       p3_val, lcsi_stress_val,     8, p3_val,
       p4_val, lcsi_stress_val,     9, p4_val,
       p5_val, lcsi_stress_val,    10, p5_val,
 
-      # Crisis: 11–15
+      # Crisis: 11\u201315
       p1_val, lcsi_crisis_val,    11, p1_val,
       p2_val, lcsi_crisis_val,    12, p2_val,
       p3_val, lcsi_crisis_val,    13, p3_val,
       p4_val, lcsi_crisis_val,    14, p4_val,
       p5_val, lcsi_crisis_val,    15, p5_val,
 
-      # Emergency: 16–20
+      # Emergency: 16\u201320
       p1_val, lcsi_emergency_val, 16, p1_val,
       p2_val, lcsi_emergency_val, 17, p2_val,
       p3_val, lcsi_emergency_val, 18, p3_val,
       p4_val, lcsi_emergency_val, 19, p4_val,
       p5_val, lcsi_emergency_val, 20, p5_val,
 
-      # Exhaustion: 21–25
+      # Exhaustion: 21\u201325
       p1_val, lcsi_exhaustion_val,21, p1_val,
       p2_val, lcsi_exhaustion_val,22, p2_val,
       p3_val, lcsi_exhaustion_val,23, p3_val,

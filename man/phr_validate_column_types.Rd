@@ -4,13 +4,7 @@
 \alias{phr_validate_column_types}
 \title{Validate Column Types}
 \usage{
-phr_validate_column_types(
-  df,
-  expected_types,
-  origin = NULL,
-  hint = NULL,
-  soft
-)
+phr_validate_column_types(df, expected_types, origin = NULL, hint = NULL, soft)
 }
 \arguments{
 \item{df}{Data frame to validate.}

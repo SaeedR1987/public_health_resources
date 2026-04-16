@@ -6,6 +6,10 @@
 \usage{
 data_table_to_schema(df)
 }
+\arguments{
+\item{df}{A data frame or tibble in the flat schema table format (as produced by
+\code{data_schema_to_table()}).}
+}
 \description{
 Convert a schema table into a canonical nested schema list
 }

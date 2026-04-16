@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_data_class.R
 \name{.parse_indicator_arguments}
 \alias{.parse_indicator_arguments}
-\title{Parse indicator arguments string respecting parentheses}
+\title{Parse indicator arguments string respecting parentheses and quoted strings}
 \usage{
 .parse_indicator_arguments(arg_string)
 }
@@ -14,7 +14,8 @@ Character vector of argument pairs
 }
 \description{
 Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
-properly by respecting parentheses so c(...) vectors aren't split incorrectly.
+properly by respecting parentheses and quoted strings so that c(...) vectors
+and quoted values containing commas are not split incorrectly.
 }
 \details{
 This function is intentionally called twice during indicator processing:
@@ -22,10 +23,5 @@ This function is intentionally called twice during indicator processing:
 2. Second call: Parse the content inside c(...) vectors into individual elements
 This two-stage parsing is necessary because arguments and vector elements have
 different semantic meanings and resolution rules.
-
-Note: This implementation does not handle escaped parentheses or parentheses
-within quoted strings (e.g., arg="func(x,y)"). This is acceptable because
-indicator arguments in practice use @ references and simple values, not complex
-quoted expressions with literal parentheses.
 }
 \keyword{internal}

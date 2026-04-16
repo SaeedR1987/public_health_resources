@@ -5,8 +5,6 @@
 library(testthat)
 library(tibble)
 
-# Source generate_household_samples.R from dev directory
-source(file.path(here::here(), "dev", "generate_household_samples.R"))
 
 
 # 1. INITIALIZATION TESTS
@@ -15,10 +13,12 @@ source(file.path(here::here(), "dev", "generate_household_samples.R"))
 test_that("IndividualData initializes with minimal valid data", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(
-    data = df,
-    dataset_name = "TestIndividual"
-  )
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = df,
+      dataset_name = "TestIndividual"
+    )
+  ))
 
   expect_s3_class(ind_data, "IndividualData")
   expect_s3_class(ind_data, "Data")
@@ -28,7 +28,9 @@ test_that("IndividualData initializes with minimal valid data", {
 test_that("IndividualData sets required columns correctly", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   # Should have individual-specific required columns
   expect_true(length(ind_data$required_columns) > 0)
@@ -52,10 +54,12 @@ test_that("IndividualData handles custom variable mapping", {
     age = "age_yrs"
   )
 
-  ind_data <- IndividualData$new(
-    data = df,
-    variable_map = custom_map
-  )
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = df,
+      variable_map = custom_map
+    )
+  ))
 
   expect_equal(ind_data$variable_map$uuid, "my_person_id")
   expect_equal(ind_data$variable_map$hh_uuid, "my_hh_id")
@@ -66,7 +70,9 @@ test_that("IndividualData handles custom variable mapping", {
 test_that("IndividualData does not initialize optional columns if not passed", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   # Optional columns should not be set
   expect_true(is.null(ind_data$optional_columns))
@@ -80,7 +86,9 @@ test_that("IndividualData does not initialize optional columns if not passed", {
 test_that("IndividualData loads default schema", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   schema <- ind_data$default_schema()
 
@@ -91,7 +99,9 @@ test_that("IndividualData loads default schema", {
 test_that("IndividualData merges schema with parent", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   # Variable schema should be set and merged
   expect_true(!is.null(ind_data$variable_schema))
@@ -101,7 +111,9 @@ test_that("IndividualData merges schema with parent", {
 test_that("IndividualData loads indicator schema", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   indicator_schema <- ind_data$default_indicator_schema()
 
@@ -111,7 +123,9 @@ test_that("IndividualData loads indicator schema", {
 test_that("IndividualData loads dependency schema", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   dependency_schema <- ind_data$default_dependency_schema()
 
@@ -125,7 +139,9 @@ test_that("IndividualData loads dependency schema", {
 test_that("IndividualData household_link field is initialized", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   # household_link should exist (may be NULL initially)
   expect_true("household_link" %in% names(ind_data))
@@ -136,8 +152,12 @@ test_that("IndividualData can link to household data", {
   hh_df <- generate_household_dataset(n = 5)
   ind_df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  hh_data <- HouseholdData$new(data = hh_df, dataset_name = "householddata")
-  ind_data <- IndividualData$new(data = ind_df)
+  hh_data <- suppressMessages(suppressWarnings(
+    HouseholdData$new(data = hh_df, dataset_name = "householddata")
+  ))
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = ind_df)
+  ))
 
   hh_data$add_linked_dataset(name = "roster", data_object = ind_data)
 
@@ -156,7 +176,9 @@ test_that("IndividualData validates required fields", {
   )
 
   expect_error({
-    ind_data <- IndividualData$new(data = df)
+    ind_data <- suppressMessages(suppressWarnings(
+      IndividualData$new(data = df)
+    ))
   }, regexp = NA)  # May or may not error depending on validation timing
 })
 
@@ -169,7 +191,9 @@ test_that("IndividualData handles empty dataset", {
   )
 
   expect_error({
-    ind_data <- IndividualData$new(data = df)
+    ind_data <- suppressMessages(suppressWarnings(
+      IndividualData$new(data = df)
+    ))
   }, regexp = NA)  # Should handle empty data gracefully
 })
 
@@ -180,7 +204,9 @@ test_that("IndividualData handles empty dataset", {
 test_that("IndividualData provides access to raw data", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   expect_true(!is.null(ind_data$raw_data))
   expect_equal(nrow(ind_data$raw_data), 20)
@@ -189,7 +215,9 @@ test_that("IndividualData provides access to raw data", {
 test_that("IndividualData tracks data stages", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   # Should have stage tracking fields
   expect_false(ind_data$validated)
@@ -209,10 +237,12 @@ test_that("IndividualData stores metadata", {
     data_collection_date = Sys.Date()
   )
 
-  ind_data <- IndividualData$new(
-    data = df,
-    metadata = metadata
-  )
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = df,
+      metadata = metadata
+    )
+  ))
 
   expect_true(is.list(ind_data$metadata))
   expect_equal(ind_data$metadata$survey_name, "Test Survey")
@@ -222,7 +252,9 @@ test_that("IndividualData stores metadata", {
 test_that("IndividualData creates default metadata", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   expect_true(is.list(ind_data$metadata))
   expect_equal(ind_data$metadata$dataset_name, "IndividualData")
@@ -235,7 +267,9 @@ test_that("IndividualData creates default metadata", {
 test_that("IndividualData inherits from Data", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   expect_true(inherits(ind_data, "Data"))
 
@@ -247,7 +281,9 @@ test_that("IndividualData inherits from Data", {
 test_that("IndividualData can be used with Data methods", {
   df <- generate_hh_roster_dataset(household_data_or_n = 20)
 
-  ind_data <- IndividualData$new(data = df)
+  ind_data <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df)
+  ))
 
   # get_data should work (inherited from Data)
   expect_no_error({
@@ -280,7 +316,9 @@ test_that("IndividualData handles missing columns gracefully", {
 
   # Should either error or warn about missing required columns
   expect_error({
-    ind_data <- IndividualData$new(data = df)
+    ind_data <- suppressMessages(suppressWarnings(
+      IndividualData$new(data = df)
+    ))
   }, regexp = NA)  # Behavior depends on validation implementation
 })
 
@@ -297,7 +335,9 @@ test_that("IndividualData populates variable_map on initialization", {
     age = c(25, 30, 45, 22, 60)
   )
 
-  ind <- IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ind <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ))
 
   # Check that variable_map is populated beyond just uuid and hh_uuid
   expect_true("person_id" %in% names(ind$variable_map))
@@ -321,7 +361,9 @@ test_that("IndividualData populates value_map for non-numeric types", {
     age = c(25, 30, 45, 22, 60)
   )
 
-  ind <- IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ind <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ))
 
   # Check that value_map is populated for sex (character type with allowed_values)
   expect_true("sex" %in% names(ind$value_map))
@@ -340,7 +382,9 @@ test_that("IndividualData maps alternative column names", {
     age_years = c(25, 30, 45, 22, 60)
   )
 
-  ind <- IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ind <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ))
 
   # Check that alternative column names are mapped
   expect_equal(ind$variable_map$uuid, "person_id")
@@ -363,16 +407,18 @@ test_that("IndividualData does not overwrite explicit variable_map", {
   )
 
   # Provide explicit variable_map
-  ind <- IndividualData$new(
-    data = df,
-    dataset_name = "TestIndividual",
-    variable_map = list(
-      uuid = "my_id",
-      hh_uuid = "my_hh",
-      sex = "person_sex",
-      age = "person_age"
+  ind <- suppressMessages(suppressWarnings(
+    IndividualData$new(
+      data = df,
+      dataset_name = "TestIndividual",
+      variable_map = list(
+        uuid = "my_id",
+        hh_uuid = "my_hh",
+        sex = "person_sex",
+        age = "person_age"
+      )
     )
-  )
+  ))
 
   # Check that explicit mappings are preserved
   expect_equal(ind$variable_map$uuid, "my_id")
@@ -392,7 +438,9 @@ test_that("IndividualData handles missing optional columns gracefully", {
 
   # Should not error even though optional columns are missing
   expect_no_error(
-    ind <- IndividualData$new(data = df, dataset_name = "TestIndividual")
+    ind <- suppressMessages(suppressWarnings(
+      IndividualData$new(data = df, dataset_name = "TestIndividual")
+    ))
   )
 
   # Optional columns should not be in variable_map if not present
@@ -414,7 +462,9 @@ test_that("IndividualData maps optional columns when present", {
     age_months = c(300, 360, 540, 264, 720)
   )
 
-  ind <- IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ind <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df, dataset_name = "TestIndividual")
+  ))
 
   # Check that optional columns are mapped when present
   expect_equal(ind$variable_map$dob_exact, "dob_exact")
@@ -441,8 +491,12 @@ test_that("IndividualData variable_map works like HouseholdData", {
     enumerator_id = paste0("E", 1:5)
   )
 
-  ind <- IndividualData$new(data = ind_df, dataset_name = "TestIndividual")
-  hh <- HouseholdData$new(data = hh_df, dataset_name = "TestHousehold")
+  ind <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = ind_df, dataset_name = "TestIndividual")
+  ))
+  hh <- suppressMessages(suppressWarnings(
+    HouseholdData$new(data = hh_df, dataset_name = "TestHousehold")
+  ))
 
   # Both should have variable_map populated beyond the default uuid
   expect_true(length(ind$variable_map) > 2)  # More than just uuid and hh_uuid

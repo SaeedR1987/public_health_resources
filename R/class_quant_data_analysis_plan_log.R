@@ -28,8 +28,6 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
 
   public = list(
 
-    #' Initialize Quant Data Analysis Plan Log
-    #'
     #' @description
     #' Creates a new QuantDataAnalysisPlanLog with default schema and required columns
     #'
@@ -173,7 +171,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
     #' @param denom_var Character; denominator variable (optional, for ratios)
     #' @param disaggregation Character; disaggregation variable(s) (optional)
     #' @param multiplier Numeric; multiplier for the calculation (default: 100)
-    #' @param indicator_unit Character; unit of measurement (default: "%")
+    #' @param indicator_unit Character; unit of measurement (default: "\%")
     #'
     #' @return Invisible TRUE
     #'

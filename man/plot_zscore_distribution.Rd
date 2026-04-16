@@ -5,7 +5,7 @@
 \title{Plot Z-Score Distribution}
 \usage{
 plot_zscore_distribution(
-  df,
+  survey_design,
   zscore_var,
   vline_intercepts = c(-3, -2, 2, 3),
   vline_colors = c("red", "orange", "orange", "red"),
@@ -13,6 +13,8 @@ plot_zscore_distribution(
   grouping = NULL,
   color_palette = "reach3",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   y_lab = NULL,
   legend_position = "bottom",
@@ -22,7 +24,7 @@ plot_zscore_distribution(
 )
 }
 \arguments{
-\item{df}{A data frame containing the z-score data.}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{zscore_var}{A character string specifying the column name containing z-scores to plot.}
 
@@ -40,7 +42,15 @@ Must be same length as vline_intercepts. Default is c("red", "orange", "orange",
 
 \item{title_name}{Optional character string for the plot title.}
 
+\item{variable_label}{Optional character string. Human-readable label for the z-score variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
+
 \item{subtitle}{Optional character string for additional subtitle text (will be appended to auto-generated n counts).}
+
+\item{y_lab}{Optional character string for the y-axis label. Default: NULL (auto-generated).}
 
 \item{legend_position}{Position of the legend. By default: "bottom". Options: "bottom", "top", "left", "right", "none".}
 

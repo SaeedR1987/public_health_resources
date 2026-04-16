@@ -5,19 +5,25 @@
 \title{Plot Correlogram}
 \usage{
 plot_correlogram(
-  .dataset,
+  survey_design,
   numeric_cols = c("fsl_fcs_score", "fsl_rcsi_score", "fsl_hhs_score"),
   title_name = NULL,
+  variable_label = NULL,
   subtitle = NULL
 )
 }
 \arguments{
-\item{.dataset}{output of the create_fsl_flags functions}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{numeric_cols}{a vector of the fsl indicator scores.
 By default: c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score")}
 
 \item{title_name}{Title of the plot}
+
+\item{variable_label}{Optional character string. Human-readable label for the variables, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{subtitle}{Optional character string appended to the auto-generated n count subtitle. Default: NULL.}
 }
 \value{
 a Correlogram plot
@@ -27,6 +33,6 @@ Plot Correlogram
 }
 \examples{
 \dontrun{
-  plot_correlogram(.dataset)
+  plot_correlogram(survey_design)
 }
 }

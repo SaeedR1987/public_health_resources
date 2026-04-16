@@ -289,7 +289,6 @@ phr_pick_ci_method <- function(n_unweighted = NULL,
                                  is_numeric = FALSE,
                                  is_ratio = FALSE) {
 
-  # --- Initialize
   flags <- c(
     flag_small_n    = FALSE,
     flag_low_neff   = FALSE,
@@ -499,7 +498,7 @@ phr_calc_survey_prop_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_event_weighted   = srvyr::survey_total(!!var_sym, vartype = NULL, na.rm = TRUE),
       n_event_unweighted = sum(!!var_sym, na.rm = TRUE),
@@ -537,7 +536,7 @@ phr_calc_survey_prop_single <- function(design,
   }
 
   # Effective sample size
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean estimate (for CI policy decision)
@@ -608,7 +607,7 @@ phr_calc_survey_prop_single <- function(design,
 
   prop_deff <- tryCatch({
     deff_est <- survey::svymean(
-      as.formula(paste0("~I(", var_name, " == 1)")),
+      as.formula(paste0("~", var_name)),
       design,
       na.rm = TRUE,
       deff = "replace"
@@ -781,7 +780,7 @@ phr_calc_survey_mean_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_weighted       = srvyr::survey_total(!is.na(!!var_sym), vartype = NULL, na.rm = TRUE),
       n_unweighted     = sum(!is.na(!!var_sym)),
@@ -795,7 +794,7 @@ phr_calc_survey_mean_single <- function(design,
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
   # Effective sample size
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean estimate (for CI policy decision)
@@ -1001,7 +1000,7 @@ phr_calc_survey_median_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_weighted       = srvyr::survey_total(!is.na(!!var_sym), vartype = NULL, na.rm = TRUE),
       n_unweighted     = sum(!is.na(!!var_sym)),
@@ -1015,7 +1014,7 @@ phr_calc_survey_median_single <- function(design,
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
   # Effective sample size
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, denom_unweighted))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, denom_unweighted))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick numeric summary for CI policy
@@ -1235,7 +1234,7 @@ phr_calc_survey_ratio_single <- function(design,
 
   design_srvyr <- if (inherits(design, "tbl_svy")) design else srvyr::as_survey(design)
 
-  dsn_sum <- design_srvyr %>%
+  dsn_sum <- design_srvyr |>
     srvyr::summarise(
       n_weighted       = srvyr::survey_total(!!num_sym, vartype = NULL, na.rm = TRUE),
       n_unweighted     = sum(!!num_sym, na.rm = TRUE),
@@ -1248,7 +1247,7 @@ phr_calc_survey_ratio_single <- function(design,
   denom_weighted   <- as.numeric(dsn_sum$denom_weighted)
   denom_unweighted <- as.numeric(dsn_sum$denom_unweighted)
 
-  w <- tryCatch(survey::weights(design), error = function(e) rep(1, nrow(data)))
+  w <- tryCatch(stats::weights(design), error = function(e) rep(1, nrow(data)))
   n_eff <- if (sum(w^2, na.rm = TRUE) > 0) (sum(w, na.rm = TRUE)^2) / sum(w^2, na.rm = TRUE) else NA_real_
 
   # Quick mean ratio

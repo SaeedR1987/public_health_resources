@@ -394,14 +394,14 @@ ipc_colors <- function(n = NULL, reverse = FALSE) {
 #' Water Theme Color Palette
 #'
 #' Provides a color palette based on the Water theme color (#28A1D2), using tints
-#' blended with white at 80%, 55%, and 30%. Can be scaled to any number of colors
+#' blended with white at 80\%, 55\%, and 30\%. Can be scaled to any number of colors
 #' by interpolating the full gradient from the primary color to the lightest tint.
 #'
-#' @param n Number of colors to return. If NULL, returns the 3 standard tints (80%, 55%, 30%).
+#' @param n Number of colors to return. If NULL, returns the 3 standard tints (80\%, 55\%, 30\%).
 #'   If n is less than or equal to 3, returns the first n standard tints.
 #'   If n is greater than 3, interpolates across the full gradient to return exactly n colors.
 #' @param reverse Logical indicating whether to reverse the color order. Default is FALSE.
-#'   When FALSE, returns colors from darkest (80%) to lightest (30%).
+#'   When FALSE, returns colors from darkest (80\%) to lightest (30\%).
 #'
 #' @return A named character vector of hex color codes (unnamed when interpolated).
 #' @export
@@ -455,14 +455,14 @@ water_colors <- function(n = NULL, reverse = FALSE) {
 #' Sanitation Theme Color Palette
 #'
 #' Provides a color palette based on the Sanitation theme color (#532F87), using tints
-#' blended with white at 80%, 55%, and 30%. Can be scaled to any number of colors
+#' blended with white at 80\%, 55\%, and 30\%. Can be scaled to any number of colors
 #' by interpolating the full gradient from the primary color to the lightest tint.
 #'
-#' @param n Number of colors to return. If NULL, returns the 3 standard tints (80%, 55%, 30%).
+#' @param n Number of colors to return. If NULL, returns the 3 standard tints (80\%, 55\%, 30\%).
 #'   If n is less than or equal to 3, returns the first n standard tints.
 #'   If n is greater than 3, interpolates across the full gradient to return exactly n colors.
 #' @param reverse Logical indicating whether to reverse the color order. Default is FALSE.
-#'   When FALSE, returns colors from darkest (80%) to lightest (30%).
+#'   When FALSE, returns colors from darkest (80\%) to lightest (30\%).
 #'
 #' @return A named character vector of hex color codes (unnamed when interpolated).
 #' @export
@@ -516,14 +516,14 @@ sanitation_colors <- function(n = NULL, reverse = FALSE) {
 #' Hygiene Theme Color Palette
 #'
 #' Provides a color palette based on the Hygiene theme color (#008D48), using tints
-#' blended with white at 80%, 55%, and 30%. Can be scaled to any number of colors
+#' blended with white at 80\%, 55\%, and 30\%. Can be scaled to any number of colors
 #' by interpolating the full gradient from the primary color to the lightest tint.
 #'
-#' @param n Number of colors to return. If NULL, returns the 3 standard tints (80%, 55%, 30%).
+#' @param n Number of colors to return. If NULL, returns the 3 standard tints (80\%, 55\%, 30\%).
 #'   If n is less than or equal to 3, returns the first n standard tints.
 #'   If n is greater than 3, interpolates across the full gradient to return exactly n colors.
 #' @param reverse Logical indicating whether to reverse the color order. Default is FALSE.
-#'   When FALSE, returns colors from darkest (80%) to lightest (30%).
+#'   When FALSE, returns colors from darkest (80\%) to lightest (30\%).
 #'
 #' @return A named character vector of hex color codes (unnamed when interpolated).
 #' @export

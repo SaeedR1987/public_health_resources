@@ -5,13 +5,15 @@
 \title{Plot Domain Radar Chart}
 \usage{
 plot_domain_radar(
-  df,
+  survey_design,
   domain_cols,
   domain_labels = NULL,
   grouping = NULL,
   max_value = NULL,
   color_palette = "reach2",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   legend_position = "bottom",
   flip_coordinates = FALSE,
@@ -20,7 +22,7 @@ plot_domain_radar(
 )
 }
 \arguments{
-\item{df}{Dataset with domain indicators}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{domain_cols}{Vector of column names representing domains (binary 0/1 values)}
 
@@ -33,6 +35,12 @@ plot_domain_radar(
 \item{color_palette}{Color palette to use. By default: "reach2"}
 
 \item{title_name}{Title of the plot. By default: NULL}
+
+\item{variable_label}{Optional character string. Human-readable label for the domain variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
 
 \item{subtitle}{Subtitle of the plot. By default: NULL}
 
@@ -52,7 +60,7 @@ Plot Domain Radar Chart
 }
 \examples{
 \dontrun{
-  plot_domain_radar(df = data,
+  plot_domain_radar(survey_design = data,
                     domain_cols = c("food", "water", "health"),
                     domain_labels = c("Food Security", "WASH", "Health"))
 }

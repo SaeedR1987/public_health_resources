@@ -1,6 +1,6 @@
 #' Statistical Quality Test Functions
 #'
-#' This file contains statistical test functions used by the DataQuality class
+#' This file contains statistical test functions used by the DataAnalytics class
 #' for plausibility testing. Each function returns a test statistic or metric
 #' that can be compared against thresholds to determine data quality.
 #'
@@ -1279,12 +1279,45 @@ quality_test_ageratio <- function(
   }, on_error = "warn", origin = "quality_test_ageratio")
 }
 
+#' Digit Preference Score (internal helper)
+#'
+#' Computes the digit preference score (DPS) using the WHO MONICA formula.
+#' The DPS is derived from a chi-squared test for uniformity over the
+#' distribution of the final recorded digit.
+#'
+#' @param x Numeric vector of measurements (NAs should be removed beforehand).
+#' @param digits Number of decimal places to which \code{x} is formatted before
+#'   extracting the final digit. Default is \code{1}.
+#' @param values Integer vector of possible final-digit values. Default is
+#'   \code{0:9}.
+#'
+#' @return A single numeric DPS value, rounded to 2 decimal places.
+#'
+#' @references
+#' Kuulasmaa K, Hense HW, Tolonen H (WHO MONICA Project).
+#' Quality Assessment of Data on Blood Pressure in the WHO MONICA Project.
+#' WHO MONICA Project e-publications No. 9, WHO, Geneva, 1998.
+#' \url{https://www.thl.fi/publications/monica/bp/bpqa.htm}
+#'
+#' @noRd
+digit_preference_score <- function(x, digits = 1, values = 0:9) {
+  x_fmt <- formatC(x, digits = digits, format = "f")
+  final_digit <- substr(x_fmt, nchar(x_fmt), nchar(x_fmt))
+  tab <- table(factor(final_digit, levels = as.character(values)))
+  chi_sq <- stats::chisq.test(tab)
+  dps <- round(
+    100 * sqrt(chi_sq$statistic / (sum(chi_sq$observed) * chi_sq$parameter)),
+    2
+  )
+  as.numeric(dps)
+}
+
 #' Digit Preference Score (MUAC)
 #'
-#' Compute digit preference score for a numeric MUAC (cm) variable using nipnTK.
+#' Compute digit preference score for a numeric variable.
 #'
 #' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
-#' @param variables Character scalar. Name of the MUAC (cm) column in `data`
+#' @param variables Character scalar. Name of the column in `data`
 #' @return List with statistic (digit preference score) and p_value (NA_real_)
 #' @export
 quality_test_digit_preference <- function(survey_design, variables) {
@@ -1329,8 +1362,7 @@ quality_test_digit_preference <- function(survey_design, variables) {
       return(list(statistic = NA_real_, p_value = NA_real_))
     }
 
-    # nipnTK::digitPreference() returns a list; first element is the score
-    dp <- nipnTK::digitPreference(x)[[1]]
+    dp <- digit_preference_score(x)
 
     return(list(
       statistic = as.numeric(dp),

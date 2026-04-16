@@ -1,13 +1,13 @@
-# ────────────────────────────────────────────────
+# ------------------------------------------------
 # IPHRA Text Translation / Localization Utility
-# ────────────────────────────────────────────────
+# ------------------------------------------------
 
 # Translation dictionary (extend later)
 phr_translations <- list(
   en = list(
     export_tor = "Export ToR",
     validation_passed = "Validation checks passed (dummy mode).",
-    tor_export_success = "ToR export simulated successfully ✅",
+    tor_export_success = "ToR export simulated successfully \u2705",
     # ---- auto-title static parts ----
     "Distribution of"            = "Distribution of",
     "Cumulative Distribution of" = "Cumulative Distribution of",
@@ -32,26 +32,26 @@ phr_translations <- list(
   ),
   fr = list(
     export_tor = "Exporter les TdR",
-    validation_passed = "Vérifications terminées avec succès (mode fictif).",
-    tor_export_success = "Exportation simulée des TdR réussie ✅",
+    validation_passed = "V\u00e9rifications termin\u00e9es avec succ\u00e8s (mode fictif).",
+    tor_export_success = "Exportation simul\u00e9e des TdR r\u00e9ussie \u2705",
     # ---- auto-title static parts ----
     "Distribution of"            = "Distribution de",
     "Cumulative Distribution of" = "Distribution cumulative de",
     "Z-Score Distribution of"    = "Distribution des z-scores de",
-    "Age Distribution of"        = "Distribution par âge de",
-    "Prevalence of"              = "Prévalence de",
+    "Age Distribution of"        = "Distribution par \u00e2ge de",
+    "Prevalence of"              = "Pr\u00e9valence de",
     "Mean of"                    = "Moyenne de",
     "Treemap of"                 = "Treemap de",
-    "Response Distribution"      = "Distribution des réponses",
+    "Response Distribution"      = "Distribution des r\u00e9ponses",
     "Domain Radar"               = "Radar des domaines",
-    "Correlation Matrix"         = "Matrice de corrélation",
-    "Age-Sex Pyramid"            = "Pyramide âge-sexe",
+    "Correlation Matrix"         = "Matrice de corr\u00e9lation",
+    "Age-Sex Pyramid"            = "Pyramide \u00e2ge-sexe",
     "IYCF Area Graph"            = "Graphique ANJE",
     "Flow Diagram"               = "Diagramme de flux",
-    "Frequency Table of"         = "Tableau de fréquence de",
+    "Frequency Table of"         = "Tableau de fr\u00e9quence de",
     "Cumulative Mean of"         = "Moyenne cumulative de",
-    "Cumulative SD of"           = "Écart-type cumulatif de",
-    "Digit Preference Score of"  = "Score de préférence numérique de",
+    "Cumulative SD of"           = "\u00c9cart-type cumulatif de",
+    "Digit Preference Score of"  = "Score de pr\u00e9f\u00e9rence num\u00e9rique de",
     "Cumulative Count of"        = "Nombre cumulatif de",
     "Cumulative Ratio of"        = "Ratio cumulatif de",
     ", by"                       = ", par"
@@ -62,8 +62,12 @@ phr_translations <- list(
 phr_current_lang <- "en"
 
 # ---- Safe Translation Lookup ----
-phr_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefaultReactiveDomain()) {
-  # [🔗 FUTURE] When language reactivity is connected, use session$userData$lang()
+phr_txt <- function(key, lang = NULL, default = NULL, session = NULL) {
+  # Lazily obtain the default Shiny reactive domain if shiny is available
+  if (is.null(session) && requireNamespace("shiny", quietly = TRUE)) {
+    session <- shiny::getDefaultReactiveDomain()
+  }
+  # [ FUTURE] When language reactivity is connected, use session$userData$lang()
   # If no reactive session available, fallback to phr_current_lang or "en"
 
   # Use glue::glue to evaluate expressions in {} within the key string
@@ -72,7 +76,7 @@ phr_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefaul
 
   if (is.null(lang)) {
     if (!is.null(session) && !is.null(session$userData$lang)) {
-      # Safe reactive access — only works once session$userData$lang is defined
+      # Safe reactive access \u2014 only works once session$userData$lang is defined
       lang <- tryCatch(session$userData$lang(), error = function(e) NULL)
     }
   }
@@ -92,7 +96,7 @@ phr_txt <- function(key, lang = NULL, default = NULL, session = shiny::getDefaul
   # ---- Fallback logic ----
   if (is.null(value)) {
     if (!is.null(default)) return(default)
-    return(paste0("⧫", key, "⧫"))  # visually marks missing keys
+    return(paste0("\u29eb", key, "\u29eb"))  # visually marks missing keys
   }
 
   return(value)

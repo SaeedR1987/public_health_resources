@@ -63,7 +63,7 @@ DeathIndividualData <- R6::R6Class(
         }
 
         # Convert recall_date safely
-        recall_date <- convert_date(recall_date)
+        recall_date <- phr_convert_date(recall_date)
         self$recall_date <- recall_date
 
         # --- Default mapping for death-related variables
@@ -125,7 +125,7 @@ DeathIndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "variable_schema_data_individual_death_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -166,7 +166,7 @@ DeathIndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "indicator_schema_data_individual_death_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -209,7 +209,7 @@ DeathIndividualData <- R6::R6Class(
       file <- system.file(
         "resources",
         "dependency_schema_data_individual_death_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {

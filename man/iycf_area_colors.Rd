@@ -34,7 +34,7 @@ lightest to darkest:
 \dontrun{
   # Get IYCF area graph colors (light to dark)
   iycf_area_colors()
-  
+
   # Get reversed order (dark to light)
   iycf_area_colors(reverse = TRUE)
 }

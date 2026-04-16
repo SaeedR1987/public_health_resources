@@ -732,25 +732,16 @@ quality_table <- read.xlsx("resources/quality_schema_template.xlsx")
 # Convert to schema list
 quality_schema <- quality_table_to_schema(quality_table)
 
-# Create DataQuality object
-dq <- DataQuality$new(
-  data = my_data,
-  quality_schema = quality_schema
-)
+# Create DataAnalytics object
+analytics <- data$generate_data_analytics(stage = "standardized")
+analytics$set_quality_schema(quality_schema)
 
 # Run quality checks
-dq$run_quality_checks()
-
-# Generate report
-report <- dq$generate_plausibility_report()
+analytics$run_quality_checks()
 
 # View results
-print(report$plausibility_score)
-print(report$test_results)
-print(report$summary)
-
-# Access detailed results
-dq$quality_results
+print(analytics$overall_score)
+print(analytics$quality_results)
 ```
 
 ### Best Practices
@@ -787,9 +778,8 @@ The quality schema is **still under development**. Current limitations:
 
 - `quality_table_to_schema()` - Convert table to quality schema list
 - `quality_schema_to_table()` - Convert quality schema list to table
-- `DataQuality$new()` - Create DataQuality object with quality schema
-- `DataQuality$run_quality_checks()` - Execute quality checks
-- `DataQuality$generate_plausibility_report()` - Generate quality report
+- `DataAnalytics$set_quality_schema()` - Set quality schema on an analytics object
+- `DataAnalytics$run_quality_checks()` - Execute quality checks
 
 ### Related Documentation
 
@@ -866,8 +856,8 @@ Different schemas use variable_map and value_map differently:
    ```r
    # Define statistical quality tests
    quality_schema <- quality_table_to_schema(quality_table)
-   dq <- DataQuality$new(data = d$standardized_data, 
-                         quality_schema = quality_schema)
+   analytics <- d$generate_data_analytics(stage = "standardized")
+   analytics$set_quality_schema(quality_schema)
    ```
 
 6. **Standardize Data**
@@ -880,9 +870,9 @@ Different schemas use variable_map and value_map differently:
    ```r
    # Applies dependency schema
    d$run_quality_checks("standardized")
-   
+
    # Run statistical quality tests
-   dq$run_quality_checks()
+   analytics$run_quality_checks()
    ```
 
 8. **Generate Cleaning Log**
@@ -891,10 +881,11 @@ Different schemas use variable_map and value_map differently:
    d$generate_cleaning_log()
    ```
 
-9. **Generate Quality Report**
+9. **View Quality Results**
    ```r
-   # Statistical plausibility report
-   report <- dq$generate_plausibility_report()
+   # Access quality scores and results
+   analytics$overall_score
+   analytics$quality_results
    ```
 
 ### Schema Interaction Diagram
@@ -969,7 +960,7 @@ Conversion functions are provided for each schema type:
 |---------|----------------|------------------|------------------|----------------|
 | **Purpose** | Define variables & validation | Quality check rules | Computed indicators | Statistical tests |
 | **Storage Field** | `variable_schema` | `dependency_schema` | `indicator_schema` | `quality_schema` |
-| **Import Method** | `set_schema()` | `set_dependency_schema()` | `import_indicator_schema()` | `DataQuality$new()` |
+| **Import Method** | `set_schema()` | `set_dependency_schema()` | `import_indicator_schema()` | `set_quality_schema()` |
 | **Export Method** | `data_schema_to_table()` | `dependency_schema_to_table()` | `export_indicator_schema()` | `quality_schema_to_table()` |
 | **Execution** | During `standardize()` | During `run_quality_checks()` | During `standardize()` | During `run_quality_checks()` |
 | **Output** | Standardized data | Quality flags | Indicator columns | Quality scores |
@@ -1005,7 +996,7 @@ All schema conversion and validation functions are in:
 
 Schema usage is implemented in:
 - `R/class_data.R` - Data class with schema methods
-- `R/class_data_quality.R` - DataQuality class
+- `R/class_data_analytics.R` - DataAnalytics class
 
 ---
 

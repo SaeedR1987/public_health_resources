@@ -22,7 +22,7 @@ Uses colors from REACH brand palette that provide good contrast.
 \dontrun{
   # Get sex comparison colors (Male, Female)
   sex_colors()
-  
+
   # Get reversed order (Female, Male)
   sex_colors(reverse = TRUE)
 }

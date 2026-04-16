@@ -15,25 +15,23 @@ add_muac(
 \arguments{
 \item{.dataset}{A data frame or tibble containing the required columns.}
 
-\item{nut_muac_cm_col}{Column name (character) of the MUAC measurements (in cm) or (mm). Unit detection will determine if values are centimeters or millimeters and perform the necessary conversion.}
+\item{nut_muac_cm_col}{Column name (character) of the MUAC measurements (in cm) or (mm).
+Unit detection will determine if values are centimeters or millimeters and perform the necessary conversion.}
 
 \item{edema_confirm_col}{Column name (character) confirming the presence of bilateral pitting edema.}
 
 \item{child_age_months_col}{Column name (character) of the child's age in months.}
 
-\item{value_edema_confirm}{Character value representing confirmed edema in the edema confirmation column.}
+\item{edema_confirm_val}{Character value representing confirmed edema in the edema confirmation column.}
 }
 \value{
-A data frame or tibble with the following new columns:
-* **nut_muac_cm**: MUAC values in centimeters (if detected or converted from millimeters).
-* **nut_muac_mm**: MUAC values in millimeters (if detected or converted from centimeters).
-* **sam_muac**: Severe Acute Malnutrition classification.
-* **mam_muac**: Moderate Acute Malnutrition classification.
-* **gam_muac**: Global Acute Malnutrition classification.
-* **flag_muac_extreme**: Flag for extreme MUAC measurements.
+A data frame or tibble with the added MUAC unit columns (where applicable), classifications, categories,
+extreme-value flag, and no-flag variants.
 }
 \description{
-This function calculates malnutrition categories (SAM, MAM, GAM) based on MUAC (Mid-Upper Arm Circumference) measurements, and it adds a flag for extreme MUAC values. It also detects whether the provided MUAC values are in centimeters or millimeters and performs the appropriate conversion if necessary.
+This function calculates malnutrition categories (SAM, MAM, GAM) based on MUAC (Mid-Upper Arm Circumference)
+measurements, and it adds a flag for extreme MUAC values. It also detects whether the provided MUAC values
+are in centimeters or millimeters and performs the appropriate conversion if necessary.
 }
 \details{
 The function adds or overwrites the following columns to the dataset:
@@ -42,11 +40,18 @@ The function adds or overwrites the following columns to the dataset:
 * **sam_muac**: Severe Acute Malnutrition (1 = SAM, 0 = not SAM).
 * **mam_muac**: Moderate Acute Malnutrition (1 = MAM, 0 = not MAM).
 * **gam_muac**: Global Acute Malnutrition (1 = GAM, 0 = not GAM).
+* **nut_muac_cat**: Categorical MUAC classification (`"Normal"`, `"MAM"`, `"SAM"`) wrapped in `phr_txt()`.
+  This is derived from `sam_muac` and `mam_muac` after edema and age exclusions.
 * **flag_muac_extreme**: Flag for extreme MUAC values (1 = less than 5 cm or greater than 20 cm, 0 = otherwise).
+* **sam_muac_noflag**: Same as `sam_muac`, but `NA` if `flag_muac_extreme == 1`.
+* **mam_muac_noflag**: Same as `mam_muac`, but `NA` if `flag_muac_extreme == 1`.
+* **gam_muac_noflag**: Same as `gam_muac`, but `NA` if `flag_muac_extreme == 1`.
 
 ## Unit Detection:
-* **Centimeter Detection**: If MUAC values in `nut_muac_cm_col` are all below 30, they are assumed to be in centimeters. The function will create or overwrite a `nut_muac_mm` column by converting the values to millimeters (multiplying by 10).
-* **Millimeter Detection**: If MUAC values in `nut_muac_cm_col` are all above 50, they are assumed to be in millimeters. The function will create or overwrite a `nut_muac_cm` column by converting the values to centimeters (dividing by 10).
+* **Centimeter Detection**: If MUAC values in `nut_muac_cm_col` are all below 30, they are assumed to be in centimeters.
+  The function will create or overwrite a `nut_muac_mm` column by converting the values to millimeters (multiplying by 10).
+* **Millimeter Detection**: If MUAC values in `nut_muac_cm_col` are all above 50, they are assumed to be in millimeters.
+  The function will create or overwrite a `nut_muac_cm` column by converting the values to centimeters (dividing by 10).
 * If the values do not satisfy the logic for centimeters or millimeters, no additional column is created, and a warning is issued.
 
 Children aged 6-59 months are included in the classification. SAM and GAM classifications take edema confirmation into account.
@@ -65,12 +70,12 @@ df_result_cm <- add_muac(
   nut_muac_cm_col = "nut_muac_cm",
   edema_confirm_col = "nut_edema_confirm",
   child_age_months_col = "child_age_months",
-  value_edema_confirm = "yes"
+  edema_confirm_val = "yes"
 )
 
 # Example dataset with MUAC values in millimeters
 df_mm <- data.frame(
-  nut_muac_cm = c(48, 125, 210), # Actually in millimeters
+  nut_muac_cm = c(80, 125, 210), # Actually in millimeters
   child_age_months = c(14, 54, 30),
   nut_edema_confirm = c("yes", NA, "no")
 )
@@ -81,7 +86,7 @@ df_result_mm <- add_muac(
   nut_muac_cm_col = "nut_muac_cm",
   edema_confirm_col = "nut_edema_confirm",
   child_age_months_col = "child_age_months",
-  value_edema_confirm = "yes"
+  edema_confirm_val = "yes"
 )
 
 }

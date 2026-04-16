@@ -74,8 +74,6 @@ HouseholdData <- R6::R6Class(
     optional_columns = NULL,  # non-required but commonly present columns
 
 
-    #' Initialize HouseholdData
-    #'
     #' @description
     #' Creates a new HouseholdData object with household-level survey data
     #'
@@ -193,7 +191,7 @@ HouseholdData <- R6::R6Class(
       file <- system.file(
         "resources",
         "variable_schema_data_household_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -237,7 +235,7 @@ HouseholdData <- R6::R6Class(
       file <- system.file(
         "resources",
         "indicator_schema_data_household_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -283,7 +281,7 @@ HouseholdData <- R6::R6Class(
       file <- system.file(
         "resources",
         "dependency_schema_data_household_template.xlsx",
-        package = "iphRa"
+        package = "phr"
       )
 
       if (!file.exists(file)) {
@@ -1210,8 +1208,8 @@ HouseholdData <- R6::R6Class(
         }
 
         # Aggregate by household
-        agg_data <- deaths_data %>%
-          dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+        agg_data <- deaths_data |>
+          dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
           dplyr::summarise(
             dplyr::across(
               dplyr::all_of(available_cols),
@@ -1247,7 +1245,7 @@ HouseholdData <- R6::R6Class(
         # For count/sum aggregations, 0 is semantically correct (measured as zero).
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
         if (length(linked_cols) > 0) {
-          hh_data <- hh_data %>%
+          hh_data <- hh_data |>
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
@@ -1297,8 +1295,8 @@ HouseholdData <- R6::R6Class(
         }
 
         # Aggregate by household
-        agg_data <- water_data %>%
-          dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+        agg_data <- water_data |>
+          dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
           dplyr::summarise(
             wash_container_total_liters = sum(as.numeric(.data[[water_col]]), na.rm = TRUE),
             num_containers = dplyr::n(),
@@ -1332,7 +1330,7 @@ HouseholdData <- R6::R6Class(
         # For count/sum aggregations, 0 is semantically correct (measured as zero).
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
         if (length(linked_cols) > 0) {
-          hh_data <- hh_data %>%
+          hh_data <- hh_data |>
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
@@ -1392,13 +1390,13 @@ HouseholdData <- R6::R6Class(
             phr_txt("No canonical roster columns found in linked dataset '{link_name}'. Falling back to basic household_size calculation.")
           )
           # At minimum, provide household size
-          agg_data <- roster_data %>%
-            dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+          agg_data <- roster_data |>
+            dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
             dplyr::summarise(roster_household_size = dplyr::n(), .groups = "drop")
         } else {
           # Aggregate canonical columns by summing
-          agg_data <- roster_data %>%
-            dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+          agg_data <- roster_data |>
+            dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
             dplyr::summarise(
               roster_household_size = dplyr::n(),
               dplyr::across(
@@ -1436,7 +1434,7 @@ HouseholdData <- R6::R6Class(
         # For count/sum aggregations, 0 is semantically correct (measured as zero).
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
         if (length(linked_cols) > 0) {
-          hh_data <- hh_data %>%
+          hh_data <- hh_data |>
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
@@ -1484,8 +1482,8 @@ HouseholdData <- R6::R6Class(
 
         if (length(available_cols) > 0) {
           # New harmonized approach: sum canonical columns
-          agg_data <- nutrition_data %>%
-            dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+          agg_data <- nutrition_data |>
+            dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
             dplyr::summarise(
               dplyr::across(
                 dplyr::all_of(available_cols),
@@ -1514,8 +1512,8 @@ HouseholdData <- R6::R6Class(
           }
 
           # Aggregate by household using old calculation method
-          agg_data <- nutrition_data %>%
-            dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+          agg_data <- nutrition_data |>
+            dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
             dplyr::summarise(
               children_under2 = sum(as.numeric(.data[[age_months_col]]) < 24, na.rm = TRUE),
               children_2to5 = sum(as.numeric(.data[[age_months_col]]) >= 24 & as.numeric(.data[[age_months_col]]) < 60, na.rm = TRUE),
@@ -1549,7 +1547,7 @@ HouseholdData <- R6::R6Class(
         # Replace NA values with 0 for all linked columns
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
         if (length(linked_cols) > 0) {
-          hh_data <- hh_data %>%
+          hh_data <- hh_data |>
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
@@ -1586,8 +1584,8 @@ HouseholdData <- R6::R6Class(
       phr_try({
 
         # Aggregate by household - count number of people recorded
-        agg_data <- health_data %>%
-          dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+        agg_data <- health_data |>
+          dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
           dplyr::summarise(
             num_people_recorded = dplyr::n(),
             .groups = "drop"
@@ -1618,7 +1616,7 @@ HouseholdData <- R6::R6Class(
         # Replace NA values with 0 for all linked columns
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
         if (length(linked_cols) > 0) {
-          hh_data <- hh_data %>%
+          hh_data <- hh_data |>
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 
@@ -1656,8 +1654,8 @@ HouseholdData <- R6::R6Class(
 
         # For women data, all rows represent women aged 15-49
         # Simply count the number of women per household
-        agg_data <- women_data %>%
-          dplyr::group_by(!!rlang::sym(linked_hh_col)) %>%
+        agg_data <- women_data |>
+          dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
           dplyr::summarise(
             women_15to49 = dplyr::n(),
             .groups = "drop"
@@ -1688,7 +1686,7 @@ HouseholdData <- R6::R6Class(
         # Replace NA values with 0 for all linked columns
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
         if (length(linked_cols) > 0) {
-          hh_data <- hh_data %>%
+          hh_data <- hh_data |>
             dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
         }
 

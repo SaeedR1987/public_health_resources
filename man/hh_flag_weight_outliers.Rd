@@ -6,6 +6,9 @@
 \usage{
 hh_flag_weight_outliers(w)
 }
+\arguments{
+\item{w}{Numeric vector of weight values to check for outliers.}
+}
 \description{
 Identify outliers using IQR rule
 }

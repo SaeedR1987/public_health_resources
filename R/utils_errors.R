@@ -1,85 +1,5 @@
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-#' #' @title IPHRA Shiny-Aware Error and Warning Handling (with session logs)
-#' #' @description
-#' #' Provides standardized, Shiny-aware functions for emitting and logging
-#' #' errors, warnings, and informational messages in a user-friendly way.
-#' #' Logs are stored in a session-scoped reactive value (via `reactiveVal`)
-#' #' and can be accessed reactively with `phr_get_logs()`.
-#' #' Logs vanish automatically when the Shiny session ends.
-#' #'
-#' #' @keywords internal
-#'
-#'
-#' # ---- Reactive logging store ----------------------------------------
-#'
-#' #' @title Initialize an Empty IPHRA Log Store
-#' #' @description
-#' #' Creates a new Shiny `reactiveVal` object containing an empty
-#' #' data frame with standard IPHRA log columns:
-#' #' `time`, `level`, `origin`, and `message`.
-#' #' Used internally to initialize session-scoped logging.
-#' #'
-#' #' @return A `reactiveVal` containing an empty log data frame.
-#' #' @keywords internal
-#' phr_init_log <- function() {
-#'   shiny::reactiveVal(
-#'     data.frame(
-#'       time = character(),
-#'       level = character(),
-#'       origin = character(),
-#'       message = character(),
-#'       stringsAsFactors = FALSE
-#'     )
-#'   )
-#' }
-#'
-#' # global reactiveVal handle (created per session lazily)
-#' phr_log_store <- NULL
-#'
-#' #' @title Get or Create the Session Log Store
-#' #' @description
-#' #' Uses Shiny's `session$userData` to store a per-session reactive log.
-#' #' Automatically initializes the log store if missing.
-#' #'
-#' #' @return A `reactiveVal` object containing the log data frame.
-#' #' @keywords internal
-#' phr_get_log_store <- function(session = shiny::getDefaultReactiveDomain()) {
-#'   if (is.null(session)) {
-#'     stop("[IPHRA::Error] No active Shiny session found; cannot access log store.")
-#'   }
-#'   if (is.null(session$userData$phr_log_store)) {
-#'     session$userData$phr_log_store <- phr_init_log()
-#'   }
-#'   session$userData$phr_log_store
-#' }
-#'
-#' @title Append a Log Entry
-#' @keywords internal
-phr_log <- function(level, message, origin = NULL) {
-  if (!requireNamespace("shiny", quietly = TRUE) || !shiny::isRunning()) return(invisible())
-  session <- shiny::getDefaultReactiveDomain()
-  log_fun <- phr_get_log_store(session)
-  current <- log_fun()
-  entry <- data.frame(
-    time = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-    level = level,
-    origin = origin %||% "",
-    message = message,
-    stringsAsFactors = FALSE
-  )
-  log_fun(rbind(current, entry))
-  invisible(NULL)
-}
-#'
-#' #' @title Get Current IPHRA Session Logs
-#' #' @return A reactive expression that returns the session log data frame.
-#' #' @export
-#' phr_get_logs <- function(session = shiny::getDefaultReactiveDomain()) {
-#'   store <- phr_get_log_store(session)
-#'   shiny::reactive(store())
-#' }
-
 
 # ---- Internal notifier ---------------------------------------------
 
@@ -139,7 +59,7 @@ phr_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
     "[IPHRA::", type, "] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
     message,
-    if (!is.null(hint)) paste0("\n • Hint: ", hint) else ""
+    if (!is.null(hint)) paste0("\n \u2022 Hint: ", hint) else ""
   )
 
   # phr_log("error", full_msg, origin)
@@ -147,11 +67,11 @@ phr_error <- function(message, type = "Error", origin = NULL, hint = NULL) {
   if (requireNamespace("shiny", quietly = TRUE) && shiny::isRunning()) {
     .phr_showNotification(full_msg, type = "error")
 
-    # ✅ Skip shiny::req(FALSE) only during testing
+    # \u2705 Skip shiny::req(FALSE) only during testing
     if (!isTRUE(getOption("IPHRA_TEST_MODE", FALSE))) {
       shiny::req(FALSE)
     } else {
-      message("[IPHRA_TEST_MODE active] — skipping shiny::req(FALSE)")
+      message("[IPHRA_TEST_MODE active] \u2014 skipping shiny::req(FALSE)")
     }
   } else {
     rlang::abort(message = full_msg, class = paste0("phr_", tolower(type)))
@@ -175,7 +95,7 @@ phr_warning <- function(message, type = "Warning", origin = NULL, hint = NULL) {
     "[IPHRA::", type, "] ",
     if (!is.null(origin)) paste0("In `", origin, "`: ") else "",
     message,
-    if (!is.null(hint)) paste0("\n • Hint: ", hint) else ""
+    if (!is.null(hint)) paste0("\n \u2022 Hint: ", hint) else ""
   )
   # phr_log("warning", full_msg, origin)
   .phr_notify(full_msg, type = "warning")
@@ -230,7 +150,7 @@ phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #'
 #' Supports nested error handling via the `step` parameter, which allows
 #' inner try blocks to add sub-context to error messages. When `step` is
-#' provided alongside `origin`, messages are formatted as "origin → step".
+#' provided alongside `origin`, messages are formatted as "origin -> step".
 #'
 #' @param expr Expression to evaluate.
 #' @param on_error One of "warn", "return", or "abort".
@@ -238,7 +158,7 @@ phr_assert <- function(condition, message, origin = NULL, hint = NULL) {
 #' @param hint Optional corrective hint to show in case of error.
 #' @param step Optional string identifying the step within a larger operation.
 #'   When provided, adds sub-context to error messages for nested try blocks.
-#'   If both `origin` and `step` are provided, the full origin becomes "origin → step".
+#'   If both `origin` and `step` are provided, the full origin becomes "origin -> step".
 #'
 #' @return If `on_error = "return"`, returns list(success = FALSE, error = message, origin = ..., step = ..., hint = ...).
 #'   On success, returns the result of `expr` (or NULL if no explicit return).
@@ -277,7 +197,7 @@ phr_try <- function(expr,
 
   # Build full origin with step context if provided
   full_origin <- if (!is.null(step) && !is.null(origin)) {
-    paste0(origin, " \u2192 ", step)  # Unicode arrow →
+    paste0(origin, " \u2192 ", step)  # Unicode arrow \u2192
   } else if (!is.null(step)) {
     step
   } else {

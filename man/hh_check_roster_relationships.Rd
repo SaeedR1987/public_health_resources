@@ -6,6 +6,9 @@
 \usage{
 hh_check_roster_relationships(rel_vec)
 }
+\arguments{
+\item{rel_vec}{Character vector of relationship-to-head codes to validate.}
+}
 \description{
 Check relationship-to-head plausibility
 }

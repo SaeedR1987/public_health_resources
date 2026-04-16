@@ -46,11 +46,13 @@ test_that("Full pipeline: schema with is_other populates other_columns correctly
     stringsAsFactors = FALSE
   )
 
-  data_obj <- Data$new(
-    data = test_data,
-    dataset_name = "TestData",
-    uuid = "hh_id"
-  )
+  data_obj <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = test_data,
+      dataset_name = "TestData",
+      uuid = "hh_id"
+    )
+  ))
 
   # Step 4: Attach the schema
   data_obj$variable_schema <- schema
@@ -116,11 +118,13 @@ test_that("other_columns used in generate_cleaning_log correctly", {
     stringsAsFactors = FALSE
   )
 
-  data_obj <- Data$new(
-    data = test_data,
-    dataset_name = "TestData",
-    uuid = "hh_id"
-  )
+  data_obj <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = test_data,
+      dataset_name = "TestData",
+      uuid = "hh_id"
+    )
+  ))
 
   data_obj$variable_schema <- schema
   data_obj$standardize()
@@ -190,11 +194,13 @@ test_that("Backward compatibility: string TRUE/FALSE still works", {
     stringsAsFactors = FALSE
   )
 
-  data_obj <- Data$new(
-    data = test_data,
-    dataset_name = "TestData",
-    uuid = "hh_id"
-  )
+  data_obj <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = test_data,
+      dataset_name = "TestData",
+      uuid = "hh_id"
+    )
+  ))
 
   data_obj$variable_schema <- schema
   data_obj$standardize()
@@ -251,11 +257,13 @@ test_that("Numeric and non-pattern columns are NOT added to other_columns", {
 
   schema <- data_table_to_schema(schema_df)
 
-  data_obj <- Data$new(
-    data = test_data,
-    dataset_name = "TestData",
-    uuid = "hh_id"
-  )
+  data_obj <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = test_data,
+      dataset_name = "TestData",
+      uuid = "hh_id"
+    )
+  ))
 
   data_obj$variable_schema <- schema
   data_obj$standardize()
@@ -303,11 +311,13 @@ test_that("Inference-based detection requires 'other' pattern in column name", {
     stringsAsFactors = FALSE
   )
 
-  data_obj <- Data$new(
-    data = test_data,
-    dataset_name = "TestData",
-    uuid = "hh_id"
-  )
+  data_obj <- suppressMessages(suppressWarnings(
+    Data$new(
+      data = test_data,
+      dataset_name = "TestData",
+      uuid = "hh_id"
+    )
+  ))
 
   # NO SCHEMA - rely on inference
   data_obj$standardize()
@@ -341,7 +351,9 @@ test_that("run_quality_checks skips dependencies when variables are missing", {
     age = c(25, 30, 35)
   )
 
-  d <- Data$new(df, dataset_name = "MissingVarTest", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(df, dataset_name = "MissingVarTest", uuid = "id")
+  ))
 
   # Set up dependency that requires 'gender' which doesn't exist
   d$set_dependency_schema(list(
@@ -377,16 +389,18 @@ test_that("run_quality_checks resolves canonical variable names from variable_ma
     household_size = c(3, 4, 2)
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "VarMapTest",
-    uuid = "record_id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "VarMapTest",
       uuid = "record_id",
-      age = "respondent_age",
-      hh_size = "household_size"
+      variable_map = list(
+        uuid = "record_id",
+        age = "respondent_age",
+        hh_size = "household_size"
+      )
     )
-  )
+  ))
 
   # Dependency uses canonical names (age, hh_size)
   d$set_dependency_schema(list(
@@ -420,15 +434,17 @@ test_that(".translate_expression replaces canonical variable names with dataset 
     dataset_col_status = c("active", "inactive")
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "ExpressionTest",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "ExpressionTest",
       uuid = "id",
-      status = "dataset_col_status"
+      variable_map = list(
+        uuid = "id",
+        status = "dataset_col_status"
+      )
     )
-  )
+  ))
 
   # Test the internal translation method
   expr <- "status == 'active'"
@@ -447,21 +463,23 @@ test_that(".translate_expression replaces canonical values with dataset values",
     status_col = c("yes", "y")
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "ValueTranslateTest",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "ValueTranslateTest",
       uuid = "id",
-      status = "status_col"
-    ),
-    value_map = list(
-      status = list(
-        yes = c("yes", "y", "1"),
-        no = c("no", "n", "0")
+      variable_map = list(
+        uuid = "id",
+        status = "status_col"
+      ),
+      value_map = list(
+        status = list(
+          yes = c("yes", "y", "1"),
+          no = c("no", "n", "0")
+        )
       )
     )
-  )
+  ))
 
   # Test with equality
   expr1 <- "status == 'yes'"
@@ -489,22 +507,24 @@ test_that(".translate_expression handles complex expressions with multiple varia
     temp_col = c(38, 37)
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "ComplexExprTest",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "ComplexExprTest",
       uuid = "id",
-      fever = "fever_col",
-      temperature = "temp_col"
-    ),
-    value_map = list(
-      fever = list(
-        yes = c("yes", "y"),
-        no = c("no", "n")
+      variable_map = list(
+        uuid = "id",
+        fever = "fever_col",
+        temperature = "temp_col"
+      ),
+      value_map = list(
+        fever = list(
+          yes = c("yes", "y"),
+          no = c("no", "n")
+        )
       )
     )
-  )
+  ))
 
   # Complex expression with both variable and value references
   expr <- "fever == 'yes' & !is.na(temperature)"
@@ -530,21 +550,23 @@ test_that("run_quality_checks translates canonical values to dataset values", {
     status_col = c("yes", "y", "no", "n")
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "ValueMapTest",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "ValueMapTest",
       uuid = "id",
-      status = "status_col"
-    ),
-    value_map = list(
-      status = list(
-        yes = c("yes", "y", "1", "oui"),
-        no = c("no", "n", "0", "non")
+      variable_map = list(
+        uuid = "id",
+        status = "status_col"
+      ),
+      value_map = list(
+        status = list(
+          yes = c("yes", "y", "1", "oui"),
+          no = c("no", "n", "0", "non")
+        )
       )
     )
-  )
+  ))
 
   # Dependency uses canonical value 'yes'
   d$set_dependency_schema(list(
@@ -581,22 +603,24 @@ test_that("run_quality_checks handles complex expressions with variable and valu
     temp_col = c(38, 37, 36, NA)
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "ComplexTest",
-    uuid = "record_id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "ComplexTest",
       uuid = "record_id",
-      fever = "fever_col",
-      temperature = "temp_col"
-    ),
-    value_map = list(
-      fever = list(
-        yes = c("yes", "y", "oui"),
-        no = c("no", "n", "non")
+      variable_map = list(
+        uuid = "record_id",
+        fever = "fever_col",
+        temperature = "temp_col"
+      ),
+      value_map = list(
+        fever = list(
+          yes = c("yes", "y", "oui"),
+          no = c("no", "n", "non")
+        )
       )
     )
-  )
+  ))
 
   # If fever='yes', then temperature should not be NA
   d$set_dependency_schema(list(
@@ -633,15 +657,17 @@ test_that("run_quality_checks skips when canonical variable is not in variable_m
     age = c(25, 30, 35)
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "UnmappedCanonicalTest",
-    uuid = "id",
-    variable_map = list(
-      uuid = "id"
-      # 'age' is not mapped
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "UnmappedCanonicalTest",
+      uuid = "id",
+      variable_map = list(
+        uuid = "id"
+        # 'age' is not mapped
+      )
     )
-  )
+  ))
 
   # Dependency uses canonical name 'age' which is in data but not in variable_map
   # Since resolve_column will try variable_map first, then fall back to direct name
@@ -672,21 +698,23 @@ test_that("run_quality_checks handles multiple canonical values in expression", 
     status = c("active", "inactive", "active")
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "MultiValueTest",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "MultiValueTest",
       uuid = "id",
-      status_role = "status"
-    ),
-    value_map = list(
-      status_role = list(
-        active = c("active", "actif"),
-        inactive = c("inactive", "inactif")
+      variable_map = list(
+        uuid = "id",
+        status_role = "status"
+      ),
+      value_map = list(
+        status_role = list(
+          active = c("active", "actif"),
+          inactive = c("inactive", "inactif")
+        )
       )
     )
-  )
+  ))
 
   # Expression with canonical value
   d$set_dependency_schema(list(
@@ -718,11 +746,13 @@ test_that("run_quality_checks skips if all required variables are missing", {
     name = c("Alice", "Bob", "Charlie")
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "AllMissingTest",
-    uuid = "id"
-  )
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "AllMissingTest",
+      uuid = "id"
+    )
+  ))
 
   d$set_dependency_schema(list(
     dependencies = list(
@@ -751,11 +781,13 @@ test_that("run_quality_checks skips if any required variable is missing", {
     age = c(25, 30, 35)
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "PartialTest",
-    uuid = "id"
-  )
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "PartialTest",
+      uuid = "id"
+    )
+  ))
 
   d$set_dependency_schema(list(
     dependencies = list(
@@ -785,16 +817,18 @@ test_that("run_quality_checks works with soft_dependencies", {
     col_y = c(10, NA, 30)
   )
 
-  d <- Data$new(
-    df,
-    dataset_name = "SoftDepTest",
-    uuid = "id",
-    variable_map = list(
+  d <- suppressMessages(suppressWarnings(
+    Data$new(
+      df,
+      dataset_name = "SoftDepTest",
       uuid = "id",
-      x = "col_x",
-      y = "col_y"
+      variable_map = list(
+        uuid = "id",
+        x = "col_x",
+        y = "col_y"
+      )
     )
-  )
+  ))
 
   # Note: soft_dependencies structure might be similar to dependencies
   d$set_dependency_schema(list(
@@ -827,7 +861,9 @@ test_that("%in% expressions expand canonical values using value_map", {
   )
 
   # Create Data object with value_map
-  d <- Data$new(data = df, dataset_name = "TestValueMap", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestValueMap", uuid = "id")
+  ))
 
   # Set variable_map and value_map
   d$variable_map$sex <- "gender_col"
@@ -878,7 +914,9 @@ test_that("%in% expressions work with roster dependency schema", {
   )
 
   # Create IndividualData which loads roster dependency schema
-  d <- IndividualData$new(data = df, dataset_name = "TestRoster")
+  d <- suppressMessages(suppressWarnings(
+    IndividualData$new(data = df, dataset_name = "TestRoster")
+  ))
 
   # The default schema should have flag_values_sex dependency
   expect_false(is.null(d$dependency_schema))
@@ -917,7 +955,9 @@ test_that("%in% expressions with multiple canonical values expand correctly", {
     status_col = c("active", "pending", "inactive", "archived")
   )
 
-  d <- Data$new(data = df, dataset_name = "TestMultiple", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestMultiple", uuid = "id")
+  ))
 
   # Set mappings
   d$variable_map$status <- "status_col"
@@ -958,7 +998,9 @@ test_that("%in% expressions without value_map work as before", {
     category = c("A", "B", "C", "D")
   )
 
-  d <- Data$new(data = df, dataset_name = "TestNoMap", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestNoMap", uuid = "id")
+  ))
 
   # No value_map set - should use literal matching
   d$set_dependency_schema(list(
@@ -988,7 +1030,9 @@ test_that("== operator still works with value_map expansion", {
     consent_col = c("yes", "y", "no")
   )
 
-  d <- Data$new(data = df, dataset_name = "TestEquals", uuid = "id")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, dataset_name = "TestEquals", uuid = "id")
+  ))
 
   d$variable_map$consent <- "consent_col"
   d$value_map$consent <- list(
@@ -1071,7 +1115,9 @@ test_that("standardize() adds 'other' columns to self$other_columns as list stru
     )
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1107,7 +1153,9 @@ test_that("generate_cleaning_log creates entries for 'other' columns and linked 
     )
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
   d$standardize()
 
@@ -1171,7 +1219,9 @@ test_that("generate_cleaning_log handles missing text column with dummy column",
     )
   )
 
-  d <- Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
+  ))
   d$set_variable_schema(schema)
 
   # Manually modify other_columns to simulate scenario without text column
@@ -1293,7 +1343,9 @@ test_that("standardize() creates cluster_id_numeric when cluster_id is mapped", 
     stringsAsFactors = FALSE
   )
 
-  obj <- Data$new(data = test_data, uuid = "hh_id")
+  obj <- suppressMessages(suppressWarnings(
+    Data$new(data = test_data, uuid = "hh_id")
+  ))
   obj$variable_map$cluster_id <- "cluster"
   obj$standardize()
 
@@ -1318,7 +1370,9 @@ test_that("standardize() does NOT create cluster_id_numeric when cluster_id not 
     stringsAsFactors = FALSE
   )
 
-  obj <- Data$new(data = test_data, uuid = "hh_id")
+  obj <- suppressMessages(suppressWarnings(
+    Data$new(data = test_data, uuid = "hh_id")
+  ))
   obj$standardize()
 
   expect_false("cluster_id_numeric" %in% names(obj$standardized_data))
@@ -1332,7 +1386,9 @@ test_that("cluster_id_numeric numbers clusters starting at 1 sequentially", {
     stringsAsFactors = FALSE
   )
 
-  obj <- Data$new(data = test_data, uuid = "uuid")
+  obj <- suppressMessages(suppressWarnings(
+    Data$new(data = test_data, uuid = "uuid")
+  ))
   obj$variable_map$cluster_id <- "cluster"
   obj$standardize()
 
@@ -1383,7 +1439,9 @@ test_that("standardize() coerces character datetime columns to POSIXct when sche
     stringsAsFactors = FALSE
   )
 
-  obj <- Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  obj <- suppressMessages(suppressWarnings(
+    Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  ))
   obj$variable_schema <- make_datetime_schema()
   obj$standardize()
 
@@ -1399,7 +1457,9 @@ test_that("standardize() preserves time information when schema type is 'datetim
     stringsAsFactors = FALSE
   )
 
-  obj <- Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  obj <- suppressMessages(suppressWarnings(
+    Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  ))
   obj$variable_schema <- make_datetime_schema()
   obj$standardize()
 
@@ -1419,7 +1479,9 @@ test_that("standardize() retains POSIXct columns unchanged when schema type is '
     stringsAsFactors = FALSE
   )
 
-  obj <- Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  obj <- suppressMessages(suppressWarnings(
+    Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
+  ))
   obj$variable_schema <- make_datetime_schema()
   obj$standardize()
 

@@ -6,6 +6,9 @@
 \usage{
 hh_dms_to_decimal(x)
 }
+\arguments{
+\item{x}{Character or numeric vector of coordinates in degrees-minutes-seconds (DMS) format.}
+}
 \description{
 Convert DMS to decimal degrees
 }

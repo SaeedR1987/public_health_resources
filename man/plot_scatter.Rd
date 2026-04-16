@@ -5,7 +5,7 @@
 \title{Plot Scatter Plot}
 \usage{
 plot_scatter(
-  df,
+  survey_design,
   x_var,
   y_var,
   grouping = NULL,
@@ -15,6 +15,8 @@ plot_scatter(
   smooth_method = "lm",
   color_palette = "reach1",
   title_name = NULL,
+  variable_label = NULL,
+  grouping_label = NULL,
   subtitle = NULL,
   x_lab = NULL,
   y_lab = NULL,
@@ -25,7 +27,7 @@ plot_scatter(
 )
 }
 \arguments{
-\item{df}{Data frame containing the data}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{x_var}{Character, column for x-axis (required)}
 
@@ -44,6 +46,12 @@ plot_scatter(
 \item{color_palette}{Character, color palette type (default: "reach1")}
 
 \item{title_name}{Character, plot title (default: NULL)}
+
+\item{variable_label}{Optional character string. Human-readable label for the x variable, used to
+auto-generate the plot title when title_name is NULL. Default: NULL.}
+
+\item{grouping_label}{Optional character string. Human-readable label for the grouping variable, appended
+to the auto-generated title. Defaults to the column name when NULL.}
 
 \item{subtitle}{Character, additional subtitle text (default: NULL)}
 

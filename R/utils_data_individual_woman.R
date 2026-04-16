@@ -110,7 +110,7 @@ add_maternal_muac <- function(
           message = phr_txt("The column `woman_muac_mm` already exists and will be overwritten.")
         )
       }
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           woman_muac_mm = .data[[muac_col]] * 10
         )
@@ -122,7 +122,7 @@ add_maternal_muac <- function(
           message = phr_txt("The column `woman_muac_cm` already exists and will be overwritten.")
         )
       }
-      .dataset <- .dataset %>%
+      .dataset <- .dataset |>
         dplyr::mutate(
           woman_muac_cm = .data[[muac_col]] / 10
         )
@@ -150,10 +150,10 @@ add_maternal_muac <- function(
 
     # Categorize MUAC and Flag Extremes
 
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         # Converting values to centimeters for categorization if required
-        muac_for_classification = if (muac_is_mm) woman_muac_cm else .data[[muac_col]],
+        muac_for_classification = if (muac_is_mm) .data$woman_muac_cm else .data[[muac_col]],
 
         # Apply categorization only to women aged 15-49 years
         woman_muac_cat = dplyr::case_when(

@@ -8,6 +8,10 @@ phr_convert_date(x, origin = "1970-01-01")
 }
 \arguments{
 \item{x}{Character, Date, numeric, or POSIX vector.}
+
+\item{origin}{Character string specifying the origin date for numeric input conversion.
+Use `"excel"` for Excel serial dates (treated as `"1899-12-30"`), or any date string
+in `"YYYY-MM-DD"` format (default: `"1970-01-01"` for Unix epoch).}
 }
 \value{
 A Date vector in YYYY-MM-DD format.

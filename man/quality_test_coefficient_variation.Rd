@@ -4,10 +4,10 @@
 \alias{quality_test_coefficient_variation}
 \title{Coefficient of Variation Test}
 \usage{
-quality_test_coefficient_variation(data, variables)
+quality_test_coefficient_variation(survey_design, variables)
 }
 \arguments{
-\item{data}{Data frame containing the variable}
+\item{survey_design}{A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})}
 
 \item{variables}{Character vector with 1 variable name}
 }

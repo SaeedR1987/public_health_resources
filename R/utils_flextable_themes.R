@@ -1,9 +1,9 @@
-#' Apply Standard iphRa Flextable Theme
+#' Apply Standard phr Flextable Theme
 #'
 #' Applies a consistent, standardised theme to a \code{flextable} object using
 #' the Roboto Condensed font and REACH brand colour palette for column headers.
 #' This function centralises all common styling so that every table produced by
-#' iphRa looks consistent.
+#' phr looks consistent.
 #'
 #' @param ft A \code{flextable} object to theme.
 #' @param color_palette Character string naming the colour palette to use.

@@ -6,6 +6,10 @@
 \usage{
 indicator_table_to_schema(df)
 }
+\arguments{
+\item{df}{A data frame or tibble in the flat indicator schema table format (as produced by
+\code{indicator_schema_to_table()}).}
+}
 \description{
 Convert an indicator schema table into a canonical nested list
 }

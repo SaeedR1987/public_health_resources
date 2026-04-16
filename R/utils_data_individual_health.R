@@ -123,7 +123,7 @@ add_foregone_care <- function(
     #------------------------------------------------------------
     # Calculate health_foregone_care_cat
     #------------------------------------------------------------
-    .dataset <- .dataset %>%
+    .dataset <- .dataset |>
       dplyr::mutate(
         health_foregone_care_cat = dplyr::case_when(
           # No health need and no illness
