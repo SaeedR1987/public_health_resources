@@ -4205,7 +4205,8 @@ plot_boxplot <- function(survey_design,
       if (show_overall && !is.character(overall_label)) overall_label <- "Overall"
 
       df_plot <- df |>
-        dplyr::filter(!is.na(!!rlang::sym(numeric_var)))
+        dplyr::filter(!is.na(!!rlang::sym(numeric_var))) |>
+        dplyr::mutate(!!rlang::sym(grouping) := as.character(!!rlang::sym(grouping)))
 
       # Create subtitle with n by group (from original grouped data, before adding overall)
       n_by_group <- df_plot |>
