@@ -163,10 +163,6 @@ utils::globalVariables(c(
   "muac_for_classification",
 
   # ----- utils_data_household_fsl.R (additional) -----
-  # LCSI category columns (cross-mutate references in factor() calls)
-  "fsl_lcsi_cat_yes",
-  "fsl_lcsi_cat_exhaust",
-  "fsl_lcsi_cat",
   # LCSI NA count column (intra-mutate reference)
   "lcsi_count_na"
 
