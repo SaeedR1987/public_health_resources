@@ -85,10 +85,12 @@ quality of services. Each response option should only belong to one domain categ
   plot_domain_distribution(survey_design = data, domain_list = domain_list)
 
   # Vertical bars
-  plot_domain_distribution(survey_design = data, domain_list = domain_list, flip_coordinates = FALSE,
+  plot_domain_distribution(survey_design = data, domain_list = domain_list,
+                              flip_coordinates = FALSE,
                               legend_position = "bottom")
 
   # Show percentages
-  plot_domain_distribution(survey_design = data, domain_list = domain_list, show_percentage = TRUE)
+  plot_domain_distribution(survey_design = data, domain_list = domain_list,
+                              show_percentage = TRUE)
 }
 }
