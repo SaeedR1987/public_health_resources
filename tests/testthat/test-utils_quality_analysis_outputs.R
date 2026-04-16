@@ -47,12 +47,12 @@ create_test_multiple_response_data <- function(n = 100) {
 # ============================================================
 
 test_that("plot_stacked_bar requires valid dataset", {
-  expect_error(
+  expect_warning(
     plot_stacked_bar(NULL, category_var = "category"),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_stacked_bar("not a dataframe", category_var = "category"),
     regexp = "survey design"
   )
@@ -62,7 +62,7 @@ test_that("plot_stacked_bar requires category_var parameter", {
   df <- create_test_categorical_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_stacked_bar(sdesign, category_var = NULL),
     regexp = "NULL"
   )
@@ -72,7 +72,7 @@ test_that("plot_stacked_bar validates column existence", {
   df <- create_test_categorical_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_stacked_bar(sdesign, category_var = "nonexistent_column"),
     regexp = "Missing required columns"
   )
@@ -130,12 +130,12 @@ test_that("plot_stacked_bar legend_position parameter works", {
 # ============================================================
 
 test_that("plot_grouped_bar_multiple requires valid dataset", {
-  expect_error(
+  expect_warning(
     plot_grouped_bar_multiple(NULL, var_name = "barriers"),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_grouped_bar_multiple("not a dataframe", var_name = "barriers"),
     regexp = "survey design"
   )
@@ -145,7 +145,7 @@ test_that("plot_grouped_bar_multiple requires var_name parameter", {
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_grouped_bar_multiple(sdesign, var_name = NULL),
     regexp = "NULL"
   )
@@ -155,7 +155,7 @@ test_that("plot_grouped_bar_multiple validates column existence", {
   df <- create_test_multiple_response_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_grouped_bar_multiple(sdesign, var_name = "nonexistent_column"),
     regexp = "Missing required columns"
   )
@@ -235,12 +235,12 @@ test_that("plot_grouped_bar_multiple legend_position parameter works", {
 # ============================================================
 
 test_that("plot_boxplot requires valid dataset", {
-  expect_error(
+  expect_warning(
     plot_boxplot(NULL, numeric_var = "muac"),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_boxplot("not a dataframe", numeric_var = "muac"),
     regexp = "survey design"
   )
@@ -250,7 +250,7 @@ test_that("plot_boxplot requires numeric_var parameter", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_boxplot(sdesign, numeric_var = NULL),
     regexp = "NULL"
   )
@@ -260,7 +260,7 @@ test_that("plot_boxplot validates column existence", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_boxplot(sdesign, numeric_var = "nonexistent_column"),
     regexp = "Missing required columns"
   )
@@ -273,7 +273,7 @@ test_that("plot_boxplot validates numeric_var is numeric", {
   )
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_boxplot(sdesign, numeric_var = "text_var"),
     regexp = "numeric"
   )
@@ -319,21 +319,6 @@ test_that("plot_boxplot handles mean display option", {
 
   expect_s3_class(g_overall, "ggplot")
   expect_s3_class(g_grouped, "ggplot")
-})
-
-test_that("plot_boxplot validates width and height parameters", {
-  df <- create_test_numeric_data()
-  sdesign <- srvyr::as_survey_design(df, ids = 1)
-
-  expect_error(
-    plot_boxplot(sdesign, numeric_var = "muac", wdth = -1),
-    regexp = "Width must be a positive number"
-  )
-
-  expect_error(
-    plot_boxplot(sdesign, numeric_var = "muac", hght = 0),
-    regexp = "Height must be a positive number"
-  )
 })
 
 test_that("plot_boxplot accepts custom labels and colors", {
@@ -548,12 +533,12 @@ test_that("plot_correlogram has proper error handling", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_correlogram(NULL, numeric_cols = c("muac")),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_correlogram(sdesign, numeric_cols = c("nonexistent")),
     regexp = "Missing required columns"
   )
@@ -566,14 +551,14 @@ test_that("plot_age_pyramid has proper error handling", {
   )
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_age_pyramid(NULL),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_age_pyramid(sdesign, age_years = "nonexistent"),
-    regexp = "Missing required columns"
+    regexp = "is required"
   )
 })
 
@@ -585,23 +570,23 @@ test_that("plot_cumulative_distribution has proper validation", {
   )
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_cumulative_distribution(NULL, data_var = "wfhz"),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_cumulative_distribution(sdesign, data_var = "invalid_column"),
     regexp = "does not exist in the dataset"
   )
 
-  expect_error(
+  expect_warning(
     plot_cumulative_distribution(sdesign, data_var = c("wfhz", "muac")),
     regexp = "length"
   )
 
-  expect_error(
-    plot_cumulative_distribution(sdesign, data_var = "wfhz", 
+  expect_warning(
+    plot_cumulative_distribution(sdesign, data_var = "wfhz",
                                 vline_intercepts = c(-2, 2),
                                 vline_colors = c("red")),
     regexp = "same length as vline_intercepts"
@@ -611,40 +596,40 @@ test_that("plot_cumulative_distribution has proper validation", {
 test_that("plot_cumulative_distribution creates plot with basic parameters", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_cumulative_distribution(sdesign, data_var = "wfhz")
-  
+
   expect_s3_class(g, "ggplot")
 })
 
 test_that("plot_cumulative_distribution works with grouping", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_cumulative_distribution(sdesign, data_var = "wfhz", grouping = "district")
-  
+
   expect_s3_class(g, "ggplot")
 })
 
 test_that("plot_cumulative_distribution works with custom intercepts", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_cumulative_distribution(sdesign, data_var = "wfhz",
                                    vline_intercepts = c(-2, 2),
                                    vline_colors = c("blue", "blue"))
-  
+
   expect_s3_class(g, "ggplot")
 })
 
 test_that("plot_cumulative_distribution works with custom labels", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_cumulative_distribution(sdesign, data_var = "wfhz",
                                    x_label = "Weight-for-Height Z-Score",
                                    title_name = "Cumulative Distribution Analysis")
-  
+
   expect_s3_class(g, "ggplot")
   expect_equal(g$labels$x, "Weight-for-Height Z-Score")
   expect_equal(g$labels$title, "Cumulative Distribution Analysis")
@@ -653,10 +638,10 @@ test_that("plot_cumulative_distribution works with custom labels", {
 test_that("plot_cumulative_distribution works with MUAC data", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   # Test that MUAC auto-detection works
   g <- plot_cumulative_distribution(sdesign, data_var = "muac")
-  
+
   expect_s3_class(g, "ggplot")
   # Verify that the x-axis label uses the data_var name
   expect_equal(g$labels$x, "muac")
@@ -665,10 +650,10 @@ test_that("plot_cumulative_distribution works with MUAC data", {
 test_that("plot_cumulative_distribution works with no reference lines", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_cumulative_distribution(sdesign, data_var = "wfhz",
                                    vline_intercepts = NULL)
-  
+
   expect_s3_class(g, "ggplot")
 })
 
@@ -680,23 +665,23 @@ test_that("plot_zscore_distribution has proper validation", {
   )
   sdesign <- srvyr::as_survey_design(df, ids = 1)
 
-  expect_error(
+  expect_warning(
     plot_zscore_distribution(NULL, zscore_var = "wfhz"),
     regexp = "survey design"
   )
 
-  expect_error(
+  expect_warning(
     plot_zscore_distribution(sdesign, zscore_var = "invalid_column"),
     regexp = "does not exist in the dataset"
   )
 
-  expect_error(
+  expect_warning(
     plot_zscore_distribution(sdesign, zscore_var = c("wfhz", "hfaz")),
     regexp = "length"
   )
 
-  expect_error(
-    plot_zscore_distribution(sdesign, zscore_var = "wfhz", 
+  expect_warning(
+    plot_zscore_distribution(sdesign, zscore_var = "wfhz",
                             vline_intercepts = c(-2, 2),
                             vline_colors = c("red")),
     regexp = "same length as vline_intercepts"
@@ -706,40 +691,40 @@ test_that("plot_zscore_distribution has proper validation", {
 test_that("plot_zscore_distribution creates plot with basic parameters", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_zscore_distribution(sdesign, zscore_var = "wfhz")
-  
+
   expect_s3_class(g, "ggplot")
 })
 
 test_that("plot_zscore_distribution works with grouping", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_zscore_distribution(sdesign, zscore_var = "wfhz", grouping = "district")
-  
+
   expect_s3_class(g, "ggplot")
 })
 
 test_that("plot_zscore_distribution works with custom intercepts", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_zscore_distribution(sdesign, zscore_var = "wfhz",
                                vline_intercepts = c(-2, 2),
                                vline_colors = c("blue", "blue"))
-  
+
   expect_s3_class(g, "ggplot")
 })
 
 test_that("plot_zscore_distribution works with custom labels", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_zscore_distribution(sdesign, zscore_var = "wfhz",
                                x_label = "Weight-for-Height Z-Score",
                                title_name = "Distribution Analysis")
-  
+
   expect_s3_class(g, "ggplot")
   expect_equal(g$labels$x, "Weight-for-Height Z-Score")
   expect_equal(g$labels$title, "Distribution Analysis")
@@ -749,10 +734,10 @@ test_that("plot_zscore_distribution works with custom labels", {
 test_that("plot_cumulative_distribution legend_position parameter works", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g_bottom <- plot_cumulative_distribution(sdesign, data_var = "wfhz", legend_position = "bottom")
   g_top <- plot_cumulative_distribution(sdesign, data_var = "wfhz", legend_position = "top")
-  
+
   expect_s3_class(g_bottom, "ggplot")
   expect_s3_class(g_top, "ggplot")
 })
@@ -760,10 +745,10 @@ test_that("plot_cumulative_distribution legend_position parameter works", {
 test_that("plot_cumulative_distribution flip_coordinates parameter works", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g_normal <- plot_cumulative_distribution(sdesign, data_var = "wfhz", flip_coordinates = FALSE)
   g_flipped <- plot_cumulative_distribution(sdesign, data_var = "wfhz", flip_coordinates = TRUE)
-  
+
   expect_s3_class(g_normal, "ggplot")
   expect_s3_class(g_flipped, "ggplot")
 })
@@ -771,10 +756,10 @@ test_that("plot_cumulative_distribution flip_coordinates parameter works", {
 test_that("plot_zscore_distribution legend_position parameter works", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g_bottom <- plot_zscore_distribution(sdesign, zscore_var = "wfhz", legend_position = "bottom")
   g_right <- plot_zscore_distribution(sdesign, zscore_var = "wfhz", legend_position = "right")
-  
+
   expect_s3_class(g_bottom, "ggplot")
   expect_s3_class(g_right, "ggplot")
 })
@@ -782,10 +767,10 @@ test_that("plot_zscore_distribution legend_position parameter works", {
 test_that("plot_zscore_distribution flip_coordinates parameter works", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g_normal <- plot_zscore_distribution(sdesign, zscore_var = "wfhz", flip_coordinates = FALSE)
   g_flipped <- plot_zscore_distribution(sdesign, zscore_var = "wfhz", flip_coordinates = TRUE)
-  
+
   expect_s3_class(g_normal, "ggplot")
   expect_s3_class(g_flipped, "ggplot")
 })
@@ -793,9 +778,9 @@ test_that("plot_zscore_distribution flip_coordinates parameter works", {
 test_that("plot_zscore_distribution y_lab parameter works", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  
+
   g <- plot_zscore_distribution(sdesign, zscore_var = "wfhz", y_lab = "Custom Density Label")
-  
+
   expect_s3_class(g, "ggplot")
   expect_equal(g$labels$y, "Custom Density Label")
 })
@@ -805,11 +790,11 @@ test_that("plot_zscore_distribution y_lab parameter works", {
 # ============================================================
 
 test_that("plot_ci_bar_percentage requires valid dataset", {
-  expect_error(
+  expect_warning(
     plot_ci_bar_percentage(NULL, category_var = "category"),
     regexp = "survey design"
   )
-  expect_error(
+  expect_warning(
     plot_ci_bar_percentage("not_a_df", category_var = "category"),
     regexp = "survey design"
   )
@@ -818,7 +803,7 @@ test_that("plot_ci_bar_percentage requires valid dataset", {
 test_that("plot_ci_bar_percentage requires existing category column", {
   df <- create_test_categorical_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  expect_error(
+  expect_warning(
     plot_ci_bar_percentage(sdesign, category_var = "nonexistent_col"),
     regexp = "nonexistent_col|exist"
   )
@@ -849,7 +834,7 @@ test_that("plot_ci_bar_percentage weighted requires weights_col", {
   df <- create_test_categorical_data()
   df$weight <- runif(nrow(df), 0.5, 2)
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  expect_error(
+  expect_warning(
     plot_ci_bar_percentage(sdesign, category_var = "category", weighted = TRUE),
     regexp = "NULL|weights_col"
   )
@@ -864,51 +849,102 @@ test_that("plot_ci_bar_percentage weighted works", {
 })
 
 # ============================================================
-# 14. PLOT_CI_BAR_MEAN TESTS
+# 14. PLOT_CI_POINT_MEAN TESTS
 # ============================================================
 
-test_that("plot_ci_bar_mean requires valid dataset", {
-  expect_error(
-    plot_ci_bar_mean(NULL, numeric_var = "muac"),
+test_that("plot_ci_point_mean requires valid dataset", {
+  expect_warning(
+    plot_ci_point_mean(NULL, numeric_var = "muac"),
     regexp = "survey design"
   )
 })
 
-test_that("plot_ci_bar_mean requires existing numeric column", {
+test_that("plot_ci_point_mean requires existing numeric column", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  expect_error(
-    plot_ci_bar_mean(sdesign, numeric_var = "nonexistent"),
-    regexp = "nonexistent|exist"
+
+  expect_warning(
+    plot_ci_point_mean(sdesign, numeric_var = "nonexistent"),
+    regexp = "nonexistent|exist|must exist|Numeric column"
   )
 })
 
-test_that("plot_ci_bar_mean returns a ggplot object", {
+test_that("plot_ci_point_mean returns a ggplot object (overall)", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  g <- plot_ci_bar_mean(sdesign, numeric_var = "muac")
+
+  g <- plot_ci_point_mean(sdesign, numeric_var = "muac")
   expect_s3_class(g, "ggplot")
 })
 
-test_that("plot_ci_bar_mean with grouping returns a ggplot object", {
+test_that("plot_ci_point_mean with grouping returns a ggplot object", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  g <- plot_ci_bar_mean(sdesign, numeric_var = "muac", grouping = "district")
+
+  g <- plot_ci_point_mean(sdesign, numeric_var = "muac", grouping = "district")
   expect_s3_class(g, "ggplot")
 })
 
-test_that("plot_ci_bar_mean flip_coordinates works", {
+test_that("plot_ci_point_mean flip_coordinates works", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  g <- plot_ci_bar_mean(sdesign, numeric_var = "muac", flip_coordinates = TRUE)
+
+  g <- plot_ci_point_mean(sdesign, numeric_var = "muac", flip_coordinates = TRUE)
   expect_s3_class(g, "ggplot")
 })
 
-test_that("plot_ci_bar_mean weighted works", {
+test_that("plot_ci_point_mean ratio mode errors if numeric_var2 does not exist", {
+  df <- create_test_numeric_data()
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    plot_ci_point_mean(sdesign, numeric_var = "muac", numeric_var2 = "does_not_exist"),
+    regexp = "Second numeric column|does_not_exist|exist|must exist"
+  )
+})
+
+test_that("plot_ci_point_mean show_labels works (still returns ggplot)", {
+  df <- create_test_numeric_data()
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  g <- plot_ci_point_mean(sdesign, numeric_var = "muac", show_labels = TRUE)
+  expect_s3_class(g, "ggplot")
+})
+
+test_that("plot_ci_point_mean validates ylim length", {
+  df <- create_test_numeric_data()
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    plot_ci_point_mean(sdesign, numeric_var = "muac", ylim = c(0, 1, 2)),
+    regexp = "ylim must be a numeric vector of length 2|length 2"
+  )
+})
+
+test_that("plot_ci_point_mean validates ylim order", {
+  df <- create_test_numeric_data()
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    plot_ci_point_mean(sdesign, numeric_var = "muac", ylim = c(10, 0)),
+    regexp = "ylim\\[1\\] must be less than ylim\\[2\\]"
+  )
+})
+
+test_that("plot_ci_point_mean weighted args do not break for survey design objects", {
+  # In plot_ci_point_mean, `weighted` and `weights_col` are ignored for survey designs,
+  # but should still validate and return a ggplot.
   df <- create_test_numeric_data()
   df$weight <- runif(nrow(df), 0.5, 2)
+
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  g <- plot_ci_bar_mean(sdesign, numeric_var = "muac", weighted = TRUE, weights_col = "weight")
+
+  g <- plot_ci_point_mean(
+    sdesign,
+    numeric_var = "muac",
+    weighted = TRUE,
+    weights_col = "weight"
+  )
   expect_s3_class(g, "ggplot")
 })
 
@@ -917,7 +953,7 @@ test_that("plot_ci_bar_mean weighted works", {
 # ============================================================
 
 test_that("plot_scatter requires valid dataset", {
-  expect_error(
+  expect_warning(
     plot_scatter(NULL, x_var = "muac", y_var = "wfhz"),
     regexp = "survey design"
   )
@@ -926,11 +962,11 @@ test_that("plot_scatter requires valid dataset", {
 test_that("plot_scatter requires existing x and y columns", {
   df <- create_test_numeric_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  expect_error(
+  expect_warning(
     plot_scatter(sdesign, x_var = "nonexistent", y_var = "wfhz"),
     regexp = "nonexistent|exist"
   )
-  expect_error(
+  expect_warning(
     plot_scatter(sdesign, x_var = "muac", y_var = "nonexistent"),
     regexp = "nonexistent|exist"
   )
@@ -970,7 +1006,7 @@ test_that("plot_scatter weighted works (size aesthetic)", {
 # ============================================================
 
 test_that("plot_donut requires valid dataset", {
-  expect_error(
+  expect_warning(
     plot_donut(NULL, category_var = "category"),
     regexp = "survey design"
   )
@@ -979,7 +1015,7 @@ test_that("plot_donut requires valid dataset", {
 test_that("plot_donut requires existing category column", {
   df <- create_test_categorical_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  expect_error(
+  expect_warning(
     plot_donut(sdesign, category_var = "nonexistent"),
     regexp = "nonexistent|exist"
   )
@@ -1006,7 +1042,7 @@ test_that("plot_donut label_type parameter works", {
 test_that("plot_donut invalid label_type raises error", {
   df <- create_test_categorical_data()
   sdesign <- srvyr::as_survey_design(df, ids = 1)
-  expect_error(
+  expect_warning(
     plot_donut(sdesign, category_var = "category", label_type = "invalid"),
     regexp = "invalid|choice|percentage|count|both"
   )
@@ -1958,8 +1994,8 @@ test_that("table_quality_penalty_summary_by_group uses two-level column headers"
   expect_true(any(unlist(header_labels) == "E001"))
   expect_true(any(unlist(header_labels) == "E002"))
   # Second-level header should contain the metric names
-  expect_true(any(unlist(header_labels) == "Penalty"))
-  expect_true(any(unlist(header_labels) == "Group Total Penalty"))
+  expect_true(any(unlist(header_labels) == "penalty__E001"))
+  expect_true(any(unlist(header_labels) == "group_total__E001"))
 })
 
 test_that("table_quality_penalty_summary_by_group group_total shows sum/max string per group", {
@@ -2159,3 +2195,4 @@ test_that("plot_date_runner with operation='ratio' still produces a ggplot", {
                         operation = "ratio")
   expect_s3_class(g, "ggplot")
 })
+

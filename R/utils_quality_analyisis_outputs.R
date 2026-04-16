@@ -1257,8 +1257,10 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
       auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-      data_norm <- as.data.frame(graphics::curve(stats::dnorm(x, mean = 0, sd = 1), from = -6, to = 6))
-
+      data_norm <- data.frame(
+        x = seq(from = -6, to = 6, by = 0.12),
+        y = stats::dnorm(seq(from = -6, to = 6, by = 0.12), mean = 0, sd = 1)
+      )
       # Get colors from palette
       colors <- get_color_palette(type = color_palette, n = 2)
 
@@ -1307,8 +1309,10 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
       if (weighted) auto_subtitle <- paste0(auto_subtitle, " (weighted)")
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-      data_norm <- as.data.frame(graphics::curve(stats::dnorm(x, mean = 0, sd = 1), from = -6, to = 6))
-
+      data_norm <- data.frame(
+        x = seq(from = -6, to = 6, by = 0.12),
+        y = stats::dnorm(seq(from = -6, to = 6, by = 0.12), mean = 0, sd = 1)
+      )
       df <- df |> dplyr::rename(group_var = {{grouping}})
 
       # Get colors from palette
