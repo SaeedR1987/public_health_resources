@@ -10,7 +10,7 @@ add_sanitation_facility_cat(
   improved_facilities_val,
   unimproved_facilities_val,
   open_defecation_val,
-  undefined_val
+  undefined_val = NULL
 )
 }
 \arguments{
@@ -28,7 +28,7 @@ in the dataset. Defaults to `"wash_sanitation_facility"`.}
 \item{open_defecation_val}{A character vector of values classified as
 "Open Defecation" practices.}
 
-\item{undefined_val}{A character vector of values classified as "Undefined" sanitation facilities.}
+\item{undefined_val}{A character vector of values classified as "Undefined" sanitation facilities. Defaults to \code{NULL} (no undefined category).}
 }
 \value{
 A data frame or tibble with an additional column `wash_sanitation_facility_cat`.

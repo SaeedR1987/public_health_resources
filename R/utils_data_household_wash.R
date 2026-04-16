@@ -904,7 +904,7 @@ add_any_water_treatment <- function(
 #'   "Unimproved" sanitation facilities.
 #' @param open_defecation_val A character vector of values classified as
 #'   "Open Defecation" practices.
-#' @param undefined_val A character vector of values classified as "Undefined" sanitation facilities.
+#' @param undefined_val A character vector of values classified as "Undefined" sanitation facilities. Defaults to `NULL` (no undefined category).
 #'
 #' @details
 #' The function performs the following:
@@ -947,7 +947,7 @@ add_sanitation_facility_cat <- function(
     improved_facilities_val,
     unimproved_facilities_val,
     open_defecation_val,
-    undefined_val
+    undefined_val = NULL
 ) {
   origin <- "add_sanitation_facility_cat"
 
