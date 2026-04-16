@@ -137,14 +137,16 @@ test_that("quality_validate_schema_to_table errors on empty threshold_expression
       variables   = NULL,
       statistical_test = "missing_percentage",
       thresholds = list(
+        # character(0) and numeric(0) are invalid — threshold_expression must be a single string
         list(threshold_expression = character(0), penalty_score = numeric(0))
-      ),              # empty expressions are not allowed
+      ),
       test_params = list()
     )
   )
 
   expect_error(
     quality_validate_schema_to_table(qc_schema),
+    regexp = "threshold_expression.*must be a single character string",
     class = "phr_error"
   )
 })
