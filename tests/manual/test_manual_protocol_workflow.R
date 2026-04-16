@@ -51,6 +51,14 @@ protocol <- Protocol$new(
 protocol$metadata
 protocol$get_protocol_summary()
 
+# Inspect loaded objective schema
+nrow(protocol$objective_schema)
+names(protocol$objective_schema)
+head(protocol$objective_schema)
+
+# Validate the objective schema
+validate_objective_schema(protocol$objective_schema)
+
 
 # =============================================================================
 # Test 2: Define Objectives ####
@@ -142,7 +150,7 @@ protocol$add_target_stratum("strata_C", "Rural South")
 
 protocol$metadata$target_strata
 
-# -- 3b: Add strata to the sample table with population parameters --
+# -- 3b: Add strata to the master sample table with population parameters --
 
 protocol$add_stratum(
   stratum_id        = "strata_A",
@@ -174,8 +182,17 @@ protocol$add_stratum(
   allocation_method = "proportional"
 )
 
-# Inspect sample table before sample sizes are set
+# Inspect master sample table before sample sizes are calculated
 protocol$get_sample_table()
+names(protocol$get_sample_table())
+
+# Validate the master strata table structure
+strata_validation <- protocol$validate_strata_table()
+strata_validation$valid
+strata_validation$message
+
+# Also validate via standalone function
+validate_strata_table(protocol$sample_table)
 
 # -- 3c: Calculate sample sizes for each stratum using utility functions --
 
@@ -232,13 +249,13 @@ cat("Nutrition screening – households needed: ", ss_nut$sample_size_households
 
 # -- 3e: Write calculated sample sizes back into the sample table --
 
-protocol$sample_table$sample_size[protocol$sample_table$stratum_id == "strata_A"] <- ss_A
-protocol$sample_table$sample_size[protocol$sample_table$stratum_id == "strata_B"] <- ss_B
-protocol$sample_table$sample_size[protocol$sample_table$stratum_id == "strata_C"] <- ss_C
+protocol$sample_table$pop_result_dummy[protocol$sample_table$stratum_id == "strata_A"] <- ss_A
+protocol$sample_table$pop_result_dummy[protocol$sample_table$stratum_id == "strata_B"] <- ss_B
+protocol$sample_table$pop_result_dummy[protocol$sample_table$stratum_id == "strata_C"] <- ss_C
 
 # Confirm sample table
 protocol$get_sample_table()
-cat("Total planned sample size:", sum(protocol$sample_table$sample_size, na.rm = TRUE), "\n")
+cat("Total planned sample size:", sum(protocol$sample_table$pop_result_dummy, na.rm = TRUE), "\n")
 
 
 # =============================================================================
@@ -614,8 +631,13 @@ exported$summary
 length(exported$primary_objectives)
 length(exported$secondary_objectives)
 
+# Objective schema in export
+nrow(exported$objective_schema)
+names(exported$objective_schema)
+
 # Sample table
 exported$sample_table
+names(exported$sample_table)
 
 # Drawn sample – number of units per stratum
 lapply(exported$drawn_sample$samples, nrow)

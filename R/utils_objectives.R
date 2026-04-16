@@ -43,7 +43,6 @@ create_objective <- function(objective_id,
     created_date = Sys.time()
   )
   
-  class(objective) <- c("iphra_objective", "list")
   return(objective)
 }
 

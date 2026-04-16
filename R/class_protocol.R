@@ -13,30 +13,34 @@
 Protocol <- R6::R6Class(
   "Protocol",
   public = list(
-    #' @field primary_objectives List of primary research objectives
+    #' @field primary_objectives List of primary research objectives (plain lists)
     primary_objectives = NULL,
-    
-    #' @field secondary_objectives List of secondary research objectives
+
+    #' @field secondary_objectives List of secondary research objectives (plain lists)
     secondary_objectives = NULL,
-    
-    #' @field sample_table Data frame with rows=strata, columns=parameters
+
+    #' @field objective_schema Data frame containing the loaded objective schema
+    objective_schema = NULL,
+
+    #' @field sample_table Master data frame with one row per stratum and all
+    #'   relevant population, sample-size, and logistics parameters
     sample_table = NULL,
-    
+
     #' @field sampling_frame Data frame with sampling units and strata
     sampling_frame = NULL,
-    
+
     #' @field drawn_sample List containing drawn sample and metadata
     drawn_sample = NULL,
-    
+
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
-    
+
     #' @field selected_indicators List of selected indicators
     selected_indicators = NULL,
-    
+
     #' @field issues List of validation issues and discrepancies
     issues = list(),
-    
+
     #' @field metadata List containing protocol metadata
     metadata = list(
       created_date = NULL,
@@ -47,7 +51,7 @@ Protocol <- R6::R6Class(
       target_strata = list(),
       protocol_version = "1.0"
     ),
-    
+
     #' @description
     #' Creates a new Protocol object
     #' @param assessment_title Character. Title of the assessment
@@ -64,16 +68,18 @@ Protocol <- R6::R6Class(
       self$secondary_objectives <- list()
       self$tools <- list()
       self$issues <- list()
+      self$objective_schema <- private$default_objective_schema()
       invisible(self)
     },
     
     #' @description Set primary research objectives
-    #' @param objectives List of primary objectives
+    #' @param objectives List of primary objectives (plain lists with fields:
+    #'   objective_id, objective_text, sector)
     set_primary_objectives = function(objectives) {
       if (!is.list(objectives)) {
         stop("Objectives must be a list")
       }
-      
+
       # Validate objectives structure
       required_fields <- c("objective_id", "objective_text", "sector")
       for (obj in objectives) {
@@ -82,20 +88,21 @@ Protocol <- R6::R6Class(
           stop(paste("Objective missing required fields:", paste(missing, collapse = ", ")))
         }
       }
-      
+
       self$primary_objectives <- objectives
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
       invisible(self)
     },
-    
+
     #' @description Set secondary research objectives
-    #' @param objectives List of secondary objectives
+    #' @param objectives List of secondary objectives (plain lists with fields:
+    #'   objective_id, objective_text, sector)
     set_secondary_objectives = function(objectives) {
       if (!is.list(objectives)) {
         stop("Objectives must be a list")
       }
-      
+
       # Validate objectives structure
       required_fields <- c("objective_id", "objective_text", "sector")
       for (obj in objectives) {
@@ -104,7 +111,7 @@ Protocol <- R6::R6Class(
           stop(paste("Objective missing required fields:", paste(missing, collapse = ", ")))
         }
       }
-      
+
       self$secondary_objectives <- objectives
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
@@ -120,50 +127,191 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
     
-    #' @description Add a stratum to the sample table
-    #' @param stratum_id Character. Unique identifier for the stratum
-    #' @param stratum_name Character. Human-readable name
-    #' @param population_size Numeric. Population size for this stratum
-    #' @param design_effect Numeric. Design effect (default = 1)
-    #' @param precision Numeric. Desired precision (default = 0.05)
-    #' @param confidence_level Numeric. Confidence level (default = 0.95)
-    #' @param allocation_method Character. Method for allocation (default = "proportional")
-    add_stratum = function(stratum_id, 
-                          stratum_name,
-                          population_size,
-                          design_effect = 1,
-                          precision = 0.05,
-                          confidence_level = 0.95,
-                          allocation_method = "proportional") {
-      
-      # Validate inputs
-      if (design_effect < 1) {
-        stop("Design effect must be >= 1")
+    #' @description Add a stratum row to the master sample table
+    #'
+    #' Each call appends one row to \code{sample_table}.  Every column in the
+    #' master table is included; columns that are not supplied default to
+    #' \code{NA}.  Parameters that have clear equivalents in the master table
+    #' schema are mapped automatically (e.g. \code{population_size} maps to
+    #' \code{Total_Population}).
+    #'
+    #' @param stratum_id Character. Unique identifier for the stratum (used as
+    #'   the row key and for cross-referencing the sampling frame).
+    #' @param stratum_name Character. Human-readable name (stored as
+    #'   \code{Population_Name}).
+    #' @param population_size Numeric. Total population for this stratum
+    #'   (stored as \code{Total_Population}).
+    #' @param total_households Numeric. Total number of households (stored as
+    #'   \code{Total_Households}).  Defaults to \code{NA}.
+    #' @param sampling_method Character. Primary sampling method for the
+    #'   stratum (stored as \code{Sampling_Method}).  Also accepted via the
+    #'   legacy alias \code{allocation_method}.  Defaults to \code{"srs"}.
+    #' @param allocation_method Deprecated alias for \code{sampling_method}.
+    #' @param pop_indicator Character. Indicator label for population-level
+    #'   sample size calculation (default \code{"General"}).
+    #' @param pop_expected_prevalence Numeric. Expected prevalence used for
+    #'   population-level sample size (\%).
+    #' @param pop_precision Numeric. Desired precision for population-level
+    #'   estimate (\%).
+    #' @param pop_nonresponse Numeric. Expected non-response rate for
+    #'   population-level calculation (\%).
+    #' @param pop_design_effect Numeric. Design effect for population-level
+    #'   calculation.  Also accepted via the legacy alias \code{design_effect}.
+    #' @param pop_fpc Logical. Apply finite population correction at population
+    #'   level?  Defaults to \code{FALSE}.
+    #' @param pop_result_dummy Numeric. Calculated (or placeholder) sample size
+    #'   at population level.
+    #' @param ind_indicator Character. Indicator label for individual-level
+    #'   sample size calculation.
+    #' @param ind_expected_prevalence Numeric. Expected prevalence for
+    #'   individual-level calculation (\%).
+    #' @param ind_precision Numeric. Desired precision for individual-level
+    #'   estimate (\%).
+    #' @param ind_nonresponse Numeric. Expected non-response rate for
+    #'   individual-level calculation (\%).
+    #' @param ind_design_effect Numeric. Design effect for individual-level
+    #'   calculation.
+    #' @param ind_avg_hh_size Numeric. Average household size (individual
+    #'   level).
+    #' @param ind_subpop_prop Numeric. Sub-population proportion (\%) for
+    #'   individual-level calculation.
+    #' @param ind_fpc Logical. Apply finite population correction at individual
+    #'   level?  Defaults to \code{FALSE}.
+    #' @param ind_result_dummy Numeric. Calculated (or placeholder) sample size
+    #'   at individual level.
+    #' @param mort_indicator Character. Indicator label for mortality-level
+    #'   sample size calculation.
+    #' @param mort_expected_death_rate Numeric. Expected crude death rate used
+    #'   for mortality sample size calculation.
+    #' @param mort_precision Numeric. Desired precision for mortality estimate.
+    #' @param mort_nonresponse Numeric. Expected non-response rate for
+    #'   mortality calculation (\%).
+    #' @param mort_design_effect Numeric. Design effect for mortality
+    #'   calculation.
+    #' @param mort_recall_days Integer. Recall period in days for mortality
+    #'   estimate.
+    #' @param mort_avg_hh_size Numeric. Average household size (mortality
+    #'   level).
+    #' @param mort_fpc Logical. Apply finite population correction at mortality
+    #'   level?  Defaults to \code{FALSE}.
+    #' @param mort_result_dummy Numeric. Calculated (or placeholder) sample
+    #'   size at mortality level.
+    #' @param teams Numeric. Number of field teams.
+    #' @param avg_interview_time Numeric. Average interview time in minutes.
+    #' @param clusters_per_day Numeric. Number of clusters visited per day per
+    #'   team.
+    #' @param enumerators_per_team Numeric. Number of enumerators per team.
+    #' @param avg_rest_time Numeric. Average rest/break time in minutes per
+    #'   day.
+    #' @param avg_travel_time Numeric. Average travel time to cluster in
+    #'   minutes.
+    #' @param start_time Character. Planned work start time (e.g.
+    #'   \code{"08:00"}).
+    #' @param end_time Character. Planned work end time (e.g.
+    #'   \code{"17:00"}).
+    #' @param design_effect Deprecated alias for \code{pop_design_effect}.
+    #' @param precision Deprecated alias for \code{pop_precision}.
+    #' @param confidence_level Deprecated / ignored in the new schema.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_stratum = function(
+      stratum_id,
+      stratum_name,
+      population_size        = NA_real_,
+      total_households       = NA_real_,
+      sampling_method        = "srs",
+      allocation_method      = NULL,   # legacy alias for sampling_method
+      pop_indicator          = "General",
+      pop_expected_prevalence = NA_real_,
+      pop_precision          = NA_real_,
+      pop_nonresponse        = NA_real_,
+      pop_design_effect      = NA_real_,
+      pop_fpc                = FALSE,
+      pop_result_dummy       = NA_real_,
+      ind_indicator          = NA_character_,
+      ind_expected_prevalence = NA_real_,
+      ind_precision          = NA_real_,
+      ind_nonresponse        = NA_real_,
+      ind_design_effect      = NA_real_,
+      ind_avg_hh_size        = NA_real_,
+      ind_subpop_prop        = NA_real_,
+      ind_fpc                = FALSE,
+      ind_result_dummy       = NA_real_,
+      mort_indicator         = NA_character_,
+      mort_expected_death_rate = NA_real_,
+      mort_precision         = NA_real_,
+      mort_nonresponse       = NA_real_,
+      mort_design_effect     = NA_real_,
+      mort_recall_days       = NA_real_,
+      mort_avg_hh_size       = NA_real_,
+      mort_fpc               = FALSE,
+      mort_result_dummy      = NA_real_,
+      teams                  = NA_real_,
+      avg_interview_time     = NA_real_,
+      clusters_per_day       = NA_real_,
+      enumerators_per_team   = NA_real_,
+      avg_rest_time          = NA_real_,
+      avg_travel_time        = NA_real_,
+      start_time             = NA_character_,
+      end_time               = NA_character_,
+      # Legacy / deprecated params kept for backward compatibility
+      design_effect          = NULL,
+      precision              = NULL,
+      confidence_level       = NULL
+    ) {
+
+      # Resolve legacy aliases
+      if (!is.null(allocation_method) && sampling_method == "srs") {
+        sampling_method <- allocation_method
       }
-      if (precision <= 0 || precision >= 1) {
-        stop("Precision must be between 0 and 1")
+      if (!is.null(design_effect) && is.na(pop_design_effect)) {
+        pop_design_effect <- design_effect
       }
-      if (confidence_level <= 0 || confidence_level >= 1) {
-        stop("Confidence level must be between 0 and 1")
+      if (!is.null(precision) && is.na(pop_precision)) {
+        pop_precision <- precision
       }
-      if (population_size <= 0) {
-        stop("Population size must be positive")
-      }
-      
+
       new_row <- data.frame(
-        stratum_id = stratum_id,
-        stratum_name = stratum_name,
-        population_size = population_size,
-        sample_size = NA_real_,
-        design_effect = design_effect,
-        precision = precision,
-        confidence_level = confidence_level,
-        allocation_method = allocation_method,
-        number_of_days = NA_real_,
-        number_of_teams = NA_real_,
+        stratum_id               = stratum_id,
+        Population_Name          = stratum_name,
+        Total_Households         = as.numeric(total_households),
+        Total_Population         = as.numeric(population_size),
+        Sampling_Method          = sampling_method,
+        pop_indicator            = pop_indicator,
+        pop_expected_prevalence  = as.numeric(pop_expected_prevalence),
+        pop_precision            = as.numeric(pop_precision),
+        pop_nonresponse          = as.numeric(pop_nonresponse),
+        pop_design_effect        = as.numeric(pop_design_effect),
+        pop_fpc                  = as.logical(pop_fpc),
+        pop_result_dummy         = as.numeric(pop_result_dummy),
+        ind_indicator            = as.character(ind_indicator),
+        ind_expected_prevalence  = as.numeric(ind_expected_prevalence),
+        ind_precision            = as.numeric(ind_precision),
+        ind_nonresponse          = as.numeric(ind_nonresponse),
+        ind_design_effect        = as.numeric(ind_design_effect),
+        ind_avg_hh_size          = as.numeric(ind_avg_hh_size),
+        ind_subpop_prop          = as.numeric(ind_subpop_prop),
+        ind_fpc                  = as.logical(ind_fpc),
+        ind_result_dummy         = as.numeric(ind_result_dummy),
+        mort_indicator           = as.character(mort_indicator),
+        mort_expected_death_rate = as.numeric(mort_expected_death_rate),
+        mort_precision           = as.numeric(mort_precision),
+        mort_nonresponse         = as.numeric(mort_nonresponse),
+        mort_design_effect       = as.numeric(mort_design_effect),
+        mort_recall_days         = as.numeric(mort_recall_days),
+        mort_avg_hh_size         = as.numeric(mort_avg_hh_size),
+        mort_fpc                 = as.logical(mort_fpc),
+        mort_result_dummy        = as.numeric(mort_result_dummy),
+        teams                    = as.numeric(teams),
+        avg_interview_time       = as.numeric(avg_interview_time),
+        clusters_per_day         = as.numeric(clusters_per_day),
+        enumerators_per_team     = as.numeric(enumerators_per_team),
+        avg_rest_time            = as.numeric(avg_rest_time),
+        avg_travel_time          = as.numeric(avg_travel_time),
+        start_time               = as.character(start_time),
+        end_time                 = as.character(end_time),
         stringsAsFactors = FALSE
       )
-      
+
       if (is.null(self$sample_table)) {
         self$sample_table <- new_row
       } else {
@@ -172,7 +320,7 @@ Protocol <- R6::R6Class(
         }
         self$sample_table <- rbind(self$sample_table, new_row)
       }
-      
+
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
       invisible(self)
@@ -227,7 +375,7 @@ Protocol <- R6::R6Class(
       for (i in seq_len(nrow(self$sample_table))) {
         stratum_row <- self$sample_table[i, ]
         stratum_id <- stratum_row$stratum_id
-        n_needed <- stratum_row$sample_size
+        n_needed <- stratum_row$pop_result_dummy
         
         # Get frame units for this stratum
         stratum_frame <- self$sampling_frame[self$sampling_frame$stratum == stratum_id, ]
@@ -343,6 +491,46 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
     
+    #' @description Validate the structure of the master sample table
+    #'
+    #' Checks that \code{sample_table} exists and contains all required master
+    #' table columns.  Returns a list with a \code{valid} flag and a
+    #' \code{message}.
+    #'
+    #' @return Named list with elements \code{valid} (logical) and
+    #'   \code{message} (character).
+    validate_strata_table = function() {
+      if (is.null(self$sample_table)) {
+        return(list(valid = FALSE, message = "sample_table is NULL — no strata have been added yet."))
+      }
+
+      required_cols <- c(
+        "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
+        "pop_indicator", "pop_result_dummy",
+        "ind_result_dummy",
+        "mort_result_dummy"
+      )
+
+      missing_cols <- setdiff(required_cols, names(self$sample_table))
+      if (length(missing_cols) > 0) {
+        return(list(
+          valid   = FALSE,
+          message = paste("sample_table is missing required columns:",
+                          paste(missing_cols, collapse = ", "))
+        ))
+      }
+
+      dupes <- self$sample_table$stratum_id[duplicated(self$sample_table$stratum_id)]
+      if (length(dupes) > 0) {
+        return(list(
+          valid   = FALSE,
+          message = paste("Duplicate stratum_id values:", paste(dupes, collapse = ", "))
+        ))
+      }
+
+      list(valid = TRUE, message = "sample_table structure is valid.")
+    },
+
     #' @description Get the sample table
     #' @return Data frame containing the sample table
     get_sample_table = function() {
@@ -367,7 +555,7 @@ Protocol <- R6::R6Class(
         num_primary_objectives = length(self$primary_objectives),
         num_secondary_objectives = length(self$secondary_objectives),
         num_strata = if (is.null(self$sample_table)) 0 else nrow(self$sample_table),
-        total_sample_size = if (is.null(self$sample_table)) 0 else sum(self$sample_table$sample_size, na.rm = TRUE),
+        total_sample_size = if (is.null(self$sample_table)) 0 else sum(self$sample_table$pop_result_dummy, na.rm = TRUE),
         num_tools = length(self$tools),
         num_issues = length(self$issues)
       )
@@ -381,6 +569,7 @@ Protocol <- R6::R6Class(
         metadata = self$metadata,
         primary_objectives = self$primary_objectives,
         secondary_objectives = self$secondary_objectives,
+        objective_schema = self$objective_schema,
         sample_table = self$sample_table,
         sampling_frame = self$sampling_frame,
         drawn_sample = self$drawn_sample,
@@ -391,8 +580,26 @@ Protocol <- R6::R6Class(
       )
     }
   ),
-  
+
   private = list(
+    # Load the default objective schema from the bundled reference.xlsx file
+    default_objective_schema = function() {
+      file <- system.file("resources", "reference.xlsx", package = "phr")
+
+      if (!file.exists(file) || file == "") {
+        file <- file.path("resources", "reference.xlsx")
+        if (!file.exists(file)) {
+          return(data.frame())
+        }
+      }
+
+      schema <- tryCatch(
+        as.data.frame(readxl::read_xlsx(file), stringsAsFactors = FALSE),
+        error = function(e) data.frame()
+      )
+
+      schema
+    },
     # Check for issues and discrepancies in the protocol
     check_issues = function() {
       self$issues <- list()
