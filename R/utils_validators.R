@@ -270,20 +270,17 @@ ensure_value <- function(value, default) {
 #' }
 #'
 #' @examples
-#' expr <- parse(text = "age > 5 & !is.na(sex)")[[1]]
-#' .is_logical_expression(expr)
+#' \dontrun{
+#' .is_logical_expression("age > 5 & !is.na(sex)")
 #'
-#' expr <- parse(text = "grepl('a', name)")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("grepl('a', name)")
 #'
-#' expr <- parse(text = "x %in% c('a', 'b', 'c')")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("x %in% c('a', 'b', 'c')")
 #'
-#' expr <- parse(text = "is.numeric(age)")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("is.numeric(age)")
 #'
-#' expr <- parse(text = "'my name is Jack'")[[1]]
-#' .is_logical_expression(expr)
+#' .is_logical_expression("'my name is Jack'")
+#' }
 #'
 #' @keywords internal
 .is_logical_expression <- function(expr_chr) {
