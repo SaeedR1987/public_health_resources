@@ -1667,6 +1667,8 @@ phr_infer_column_type <- function(x, name = NULL, return_details = FALSE) {
 #'
 #' @return TRUE (invisibly) if validation passes; otherwise issues an IPHRA warning or error.
 #'
+#' @export
+#'
 #' @examples
 #' phr_validate_date_order_vectors(
 #'   as.Date(c("2024-01-01", "2024-02-01")),
