@@ -21,6 +21,7 @@
 #' ensure_value("valid_input", "default_value")  # Returns: "valid_input"
 #'
 #' # Usage inside a pipeline or similar defensive checks
+#' some_var <- NULL
 #' some_var <- ensure_value(some_var, "fallback_value")
 ensure_value <- function(value, default) {
   if (is.null(value) || length(value) == 0) {

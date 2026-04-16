@@ -147,6 +147,7 @@ utils::globalVariables(c(
   "liters_pppd",
   "liters_log",
   "liters_pppd_log",
+  "wash_jmp_ladder_drinking_water_cat",
 
   # ----- utils_data_individual_death.R -----
   # Calculated date / person-time columns (cross-mutate references)
