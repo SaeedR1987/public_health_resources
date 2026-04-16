@@ -885,7 +885,7 @@ add_lcsi <- function(.dataset,
     .dataset <- .dataset |>
       dplyr::mutate(
         fsl_lcsi_cat_yes = factor(
-          fsl_lcsi_cat_yes,
+          .data$fsl_lcsi_cat_yes,
           levels = c(
             phr_txt("Emergency"),
             phr_txt("Crisis"),
@@ -895,7 +895,7 @@ add_lcsi <- function(.dataset,
           ordered = TRUE
         ),
         fsl_lcsi_cat_exhaust = factor(
-          fsl_lcsi_cat_exhaust,
+          .data$fsl_lcsi_cat_exhaust,
           levels = c(
             phr_txt("Emergency"),
             phr_txt("Crisis"),
@@ -905,7 +905,7 @@ add_lcsi <- function(.dataset,
           ordered = TRUE
         ),
         fsl_lcsi_cat = factor(
-          fsl_lcsi_cat,
+          .data$fsl_lcsi_cat,
           levels = c(
             phr_txt("Emergency"),
             phr_txt("Crisis"),
