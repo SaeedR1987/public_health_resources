@@ -5096,6 +5096,10 @@ plot_ci_bar_percentage <- function(survey_design,
     # Determine if we have grouping
     has_grouping <- !is.null(grouping)
 
+    # Validate that weights_col is provided when weighted = TRUE (applies to all paths)
+    if (weighted) {
+      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+    }
 
     # SURVEY DESIGN PATH: use phr_calc_survey_categorical_single
 
