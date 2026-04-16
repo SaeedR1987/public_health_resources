@@ -156,6 +156,14 @@ utils::globalVariables(c(
 
   # ----- utils_data_water_container.R -----
   # Total litres column (cross-mutate reference)
-  "wash_container_total_litres"
+  "wash_container_total_litres",
+
+  # ----- utils_data_individual_woman.R -----
+  # Intermediate MUAC classification column (intra-mutate reference)
+  "muac_for_classification",
+
+  # ----- utils_data_household_fsl.R (additional) -----
+  # LCSI NA count column (intra-mutate reference)
+  "lcsi_count_na"
 
 ))

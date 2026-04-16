@@ -153,7 +153,7 @@ add_maternal_muac <- function(
     .dataset <- .dataset |>
       dplyr::mutate(
         # Converting values to centimeters for categorization if required
-        muac_for_classification = if (muac_is_mm) woman_muac_cm else .data[[muac_col]],
+        muac_for_classification = if (muac_is_mm) .data$woman_muac_cm else .data[[muac_col]],
 
         # Apply categorization only to women aged 15-49 years
         woman_muac_cat = dplyr::case_when(

@@ -2699,9 +2699,9 @@ plot_domain_distribution <- function(survey_design,
       g <- ggplot2::ggplot(
         data = plot_data,
         mapping = ggplot2::aes(
-          x = stats::reorder(response_label, if (show_percentage) percentage else count),
+          x = stats::reorder(.data$response_label, if (show_percentage) .data$percentage else .data$count),
           y = plot_value,
-          fill = domain_label
+          fill = .data$domain_label
         )
       ) +
         ggplot2::geom_bar(stat = "identity") +
@@ -2711,9 +2711,9 @@ plot_domain_distribution <- function(survey_design,
       g <- ggplot2::ggplot(
         data = plot_data,
         mapping = ggplot2::aes(
-          x = stats::reorder(response_label, if (show_percentage) percentage else count),
+          x = stats::reorder(.data$response_label, if (show_percentage) .data$percentage else .data$count),
           y = plot_value,
-          fill = domain_label
+          fill = .data$domain_label
         )
       ) +
         ggplot2::geom_bar(stat = "identity") +
@@ -2930,7 +2930,7 @@ plot_stacked_bar <- function(survey_design,
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
       # Create base plot
-      g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = group, y = percentage,
+      g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = .data$group, y = percentage,
                                                  fill = as.factor(!!rlang::sym(fill_var)))) +
         ggplot2::geom_bar(stat = "identity", position = "fill") +
         ggplot2::scale_y_continuous(labels = scales::percent_format()) +
@@ -3811,7 +3811,7 @@ plot_grouped_bar_multiple <- function(survey_design,
       colors <- get_color_palette(type = color_palette, n = 1)
 
       g <- ggplot2::ggplot(df_plot,
-                           ggplot2::aes(x = stats::reorder(response, value), y = value)) +
+                           ggplot2::aes(x = stats::reorder(.data$response, value), y = value)) +
         ggplot2::geom_bar(stat = "identity", fill = colors[1]) +
         ggplot2::theme_minimal() +
         ggplot2::theme(legend.position = legend_position) +
@@ -3900,7 +3900,7 @@ plot_grouped_bar_multiple <- function(survey_design,
       if (is.null(legend_label)) legend_label <- grouping
 
       g <- ggplot2::ggplot(df_plot, ggplot2::aes(
-        x    = stats::reorder(response, value),
+        x    = stats::reorder(.data$response, value),
         y    = value,
         fill = as.factor(!!rlang::sym(grouping))
       )) +
@@ -4163,25 +4163,25 @@ plot_boxplot <- function(survey_design,
 
       if (weighted) {
         # Use weighted stats for boxplot
-        g <- ggplot2::ggplot(weighted_stats, ggplot2::aes(x = group))
+        g <- ggplot2::ggplot(weighted_stats, ggplot2::aes(x = .data$group))
 
         if (!is.null(fill_color)) {
           g <- g + ggplot2::geom_boxplot(
             stat = "identity",
-            ggplot2::aes(ymin = ymin, lower = lower, middle = middle, upper = upper, ymax = ymax),
+            ggplot2::aes(ymin = ymin, lower = .data$lower, middle = .data$middle, upper = .data$upper, ymax = ymax),
             fill = fill_color[1]
           )
         } else {
           colors <- get_color_palette(type = color_palette, n = 1)
           g <- g + ggplot2::geom_boxplot(
             stat = "identity",
-            ggplot2::aes(ymin = ymin, lower = lower, middle = middle, upper = upper, ymax = ymax),
+            ggplot2::aes(ymin = ymin, lower = .data$lower, middle = .data$middle, upper = .data$upper, ymax = ymax),
             fill = colors[1]
           )
         }
       } else {
         # Unweighted boxplot
-        g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = group, y = !!rlang::sym(numeric_var)))
+        g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = .data$group, y = !!rlang::sym(numeric_var)))
 
         if (!is.null(fill_color)) {
           g <- g + ggplot2::geom_boxplot(outlier.shape = outlier_shape, fill = fill_color[1])
@@ -4241,13 +4241,13 @@ plot_boxplot <- function(survey_design,
 
       if (weighted) {
         # Use weighted stats for boxplot (overall row already prepended above if show_overall)
-        g <- ggplot2::ggplot(weighted_stats, ggplot2::aes(x = as.factor(group)))
+        g <- ggplot2::ggplot(weighted_stats, ggplot2::aes(x = as.factor(.data$group)))
 
         if (!is.null(fill_color)) {
           g <- g + ggplot2::geom_boxplot(
             stat = "identity",
-            ggplot2::aes(ymin = ymin, lower = lower, middle = middle, upper = upper, ymax = ymax,
-                         fill = as.factor(group))
+            ggplot2::aes(ymin = ymin, lower = .data$lower, middle = .data$middle, upper = .data$upper, ymax = ymax,
+                         fill = as.factor(.data$group))
           ) +
             ggplot2::scale_fill_manual(values = fill_color, name = legend_label)
         } else {
@@ -4255,8 +4255,8 @@ plot_boxplot <- function(survey_design,
           colors <- get_color_palette(type = color_palette, n = n_colors)
           g <- g + ggplot2::geom_boxplot(
             stat = "identity",
-            ggplot2::aes(ymin = ymin, lower = lower, middle = middle, upper = upper, ymax = ymax,
-                         fill = as.factor(group))
+            ggplot2::aes(ymin = ymin, lower = .data$lower, middle = .data$middle, upper = .data$upper, ymax = ymax,
+                         fill = as.factor(.data$group))
           ) +
             ggplot2::scale_fill_manual(values = colors, name = legend_label)
         }
@@ -4301,7 +4301,7 @@ plot_boxplot <- function(survey_design,
                              group = "Overall")
         }
         g <- g + ggplot2::geom_point(data = mean_df,
-                                     ggplot2::aes(x = group, y = mean_val),
+                                     ggplot2::aes(x = .data$group, y = .data$mean_val),
                                      color = "red", size = 3, shape = 18)
       } else {
         # df_plot includes overall rows (when show_overall = TRUE) so group_by covers all groups
@@ -4319,7 +4319,7 @@ plot_boxplot <- function(survey_design,
                              .groups = "drop")
         }
         g <- g + ggplot2::geom_point(data = mean_df,
-                                     ggplot2::aes(x = as.factor(!!rlang::sym(grouping)), y = mean_val),
+                                     ggplot2::aes(x = as.factor(!!rlang::sym(grouping)), y = .data$mean_val),
                                      color = "red", size = 3, shape = 18)
       }
     }
@@ -4883,7 +4883,7 @@ plot_sankey <- function(survey_design,
       g <- ggplot2::ggplot(
         data = df_agg,
         ggplot2::aes(
-          y = plot_value,
+          y = .data$plot_value,
           axis1 = !!rlang::sym(axis_vars[1]),
           axis2 = !!rlang::sym(axis_vars[2])
         )
@@ -4892,7 +4892,7 @@ plot_sankey <- function(survey_design,
       g <- ggplot2::ggplot(
         data = df_agg,
         ggplot2::aes(
-          y = plot_value,
+          y = .data$plot_value,
           axis1 = !!rlang::sym(axis_vars[1]),
           axis2 = !!rlang::sym(axis_vars[2]),
           axis3 = !!rlang::sym(axis_vars[3])
@@ -4902,7 +4902,7 @@ plot_sankey <- function(survey_design,
       g <- ggplot2::ggplot(
         data = df_agg,
         ggplot2::aes(
-          y = plot_value,
+          y = .data$plot_value,
           axis1 = !!rlang::sym(axis_vars[1]),
           axis2 = !!rlang::sym(axis_vars[2]),
           axis3 = !!rlang::sym(axis_vars[3]),
@@ -5281,16 +5281,16 @@ plot_ci_bar_percentage <- function(survey_design,
     if (!has_grouping) {
       g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x_var, y = pct, fill = x_var)) +
         ggplot2::geom_bar(stat = "identity") +
-        ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+        ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper), width = 0.2) +
         ggplot2::scale_fill_manual(values = colors, guide = "none") +
         ggplot2::scale_y_continuous(labels = scales::percent_format(scale = 1), limits = c(0, NA)) +
         ggplot2::theme_minimal() +
         ggplot2::theme(legend.position = legend_position) +
         ggplot2::labs(x = final_x_lab, y = y_lab, subtitle = final_subtitle)
     } else {
-      g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x_var, y = pct, fill = fill_var)) +
+      g <- ggplot2::ggplot(df_plot, ggplot2::aes(x = x_var, y = pct, fill = .data$fill_var)) +
         ggplot2::geom_bar(stat = "identity", position = "dodge") +
-        ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lower, ymax = ci_upper, group = fill_var),
+        ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper, group = .data$fill_var),
                                position = ggplot2::position_dodge(0.9), width = 0.2) +
         ggplot2::scale_fill_manual(values = colors, name = final_legend_label) +
         ggplot2::scale_y_continuous(labels = scales::percent_format(scale = 1), limits = c(0, NA)) +
@@ -5630,9 +5630,9 @@ plot_ci_point_mean <- function(survey_design,
       colors <- get_color_palette(type = color_palette, n = n_colors)
       final_x_lab <- if (is.null(x_lab)) "" else x_lab
 
-      g <- ggplot2::ggplot(stats_df, ggplot2::aes(x = x_var, y = est)) +
+      g <- ggplot2::ggplot(stats_df, ggplot2::aes(x = x_var, y = .data$est)) +
         ggplot2::geom_point(size = point_size, color = colors[1]) +
-        ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, color = colors[1]) +
+        ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper), width = 0.2, color = colors[1]) +
         ggplot2::theme_minimal() +
         ggplot2::theme(legend.position = legend_position) +
         ggplot2::labs(x = final_x_lab, y = y_lab, subtitle = final_subtitle)
@@ -5642,9 +5642,9 @@ plot_ci_point_mean <- function(survey_design,
       final_x_lab <- if (is.null(x_lab)) grouping else x_lab
       final_legend_label <- if (is.null(legend_label)) grouping else legend_label
 
-      g <- ggplot2::ggplot(stats_df, ggplot2::aes(x = x_var, y = est, color = x_var)) +
+      g <- ggplot2::ggplot(stats_df, ggplot2::aes(x = x_var, y = .data$est, color = x_var)) +
         ggplot2::geom_point(size = point_size) +
-        ggplot2::geom_errorbar(ggplot2::aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+        ggplot2::geom_errorbar(ggplot2::aes(ymin = .data$ci_lower, ymax = .data$ci_upper), width = 0.2) +
         ggplot2::scale_color_manual(values = colors, name = final_legend_label) +
         ggplot2::theme_minimal() +
         ggplot2::theme(legend.position = legend_position) +
@@ -6681,7 +6681,7 @@ plot_crosstab <- function(survey_design,
           # Draw rectangle for each cell in region
           g <- g + ggplot2::geom_tile(
             data = region_cells,
-            ggplot2::aes(x = col_val, y = row_val),
+            ggplot2::aes(x = .data$col_val, y = .data$row_val),
             fill = NA,
             color = cell_color,
             size = cell_size,
