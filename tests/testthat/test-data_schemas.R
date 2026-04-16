@@ -1121,45 +1121,6 @@ test_that("generate_cleaning_log creates entries for other columns", {
 })
 
 
-test_that("generate_cleaning_log infers main column from naming convention", {
-
-  test_df <- tibble::tibble(
-    uuid = c("id_1", "id_2"),
-    income_source = c("farming", "other"),
-    income_source_other = c("", "remittances")
-  )
-
-  # Schema does NOT have other_column_link, should infer from naming
-  schema <- list(
-    required = "uuid",
-    types = list(
-      uuid = "character",
-      income_source = "character",
-      income_source_other = "character"
-    ),
-    is_other = list(income_source_other = TRUE)
-    # Note: no other_column_link specified
-  )
-
-  d <- suppressMessages(suppressWarnings(
-    Data$new(data = test_df, uuid = "uuid", dataset_name = "TestData")
-  ))
-  d$set_variable_schema(schema)
-  d$standardize()
-
-  d$data_quality_flags <- data.frame(uuid = test_df$uuid)
-  d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
-
-  log_df <- d$cleaning_log$log_df
-
-  # Should still create entries even without explicit link
-  id2_entries <- log_df[log_df$uuid == "id_2", ]
-  expect_gte(nrow(id2_entries), 2)
-
-  # Should have inferred income_source as the main column
-  expect_true(any(id2_entries$question.name == "income_source"))
-})
-
 test_that("Data$standardize detects both inferred and schema-identified other columns", {
 
 

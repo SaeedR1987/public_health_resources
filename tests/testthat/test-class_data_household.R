@@ -1261,7 +1261,7 @@ test_that("clean and generate_cleaning_log skip non-Data linked objects graceful
   hh_data$linked_objects[["bad_link"]] <- list(object = list(not_a_data = TRUE))
 
   # Both methods should warn but not abort
-  expect_no_error(suppressWarnings(hh_data$generate_cleaning_log()))
+  expect_no_error(suppressWarnings(hh_data$generate_cleaning_log(stage = "raw")))
   expect_no_error(suppressWarnings(hh_data$clean()))
 })
 
@@ -1310,7 +1310,7 @@ test_that("generate_data_analytics with mortality type succeeds when linked rost
       hh_uuid  = c("hh1"),
       age_years = c(2),
       sex       = c("M")
-    )
+    ), recall_date = "2025-01-01"
   )
 
   hh_data$add_linked_dataset("roster", roster_data)

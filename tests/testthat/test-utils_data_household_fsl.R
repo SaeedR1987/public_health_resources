@@ -300,17 +300,17 @@ test_that("add_hhs() — normal functionality works", {
   # Factor levels ordered worst to best
   # fsl_hhs_cat: match by regex (grepl) instead of exact equality
   lvls1 <- levels(out$fsl_hhs_cat)
-  expect_true(all(grepl("Severe", lvls1)))
-  expect_true(all(grepl("Moderate", lvls1)))
-  expect_true(all(grepl("Little\\s*to\\s*No", lvls1)))  # allow variable whitespace
+  expect_true(any(grepl("Severe", lvls1)))
+  expect_true(any(grepl("Moderate", lvls1)))
+  expect_true(any(grepl("Little\\s*to\\s*No", lvls1)))  # allow variable whitespace
 
   # fsl_hhs_cat_ipc: match by regex (grepl) instead of exact equality
   lvls2 <- levels(out$fsl_hhs_cat_ipc)
-  expect_true(all(grepl("Very\\s*Severe", lvls2)))
-  expect_true(all(grepl("Severe", lvls2)))
-  expect_true(all(grepl("Moderate", lvls2)))
-  expect_true(all(grepl("Little", lvls2)))
-  expect_true(all(grepl("None", lvls2)))
+  expect_true(any(grepl("Very\\s*Severe", lvls2)))
+  expect_true(any(grepl("Severe", lvls2)))
+  expect_true(any(grepl("Moderate", lvls2)))
+  expect_true(any(grepl("Little", lvls2)))
+  expect_true(any(grepl("None", lvls2)))
 })
 
  test_that("add_hhs() — edge case of all zero indicators", {

@@ -1612,3 +1612,4 @@ test_that("map_schema_labels is called automatically after map_schema_vars in st
   expect_equal(d$variable_label$sex, "Sex")
   expect_equal(d$value_label$sex[["male"]], "Male")
 })
+
