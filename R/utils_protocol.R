@@ -3,6 +3,14 @@
 #' @description
 #' Utility functions for working with Protocol objects and protocol workflows.
 
+# Minimum columns every master strata table must contain.
+.strata_table_required_cols <- c(
+  "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
+  "pop_indicator", "pop_result_dummy",
+  "ind_result_dummy",
+  "mort_result_dummy"
+)
+
 #' Create a new protocol instance
 #'
 #' @param assessment_title Character. Title of the assessment
@@ -59,12 +67,7 @@ validate_strata_table <- function(sample_table) {
                 message = "sample_table is empty (zero rows)."))
   }
 
-  required_cols <- c(
-    "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
-    "pop_indicator", "pop_result_dummy",
-    "ind_result_dummy",
-    "mort_result_dummy"
-  )
+  required_cols <- .strata_table_required_cols
 
   missing_cols <- setdiff(required_cols, names(sample_table))
   if (length(missing_cols) > 0) {

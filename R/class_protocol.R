@@ -504,12 +504,7 @@ Protocol <- R6::R6Class(
         return(list(valid = FALSE, message = "sample_table is NULL — no strata have been added yet."))
       }
 
-      required_cols <- c(
-        "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
-        "pop_indicator", "pop_result_dummy",
-        "ind_result_dummy",
-        "mort_result_dummy"
-      )
+      required_cols <- .strata_table_required_cols
 
       missing_cols <- setdiff(required_cols, names(self$sample_table))
       if (length(missing_cols) > 0) {
@@ -584,21 +579,7 @@ Protocol <- R6::R6Class(
   private = list(
     # Load the default objective schema from the bundled reference.xlsx file
     default_objective_schema = function() {
-      file <- system.file("resources", "reference.xlsx", package = "phr")
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "reference.xlsx")
-        if (!file.exists(file)) {
-          return(data.frame())
-        }
-      }
-
-      schema <- tryCatch(
-        as.data.frame(readxl::read_xlsx(file), stringsAsFactors = FALSE),
-        error = function(e) data.frame()
-      )
-
-      schema
+      load_objective_schema()
     },
     # Check for issues and discrepancies in the protocol
     check_issues = function() {
