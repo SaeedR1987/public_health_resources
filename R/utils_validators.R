@@ -1584,6 +1584,8 @@ phr_validate_schema <- function(df, schema, origin = NULL, hint = NULL, soft) {
 #' @return A character string ("numeric", "date", "logical", "character", or "unknown"),
 #'   or a list with detailed info if `return_details = TRUE`.
 #'
+#' @export
+#'
 #' @examples
 #' phr_infer_column_type(c("12", "5", "9"))
 #' phr_infer_column_type(c("TRUE", "FALSE", "TRUE"))
