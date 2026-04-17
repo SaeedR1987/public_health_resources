@@ -3,6 +3,14 @@
 #' @description
 #' Utility functions for working with Protocol objects and protocol workflows.
 
+# Minimum columns every master strata table must contain.
+.strata_table_required_cols <- c(
+  "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
+  "pop_indicator", "pop_result_dummy",
+  "ind_result_dummy",
+  "mort_result_dummy"
+)
+
 #' Create a new protocol instance
 #'
 #' @param assessment_title Character. Title of the assessment
@@ -34,6 +42,51 @@ validate_protocol <- function(protocol) {
   )
   
   return(results)
+}
+
+#' Validate the master strata table structure
+#'
+#' Checks that a data frame conforms to the expected master strata table
+#' structure with all required columns.  This is a standalone helper that
+#' mirrors the \code{Protocol$validate_strata_table()} method.
+#'
+#' @param sample_table A data frame to validate (typically
+#'   \code{protocol$sample_table}).
+#' @return Named list with elements \code{valid} (logical) and
+#'   \code{message} (character).
+#' @export
+validate_strata_table <- function(sample_table) {
+
+  if (is.null(sample_table) || !is.data.frame(sample_table)) {
+    return(list(valid = FALSE,
+                message = "sample_table must be a non-NULL data frame."))
+  }
+
+  if (nrow(sample_table) == 0) {
+    return(list(valid = FALSE,
+                message = "sample_table is empty (zero rows)."))
+  }
+
+  required_cols <- .strata_table_required_cols
+
+  missing_cols <- setdiff(required_cols, names(sample_table))
+  if (length(missing_cols) > 0) {
+    return(list(
+      valid   = FALSE,
+      message = paste("sample_table is missing required columns:",
+                      paste(missing_cols, collapse = ", "))
+    ))
+  }
+
+  dupes <- sample_table$stratum_id[duplicated(sample_table$stratum_id)]
+  if (length(dupes) > 0) {
+    return(list(
+      valid   = FALSE,
+      message = paste("Duplicate stratum_id values:", paste(dupes, collapse = ", "))
+    ))
+  }
+
+  list(valid = TRUE, message = "sample_table structure is valid.")
 }
 
 #' Save protocol to RDS file
@@ -83,6 +136,7 @@ restore_protocol <- function(protocol_data) {
   protocol$metadata <- protocol_data$metadata
   protocol$primary_objectives <- protocol_data$primary_objectives
   protocol$secondary_objectives <- protocol_data$secondary_objectives
+  protocol$objective_schema <- protocol_data$objective_schema %||% protocol$objective_schema
   protocol$sample_table <- protocol_data$sample_table
   protocol$sampling_frame <- protocol_data$sampling_frame
   protocol$drawn_sample <- protocol_data$drawn_sample
@@ -117,7 +171,7 @@ print_protocol_summary <- function(protocol) {
   cat("  Primary Objectives:", summary$num_primary_objectives, "\n")
   cat("  Secondary Objectives:", summary$num_secondary_objectives, "\n")
   cat("  Strata:", summary$num_strata, "\n")
-  cat("  Total Sample Size:", summary$total_sample_size, "\n")
+  cat("  Total Sample Size (pop level):", summary$total_sample_size, "\n")
   cat("  Tools:", summary$num_tools, "\n\n")
   
   cat("Issues:", summary$num_issues, "\n")
