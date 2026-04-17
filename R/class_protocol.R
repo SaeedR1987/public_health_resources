@@ -370,13 +370,17 @@ Protocol <- R6::R6Class(
 
     # Create an officer doc using the bundled template when available, or a blank doc.
     create_base_doc = function(reference_docx = NULL) {
-      template_path <- if (!is.null(reference_docx) && file.exists(reference_docx)) {
-        reference_docx
-      } else {
-        sys_path <- system.file("resources", "protocol_report_template.docx", package = "phr")
-        if (nzchar(sys_path)) sys_path else NULL
+      # Caller-supplied path takes highest priority
+      if (!is.null(reference_docx) && file.exists(reference_docx)) {
+        return(officer::read_docx(reference_docx))
       }
-      if (!is.null(template_path)) officer::read_docx(template_path) else officer::read_docx()
+      # Fall back to the package-bundled template
+      sys_path <- system.file("resources", "protocol_report_template.docx", package = "phr")
+      if (nzchar(sys_path)) {
+        return(officer::read_docx(sys_path))
+      }
+      # No template found — use a blank Word document with default styles
+      officer::read_docx()
     },
 
     # Add the title / metadata section to the Word document.
@@ -440,15 +444,22 @@ Protocol <- R6::R6Class(
         tool <- self$tools[[i]]
 
         if (methods::is(tool, "R6")) {
-          tool_name  <- tryCatch(tool$get_name(),      error = function(e) paste("Tool", i))
-          tool_type  <- tryCatch(tool$get_tool_type(), error = function(e) "unknown")
-          survey     <- tryCatch(tool$get_survey(),    error = function(e) NULL)
-          indicators <- if (!is.null(survey) && is.data.frame(survey) &&
-                             nrow(survey) > 0 && "name" %in% names(survey)) {
-            unique(stats::na.omit(survey$name))
-          } else {
-            character(0)
-          }
+          tool_name  <- tryCatch(tool$get_name(),      error = function(e) {
+            phr_warning(phr_txt("Could not read name for tool {i}: {conditionMessage(e)}"),
+                        origin = "Protocol$add_tools_section")
+            paste("Tool", i)
+          })
+          tool_type  <- tryCatch(tool$get_tool_type(), error = function(e) {
+            phr_warning(phr_txt("Could not read type for tool {i}: {conditionMessage(e)}"),
+                        origin = "Protocol$add_tools_section")
+            "unknown"
+          })
+          survey     <- tryCatch(tool$get_survey(),    error = function(e) {
+            phr_warning(phr_txt("Could not read survey sheet for tool {i}: {conditionMessage(e)}"),
+                        origin = "Protocol$add_tools_section")
+            NULL
+          })
+          indicators <- private$extract_indicators_from_survey(survey)
         } else {
           tool_name  <- tool$tool_name  %||% paste("Tool", i)
           tool_type  <- tool$tool_type  %||% "unknown"
@@ -474,6 +485,18 @@ Protocol <- R6::R6Class(
       }
 
       doc
+    },
+
+    # Extract unique non-NA indicator names from an XLSForm survey data frame.
+    # Returns an empty character vector when the survey is absent or has no
+    # 'name' column.
+    extract_indicators_from_survey = function(survey) {
+      if (!is.null(survey) && is.data.frame(survey) &&
+          nrow(survey) > 0 && "name" %in% names(survey)) {
+        unique(stats::na.omit(survey$name))
+      } else {
+        character(0)
+      }
     }
   )
 )
