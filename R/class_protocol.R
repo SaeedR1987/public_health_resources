@@ -62,16 +62,19 @@ Protocol <- R6::R6Class(
     #' @param month_year Character. Month and year of data collection (e.g., "January 2024")
     #' @return A new Protocol object
     initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL) {
-      self$metadata$created_date <- Sys.time()
-      self$metadata$modified_date <- Sys.time()
-      self$metadata$assessment_title <- assessment_title
-      self$metadata$country_name <- country_name
-      self$metadata$month_year <- month_year
-      self$primary_objectives <- list()
-      self$secondary_objectives <- list()
-      self$tools <- list()
-      self$issues <- list()
-      self$objective_schema <- private$default_objective_schema()
+      phr_try({
+        self$metadata$created_date <- Sys.time()
+        self$metadata$modified_date <- Sys.time()
+        self$metadata$assessment_title <- assessment_title
+        self$metadata$country_name <- country_name
+        self$metadata$month_year <- month_year
+        self$primary_objectives <- list()
+        self$secondary_objectives <- list()
+        self$tools <- list()
+        self$issues <- list()
+        self$objective_schema <- private$default_objective_schema()
+        phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
+      }, on_error = "abort", origin = "Protocol$initialize")
       invisible(self)
     },
     
@@ -80,22 +83,27 @@ Protocol <- R6::R6Class(
     #'   sector, pillar, sub_pillar, short_objective, text_objective, and
     #'   optionally data_source)
     set_primary_objectives = function(objectives) {
-      if (!is.list(objectives)) {
-        stop("Objectives must be a list")
-      }
+      phr_try({
+        phr_assert(is.list(objectives),
+                   message = phr_txt("Objectives must be a list."),
+                   origin  = "Protocol$set_primary_objectives")
 
-      # Validate objectives structure
-      required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-      for (obj in objectives) {
-        missing <- setdiff(required_fields, names(obj))
-        if (length(missing) > 0) {
-          stop(paste("Objective missing required fields:", paste(missing, collapse = ", ")))
+        required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+        for (obj in objectives) {
+          missing <- setdiff(required_fields, names(obj))
+          if (length(missing) > 0) {
+            phr_error(
+              message = phr_txt("Objective missing required fields: {paste(missing, collapse=', ')}"),
+              origin  = "Protocol$set_primary_objectives",
+              hint    = phr_txt("Use create_objective() to build a conforming objective list.")
+            )
+          }
         }
-      }
 
-      self$primary_objectives <- objectives
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        self$primary_objectives <- objectives
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+      }, on_error = "abort", origin = "Protocol$set_primary_objectives")
       invisible(self)
     },
 
@@ -104,22 +112,27 @@ Protocol <- R6::R6Class(
     #'   sector, pillar, sub_pillar, short_objective, text_objective, and
     #'   optionally data_source)
     set_secondary_objectives = function(objectives) {
-      if (!is.list(objectives)) {
-        stop("Objectives must be a list")
-      }
+      phr_try({
+        phr_assert(is.list(objectives),
+                   message = phr_txt("Objectives must be a list."),
+                   origin  = "Protocol$set_secondary_objectives")
 
-      # Validate objectives structure
-      required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-      for (obj in objectives) {
-        missing <- setdiff(required_fields, names(obj))
-        if (length(missing) > 0) {
-          stop(paste("Objective missing required fields:", paste(missing, collapse = ", ")))
+        required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+        for (obj in objectives) {
+          missing <- setdiff(required_fields, names(obj))
+          if (length(missing) > 0) {
+            phr_error(
+              message = phr_txt("Objective missing required fields: {paste(missing, collapse=', ')}"),
+              origin  = "Protocol$set_secondary_objectives",
+              hint    = phr_txt("Use create_objective() to build a conforming objective list.")
+            )
+          }
         }
-      }
 
-      self$secondary_objectives <- objectives
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        self$secondary_objectives <- objectives
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+      }, on_error = "abort", origin = "Protocol$set_secondary_objectives")
       invisible(self)
     },
 
@@ -135,27 +148,42 @@ Protocol <- R6::R6Class(
     #'   \code{"secondary"}.
     #' @return Invisibly returns \code{self} for method chaining.
     add_objective = function(objective, type = "primary") {
-      if (!type %in% c("primary", "secondary")) {
-        stop("type must be 'primary' or 'secondary'")
-      }
-      if (!is.list(objective)) {
-        stop("objective must be a named list")
-      }
+      phr_try({
+        phr_assert(
+          type %in% c("primary", "secondary"),
+          message = phr_txt("type must be 'primary' or 'secondary'."),
+          origin  = "Protocol$add_objective"
+        )
+        phr_assert(
+          is.list(objective),
+          message = phr_txt("objective must be a named list."),
+          origin  = "Protocol$add_objective",
+          hint    = phr_txt("Use create_objective() to build a conforming objective.")
+        )
 
-      required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-      missing <- setdiff(required_fields, names(objective))
-      if (length(missing) > 0) {
-        stop(paste("Objective missing required fields:", paste(missing, collapse = ", ")))
-      }
+        required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+        missing <- setdiff(required_fields, names(objective))
+        if (length(missing) > 0) {
+          phr_error(
+            message = phr_txt("Objective missing required fields: {paste(missing, collapse=', ')}"),
+            origin  = "Protocol$add_objective",
+            hint    = phr_txt("Use create_objective() to build a conforming objective list.")
+          )
+        }
 
-      if (type == "primary") {
-        self$primary_objectives <- c(self$primary_objectives, list(objective))
-      } else {
-        self$secondary_objectives <- c(self$secondary_objectives, list(objective))
-      }
+        if (type == "primary") {
+          self$primary_objectives <- c(self$primary_objectives, list(objective))
+        } else {
+          self$secondary_objectives <- c(self$secondary_objectives, list(objective))
+        }
 
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+        phr_message(
+          phr_txt("{type} objective '{objective$short_objective}' added."),
+          origin = "Protocol$add_objective"
+        )
+      }, on_error = "abort", origin = "Protocol$add_objective")
       invisible(self)
     },
 
@@ -167,32 +195,42 @@ Protocol <- R6::R6Class(
     #'   \code{"secondary"}.
     #' @return Invisibly returns \code{self} for method chaining.
     remove_objective = function(short_objective, type = "primary") {
-      if (!type %in% c("primary", "secondary")) {
-        stop("type must be 'primary' or 'secondary'")
-      }
-
-      if (type == "primary") {
-        before <- length(self$primary_objectives)
-        self$primary_objectives <- Filter(
-          function(x) !identical(x$short_objective, short_objective),
-          self$primary_objectives
+      phr_try({
+        phr_assert(
+          type %in% c("primary", "secondary"),
+          message = phr_txt("type must be 'primary' or 'secondary'."),
+          origin  = "Protocol$remove_objective"
         )
-        if (length(self$primary_objectives) == before) {
-          warning(paste0("No primary objective with short_objective '", short_objective, "' was found."))
-        }
-      } else {
-        before <- length(self$secondary_objectives)
-        self$secondary_objectives <- Filter(
-          function(x) !identical(x$short_objective, short_objective),
-          self$secondary_objectives
-        )
-        if (length(self$secondary_objectives) == before) {
-          warning(paste0("No secondary objective with short_objective '", short_objective, "' was found."))
-        }
-      }
 
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        if (type == "primary") {
+          before <- length(self$primary_objectives)
+          self$primary_objectives <- Filter(
+            function(x) !identical(x$short_objective, short_objective),
+            self$primary_objectives
+          )
+          if (length(self$primary_objectives) == before) {
+            phr_warning(
+              message = phr_txt("No primary objective with short_objective '{short_objective}' was found."),
+              origin  = "Protocol$remove_objective"
+            )
+          }
+        } else {
+          before <- length(self$secondary_objectives)
+          self$secondary_objectives <- Filter(
+            function(x) !identical(x$short_objective, short_objective),
+            self$secondary_objectives
+          )
+          if (length(self$secondary_objectives) == before) {
+            phr_warning(
+              message = phr_txt("No secondary objective with short_objective '{short_objective}' was found."),
+              origin  = "Protocol$remove_objective"
+            )
+          }
+        }
+
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+      }, on_error = "abort", origin = "Protocol$remove_objective")
       invisible(self)
     },
     
@@ -395,13 +433,18 @@ Protocol <- R6::R6Class(
         self$sample_table <- new_row
       } else {
         if (stratum_id %in% self$sample_table$stratum_id) {
-          stop(paste("Stratum ID", stratum_id, "already exists"))
+          phr_error(
+            message = phr_txt("Stratum ID '{stratum_id}' already exists."),
+            origin  = "Protocol$add_stratum",
+            hint    = phr_txt("Use a unique stratum_id for each call to add_stratum().")
+          )
         }
         self$sample_table <- rbind(self$sample_table, new_row)
       }
 
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
+      phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "Protocol$add_stratum")
       invisible(self)
     },
     
@@ -418,33 +461,48 @@ Protocol <- R6::R6Class(
     #'   A \code{stratum} column enables stratified sampling.
     #' @return Invisibly returns \code{self} for method chaining.
     set_sampling_frame = function(frame) {
+      phr_try({
 
-      # 1. Confirm it is a data frame and not empty
-      if (!phr_validate_dataframe(frame, soft = TRUE)) {
-        stop("Sampling frame must be a non-NULL data frame with atomic columns.")
-      }
-      if (nrow(frame) == 0) {
-        stop("Sampling frame is empty.")
-      }
+        # 1. Confirm it is a data frame and not empty
+        phr_validate_dataframe(frame, origin = "Protocol$set_sampling_frame", soft = FALSE)
+        phr_assert(
+          nrow(frame) > 0,
+          message = phr_txt("Sampling frame is empty."),
+          origin  = "Protocol$set_sampling_frame",
+          hint    = phr_txt("Provide a data frame with at least one PSU row.")
+        )
 
-      # 2. Run validate_sampling_frame — stops on hard issues
-      val_result <- validate_sampling_frame(frame)
-      if (!val_result$valid) {
-        hard_issues <- val_result$issues[setdiff(names(val_result$issues), "missing_inclusion")]
-        if (length(hard_issues) > 0) {
-          stop(paste("Sampling frame validation failed:",
-                     paste(names(hard_issues), unlist(hard_issues), sep = ": ", collapse = "; ")))
+        # 2. Run validate_sampling_frame — stops on hard issues
+        val_result <- validate_sampling_frame(frame)
+        if (!val_result$valid) {
+          hard_issues <- val_result$issues[setdiff(names(val_result$issues), "missing_inclusion")]
+          if (length(hard_issues) > 0) {
+            phr_error(
+              message = phr_txt("Sampling frame validation failed: {paste(names(hard_issues), unlist(hard_issues), sep=': ', collapse='; ')}"),
+              origin  = "Protocol$set_sampling_frame",
+              hint    = phr_txt("Ensure the frame has a 'psu' column and any 'inclusion' column contains only TRUE/FALSE values.")
+            )
+          }
         }
-      }
 
-      # 3. Add inclusion column (all TRUE) if absent
-      if (!"inclusion" %in% names(frame)) {
-        frame$inclusion <- TRUE
-      }
+        # 3. Add inclusion column (all TRUE) if absent
+        if (!"inclusion" %in% names(frame)) {
+          frame$inclusion <- TRUE
+          phr_message(
+            phr_txt("'inclusion' column not found — defaulting all PSUs to TRUE."),
+            origin = "Protocol$set_sampling_frame"
+          )
+        }
 
-      self$sampling_frame <- frame
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        self$sampling_frame <- frame
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+        phr_message(
+          phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
+          origin = "Protocol$set_sampling_frame"
+        )
+
+      }, on_error = "abort", origin = "Protocol$set_sampling_frame")
       invisible(self)
     },
 
@@ -486,85 +544,95 @@ Protocol <- R6::R6Class(
                            cluster_size = NULL,
                            seed = 42,
                            stratified = FALSE) {
-      if (is.null(self$sampling_frame)) {
-        stop("Must set sampling frame before drawing sample.")
-      }
-      if (missing(sample_size)) {
-        stop("sample_size (total households) is a required argument.")
-      }
+      phr_try({
 
-      frame <- self$sampling_frame
-
-      # Eligible PSUs
-      if ("inclusion" %in% names(frame)) {
-        eligible_rows <- which(!is.na(frame$inclusion) & frame$inclusion)
-      } else {
-        eligible_rows <- seq_len(nrow(frame))
-      }
-      eligible_frame <- frame[eligible_rows, , drop = FALSE]
-
-      # Initialise output columns on full frame
-      frame$sampled_psu      <- NA_integer_
-      frame$allocated_sample <- NA_real_
-
-      if (stratified && "stratum" %in% names(eligible_frame)) {
-        strata <- unique(eligible_frame$stratum)
-        cluster_offset <- 0L
-
-        for (st in strata) {
-          st_eligible_rows <- which(eligible_frame$stratum == st)
-          st_frame <- eligible_frame[st_eligible_rows, , drop = FALSE]
-
-          # Determine per-stratum sample size
-          st_sample_size <- private$stratum_sample_size(st, sample_size,
-                                                         nrow(st_frame),
-                                                         nrow(eligible_frame))
-
-          st_result <- private$apply_sampling_method(
-            frame       = st_frame,
-            method      = method,
-            sample_size = st_sample_size,
-            n_psu       = n_psu,
-            n_clusters  = n_clusters,
-            n_sites     = n_sites,
-            cluster_size = cluster_size,
-            seed        = seed
-          )
-
-          # Make cluster numbers globally unique across strata
-          sel_mask <- !is.na(st_result$sampled_psu)
-          if (any(sel_mask)) {
-            st_result$sampled_psu[sel_mask] <-
-              st_result$sampled_psu[sel_mask] + cluster_offset
-            cluster_offset <- cluster_offset +
-              max(st_result$sampled_psu[sel_mask], na.rm = TRUE)
-          }
-
-          # Map results back to the full frame
-          full_frame_rows <- eligible_rows[st_eligible_rows]
-          frame$sampled_psu[full_frame_rows]      <- st_result$sampled_psu
-          frame$allocated_sample[full_frame_rows] <- st_result$allocated_sample
-        }
-      } else {
-        result <- private$apply_sampling_method(
-          frame        = eligible_frame,
-          method       = method,
-          sample_size  = sample_size,
-          n_psu        = n_psu,
-          n_clusters   = n_clusters,
-          n_sites      = n_sites,
-          cluster_size = cluster_size,
-          seed         = seed
+        phr_assert(
+          !is.null(self$sampling_frame),
+          message = phr_txt("Must set sampling frame before drawing sample."),
+          origin  = "Protocol$draw_sample",
+          hint    = phr_txt("Call set_sampling_frame() first.")
         )
-        frame$sampled_psu[eligible_rows]      <- result$sampled_psu
-        frame$allocated_sample[eligible_rows] <- result$allocated_sample
-      }
+        phr_assert(
+          !missing(sample_size),
+          message = phr_txt("sample_size (total households) is a required argument."),
+          origin  = "Protocol$draw_sample"
+        )
 
-      self$drawn_sample_full <- frame
-      self$drawn_sample      <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
+        frame <- self$sampling_frame
 
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        # Eligible PSUs
+        if ("inclusion" %in% names(frame)) {
+          eligible_rows <- which(!is.na(frame$inclusion) & frame$inclusion)
+        } else {
+          eligible_rows <- seq_len(nrow(frame))
+        }
+        eligible_frame <- frame[eligible_rows, , drop = FALSE]
+
+        # Initialise output columns on full frame
+        frame$sampled_psu      <- NA_integer_
+        frame$allocated_sample <- NA_real_
+
+        if (stratified && "stratum" %in% names(eligible_frame)) {
+          strata <- unique(eligible_frame$stratum)
+          cluster_offset <- 0L
+
+          for (st in strata) {
+            st_eligible_rows <- which(eligible_frame$stratum == st)
+            st_frame <- eligible_frame[st_eligible_rows, , drop = FALSE]
+
+            st_sample_size <- private$stratum_sample_size(st, sample_size,
+                                                           nrow(st_frame),
+                                                           nrow(eligible_frame))
+
+            st_result <- private$apply_sampling_method(
+              frame        = st_frame,
+              method       = method,
+              sample_size  = st_sample_size,
+              n_psu        = n_psu,
+              n_clusters   = n_clusters,
+              n_sites      = n_sites,
+              cluster_size = cluster_size,
+              seed         = seed
+            )
+
+            sel_mask <- !is.na(st_result$sampled_psu)
+            if (any(sel_mask)) {
+              st_result$sampled_psu[sel_mask] <-
+                st_result$sampled_psu[sel_mask] + cluster_offset
+              cluster_offset <- cluster_offset +
+                max(st_result$sampled_psu[sel_mask], na.rm = TRUE)
+            }
+
+            full_frame_rows <- eligible_rows[st_eligible_rows]
+            frame$sampled_psu[full_frame_rows]      <- st_result$sampled_psu
+            frame$allocated_sample[full_frame_rows] <- st_result$allocated_sample
+          }
+        } else {
+          result <- private$apply_sampling_method(
+            frame        = eligible_frame,
+            method       = method,
+            sample_size  = sample_size,
+            n_psu        = n_psu,
+            n_clusters   = n_clusters,
+            n_sites      = n_sites,
+            cluster_size = cluster_size,
+            seed         = seed
+          )
+          frame$sampled_psu[eligible_rows]      <- result$sampled_psu
+          frame$allocated_sample[eligible_rows] <- result$allocated_sample
+        }
+
+        self$drawn_sample_full <- frame
+        self$drawn_sample      <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
+
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+        phr_message(
+          phr_txt("Sample drawn using method '{method}': {nrow(self$drawn_sample)} PSU(s) selected."),
+          origin = "Protocol$draw_sample"
+        )
+
+      }, on_error = "abort", origin = "Protocol$draw_sample")
       invisible(self)
     },
     
@@ -578,29 +646,31 @@ Protocol <- R6::R6Class(
     #' @param tool_name Optional character. Name for the new tool.
     #' @return Invisibly returns self for method chaining.
     add_tools = function(tool_type = "household", tool_name = NULL) {
-      valid_types <- c("household", "key_informant", "observation", "generic")
-      if (!tool_type %in% valid_types) {
-        stop(paste(
-          "tool_type must be one of:",
-          paste(valid_types, collapse = ", ")
-        ))
-      }
+      phr_try({
+        valid_types <- c("household", "key_informant", "observation", "generic")
+        phr_assert(
+          tool_type %in% valid_types,
+          message = phr_txt("tool_type must be one of: {paste(valid_types, collapse=', ')}."),
+          origin  = "Protocol$add_tools"
+        )
 
-      tool <- switch(
-        tool_type,
-        "household"     = HouseholdTool$new(name = tool_name),
-        "key_informant" = KeyInformantTool$new(name = tool_name),
-        "observation"   = ObservationTool$new(name = tool_name),
-        Tool$new(name = tool_name)
-      )
+        tool <- switch(
+          tool_type,
+          "household"     = HouseholdTool$new(name = tool_name),
+          "key_informant" = KeyInformantTool$new(name = tool_name),
+          "observation"   = ObservationTool$new(name = tool_name),
+          Tool$new(name = tool_name)
+        )
 
-      if (is.null(self$tools)) {
-        self$tools <- list()
-      }
+        if (is.null(self$tools)) {
+          self$tools <- list()
+        }
 
-      self$tools <- c(self$tools, list(tool))
-      self$metadata$modified_date <- Sys.time()
-      private$check_issues()
+        self$tools <- c(self$tools, list(tool))
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+        phr_message(phr_txt("Tool of type '{tool_type}' added."), origin = "Protocol$add_tools")
+      }, on_error = "abort", origin = "Protocol$add_tools")
       invisible(self)
     },
     
@@ -769,26 +839,36 @@ Protocol <- R6::R6Class(
     # Apply a PSU-level sampling method — dispatches to sample_psu_* utilities
     apply_sampling_method = function(frame, method, sample_size, n_psu, n_clusters,
                                      n_sites, cluster_size, seed) {
+      origin <- "Protocol$apply_sampling_method"
       valid_methods <- c("srs", "proportional", "pps_cluster", "rlc", "systematic")
-      if (!method %in% valid_methods) {
-        stop(paste("Unknown sampling method:", method,
-                   "— must be one of:", paste(valid_methods, collapse = ", ")))
-      }
+      phr_assert(
+        method %in% valid_methods,
+        message = phr_txt("Unknown sampling method '{method}' — must be one of: {paste(valid_methods, collapse=', ')}."),
+        origin  = origin
+      )
 
       if (method == "srs") {
-        if (is.null(n_psu)) stop("n_psu is required for the 'srs' method.")
+        phr_assert(!is.null(n_psu),
+                   message = phr_txt("n_psu is required for the 'srs' method."),
+                   origin = origin)
         sample_psu_srs(frame, n_psu, sample_size, seed)
       } else if (method == "proportional") {
         sample_psu_proportional(frame, sample_size, seed)
       } else if (method == "pps_cluster") {
-        if (is.null(n_clusters))  stop("n_clusters is required for the 'pps_cluster' method.")
-        if (is.null(cluster_size)) stop("cluster_size is required for the 'pps_cluster' method.")
+        phr_assert(!is.null(n_clusters),
+                   message = phr_txt("n_clusters is required for the 'pps_cluster' method."),
+                   origin = origin)
+        phr_assert(!is.null(cluster_size),
+                   message = phr_txt("cluster_size is required for the 'pps_cluster' method."),
+                   origin = origin)
         sample_psu_pps_cluster(frame, n_clusters, cluster_size, seed)
       } else if (method == "rlc") {
         cs <- if (!is.null(cluster_size)) cluster_size else 3L
         sample_psu_rlc(frame, sample_size, cs, seed)
       } else {  # systematic
-        if (is.null(n_sites)) stop("n_sites is required for the 'systematic' method.")
+        phr_assert(!is.null(n_sites),
+                   message = phr_txt("n_sites is required for the 'systematic' method."),
+                   origin = origin)
         sample_psu_systematic(frame, n_sites, sample_size, seed)
       }
     },

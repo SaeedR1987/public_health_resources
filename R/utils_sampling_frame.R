@@ -120,14 +120,19 @@ validate_sampling_frame <- function(frame, required_cols = character(0)) {
 #' @return List with coverage check results
 #' @export
 check_frame_coverage <- function(frame, sample_table) {
-  
-  if (!is.data.frame(frame) || !is.data.frame(sample_table)) {
-    stop("Both frame and sample_table must be data frames")
-  }
-  
-  # Get strata from each
-  frame_strata <- unique(frame$stratum)
-  table_strata <- sample_table$stratum_id
+
+  origin <- "check_frame_coverage"
+
+  phr_try({
+    phr_assert(
+      is.data.frame(frame) && is.data.frame(sample_table),
+      message = phr_txt("Both frame and sample_table must be data frames."),
+      origin  = origin
+    )
+
+    # Get strata from each
+    frame_strata <- unique(frame$stratum)
+    table_strata <- sample_table$stratum_id
   
   # Check coverage
   missing_in_frame <- setdiff(table_strata, frame_strata)
@@ -159,14 +164,12 @@ check_frame_coverage <- function(frame, sample_table) {
     issues$insufficient_units <- insufficient_strata
   }
   
-  if (length(issues) == 0) {
-    return(list(
-      valid = TRUE,
-      message = "Frame provides adequate coverage for sample table"
-    ))
-  } else {
-    return(list(valid = FALSE, issues = issues))
-  }
+    if (length(issues) == 0) {
+      list(valid = TRUE, message = phr_txt("Frame provides adequate coverage for sample table."))
+    } else {
+      list(valid = FALSE, issues = issues)
+    }
+  }, on_error = "abort", origin = origin)
 }
 
 #' Create a synthetic sampling frame for testing
@@ -218,43 +221,42 @@ create_synthetic_frame <- function(strata_config, seed = NULL) {
 #' @return List with summary statistics
 #' @export
 summarize_sampling_frame <- function(frame) {
-  
-  if (!is.data.frame(frame)) {
-    stop("Frame must be a data frame")
-  }
-  
-  summary <- list(
-    total_units = nrow(frame),
-    num_strata = length(unique(frame$stratum)),
-    strata_names = unique(frame$stratum)
-  )
-  
-  if ("population_size" %in% names(frame)) {
-    summary$total_population <- sum(frame$population_size, na.rm = TRUE)
-    summary$mean_population_per_unit <- mean(frame$population_size, na.rm = TRUE)
-    summary$median_population_per_unit <- median(frame$population_size, na.rm = TRUE)
-  }
-  
-  # Stratum-level summaries
-  stratum_summaries <- list()
-  for (stratum in unique(frame$stratum)) {
-    stratum_data <- frame[frame$stratum == stratum, ]
-    
-    stratum_summary <- list(
-      num_units = nrow(stratum_data),
-      total_population = if ("population_size" %in% names(stratum_data)) {
-        sum(stratum_data$population_size, na.rm = TRUE)
-      } else {
-        NA
-      }
+
+  origin <- "summarize_sampling_frame"
+
+  phr_try({
+    phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+
+    summary_out <- list(
+      total_units  = nrow(frame),
+      num_strata   = if ("stratum" %in% names(frame)) length(unique(frame$stratum)) else 1L,
+      strata_names = if ("stratum" %in% names(frame)) unique(frame$stratum) else NA_character_
     )
-    
-    stratum_summaries[[stratum]] <- stratum_summary
-  }
-  
-  summary$by_stratum <- stratum_summaries
-  
-  return(summary)
+
+    if ("population_size" %in% names(frame)) {
+      summary_out$total_population          <- sum(frame$population_size, na.rm = TRUE)
+      summary_out$mean_population_per_unit  <- mean(frame$population_size, na.rm = TRUE)
+      summary_out$median_population_per_unit <- median(frame$population_size, na.rm = TRUE)
+    }
+
+    if ("stratum" %in% names(frame)) {
+      stratum_summaries <- list()
+      for (stratum in unique(frame$stratum)) {
+        stratum_data <- frame[frame$stratum == stratum, ]
+        stratum_summaries[[stratum]] <- list(
+          num_units        = nrow(stratum_data),
+          total_population = if ("population_size" %in% names(stratum_data)) {
+            sum(stratum_data$population_size, na.rm = TRUE)
+          } else {
+            NA
+          }
+        )
+      }
+      summary_out$by_stratum <- stratum_summaries
+    }
+
+    summary_out
+  }, on_error = "abort", origin = origin)
 }
 
 #' Print sampling frame summary
@@ -262,27 +264,30 @@ summarize_sampling_frame <- function(frame) {
 #' @param frame Data frame. The sampling frame
 #' @export
 print_frame_summary <- function(frame) {
-  summary <- summarize_sampling_frame(frame)
-  
-  cat("Sampling Frame Summary\n")
-  cat("======================\n\n")
-  
-  cat("Total sampling units:", summary$total_units, "\n")
-  cat("Number of strata:", summary$num_strata, "\n")
-  
-  if (!is.null(summary$total_population)) {
-    cat("Total population:", summary$total_population, "\n")
-    cat("Mean population per unit:", round(summary$mean_population_per_unit, 1), "\n")
-    cat("Median population per unit:", round(summary$median_population_per_unit, 1), "\n")
-  }
-  
-  cat("\nBy Stratum:\n")
-  for (stratum in names(summary$by_stratum)) {
-    st_summary <- summary$by_stratum[[stratum]]
-    cat(sprintf("  %s: %d units", stratum, st_summary$num_units))
-    if (!is.na(st_summary$total_population)) {
-      cat(sprintf(", population = %d", st_summary$total_population))
+
+  origin <- "print_frame_summary"
+
+  phr_try({
+    summary <- summarize_sampling_frame(frame)
+
+    phr_message(
+      phr_txt("Sampling Frame: {summary$total_units} units across {summary$num_strata} stratum/strata."),
+      origin = origin
+    )
+
+    if (!is.null(summary$total_population)) {
+      phr_message(
+        phr_txt("Population: total={summary$total_population}, mean/unit={round(summary$mean_population_per_unit,1)}, median/unit={round(summary$median_population_per_unit,1)}"),
+        origin = origin
+      )
     }
-    cat("\n")
-  }
+
+    if (!is.null(summary$by_stratum)) {
+      for (stratum in names(summary$by_stratum)) {
+        st_s <- summary$by_stratum[[stratum]]
+        pop_txt <- if (!is.na(st_s$total_population)) phr_txt(", population={st_s$total_population}") else ""
+        phr_message(phr_txt("{stratum}: {st_s$num_units} units{pop_txt}"), origin = origin)
+      }
+    }
+  }, on_error = "abort", origin = origin)
 }

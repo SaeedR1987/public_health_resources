@@ -23,33 +23,38 @@ create_objective <- function(sector,
                              text_objective,
                              data_source = NA_character_) {
 
-  # Validate required fields
-  required <- list(
-    sector        = sector,
-    pillar        = pillar,
-    sub_pillar    = sub_pillar,
-    short_objective = short_objective,
-    text_objective  = text_objective
-  )
+  origin <- "create_objective"
 
-  for (nm in names(required)) {
-    val <- required[[nm]]
-    if (is.null(val) || (length(val) == 1L && is.na(val)) || !nzchar(as.character(val))) {
-      stop(paste0("'", nm, "' is a required field and must be a non-empty string."))
+  phr_try({
+
+    required <- list(
+      sector          = sector,
+      pillar          = pillar,
+      sub_pillar      = sub_pillar,
+      short_objective = short_objective,
+      text_objective  = text_objective
+    )
+
+    for (nm in names(required)) {
+      val <- required[[nm]]
+      phr_assert(
+        !is.null(val) && !(length(val) == 1L && is.na(val)) && nzchar(as.character(val)),
+        message = phr_txt("'{nm}' is a required field and must be a non-empty string."),
+        origin  = origin
+      )
     }
-  }
 
-  objective <- list(
-    sector          = as.character(sector),
-    pillar          = as.character(pillar),
-    sub_pillar      = as.character(sub_pillar),
-    short_objective = as.character(short_objective),
-    text_objective  = as.character(text_objective),
-    data_source     = if (is.null(data_source)) NA_character_ else as.character(data_source),
-    created_date    = Sys.time()
-  )
+    list(
+      sector          = as.character(sector),
+      pillar          = as.character(pillar),
+      sub_pillar      = as.character(sub_pillar),
+      short_objective = as.character(short_objective),
+      text_objective  = as.character(text_objective),
+      data_source     = if (is.null(data_source)) NA_character_ else as.character(data_source),
+      created_date    = Sys.time()
+    )
 
-  return(objective)
+  }, on_error = "abort", origin = origin)
 }
 
 #' Create multiple objectives from a data frame
@@ -59,40 +64,42 @@ create_objective <- function(sector,
 #' @return List of objective objects.
 #' @export
 create_objectives_from_df <- function(objectives_df) {
-  if (!is.data.frame(objectives_df)) {
-    stop("objectives_df must be a data frame")
-  }
 
-  required_cols <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-  missing_cols <- setdiff(required_cols, names(objectives_df))
-  if (length(missing_cols) > 0) {
-    stop(paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
-  }
+  origin <- "create_objectives_from_df"
 
-  objectives_list <- list()
+  phr_try({
 
-  for (i in seq_len(nrow(objectives_df))) {
-    row <- objectives_df[i, ]
+    phr_validate_dataframe(objectives_df, origin = origin, soft = FALSE)
 
-    data_source <- if ("data_source" %in% names(row) && !is.na(row$data_source)) {
-      as.character(row$data_source)
-    } else {
-      NA_character_
+    required_cols <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+    phr_validate_columns(objectives_df, required_cols, origin = origin, soft = FALSE)
+
+    objectives_list <- list()
+
+    for (i in seq_len(nrow(objectives_df))) {
+      row <- objectives_df[i, ]
+
+      data_source <- if ("data_source" %in% names(row) && !is.na(row$data_source)) {
+        as.character(row$data_source)
+      } else {
+        NA_character_
+      }
+
+      obj <- create_objective(
+        sector          = as.character(row$sector),
+        pillar          = as.character(row$pillar),
+        sub_pillar      = as.character(row$sub_pillar),
+        short_objective = as.character(row$short_objective),
+        text_objective  = as.character(row$text_objective),
+        data_source     = data_source
+      )
+
+      objectives_list[[length(objectives_list) + 1]] <- obj
     }
 
-    obj <- create_objective(
-      sector          = as.character(row$sector),
-      pillar          = as.character(row$pillar),
-      sub_pillar      = as.character(row$sub_pillar),
-      short_objective = as.character(row$short_objective),
-      text_objective  = as.character(row$text_objective),
-      data_source     = data_source
-    )
+    objectives_list
 
-    objectives_list[[length(objectives_list) + 1]] <- obj
-  }
-
-  return(objectives_list)
+  }, on_error = "abort", origin = origin)
 }
 
 #' Validate objectives
@@ -101,43 +108,62 @@ create_objectives_from_df <- function(objectives_df) {
 #' @return List with validation results
 #' @export
 validate_objectives <- function(objectives) {
-  if (!is.list(objectives) || length(objectives) == 0) {
-    return(list(valid = FALSE, message = "Objectives must be a non-empty list"))
-  }
 
-  issues <- list()
+  origin <- "validate_objectives"
 
-  required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+  phr_try({
 
-  # Check for duplicate short_objective labels
-  short_objs <- sapply(objectives, function(x) x$short_objective)
-  if (any(duplicated(short_objs))) {
-    issues$duplicate_short_objectives <- short_objs[duplicated(short_objs)]
-  }
+    phr_assert(
+      is.list(objectives) && length(objectives) > 0,
+      message = phr_txt("Objectives must be a non-empty list."),
+      origin  = origin
+    )
 
-  # Check for missing required fields
-  for (i in seq_along(objectives)) {
-    obj <- objectives[[i]]
-    missing <- setdiff(required_fields, names(obj))
-    if (length(missing) > 0) {
-      issues$missing_fields <- c(issues$missing_fields,
-                                  paste0("objective[", i, "]: ", paste(missing, collapse = ", ")))
+    issues <- list()
+
+    required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+
+    # Check for duplicate short_objective labels
+    short_objs <- sapply(objectives, function(x) x$short_objective)
+    if (any(duplicated(short_objs))) {
+      issues$duplicate_short_objectives <- short_objs[duplicated(short_objs)]
+      phr_warning(
+        message = phr_txt("Duplicate short_objective labels found: {paste(issues$duplicate_short_objectives, collapse=', ')}"),
+        origin  = origin,
+        hint    = phr_txt("Each objective should have a unique short_objective label.")
+      )
     }
-  }
 
-  # Check for vague objectives (very short text_objective)
-  for (i in seq_along(objectives)) {
-    obj <- objectives[[i]]
-    if (!is.null(obj$text_objective) && nchar(obj$text_objective) < 20) {
-      issues$vague_objectives <- c(issues$vague_objectives, obj$short_objective)
+    # Check for missing required fields
+    for (i in seq_along(objectives)) {
+      obj <- objectives[[i]]
+      missing <- setdiff(required_fields, names(obj))
+      if (length(missing) > 0) {
+        issues$missing_fields <- c(issues$missing_fields,
+                                    paste0("objective[", i, "]: ", paste(missing, collapse = ", ")))
+      }
     }
-  }
 
-  if (length(issues) == 0) {
-    return(list(valid = TRUE, message = "All objectives are valid"))
-  } else {
-    return(list(valid = FALSE, issues = issues))
-  }
+    # Check for vague objectives (very short text_objective)
+    for (i in seq_along(objectives)) {
+      obj <- objectives[[i]]
+      if (!is.null(obj$text_objective) && nchar(obj$text_objective) < 20) {
+        issues$vague_objectives <- c(issues$vague_objectives, obj$short_objective)
+        phr_warning(
+          message = phr_txt("Objective '{obj$short_objective}' has a very short text_objective (< 20 characters)."),
+          origin  = origin,
+          hint    = phr_txt("Consider expanding the text_objective for clarity.")
+        )
+      }
+    }
+
+    if (length(issues) == 0) {
+      list(valid = TRUE, message = phr_txt("All objectives are valid."))
+    } else {
+      list(valid = FALSE, issues = issues)
+    }
+
+  }, on_error = "abort", origin = origin)
 }
 
 #' Get objectives by sector
@@ -157,21 +183,32 @@ get_objectives_by_sector <- function(objectives, sector) {
 #' @return Data frame with objective information
 #' @export
 objectives_to_df <- function(objectives) {
-  if (length(objectives) == 0) {
-    return(data.frame())
-  }
 
-  df <- data.frame(
-    sector          = sapply(objectives, function(x) x$sector),
-    pillar          = sapply(objectives, function(x) x$pillar),
-    sub_pillar      = sapply(objectives, function(x) x$sub_pillar),
-    short_objective = sapply(objectives, function(x) x$short_objective),
-    text_objective  = sapply(objectives, function(x) x$text_objective),
-    data_source     = sapply(objectives, function(x) if (!is.null(x$data_source)) x$data_source else NA_character_),
-    stringsAsFactors = FALSE
-  )
+  origin <- "objectives_to_df"
 
-  return(df)
+  phr_try({
+
+    phr_assert(
+      is.list(objectives),
+      message = phr_txt("objectives must be a list."),
+      origin  = origin
+    )
+
+    if (length(objectives) == 0) {
+      return(data.frame())
+    }
+
+    data.frame(
+      sector          = sapply(objectives, function(x) x$sector),
+      pillar          = sapply(objectives, function(x) x$pillar),
+      sub_pillar      = sapply(objectives, function(x) x$sub_pillar),
+      short_objective = sapply(objectives, function(x) x$short_objective),
+      text_objective  = sapply(objectives, function(x) x$text_objective),
+      data_source     = sapply(objectives, function(x) if (!is.null(x$data_source)) x$data_source else NA_character_),
+      stringsAsFactors = FALSE
+    )
+
+  }, on_error = "abort", origin = origin)
 }
 
 #' Print objectives summary
@@ -179,21 +216,20 @@ objectives_to_df <- function(objectives) {
 #' @param objectives List of objectives
 #' @export
 print_objectives_summary <- function(objectives) {
+
   if (length(objectives) == 0) {
-    cat("No objectives defined\n")
+    phr_message(phr_txt("No objectives defined."), origin = "print_objectives_summary")
     return(invisible(NULL))
   }
 
-  cat("Objectives Summary\n")
-  cat("==================\n\n")
-  cat("Total objectives:", length(objectives), "\n\n")
-
-  # By sector
   sectors <- unique(sapply(objectives, function(x) x$sector))
-  cat("Sectors covered:", paste(sectors, collapse = ", "), "\n\n")
+
+  phr_message(phr_txt("Objectives Summary — {length(objectives)} total objective(s). Sectors: {paste(sectors, collapse=', ')}"),
+              origin = "print_objectives_summary")
 
   for (sector in sectors) {
     sector_objs <- get_objectives_by_sector(objectives, sector)
-    cat("", sector, ":", length(sector_objs), "objective(s)\n")
+    phr_message(phr_txt("{sector}: {length(sector_objs)} objective(s)"),
+                origin = "print_objectives_summary")
   }
 }
