@@ -6,7 +6,7 @@
 #' the Tool class hierarchy (Tool, HouseholdTool, KeyInformantTool, ObservationTool).
 #'
 #' Steps covered:
-#'  1. Create dummy objectives (primary and secondary) and attach to a Protocol
+#'  1. Create dummy objectives and attach to a Protocol using the nested structure
 #'  2. Define strata and sample sizes using dummy population data
 #'  3. Build a dummy sampling frame and validate it
 #'  4. Calculate sample sizes with different methods
@@ -64,78 +64,99 @@ validate_objective_schema(protocol$objective_schema)
 # Test 2: Define Objectives ####
 # =============================================================================
 
-# -- 2a: Create primary objectives using create_objective() --
+# -- 2a: Create objectives using create_objective() --
+# data_source is used to distinguish primary vs secondary (replaces the 'type' param)
 
 obj_fsl_1 <- create_objective(
-  objective_id   = "P-FSL-01",
-  objective_text = "Estimate the prevalence of food insecurity among assessed households using HDDS and FCS indicators",
-  data_type      = "primary",
-  sector         = "FSL",
-  indicators     = c("hdds_score", "fcs_score", "rcsi_score"),
-  rationale      = "Food insecurity is a key driver of humanitarian need in Dummy Country"
+  sector          = "FSL",
+  pillar          = "Food Security",
+  sub_pillar      = "Food Access",
+  short_objective = "P-FSL-01",
+  text_objective  = "Estimate the prevalence of food insecurity among assessed households using HDDS and FCS indicators",
+  data_source     = "primary"
 )
 
 obj_wash_1 <- create_objective(
-  objective_id   = "P-WASH-01",
-  objective_text = "Assess access to safe drinking water and sanitation facilities at household level",
-  data_type      = "primary",
-  sector         = "WASH",
-  indicators     = c("water_source", "water_treatment", "latrine_access"),
-  rationale      = "WASH indicators are critical for disease prevention"
+  sector          = "WASH",
+  pillar          = "Water",
+  sub_pillar      = "Water Access",
+  short_objective = "P-WASH-01",
+  text_objective  = "Assess access to safe drinking water and sanitation facilities at household level",
+  data_source     = "primary"
 )
 
 obj_health_1 <- create_objective(
-  objective_id   = "P-HEALTH-01",
-  objective_text = "Measure the prevalence of acute respiratory illness and malaria among children under 5",
-  data_type      = "primary",
-  sector         = "Health",
-  indicators     = c("u5_ari_prevalence", "u5_malaria_prevalence"),
-  rationale      = "Child morbidity data is needed to target health interventions"
+  sector          = "Health",
+  pillar          = "Child Health",
+  sub_pillar      = "Morbidity",
+  short_objective = "P-HEALTH-01",
+  text_objective  = "Measure the prevalence of acute respiratory illness and malaria among children under 5",
+  data_source     = "primary"
 )
 
 # -- 2b: Create secondary objectives --
 
 obj_fsl_2 <- create_objective(
-  objective_id   = "S-FSL-01",
-  objective_text = "Understand the key coping strategies adopted by households facing food gaps",
-  data_type      = "secondary",
-  sector         = "FSL",
-  indicators     = c("lcsi_stress", "lcsi_crisis", "lcsi_emergency"),
-  rationale      = "Coping strategy data complements the food security indicators"
+  sector          = "FSL",
+  pillar          = "Food Security",
+  sub_pillar      = "Coping Strategies",
+  short_objective = "S-FSL-01",
+  text_objective  = "Understand the key coping strategies adopted by households facing food gaps",
+  data_source     = "secondary"
 )
 
 obj_shelter_1 <- create_objective(
-  objective_id   = "S-SHELTER-01",
-  objective_text = "Describe the quality and adequacy of shelter conditions across assessed strata",
-  data_type      = "secondary",
-  sector         = "Shelter",
-  indicators     = c("shelter_type", "roof_material", "floor_material"),
-  rationale      = "Shelter data provides context for vulnerability profiling"
+  sector          = "Shelter",
+  pillar          = "Shelter Quality",
+  sub_pillar      = "Structural Adequacy",
+  short_objective = "S-SHELTER-01",
+  text_objective  = "Describe the quality and adequacy of shelter conditions across assessed strata",
+  data_source     = "secondary"
 )
 
-# -- 2c: Set objectives on the Protocol --
+# -- 2c: Set objectives on the Protocol using set_objectives() --
+# Accepts a flat list; automatically nests by sector/pillar/sub_pillar/data_source
 
-primary_objs   <- list(obj_fsl_1, obj_wash_1, obj_health_1)
-secondary_objs <- list(obj_fsl_2, obj_shelter_1)
+all_objs <- list(obj_fsl_1, obj_wash_1, obj_health_1, obj_fsl_2, obj_shelter_1)
+protocol$set_objectives(all_objs)
 
-protocol$set_primary_objectives(primary_objs)
-protocol$set_secondary_objectives(secondary_objs)
+# Or add individual objectives with add_objective()
+extra_obj <- create_objective(
+  sector          = "Nutrition",
+  pillar          = "Child Nutrition",
+  sub_pillar      = "Wasting",
+  short_objective = "P-NUT-01",
+  text_objective  = "Estimate the prevalence of global acute malnutrition among children 6-59 months",
+  data_source     = "primary"
+)
+protocol$add_objective(extra_obj)
 
-# Inspect objectives
-length(protocol$primary_objectives)
-length(protocol$secondary_objectives)
+# Inspect objectives (nested structure)
+protocol$objectives            # nested list
+count_objectives(protocol$objectives)  # total count
+
+# Flatten to a list of objectives
+flat_objs <- flatten_objectives(protocol$objectives)
+length(flat_objs)
 
 # Validate objectives
-validate_objectives(protocol$primary_objectives)
-validate_objectives(protocol$secondary_objectives)
+validate_objectives(protocol$objectives)
 
 # Summarise objectives
-print_objectives_summary(c(protocol$primary_objectives, protocol$secondary_objectives))
-objectives_to_df(c(protocol$primary_objectives, protocol$secondary_objectives))
+print_objectives_summary(protocol$objectives)
 
-# Filter objectives by sector
-get_objectives_by_sector(protocol$primary_objectives, "FSL")
-get_objectives_by_data_type(c(protocol$primary_objectives, protocol$secondary_objectives), "secondary")
+# Convert to data frame
+objectives_to_df(protocol$objectives)
+
+# Filter by sector
+get_objectives_by_sector(protocol$objectives, "FSL")
+
+# Filter by data source
+get_objectives_by_data_source(protocol$objectives, "secondary")
+
+# Remove an objective
+protocol$remove_objective("P-NUT-01")
+count_objectives(protocol$objectives)  # should be 5 again
 
 
 # =============================================================================
@@ -151,42 +172,46 @@ protocol$add_target_stratum("strata_C", "Rural South")
 protocol$metadata$target_strata
 
 # -- 3b: Add strata to the master sample table with population parameters --
+# ind_indicator and mort_indicator are now required columns
 
 protocol$add_stratum(
-  stratum_id        = "strata_A",
-  stratum_name      = "Urban North",
-  population_size   = 45000,
-  design_effect     = 1.5,
-  precision         = 0.05,
-  confidence_level  = 0.95,
-  allocation_method = "proportional"
+  stratum_id              = "strata_A",
+  stratum_name            = "Urban North",
+  population_size         = 45000,
+  pop_design_effect       = 1.5,
+  pop_precision           = 0.05,
+  ind_indicator           = "wasting_prevalence",
+  mort_indicator          = "crude_death_rate",
+  sampling_method         = "proportional"
 )
 
 protocol$add_stratum(
-  stratum_id        = "strata_B",
-  stratum_name      = "Peri-Urban East",
-  population_size   = 28000,
-  design_effect     = 1.8,
-  precision         = 0.05,
-  confidence_level  = 0.95,
-  allocation_method = "proportional"
+  stratum_id              = "strata_B",
+  stratum_name            = "Peri-Urban East",
+  population_size         = 28000,
+  pop_design_effect       = 1.8,
+  pop_precision           = 0.05,
+  ind_indicator           = "wasting_prevalence",
+  mort_indicator          = "crude_death_rate",
+  sampling_method         = "proportional"
 )
 
 protocol$add_stratum(
-  stratum_id        = "strata_C",
-  stratum_name      = "Rural South",
-  population_size   = 17000,
-  design_effect     = 2.0,
-  precision         = 0.07,
-  confidence_level  = 0.95,
-  allocation_method = "proportional"
+  stratum_id              = "strata_C",
+  stratum_name            = "Rural South",
+  population_size         = 17000,
+  pop_design_effect       = 2.0,
+  pop_precision           = 0.07,
+  ind_indicator           = "wasting_prevalence",
+  mort_indicator          = "crude_death_rate",
+  sampling_method         = "proportional"
 )
 
 # Inspect master sample table before sample sizes are calculated
 protocol$get_sample_table()
 names(protocol$get_sample_table())
 
-# Validate the master strata table structure
+# Validate the master strata table structure (now requires ind_indicator and mort_indicator)
 strata_validation <- protocol$validate_strata_table()
 strata_validation$valid
 strata_validation$message
@@ -268,7 +293,7 @@ set.seed(42)
 
 make_villages <- function(stratum_id, n_villages, pop_range) {
   tibble::tibble(
-    id              = paste0(stratum_id, "_v", seq_len(n_villages)),
+    psu             = paste0(stratum_id, "_v", seq_len(n_villages)),
     stratum         = stratum_id,
     village_name    = paste0(stratum_id, "_Village_", seq_len(n_villages)),
     population_size = sample(pop_range[1]:pop_range[2], n_villages, replace = TRUE)
@@ -304,34 +329,80 @@ protocol$get_issues()
 # Test 5: Draw Sample ####
 # =============================================================================
 
-# -- 5a: Draw using simple random sampling --
+# The new draw_sample() API reads Sampling_Method, Final_HH_Sample_Size,
+# n_psu, n_clusters, cluster_size, and n_sites directly from the strata table.
 
-protocol$draw_sample(method = "srs", seed = 123)
-protocol$drawn_sample$method
-protocol$drawn_sample$seed
-protocol$drawn_sample$date_drawn
+# -- 5a: Update sample table with sampling parameters before drawing --
 
-# Inspect drawn samples per stratum
-lapply(protocol$drawn_sample$samples, nrow)
+# Set Final_HH_Sample_Size for each stratum (used by draw_sample)
+protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_A"] <- ss_A
+protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_B"] <- ss_B
+protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_C"] <- ss_C
 
-# -- 5b: Draw using PPS cluster sampling (overwrite) --
+# -- 5b: Draw using proportional method (reads method from Sampling_Method column) --
+# All three strata already have Sampling_Method = "proportional"
 
-protocol$draw_sample(method = "pps_cluster", seed = 456, cluster_size = 8)
-protocol$drawn_sample$method
-protocol$drawn_sample$cluster_size
+protocol$draw_sample(seed = 789)
+nrow(protocol$drawn_sample)       # selected PSUs
+nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
+head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
-lapply(protocol$drawn_sample$samples, nrow)
+# -- 5c: Override method to pps_cluster by updating the strata table --
+# Set n_clusters and cluster_size in the table first
 
-# -- 5c: Draw using standalone utility functions --
+protocol$sample_table$Sampling_Method <- "pps_cluster"
+protocol$sample_table$n_clusters      <- 30
+protocol$sample_table$cluster_size    <- 20
 
+protocol$draw_sample(seed = 456)
+nrow(protocol$drawn_sample)
+head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
+
+# -- 5d: Purposive sampling — sampled_psu and allocated_sample are all NA --
+# (User manually designates selected PSUs after this step.)
+
+protocol$sample_table$Sampling_Method <- "purposive"
+protocol$draw_sample(seed = 42)
+nrow(protocol$drawn_sample)       # 0 — no PSUs auto-selected
+sum(is.na(protocol$drawn_sample_full$sampled_psu))  # all NA
+
+# Restore proportional for remaining tests
+protocol$sample_table$Sampling_Method <- "proportional"
+
+# -- 5e: Pass an explicit frame and strata_table (without touching protocol fields) --
+
+custom_frame  <- sampling_frame[sampling_frame$stratum == "strata_A", ]
+custom_frame$inclusion <- TRUE
+custom_strata <- protocol$sample_table[protocol$sample_table$stratum_id == "strata_A", ]
+custom_strata$Sampling_Method <- "srs"
+custom_strata$n_psu            <- 15
+
+protocol$draw_sample(frame = custom_frame, strata_table = custom_strata, seed = 111)
+nrow(protocol$drawn_sample)
+
+# -- 5f: Use standalone PSU utility functions directly --
+# draw_sample_psu_* functions return the FULL modified frame (sampled_psu / allocated_sample cols);
+# the legacy draw_sample_* helpers (draw_sample_srs, draw_sample_pps, etc.) return only selected rows.
+
+sample_result_A <- draw_sample_psu_pps_cluster(
+  frame        = frame_A,
+  n_clusters   = 12,
+  cluster_size = 20,
+  seed         = 789
+)
+nrow(sample_result_A)
+sum(!is.na(sample_result_A$sampled_psu))  # selected PSUs
+head(sample_result_A[!is.na(sample_result_A$sampled_psu), ])
+
+# Purposive standalone function
+purposive_result <- draw_sample_psu_purposive(frame_A)
+sum(is.na(purposive_result$sampled_psu))  # all NA — user fills manually
+
+# Legacy helper: draw_sample_srs() returns only selected rows (not the full frame)
 sample_srs_A <- draw_sample_srs(frame_A, n = ss_A, seed = 789)
 head(sample_srs_A)
 attr(sample_srs_A, "sampling_method")
 attr(sample_srs_A, "n_drawn")
-
-sample_pps_B <- draw_sample_pps(frame_B, n = ss_B, seed = 789)
-head(sample_pps_B)
-attr(sample_pps_B, "sampling_method")
 
 
 # =============================================================================
@@ -376,11 +447,9 @@ hh_tool$get_settings()
 
 # -- 6e: Filter survey by modules --
 
-# Inspect which values appear in the first column (module/sector column)
 head(master_survey[[1]], 30)
 unique(master_survey[[1]])
 
-# Filter to keep FSL and WASH modules (plus structural rows)
 hh_tool$filter_survey_by_modules(modules = c("core", "FSL", "WASH"))
 
 modified_survey <- hh_tool$get_modified_survey()
@@ -395,7 +464,7 @@ modified_choices <- hh_tool$get_modified_choices()
 nrow(modified_choices)
 unique(modified_choices$list_name)
 
-# -- 6g: Validate tool (checks that all choice lists are present) --
+# -- 6g: Validate tool --
 
 is_valid <- hh_tool$validate_tool()
 cat("Household tool valid:", is_valid, "\n")
@@ -414,7 +483,6 @@ hh_tool$update_choice_list(
   new_choices = new_admin1_choices
 )
 
-# Inspect updated choices
 updated_choices <- hh_tool$get_modified_choices()
 updated_choices[updated_choices$list_name == "admin1", ]
 
@@ -475,7 +543,6 @@ hh_tool$get_selected_indicators()
 
 protocol$add_tools(tool_type = "key_informant", tool_name = "Community KII")
 
-# Inspect
 protocol$tools[[2]]$get_name()
 protocol$tools[[2]]$get_tool_type()
 
@@ -522,7 +589,6 @@ kii_tool$get_question("facility_name")
 
 protocol$add_tools(tool_type = "observation", tool_name = "Water Point Observation")
 
-# Inspect
 protocol$tools[[3]]$get_name()
 protocol$tools[[3]]$get_tool_type()
 
@@ -568,7 +634,6 @@ obs_tool$get_question("handwashing_station_present")
 
 protocol$add_tools(tool_type = "generic", tool_name = "Market Assessment Form")
 
-# Inspect
 protocol$tools[[4]]$get_name()
 protocol$tools[[4]]$get_tool_type()
 
@@ -577,30 +642,14 @@ protocol$tools[[4]]$get_tool_type()
 generic_tool <- Tool$new(name = "Focus Group Discussion Guide")
 generic_tool$get_tool_type()
 
-# Add a few questions to the generic tool
-generic_tool$add_question(
-  type  = "text",
-  name  = "community_name",
-  label = "Name of the community"
-)
-
-generic_tool$add_question(
-  type  = "integer",
-  name  = "participants_count",
-  label = "Number of participants"
-)
-
-generic_tool$add_question(
-  type  = "select_one yes_no",
-  name  = "consent_obtained",
-  label = "Was group consent obtained?"
-)
+generic_tool$add_question(type = "text",    name = "community_name",    label = "Name of the community")
+generic_tool$add_question(type = "integer", name = "participants_count", label = "Number of participants")
+generic_tool$add_question(type = "select_one yes_no", name = "consent_obtained", label = "Was group consent obtained?")
 
 nrow(generic_tool$get_survey())
 generic_tool$has_question("community_name")
 generic_tool$has_question("participants_count")
 
-# Validate (will flag missing choice lists for select questions)
 generic_valid <- generic_tool$validate_tool()
 cat("Generic tool valid:", generic_valid, "\n")
 generic_tool$get_validation_errors()
@@ -618,6 +667,7 @@ protocol$get_issues()
 
 summary_out <- protocol$get_protocol_summary()
 summary_out
+summary_out$num_objectives   # total objectives (replaces num_primary/secondary)
 
 # -- 10c: Export full protocol to a list --
 
@@ -627,9 +677,9 @@ names(exported)
 exported$metadata
 exported$summary
 
-# Primary and secondary objectives in export
-length(exported$primary_objectives)
-length(exported$secondary_objectives)
+# Objectives in export (nested structure)
+count_objectives(exported$objectives)
+objectives_to_df(exported$objectives)
 
 # Objective schema in export
 nrow(exported$objective_schema)
@@ -639,8 +689,8 @@ names(exported$objective_schema)
 exported$sample_table
 names(exported$sample_table)
 
-# Drawn sample – number of units per stratum
-lapply(exported$drawn_sample$samples, nrow)
+# Drawn sample
+nrow(exported$drawn_sample)
 
 # Tools in the protocol
 length(exported$tools)

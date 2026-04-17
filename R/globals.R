@@ -165,6 +165,12 @@ utils::globalVariables(c(
 
   # ----- utils_data_household_fsl.R (additional) -----
   # LCSI NA count column (intra-mutate reference)
-  "lcsi_count_na"
+  "lcsi_count_na",
+
+  # ----- class_protocol.R / utils_sample_drawing.R -----
+  # Sampling output columns
+  "sampled_psu",
+  "allocated_sample",
+  "Final_HH_Sample_Size"
 
 ))
