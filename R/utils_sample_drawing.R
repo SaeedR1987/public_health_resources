@@ -2,7 +2,7 @@
 #'
 #' @description
 #' Functions for drawing samples from sampling frames using various methods.
-#' PSU-level sampling functions (prefixed \code{sample_psu_}) operate on an
+#' PSU-level sampling functions (prefixed \code{draw_sample_psu_}) operate on an
 #' already-filtered frame of eligible primary sampling units and return that
 #' frame augmented with two new columns:
 #' \itemize{
@@ -11,6 +11,8 @@
 #'   \item \code{allocated_sample} — number of households allocated to that
 #'     PSU; \code{NA} for unselected PSUs.
 #' }
+#' The filtering of non-selected PSUs is performed by the caller (e.g.
+#' \code{Protocol$draw_sample()}) after the full annotated frame is returned.
 
 # ---------------------------------------------------------------------------
 # PSU-level sampling utility functions (called from Protocol$draw_sample)
@@ -27,11 +29,11 @@
 #' @param sample_size Integer. Total household sample size to allocate.
 #' @param seed Integer. Random seed for reproducibility (default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
-#'   columns added.
+#'   columns added.  Unselected PSUs receive \code{NA} in both columns.
 #' @export
-sample_psu_srs <- function(frame, n_psu, sample_size, seed = 42) {
+draw_sample_psu_srs <- function(frame, n_psu, sample_size, seed = 42) {
 
-  origin <- "sample_psu_srs"
+  origin <- "draw_sample_psu_srs"
 
   phr_try({
     phr_validate_dataframe(frame, origin = origin, soft = FALSE)
@@ -76,11 +78,11 @@ sample_psu_srs <- function(frame, n_psu, sample_size, seed = 42) {
 #' @param seed Integer. Random seed (not used in allocation itself but kept for
 #'   interface consistency; default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
-#'   columns added.
+#'   columns added.  All PSUs are selected (allocated proportionally).
 #' @export
-sample_psu_proportional <- function(frame, sample_size, seed = 42) {
+draw_sample_psu_proportional <- function(frame, sample_size, seed = 42) {
 
-  origin <- "sample_psu_proportional"
+  origin <- "draw_sample_psu_proportional"
 
   phr_try({
     phr_validate_dataframe(frame, origin = origin, soft = FALSE)
@@ -127,10 +129,11 @@ sample_psu_proportional <- function(frame, sample_size, seed = 42) {
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
 #'   columns added.  For PSUs receiving multiple clusters,
 #'   \code{allocated_sample = n_clusters_at_psu * cluster_size}.
+#'   Unselected PSUs receive \code{NA}.
 #' @export
-sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 42) {
+draw_sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 42) {
 
-  origin <- "sample_psu_pps_cluster"
+  origin <- "draw_sample_psu_pps_cluster"
 
   phr_try({
     phr_validate_dataframe(frame, origin = origin, soft = FALSE)
@@ -170,11 +173,11 @@ sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 42) {
 #' @param cluster_size Integer. Households per cluster (default \code{3}).
 #' @param seed Integer. Random seed for reproducibility (default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
-#'   columns added.
+#'   columns added.  Unselected PSUs receive \code{NA}.
 #' @export
-sample_psu_rlc <- function(frame, sample_size, cluster_size = 3, seed = 42) {
+draw_sample_psu_rlc <- function(frame, sample_size, cluster_size = 3, seed = 42) {
 
-  origin <- "sample_psu_rlc"
+  origin <- "draw_sample_psu_rlc"
 
   phr_try({
     phr_validate_dataframe(frame, origin = origin, soft = FALSE)
@@ -217,11 +220,11 @@ sample_psu_rlc <- function(frame, sample_size, cluster_size = 3, seed = 42) {
 #'   across selected PSUs.
 #' @param seed Integer. Random seed for reproducibility (default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
-#'   columns added.
+#'   columns added.  Unselected PSUs receive \code{NA}.
 #' @export
-sample_psu_systematic <- function(frame, n_sites, sample_size, seed = 42) {
+draw_sample_psu_systematic <- function(frame, n_sites, sample_size, seed = 42) {
 
-  origin <- "sample_psu_systematic"
+  origin <- "draw_sample_psu_systematic"
 
   phr_try({
     phr_validate_dataframe(frame, origin = origin, soft = FALSE)

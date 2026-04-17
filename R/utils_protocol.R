@@ -7,8 +7,8 @@
 .strata_table_required_cols <- c(
   "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
   "pop_indicator", "pop_result_dummy",
-  "ind_result_dummy",
-  "mort_result_dummy",
+  "ind_indicator", "ind_result_dummy",
+  "mort_indicator", "mort_result_dummy",
   "Final_HH_Sample_Size"
 )
 
@@ -305,8 +305,7 @@ restore_protocol <- function(protocol_data) {
     )
 
     protocol$metadata              <- protocol_data$metadata
-    protocol$primary_objectives    <- protocol_data$primary_objectives
-    protocol$secondary_objectives  <- protocol_data$secondary_objectives
+    protocol$objectives            <- protocol_data$objectives %||% list()
     protocol$objective_schema      <- protocol_data$objective_schema %||% protocol$objective_schema
     protocol$sample_table          <- protocol_data$sample_table
     protocol$sampling_frame        <- protocol_data$sampling_frame
@@ -343,7 +342,7 @@ print_protocol_summary <- function(protocol) {
       origin = origin
     )
     phr_message(
-      phr_txt("Primary Objectives: {summary$num_primary_objectives} | Secondary: {summary$num_secondary_objectives} | Strata: {summary$num_strata} | Tools: {summary$num_tools}"),
+      phr_txt("Objectives: {summary$num_objectives} | Strata: {summary$num_strata} | Tools: {summary$num_tools}"),
       origin = origin
     )
 

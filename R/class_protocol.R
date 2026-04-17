@@ -3,7 +3,7 @@
 #' @description
 #' Main class for managing the complete protocols pipeline workflow.
 #' Allows flexible interaction with different workflow components:
-#' 1. Objective Selection (Primary and Secondary)
+#' 1. Objective Selection (nested by sector, pillar, sub-pillar, and data source)
 #' 2. Strata Definition and Sample Size Calculations
 #' 3. Sampling Frame Validation and Sample Drawing
 #' 4. Tool and Indicator Selection
@@ -13,11 +13,12 @@
 Protocol <- R6::R6Class(
   "Protocol",
   public = list(
-    #' @field primary_objectives List of primary research objectives (plain lists)
-    primary_objectives = NULL,
-
-    #' @field secondary_objectives List of secondary research objectives (plain lists)
-    secondary_objectives = NULL,
+    #' @field objectives Nested list of research objectives structured as
+    #'   \code{sector → pillar → sub_pillar → data_source → [list of objectives]}.
+    #'   Use \code{add_objective()}, \code{remove_objective()}, and
+    #'   \code{set_objectives()} to manage; use \code{flatten_objectives()} or
+    #'   \code{objectives_to_df()} to inspect.
+    objectives = NULL,
 
     #' @field objective_schema Data frame containing the loaded objective schema
     objective_schema = NULL,
@@ -68,8 +69,7 @@ Protocol <- R6::R6Class(
         self$metadata$assessment_title <- assessment_title
         self$metadata$country_name <- country_name
         self$metadata$month_year <- month_year
-        self$primary_objectives <- list()
-        self$secondary_objectives <- list()
+        self$objectives <- list()
         self$tools <- list()
         self$issues <- list()
         self$objective_schema <- private$default_objective_schema()
@@ -78,82 +78,50 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
     
-    #' @description Set primary research objectives
-    #' @param objectives List of primary objectives (plain lists with fields:
-    #'   sector, pillar, sub_pillar, short_objective, text_objective, and
-    #'   optionally data_source)
-    set_primary_objectives = function(objectives) {
+    #' @description Set all objectives at once, replacing the current objectives
+    #'
+    #' Accepts either a flat list of objectives (as produced by
+    #' \code{create_objective()} or \code{create_objectives_from_df()}) or an
+    #' already-nested structure (sector → pillar → sub_pillar → data_source).
+    #' Flat lists are automatically converted with \code{nest_objectives()}.
+    #'
+    #' @param objectives List.  Flat or nested objectives.
+    #' @return Invisibly returns \code{self} for method chaining.
+    set_objectives = function(objectives) {
       phr_try({
         phr_assert(is.list(objectives),
-                   message = phr_txt("Objectives must be a list."),
-                   origin  = "Protocol$set_primary_objectives")
+                   message = phr_txt("objectives must be a list."),
+                   origin  = "Protocol$set_objectives")
 
-        required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-        for (obj in objectives) {
-          missing <- setdiff(required_fields, names(obj))
-          if (length(missing) > 0) {
-            phr_error(
-              message = phr_txt("Objective missing required fields: {paste(missing, collapse=', ')}"),
-              origin  = "Protocol$set_primary_objectives",
-              hint    = phr_txt("Use create_objective() to build a conforming objective list.")
-            )
-          }
+        # Detect flat vs nested using robust check (all elements have $short_objective).
+        # Empty lists are assigned directly (treated as empty nested structure).
+        if (.is_flat_objectives(objectives)) {
+          self$objectives <- nest_objectives(objectives)
+        } else {
+          self$objectives <- objectives
         }
 
-        self$primary_objectives <- objectives
         self$metadata$modified_date <- Sys.time()
         private$check_issues()
-      }, on_error = "abort", origin = "Protocol$set_primary_objectives")
-      invisible(self)
-    },
-
-    #' @description Set secondary research objectives
-    #' @param objectives List of secondary objectives (plain lists with fields:
-    #'   sector, pillar, sub_pillar, short_objective, text_objective, and
-    #'   optionally data_source)
-    set_secondary_objectives = function(objectives) {
-      phr_try({
-        phr_assert(is.list(objectives),
-                   message = phr_txt("Objectives must be a list."),
-                   origin  = "Protocol$set_secondary_objectives")
-
-        required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-        for (obj in objectives) {
-          missing <- setdiff(required_fields, names(obj))
-          if (length(missing) > 0) {
-            phr_error(
-              message = phr_txt("Objective missing required fields: {paste(missing, collapse=', ')}"),
-              origin  = "Protocol$set_secondary_objectives",
-              hint    = phr_txt("Use create_objective() to build a conforming objective list.")
-            )
-          }
-        }
-
-        self$secondary_objectives <- objectives
-        self$metadata$modified_date <- Sys.time()
-        private$check_issues()
-      }, on_error = "abort", origin = "Protocol$set_secondary_objectives")
+        phr_message(
+          phr_txt("{count_objectives(self$objectives)} objective(s) set."),
+          origin = "Protocol$set_objectives"
+        )
+      }, on_error = "abort", origin = "Protocol$set_objectives")
       invisible(self)
     },
 
     #' @description Add a single objective to the protocol
     #'
-    #' The objective must contain at minimum the fields \code{sector},
-    #' \code{pillar}, \code{sub_pillar}, \code{short_objective}, and
-    #' \code{text_objective}.  Use \code{create_objective()} to build a
-    #' conforming objective list.
+    #' The objective is placed into the nested structure under its
+    #' \code{sector}, \code{pillar}, \code{sub_pillar}, and \code{data_source}
+    #' keys.  Use \code{create_objective()} to build a conforming objective
+    #' list.
     #'
     #' @param objective Named list. Objective to add (see \code{create_objective()}).
-    #' @param type Character. Either \code{"primary"} (default) or
-    #'   \code{"secondary"}.
     #' @return Invisibly returns \code{self} for method chaining.
-    add_objective = function(objective, type = "primary") {
+    add_objective = function(objective) {
       phr_try({
-        phr_assert(
-          type %in% c("primary", "secondary"),
-          message = phr_txt("type must be 'primary' or 'secondary'."),
-          origin  = "Protocol$add_objective"
-        )
         phr_assert(
           is.list(objective),
           message = phr_txt("objective must be a named list."),
@@ -171,16 +139,27 @@ Protocol <- R6::R6Class(
           )
         }
 
-        if (type == "primary") {
-          self$primary_objectives <- c(self$primary_objectives, list(objective))
-        } else {
-          self$secondary_objectives <- c(self$secondary_objectives, list(objective))
-        }
+        # Default data_source to "primary" when absent or NA
+        ds <- .normalize_data_source(objective$data_source)
+
+        s  <- objective$sector
+        p  <- objective$pillar
+        sp <- objective$sub_pillar
+
+        if (is.null(self$objectives[[s]]))            self$objectives[[s]]            <- list()
+        if (is.null(self$objectives[[s]][[p]]))       self$objectives[[s]][[p]]       <- list()
+        if (is.null(self$objectives[[s]][[p]][[sp]])) self$objectives[[s]][[p]][[sp]] <- list()
+        if (is.null(self$objectives[[s]][[p]][[sp]][[ds]])) self$objectives[[s]][[p]][[sp]][[ds]] <- list()
+
+        self$objectives[[s]][[p]][[sp]][[ds]] <- c(
+          self$objectives[[s]][[p]][[sp]][[ds]],
+          list(objective)
+        )
 
         self$metadata$modified_date <- Sys.time()
         private$check_issues()
         phr_message(
-          phr_txt("{type} objective '{objective$short_objective}' added."),
+          phr_txt("Objective '{objective$short_objective}' added [{ds}]."),
           origin = "Protocol$add_objective"
         )
       }, on_error = "abort", origin = "Protocol$add_objective")
@@ -189,43 +168,38 @@ Protocol <- R6::R6Class(
 
     #' @description Remove an objective from the protocol by its short_objective label
     #'
+    #' Searches the entire nested objectives structure and removes the first
+    #' objective whose \code{short_objective} matches the supplied value.
+    #'
     #' @param short_objective Character. The \code{short_objective} value of the
     #'   objective to remove.
-    #' @param type Character. Either \code{"primary"} (default) or
-    #'   \code{"secondary"}.
     #' @return Invisibly returns \code{self} for method chaining.
-    remove_objective = function(short_objective, type = "primary") {
+    remove_objective = function(short_objective) {
       phr_try({
-        phr_assert(
-          type %in% c("primary", "secondary"),
-          message = phr_txt("type must be 'primary' or 'secondary'."),
-          origin  = "Protocol$remove_objective"
-        )
+        found <- FALSE
 
-        if (type == "primary") {
-          before <- length(self$primary_objectives)
-          self$primary_objectives <- Filter(
-            function(x) !identical(x$short_objective, short_objective),
-            self$primary_objectives
-          )
-          if (length(self$primary_objectives) == before) {
-            phr_warning(
-              message = phr_txt("No primary objective with short_objective '{short_objective}' was found."),
-              origin  = "Protocol$remove_objective"
-            )
+        for (s in names(self$objectives)) {
+          for (p in names(self$objectives[[s]])) {
+            for (sp in names(self$objectives[[s]][[p]])) {
+              for (ds in names(self$objectives[[s]][[p]][[sp]])) {
+                before <- length(self$objectives[[s]][[p]][[sp]][[ds]])
+                self$objectives[[s]][[p]][[sp]][[ds]] <- Filter(
+                  function(x) !identical(x$short_objective, short_objective),
+                  self$objectives[[s]][[p]][[sp]][[ds]]
+                )
+                if (length(self$objectives[[s]][[p]][[sp]][[ds]]) < before) {
+                  found <- TRUE
+                }
+              }
+            }
           }
-        } else {
-          before <- length(self$secondary_objectives)
-          self$secondary_objectives <- Filter(
-            function(x) !identical(x$short_objective, short_objective),
-            self$secondary_objectives
+        }
+
+        if (!found) {
+          phr_warning(
+            message = phr_txt("No objective with short_objective '{short_objective}' was found."),
+            origin  = "Protocol$remove_objective"
           )
-          if (length(self$secondary_objectives) == before) {
-            phr_warning(
-              message = phr_txt("No secondary objective with short_objective '{short_objective}' was found."),
-              origin  = "Protocol$remove_objective"
-            )
-          }
         }
 
         self$metadata$modified_date <- Sys.time()
@@ -739,8 +713,7 @@ Protocol <- R6::R6Class(
         month_year = self$metadata$month_year,
         created = self$metadata$created_date,
         modified = self$metadata$modified_date,
-        num_primary_objectives = length(self$primary_objectives),
-        num_secondary_objectives = length(self$secondary_objectives),
+        num_objectives = count_objectives(self$objectives),
         num_strata = if (is.null(self$sample_table)) 0 else nrow(self$sample_table),
         total_sample_size = if (is.null(self$sample_table)) 0 else sum(self$sample_table$pop_result_dummy, na.rm = TRUE),
         num_tools = length(self$tools),
@@ -754,8 +727,7 @@ Protocol <- R6::R6Class(
     export_protocol = function() {
       list(
         metadata = self$metadata,
-        primary_objectives = self$primary_objectives,
-        secondary_objectives = self$secondary_objectives,
+        objectives = self$objectives,
         objective_schema = self$objective_schema,
         sample_table = self$sample_table,
         sampling_frame = self$sampling_frame,
@@ -779,12 +751,11 @@ Protocol <- R6::R6Class(
       self$issues <- list()
       
       # Check if objectives have matching indicators in tools
-      all_objectives <- c(self$primary_objectives, self$secondary_objectives)
+      all_objectives <- flatten_objectives(self$objectives)
       if (length(all_objectives) > 0 && length(self$tools) > 0) {
         obj_sectors <- unique(sapply(all_objectives, function(x) x$sector))
         
         # Placeholder: Check tool coverage (actual Tool class will define how to extract sectors)
-        # For now, assume tools have a $sector field
         tool_sectors <- character(0)
         tryCatch({
           tool_sectors <- unique(sapply(self$tools, function(x) {
@@ -851,9 +822,9 @@ Protocol <- R6::R6Class(
         phr_assert(!is.null(n_psu),
                    message = phr_txt("n_psu is required for the 'srs' method."),
                    origin = origin)
-        sample_psu_srs(frame, n_psu, sample_size, seed)
+        draw_sample_psu_srs(frame, n_psu, sample_size, seed)
       } else if (method == "proportional") {
-        sample_psu_proportional(frame, sample_size, seed)
+        draw_sample_psu_proportional(frame, sample_size, seed)
       } else if (method == "pps_cluster") {
         phr_assert(!is.null(n_clusters),
                    message = phr_txt("n_clusters is required for the 'pps_cluster' method."),
@@ -861,15 +832,15 @@ Protocol <- R6::R6Class(
         phr_assert(!is.null(cluster_size),
                    message = phr_txt("cluster_size is required for the 'pps_cluster' method."),
                    origin = origin)
-        sample_psu_pps_cluster(frame, n_clusters, cluster_size, seed)
+        draw_sample_psu_pps_cluster(frame, n_clusters, cluster_size, seed)
       } else if (method == "rlc") {
         cs <- if (!is.null(cluster_size)) cluster_size else 3L
-        sample_psu_rlc(frame, sample_size, cs, seed)
+        draw_sample_psu_rlc(frame, sample_size, cs, seed)
       } else {  # systematic
         phr_assert(!is.null(n_sites),
                    message = phr_txt("n_sites is required for the 'systematic' method."),
                    origin = origin)
-        sample_psu_systematic(frame, n_sites, sample_size, seed)
+        draw_sample_psu_systematic(frame, n_sites, sample_size, seed)
       }
     },
 
