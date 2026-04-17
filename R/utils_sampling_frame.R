@@ -271,7 +271,7 @@ print_frame_summary <- function(frame) {
     summary <- summarize_sampling_frame(frame)
 
     phr_message(
-      phr_txt("Sampling Frame: {summary$total_units} units across {summary$num_strata} stratum/strata."),
+      phr_txt("Sampling Frame: {summary$total_units} units across {summary$num_strata} {ifelse(summary$num_strata == 1, 'stratum', 'strata')}."),
       origin = origin
     )
 

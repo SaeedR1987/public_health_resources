@@ -271,7 +271,7 @@ load_protocol <- function(file) {
   phr_try({
     phr_assert(
       file.exists(file),
-      message = phr_txt("File does not exist: {file}"),
+      message = phr_txt("File does not exist: '{file}'"),
       origin  = origin,
       hint    = phr_txt("Check the file path and ensure the file has not been moved or deleted.")
     )
