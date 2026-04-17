@@ -474,7 +474,9 @@ Protocol <- R6::R6Class(
     #'   within each stratum of the sampling frame.  When \code{TRUE}, per-
     #'   stratum sample sizes are taken from \code{sample_table$Final_HH_Sample_Size}
     #'   if available; otherwise \code{sample_size} is divided proportionally
-    #'   across strata.  Default \code{FALSE}.
+    #'   across strata.  Note: when per-stratum sizes come from \code{sample_table},
+    #'   the total allocated across all strata may differ from \code{sample_size}.
+    #'   Default \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
     draw_sample = function(method = "srs",
                            sample_size,

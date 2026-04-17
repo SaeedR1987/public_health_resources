@@ -106,6 +106,9 @@ validate_strata_table <- function(sample_table) {
 #' @export
 calculate_sample_size_strata_table <- function(sample_table) {
 
+  # Default design effect used as fallback when no value is stored.
+  .default_design_effect <- 1.5
+
   val_result <- validate_strata_table(sample_table)
   if (!val_result$valid) {
     stop(val_result$message)
@@ -116,7 +119,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
 
     # ---- General (population-level) sample size -------------------------
     if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
-      design_effect <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) row$pop_design_effect else 1.5
+      design_effect <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) row$pop_design_effect else .default_design_effect
       design_type   <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) "cluster" else "simple_random"
       nonresponse   <- if (!is.na(row$pop_nonresponse)) row$pop_nonresponse else 5
       fpc           <- if (!is.na(row$pop_fpc)) as.logical(row$pop_fpc) else FALSE
@@ -140,7 +143,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
     # ---- Individual-level sample size -----------------------------------
     if (!is.na(row$ind_expected_prevalence) && !is.na(row$ind_precision) &&
         !is.na(row$ind_avg_hh_size) && row$ind_avg_hh_size > 0) {
-      design_effect <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) row$ind_design_effect else 1.5
+      design_effect <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) row$ind_design_effect else .default_design_effect
       design_type   <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) "cluster" else "simple_random"
       nonresponse   <- if (!is.na(row$ind_nonresponse)) row$ind_nonresponse else 5
       fpc           <- if (!is.na(row$ind_fpc)) as.logical(row$ind_fpc) else FALSE
@@ -169,7 +172,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
     # ---- Mortality-rate sample size -------------------------------------
     if (!is.na(row$mort_expected_death_rate) && !is.na(row$mort_precision) &&
         !is.na(row$mort_avg_hh_size) && row$mort_avg_hh_size > 0) {
-      design_effect <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) row$mort_design_effect else 1.5
+      design_effect <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) row$mort_design_effect else .default_design_effect
       design_type   <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) "cluster" else "simple_random"
       nonresponse   <- if (!is.na(row$mort_nonresponse)) row$mort_nonresponse else 5
       fpc           <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE

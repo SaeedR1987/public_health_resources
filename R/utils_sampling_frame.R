@@ -66,7 +66,7 @@ validate_sampling_frame <- function(frame, required_cols = character(0)) {
   } else {
     issues$missing_inclusion <- paste(
       "Frame does not have an 'inclusion' column.",
-      "set_sampling_frame() will add it with all TRUE values."
+      "Consider adding it to mark PSUs for inclusion (TRUE/FALSE)."
     )
   }
 

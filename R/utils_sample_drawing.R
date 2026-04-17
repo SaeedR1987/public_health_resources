@@ -81,15 +81,16 @@ sample_psu_proportional <- function(frame, sample_size, seed = 42) {
   total_pop <- sum(frame$population_size, na.rm = TRUE)
   if (total_pop == 0) stop("Total population cannot be zero for proportional method.")
 
-  frame$sampled_psu      <- seq_len(nrow(frame))
-  frame$allocated_sample <- round(frame$population_size / total_pop * sample_size)
-  frame$allocated_sample <- pmax(frame$allocated_sample, 1L)
+  frame$sampled_psu <- seq_len(nrow(frame))
 
-  # Adjust to match total exactly
-  diff_val <- sample_size - sum(frame$allocated_sample)
-  if (diff_val != 0) {
-    largest_idx <- which.max(frame$population_size)
-    frame$allocated_sample[largest_idx] <- frame$allocated_sample[largest_idx] + diff_val
+  # Hamilton (largest-remainder) method — guarantees sum == sample_size
+  exact_alloc              <- frame$population_size / total_pop * sample_size
+  frame$allocated_sample   <- floor(exact_alloc)
+  remainder                <- sample_size - sum(frame$allocated_sample)
+  if (remainder > 0) {
+    frac_idx <- order(exact_alloc - frame$allocated_sample, decreasing = TRUE)
+    frame$allocated_sample[frac_idx[seq_len(remainder)]] <-
+      frame$allocated_sample[frac_idx[seq_len(remainder)]] + 1
   }
 
   frame
