@@ -23,6 +23,21 @@ create_protocol <- function(assessment_title = NULL, country_name = NULL, month_
   Protocol$new(assessment_title = assessment_title, country_name = country_name, month_year = month_year)
 }
 
+#' Create a new survey protocol instance
+#'
+#' Creates a \code{\link{SurveyProtocol}} object, which extends
+#' \code{\link{Protocol}} with strata definition, sample size calculations,
+#' sampling frame management, and sample drawing capabilities.
+#'
+#' @param assessment_title Character. Title of the assessment
+#' @param country_name Character. Country where assessment takes place
+#' @param month_year Character. Month and year of data collection
+#' @return A new SurveyProtocol object
+#' @export
+create_survey_protocol <- function(assessment_title = NULL, country_name = NULL, month_year = NULL) {
+  SurveyProtocol$new(assessment_title = assessment_title, country_name = country_name, month_year = month_year)
+}
+
 #' Validate protocol completeness
 #'
 #' @param protocol Protocol object to validate
@@ -284,8 +299,12 @@ load_protocol <- function(file) {
 
 #' Restore protocol object from exported data
 #'
+#' Restores a \code{\link{SurveyProtocol}} when the exported data contains
+#' sampling fields (\code{sample_table}, \code{sampling_frame}, etc.),
+#' otherwise restores a base \code{\link{Protocol}}.
+#'
 #' @param protocol_data List. Exported protocol data from export_protocol()
-#' @return A new Protocol object with restored data
+#' @return A new Protocol or SurveyProtocol object with restored data
 #' @export
 restore_protocol <- function(protocol_data) {
 
@@ -298,22 +317,37 @@ restore_protocol <- function(protocol_data) {
       origin  = origin
     )
 
-    protocol <- Protocol$new(
-      assessment_title = protocol_data$metadata$assessment_title,
-      country_name     = protocol_data$metadata$country_name,
-      month_year       = protocol_data$metadata$month_year
-    )
+    has_sampling_data <- any(c("sample_table", "sampling_frame", "drawn_sample",
+                               "drawn_sample_full") %in% names(protocol_data) &
+                             !vapply(protocol_data[intersect(c("sample_table", "sampling_frame",
+                                                               "drawn_sample", "drawn_sample_full"),
+                                                             names(protocol_data))],
+                                    is.null, logical(1)))
 
-    protocol$metadata              <- protocol_data$metadata
-    protocol$objectives            <- protocol_data$objectives %||% list()
-    protocol$objective_schema      <- protocol_data$objective_schema %||% protocol$objective_schema
-    protocol$sample_table          <- protocol_data$sample_table
-    protocol$sampling_frame        <- protocol_data$sampling_frame
-    protocol$drawn_sample          <- protocol_data$drawn_sample
-    protocol$drawn_sample_full     <- protocol_data$drawn_sample_full
-    protocol$tools                 <- protocol_data$tools
-    protocol$selected_indicators   <- protocol_data$selected_indicators
-    protocol$issues                <- protocol_data$issues
+    if (has_sampling_data) {
+      protocol <- SurveyProtocol$new(
+        assessment_title = protocol_data$metadata$assessment_title,
+        country_name     = protocol_data$metadata$country_name,
+        month_year       = protocol_data$metadata$month_year
+      )
+      protocol$sample_table      <- protocol_data$sample_table
+      protocol$sampling_frame    <- protocol_data$sampling_frame
+      protocol$drawn_sample      <- protocol_data$drawn_sample
+      protocol$drawn_sample_full <- protocol_data$drawn_sample_full
+    } else {
+      protocol <- Protocol$new(
+        assessment_title = protocol_data$metadata$assessment_title,
+        country_name     = protocol_data$metadata$country_name,
+        month_year       = protocol_data$metadata$month_year
+      )
+    }
+
+    protocol$metadata            <- protocol_data$metadata
+    protocol$objectives          <- protocol_data$objectives %||% list()
+    protocol$objective_schema    <- protocol_data$objective_schema %||% protocol$objective_schema
+    protocol$tools               <- protocol_data$tools
+    protocol$selected_indicators <- protocol_data$selected_indicators
+    protocol$issues              <- protocol_data$issues
 
     phr_message(phr_txt("Protocol restored successfully."), origin = origin)
     protocol
@@ -342,7 +376,7 @@ print_protocol_summary <- function(protocol) {
       origin = origin
     )
     phr_message(
-      phr_txt("Objectives: {summary$num_objectives} | Strata: {summary$num_strata} | Tools: {summary$num_tools}"),
+      phr_txt("Objectives: {summary$num_objectives} | Strata: {summary$num_strata %||% 'N/A'} | Tools: {summary$num_tools}"),
       origin = origin
     )
 
