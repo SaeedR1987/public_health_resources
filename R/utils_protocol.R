@@ -354,8 +354,47 @@ restore_protocol <- function(protocol_data) {
   }, on_error = "abort", origin = origin)
 }
 
-#' Print protocol summary
+#' Generate a Word document report from a Protocol or SurveyProtocol object
 #'
+#' Convenience wrapper around \code{Protocol$generate_report()} and
+#' \code{SurveyProtocol$generate_report()}.  Dispatches to the correct method
+#' based on the class of \code{protocol}.
+#'
+#' @param protocol A \code{\link{Protocol}} or \code{\link{SurveyProtocol}}
+#'   object.
+#' @param output_file Character. Output \code{.docx} file path.  Defaults to
+#'   \code{"protocol_report.docx"} in the current working directory.
+#' @param reference_docx Character or \code{NULL}. Path to a Word style
+#'   reference document.  Uses the package-bundled template by default.
+#' @param open Logical. Whether to open the file after writing.  Defaults to
+#'   \code{FALSE}.
+#' @return Invisibly returns the protocol object.
+#' @export
+generate_protocol_report <- function(protocol,
+                                     output_file   = "protocol_report.docx",
+                                     reference_docx = NULL,
+                                     open           = FALSE) {
+
+  origin <- "generate_protocol_report"
+
+  phr_try({
+    phr_assert(
+      inherits(protocol, "Protocol"),
+      message = phr_txt("Object is not a Protocol or SurveyProtocol instance."),
+      origin  = origin,
+      hint    = phr_txt("Use create_protocol() or create_survey_protocol() to create a valid object.")
+    )
+
+    protocol$generate_report(
+      output_file    = output_file,
+      reference_docx = reference_docx,
+      open           = open
+    )
+  }, on_error = "abort", origin = origin)
+
+  invisible(protocol)
+}
+
 #' @param protocol Protocol object to summarize
 #' @export
 print_protocol_summary <- function(protocol) {

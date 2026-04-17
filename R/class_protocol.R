@@ -286,6 +286,43 @@ Protocol <- R6::R6Class(
         issues = self$issues,
         summary = self$get_protocol_summary()
       )
+    },
+
+    #' @description Generate a Word document report summarising protocol details
+    #'
+    #' Creates a \code{.docx} file with sections covering protocol metadata,
+    #' research objectives, and data collection tools (skipped when none have
+    #' been added).  A package-bundled reference Word template
+    #' (\code{inst/resources/protocol_report_template.docx}) is used for
+    #' consistent styling when available; otherwise a plain Word document with
+    #' default styles is produced.
+    #'
+    #' @param output_file Character. Output file path including the \code{.docx}
+    #'   extension.  Defaults to \code{"protocol_report.docx"} in the current
+    #'   working directory.
+    #' @param reference_docx Character or \code{NULL}.  Path to a \code{.docx}
+    #'   file used as a style reference.  When \code{NULL} (default) the
+    #'   package-bundled template is used if present, otherwise a blank document.
+    #' @param open Logical.  Whether to open the generated file after writing.
+    #'   Defaults to \code{FALSE}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    generate_report = function(output_file = "protocol_report.docx",
+                               reference_docx = NULL,
+                               open = FALSE) {
+      phr_try({
+        doc <- private$create_base_doc(reference_docx)
+        doc <- private$add_metadata_section(doc)
+        doc <- private$add_objectives_section(doc)
+        doc <- private$add_tools_section(doc)
+
+        print(doc, target = output_file)
+        phr_message(
+          phr_txt("Protocol report saved to: {output_file}"),
+          origin = "Protocol$generate_report"
+        )
+        if (isTRUE(open)) utils::browseURL(output_file)
+      }, on_error = "abort", origin = "Protocol$generate_report")
+      invisible(self)
     }
   ),
 
@@ -329,6 +366,114 @@ Protocol <- R6::R6Class(
       }
       
       invisible(self)
+    },
+
+    # Create an officer doc using the bundled template when available, or a blank doc.
+    create_base_doc = function(reference_docx = NULL) {
+      template_path <- if (!is.null(reference_docx) && file.exists(reference_docx)) {
+        reference_docx
+      } else {
+        sys_path <- system.file("resources", "protocol_report_template.docx", package = "phr")
+        if (nzchar(sys_path)) sys_path else NULL
+      }
+      if (!is.null(template_path)) officer::read_docx(template_path) else officer::read_docx()
+    },
+
+    # Add the title / metadata section to the Word document.
+    add_metadata_section = function(doc) {
+      title <- self$metadata$assessment_title %||% "Technical Protocol Document"
+      doc <- officer::body_add_par(doc, title, style = "heading 1")
+
+      meta_lines <- c(
+        if (!is.null(self$metadata$country_name) && nzchar(self$metadata$country_name %||% ""))
+          paste0("Country: ", self$metadata$country_name),
+        if (!is.null(self$metadata$month_year) && nzchar(self$metadata$month_year %||% ""))
+          paste0("Period: ", self$metadata$month_year),
+        paste0("Generated: ", format(Sys.time(), "%d %B %Y"))
+      )
+      for (line in meta_lines) {
+        doc <- officer::body_add_par(doc, line, style = "Normal")
+      }
+      officer::body_add_par(doc, "", style = "Normal")
+    },
+
+    # Add the research objectives section to the Word document.
+    add_objectives_section = function(doc) {
+      doc <- officer::body_add_par(doc, "Research Objectives", style = "heading 1")
+
+      all_objectives <- flatten_objectives(self$objectives)
+      if (length(all_objectives) == 0) {
+        return(officer::body_add_par(doc, "No objectives have been defined.", style = "Normal"))
+      }
+
+      obj_df <- do.call(rbind, lapply(all_objectives, function(x) {
+        data.frame(
+          Sector        = as.character(x$sector          %||% ""),
+          Pillar        = as.character(x$pillar          %||% ""),
+          "Sub-Pillar"  = as.character(x$sub_pillar      %||% ""),
+          ID            = as.character(x$short_objective %||% ""),
+          Objective     = as.character(x$text_objective  %||% ""),
+          "Data Source" = as.character(x$data_source     %||% "primary"),
+          check.names   = FALSE,
+          stringsAsFactors = FALSE
+        )
+      }))
+
+      ft <- flextable::flextable(obj_df)
+      ft <- flextable::theme_zebra(ft)
+      ft <- flextable::autofit(ft)
+      flextable::body_add_flextable(doc, ft)
+    },
+
+    # Add the data collection tools section to the Word document.
+    # Skipped (with a placeholder note) when self$tools is empty.
+    add_tools_section = function(doc) {
+      doc <- officer::body_add_par(doc, "Data Collection Tools", style = "heading 1")
+
+      if (length(self$tools) == 0) {
+        return(officer::body_add_par(
+          doc, "No data collection tools have been defined.", style = "Normal"
+        ))
+      }
+
+      for (i in seq_along(self$tools)) {
+        tool <- self$tools[[i]]
+
+        if (methods::is(tool, "R6")) {
+          tool_name  <- tryCatch(tool$get_name(),      error = function(e) paste("Tool", i))
+          tool_type  <- tryCatch(tool$get_tool_type(), error = function(e) "unknown")
+          survey     <- tryCatch(tool$get_survey(),    error = function(e) NULL)
+          indicators <- if (!is.null(survey) && is.data.frame(survey) &&
+                             nrow(survey) > 0 && "name" %in% names(survey)) {
+            unique(stats::na.omit(survey$name))
+          } else {
+            character(0)
+          }
+        } else {
+          tool_name  <- tool$tool_name  %||% paste("Tool", i)
+          tool_type  <- tool$tool_type  %||% "unknown"
+          indicators <- tool$indicators %||% character(0)
+        }
+
+        doc <- officer::body_add_par(
+          doc,
+          paste0(i, ". ", tool_name, " (", tool_type, ")"),
+          style = "heading 2"
+        )
+
+        if (length(indicators) > 0) {
+          ind_df <- data.frame(Indicator = as.character(indicators), stringsAsFactors = FALSE)
+          ft <- flextable::flextable(ind_df)
+          ft <- flextable::autofit(ft)
+          doc <- flextable::body_add_flextable(doc, ft)
+        } else {
+          doc <- officer::body_add_par(
+            doc, "No indicators defined for this tool.", style = "Normal"
+          )
+        }
+      }
+
+      doc
     }
   )
 )

@@ -556,10 +556,93 @@ SurveyProtocol <- R6::R6Class(
       base_export$drawn_sample_full <- self$drawn_sample_full
       base_export$summary           <- self$get_protocol_summary()
       base_export
+    },
+
+    #' @description Generate a Word document report including sampling information
+    #'
+    #' Extends \code{Protocol$generate_report()} by appending a Sampling Design
+    #' section that summarises strata definitions, household sample sizes, and
+    #' (when \code{draw_sample()} has been called) a table of selected PSUs.
+    #'
+    #' @param output_file Character. Output \code{.docx} file path.
+    #'   Defaults to \code{"protocol_report.docx"}.
+    #' @param reference_docx Character or \code{NULL}. Path to a Word style
+    #'   reference document.  Uses the package-bundled template by default.
+    #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    generate_report = function(output_file = "protocol_report.docx",
+                               reference_docx = NULL,
+                               open = FALSE) {
+      phr_try({
+        doc <- private$create_base_doc(reference_docx)
+        doc <- private$add_metadata_section(doc)
+        doc <- private$add_objectives_section(doc)
+        doc <- private$add_tools_section(doc)
+        doc <- private$add_sampling_section(doc)
+
+        print(doc, target = output_file)
+        phr_message(
+          phr_txt("Protocol report saved to: {output_file}"),
+          origin = "SurveyProtocol$generate_report"
+        )
+        if (isTRUE(open)) utils::browseURL(output_file)
+      }, on_error = "abort", origin = "SurveyProtocol$generate_report")
+      invisible(self)
     }
   ),
 
   private = list(
+    # Add the sampling design section to the Word document.
+    add_sampling_section = function(doc) {
+      doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 1")
+
+      if (is.null(self$sample_table) || nrow(self$sample_table) == 0) {
+        return(officer::body_add_par(doc, "No strata have been defined.", style = "Normal"))
+      }
+
+      # --- Strata and sample sizes table ---
+      doc <- officer::body_add_par(doc, "Strata and Sample Sizes", style = "heading 2")
+
+      display_cols <- c("stratum_id", "Population_Name", "Total_Population",
+                        "Sampling_Method", "Final_HH_Sample_Size")
+      col_labels   <- c("Stratum ID", "Population Name", "Total Population",
+                        "Sampling Method", "Final Sample Size (HH)")
+      avail_idx    <- which(display_cols %in% names(self$sample_table))
+
+      if (length(avail_idx) > 0) {
+        strata_df <- self$sample_table[, display_cols[avail_idx], drop = FALSE]
+        names(strata_df) <- col_labels[avail_idx]
+        ft <- flextable::flextable(strata_df)
+        ft <- flextable::theme_zebra(ft)
+        ft <- flextable::autofit(ft)
+        doc <- flextable::body_add_flextable(doc, ft)
+      }
+
+      # --- Selected PSUs (only when draw_sample() has been called) ---
+      if (!is.null(self$drawn_sample) && nrow(self$drawn_sample) > 0) {
+        doc <- officer::body_add_par(doc, "Selected PSUs", style = "heading 2")
+        doc <- officer::body_add_par(
+          doc,
+          paste0("Total PSUs selected: ", nrow(self$drawn_sample)),
+          style = "Normal"
+        )
+
+        psu_cols <- intersect(
+          c("psu", "stratum", "sampled_psu", "allocated_sample"),
+          names(self$drawn_sample)
+        )
+        if (length(psu_cols) > 0) {
+          psu_df <- self$drawn_sample[, psu_cols, drop = FALSE]
+          ft <- flextable::flextable(psu_df)
+          ft <- flextable::theme_zebra(ft)
+          ft <- flextable::autofit(ft)
+          doc <- flextable::body_add_flextable(doc, ft)
+        }
+      }
+
+      doc
+    },
+
     # Check for issues and discrepancies in the survey protocol,
     # including strata consistency between frame and sample table.
     check_issues = function() {
