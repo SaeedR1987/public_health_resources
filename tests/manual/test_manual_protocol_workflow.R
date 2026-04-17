@@ -329,35 +329,58 @@ protocol$get_issues()
 # Test 5: Draw Sample ####
 # =============================================================================
 
-# -- 5a: Draw using simple random sampling across the whole frame --
+# The new draw_sample() API reads Sampling_Method, Final_HH_Sample_Size,
+# n_psu, n_clusters, cluster_size, and n_sites directly from the strata table.
 
-protocol$draw_sample(method = "srs", sample_size = 600, n_psu = 30, seed = 123)
+# -- 5a: Update sample table with sampling parameters before drawing --
+
+# Set Final_HH_Sample_Size for each stratum (used by draw_sample)
+protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_A"] <- ss_A
+protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_B"] <- ss_B
+protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_C"] <- ss_C
+
+# -- 5b: Draw using proportional method (reads method from Sampling_Method column) --
+# All three strata already have Sampling_Method = "proportional"
+
+protocol$draw_sample(seed = 789)
 nrow(protocol$drawn_sample)       # selected PSUs
 nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
+head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
-# -- 5b: Draw using PPS cluster sampling (overwrite) --
+# -- 5c: Override method to pps_cluster by updating the strata table --
+# Set n_clusters and cluster_size in the table first
 
-protocol$draw_sample(
-  method       = "pps_cluster",
-  sample_size  = 600,
-  n_clusters   = 30,
-  cluster_size = 20,
-  seed         = 456
-)
+protocol$sample_table$Sampling_Method <- "pps_cluster"
+protocol$sample_table$n_clusters      <- 30
+protocol$sample_table$cluster_size    <- 20
+
+protocol$draw_sample(seed = 456)
 nrow(protocol$drawn_sample)
-head(protocol$drawn_sample[, c("psu", "population_size", "sampled_psu", "allocated_sample")])
+head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
-# -- 5c: Draw stratified (per-stratum sizes from Final_HH_Sample_Size if set) --
+# -- 5d: Purposive sampling — sampled_psu and allocated_sample are all NA --
+# (User manually designates selected PSUs after this step.)
 
-protocol$draw_sample(
-  method      = "proportional",
-  sample_size = 600,
-  seed        = 789,
-  stratified  = TRUE
-)
+protocol$sample_table$Sampling_Method <- "purposive"
+protocol$draw_sample(seed = 42)
+nrow(protocol$drawn_sample)       # 0 — no PSUs auto-selected
+sum(is.na(protocol$drawn_sample_full$sampled_psu))  # all NA
+
+# Restore proportional for remaining tests
+protocol$sample_table$Sampling_Method <- "proportional"
+
+# -- 5e: Pass an explicit frame and strata_table (without touching protocol fields) --
+
+custom_frame  <- sampling_frame[sampling_frame$stratum == "strata_A", ]
+custom_frame$inclusion <- TRUE
+custom_strata <- protocol$sample_table[protocol$sample_table$stratum_id == "strata_A", ]
+custom_strata$Sampling_Method <- "srs"
+custom_strata$n_psu            <- 15
+
+protocol$draw_sample(frame = custom_frame, strata_table = custom_strata, seed = 111)
 nrow(protocol$drawn_sample)
 
-# -- 5d: Use standalone PSU utility functions directly --
+# -- 5f: Use standalone PSU utility functions directly --
 # draw_sample_psu_* functions return the FULL modified frame (sampled_psu / allocated_sample cols);
 # the legacy draw_sample_* helpers (draw_sample_srs, draw_sample_pps, etc.) return only selected rows.
 
@@ -370,6 +393,10 @@ sample_result_A <- draw_sample_psu_pps_cluster(
 nrow(sample_result_A)
 sum(!is.na(sample_result_A$sampled_psu))  # selected PSUs
 head(sample_result_A[!is.na(sample_result_A$sampled_psu), ])
+
+# Purposive standalone function
+purposive_result <- draw_sample_psu_purposive(frame_A)
+sum(is.na(purposive_result$sampled_psu))  # all NA — user fills manually
 
 # Legacy helper: draw_sample_srs() returns only selected rows (not the full frame)
 sample_srs_A <- draw_sample_srs(frame_A, n = ss_A, seed = 789)

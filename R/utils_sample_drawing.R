@@ -262,6 +262,32 @@ draw_sample_psu_systematic <- function(frame, n_sites, sample_size, seed = 42) {
   }, on_error = "abort", origin = origin)
 }
 
+#' Draw PSUs using purposive / convenience sampling
+#'
+#' Marks the frame as having purposive sampling selected — all PSUs are
+#' retained but \code{sampled_psu} and \code{allocated_sample} are left as
+#' \code{NA}.  The user is expected to manually designate selected PSUs after
+#' this call.
+#'
+#' @param frame Data frame. Eligible PSUs.
+#' @param seed Integer. Not used; kept for interface consistency (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added, both set to \code{NA}.
+#' @export
+draw_sample_psu_purposive <- function(frame, seed = 42) {
+
+  origin <- "draw_sample_psu_purposive"
+
+  phr_try({
+    phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+
+    frame$sampled_psu      <- NA_integer_
+    frame$allocated_sample <- NA_real_
+
+    frame
+  }, on_error = "abort", origin = origin)
+}
+
 # ---------------------------------------------------------------------------
 # Legacy helpers kept for backward compatibility
 # ---------------------------------------------------------------------------
