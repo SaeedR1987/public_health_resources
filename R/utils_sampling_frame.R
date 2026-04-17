@@ -5,53 +5,79 @@
 
 #' Validate sampling frame structure
 #'
-#' @param frame Data frame. The sampling frame to validate
-#' @param required_cols Character vector. Required column names (default = c("id", "stratum", "population_size"))
-#' @return List with validation results
+#' Validates a sampling frame for use in sample drawing operations.  Uses
+#' existing \pkg{phr} validator helpers where possible.
+#'
+#' Required column: \code{psu} (primary sampling unit identifier).
+#'
+#' Optional but validated if present:
+#' \itemize{
+#'   \item \code{inclusion} — logical column marking PSUs for inclusion;
+#'     created with all \code{TRUE} values by \code{set_sampling_frame()} if
+#'     absent.
+#'   \item \code{population_size} — positive numeric sizes.
+#'   \item \code{stratum} — strata labels (empty strata are flagged).
+#' }
+#'
+#' @param frame Data frame. The sampling frame to validate.
+#' @param required_cols Character vector. Additional required column names
+#'   beyond \code{"psu"} (default \code{character(0)}).
+#' @return List with \code{valid} (logical), \code{message} (character on
+#'   failure), \code{issues} (named list on failure), or \code{summary}
+#'   (named list on success).
 #' @export
-validate_sampling_frame <- function(frame, 
-                                    required_cols = c("id", "stratum", "population_size")) {
-  
+validate_sampling_frame <- function(frame, required_cols = character(0)) {
+
   issues <- list()
-  
-  # Check if frame is a data frame
-  if (!is.data.frame(frame)) {
-    return(list(valid = FALSE, message = "Frame must be a data frame"))
+
+  # ---- Basic data-frame check (reuse phr_validate_dataframe) ----------
+  if (!phr_validate_dataframe(frame, soft = TRUE)) {
+    return(list(valid = FALSE,
+                message = "Frame must be a non-NULL data frame with atomic columns."))
   }
-  
-  # Check for empty frame
+
+  # ---- Non-empty check ------------------------------------------------
   if (nrow(frame) == 0) {
-    return(list(valid = FALSE, message = "Frame is empty"))
+    return(list(valid = FALSE, message = "Frame is empty."))
   }
-  
-  # Check required columns
-  missing_cols <- setdiff(required_cols, names(frame))
+
+  # ---- Required columns (psu is always required) ----------------------
+  all_required <- unique(c("psu", required_cols))
+  missing_cols <- setdiff(all_required, names(frame))
   if (length(missing_cols) > 0) {
     issues$missing_columns <- missing_cols
   }
-  
-  # Check for duplicate IDs
-  if ("id" %in% names(frame)) {
-    if (any(duplicated(frame$id))) {
-      issues$duplicate_ids <- frame$id[duplicated(frame$id)]
+
+  # ---- PSU column checks ----------------------------------------------
+  if ("psu" %in% names(frame)) {
+    if (any(duplicated(frame$psu))) {
+      issues$duplicate_psu <- frame$psu[duplicated(frame$psu)]
+    }
+    if (any(is.na(frame$psu))) {
+      issues$missing_psu_values <- sum(is.na(frame$psu))
     }
   }
-  
-  # Check for missing values in required columns
-  for (col in intersect(required_cols, names(frame))) {
-    if (any(is.na(frame[[col]]))) {
-      issues$missing_values[[col]] <- sum(is.na(frame[[col]]))
+
+  # ---- inclusion column -----------------------------------------------
+  if ("inclusion" %in% names(frame)) {
+    if (!is.logical(frame$inclusion)) {
+      issues$invalid_inclusion <- "The 'inclusion' column must be logical (TRUE/FALSE)."
     }
+  } else {
+    issues$missing_inclusion <- paste(
+      "Frame does not have an 'inclusion' column.",
+      "set_sampling_frame() will add it with all TRUE values."
+    )
   }
-  
-  # Check population sizes are positive
+
+  # ---- population_size checks -----------------------------------------
   if ("population_size" %in% names(frame)) {
     if (any(frame$population_size <= 0, na.rm = TRUE)) {
       issues$invalid_population_size <- sum(frame$population_size <= 0, na.rm = TRUE)
     }
   }
-  
-  # Check for empty strata
+
+  # ---- Stratum checks -------------------------------------------------
   if ("stratum" %in% names(frame)) {
     strata_counts <- table(frame$stratum)
     empty_strata <- names(strata_counts[strata_counts == 0])
@@ -59,15 +85,27 @@ validate_sampling_frame <- function(frame,
       issues$empty_strata <- empty_strata
     }
   }
-  
-  if (length(issues) == 0) {
+
+  # ---- Return result --------------------------------------------------
+  # issues only about missing inclusion do not make the frame invalid
+  hard_issues <- issues[setdiff(names(issues), "missing_inclusion")]
+
+  if (length(hard_issues) == 0) {
+    n_included <- if ("inclusion" %in% names(frame)) sum(frame$inclusion, na.rm = TRUE) else nrow(frame)
+
     return(list(
       valid = TRUE,
-      message = "Sampling frame is valid",
+      message = "Sampling frame is valid.",
+      issues  = if (length(issues) > 0) issues else NULL,
       summary = list(
-        num_units = nrow(frame),
-        num_strata = length(unique(frame$stratum)),
-        total_population = sum(frame$population_size, na.rm = TRUE)
+        num_units      = nrow(frame),
+        num_included   = n_included,
+        num_strata     = if ("stratum" %in% names(frame)) length(unique(frame$stratum)) else 1L,
+        total_population = if ("population_size" %in% names(frame)) {
+          sum(frame$population_size, na.rm = TRUE)
+        } else {
+          NA_real_
+        }
       )
     ))
   } else {
@@ -157,9 +195,10 @@ create_synthetic_frame <- function(strata_config, seed = NULL) {
     
     # Create frame for this stratum
     stratum_frame <- data.frame(
-      id = paste0(stratum_name, "_", seq_len(num_units)),
-      stratum = stratum_name,
+      psu             = paste0(stratum_name, "_", seq_len(num_units)),
+      stratum         = stratum_name,
       population_size = populations,
+      inclusion       = TRUE,
       stringsAsFactors = FALSE
     )
     

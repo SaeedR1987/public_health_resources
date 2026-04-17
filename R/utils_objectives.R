@@ -5,93 +5,93 @@
 
 #' Create an objective
 #'
-#' @param objective_id Character. Unique identifier for the objective
-#' @param objective_text Character. Description of the objective
-#' @param data_type Character. Either "primary" or "secondary"
-#' @param sector Character. Sector (FSL, Health, Nutrition, WASH, Protection, Education, Shelter)
-#' @param indicators Character vector. List of indicator IDs related to this objective
-#' @param rationale Character. Rationale for the objective (optional)
-#' @return List representing an objective
+#' Creates an objective using the standard fields from the reference schema:
+#' sector, pillar, sub_pillar, short_objective, text_objective, and data_source.
+#'
+#' @param sector Character. Sector (e.g. "General", "FSL", "Health", "Nutrition", "WASH").
+#' @param pillar Character. Pillar within the sector (e.g. "Demographics").
+#' @param sub_pillar Character. Sub-pillar within the pillar.
+#' @param short_objective Character. Short label for the objective (should be unique).
+#' @param text_objective Character. Full descriptive text of the objective.
+#' @param data_source Character. Data source for the objective (optional, default NA).
+#' @return Named list representing an objective.
 #' @export
-create_objective <- function(objective_id,
-                             objective_text,
-                             data_type,
-                             sector,
-                             indicators = NULL,
-                             rationale = NULL) {
-  
-  # Validate data_type
-  if (!data_type %in% c("primary", "secondary")) {
-    stop("data_type must be 'primary' or 'secondary'")
-  }
-  
-  # Validate sector
-  valid_sectors <- c("FSL", "Health", "Nutrition", "WASH", "Protection", 
-                    "Education", "Shelter", "Multi-sector", "Other")
-  if (!sector %in% valid_sectors) {
-    warning(paste("Sector", sector, "is not in standard list:", 
-                 paste(valid_sectors, collapse = ", ")))
-  }
-  
-  objective <- list(
-    objective_id = objective_id,
-    objective_text = objective_text,
-    data_type = data_type,
-    sector = sector,
-    indicators = indicators,
-    rationale = rationale,
-    created_date = Sys.time()
+create_objective <- function(sector,
+                             pillar,
+                             sub_pillar,
+                             short_objective,
+                             text_objective,
+                             data_source = NA_character_) {
+
+  # Validate required fields
+  required <- list(
+    sector        = sector,
+    pillar        = pillar,
+    sub_pillar    = sub_pillar,
+    short_objective = short_objective,
+    text_objective  = text_objective
   )
-  
+
+  for (nm in names(required)) {
+    val <- required[[nm]]
+    if (is.null(val) || (length(val) == 1L && is.na(val)) || !nzchar(as.character(val))) {
+      stop(paste0("'", nm, "' is a required field and must be a non-empty string."))
+    }
+  }
+
+  objective <- list(
+    sector          = as.character(sector),
+    pillar          = as.character(pillar),
+    sub_pillar      = as.character(sub_pillar),
+    short_objective = as.character(short_objective),
+    text_objective  = as.character(text_objective),
+    data_source     = if (is.null(data_source)) NA_character_ else as.character(data_source),
+    created_date    = Sys.time()
+  )
+
   return(objective)
 }
 
-#' Create multiple objectives
+#' Create multiple objectives from a data frame
 #'
-#' @param objectives_df Data frame with columns: objective_id, objective_text, 
-#'                      data_type, sector, indicators (optional), rationale (optional)
-#' @return List of objectives
+#' @param objectives_df Data frame with columns: sector, pillar, sub_pillar,
+#'   short_objective, text_objective, and optionally data_source.
+#' @return List of objective objects.
 #' @export
 create_objectives_from_df <- function(objectives_df) {
   if (!is.data.frame(objectives_df)) {
     stop("objectives_df must be a data frame")
   }
-  
-  required_cols <- c("objective_id", "objective_text", "data_type", "sector")
+
+  required_cols <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
   missing_cols <- setdiff(required_cols, names(objectives_df))
   if (length(missing_cols) > 0) {
     stop(paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
   }
-  
+
   objectives_list <- list()
-  
+
   for (i in seq_len(nrow(objectives_df))) {
     row <- objectives_df[i, ]
-    
-    indicators <- if ("indicators" %in% names(row) && !is.na(row$indicators)) {
-      strsplit(as.character(row$indicators), ",")[[1]]
+
+    data_source <- if ("data_source" %in% names(row) && !is.na(row$data_source)) {
+      as.character(row$data_source)
     } else {
-      NULL
+      NA_character_
     }
-    
-    rationale <- if ("rationale" %in% names(row) && !is.na(row$rationale)) {
-      as.character(row$rationale)
-    } else {
-      NULL
-    }
-    
+
     obj <- create_objective(
-      objective_id = as.character(row$objective_id),
-      objective_text = as.character(row$objective_text),
-      data_type = as.character(row$data_type),
-      sector = as.character(row$sector),
-      indicators = indicators,
-      rationale = rationale
+      sector          = as.character(row$sector),
+      pillar          = as.character(row$pillar),
+      sub_pillar      = as.character(row$sub_pillar),
+      short_objective = as.character(row$short_objective),
+      text_objective  = as.character(row$text_objective),
+      data_source     = data_source
     )
-    
+
     objectives_list[[length(objectives_list) + 1]] <- obj
   }
-  
+
   return(objectives_list)
 }
 
@@ -104,39 +104,35 @@ validate_objectives <- function(objectives) {
   if (!is.list(objectives) || length(objectives) == 0) {
     return(list(valid = FALSE, message = "Objectives must be a non-empty list"))
   }
-  
+
   issues <- list()
-  
-  # Check for duplicate IDs
-  ids <- sapply(objectives, function(x) x$objective_id)
-  if (any(duplicated(ids))) {
-    issues$duplicate_ids <- ids[duplicated(ids)]
+
+  required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+
+  # Check for duplicate short_objective labels
+  short_objs <- sapply(objectives, function(x) x$short_objective)
+  if (any(duplicated(short_objs))) {
+    issues$duplicate_short_objectives <- short_objs[duplicated(short_objs)]
   }
-  
-  # Check for vague objectives (very short text)
+
+  # Check for missing required fields
   for (i in seq_along(objectives)) {
     obj <- objectives[[i]]
-    if (nchar(obj$objective_text) < 20) {
-      issues$vague_objectives <- c(issues$vague_objectives, obj$objective_id)
+    missing <- setdiff(required_fields, names(obj))
+    if (length(missing) > 0) {
+      issues$missing_fields <- c(issues$missing_fields,
+                                  paste0("objective[", i, "]: ", paste(missing, collapse = ", ")))
     }
   }
-  
-  # Check for objectives without indicators
+
+  # Check for vague objectives (very short text_objective)
   for (i in seq_along(objectives)) {
     obj <- objectives[[i]]
-    if (is.null(obj$indicators) || length(obj$indicators) == 0) {
-      issues$missing_indicators <- c(issues$missing_indicators, obj$objective_id)
+    if (!is.null(obj$text_objective) && nchar(obj$text_objective) < 20) {
+      issues$vague_objectives <- c(issues$vague_objectives, obj$short_objective)
     }
   }
-  
-  # Check data type
-  for (i in seq_along(objectives)) {
-    obj <- objectives[[i]]
-    if (!obj$data_type %in% c("primary", "secondary")) {
-      issues$invalid_data_type <- c(issues$invalid_data_type, obj$objective_id)
-    }
-  }
-  
+
   if (length(issues) == 0) {
     return(list(valid = TRUE, message = "All objectives are valid"))
   } else {
@@ -155,21 +151,6 @@ get_objectives_by_sector <- function(objectives, sector) {
   return(filtered)
 }
 
-#' Get objectives by data type
-#'
-#' @param objectives List of objectives
-#' @param data_type Character. Either "primary" or "secondary"
-#' @return List of objectives for the specified data type
-#' @export
-get_objectives_by_data_type <- function(objectives, data_type) {
-  if (!data_type %in% c("primary", "secondary")) {
-    stop("data_type must be 'primary' or 'secondary'")
-  }
-  
-  filtered <- Filter(function(x) x$data_type == data_type, objectives)
-  return(filtered)
-}
-
 #' Convert objectives to data frame
 #'
 #' @param objectives List of objectives
@@ -179,16 +160,17 @@ objectives_to_df <- function(objectives) {
   if (length(objectives) == 0) {
     return(data.frame())
   }
-  
+
   df <- data.frame(
-    objective_id = sapply(objectives, function(x) x$objective_id),
-    objective_text = sapply(objectives, function(x) x$objective_text),
-    data_type = sapply(objectives, function(x) x$data_type),
-    sector = sapply(objectives, function(x) x$sector),
-    num_indicators = sapply(objectives, function(x) length(x$indicators)),
+    sector          = sapply(objectives, function(x) x$sector),
+    pillar          = sapply(objectives, function(x) x$pillar),
+    sub_pillar      = sapply(objectives, function(x) x$sub_pillar),
+    short_objective = sapply(objectives, function(x) x$short_objective),
+    text_objective  = sapply(objectives, function(x) x$text_objective),
+    data_source     = sapply(objectives, function(x) if (!is.null(x$data_source)) x$data_source else NA_character_),
     stringsAsFactors = FALSE
   )
-  
+
   return(df)
 }
 
@@ -201,21 +183,15 @@ print_objectives_summary <- function(objectives) {
     cat("No objectives defined\n")
     return(invisible(NULL))
   }
-  
+
   cat("Objectives Summary\n")
   cat("==================\n\n")
   cat("Total objectives:", length(objectives), "\n\n")
-  
-  # By data type
-  primary <- get_objectives_by_data_type(objectives, "primary")
-  secondary <- get_objectives_by_data_type(objectives, "secondary")
-  cat("Primary data objectives:", length(primary), "\n")
-  cat("Secondary data objectives:", length(secondary), "\n\n")
-  
+
   # By sector
   sectors <- unique(sapply(objectives, function(x) x$sector))
   cat("Sectors covered:", paste(sectors, collapse = ", "), "\n\n")
-  
+
   for (sector in sectors) {
     sector_objs <- get_objectives_by_sector(objectives, sector)
     cat("", sector, ":", length(sector_objs), "objective(s)\n")

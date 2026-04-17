@@ -29,8 +29,11 @@ Protocol <- R6::R6Class(
     #' @field sampling_frame Data frame with sampling units and strata
     sampling_frame = NULL,
 
-    #' @field drawn_sample List containing drawn sample and metadata
+    #' @field drawn_sample Data frame with selected PSUs (filtered from drawn_sample_full)
     drawn_sample = NULL,
+
+    #' @field drawn_sample_full Full sampling frame with sampled_psu and allocated_sample columns
+    drawn_sample_full = NULL,
 
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
@@ -74,14 +77,15 @@ Protocol <- R6::R6Class(
     
     #' @description Set primary research objectives
     #' @param objectives List of primary objectives (plain lists with fields:
-    #'   objective_id, objective_text, sector)
+    #'   sector, pillar, sub_pillar, short_objective, text_objective, and
+    #'   optionally data_source)
     set_primary_objectives = function(objectives) {
       if (!is.list(objectives)) {
         stop("Objectives must be a list")
       }
 
       # Validate objectives structure
-      required_fields <- c("objective_id", "objective_text", "sector")
+      required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
       for (obj in objectives) {
         missing <- setdiff(required_fields, names(obj))
         if (length(missing) > 0) {
@@ -97,14 +101,15 @@ Protocol <- R6::R6Class(
 
     #' @description Set secondary research objectives
     #' @param objectives List of secondary objectives (plain lists with fields:
-    #'   objective_id, objective_text, sector)
+    #'   sector, pillar, sub_pillar, short_objective, text_objective, and
+    #'   optionally data_source)
     set_secondary_objectives = function(objectives) {
       if (!is.list(objectives)) {
         stop("Objectives must be a list")
       }
 
       # Validate objectives structure
-      required_fields <- c("objective_id", "objective_text", "sector")
+      required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
       for (obj in objectives) {
         missing <- setdiff(required_fields, names(obj))
         if (length(missing) > 0) {
@@ -113,6 +118,79 @@ Protocol <- R6::R6Class(
       }
 
       self$secondary_objectives <- objectives
+      self$metadata$modified_date <- Sys.time()
+      private$check_issues()
+      invisible(self)
+    },
+
+    #' @description Add a single objective to the protocol
+    #'
+    #' The objective must contain at minimum the fields \code{sector},
+    #' \code{pillar}, \code{sub_pillar}, \code{short_objective}, and
+    #' \code{text_objective}.  Use \code{create_objective()} to build a
+    #' conforming objective list.
+    #'
+    #' @param objective Named list. Objective to add (see \code{create_objective()}).
+    #' @param type Character. Either \code{"primary"} (default) or
+    #'   \code{"secondary"}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_objective = function(objective, type = "primary") {
+      if (!type %in% c("primary", "secondary")) {
+        stop("type must be 'primary' or 'secondary'")
+      }
+      if (!is.list(objective)) {
+        stop("objective must be a named list")
+      }
+
+      required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+      missing <- setdiff(required_fields, names(objective))
+      if (length(missing) > 0) {
+        stop(paste("Objective missing required fields:", paste(missing, collapse = ", ")))
+      }
+
+      if (type == "primary") {
+        self$primary_objectives <- c(self$primary_objectives, list(objective))
+      } else {
+        self$secondary_objectives <- c(self$secondary_objectives, list(objective))
+      }
+
+      self$metadata$modified_date <- Sys.time()
+      private$check_issues()
+      invisible(self)
+    },
+
+    #' @description Remove an objective from the protocol by its short_objective label
+    #'
+    #' @param short_objective Character. The \code{short_objective} value of the
+    #'   objective to remove.
+    #' @param type Character. Either \code{"primary"} (default) or
+    #'   \code{"secondary"}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    remove_objective = function(short_objective, type = "primary") {
+      if (!type %in% c("primary", "secondary")) {
+        stop("type must be 'primary' or 'secondary'")
+      }
+
+      if (type == "primary") {
+        before <- length(self$primary_objectives)
+        self$primary_objectives <- Filter(
+          function(x) !identical(x$short_objective, short_objective),
+          self$primary_objectives
+        )
+        if (length(self$primary_objectives) == before) {
+          warning(paste0("No primary objective with short_objective '", short_objective, "' was found."))
+        }
+      } else {
+        before <- length(self$secondary_objectives)
+        self$secondary_objectives <- Filter(
+          function(x) !identical(x$short_objective, short_objective),
+          self$secondary_objectives
+        )
+        if (length(self$secondary_objectives) == before) {
+          warning(paste0("No secondary objective with short_objective '", short_objective, "' was found."))
+        }
+      }
+
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
       invisible(self)
@@ -309,6 +387,7 @@ Protocol <- R6::R6Class(
         avg_travel_time          = as.numeric(avg_travel_time),
         start_time               = as.character(start_time),
         end_time                 = as.character(end_time),
+        Final_HH_Sample_Size     = NA_real_,
         stringsAsFactors = FALSE
       )
 
@@ -327,120 +406,161 @@ Protocol <- R6::R6Class(
     },
     
     #' @description Set the sampling frame
-    #' @param frame Data frame with required columns: id, stratum, population_size
+    #'
+    #' Validates the frame using existing \pkg{phr} validators and
+    #' \code{validate_sampling_frame()}, then stores it.  If the frame does
+    #' not have an \code{inclusion} column, one is added with all \code{TRUE}
+    #' values.
+    #'
+    #' @param frame Data frame. Must contain at minimum a \code{psu} column
+    #'   (primary sampling unit identifier).  A \code{population_size} column
+    #'   is required for proportional, pps_cluster, and rlc sampling methods.
+    #'   A \code{stratum} column enables stratified sampling.
+    #' @return Invisibly returns \code{self} for method chaining.
     set_sampling_frame = function(frame) {
-      # Validate frame structure
-      required_cols <- c("id", "stratum", "population_size")
-      missing_cols <- setdiff(required_cols, names(frame))
-      if (length(missing_cols) > 0) {
-        stop(paste("Sampling frame missing required columns:", 
-                   paste(missing_cols, collapse = ", ")))
+
+      # 1. Confirm it is a data frame and not empty
+      if (!phr_validate_dataframe(frame, soft = TRUE)) {
+        stop("Sampling frame must be a non-NULL data frame with atomic columns.")
       }
-      
-      # Check for duplicates
-      if (any(duplicated(frame$id))) {
-        stop("Duplicate IDs found in sampling frame")
+      if (nrow(frame) == 0) {
+        stop("Sampling frame is empty.")
       }
-      
-      # Check for missing values
-      for (col in required_cols) {
-        if (any(is.na(frame[[col]]))) {
-          stop(paste("Missing values found in column:", col))
+
+      # 2. Run validate_sampling_frame — stops on hard issues
+      val_result <- validate_sampling_frame(frame)
+      if (!val_result$valid) {
+        hard_issues <- val_result$issues[setdiff(names(val_result$issues), "missing_inclusion")]
+        if (length(hard_issues) > 0) {
+          stop(paste("Sampling frame validation failed:",
+                     paste(names(hard_issues), unlist(hard_issues), sep = ": ", collapse = "; ")))
         }
       }
-      
+
+      # 3. Add inclusion column (all TRUE) if absent
+      if (!"inclusion" %in% names(frame)) {
+        frame$inclusion <- TRUE
+      }
+
       self$sampling_frame <- frame
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
       invisible(self)
     },
-    
-    #' @description Draw sample from sampling frame
-    #' @param method Character. Sampling method: "srs", "proportional", "pps_cluster", "rlc", "systematic"
-    #' @param seed Integer. Random seed for reproducibility
-    #' @param cluster_size Numeric. Cluster size for PPS or RLC methods
-    draw_sample = function(method = "srs", seed = NULL, cluster_size = NULL) {
+
+    #' @description Draw sample from the sampling frame
+    #'
+    #' Applies one of five PSU-level sampling methods to the eligible PSUs in
+    #' the sampling frame (those with \code{inclusion == TRUE}).  Results are
+    #' stored in \code{drawn_sample_full} (the full frame annotated with
+    #' \code{sampled_psu} and \code{allocated_sample} columns) and
+    #' \code{drawn_sample} (only the selected rows).
+    #'
+    #' @param method Character. One of \code{"srs"}, \code{"proportional"},
+    #'   \code{"pps_cluster"}, \code{"rlc"}, \code{"systematic"}.
+    #'   Default \code{"srs"}.
+    #' @param sample_size Integer. Total household sample size to allocate
+    #'   across selected PSUs.  Required.
+    #' @param n_psu Integer. Number of PSUs to select.  Required for
+    #'   \code{"srs"} method.
+    #' @param n_clusters Integer. Number of clusters to allocate.  Required
+    #'   for \code{"pps_cluster"} method.
+    #' @param n_sites Integer. Number of sites to select.  Required for
+    #'   \code{"systematic"} method.
+    #' @param cluster_size Integer. Households per cluster.  Required for
+    #'   \code{"pps_cluster"}; defaults to \code{3} for \code{"rlc"}.
+    #' @param seed Integer. Random seed for reproducibility (default \code{42}).
+    #' @param stratified Logical. If \code{TRUE}, apply sampling independently
+    #'   within each stratum of the sampling frame.  When \code{TRUE}, per-
+    #'   stratum sample sizes are taken from \code{sample_table$Final_HH_Sample_Size}
+    #'   if available; otherwise \code{sample_size} is divided proportionally
+    #'   across strata.  Default \code{FALSE}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    draw_sample = function(method = "srs",
+                           sample_size,
+                           n_psu = NULL,
+                           n_clusters = NULL,
+                           n_sites = NULL,
+                           cluster_size = NULL,
+                           seed = 42,
+                           stratified = FALSE) {
       if (is.null(self$sampling_frame)) {
-        stop("Must set sampling frame before drawing sample")
+        stop("Must set sampling frame before drawing sample.")
       }
-      
-      if (is.null(seed)) {
-        seed <- as.integer(Sys.time())
+      if (missing(sample_size)) {
+        stop("sample_size (total households) is a required argument.")
       }
-      set.seed(seed)
-      
-      # Draw sample by stratum
-      drawn_samples <- list()
-      
-      for (i in seq_len(nrow(self$sample_table))) {
-        stratum_row <- self$sample_table[i, ]
-        stratum_id <- stratum_row$stratum_id
-        n_needed <- stratum_row$pop_result_dummy
-        
-        # Get frame units for this stratum
-        stratum_frame <- self$sampling_frame[self$sampling_frame$stratum == stratum_id, ]
-        
-        if (nrow(stratum_frame) < n_needed) {
-          warning(paste("Not enough units in frame for stratum", stratum_id,
-                       ". Needed:", n_needed, "Available:", nrow(stratum_frame)))
-          n_needed <- nrow(stratum_frame)
-        }
-        
-        # Draw sample based on method
-        if (method == "srs") {
-          # Simple random sampling
-          sample_idx <- sample(seq_len(nrow(stratum_frame)), n_needed, replace = FALSE)
-          stratum_sample <- stratum_frame[sample_idx, ]
-          
-        } else if (method == "proportional") {
-          # Proportional allocation
-          sample_idx <- sample(seq_len(nrow(stratum_frame)), n_needed, replace = FALSE)
-          stratum_sample <- stratum_frame[sample_idx, ]
-          
-        } else if (method == "pps_cluster") {
-          # PPS with provided cluster size
-          if (is.null(cluster_size)) {
-            stop("cluster_size must be provided for pps_cluster method")
+
+      frame <- self$sampling_frame
+
+      # Eligible PSUs
+      if ("inclusion" %in% names(frame)) {
+        eligible_rows <- which(!is.na(frame$inclusion) & frame$inclusion)
+      } else {
+        eligible_rows <- seq_len(nrow(frame))
+      }
+      eligible_frame <- frame[eligible_rows, , drop = FALSE]
+
+      # Initialise output columns on full frame
+      frame$sampled_psu      <- NA_integer_
+      frame$allocated_sample <- NA_real_
+
+      if (stratified && "stratum" %in% names(eligible_frame)) {
+        strata <- unique(eligible_frame$stratum)
+        cluster_offset <- 0L
+
+        for (st in strata) {
+          st_eligible_rows <- which(eligible_frame$stratum == st)
+          st_frame <- eligible_frame[st_eligible_rows, , drop = FALSE]
+
+          # Determine per-stratum sample size
+          st_sample_size <- private$stratum_sample_size(st, sample_size,
+                                                         nrow(st_frame),
+                                                         nrow(eligible_frame))
+
+          st_result <- private$apply_sampling_method(
+            frame       = st_frame,
+            method      = method,
+            sample_size = st_sample_size,
+            n_psu       = n_psu,
+            n_clusters  = n_clusters,
+            n_sites     = n_sites,
+            cluster_size = cluster_size,
+            seed        = seed
+          )
+
+          # Make cluster numbers globally unique across strata
+          sel_mask <- !is.na(st_result$sampled_psu)
+          if (any(sel_mask)) {
+            st_result$sampled_psu[sel_mask] <-
+              st_result$sampled_psu[sel_mask] + cluster_offset
+            cluster_offset <- cluster_offset +
+              max(st_result$sampled_psu[sel_mask], na.rm = TRUE)
           }
-          n_clusters <- ceiling(n_needed / cluster_size)
-          probs <- stratum_frame$population_size / sum(stratum_frame$population_size)
-          sample_idx <- sample(seq_len(nrow(stratum_frame)), n_clusters, 
-                              replace = FALSE, prob = probs)
-          stratum_sample <- stratum_frame[sample_idx, ]
-          stratum_sample$cluster_size <- cluster_size
-          
-        } else if (method == "rlc") {
-          # Random Location Cluster with size 3 using PPS
-          n_clusters <- ceiling(n_needed / 3)
-          probs <- stratum_frame$population_size / sum(stratum_frame$population_size)
-          sample_idx <- sample(seq_len(nrow(stratum_frame)), n_clusters, 
-                              replace = FALSE, prob = probs)
-          stratum_sample <- stratum_frame[sample_idx, ]
-          stratum_sample$cluster_size <- 3
-          
-        } else if (method == "systematic") {
-          # Systematic sampling
-          interval <- floor(nrow(stratum_frame) / n_needed)
-          start <- sample(seq_len(interval), 1)
-          sample_idx <- seq(start, nrow(stratum_frame), by = interval)[1:n_needed]
-          stratum_sample <- stratum_frame[sample_idx, ]
-          
-        } else {
-          stop(paste("Unknown sampling method:", method))
+
+          # Map results back to the full frame
+          full_frame_rows <- eligible_rows[st_eligible_rows]
+          frame$sampled_psu[full_frame_rows]      <- st_result$sampled_psu
+          frame$allocated_sample[full_frame_rows] <- st_result$allocated_sample
         }
-        
-        drawn_samples[[stratum_id]] <- stratum_sample
+      } else {
+        result <- private$apply_sampling_method(
+          frame        = eligible_frame,
+          method       = method,
+          sample_size  = sample_size,
+          n_psu        = n_psu,
+          n_clusters   = n_clusters,
+          n_sites      = n_sites,
+          cluster_size = cluster_size,
+          seed         = seed
+        )
+        frame$sampled_psu[eligible_rows]      <- result$sampled_psu
+        frame$allocated_sample[eligible_rows] <- result$allocated_sample
       }
-      
-      # Store drawn sample with metadata
-      self$drawn_sample <- list(
-        samples = drawn_samples,
-        method = method,
-        seed = seed,
-        date_drawn = Sys.time(),
-        cluster_size = cluster_size
-      )
-      
+
+      self$drawn_sample_full <- frame
+      self$drawn_sample      <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
+
       self$metadata$modified_date <- Sys.time()
       private$check_issues()
       invisible(self)
@@ -568,6 +688,7 @@ Protocol <- R6::R6Class(
         sample_table = self$sample_table,
         sampling_frame = self$sampling_frame,
         drawn_sample = self$drawn_sample,
+        drawn_sample_full = self$drawn_sample_full,
         tools = self$tools,
         selected_indicators = self$selected_indicators,
         issues = self$issues,
@@ -641,6 +762,49 @@ Protocol <- R6::R6Class(
       }
       
       invisible(self)
+    },
+
+    # Apply a PSU-level sampling method — dispatches to sample_psu_* utilities
+    apply_sampling_method = function(frame, method, sample_size, n_psu, n_clusters,
+                                     n_sites, cluster_size, seed) {
+      valid_methods <- c("srs", "proportional", "pps_cluster", "rlc", "systematic")
+      if (!method %in% valid_methods) {
+        stop(paste("Unknown sampling method:", method,
+                   "— must be one of:", paste(valid_methods, collapse = ", ")))
+      }
+
+      if (method == "srs") {
+        if (is.null(n_psu)) stop("n_psu is required for the 'srs' method.")
+        sample_psu_srs(frame, n_psu, sample_size, seed)
+      } else if (method == "proportional") {
+        sample_psu_proportional(frame, sample_size, seed)
+      } else if (method == "pps_cluster") {
+        if (is.null(n_clusters))  stop("n_clusters is required for the 'pps_cluster' method.")
+        if (is.null(cluster_size)) stop("cluster_size is required for the 'pps_cluster' method.")
+        sample_psu_pps_cluster(frame, n_clusters, cluster_size, seed)
+      } else if (method == "rlc") {
+        cs <- if (!is.null(cluster_size)) cluster_size else 3L
+        sample_psu_rlc(frame, sample_size, cs, seed)
+      } else {  # systematic
+        if (is.null(n_sites)) stop("n_sites is required for the 'systematic' method.")
+        sample_psu_systematic(frame, n_sites, sample_size, seed)
+      }
+    },
+
+    # Determine the sample size for one stratum when stratified = TRUE.
+    # Looks up Final_HH_Sample_Size from sample_table first; falls back to
+    # proportional division of the total sample_size.
+    stratum_sample_size = function(stratum_id, total_sample_size,
+                                   stratum_n_eligible, total_n_eligible) {
+      if (!is.null(self$sample_table) &&
+          "Final_HH_Sample_Size" %in% names(self$sample_table)) {
+        st_row <- self$sample_table[self$sample_table$stratum_id == stratum_id, ]
+        if (nrow(st_row) > 0 && !is.na(st_row$Final_HH_Sample_Size[1])) {
+          return(as.integer(st_row$Final_HH_Sample_Size[1]))
+        }
+      }
+      # Proportional fallback
+      round(total_sample_size * stratum_n_eligible / max(total_n_eligible, 1L))
     }
   )
 )

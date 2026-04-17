@@ -8,7 +8,8 @@
   "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
   "pop_indicator", "pop_result_dummy",
   "ind_result_dummy",
-  "mort_result_dummy"
+  "mort_result_dummy",
+  "Final_HH_Sample_Size"
 )
 
 #' Create a new protocol instance
@@ -87,6 +88,127 @@ validate_strata_table <- function(sample_table) {
   }
 
   list(valid = TRUE, message = "sample_table structure is valid.")
+}
+
+#' Recalculate sample sizes for all rows of a strata table
+#'
+#' Goes row by row through a master strata table and recalculates the
+#' \code{pop_result_dummy}, \code{ind_result_dummy}, and
+#' \code{mort_result_dummy} columns from the stored parameters wherever
+#' sufficient information is available.  After recalculation,
+#' \code{Final_HH_Sample_Size} is set to the maximum household sample size
+#' across the three calculation types for each row.
+#'
+#' @param sample_table A data frame conforming to the master strata table
+#'   schema (validated with \code{validate_strata_table}).
+#' @return The updated \code{sample_table} with recalculated sample size
+#'   columns.
+#' @export
+calculate_sample_size_strata_table <- function(sample_table) {
+
+  val_result <- validate_strata_table(sample_table)
+  if (!val_result$valid) {
+    stop(val_result$message)
+  }
+
+  for (i in seq_len(nrow(sample_table))) {
+    row <- sample_table[i, ]
+
+    # ---- General (population-level) sample size -------------------------
+    if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
+      design_effect <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) row$pop_design_effect else 1.5
+      design_type   <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) "cluster" else "simple_random"
+      nonresponse   <- if (!is.na(row$pop_nonresponse)) row$pop_nonresponse else 5
+      fpc           <- if (!is.na(row$pop_fpc)) as.logical(row$pop_fpc) else FALSE
+      total_pop     <- if (!is.na(row$Total_Population) && row$Total_Population > 0) row$Total_Population else NULL
+
+      pop_ss <- tryCatch(
+        calculate_sample_size_general(
+          expected_proportion = row$pop_expected_prevalence,
+          desired_precision   = row$pop_precision,
+          non_response_rate   = nonresponse,
+          design              = design_type,
+          design_effect       = design_effect,
+          fpc                 = fpc,
+          total_population    = total_pop
+        ),
+        error = function(e) NA_real_
+      )
+      sample_table$pop_result_dummy[i] <- pop_ss
+    }
+
+    # ---- Individual-level sample size -----------------------------------
+    if (!is.na(row$ind_expected_prevalence) && !is.na(row$ind_precision) &&
+        !is.na(row$ind_avg_hh_size) && row$ind_avg_hh_size > 0) {
+      design_effect <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) row$ind_design_effect else 1.5
+      design_type   <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) "cluster" else "simple_random"
+      nonresponse   <- if (!is.na(row$ind_nonresponse)) row$ind_nonresponse else 5
+      fpc           <- if (!is.na(row$ind_fpc)) as.logical(row$ind_fpc) else FALSE
+      total_pop     <- if (!is.na(row$Total_Population) && row$Total_Population > 0) row$Total_Population else NULL
+      subpop        <- if (!is.na(row$ind_subpop_prop)) row$ind_subpop_prop else 100
+
+      ind_res <- tryCatch(
+        calculate_sample_size_individual(
+          expected_proportion    = row$ind_expected_prevalence,
+          desired_precision      = row$ind_precision,
+          non_response_rate      = nonresponse,
+          design                 = design_type,
+          design_effect          = design_effect,
+          fpc                    = fpc,
+          total_population       = total_pop,
+          average_household_size = row$ind_avg_hh_size,
+          sub_population_percent = subpop
+        ),
+        error = function(e) NULL
+      )
+      if (!is.null(ind_res)) {
+        sample_table$ind_result_dummy[i] <- ind_res$sample_size_households
+      }
+    }
+
+    # ---- Mortality-rate sample size -------------------------------------
+    if (!is.na(row$mort_expected_death_rate) && !is.na(row$mort_precision) &&
+        !is.na(row$mort_avg_hh_size) && row$mort_avg_hh_size > 0) {
+      design_effect <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) row$mort_design_effect else 1.5
+      design_type   <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) "cluster" else "simple_random"
+      nonresponse   <- if (!is.na(row$mort_nonresponse)) row$mort_nonresponse else 5
+      fpc           <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE
+      total_pop     <- if (!is.na(row$Total_Population) && row$Total_Population > 0) row$Total_Population else NULL
+      recall_days   <- if (!is.na(row$mort_recall_days) && row$mort_recall_days > 0) row$mort_recall_days else 90
+
+      mort_res <- tryCatch(
+        calculate_sample_size_mortality(
+          expected_death_rate    = row$mort_expected_death_rate,
+          desired_precision      = row$mort_precision,
+          non_response_rate      = nonresponse,
+          design                 = design_type,
+          design_effect          = design_effect,
+          recall_days            = recall_days,
+          average_household_size = row$mort_avg_hh_size,
+          fpc                    = fpc,
+          total_population       = total_pop
+        ),
+        error = function(e) NULL
+      )
+      if (!is.null(mort_res)) {
+        sample_table$mort_result_dummy[i] <- mort_res$sample_size_households
+      }
+    }
+
+    # ---- Final household sample size: max across all three types --------
+    hh_sizes <- c(
+      pop_hh  = if (!is.na(sample_table$pop_result_dummy[i]))  sample_table$pop_result_dummy[i]  else NA_real_,
+      ind_hh  = if (!is.na(sample_table$ind_result_dummy[i]))  sample_table$ind_result_dummy[i]  else NA_real_,
+      mort_hh = if (!is.na(sample_table$mort_result_dummy[i])) sample_table$mort_result_dummy[i] else NA_real_
+    )
+
+    valid_hh <- hh_sizes[!is.na(hh_sizes)]
+    if (length(valid_hh) > 0 && "Final_HH_Sample_Size" %in% names(sample_table)) {
+      sample_table$Final_HH_Sample_Size[i] <- max(valid_hh)
+    }
+  }
+
+  return(sample_table)
 }
 
 #' Save protocol to RDS file
