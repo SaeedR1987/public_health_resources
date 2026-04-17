@@ -376,7 +376,7 @@ print_protocol_summary <- function(protocol) {
       origin = origin
     )
     phr_message(
-      phr_txt("Objectives: {summary$num_objectives} | Strata: {summary$num_strata %||% 'N/A'} | Tools: {summary$num_tools}"),
+      phr_txt("Objectives: {summary$num_objectives} | Strata: {if (is.null(summary$num_strata)) 'N/A' else summary$num_strata} | Tools: {summary$num_tools}"),
       origin = origin
     )
 
