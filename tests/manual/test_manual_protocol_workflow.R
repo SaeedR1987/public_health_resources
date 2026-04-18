@@ -775,7 +775,7 @@ cat("SurveyProtocol report (wrapper) written to:", report_survey_path2, "\n")
 sp_no_draw <- create_survey_protocol(
   assessment_title = "Draft Survey – No Sample",
   country_name     = country_name,
-  month_year       = month_year
+  month_year       = "April 2026"
 )
 sp_no_draw$add_stratum(
   stratum_id      = "pilot",
