@@ -560,14 +560,15 @@ SurveyProtocol <- R6::R6Class(
 
     #' @description Generate a Word document report including sampling information
     #'
-    #' Extends \code{Protocol$generate_report()} by appending a Sampling Design
-    #' section that summarises strata definitions, household sample sizes, and
-    #' (when \code{draw_sample()} has been called) a table of selected PSUs.
+    #' Extends \code{Protocol$generate_report()} by inserting a
+    #' \strong{Sampling Design} sub-section within the Protocol Data section,
+    #' summarising strata definitions, household sample sizes, and (when
+    #' \code{draw_sample()} has been called) a table of selected PSUs.
     #'
     #' @param output_file Character. Output \code{.docx} file path.
     #'   Defaults to \code{"protocol_report.docx"}.
-    #' @param reference_docx Character or \code{NULL}. Path to a Word style
-    #'   reference document.  Uses the package-bundled template by default.
+    #' @param reference_docx Character or \code{NULL}. Path to a custom
+    #'   \code{.docx} template.  Uses the bundled REACH TOR template by default.
     #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
     generate_report = function(output_file = "protocol_report.docx",
@@ -592,16 +593,18 @@ SurveyProtocol <- R6::R6Class(
   ),
 
   private = list(
-    # Add the sampling design section to the Word document.
+    # Add the sampling design section after the current cursor position.
     add_sampling_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 1")
+      doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 2", pos = "after")
 
       if (is.null(self$sample_table) || nrow(self$sample_table) == 0) {
-        return(officer::body_add_par(doc, "No strata have been defined.", style = "Normal"))
+        return(officer::body_add_par(
+          doc, "No strata have been defined.", style = "Normal", pos = "after"
+        ))
       }
 
       # --- Strata and sample sizes table ---
-      doc <- officer::body_add_par(doc, "Strata and Sample Sizes", style = "heading 2")
+      doc <- officer::body_add_par(doc, "Strata and Sample Sizes", style = "heading 3", pos = "after")
 
       display_cols <- c("stratum_id", "Population_Name", "Total_Population",
                         "Sampling_Method", "Final_HH_Sample_Size")
@@ -615,16 +618,17 @@ SurveyProtocol <- R6::R6Class(
         ft <- flextable::flextable(strata_df)
         ft <- flextable::theme_zebra(ft)
         ft <- flextable::autofit(ft)
-        doc <- flextable::body_add_flextable(doc, ft)
+        doc <- flextable::body_add_flextable(doc, ft, pos = "after")
       }
 
       # --- Selected PSUs (only when draw_sample() has been called) ---
       if (!is.null(self$drawn_sample) && nrow(self$drawn_sample) > 0) {
-        doc <- officer::body_add_par(doc, "Selected PSUs", style = "heading 2")
+        doc <- officer::body_add_par(doc, "Selected PSUs", style = "heading 3", pos = "after")
         doc <- officer::body_add_par(
           doc,
           paste0("Total PSUs selected: ", nrow(self$drawn_sample)),
-          style = "Normal"
+          style = "Normal",
+          pos   = "after"
         )
 
         psu_cols <- intersect(
@@ -636,7 +640,7 @@ SurveyProtocol <- R6::R6Class(
           ft <- flextable::flextable(psu_df)
           ft <- flextable::theme_zebra(ft)
           ft <- flextable::autofit(ft)
-          doc <- flextable::body_add_flextable(doc, ft)
+          doc <- flextable::body_add_flextable(doc, ft, pos = "after")
         }
       }
 

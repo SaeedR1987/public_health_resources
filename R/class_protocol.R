@@ -288,21 +288,25 @@ Protocol <- R6::R6Class(
       )
     },
 
-    #' @description Generate a Word document report summarising protocol details
+    #' @description Generate a Word document report based on the REACH TOR template
     #'
-    #' Creates a \code{.docx} file with sections covering protocol metadata,
-    #' research objectives, and data collection tools (skipped when none have
-    #' been added).  A package-bundled reference Word template
-    #' (\code{inst/resources/protocol_report_template.docx}) is used for
-    #' consistent styling when available; otherwise a plain Word document with
-    #' default styles is produced.
+    #' Creates a \code{.docx} file based on the bundled REACH Terms of Reference
+    #' template (\code{inst/resources/reach_tor_template.docx}).  The document
+    #' inherits the template's formatting, branding, section structure (Executive
+    #' Summary, Rationale, Methodology, DAP, etc.) and key placeholder strings are
+    #' replaced with protocol metadata.  A new \strong{Protocol Data} section is
+    #' inserted directly after the Executive Summary table and contains:
+    #' \itemize{
+    #'   \item Research Objectives table
+    #'   \item Data Collection Tools (one sub-section per tool with indicator list)
+    #' }
     #'
     #' @param output_file Character. Output file path including the \code{.docx}
     #'   extension.  Defaults to \code{"protocol_report.docx"} in the current
     #'   working directory.
-    #' @param reference_docx Character or \code{NULL}.  Path to a \code{.docx}
-    #'   file used as a style reference.  When \code{NULL} (default) the
-    #'   package-bundled template is used if present, otherwise a blank document.
+    #' @param reference_docx Character or \code{NULL}.  Path to a custom
+    #'   \code{.docx} template.  When \code{NULL} (default) the package-bundled
+    #'   REACH TOR template is used.
     #' @param open Logical.  Whether to open the generated file after writing.
     #'   Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
@@ -368,13 +372,18 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
-    # Create an officer doc using the bundled template when available, or a blank doc.
+    # Create an officer doc using the REACH TOR template when available, or blank.
     create_base_doc = function(reference_docx = NULL) {
       # Caller-supplied path takes highest priority
       if (!is.null(reference_docx) && file.exists(reference_docx)) {
         return(officer::read_docx(reference_docx))
       }
-      # Fall back to the package-bundled template
+      # Try the REACH TOR-based template first
+      reach_path <- system.file("resources", "reach_tor_template.docx", package = "phr")
+      if (nzchar(reach_path)) {
+        return(officer::read_docx(reach_path))
+      }
+      # Fall back to the older protocol report template
       sys_path <- system.file("resources", "protocol_report_template.docx", package = "phr")
       if (nzchar(sys_path)) {
         return(officer::read_docx(sys_path))
@@ -383,31 +392,134 @@ Protocol <- R6::R6Class(
       officer::read_docx()
     },
 
-    # Add the title / metadata section to the Word document.
+    # Replace REACH TOR template placeholders with actual metadata, then
+    # insert a "Protocol Data" section heading before the "Rationale" heading
+    # so that all protocol-specific content sits directly after the Executive
+    # Summary table in the finished document.
     add_metadata_section = function(doc) {
-      title <- self$metadata$assessment_title %||% "Technical Protocol Document"
-      doc <- officer::body_add_par(doc, title, style = "heading 1")
+      title   <- self$metadata$assessment_title %||% "Protocol Report"
+      country <- self$metadata$country_name     %||% ""
+      period  <- self$metadata$month_year       %||% ""
+      version <- self$metadata$protocol_version %||% "1.0"
+      date_str <- format(Sys.Date(), "%d/%m/%Y")
 
-      meta_lines <- c(
-        if (!is.null(self$metadata$country_name) && nzchar(self$metadata$country_name %||% ""))
-          paste0("Country: ", self$metadata$country_name),
-        if (!is.null(self$metadata$month_year) && nzchar(self$metadata$month_year %||% ""))
-          paste0("Period: ", self$metadata$month_year),
-        paste0("Generated: ", format(Sys.time(), "%d %B %Y"))
-      )
-      for (line in meta_lines) {
-        doc <- officer::body_add_par(doc, line, style = "Normal")
+      # Build objective summary text for the General Objective / Specific
+      # Objectives / Research Questions cells in the Executive Summary table.
+      all_objectives <- flatten_objectives(self$objectives)
+
+      gen_obj_text <- if (length(all_objectives) > 0) {
+        all_objectives[[1]]$text_objective %||% title
+      } else {
+        title
       }
-      officer::body_add_par(doc, "", style = "Normal")
+
+      spec_obj_text <- if (length(all_objectives) > 0) {
+        paste(vapply(seq_along(all_objectives), function(i) {
+          obj <- all_objectives[[i]]
+          paste0(i, ". ", obj$text_objective %||% "")
+        }, character(1)), collapse = "; ")
+      } else {
+        ""
+      }
+
+      rq_text <- if (length(all_objectives) > 0) {
+        paste(vapply(seq_along(all_objectives), function(i) {
+          obj <- all_objectives[[i]]
+          paste0(i, ". ", obj$short_objective %||% "")
+        }, character(1)), collapse = "; ")
+      } else {
+        ""
+      }
+
+      # Placeholder → replacement pairs (REACH TOR template placeholders).
+      # Single-run placeholders (reliable cross-run replacements marked below).
+      replace_pairs <- list(
+        c("[Research Cycle title]", title),
+        c("[Country]",              country),
+        c("[Release date]",         date_str),
+        c("[Version number]",       paste0("v", version))
+      )
+      if (nzchar(country)) {
+        replace_pairs <- c(replace_pairs, list(
+          c("[Specify name(s) here]", country),
+          c("[Describe here the geographic area that the research aims to provide findings about]",
+            country)
+        ))
+      }
+      if (nzchar(gen_obj_text)) {
+        replace_pairs <- c(replace_pairs, list(
+          c(paste0("[Describe here what this research aims to inform \u2013",
+                   " for specific guidance on this, see Step 1.2 of the",
+                   " IMPACT Research Design Guidelines]"),
+            gen_obj_text)
+        ))
+      }
+      if (nzchar(spec_obj_text)) {
+        replace_pairs <- c(replace_pairs, list(
+          c(paste0("[List here what the research aims to identify to facilitate",
+                   " the general objective \u2013 for specific guidance on this,",
+                   " see Step 1.2 of the IMPACT Research Design Guidelines]"),
+            spec_obj_text)
+        ))
+      }
+      if (nzchar(rq_text)) {
+        replace_pairs <- c(replace_pairs, list(
+          c(paste0("[List here the research questions that will need to be answered",
+                   " to meet the objectives\u2013 for specific guidance on this,",
+                   " see Step 2.1 of the IMPACT Research Design Guidelines]"),
+            rq_text)
+        ))
+      }
+
+      for (rp in replace_pairs) {
+        tryCatch(
+          doc <- officer::body_replace_all_text(doc,
+                                                old_value = rp[1],
+                                                new_value = rp[2],
+                                                fixed     = TRUE),
+          error = function(e) NULL
+        )
+      }
+
+      # Navigate to "Rationale" heading (REACH TOR section) and insert the
+      # "Protocol Data" section heading immediately before it, so our
+      # structured content sits right after the Executive Summary table.
+      meta_line <- paste(
+        Filter(nzchar, c(
+          if (nzchar(country)) paste0("Country: ", country),
+          if (nzchar(period))  paste0("Period: ",  period),
+          paste0("Generated: ", format(Sys.Date(), "%d %B %Y")),
+          paste0("Version: ", version)
+        )),
+        collapse = "  |  "
+      )
+
+      doc <- tryCatch({
+        doc <- officer::cursor_begin(doc)
+        doc <- officer::cursor_reach(doc, keyword = "Rationale")
+        doc <- officer::body_add_par(doc, "Protocol Data", style = "heading 1", pos = "before")
+        doc <- officer::body_add_par(doc, meta_line, style = "Normal", pos = "after")
+        doc
+      }, error = function(e) {
+        # Fallback when "Rationale" section is absent (e.g. custom template).
+        doc <- officer::cursor_end(doc)
+        doc <- officer::body_add_par(doc, "Protocol Data", style = "heading 1")
+        doc <- officer::body_add_par(doc, meta_line, style = "Normal")
+        doc
+      })
+
+      doc
     },
 
-    # Add the research objectives section to the Word document.
+    # Add the research objectives section after the current cursor position.
     add_objectives_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Research Objectives", style = "heading 1")
+      doc <- officer::body_add_par(doc, "Research Objectives", style = "heading 2", pos = "after")
 
       all_objectives <- flatten_objectives(self$objectives)
       if (length(all_objectives) == 0) {
-        return(officer::body_add_par(doc, "No objectives have been defined.", style = "Normal"))
+        return(officer::body_add_par(
+          doc, "No objectives have been defined.", style = "Normal", pos = "after"
+        ))
       }
 
       obj_df <- do.call(rbind, lapply(all_objectives, function(x) {
@@ -426,17 +538,17 @@ Protocol <- R6::R6Class(
       ft <- flextable::flextable(obj_df)
       ft <- flextable::theme_zebra(ft)
       ft <- flextable::autofit(ft)
-      flextable::body_add_flextable(doc, ft)
+      flextable::body_add_flextable(doc, ft, pos = "after")
     },
 
-    # Add the data collection tools section to the Word document.
+    # Add the data collection tools section after the current cursor position.
     # Skipped (with a placeholder note) when self$tools is empty.
     add_tools_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Data Collection Tools", style = "heading 1")
+      doc <- officer::body_add_par(doc, "Data Collection Tools", style = "heading 2", pos = "after")
 
       if (length(self$tools) == 0) {
         return(officer::body_add_par(
-          doc, "No data collection tools have been defined.", style = "Normal"
+          doc, "No data collection tools have been defined.", style = "Normal", pos = "after"
         ))
       }
 
@@ -469,17 +581,18 @@ Protocol <- R6::R6Class(
         doc <- officer::body_add_par(
           doc,
           paste0(i, ". ", tool_name, " (", tool_type, ")"),
-          style = "heading 2"
+          style = "heading 3",
+          pos   = "after"
         )
 
         if (length(indicators) > 0) {
           ind_df <- data.frame(Indicator = as.character(indicators), stringsAsFactors = FALSE)
           ft <- flextable::flextable(ind_df)
           ft <- flextable::autofit(ft)
-          doc <- flextable::body_add_flextable(doc, ft)
+          doc <- flextable::body_add_flextable(doc, ft, pos = "after")
         } else {
           doc <- officer::body_add_par(
-            doc, "No indicators defined for this tool.", style = "Normal"
+            doc, "No indicators defined for this tool.", style = "Normal", pos = "after"
           )
         }
       }
