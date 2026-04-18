@@ -2,23 +2,26 @@
 
 #' Manual Test Script for Protocol and Tool Workflow
 #'
-#' This script demonstrates the complete workflow for the Protocol class and
+#' This script demonstrates the complete workflow for the Protocol class
+#' hierarchy (Protocol base class and SurveyProtocol subclass) together with
 #' the Tool class hierarchy (Tool, HouseholdTool, KeyInformantTool, ObservationTool).
 #'
 #' Steps covered:
-#'  1. Create dummy objectives and attach to a Protocol using the nested structure
-#'  2. Define strata and sample sizes using dummy population data
-#'  3. Build a dummy sampling frame and validate it
-#'  4. Calculate sample sizes with different methods
-#'  5. Draw samples from the sampling frame
-#'  6. Instantiate and inspect Tool subclasses (Household, KII, Observation)
-#'  7. Modify tools: filter by modules, update choice lists, change language
-#'  8. Validate tools
-#'  9. Attach tools to the Protocol
-#' 10. Export and inspect the completed Protocol
+#'  1.  Create a base Protocol object (no sampling)
+#'  2.  Define objectives and manage them on the base Protocol
+#'  3.  Generate a Word report from the base Protocol (no tools yet, then with tools)
+#'  4.  Create a SurveyProtocol object (with sampling support)
+#'  5.  Define strata and sample sizes on the SurveyProtocol
+#'  6.  Build and validate a sampling frame
+#'  7.  Draw samples from the sampling frame
+#'  8.  Instantiate and inspect Tool subclasses (Household, KII, Observation)
+#'  9.  Modify tools: filter by modules, update choice lists, change language
+#' 10.  Attach tools to the SurveyProtocol
+#' 11.  Finalise and inspect the SurveyProtocol (export, save/load)
+#' 12.  Generate a Word report from the SurveyProtocol
 #'
 #' Author: Auto-generated for iphRa protocol / tool manual testing
-#' Date: 2025-01-01
+#' Date: 2025-01-01 (revised 2025-04-18)
 
 rm(list = ls())
 
@@ -38,14 +41,19 @@ month_year       <- "March 2025"
 
 
 # =============================================================================
-# Test 1: Create a Protocol Object ####
+# Test 1: Create a base Protocol Object ####
 # =============================================================================
+# Use create_protocol() factory (or Protocol$new() directly).
+# The base Protocol handles objectives, tools, and report generation only.
+# Use SurveyProtocol for anything sampling-related (Tests 4-7 below).
 
-protocol <- Protocol$new(
+protocol <- create_protocol(
   assessment_title = assessment_title,
   country_name     = country_name,
   month_year       = month_year
 )
+stopifnot(inherits(protocol, "Protocol"))
+stopifnot(!inherits(protocol, "SurveyProtocol"))
 
 # Inspect initial state
 protocol$metadata
@@ -65,7 +73,7 @@ validate_objective_schema(protocol$objective_schema)
 # =============================================================================
 
 # -- 2a: Create objectives using create_objective() --
-# data_source is used to distinguish primary vs secondary (replaces the 'type' param)
+# data_source distinguishes primary vs secondary
 
 obj_fsl_1 <- create_objective(
   sector          = "FSL",
@@ -160,66 +168,116 @@ count_objectives(protocol$objectives)  # should be 5 again
 
 
 # =============================================================================
-# Test 3: Define Strata and Sample Sizes ####
+# Test 3: Generate Word Report from base Protocol ####
+# =============================================================================
+# generate_report() uses officer + flextable (bundled template used when present).
+# The standalone wrapper generate_protocol_report() dispatches to the method.
+
+# -- 3a: Generate report with no tools (tools section shows placeholder text) --
+
+report_no_tools <- tempfile(fileext = ".docx")
+protocol$generate_report(output_file = report_no_tools)
+stopifnot(file.exists(report_no_tools))
+cat("Base protocol report (no tools) written to:", report_no_tools, "\n")
+
+# -- 3b: Add a couple of list-based tools (no XLSForm backing) to the base protocol --
+#         and verify they appear in the report
+
+protocol$add_tools(tool_type = "household",    tool_name = "Main Household Survey")
+protocol$add_tools(tool_type = "key_informant", tool_name = "Community KII")
+
+report_with_tools <- tempfile(fileext = ".docx")
+generate_protocol_report(protocol, output_file = report_with_tools)
+stopifnot(file.exists(report_with_tools))
+cat("Base protocol report (with tools) written to:", report_with_tools, "\n")
+
+# Confirm summary reflects tools
+base_summary <- protocol$get_protocol_summary()
+base_summary$num_tools    # 2
+base_summary$num_strata   # NULL — not a SurveyProtocol
+stopifnot(is.null(base_summary$num_strata))
+
+# Remove the dummy tools so we start fresh on the SurveyProtocol below
+protocol$tools <- list()
+
+
+# =============================================================================
+# Test 4: Create a SurveyProtocol Object ####
+# =============================================================================
+# SurveyProtocol inherits all Protocol capabilities and adds sampling support.
+
+survey_protocol <- create_survey_protocol(
+  assessment_title = assessment_title,
+  country_name     = country_name,
+  month_year       = month_year
+)
+stopifnot(inherits(survey_protocol, "SurveyProtocol"))
+stopifnot(inherits(survey_protocol, "Protocol"))
+
+# Copy the objectives from the base protocol to the survey protocol
+survey_protocol$set_objectives(flatten_objectives(protocol$objectives))
+
+# Add target strata to metadata
+survey_protocol$add_target_stratum("strata_A", "Urban North")
+survey_protocol$add_target_stratum("strata_B", "Peri-Urban East")
+survey_protocol$add_target_stratum("strata_C", "Rural South")
+
+survey_protocol$metadata$target_strata
+
+
+# =============================================================================
+# Test 5: Define Strata and Sample Sizes ####
 # =============================================================================
 
-# -- 3a: Add target strata to protocol metadata --
+# -- 5a: Add strata to the master sample table --
+# ind_indicator and mort_indicator are required columns
 
-protocol$add_target_stratum("strata_A", "Urban North")
-protocol$add_target_stratum("strata_B", "Peri-Urban East")
-protocol$add_target_stratum("strata_C", "Rural South")
-
-protocol$metadata$target_strata
-
-# -- 3b: Add strata to the master sample table with population parameters --
-# ind_indicator and mort_indicator are now required columns
-
-protocol$add_stratum(
-  stratum_id              = "strata_A",
-  stratum_name            = "Urban North",
-  population_size         = 45000,
-  pop_design_effect       = 1.5,
-  pop_precision           = 0.05,
-  ind_indicator           = "wasting_prevalence",
-  mort_indicator          = "crude_death_rate",
-  sampling_method         = "proportional"
+survey_protocol$add_stratum(
+  stratum_id        = "strata_A",
+  stratum_name      = "Urban North",
+  population_size   = 45000,
+  pop_design_effect = 1.5,
+  pop_precision     = 0.05,
+  ind_indicator     = "wasting_prevalence",
+  mort_indicator    = "crude_death_rate",
+  sampling_method   = "proportional"
 )
 
-protocol$add_stratum(
-  stratum_id              = "strata_B",
-  stratum_name            = "Peri-Urban East",
-  population_size         = 28000,
-  pop_design_effect       = 1.8,
-  pop_precision           = 0.05,
-  ind_indicator           = "wasting_prevalence",
-  mort_indicator          = "crude_death_rate",
-  sampling_method         = "proportional"
+survey_protocol$add_stratum(
+  stratum_id        = "strata_B",
+  stratum_name      = "Peri-Urban East",
+  population_size   = 28000,
+  pop_design_effect = 1.8,
+  pop_precision     = 0.05,
+  ind_indicator     = "wasting_prevalence",
+  mort_indicator    = "crude_death_rate",
+  sampling_method   = "proportional"
 )
 
-protocol$add_stratum(
-  stratum_id              = "strata_C",
-  stratum_name            = "Rural South",
-  population_size         = 17000,
-  pop_design_effect       = 2.0,
-  pop_precision           = 0.07,
-  ind_indicator           = "wasting_prevalence",
-  mort_indicator          = "crude_death_rate",
-  sampling_method         = "proportional"
+survey_protocol$add_stratum(
+  stratum_id        = "strata_C",
+  stratum_name      = "Rural South",
+  population_size   = 17000,
+  pop_design_effect = 2.0,
+  pop_precision     = 0.07,
+  ind_indicator     = "wasting_prevalence",
+  mort_indicator    = "crude_death_rate",
+  sampling_method   = "proportional"
 )
 
 # Inspect master sample table before sample sizes are calculated
-protocol$get_sample_table()
-names(protocol$get_sample_table())
+survey_protocol$get_sample_table()
+names(survey_protocol$get_sample_table())
 
-# Validate the master strata table structure (now requires ind_indicator and mort_indicator)
-strata_validation <- protocol$validate_strata_table()
+# Validate the master strata table structure
+strata_validation <- survey_protocol$validate_strata_table()
 strata_validation$valid
 strata_validation$message
 
 # Also validate via standalone function
-validate_strata_table(protocol$sample_table)
+validate_strata_table(survey_protocol$sample_table)
 
-# -- 3c: Calculate sample sizes for each stratum using utility functions --
+# -- 5b: Calculate sample sizes for each stratum --
 
 ss_A <- calculate_sample_size_general(
   expected_proportion = 50,
@@ -257,7 +315,7 @@ ss_C <- calculate_sample_size_general(
 )
 cat("Stratum C – calculated sample size:", ss_C, "\n")
 
-# -- 3d: Also try the individual-level calculation for nutrition screening --
+# -- 5c: Individual-level calculation for nutrition screening --
 
 ss_nut <- calculate_sample_size_individual(
   expected_proportion    = 15,
@@ -266,28 +324,32 @@ ss_nut <- calculate_sample_size_individual(
   design                 = "cluster",
   design_effect          = 1.5,
   average_household_size = 5.2,
-  sub_population_percent = 20,  # children under 5 ~20% of population
+  sub_population_percent = 20,
   confidence_level       = 0.95
 )
 cat("Nutrition screening – individuals needed:", ss_nut$sample_size_individuals, "\n")
 cat("Nutrition screening – households needed: ", ss_nut$sample_size_households,  "\n")
 
-# -- 3e: Write calculated sample sizes back into the sample table --
+# -- 5d: Write calculated sample sizes back into the sample table --
 
-protocol$sample_table$pop_result_dummy[protocol$sample_table$stratum_id == "strata_A"] <- ss_A
-protocol$sample_table$pop_result_dummy[protocol$sample_table$stratum_id == "strata_B"] <- ss_B
-protocol$sample_table$pop_result_dummy[protocol$sample_table$stratum_id == "strata_C"] <- ss_C
+survey_protocol$sample_table$pop_result_dummy[survey_protocol$sample_table$stratum_id == "strata_A"] <- ss_A
+survey_protocol$sample_table$pop_result_dummy[survey_protocol$sample_table$stratum_id == "strata_B"] <- ss_B
+survey_protocol$sample_table$pop_result_dummy[survey_protocol$sample_table$stratum_id == "strata_C"] <- ss_C
 
-# Confirm sample table
-protocol$get_sample_table()
-cat("Total planned sample size:", sum(protocol$sample_table$pop_result_dummy, na.rm = TRUE), "\n")
+survey_protocol$get_sample_table()
+cat("Total planned sample size:", sum(survey_protocol$sample_table$pop_result_dummy, na.rm = TRUE), "\n")
+
+# Summary includes sampling fields for SurveyProtocol
+sp_summary <- survey_protocol$get_protocol_summary()
+stopifnot("num_strata" %in% names(sp_summary))
+stopifnot(sp_summary$num_strata == 3L)
 
 
 # =============================================================================
-# Test 4: Build and Validate a Sampling Frame ####
+# Test 6: Build and Validate a Sampling Frame ####
 # =============================================================================
 
-# -- 4a: Generate a dummy sampling frame (villages / enumeration areas) --
+# -- 6a: Generate a dummy sampling frame (villages / enumeration areas) --
 
 set.seed(42)
 
@@ -310,79 +372,77 @@ cat("Sampling frame: ", nrow(sampling_frame), "villages across",
     length(unique(sampling_frame$stratum)), "strata\n")
 head(sampling_frame)
 
-# -- 4b: Validate the sampling frame using utility function --
+# -- 6b: Validate the sampling frame using utility function --
 
 frame_validation <- validate_sampling_frame(sampling_frame)
 frame_validation$valid
 frame_validation$message
 frame_validation$summary
 
-# -- 4c: Set sampling frame on the Protocol --
+# -- 6c: Set sampling frame on the SurveyProtocol --
 
-protocol$set_sampling_frame(sampling_frame)
+survey_protocol$set_sampling_frame(sampling_frame)
 
 # Check protocol issues after setting frame (strata alignment)
-protocol$get_issues()
+survey_protocol$get_issues()
 
 
 # =============================================================================
-# Test 5: Draw Sample ####
+# Test 7: Draw Sample ####
 # =============================================================================
 
-# The new draw_sample() API reads Sampling_Method, Final_HH_Sample_Size,
-# n_psu, n_clusters, cluster_size, and n_sites directly from the strata table.
+# draw_sample() reads Sampling_Method, Final_HH_Sample_Size, n_psu,
+# n_clusters, cluster_size, and n_sites from the strata table.
 
-# -- 5a: Update sample table with sampling parameters before drawing --
+# -- 7a: Set Final_HH_Sample_Size for each stratum --
 
-# Set Final_HH_Sample_Size for each stratum (used by draw_sample)
-protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_A"] <- ss_A
-protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_B"] <- ss_B
-protocol$sample_table$Final_HH_Sample_Size[protocol$sample_table$stratum_id == "strata_C"] <- ss_C
+survey_protocol$sample_table$Final_HH_Sample_Size[survey_protocol$sample_table$stratum_id == "strata_A"] <- ss_A
+survey_protocol$sample_table$Final_HH_Sample_Size[survey_protocol$sample_table$stratum_id == "strata_B"] <- ss_B
+survey_protocol$sample_table$Final_HH_Sample_Size[survey_protocol$sample_table$stratum_id == "strata_C"] <- ss_C
 
-# -- 5b: Draw using proportional method (reads method from Sampling_Method column) --
-# All three strata already have Sampling_Method = "proportional"
+# -- 7b: Draw using proportional method (reads from Sampling_Method column) --
 
-protocol$draw_sample(seed = 789)
-nrow(protocol$drawn_sample)       # selected PSUs
-nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
-head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
+survey_protocol$draw_sample(seed = 789)
+nrow(survey_protocol$drawn_sample)       # selected PSUs
+nrow(survey_protocol$drawn_sample_full)  # full frame with sampled_psu column
+head(survey_protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
-# -- 5c: Override method to pps_cluster by updating the strata table --
-# Set n_clusters and cluster_size in the table first
+# -- 7c: Override to pps_cluster --
 
-protocol$sample_table$Sampling_Method <- "pps_cluster"
-protocol$sample_table$n_clusters      <- 30
-protocol$sample_table$cluster_size    <- 20
+survey_protocol$sample_table$Sampling_Method <- "pps_cluster"
+survey_protocol$sample_table$n_clusters      <- 30
+survey_protocol$sample_table$cluster_size    <- 20
 
-protocol$draw_sample(seed = 456)
-nrow(protocol$drawn_sample)
-head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
+survey_protocol$draw_sample(seed = 456)
+nrow(survey_protocol$drawn_sample)
+head(survey_protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
-# -- 5d: Purposive sampling — sampled_psu and allocated_sample are all NA --
-# (User manually designates selected PSUs after this step.)
+# -- 7d: Purposive sampling — no PSUs auto-selected --
 
-protocol$sample_table$Sampling_Method <- "purposive"
-protocol$draw_sample(seed = 42)
-nrow(protocol$drawn_sample)       # 0 — no PSUs auto-selected
-sum(is.na(protocol$drawn_sample_full$sampled_psu))  # all NA
+survey_protocol$sample_table$Sampling_Method <- "purposive"
+survey_protocol$draw_sample(seed = 42)
+nrow(survey_protocol$drawn_sample)                              # 0
+sum(is.na(survey_protocol$drawn_sample_full$sampled_psu))       # all NA
 
 # Restore proportional for remaining tests
-protocol$sample_table$Sampling_Method <- "proportional"
+survey_protocol$sample_table$Sampling_Method <- "proportional"
+survey_protocol$draw_sample(seed = 789)
 
-# -- 5e: Pass an explicit frame and strata_table (without touching protocol fields) --
+# -- 7e: Pass an explicit frame and strata_table --
 
 custom_frame  <- sampling_frame[sampling_frame$stratum == "strata_A", ]
 custom_frame$inclusion <- TRUE
-custom_strata <- protocol$sample_table[protocol$sample_table$stratum_id == "strata_A", ]
+custom_strata <- survey_protocol$sample_table[survey_protocol$sample_table$stratum_id == "strata_A", ]
 custom_strata$Sampling_Method <- "srs"
 custom_strata$n_psu            <- 15
 
-protocol$draw_sample(frame = custom_frame, strata_table = custom_strata, seed = 111)
-nrow(protocol$drawn_sample)
+survey_protocol$draw_sample(frame = custom_frame, strata_table = custom_strata, seed = 111)
+nrow(survey_protocol$drawn_sample)
 
-# -- 5f: Use standalone PSU utility functions directly --
-# draw_sample_psu_* functions return the FULL modified frame (sampled_psu / allocated_sample cols);
-# the legacy draw_sample_* helpers (draw_sample_srs, draw_sample_pps, etc.) return only selected rows.
+# Restore full proportional draw for report generation later
+survey_protocol$draw_sample(seed = 789)
+
+# -- 7f: Standalone PSU utility functions --
 
 sample_result_A <- draw_sample_psu_pps_cluster(
   frame        = frame_A,
@@ -391,14 +451,12 @@ sample_result_A <- draw_sample_psu_pps_cluster(
   seed         = 789
 )
 nrow(sample_result_A)
-sum(!is.na(sample_result_A$sampled_psu))  # selected PSUs
+sum(!is.na(sample_result_A$sampled_psu))
 head(sample_result_A[!is.na(sample_result_A$sampled_psu), ])
 
-# Purposive standalone function
 purposive_result <- draw_sample_psu_purposive(frame_A)
-sum(is.na(purposive_result$sampled_psu))  # all NA — user fills manually
+sum(is.na(purposive_result$sampled_psu))  # all NA
 
-# Legacy helper: draw_sample_srs() returns only selected rows (not the full frame)
 sample_srs_A <- draw_sample_srs(frame_A, n = ss_A, seed = 789)
 head(sample_srs_A)
 attr(sample_srs_A, "sampling_method")
@@ -406,38 +464,36 @@ attr(sample_srs_A, "n_drawn")
 
 
 # =============================================================================
-# Test 6: Household Tool ####
+# Test 8: Household Tool ####
 # =============================================================================
 
-# -- 6a: Instantiate via Protocol$add_tools() --
+# -- 8a: Instantiate via SurveyProtocol$add_tools() --
 
-protocol$add_tools(tool_type = "household", tool_name = "Main Household Survey")
+survey_protocol$add_tools(tool_type = "household", tool_name = "Main Household Survey")
 
-# Inspect tools list
-length(protocol$tools)
-protocol$tools[[1]]$get_name()
-protocol$tools[[1]]$get_tool_type()
+length(survey_protocol$tools)
+survey_protocol$tools[[1]]$get_name()
+survey_protocol$tools[[1]]$get_tool_type()
 
-# -- 6b: Directly instantiate a HouseholdTool --
+# -- 8b: Directly instantiate a HouseholdTool --
 
 hh_tool <- HouseholdTool$new(name = "Household Survey Tool – Strata A & B")
 hh_tool$get_name()
 hh_tool$get_tool_type()
 hh_tool$has_roster()
 
-# Inspect master survey and choices
 master_survey  <- hh_tool$get_master_survey()
 master_choices <- hh_tool$get_master_choices()
 nrow(master_survey)
 nrow(master_choices)
 head(master_survey)
 
-# -- 6c: Inspect settings --
+# -- 8c: Inspect settings --
 
 hh_settings <- hh_tool$get_settings()
 hh_settings
 
-# -- 6d: Change default language --
+# -- 8d: Change default language --
 
 hh_tool$change_default_language("French")
 hh_tool$get_settings()
@@ -445,7 +501,7 @@ hh_tool$get_settings()
 hh_tool$change_default_language("English")
 hh_tool$get_settings()
 
-# -- 6e: Filter survey by modules --
+# -- 8e: Filter survey by modules --
 
 head(master_survey[[1]], 30)
 unique(master_survey[[1]])
@@ -456,7 +512,7 @@ modified_survey <- hh_tool$get_modified_survey()
 nrow(modified_survey)
 head(modified_survey)
 
-# -- 6f: Filter choices to match modified survey --
+# -- 8f: Filter choices to match modified survey --
 
 hh_tool$filter_choices_from_survey()
 
@@ -464,13 +520,13 @@ modified_choices <- hh_tool$get_modified_choices()
 nrow(modified_choices)
 unique(modified_choices$list_name)
 
-# -- 6g: Validate tool --
+# -- 8g: Validate tool --
 
 is_valid <- hh_tool$validate_tool()
 cat("Household tool valid:", is_valid, "\n")
 hh_tool$get_validation_errors()
 
-# -- 6h: Update a choice list with custom values --
+# -- 8h: Update a choice list with custom values --
 
 new_admin1_choices <- data.frame(
   name  = c("north", "east", "south", "west"),
@@ -486,13 +542,11 @@ hh_tool$update_choice_list(
 updated_choices <- hh_tool$get_modified_choices()
 updated_choices[updated_choices$list_name == "admin1", ]
 
-# -- 6i: Inspect roster groups --
+# -- 8i: Inspect roster groups --
 
 roster_groups <- hh_tool$get_roster_groups()
 nrow(roster_groups)
 head(roster_groups)
-
-# -- 6j: Inspect questions in a specific roster --
 
 if (nrow(roster_groups) > 0) {
   first_roster <- roster_groups$name[1]
@@ -501,7 +555,7 @@ if (nrow(roster_groups) > 0) {
   head(roster_qs)
 }
 
-# -- 6k: Add a custom question to the tool --
+# -- 8j: Add / update / remove a custom question --
 
 hh_tool$add_question(
   type     = "integer",
@@ -513,40 +567,36 @@ hh_tool$add_question(
 hh_tool$has_question("hh_monthly_income")
 hh_tool$get_question("hh_monthly_income")
 
-# -- 6l: Update the custom question --
-
 hh_tool$update_question("hh_monthly_income", label = "Monthly household income in USD (estimated)")
 hh_tool$get_question("hh_monthly_income")
-
-# -- 6m: Remove the custom question --
 
 hh_tool$remove_question("hh_monthly_income")
 hh_tool$has_question("hh_monthly_income")
 
-# -- 6n: Update settings --
+# -- 8k: Update settings --
 
 hh_tool$update_settings("form_title", "IPHRA Household Survey – Dummy Country 2025")
 hh_tool$update_settings("version",    "2025-03-01")
 hh_tool$get_settings()
 
-# -- 6o: Set selected indicators --
+# -- 8l: Set selected indicators --
 
 hh_tool$set_selected_indicators(c("hdds_score", "fcs_score", "water_source"))
 hh_tool$get_selected_indicators()
 
 
 # =============================================================================
-# Test 7: Key Informant Interview (KII) Tool ####
+# Test 9: Key Informant Interview (KII) Tool ####
 # =============================================================================
 
-# -- 7a: Instantiate via Protocol$add_tools() --
+# -- 9a: Instantiate via add_tools() --
 
-protocol$add_tools(tool_type = "key_informant", tool_name = "Community KII")
+survey_protocol$add_tools(tool_type = "key_informant", tool_name = "Community KII")
 
-protocol$tools[[2]]$get_name()
-protocol$tools[[2]]$get_tool_type()
+survey_protocol$tools[[2]]$get_name()
+survey_protocol$tools[[2]]$get_tool_type()
 
-# -- 7b: Directly instantiate a KeyInformantTool --
+# -- 9b: Directly instantiate a KeyInformantTool --
 
 kii_tool <- KeyInformantTool$new(
   name     = "Health Facility KII",
@@ -562,13 +612,9 @@ nrow(kii_survey)
 nrow(kii_choices)
 head(kii_survey)
 
-# -- 7c: Validate KII tool --
-
 kii_valid <- kii_tool$validate_tool()
 cat("KII tool valid:", kii_valid, "\n")
 kii_tool$get_validation_errors()
-
-# -- 7d: Add and inspect a custom KII question --
 
 kii_tool$add_question(
   type     = "text",
@@ -582,17 +628,15 @@ kii_tool$get_question("facility_name")
 
 
 # =============================================================================
-# Test 8: Observation Tool ####
+# Test 10: Observation and Generic Tools ####
 # =============================================================================
 
-# -- 8a: Instantiate via Protocol$add_tools() --
+# -- 10a: Observation Tool --
 
-protocol$add_tools(tool_type = "observation", tool_name = "Water Point Observation")
+survey_protocol$add_tools(tool_type = "observation", tool_name = "Water Point Observation")
 
-protocol$tools[[3]]$get_name()
-protocol$tools[[3]]$get_tool_type()
-
-# -- 8b: Directly instantiate an ObservationTool --
+survey_protocol$tools[[3]]$get_name()
+survey_protocol$tools[[3]]$get_tool_type()
 
 obs_tool <- ObservationTool$new(
   name             = "Sanitation Facility Observation",
@@ -606,15 +650,10 @@ obs_survey  <- obs_tool$get_master_survey()
 obs_choices <- obs_tool$get_master_choices()
 nrow(obs_survey)
 nrow(obs_choices)
-head(obs_survey)
-
-# -- 8c: Validate observation tool --
 
 obs_valid <- obs_tool$validate_tool()
 cat("Observation tool valid:", obs_valid, "\n")
 obs_tool$get_validation_errors()
-
-# -- 8d: Add a custom observation question --
 
 obs_tool$add_question(
   type     = "select_one yes_no",
@@ -623,21 +662,13 @@ obs_tool$add_question(
 )
 
 obs_tool$has_question("handwashing_station_present")
-obs_tool$get_question("handwashing_station_present")
 
+# -- 10b: Generic Tool --
 
-# =============================================================================
-# Test 9: Generic Tool ####
-# =============================================================================
+survey_protocol$add_tools(tool_type = "generic", tool_name = "Market Assessment Form")
 
-# -- 9a: Instantiate a generic Tool via Protocol$add_tools() --
-
-protocol$add_tools(tool_type = "generic", tool_name = "Market Assessment Form")
-
-protocol$tools[[4]]$get_name()
-protocol$tools[[4]]$get_tool_type()
-
-# -- 9b: Directly instantiate a generic Tool and populate it manually --
+survey_protocol$tools[[4]]$get_name()
+survey_protocol$tools[[4]]$get_tool_type()
 
 generic_tool <- Tool$new(name = "Focus Group Discussion Guide")
 generic_tool$get_tool_type()
@@ -648,7 +679,6 @@ generic_tool$add_question(type = "select_one yes_no", name = "consent_obtained",
 
 nrow(generic_tool$get_survey())
 generic_tool$has_question("community_name")
-generic_tool$has_question("participants_count")
 
 generic_valid <- generic_tool$validate_tool()
 cat("Generic tool valid:", generic_valid, "\n")
@@ -656,55 +686,134 @@ generic_tool$get_validation_errors()
 
 
 # =============================================================================
-# Test 10: Finalise and Inspect the Protocol ####
+# Test 11: Finalise and Inspect the SurveyProtocol ####
 # =============================================================================
 
-# -- 10a: Check protocol issues --
+# -- 11a: Check issues --
 
-protocol$get_issues()
+survey_protocol$get_issues()
 
-# -- 10b: Get protocol summary --
+# -- 11b: Summary includes sampling fields --
 
-summary_out <- protocol$get_protocol_summary()
-summary_out
-summary_out$num_objectives   # total objectives (replaces num_primary/secondary)
+sp_full_summary <- survey_protocol$get_protocol_summary()
+sp_full_summary
+sp_full_summary$num_objectives
+sp_full_summary$num_strata        # SurveyProtocol-only field
+sp_full_summary$total_sample_size
 
-# -- 10c: Export full protocol to a list --
+# -- 11c: Export full protocol --
 
-exported <- protocol$export_protocol()
+exported <- survey_protocol$export_protocol()
 
 names(exported)
 exported$metadata
 exported$summary
 
-# Objectives in export (nested structure)
 count_objectives(exported$objectives)
 objectives_to_df(exported$objectives)
 
-# Objective schema in export
 nrow(exported$objective_schema)
 names(exported$objective_schema)
 
-# Sample table
+# Sampling fields present in export
 exported$sample_table
 names(exported$sample_table)
-
-# Drawn sample
 nrow(exported$drawn_sample)
+nrow(exported$drawn_sample_full)
 
-# Tools in the protocol
+# Tools
 length(exported$tools)
 sapply(exported$tools, function(t) t$get_name())
 
-# -- 10d: Save protocol to a temporary RDS file --
+# -- 11d: print_protocol_summary() works for both classes --
+
+print_protocol_summary(protocol)          # base Protocol (no num_strata)
+print_protocol_summary(survey_protocol)   # SurveyProtocol (num_strata = 3)
+
+# -- 11e: Save and reload via RDS --
 
 tmp_file <- tempfile(fileext = ".rds")
-save_protocol(protocol, file = tmp_file)
+save_protocol(survey_protocol, file = tmp_file)
 
-# Reload and inspect
 reloaded <- load_protocol(tmp_file)
 names(reloaded)
 reloaded$metadata$assessment_title
 reloaded$summary
+
+# -- 11f: restore_protocol() auto-selects SurveyProtocol when sampling data present --
+
+restored_sp <- restore_protocol(exported)
+stopifnot(inherits(restored_sp, "SurveyProtocol"))
+
+restored_base <- restore_protocol(protocol$export_protocol())
+stopifnot(inherits(restored_base, "Protocol"))
+stopifnot(!inherits(restored_base, "SurveyProtocol"))
+
+
+# =============================================================================
+# Test 12: Report Generation ####
+# =============================================================================
+# generate_report() / generate_protocol_report() write a .docx file.
+# base Protocol: metadata + objectives + tools (skipped if empty)
+# SurveyProtocol: adds Sampling Design section (strata table + selected PSUs)
+
+# -- 12a: SurveyProtocol report after draw_sample() was called --
+
+report_survey_path <- tempfile(fileext = ".docx")
+survey_protocol$generate_report(output_file = report_survey_path)
+stopifnot(file.exists(report_survey_path))
+cat("SurveyProtocol report written to:", report_survey_path, "\n")
+
+# Using the standalone wrapper
+report_survey_path2 <- tempfile(fileext = ".docx")
+generate_protocol_report(survey_protocol, output_file = report_survey_path2)
+stopifnot(file.exists(report_survey_path2))
+cat("SurveyProtocol report (wrapper) written to:", report_survey_path2, "\n")
+
+# -- 12b: SurveyProtocol report when no sample has been drawn yet --
+
+sp_no_draw <- create_survey_protocol(
+  assessment_title = "Draft Survey – No Sample",
+  country_name     = country_name,
+  month_year       = "April 2026"
+)
+sp_no_draw$add_stratum(
+  stratum_id      = "pilot",
+  stratum_name    = "Pilot Area",
+  population_size = 5000,
+  ind_indicator   = "wasting_prevalence",
+  mort_indicator  = "crude_death_rate",
+  sampling_method = "srs",
+  n_psu           = 10
+)
+report_no_draw <- tempfile(fileext = ".docx")
+sp_no_draw$generate_report(output_file = report_no_draw)
+stopifnot(file.exists(report_no_draw))
+cat("SurveyProtocol report (no draw) written to:", report_no_draw, "\n")
+
+# -- 12c: Base Protocol report (no tools) --
+
+base_only <- create_protocol(
+  assessment_title = "Secondary Data Review",
+  country_name     = "Country X",
+  month_year       = "April 2025"
+)
+base_only$add_objective(create_objective(
+  sector          = "General",
+  pillar          = "Context",
+  sub_pillar      = "Background",
+  short_objective = "GEN-01",
+  text_objective  = "Review secondary data on humanitarian conditions"
+))
+
+report_base_path <- tempfile(fileext = ".docx")
+generate_protocol_report(base_only, output_file = report_base_path)
+stopifnot(file.exists(report_base_path))
+cat("Base Protocol report written to:", report_base_path, "\n")
+
+# -- 12d: validate_protocol() works on both classes --
+
+validate_protocol(protocol)
+validate_protocol(survey_protocol)
 
 cat("\n=== Protocol and Tool workflow test completed successfully ===\n")
