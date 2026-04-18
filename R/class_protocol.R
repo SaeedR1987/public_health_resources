@@ -477,13 +477,23 @@ Protocol <- R6::R6Class(
                                                 old_value = rp[1],
                                                 new_value = rp[2],
                                                 fixed     = TRUE),
-          error = function(e) NULL
+          error = function(e) {
+            phr_warning(
+              phr_txt("Placeholder replacement failed for '{rp[1]}': {conditionMessage(e)}"),
+              origin = "Protocol$add_metadata_section"
+            )
+          }
         )
       }
 
-      # Navigate to "Rationale" heading (REACH TOR section) and insert the
-      # "Protocol Data" section heading immediately before it, so our
-      # structured content sits right after the Executive Summary table.
+      # Navigate to the "Rationale" heading (present in the REACH TOR template)
+      # and insert the "Protocol Data" section heading immediately before it.
+      # This places all protocol-specific content directly after the Executive
+      # Summary table.  Falls back to appending at the end of the document when
+      # "Rationale" is absent (e.g. a custom template without that section).
+      # NOTE: subsequent section methods (add_objectives_section, add_tools_section,
+      # add_sampling_section) rely on the cursor being positioned at the last
+      # inserted paragraph so they can continue appending with pos = "after".
       meta_line <- paste(
         Filter(nzchar, c(
           if (nzchar(country)) paste0("Country: ", country),
@@ -502,6 +512,10 @@ Protocol <- R6::R6Class(
         doc
       }, error = function(e) {
         # Fallback when "Rationale" section is absent (e.g. custom template).
+        phr_warning(
+          phr_txt("Could not find 'Rationale' heading in template; appending Protocol Data at end of document."),
+          origin = "Protocol$add_metadata_section"
+        )
         doc <- officer::cursor_end(doc)
         doc <- officer::body_add_par(doc, "Protocol Data", style = "heading 1")
         doc <- officer::body_add_par(doc, meta_line, style = "Normal")
