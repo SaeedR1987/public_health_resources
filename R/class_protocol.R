@@ -22,7 +22,17 @@ Protocol <- R6::R6Class(
     #'   \code{objectives_to_df()} to inspect.
     objectives = NULL,
 
-    #' @field objective_schema Data frame containing the loaded objective schema
+    #' @field framework A \code{\link{Framework}} object (e.g.
+    #'   \code{\link{ANAFramework}}) that holds the master and adjusted
+    #'   reference schemas and SVG diagrams for this protocol.  Assign a
+    #'   Framework instance to this field to associate a conceptual framework
+    #'   with the protocol.
+    framework = NULL,
+
+    #' @field objective_schema Data frame containing the loaded objective schema.
+    #'   Retained for backward compatibility; prefer accessing the schema via
+    #'   \code{self$framework$master_schema} or
+    #'   \code{self$framework$adjusted_schema} when a framework is set.
     objective_schema = NULL,
 
     #' @field tools List of Tool objects (placeholder for Tool class instances)
@@ -61,7 +71,6 @@ Protocol <- R6::R6Class(
         self$objectives <- list()
         self$tools <- list()
         self$issues <- list()
-        self$objective_schema <- private$default_objective_schema()
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
       invisible(self)
@@ -281,6 +290,11 @@ Protocol <- R6::R6Class(
         metadata = self$metadata,
         objectives = self$objectives,
         objective_schema = self$objective_schema,
+        framework = if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+          self$framework$export_framework()
+        } else {
+          NULL
+        },
         tools = self$tools,
         selected_indicators = self$selected_indicators,
         issues = self$issues,
@@ -331,10 +345,6 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
-    # Load the default objective schema from the bundled reference.xlsx file
-    default_objective_schema = function() {
-      load_objective_schema()
-    },
     # Check for issues and discrepancies in the protocol
     check_issues = function() {
       self$issues <- list()
