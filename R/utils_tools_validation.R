@@ -278,7 +278,7 @@ xlsform_check_brackets <- function(cell) {
 #'   Returns `FALSE` when `cell` is `NA`, `NULL`, or an empty string.
 #'
 #' @examples
-#' xlsform_orphan_square_brackets("${var}[1]")   # FALSE – preceded by ${}
+#' xlsform_orphan_square_brackets("${var}")    # FALSE – no brackets outside ${}
 #' xlsform_orphan_square_brackets("[1]")          # TRUE  – standalone
 #' xlsform_orphan_square_brackets("${age} > 5")  # FALSE – no brackets
 #'
@@ -359,7 +359,7 @@ xlsform_check_group_repeats <- function(df, type_col = "type") {
   for (i in seq_along(types)) {
     raw_type <- trimws(as.character(types[[i]]))
 
-    # Normalise: XLSForm also allows "begin group" (space variant)
+    # Normalize: XLSForm also allows "begin group" (space variant)
     norm_type <- tolower(gsub("[[:space:]]+", "_", raw_type))
 
     if (norm_type == "begin_group") {
