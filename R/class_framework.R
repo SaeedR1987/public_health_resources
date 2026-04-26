@@ -3,7 +3,7 @@
 #' @description
 #' Base class for conceptual frameworks used in protocol planning.
 #' A Framework holds a master reference schema (all objectives and indicators),
-#' an adjusted schema filtered to only the currently selected objectives, a
+#' an adjusted schema filtered to the currently selected objectives, a
 #' master SVG diagram representing the full conceptual framework, and an
 #' adjusted SVG diagram derived from the master and trimmed to the selected
 #' objectives.

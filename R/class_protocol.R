@@ -29,10 +29,13 @@ Protocol <- R6::R6Class(
     #'   with the protocol.
     framework = NULL,
 
-    #' @field objective_schema Data frame containing the loaded objective schema.
-    #'   Retained for backward compatibility; prefer accessing the schema via
-    #'   \code{self$framework$master_schema} or
-    #'   \code{self$framework$adjusted_schema} when a framework is set.
+    #' @field objective_schema Data frame containing the objective schema.
+    #'   This field is no longer auto-populated on initialisation.  When a
+    #'   \code{\link{Framework}} is associated with this protocol, access the
+    #'   schema via \code{self$framework$master_schema} or
+    #'   \code{self$framework$adjusted_schema}.  \code{objective_schema} may
+    #'   still be set manually for custom schemas that do not require a full
+    #'   Framework object.
     objective_schema = NULL,
 
     #' @field tools List of Tool objects (placeholder for Tool class instances)
