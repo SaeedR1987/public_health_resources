@@ -1,0 +1,400 @@
+# ---------------------------------------------------------------
+# XLSForm Tool Validation Helpers
+# ---------------------------------------------------------------
+# Helper functions for validating XLSForm tool structure and coding.
+# These utilities operate on XLSForm survey sheets represented as
+# data frames where columns such as 'name', 'type', and 'relevant'
+# follow standard XLSForm conventions.
+# ---------------------------------------------------------------
+
+
+# ---- 1. Extract variable names from a cell ---------------------
+
+#' @title Extract XLSForm Variable Names from a Cell
+#'
+#' @description
+#' Identifies and extracts variable names that are wrapped in the XLSForm
+#' `${}` syntax (e.g. `${my_variable}`) within a single character string.
+#' Only the variable names are returned, without the surrounding `${}` wrapper.
+#'
+#' @param cell A single character string (one XLSForm cell value).
+#'
+#' @return A character vector of variable names found in the cell.
+#'   Returns `character(0)` if no matches are found, or if `cell` is
+#'   `NA`, `NULL`, or not a single character string.
+#'
+#' @examples
+#' xlsform_extract_variables("${age} > 18 and ${consent} = 'yes'")
+#' # Returns: c("age", "consent")
+#'
+#' xlsform_extract_variables("no variables here")
+#' # Returns: character(0)
+#'
+#' @export
+xlsform_extract_variables <- function(cell) {
+  origin <- "xlsform_extract_variables"
+
+  if (!is.character(cell) || length(cell) != 1L || is.na(cell)) {
+    return(character(0))
+  }
+
+  matches <- gregexpr("\\$\\{([^}]+)\\}", cell, perl = TRUE)
+  raw <- regmatches(cell, matches)[[1]]
+
+  if (length(raw) == 0L) {
+    return(character(0))
+  }
+
+  # Strip the ${ prefix and } suffix
+  gsub("^\\$\\{|\\}$", "", raw)
+}
+
+
+# ---- 2. Collect all wrapped variables across a column ----------
+
+#' @title Collect XLSForm Variable References Across a Data Frame Column
+#'
+#' @description
+#' Iterates through every row of a character column in a data frame and
+#' builds a single character vector containing every variable name that
+#' appears inside `${}` wrappers. Duplicate names are included once each
+#' by default, reflecting all unique references found.
+#'
+#' @param df A data frame containing XLSForm data.
+#' @param col A character string naming the column to scan.
+#' @param only_unique Logical; if `TRUE` (default) return only unique variable
+#'   names. Set to `FALSE` to return all occurrences.
+#'
+#' @return A character vector of variable names found across the column.
+#'   Returns `character(0)` when no `${}` references exist.
+#'
+#' @examples
+#' survey <- data.frame(
+#'   relevant = c(
+#'     "${age} > 5",
+#'     "${consent} = 'yes' and ${age} > 0",
+#'     NA_character_
+#'   ),
+#'   stringsAsFactors = FALSE
+#' )
+#' xlsform_collect_variables(survey, "relevant")
+#' # Returns: c("age", "consent")
+#'
+#' @export
+xlsform_collect_variables <- function(df, col, only_unique = TRUE) {
+  origin <- "xlsform_collect_variables"
+
+  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phr_assert(
+    is.character(col) && length(col) == 1L && col %in% names(df),
+    paste0("Column '", col, "' not found in `df`."),
+    origin = origin,
+    hint = "Check column name spelling and that the data frame has been loaded correctly."
+  )
+
+  column_values <- df[[col]]
+
+  all_vars <- unlist(lapply(column_values, xlsform_extract_variables), use.names = FALSE)
+
+  if (is.null(all_vars) || length(all_vars) == 0L) {
+    return(character(0))
+  }
+
+  if (only_unique) {
+    return(unique(all_vars))
+  }
+
+  all_vars
+}
+
+
+# ---- 3. Validate a variable name -------------------------------
+
+#' @title Check Whether an XLSForm Variable Name Is Valid
+#'
+#' @description
+#' A valid XLSForm variable name must:
+#' \itemize{
+#'   \item Contain only letters (ASCII), digits, and underscores (`_`).
+#'   \item Start with a letter or underscore (not a digit).
+#'   \item Not contain spaces, apostrophes, hyphens, or any other characters
+#'         that would make it non-machine-readable.
+#' }
+#'
+#' @param varname A single character string to validate.
+#'
+#' @return `TRUE` if the name is valid; `FALSE` otherwise.
+#'   Returns `FALSE` for `NA`, `NULL`, or non-character input.
+#'
+#' @examples
+#' xlsform_is_valid_varname("my_variable")   # TRUE
+#' xlsform_is_valid_varname("my variable")   # FALSE – space
+#' xlsform_is_valid_varname("it's")          # FALSE – apostrophe
+#' xlsform_is_valid_varname("123start")      # FALSE – starts with digit
+#' xlsform_is_valid_varname("_ok_name")      # TRUE
+#'
+#' @export
+xlsform_is_valid_varname <- function(varname) {
+
+  if (!is.character(varname) || length(varname) != 1L || is.na(varname) || nchar(varname) == 0L) {
+    return(FALSE)
+  }
+
+  grepl("^[A-Za-z_][A-Za-z0-9_]*$", varname, perl = TRUE)
+}
+
+
+# ---- 4. Check whether a variable name appears in a name vector -
+
+#' @title Check Whether an XLSForm Variable Name Is Defined in the Survey
+#'
+#' @description
+#' Looks up a variable name in a reference vector of names — typically the
+#' `name` column of the XLSForm survey sheet — to confirm the variable has
+#' been declared.
+#'
+#' @param varname A single character string: the variable name to look up.
+#' @param name_vector A character vector of declared variable names to search
+#'   within (e.g. `survey$name`).
+#'
+#' @return `TRUE` if `varname` is found in `name_vector`; `FALSE` otherwise.
+#'   Returns `FALSE` for invalid inputs.
+#'
+#' @examples
+#' declared <- c("age", "sex", "consent", "hh_size")
+#' xlsform_varname_in_survey("age", declared)     # TRUE
+#' xlsform_varname_in_survey("weight", declared)  # FALSE
+#'
+#' @export
+xlsform_varname_in_survey <- function(varname, name_vector) {
+  origin <- "xlsform_varname_in_survey"
+
+  if (!is.character(varname) || length(varname) != 1L || is.na(varname)) {
+    phr_warning(
+      "Argument `varname` must be a single non-NA character string.",
+      origin = origin
+    )
+    return(FALSE)
+  }
+
+  phr_assert(
+    is.character(name_vector),
+    "Argument `name_vector` must be a character vector.",
+    origin = origin,
+    hint = "Typically pass the 'name' column of the XLSForm survey sheet."
+  )
+
+  varname %in% name_vector
+}
+
+
+# ---- 5. Detect unmatched parentheses or square brackets --------
+
+#' @title Check a Cell for Unmatched Parentheses or Square Brackets
+#'
+#' @description
+#' Scans a single character string for bracket balance issues:
+#' unmatched opening or closing parentheses `()` and unmatched opening
+#' or closing square brackets `[]`.
+#'
+#' @param cell A single character string (one XLSForm cell value).
+#'
+#' @return A named logical vector with two elements:
+#' \describe{
+#'   \item{`parens_ok`}{`TRUE` when parentheses are balanced.}
+#'   \item{`brackets_ok`}{`TRUE` when square brackets are balanced.}
+#' }
+#' Both values are `TRUE` when the cell is `NA`, `NULL`, or an empty string
+#' (nothing to be unbalanced).
+#'
+#' @examples
+#' xlsform_check_brackets("(a + b) * (c - d)")
+#' # parens_ok: TRUE, brackets_ok: TRUE
+#'
+#' xlsform_check_brackets("if(a > 1, 'yes'")
+#' # parens_ok: FALSE, brackets_ok: TRUE
+#'
+#' xlsform_check_brackets("selected(${q1}, 'opt_a')")
+#' # parens_ok: TRUE, brackets_ok: TRUE
+#'
+#' @export
+xlsform_check_brackets <- function(cell) {
+
+  ok <- c(parens_ok = TRUE, brackets_ok = TRUE)
+
+  if (!is.character(cell) || length(cell) != 1L || is.na(cell) || nchar(cell) == 0L) {
+    return(ok)
+  }
+
+  chars <- strsplit(cell, "", fixed = TRUE)[[1]]
+
+  paren_depth   <- 0L
+  bracket_depth <- 0L
+  paren_ok      <- TRUE
+  bracket_ok    <- TRUE
+
+  for (ch in chars) {
+    if (ch == "(") {
+      paren_depth <- paren_depth + 1L
+    } else if (ch == ")") {
+      paren_depth <- paren_depth - 1L
+      if (paren_depth < 0L) {
+        paren_ok <- FALSE
+        break
+      }
+    } else if (ch == "[") {
+      bracket_depth <- bracket_depth + 1L
+    } else if (ch == "]") {
+      bracket_depth <- bracket_depth - 1L
+      if (bracket_depth < 0L) {
+        bracket_ok <- FALSE
+        break
+      }
+    }
+  }
+
+  c(
+    parens_ok   = paren_ok   && paren_depth == 0L,
+    brackets_ok = bracket_ok && bracket_depth == 0L
+  )
+}
+
+
+# ---- 6. Detect orphaned square brackets (no preceding $) -------
+
+#' @title Detect Square Brackets Not Preceded by a Dollar Sign
+#'
+#' @description
+#' In XLSForm logic, square brackets are only valid inside the `${}` variable
+#' reference syntax. A `[` that appears on its own (not immediately after `$`)
+#' is invalid coding and will cause evaluation errors.
+#'
+#' This helper scans a single cell string and returns `TRUE` when at least one
+#' orphaned `[` is found.
+#'
+#' @param cell A single character string (one XLSForm cell value).
+#'
+#' @return `TRUE` if orphaned square brackets are found; `FALSE` otherwise.
+#'   Returns `FALSE` when `cell` is `NA`, `NULL`, or an empty string.
+#'
+#' @examples
+#' xlsform_orphan_square_brackets("${var}[1]")   # FALSE – preceded by ${}
+#' xlsform_orphan_square_brackets("[1]")          # TRUE  – standalone
+#' xlsform_orphan_square_brackets("${age} > 5")  # FALSE – no brackets
+#'
+#' @export
+xlsform_orphan_square_brackets <- function(cell) {
+
+  if (!is.character(cell) || length(cell) != 1L || is.na(cell) || nchar(cell) == 0L) {
+    return(FALSE)
+  }
+
+  # Temporarily remove ${ ... } blocks so that legitimate brackets inside them
+  # are not flagged.  Replace with a neutral placeholder.
+  stripped <- gsub("\\$\\{[^}]*\\}", "VARREF", cell, perl = TRUE)
+
+  # Any remaining [ is orphaned
+  grepl("\\[", stripped, fixed = TRUE)
+}
+
+
+# ---- 7. Detect unclosed begin_group / begin_repeat blocks ------
+
+#' @title Check XLSForm Survey for Unclosed Group or Repeat Blocks
+#'
+#' @description
+#' In an XLSForm survey each `begin_group` or `begin_repeat` row in the
+#' `type` column must be matched by a subsequent `end_group` or `end_repeat`
+#' row respectively.  This helper analyses a data frame representing the survey
+#' sheet and reports any blocks that are opened but never closed, or closed
+#' without having been opened first.
+#'
+#' @param df A data frame representing the XLSForm survey sheet. Must contain
+#'   a `type` column.
+#' @param type_col A character string naming the column that holds question
+#'   types (default `"type"`).
+#'
+#' @return A list with two elements:
+#' \describe{
+#'   \item{`valid`}{`TRUE` if all groups and repeats are properly closed.}
+#'   \item{`issues`}{A character vector describing each problem found.
+#'     Empty when `valid` is `TRUE`.}
+#' }
+#'
+#' @examples
+#' survey <- data.frame(
+#'   type = c("text", "begin_group", "text", "end_group",
+#'            "begin_repeat", "text", "end_repeat"),
+#'   stringsAsFactors = FALSE
+#' )
+#' xlsform_check_group_repeats(survey)
+#' # $valid: TRUE, $issues: character(0)
+#'
+#' bad_survey <- data.frame(
+#'   type = c("begin_group", "text", "begin_repeat", "text"),
+#'   stringsAsFactors = FALSE
+#' )
+#' xlsform_check_group_repeats(bad_survey)
+#' # $valid: FALSE, issues describing unclosed blocks
+#'
+#' @export
+xlsform_check_group_repeats <- function(df, type_col = "type") {
+  origin <- "xlsform_check_group_repeats"
+
+  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phr_assert(
+    is.character(type_col) && length(type_col) == 1L && type_col %in% names(df),
+    paste0("Column '", type_col, "' not found in `df`."),
+    origin = origin,
+    hint = "Ensure the data frame contains a 'type' column or pass the correct column name."
+  )
+
+  types  <- df[[type_col]]
+  issues <- character(0)
+
+  # Separate stacks for groups and repeats
+  group_stack  <- integer(0)   # row indices of unmatched begin_group
+  repeat_stack <- integer(0)   # row indices of unmatched begin_repeat
+
+  for (i in seq_along(types)) {
+    raw_type <- trimws(as.character(types[[i]]))
+
+    # Normalise: XLSForm also allows "begin group" (space variant)
+    norm_type <- tolower(gsub("[[:space:]]+", "_", raw_type))
+
+    if (norm_type == "begin_group") {
+      group_stack <- c(group_stack, i)
+
+    } else if (norm_type == "end_group") {
+      if (length(group_stack) == 0L) {
+        issues <- c(issues, paste0("Row ", i, ": 'end_group' found without a matching 'begin_group'."))
+      } else {
+        group_stack <- group_stack[-length(group_stack)]
+      }
+
+    } else if (norm_type == "begin_repeat") {
+      repeat_stack <- c(repeat_stack, i)
+
+    } else if (norm_type == "end_repeat") {
+      if (length(repeat_stack) == 0L) {
+        issues <- c(issues, paste0("Row ", i, ": 'end_repeat' found without a matching 'begin_repeat'."))
+      } else {
+        repeat_stack <- repeat_stack[-length(repeat_stack)]
+      }
+    }
+  }
+
+  # Any unclosed openers remaining in the stacks
+  for (row_i in group_stack) {
+    issues <- c(issues, paste0("Row ", row_i, ": 'begin_group' has no matching 'end_group'."))
+  }
+
+  for (row_i in repeat_stack) {
+    issues <- c(issues, paste0("Row ", row_i, ": 'begin_repeat' has no matching 'end_repeat'."))
+  }
+
+  list(
+    valid  = length(issues) == 0L,
+    issues = issues
+  )
+}
