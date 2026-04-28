@@ -4,7 +4,8 @@
 #'
 #' This script demonstrates the complete workflow for the Protocol class
 #' hierarchy (Protocol base class and SurveyProtocol subclass) together with
-#' the Tool class hierarchy (Tool, HouseholdTool, KeyInformantTool, ObservationTool).
+#' the Tool class hierarchy (Tool, HouseholdTool, KeyInformantTool, ObservationTool)
+#' and the Framework class hierarchy (Framework base class and ANAFramework subclass).
 #'
 #' Steps covered:
 #'  1.  Create a base Protocol object (no sampling)
@@ -19,6 +20,8 @@
 #' 10.  Attach tools to the SurveyProtocol
 #' 11.  Finalise and inspect the SurveyProtocol (export, save/load)
 #' 12.  Generate a Word report from the SurveyProtocol
+#' 13.  Framework and ANAFramework workflow (create, preset selection, SVG
+#'      highlighting, Protocol integration, export/restore round-trip)
 #'
 #' Author: Auto-generated for iphRa protocol / tool manual testing
 #' Date: 2025-01-01 (revised 2025-04-18)
@@ -59,13 +62,17 @@ stopifnot(!inherits(protocol, "SurveyProtocol"))
 protocol$metadata
 protocol$get_protocol_summary()
 
-# Inspect loaded objective schema
-nrow(protocol$objective_schema)
-names(protocol$objective_schema)
-head(protocol$objective_schema)
+# objective_schema is now managed through the Framework object (see Test 13).
+# Attach an ANAFramework to access the full reference schema:
+ana_fw <- create_ana_framework()
+protocol$framework <- ana_fw
 
-# Validate the objective schema
-validate_objective_schema(protocol$objective_schema)
+nrow(protocol$framework$master_schema)
+names(protocol$framework$master_schema)
+head(protocol$framework$master_schema)
+
+# Validate the objective schema via the framework
+validate_objective_schema(protocol$framework$master_schema)
 
 
 # =============================================================================
@@ -817,3 +824,178 @@ validate_protocol(protocol)
 validate_protocol(survey_protocol)
 
 cat("\n=== Protocol and Tool workflow test completed successfully ===\n")
+
+
+# =============================================================================
+# Test 13: Framework and ANAFramework Workflow ####
+# =============================================================================
+
+cat("\n--- Test 13: Framework and ANAFramework ---\n")
+
+# -- 13a: Create a base Framework and set a manual schema and SVG --
+
+fw_base <- create_framework()
+stopifnot(inherits(fw_base, "Framework"))
+stopifnot(is.null(fw_base$master_schema))
+stopifnot(is.null(fw_base$master_svg))
+
+manual_schema <- data.frame(
+  sector          = c("FSL", "FSL", "WASH"),
+  pillar          = c("Food Security", "Food Security", "Water"),
+  sub_pillar      = c("FoodSecurity", "FoodSecurity", "WaterSecurity"),
+  short_objective = c("FSL-01", "FSL-02", "WASH-01"),
+  text_objective  = c("Estimate food insecurity", "Assess coping strategies", "Assess water access"),
+  core            = c("Core", NA, NA),
+  extended        = c(NA, "Extended", "Extended"),
+  outcomes        = c(NA, NA, NA),
+  fsl             = c("FSL", "FSL", NA),
+  wash            = c(NA, NA, "WASH"),
+  health          = c(NA, NA, NA),
+  stringsAsFactors = FALSE
+)
+
+fw_base$set_master_schema(manual_schema)
+stopifnot(is.data.frame(fw_base$master_schema))
+stopifnot(nrow(fw_base$master_schema) == 3)
+
+fw_base$set_master_svg('<svg><g id="FoodSecurity"><rect fill="white" stroke="black"/></g><g id="WaterSecurity"><rect fill="white" stroke="black"/></g></svg>')
+stopifnot(!is.null(fw_base$master_svg))
+cat("Base Framework created with manual schema (3 rows) and SVG.\n")
+
+# -- 13b: update_adjusted_schema() filters to selected objectives --
+
+fw_base$update_adjusted_schema(c("FSL-01", "WASH-01"))
+stopifnot(is.data.frame(fw_base$adjusted_schema))
+stopifnot(nrow(fw_base$adjusted_schema) == 2)
+cat("Adjusted schema rows:", nrow(fw_base$adjusted_schema), "(expected 2)\n")
+
+# -- 13c: Base Framework update_adjusted_svg() hides non-selected elements --
+
+fw_base$update_adjusted_svg()
+stopifnot(!is.null(fw_base$adjusted_svg))
+cat("Base Framework adjusted SVG generated.\n")
+
+# -- 13d: Create ANAFramework and verify auto-loaded resources --
+
+af <- create_ana_framework()
+stopifnot(inherits(af, "ANAFramework"))
+stopifnot(inherits(af, "Framework"))
+
+# master_schema loaded from reference.xlsx
+stopifnot(!is.null(af$master_schema) && is.data.frame(af$master_schema))
+stopifnot(nrow(af$master_schema) > 0)
+cat("ANAFramework master_schema rows:", nrow(af$master_schema), "\n")
+cat("ANAFramework master_schema cols:", paste(names(af$master_schema), collapse = ", "), "\n")
+
+# master_svg loaded from ana_framework.svg
+stopifnot(!is.null(af$master_svg))
+stopifnot(nzchar(af$master_svg))
+stopifnot(grepl("<svg", af$master_svg))
+cat("ANAFramework master_svg loaded (", nchar(af$master_svg), "chars)\n")
+
+# -- 13e: filter_schema_by_pillar() --
+
+available_pillars <- unique(af$master_schema$pillar)
+cat("Available pillars:", paste(available_pillars, collapse = ", "), "\n")
+
+if (length(available_pillars) > 0) {
+  pillar_subset <- af$filter_schema_by_pillar(available_pillars[1])
+  stopifnot(is.data.frame(pillar_subset))
+  stopifnot(nrow(pillar_subset) > 0)
+  stopifnot(all(pillar_subset$pillar == available_pillars[1]))
+  cat("filter_schema_by_pillar('", available_pillars[1], "'): ",
+      nrow(pillar_subset), "rows\n")
+}
+
+# -- 13f: get_preset_objectives() for all named presets --
+
+for (preset_name in c("core", "extended", "outcomes", "fsl", "wash", "health")) {
+  preset_objs <- af$get_preset_objectives(preset_name)
+  stopifnot(is.character(preset_objs))
+  cat("Preset '", preset_name, "': ", length(preset_objs), "objective(s)\n")
+}
+
+# -- 13g: update_adjusted_schema() + update_adjusted_svg() with preset --
+
+fsl_objs <- af$get_preset_objectives("fsl")
+cat("FSL preset objectives:", length(fsl_objs), "\n")
+
+af$update_adjusted_schema(fsl_objs)
+stopifnot(is.data.frame(af$adjusted_schema))
+stopifnot(nrow(af$adjusted_schema) > 0)
+cat("Adjusted schema for FSL preset:", nrow(af$adjusted_schema), "rows\n")
+
+af$update_adjusted_svg(highlight_colour = "lightgreen", default_colour = "white")
+stopifnot(!is.null(af$adjusted_svg))
+stopifnot(nzchar(af$adjusted_svg))
+cat("ANAFramework adjusted SVG generated (",
+    nchar(af$adjusted_svg), "chars)\n")
+
+# -- 13h: Verify highlight colour appears in adjusted SVG --
+
+fsl_sub_pillars <- unique(af$adjusted_schema$sub_pillar)
+fsl_sub_pillars <- fsl_sub_pillars[!is.na(fsl_sub_pillars) & nzchar(fsl_sub_pillars)]
+cat("FSL sub_pillars (SVG block IDs):", paste(fsl_sub_pillars, collapse = ", "), "\n")
+
+# Check that at least one highlighted block appears in the SVG
+if (length(fsl_sub_pillars) > 0) {
+  # Look for the first block ID that actually exists in master_svg
+  blocks_in_svg <- fsl_sub_pillars[
+    sapply(fsl_sub_pillars, function(b) grepl(paste0('id="', b, '"'), af$master_svg))
+  ]
+  if (length(blocks_in_svg) > 0) {
+    stopifnot(grepl("lightgreen", af$adjusted_svg))
+    cat("Highlight colour 'lightgreen' confirmed in adjusted SVG.\n")
+  }
+}
+
+# -- 13i: Attach framework to a Protocol and round-trip via export/restore --
+
+fw_protocol <- create_protocol(
+  assessment_title = "ANA Framework Integration Test",
+  country_name     = "Test Country",
+  month_year       = "April 2026"
+)
+
+fw_protocol$framework <- af
+stopifnot(inherits(fw_protocol$framework, "ANAFramework"))
+stopifnot(inherits(fw_protocol$framework, "Framework"))
+
+exported_fw_protocol <- fw_protocol$export_protocol()
+stopifnot("framework" %in% names(exported_fw_protocol))
+stopifnot(is.list(exported_fw_protocol$framework))
+cat("Protocol export includes framework field (class =",
+    exported_fw_protocol$framework$class, ")\n")
+
+restored_fw_protocol <- restore_protocol(exported_fw_protocol)
+stopifnot(inherits(restored_fw_protocol$framework, "ANAFramework"))
+stopifnot(!is.null(restored_fw_protocol$framework$master_schema))
+cat("Restored Protocol framework class:",
+    class(restored_fw_protocol$framework)[1], "\n")
+cat("Restored framework master_schema rows:",
+    nrow(restored_fw_protocol$framework$master_schema), "\n")
+
+# -- 13j: restore_framework() directly --
+
+exported_fw <- af$export_framework()
+stopifnot(is.list(exported_fw))
+stopifnot(exported_fw$class == "ANAFramework")
+
+restored_fw <- restore_framework(exported_fw)
+stopifnot(inherits(restored_fw, "ANAFramework"))
+stopifnot(inherits(restored_fw, "Framework"))
+stopifnot(is.data.frame(restored_fw$master_schema))
+stopifnot(nrow(restored_fw$master_schema) > 0)
+cat("restore_framework() restored ANAFramework with",
+    nrow(restored_fw$master_schema), "schema rows.\n")
+
+# -- 13k: update_adjusted_svg() with custom highlight colour --
+
+af2 <- create_ana_framework()
+wash_objs <- af2$get_preset_objectives("wash")
+af2$update_adjusted_schema(wash_objs)
+af2$update_adjusted_svg(highlight_colour = "lightblue", default_colour = "white")
+stopifnot(!is.null(af2$adjusted_svg))
+cat("WASH preset adjusted SVG generated with lightblue highlight.\n")
+
+cat("\n=== Framework and ANAFramework workflow test completed successfully ===\n")
