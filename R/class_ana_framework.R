@@ -92,7 +92,7 @@ ANAFramework <- R6::R6Class(
     #'   matches one or more of the supplied pillar names.
     #'
     #' This corresponds to the pillar-dimension filter used in the Shiny module
-    #' (\code{reference_objectives[reference_objectives\$pillar \%in\%
+    #' (\code{reference_objectives[reference_objectives$pillar %in%
     #' selected_pillars, ]}).
     #'
     #' @param pillars Character vector of pillar names to retain.
@@ -234,7 +234,14 @@ ANAFramework <- R6::R6Class(
 
   private = list(
     # Replace fill="..." on the primary <rect stroke="black"> inside each
-    # named <g id="BLOCK_ID"> group.  Uses a conservative perl regex.
+    # named <g id="BLOCK_ID"> group.
+    #
+    # @param svg Character. SVG markup to modify.
+    # @param all_blocks Character vector of all known sub_pillar block IDs.
+    # @param selected_blocks Character vector of the currently selected block IDs.
+    # @param highlight_colour Character. Fill colour for selected blocks.
+    # @param default_colour Character. Fill colour for unselected blocks.
+    # @return Modified SVG character string.
     set_block_fills = function(svg, all_blocks, selected_blocks,
                                highlight_colour, default_colour) {
       for (bid in all_blocks) {
