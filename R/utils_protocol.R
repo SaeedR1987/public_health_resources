@@ -345,6 +345,9 @@ restore_protocol <- function(protocol_data) {
     protocol$metadata            <- protocol_data$metadata
     protocol$objectives          <- protocol_data$objectives %||% list()
     protocol$objective_schema    <- protocol_data$objective_schema %||% protocol$objective_schema
+    if (!is.null(protocol_data$framework)) {
+      protocol$framework <- restore_framework(protocol_data$framework)
+    }
     protocol$tools               <- protocol_data$tools
     protocol$selected_indicators <- protocol_data$selected_indicators
     protocol$issues              <- protocol_data$issues
