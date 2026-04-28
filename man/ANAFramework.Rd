@@ -5,19 +5,26 @@
 \title{ANAFramework R6 Class}
 \description{
 Subclass of \code{\link{Framework}} for the ANA (Area-based Needs
-Assessment) conceptual framework.  On initialisation the class
-automatically loads the bundled \code{reference.xlsx} file as the master
-reference schema, making all standard ANA objectives immediately available.
+Assessment) conceptual framework.  On initialisation the class automatically
+loads the bundled \code{reference.xlsx} as \code{master_schema} and
+\code{ana_framework.svg} as \code{master_svg}.
 
-The master SVG diagram can be set at any time via
-\code{set_master_svg()}.  Once both the master schema and SVG are in place,
-call \code{update_adjusted_schema()} and \code{update_adjusted_svg()} to
-synchronise the adjusted versions with a current objective selection.
+Call \code{update_adjusted_schema()} with a vector of \code{short_objective}
+values and then \code{update_adjusted_svg()} to produce a highlighted SVG
+that shows which conceptual framework blocks are covered by the selection.
+
+Preset selections based on the columns of the master schema
+(\code{core}, \code{extended}, \code{outcomes}, \code{fsl},
+\code{wash}, \code{health}) can be retrieved with
+\code{get_preset_objectives()}.
 }
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-ANAFramework-new}{\code{ANAFramework$new()}}
+\item \href{#method-ANAFramework-filter_schema_by_pillar}{\code{ANAFramework$filter_schema_by_pillar()}}
+\item \href{#method-ANAFramework-get_preset_objectives}{\code{ANAFramework$get_preset_objectives()}}
+\item \href{#method-ANAFramework-update_adjusted_svg}{\code{ANAFramework$update_adjusted_svg()}}
 \item \href{#method-ANAFramework-clone}{\code{ANAFramework$clone()}}
 }
 }
@@ -27,15 +34,85 @@ synchronise the adjusted versions with a current objective selection.
 \subsection{Method \code{new()}}{
 Creates a new ANAFramework object.
 
-The bundled \code{reference.xlsx} is loaded automatically and stored as
-\code{master_schema}.  If the file cannot be found or read, a warning is
-issued and \code{master_schema} remains \code{NULL}.
+The bundled \code{reference.xlsx} is loaded as \code{master_schema} and
+\code{ana_framework.svg} is loaded as \code{master_svg}.  Warnings are
+issued if either file cannot be found or read.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ANAFramework$new()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
 A new ANAFramework object.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ANAFramework-filter_schema_by_pillar"></a>}}
+\if{latex}{\out{\hypertarget{method-ANAFramework-filter_schema_by_pillar}{}}}
+\subsection{Method \code{filter_schema_by_pillar()}}{
+Filter the master schema to objectives whose \code{pillar} matches one or
+more of the supplied pillar names.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$filter_schema_by_pillar(pillars)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{pillars}}{Character vector of pillar names to retain.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Data frame subset of \code{master_schema}.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ANAFramework-get_preset_objectives"></a>}}
+\if{latex}{\out{\hypertarget{method-ANAFramework-get_preset_objectives}{}}}
+\subsection{Method \code{get_preset_objectives()}}{
+Return the \code{short_objective} values for a named preset.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$get_preset_objectives(preset)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{preset}}{Character. One of \code{"core"}, \code{"extended"},
+\code{"outcomes"}, \code{"fsl"}, \code{"wash"}, or \code{"health"}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Character vector of \code{short_objective} values.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ANAFramework-update_adjusted_svg"></a>}}
+\if{latex}{\out{\hypertarget{method-ANAFramework-update_adjusted_svg}{}}}
+\subsection{Method \code{update_adjusted_svg()}}{
+Update the adjusted SVG by highlighting blocks for the currently selected
+objectives.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$update_adjusted_svg(
+  highlight_colour = "lightgreen",
+  default_colour = "white"
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{highlight_colour}}{Character. Fill colour for selected blocks.
+Defaults to \code{"lightgreen"}.}
+
+\item{\code{default_colour}}{Character. Fill colour for unselected blocks.
+Defaults to \code{"white"}.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Invisibly returns \code{self} for method chaining.
 }
 }
 \if{html}{\out{<hr>}}

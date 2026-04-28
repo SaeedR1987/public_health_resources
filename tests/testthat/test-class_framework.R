@@ -246,3 +246,103 @@ test_that("restore_protocol restores framework field", {
   expect_true(inherits(restored$framework, "Framework"))
   expect_equal(nrow(restored$framework$master_schema), 1)
 })
+
+# ---- ANAFramework additional method tests ----
+
+.skip_if_no_ana_resources <- function() {
+  skip_if_not(
+    file.exists(system.file("resources", "reference.xlsx", package = "phr")) ||
+      file.exists(file.path("resources", "reference.xlsx")),
+    "ANA resources not available"
+  )
+}
+
+test_that("ANAFramework auto-loads master_svg from ana_framework.svg", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  expect_false(is.null(af$master_svg))
+  expect_true(nzchar(af$master_svg))
+  expect_true(grepl("<svg", af$master_svg))
+})
+
+test_that("ANAFramework$filter_schema_by_pillar returns subset", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  skip_if(is.null(af$master_schema))
+
+  available_pillars <- unique(af$master_schema$pillar)
+  skip_if(length(available_pillars) == 0)
+
+  pillar <- available_pillars[[1]]
+  result <- af$filter_schema_by_pillar(pillar)
+  expect_true(is.data.frame(result))
+  expect_true(nrow(result) > 0)
+  expect_true(all(result$pillar == pillar))
+})
+
+test_that("ANAFramework$filter_schema_by_pillar errors without master_schema", {
+  af <- ANAFramework$new()
+  af$master_schema <- NULL
+  expect_error(af$filter_schema_by_pillar("FSL"))
+})
+
+test_that("ANAFramework$get_preset_objectives errors on invalid preset", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  skip_if(is.null(af$master_schema))
+  expect_error(af$get_preset_objectives("bogus_preset"))
+})
+
+test_that("ANAFramework$get_preset_objectives returns character vector for valid preset", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  skip_if(is.null(af$master_schema))
+
+  for (preset in c("core", "extended", "outcomes", "fsl", "wash", "health")) {
+    result <- af$get_preset_objectives(preset)
+    expect_true(is.character(result))
+  }
+})
+
+test_that("ANAFramework$update_adjusted_svg highlights correct sub_pillar blocks", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  skip_if(is.null(af$master_schema) || is.null(af$master_svg))
+
+  # Pick the first sub_pillar that appears in the SVG
+  all_blocks <- unique(af$master_schema$sub_pillar)
+  all_blocks  <- all_blocks[!is.na(all_blocks) & nzchar(all_blocks)]
+  skip_if(length(all_blocks) == 0)
+
+  first_block <- all_blocks[[1]]
+  # Select only objectives for that sub_pillar
+  objs_in_block <- af$master_schema$short_objective[
+    !is.na(af$master_schema$sub_pillar) & af$master_schema$sub_pillar == first_block
+  ]
+  af$update_adjusted_schema(objs_in_block)
+  af$update_adjusted_svg(highlight_colour = "lightgreen", default_colour = "white")
+
+  expect_false(is.null(af$adjusted_svg))
+  expect_true(nzchar(af$adjusted_svg))
+  # The selected block should have lightgreen fill
+  if (grepl(paste0('id="', first_block, '"'), af$master_svg)) {
+    expect_true(grepl("lightgreen", af$adjusted_svg))
+  }
+})
+
+test_that("ANAFramework$update_adjusted_svg warns when master_svg is NULL", {
+  af <- ANAFramework$new()
+  af$master_svg <- NULL
+  schema <- data.frame(
+    sector         = "Health",
+    pillar         = "Morbidity",
+    sub_pillar     = "HealthStatus",
+    short_objective = "H1",
+    text_objective  = "Obj 1",
+    stringsAsFactors = FALSE
+  )
+  af$master_schema <- schema
+  af$adjusted_schema <- schema
+  expect_warning(af$update_adjusted_svg())
+})
+
