@@ -63,7 +63,7 @@ xlsform_extract_variables <- function(cell, pattern = "\\$\\{([^}]+)\\}") {
   cap_start  <- attr(pos, "capture.start")
   cap_length <- attr(pos, "capture.length")
 
-  if (!is.null(cap_start) && ncol(cap_start) >= 1L && all(cap_start[, 1L] != -1L)) {
+  if (!is.null(cap_start) && ncol(cap_start) >= 1L && nrow(cap_start) > 0L && all(cap_start[, 1L] != -1L)) {
     # Capture group 1 content
     substring(cell, cap_start[, 1L], cap_start[, 1L] + cap_length[, 1L] - 1L)
   } else {
