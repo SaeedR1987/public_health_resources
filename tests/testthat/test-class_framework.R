@@ -162,15 +162,15 @@ test_that("create_framework returns a Framework object", {
   expect_true(inherits(fw, "Framework"))
 })
 
-test_that("create_ana_framework returns an ANAFramework object", {
+test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
   skip_if_not(
     file.exists(system.file("resources", "reference.xlsx", package = "phr")) ||
       file.exists(file.path("resources", "reference.xlsx")),
     "reference.xlsx not available"
   )
-  af <- create_ana_framework()
-  expect_true(inherits(af, "ANAFramework"))
-  expect_true(inherits(af, "Framework"))
+  p <- Protocol$new(framework_type = "ana")
+  expect_true(inherits(p$framework, "ANAFramework"))
+  expect_true(inherits(p$framework, "Framework"))
 })
 
 test_that("restore_framework reconstructs a Framework from exported data", {
@@ -192,12 +192,16 @@ test_that("restore_framework reconstructs a Framework from exported data", {
   expect_false(is.null(restored$master_svg))
 })
 
-test_that("Protocol has a framework field defaulting to NULL", {
+test_that("Protocol initializes with a Framework object by default (framework_type='none')", {
   p <- Protocol$new()
-  expect_null(p$framework)
+  expect_true(inherits(p$framework, "Framework"))
 })
 
-test_that("Protocol framework field can be set to a Framework object", {
+test_that("Protocol$new() rejects invalid framework_type", {
+  expect_error(Protocol$new(framework_type = "bogus"))
+})
+
+test_that("Protocol framework field can be replaced with another Framework object", {
   p   <- Protocol$new()
   fw  <- Framework$new()
   p$framework <- fw
@@ -222,10 +226,10 @@ test_that("Protocol$export_protocol includes framework when set", {
   expect_equal(exported$framework$class, "Framework")
 })
 
-test_that("Protocol$export_protocol has NULL framework when none set", {
+test_that("Protocol$export_protocol includes default framework", {
   p        <- Protocol$new()
   exported <- p$export_protocol()
-  expect_null(exported$framework)
+  expect_false(is.null(exported$framework))
 })
 
 test_that("restore_protocol restores framework field", {

@@ -277,6 +277,53 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Render the framework SVG and display it in the active
+    #'   graphics device (e.g. the RStudio Plots pane).
+    #'
+    #' Uses \code{adjusted_svg} when available, falling back to
+    #' \code{master_svg}.  Requires the \pkg{rsvg} and \pkg{grid} packages.
+    #' When neither is installed the SVG is written to a temporary file and
+    #' the file path is returned visibly so the caller can open it manually.
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.  When
+    #'   \pkg{rsvg}/\pkg{grid} are unavailable the path to the written SVG
+    #'   file is returned visibly instead.
+    render_framework_svg = function() {
+      phr_try({
+        svg_content <- self$adjusted_svg %||% self$master_svg
+        phr_assert(
+          !is.null(svg_content) && nzchar(svg_content),
+          message = phr_txt(
+            "No SVG content available. Call update_adjusted_svg() or set_master_svg() first."
+          ),
+          origin = "Framework$render_framework_svg"
+        )
+
+        tmp_svg <- tempfile(fileext = ".svg")
+        writeLines(svg_content, con = tmp_svg)
+
+        if (requireNamespace("rsvg", quietly = TRUE) &&
+            requireNamespace("grid", quietly = TRUE)) {
+          native_raster <- rsvg::rsvg_nativeraster(tmp_svg)
+          grid::grid.newpage()
+          grid::grid.raster(native_raster)
+          phr_message(
+            phr_txt("Framework SVG rendered to the active graphics device."),
+            origin = "Framework$render_framework_svg"
+          )
+        } else {
+          phr_warning(
+            message = phr_txt(
+              "Packages 'rsvg' and 'grid' are required to display the SVG in the plots window. SVG written to: {tmp_svg}"
+            ),
+            origin = "Framework$render_framework_svg"
+          )
+          return(tmp_svg)
+        }
+      }, on_error = "abort", origin = "Framework$render_framework_svg")
+      invisible(self)
+    },
+
     #' @description Remove objective row(s) from the adjusted schema by
     #'   \code{short_objective} value.
     #'

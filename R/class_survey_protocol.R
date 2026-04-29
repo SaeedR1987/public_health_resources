@@ -35,12 +35,16 @@ SurveyProtocol <- R6::R6Class(
     #' @param assessment_title Character. Title of the assessment
     #' @param country_name Character. Country where assessment takes place
     #' @param month_year Character. Month and year of data collection (e.g., "January 2024")
+    #' @param framework_type Character. Type of framework to initialise.  One of
+    #'   \code{"none"} or \code{"ana"}.  Defaults to \code{"none"}.
     #' @return A new SurveyProtocol object
-    initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL) {
+    initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
+                          framework_type = "none") {
       super$initialize(
         assessment_title = assessment_title,
         country_name     = country_name,
-        month_year       = month_year
+        month_year       = month_year,
+        framework_type   = framework_type
       )
       invisible(self)
     },

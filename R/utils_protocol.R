@@ -22,10 +22,14 @@
 #' @param assessment_title Character. Title of the assessment
 #' @param country_name Character. Country where assessment takes place
 #' @param month_year Character. Month and year of data collection
+#' @param framework_type Character. Type of framework to initialise.  One of
+#'   \code{"none"} (default) or \code{"ana"}.
 #' @return A new SurveyProtocol object
 #' @export
-create_survey_protocol <- function(assessment_title = NULL, country_name = NULL, month_year = NULL) {
-  SurveyProtocol$new(assessment_title = assessment_title, country_name = country_name, month_year = month_year)
+create_survey_protocol <- function(assessment_title = NULL, country_name = NULL, month_year = NULL,
+                                    framework_type = "none") {
+  SurveyProtocol$new(assessment_title = assessment_title, country_name = country_name,
+                     month_year = month_year, framework_type = framework_type)
 }
 
 #' Validate protocol completeness

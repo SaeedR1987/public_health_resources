@@ -64,7 +64,7 @@ protocol$get_protocol_summary()
 
 # objective_schema is now managed through the Framework object (see Test 13).
 # Attach an ANAFramework to access the full reference schema:
-ana_fw <- create_ana_framework()
+ana_fw <- ANAFramework$new()
 protocol$framework <- ana_fw
 
 nrow(protocol$framework$master_schema)
@@ -799,7 +799,7 @@ cat("Base Framework adjusted SVG generated.\n")
 
 # -- 13d: Create ANAFramework and verify auto-loaded resources --
 
-af <- create_ana_framework()
+af <- ANAFramework$new()
 stopifnot(inherits(af, "ANAFramework"))
 stopifnot(inherits(af, "Framework"))
 
@@ -913,7 +913,7 @@ cat("restore_framework() restored ANAFramework with",
 
 # -- 13k: update_adjusted_svg() with custom highlight colour --
 
-af2 <- create_ana_framework()
+af2 <- ANAFramework$new()
 wash_objs <- af2$get_preset_objectives("wash")
 af2$update_adjusted_schema(wash_objs)
 af2$update_adjusted_svg(highlight_colour = "lightblue", default_colour = "white")
