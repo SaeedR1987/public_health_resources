@@ -162,7 +162,8 @@ validate_objective_schema <- function(schema, soft = FALSE) {
       }
     }
 
-    # Type checks: text columns must be character (or coercible)
+    # Type checks: text columns must be character type (factor is also accepted
+    # as it is coercible to character, but callers should use stringsAsFactors = FALSE)
     char_cols <- c("sector", "pillar", "sub_pillar", "text_objective")
     bad_types <- char_cols[sapply(char_cols, function(col) {
       col %in% names(schema) && !is.character(schema[[col]]) &&
@@ -171,7 +172,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
     if (length(bad_types) > 0) {
       msg <- phr_txt(
         glue::glue(
-          "The following column(s) should be character: {paste(bad_types, collapse = ', ')}"
+          "The following column(s) should be character (or factor): {paste(bad_types, collapse = ', ')}"
         )
       )
       if (soft) {

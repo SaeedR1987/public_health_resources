@@ -766,6 +766,7 @@ manual_schema <- data.frame(
   pillar          = c("Food Security", "Food Security", "Water", "Water"),
   sub_pillar      = c("FoodSecurity", "FoodSecurity", "WaterSecurity", "WaterSecurity"),
   short_objective = c("FSL-01", "FSL-01", "WASH-01", "WASH-01"),
+  # same objective text per short_objective is intentional — rows differ by indicator
   text_objective  = c("Estimate food insecurity", "Estimate food insecurity", "Assess water access", "Assess water access"),
   indicator       = c("FCS", "HDDS", "Water Source", "Water Quality"),
   core            = c("Core", "Core", NA, NA),

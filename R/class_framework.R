@@ -281,7 +281,9 @@ Framework <- R6::R6Class(
     #'   \code{short_objective} value.
     #'
     #' Removes all rows in \code{adjusted_schema} whose \code{short_objective}
-    #' matches the supplied value.
+    #' matches the supplied value.  Rows with \code{NA} in
+    #' \code{short_objective} are never removed by this method (they must be
+    #' removed by directly modifying \code{adjusted_schema}).
     #'
     #' @param short_objective Character. The \code{short_objective} value to
     #'   remove.
