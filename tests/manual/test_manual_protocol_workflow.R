@@ -3,14 +3,14 @@
 #' Manual Test Script for Protocol and Tool Workflow
 #'
 #' This script demonstrates the complete workflow for the Protocol class
-#' hierarchy (Protocol base class and SurveyProtocol subclass) together with
+#' hierarchy (IPHRAProtocol and SurveyProtocol subclass) together with
 #' the Tool class hierarchy (Tool, HouseholdTool, KeyInformantTool, ObservationTool)
 #' and the Framework class hierarchy (Framework base class and ANAFramework subclass).
 #'
 #' Steps covered:
-#'  1.  Create a base Protocol object (no sampling)
-#'  2.  Define objectives and manage them on the base Protocol
-#'  3.  Generate a Word report from the base Protocol (no tools yet, then with tools)
+#'  1.  Create an IPHRAProtocol object (no sampling)
+#'  2.  Define objectives and manage them via the built-in ANAFramework
+#'  3.  Generate a Word report from the IPHRAProtocol (no tools yet, then with tools)
 #'  4.  Create a SurveyProtocol object (with sampling support)
 #'  5.  Define strata and sample sizes on the SurveyProtocol
 #'  6.  Build and validate a sampling frame
@@ -24,7 +24,7 @@
 #'      highlighting, Protocol integration, export/restore round-trip)
 #'
 #' Author: Auto-generated for iphRa protocol / tool manual testing
-#' Date: 2025-01-01 (revised 2025-04-18)
+#' Date: 2025-01-01 (revised 2025-04-29)
 
 rm(list = ls())
 
@@ -44,35 +44,35 @@ month_year       <- "March 2025"
 
 
 # =============================================================================
-# Test 1: Create a base Protocol Object ####
+# Test 1: Create an IPHRAProtocol Object ####
 # =============================================================================
-# Use Protocol$new() directly.
-# The base Protocol handles objectives, tools, and report generation only.
-# Use SurveyProtocol for anything sampling-related (Tests 4-7 below).
+# IPHRAProtocol$new() automatically creates an ANAFramework and restricts
+# add_tools() to the approved IPHRA tool list.
 
-protocol <- Protocol$new(
+protocol <- IPHRAProtocol$new(
   assessment_title = assessment_title,
   country_name     = country_name,
   month_year       = month_year
 )
+stopifnot(inherits(protocol, "IPHRAProtocol"))
 stopifnot(inherits(protocol, "Protocol"))
 stopifnot(!inherits(protocol, "SurveyProtocol"))
+
+# IPHRAProtocol auto-creates an ANAFramework on initialisation
+stopifnot(inherits(protocol$framework, "ANAFramework"))
+stopifnot(inherits(protocol$framework, "Framework"))
 
 # Inspect initial state
 protocol$metadata
 protocol$get_protocol_summary()
 
-# objective_schema is now managed through the Framework object (see Test 13).
-# Attach an ANAFramework to access the full reference schema:
-ana_fw <- ANAFramework$new()
-protocol$framework <- ana_fw
-
+# The ANAFramework is already attached – inspect it directly
 nrow(protocol$framework$master_schema)
 names(protocol$framework$master_schema)
 head(protocol$framework$master_schema)
 
-# Validate the objective schema via the framework
-validate_objective_schema(protocol$framework$master_schema)
+# Validate the objective schema via the protocol method
+protocol$validate_objective_schema(protocol$framework$master_schema)
 
 
 # =============================================================================
@@ -82,7 +82,7 @@ validate_objective_schema(protocol$framework$master_schema)
 # Use Framework$add_objective_row() / remove_objective_row() / update_adjusted_schema().
 
 # -- 2a: Select objectives from the ANAFramework using a preset --
-fsl_preset <- ana_fw$get_preset_objectives("fsl")
+fsl_preset <- protocol$framework$get_preset_objectives("fsl")
 cat("FSL preset objectives:", length(fsl_preset), "\n")
 
 # Set adjusted_schema to the FSL preset selection
@@ -107,7 +107,7 @@ cat("Adjusted schema rows after remove_objective_row:", nrow(protocol$framework$
 
 
 # =============================================================================
-# Test 3: Generate Word Report from base Protocol ####
+# Test 3: Generate Word Report from IPHRAProtocol ####
 # =============================================================================
 # generate_reach_tor() uses officer + flextable (bundled template used when present).
 # The standalone wrapper generate_protocol_report() dispatches to the method.
@@ -117,18 +117,27 @@ cat("Adjusted schema rows after remove_objective_row:", nrow(protocol$framework$
 report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = report_no_tools)
 stopifnot(file.exists(report_no_tools))
-cat("Base protocol report (no tools) written to:", report_no_tools, "\n")
+cat("IPHRAProtocol report (no tools) written to:", report_no_tools, "\n")
 
-# -- 3b: Add a couple of list-based tools (no XLSForm backing) to the base protocol --
-#         and verify they appear in the report
+# -- 3b: Add IPHRA tools to the protocol and verify they appear in the report --
+# IPHRAProtocol$add_tools() takes an approved IPHRA tool name only.
 
-protocol$add_tools(tool_type = "household",    tool_name = "Main Household Survey")
-protocol$add_tools(tool_type = "key_informant", tool_name = "Community KII")
+protocol$add_tools("tool_household_iphra_v2")
+protocol$add_tools("tool_kii_community_iphra_v2")
+
+# Tools are stored by name in the named list
+stopifnot("tool_household_iphra_v2" %in% names(protocol$tools))
+stopifnot("tool_kii_community_iphra_v2" %in% names(protocol$tools))
+stopifnot(inherits(protocol$tools[["tool_household_iphra_v2"]], "HouseholdTool"))
+stopifnot(inherits(protocol$tools[["tool_kii_community_iphra_v2"]], "KeyInformantTool"))
+
+cat("Allowable IPHRA tools:\n")
+print(protocol$get_allowable_tools())
 
 report_with_tools <- tempfile(fileext = ".docx")
 generate_protocol_report(protocol, output_file = report_with_tools)
 stopifnot(file.exists(report_with_tools))
-cat("Base protocol report (with tools) written to:", report_with_tools, "\n")
+cat("IPHRAProtocol report (with tools) written to:", report_with_tools, "\n")
 
 # Confirm summary reflects tools
 base_summary <- protocol$get_protocol_summary()
@@ -392,8 +401,8 @@ attr(sample_srs_A, "n_drawn")
 survey_protocol$add_tools(tool_type = "household", tool_name = "Main Household Survey")
 
 length(survey_protocol$tools)
-survey_protocol$tools[[1]]$get_name()
-survey_protocol$tools[[1]]$get_tool_type()
+survey_protocol$tools[["Main Household Survey"]]$get_name()
+survey_protocol$tools[["Main Household Survey"]]$get_tool_type()
 
 # -- 8b: Directly instantiate a HouseholdTool --
 
@@ -513,8 +522,8 @@ hh_tool$get_selected_indicators()
 
 survey_protocol$add_tools(tool_type = "key_informant", tool_name = "Community KII")
 
-survey_protocol$tools[[2]]$get_name()
-survey_protocol$tools[[2]]$get_tool_type()
+survey_protocol$tools[["Community KII"]]$get_name()
+survey_protocol$tools[["Community KII"]]$get_tool_type()
 
 # -- 9b: Directly instantiate a KeyInformantTool --
 
@@ -555,8 +564,8 @@ kii_tool$get_question("facility_name")
 
 survey_protocol$add_tools(tool_type = "observation", tool_name = "Water Point Observation")
 
-survey_protocol$tools[[3]]$get_name()
-survey_protocol$tools[[3]]$get_tool_type()
+survey_protocol$tools[["Water Point Observation"]]$get_name()
+survey_protocol$tools[["Water Point Observation"]]$get_tool_type()
 
 obs_tool <- ObservationTool$new(
   name             = "Sanitation Facility Observation",
@@ -587,8 +596,8 @@ obs_tool$has_question("handwashing_station_present")
 
 survey_protocol$add_tools(tool_type = "generic", tool_name = "Market Assessment Form")
 
-survey_protocol$tools[[4]]$get_name()
-survey_protocol$tools[[4]]$get_tool_type()
+survey_protocol$tools[["Market Assessment Form"]]$get_name()
+survey_protocol$tools[["Market Assessment Form"]]$get_tool_type()
 
 generic_tool <- Tool$new(name = "Focus Group Discussion Guide")
 generic_tool$get_tool_type()
@@ -653,7 +662,7 @@ sapply(exported$tools, function(t) t$get_name())
 
 # -- 11d: print_protocol_summary() works for both classes --
 
-print_protocol_summary(protocol)          # base Protocol (no num_strata)
+print_protocol_summary(protocol)          # IPHRAProtocol (no num_strata)
 print_protocol_summary(survey_protocol)   # SurveyProtocol (num_strata = 3)
 
 # -- 11e: Save and reload via RDS --
@@ -671,6 +680,7 @@ reloaded$summary
 restored_sp <- restore_protocol(exported)
 stopifnot(inherits(restored_sp, "SurveyProtocol"))
 
+# IPHRAProtocol restores as a base Protocol (no sampling data in its export)
 restored_base <- restore_protocol(protocol$export_protocol())
 stopifnot(inherits(restored_base, "Protocol"))
 stopifnot(!inherits(restored_base, "SurveyProtocol"))
@@ -871,14 +881,15 @@ if (length(fsl_sub_pillars) > 0) {
   }
 }
 
-# -- 13i: Attach framework to a Protocol and round-trip via export/restore --
+# -- 13i: Attach framework to an IPHRAProtocol and round-trip via export/restore --
 
-fw_protocol <- Protocol$new(
+fw_protocol <- IPHRAProtocol$new(
   assessment_title = "ANA Framework Integration Test",
   country_name     = "Test Country",
   month_year       = "April 2026"
 )
 
+# Replace the auto-created ANAFramework with the FSL-preset one from above
 fw_protocol$framework <- af
 stopifnot(inherits(fw_protocol$framework, "ANAFramework"))
 stopifnot(inherits(fw_protocol$framework, "Framework"))
@@ -945,12 +956,20 @@ fw_edit$remove_objective_row("FSL-01")
 stopifnot(is.null(fw_edit$adjusted_schema) || nrow(fw_edit$adjusted_schema) == 0L)
 cat("Framework adjusted_schema rows after remove_objective_row:", nrow(fw_edit$adjusted_schema), "\n")
 
-# -- 13m: render_framework_svg() on a Protocol --
+# -- 13m: render_framework_svg() on the Framework (renders to active graphics device) --
+# render_framework_svg() is a Framework method that displays the SVG in the
+# RStudio Plots pane.  To also save the raw SVG to disk, write the content directly.
 
 fw_protocol$framework$update_adjusted_svg()
 svg_file <- tempfile(fileext = ".svg")
-fw_protocol$render_framework_svg(output_file = svg_file)
+writeLines(
+  fw_protocol$framework$adjusted_svg %||% fw_protocol$framework$master_svg,
+  con = svg_file
+)
 stopifnot(file.exists(svg_file))
 cat("Framework SVG written to:", svg_file, "\n")
+
+# Display in the active graphics device (RStudio Plots pane)
+# fw_protocol$framework$render_framework_svg()  # uncomment when running interactively
 
 cat("\n=== Framework and ANAFramework workflow test completed successfully ===\n")
