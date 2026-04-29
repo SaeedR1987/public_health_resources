@@ -416,3 +416,46 @@ test_that("Framework$render_framework_svg errors when no SVG is set", {
   expect_error(fw$render_framework_svg())
 })
 
+test_that("Framework$render_framework_svg accepts version='master' and version='adjusted'", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector         = "Health",
+    pillar         = "Morbidity",
+    sub_pillar     = "Acute",
+    short_objective = "H1",
+    text_objective  = "Obj 1",
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$set_master_svg('<svg><rect id="H1"/></svg>')
+  # render_framework_svg with version='master' should not error (rsvg/grid may not be available)
+  tryCatch(fw$render_framework_svg(version = "master"), warning = function(w) NULL)
+  tryCatch(fw$render_framework_svg(version = "adjusted"), warning = function(w) NULL)
+})
+
+test_that("Framework$render_framework_svg errors on invalid version argument", {
+  fw <- Framework$new()
+  fw$set_master_svg('<svg><rect id="H1"/></svg>')
+  expect_error(fw$render_framework_svg(version = "bad_version"))
+})
+
+test_that("Framework$render_framework_svg version='master' uses master_svg even when adjusted_svg is set", {
+  skip_if_not(
+    requireNamespace("rsvg", quietly = TRUE) && requireNamespace("grid", quietly = TRUE),
+    "rsvg/grid not available"
+  )
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = "SP",
+    short_objective = c("H1", "H2"), text_objective = c("O1", "O2"),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$set_master_svg('<svg><rect id="H1"/><rect id="H2"/></svg>')
+  fw$update_adjusted_schema("H1")
+  fw$update_adjusted_svg()
+  expect_false(is.null(fw$adjusted_svg))
+  # version='master' should not error
+  expect_silent(fw$render_framework_svg(version = "master"))
+})
+

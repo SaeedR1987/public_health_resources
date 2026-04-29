@@ -280,17 +280,34 @@ Framework <- R6::R6Class(
     #' @description Render the framework SVG and display it in the active
     #'   graphics device (e.g. the RStudio Plots pane).
     #'
-    #' Uses \code{adjusted_svg} when available, falling back to
-    #' \code{master_svg}.  Requires the \pkg{rsvg} and \pkg{grid} packages.
+    #' The \code{version} argument controls which SVG is rendered.  Pass
+    #' \code{"adjusted"} (the default) to render \code{adjusted_svg}, falling
+    #' back to \code{master_svg} when \code{adjusted_svg} is \code{NULL}.
+    #' Pass \code{"master"} to render \code{master_svg} directly, regardless of
+    #' whether an adjusted version exists.
+    #'
+    #' Requires the \pkg{rsvg} and \pkg{grid} packages.
     #' When neither is installed the SVG is written to a temporary file and
     #' the file path is returned visibly so the caller can open it manually.
     #'
+    #' @param version Character. Which SVG to render: \code{"adjusted"}
+    #'   (default) or \code{"master"}.
     #' @return Invisibly returns \code{self} for method chaining.  When
     #'   \pkg{rsvg}/\pkg{grid} are unavailable the path to the written SVG
     #'   file is returned visibly instead.
-    render_framework_svg = function() {
+    render_framework_svg = function(version = "adjusted") {
       phr_try({
-        svg_content <- self$adjusted_svg %||% self$master_svg
+        phr_assert(
+          is.character(version) && length(version) == 1 &&
+            version %in% c("adjusted", "master"),
+          message = phr_txt("version must be 'adjusted' or 'master'."),
+          origin  = "Framework$render_framework_svg"
+        )
+        svg_content <- if (version == "master") {
+          self$master_svg
+        } else {
+          self$adjusted_svg %||% self$master_svg
+        }
         phr_assert(
           !is.null(svg_content) && nzchar(svg_content),
           message = phr_txt(

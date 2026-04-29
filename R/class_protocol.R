@@ -98,15 +98,6 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
     
-    #' @description Add a target stratum to metadata
-    #' @param stratum_id Character. Unique identifier
-    #' @param stratum_name Character. Human-readable name
-    add_target_stratum = function(stratum_id, stratum_name) {
-      self$metadata$target_strata[[stratum_id]] <- stratum_name
-      self$metadata$modified_date <- Sys.time()
-      invisible(self)
-    },
-    
     #' @description Add a single Tool object to the protocol by specifying its type.
     #' A new tool of the requested type is instantiated (loading its bundled
     #' default XLSForm template) and stored in the \code{tools} named list under
