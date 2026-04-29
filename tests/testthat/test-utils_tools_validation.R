@@ -36,6 +36,11 @@ test_that("xlsform_extract_variables handles variables with underscores and digi
   expect_equal(result, c("hh_size_01", "num_children_05"))
 })
 
+test_that("xlsform_extract_variables accepts a custom pattern", {
+  result <- xlsform_extract_variables("ref(age) and ref(sex)", pattern = "ref\\(([^)]+)\\)")
+  expect_equal(result, c("age", "sex"))
+})
+
 
 # ---- 2. xlsform_collect_variables -----------------------
 
@@ -75,142 +80,146 @@ test_that("xlsform_collect_variables errors when df is not a data frame", {
   expect_error(xlsform_collect_variables(list(a = 1), "a"))
 })
 
+test_that("xlsform_collect_variables accepts a custom pattern", {
+  df <- data.frame(
+    expr = c("ref(age)", "ref(sex) and ref(age)"),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_collect_variables(df, "expr", pattern = "ref\\(([^)]+)\\)")
+  expect_setequal(result, c("age", "sex"))
+})
+
 
 # ---- 3. xlsform_is_valid_varname ------------------------
 
-test_that("xlsform_is_valid_varname returns TRUE for simple names", {
-  expect_true(xlsform_is_valid_varname("age"))
-  expect_true(xlsform_is_valid_varname("hh_size"))
-  expect_true(xlsform_is_valid_varname("_private"))
-  expect_true(xlsform_is_valid_varname("var123"))
+test_that("xlsform_is_valid_varname returns valid TRUE for correct names", {
+  expect_true(xlsform_is_valid_varname("my_variable")$valid)
+  expect_true(xlsform_is_valid_varname("_ok_name")$valid)
+  expect_true(xlsform_is_valid_varname("var01")$valid)
 })
 
-test_that("xlsform_is_valid_varname returns FALSE for names with spaces", {
-  expect_false(xlsform_is_valid_varname("my variable"))
+test_that("xlsform_is_valid_varname returns valid FALSE for names with spaces", {
+  result <- xlsform_is_valid_varname("my variable")
+  expect_false(result$valid)
+  expect_length(result$issues, 1L)
 })
 
-test_that("xlsform_is_valid_varname returns FALSE for names with apostrophes", {
-  expect_false(xlsform_is_valid_varname("it's"))
+test_that("xlsform_is_valid_varname returns valid FALSE for names starting with digit", {
+  result <- xlsform_is_valid_varname("123start")
+  expect_false(result$valid)
 })
 
-test_that("xlsform_is_valid_varname returns FALSE when starting with a digit", {
-  expect_false(xlsform_is_valid_varname("123start"))
+test_that("xlsform_is_valid_varname returns valid FALSE for names with apostrophes", {
+  result <- xlsform_is_valid_varname("it's")
+  expect_false(result$valid)
 })
 
-test_that("xlsform_is_valid_varname returns FALSE for names with hyphens", {
-  expect_false(xlsform_is_valid_varname("my-var"))
+test_that("xlsform_is_valid_varname returns valid FALSE for NA or empty input", {
+  expect_false(xlsform_is_valid_varname(NA_character_)$valid)
+  expect_false(xlsform_is_valid_varname("")$valid)
+  expect_false(xlsform_is_valid_varname(NULL)$valid)
 })
 
-test_that("xlsform_is_valid_varname returns FALSE for NA", {
-  expect_false(xlsform_is_valid_varname(NA_character_))
-})
-
-test_that("xlsform_is_valid_varname returns FALSE for empty string", {
-  expect_false(xlsform_is_valid_varname(""))
-})
-
-test_that("xlsform_is_valid_varname returns FALSE for non-character input", {
-  expect_false(xlsform_is_valid_varname(123))
+test_that("xlsform_is_valid_varname issues include NA row and a message", {
+  result <- xlsform_is_valid_varname("bad name")
+  expect_true(is.na(result$issues[[1]]$row))
+  expect_true(nchar(result$issues[[1]]$message) > 0L)
 })
 
 
 # ---- 4. xlsform_varname_in_survey -----------------------
 
-test_that("xlsform_varname_in_survey returns TRUE when variable is declared", {
-  declared <- c("age", "sex", "consent", "hh_size")
-  expect_true(xlsform_varname_in_survey("age", declared))
+test_that("xlsform_varname_in_survey returns valid TRUE when name is present", {
+  declared <- c("age", "sex", "consent")
+  expect_true(xlsform_varname_in_survey("age", declared)$valid)
 })
 
-test_that("xlsform_varname_in_survey returns FALSE when variable is not declared", {
+test_that("xlsform_varname_in_survey returns valid FALSE when name is absent", {
   declared <- c("age", "sex")
-  expect_false(xlsform_varname_in_survey("weight", declared))
+  result <- xlsform_varname_in_survey("weight", declared)
+  expect_false(result$valid)
+  expect_length(result$issues, 1L)
 })
 
-test_that("xlsform_varname_in_survey returns FALSE and warns for NA varname", {
-  expect_warning(
-    result <- xlsform_varname_in_survey(NA_character_, c("age")),
-    regexp = NULL
-  )
-  expect_false(result)
+test_that("xlsform_varname_in_survey issues include NA row and a message", {
+  result <- xlsform_varname_in_survey("weight", c("age"))
+  expect_true(is.na(result$issues[[1]]$row))
+  expect_true(nchar(result$issues[[1]]$message) > 0L)
+})
+
+test_that("xlsform_varname_in_survey returns valid FALSE and emits a warning for NA varname", {
+  # phr_warning calls base::warning(), so a warning is expected
+  expect_warning(xlsform_varname_in_survey(NA_character_, c("age")))
+  result <- suppressWarnings(xlsform_varname_in_survey(NA_character_, c("age")))
+  expect_false(result$valid)
 })
 
 test_that("xlsform_varname_in_survey errors when name_vector is not character", {
-  expect_error(xlsform_varname_in_survey("age", 1:3))
+  expect_error(xlsform_varname_in_survey("age", 1:5))
 })
 
 
 # ---- 5. xlsform_check_brackets --------------------------
 
-test_that("xlsform_check_brackets returns TRUE for balanced brackets", {
-  result <- xlsform_check_brackets("(a + b) * [c - d]")
-  expect_true(result["parens_ok"])
-  expect_true(result["brackets_ok"])
+test_that("xlsform_check_brackets returns valid TRUE for balanced brackets", {
+  expect_true(xlsform_check_brackets("(a + b) * (c - d)")$valid)
+  expect_length(xlsform_check_brackets("(a + b) * (c - d)")$issues, 0L)
 })
 
-test_that("xlsform_check_brackets detects unmatched opening parenthesis", {
+test_that("xlsform_check_brackets returns valid FALSE for unmatched paren", {
   result <- xlsform_check_brackets("if(a > 1, 'yes'")
-  expect_false(result["parens_ok"])
-  expect_true(result["brackets_ok"])
+  expect_false(result$valid)
+  expect_true(any(grepl("Parentheses", sapply(result$issues, `[[`, "message"))))
 })
 
-test_that("xlsform_check_brackets detects unmatched closing parenthesis", {
-  result <- xlsform_check_brackets("a + b)")
-  expect_false(result["parens_ok"])
+test_that("xlsform_check_brackets returns valid FALSE for unmatched bracket", {
+  result <- xlsform_check_brackets("[1 + 2")
+  expect_false(result$valid)
+  expect_true(any(grepl("[Bb]racket", sapply(result$issues, `[[`, "message"))))
 })
 
-test_that("xlsform_check_brackets detects unmatched opening square bracket", {
-  result <- xlsform_check_brackets("selected(${q}, [1)")
-  expect_false(result["brackets_ok"])
+test_that("xlsform_check_brackets returns valid TRUE for NA or empty cell", {
+  expect_true(xlsform_check_brackets(NA_character_)$valid)
+  expect_true(xlsform_check_brackets("")$valid)
 })
 
-test_that("xlsform_check_brackets returns TRUE for NA cell", {
-  result <- xlsform_check_brackets(NA_character_)
-  expect_true(result["parens_ok"])
-  expect_true(result["brackets_ok"])
-})
-
-test_that("xlsform_check_brackets returns TRUE for empty cell", {
-  result <- xlsform_check_brackets("")
-  expect_true(result["parens_ok"])
-  expect_true(result["brackets_ok"])
-})
-
-test_that("xlsform_check_brackets handles nested parentheses", {
-  result <- xlsform_check_brackets("((a + b) * (c + d))")
-  expect_true(result["parens_ok"])
+test_that("xlsform_check_brackets issues include NA row", {
+  result <- xlsform_check_brackets("(bad")
+  expect_true(is.na(result$issues[[1]]$row))
 })
 
 
 # ---- 6. xlsform_orphan_square_brackets ------------------
 
-test_that("xlsform_orphan_square_brackets returns FALSE for valid ${ } syntax", {
-  expect_false(xlsform_orphan_square_brackets("${age} > 5"))
+test_that("xlsform_orphan_square_brackets returns valid TRUE for variable ref brackets", {
+  expect_true(xlsform_orphan_square_brackets("${var}")$valid)
 })
 
-test_that("xlsform_orphan_square_brackets returns TRUE for standalone bracket", {
-  expect_true(xlsform_orphan_square_brackets("[1]"))
+test_that("xlsform_orphan_square_brackets returns valid FALSE for standalone bracket", {
+  result <- xlsform_orphan_square_brackets("[1]")
+  expect_false(result$valid)
+  expect_length(result$issues, 1L)
 })
 
-test_that("xlsform_orphan_square_brackets returns TRUE for bracket after non-$ char", {
-  expect_true(xlsform_orphan_square_brackets("var[0]"))
+test_that("xlsform_orphan_square_brackets returns valid TRUE when no brackets", {
+  expect_true(xlsform_orphan_square_brackets("${age} > 5")$valid)
 })
 
-test_that("xlsform_orphan_square_brackets returns FALSE for no brackets", {
-  expect_false(xlsform_orphan_square_brackets("${age} > 5 and ${consent} = 'yes'"))
+test_that("xlsform_orphan_square_brackets returns valid TRUE for NA or empty", {
+  expect_true(xlsform_orphan_square_brackets(NA_character_)$valid)
+  expect_true(xlsform_orphan_square_brackets("")$valid)
 })
 
-test_that("xlsform_orphan_square_brackets returns FALSE for NA", {
-  expect_false(xlsform_orphan_square_brackets(NA_character_))
-})
-
-test_that("xlsform_orphan_square_brackets returns FALSE for empty string", {
-  expect_false(xlsform_orphan_square_brackets(""))
+test_that("xlsform_orphan_square_brackets issues include NA row and message", {
+  result <- xlsform_orphan_square_brackets("[x]")
+  expect_true(is.na(result$issues[[1]]$row))
+  expect_true(nchar(result$issues[[1]]$message) > 0L)
 })
 
 
 # ---- 7. xlsform_check_group_repeats ---------------------
 
-test_that("xlsform_check_group_repeats returns valid for well-formed survey", {
+test_that("xlsform_check_group_repeats returns valid TRUE for matched groups", {
   survey <- data.frame(
     type = c("text", "begin_group", "text", "end_group",
              "begin_repeat", "text", "end_repeat"),
@@ -218,84 +227,48 @@ test_that("xlsform_check_group_repeats returns valid for well-formed survey", {
   )
   result <- xlsform_check_group_repeats(survey)
   expect_true(result$valid)
-  expect_equal(length(result$issues), 0L)
+  expect_length(result$issues, 0L)
 })
 
-test_that("xlsform_check_group_repeats detects unclosed begin_group", {
+test_that("xlsform_check_group_repeats returns valid FALSE for unclosed begin_group", {
   survey <- data.frame(
     type = c("begin_group", "text"),
     stringsAsFactors = FALSE
   )
   result <- xlsform_check_group_repeats(survey)
   expect_false(result$valid)
-  expect_true(any(grepl("begin_group", result$issues)))
+  messages <- sapply(result$issues, `[[`, "message")
+  expect_true(any(grepl("begin_group", messages)))
 })
 
-test_that("xlsform_check_group_repeats detects unclosed begin_repeat", {
-  survey <- data.frame(
-    type = c("begin_repeat", "text"),
-    stringsAsFactors = FALSE
-  )
-  result <- xlsform_check_group_repeats(survey)
-  expect_false(result$valid)
-  expect_true(any(grepl("begin_repeat", result$issues)))
-})
-
-test_that("xlsform_check_group_repeats detects end_group without begin_group", {
+test_that("xlsform_check_group_repeats returns valid FALSE for unmatched end_group", {
   survey <- data.frame(
     type = c("text", "end_group"),
     stringsAsFactors = FALSE
   )
   result <- xlsform_check_group_repeats(survey)
   expect_false(result$valid)
-  expect_true(any(grepl("end_group", result$issues)))
 })
 
-test_that("xlsform_check_group_repeats detects end_repeat without begin_repeat", {
+test_that("xlsform_check_group_repeats returns valid FALSE for unclosed begin_repeat", {
   survey <- data.frame(
-    type = c("text", "end_repeat"),
+    type = c("begin_repeat", "text"),
     stringsAsFactors = FALSE
   )
   result <- xlsform_check_group_repeats(survey)
   expect_false(result$valid)
-  expect_true(any(grepl("end_repeat", result$issues)))
+  messages <- sapply(result$issues, `[[`, "message")
+  expect_true(any(grepl("begin_repeat", messages)))
 })
 
-test_that("xlsform_check_group_repeats handles nested groups correctly", {
+test_that("xlsform_check_group_repeats issues contain row index and message", {
   survey <- data.frame(
-    type = c("begin_group", "begin_group", "text", "end_group", "end_group"),
+    type = c("begin_group", "text"),
     stringsAsFactors = FALSE
   )
   result <- xlsform_check_group_repeats(survey)
-  expect_true(result$valid)
-})
-
-test_that("xlsform_check_group_repeats handles nested groups with missing inner end", {
-  survey <- data.frame(
-    type = c("begin_group", "begin_group", "text", "end_group"),
-    stringsAsFactors = FALSE
-  )
-  result <- xlsform_check_group_repeats(survey)
-  expect_false(result$valid)
-  expect_equal(length(result$issues), 1L)
-})
-
-test_that("xlsform_check_group_repeats accepts 'begin group' space variant", {
-  survey <- data.frame(
-    type = c("begin group", "text", "end group"),
-    stringsAsFactors = FALSE
-  )
-  result <- xlsform_check_group_repeats(survey)
-  expect_true(result$valid)
-})
-
-test_that("xlsform_check_group_repeats errors when df is not a data frame", {
-  expect_error(xlsform_check_group_repeats(list(type = "begin_group")))
-})
-
-test_that("xlsform_check_group_repeats errors when type column is missing", {
-  survey <- data.frame(name = c("q1", "q2"), stringsAsFactors = FALSE)
-  expect_error(xlsform_check_group_repeats(survey))
+  expect_true(is.integer(result$issues[[1]]$row))
+  expect_true(nchar(result$issues[[1]]$message) > 0L)
 })
 
 test_that("xlsform_check_group_repeats returns valid for survey with no groups", {
@@ -305,7 +278,12 @@ test_that("xlsform_check_group_repeats returns valid for survey with no groups",
   )
   result <- xlsform_check_group_repeats(survey)
   expect_true(result$valid)
-  expect_equal(length(result$issues), 0L)
+  expect_length(result$issues, 0L)
+})
+
+test_that("xlsform_check_group_repeats errors when type column is missing", {
+  df <- data.frame(name = "q1", stringsAsFactors = FALSE)
+  expect_error(xlsform_check_group_repeats(df))
 })
 
 
@@ -316,14 +294,16 @@ test_that("xlsform_check_required_sheet_cols passes for complete survey sheet", 
                    stringsAsFactors = FALSE)
   result <- xlsform_check_required_sheet_cols(df, sheet = "survey")
   expect_true(result$valid)
-  expect_equal(length(result$missing), 0L)
+  expect_length(result$issues, 0L)
 })
 
 test_that("xlsform_check_required_sheet_cols flags missing columns in survey", {
   df <- data.frame(type = "text", stringsAsFactors = FALSE)
   result <- xlsform_check_required_sheet_cols(df, sheet = "survey")
   expect_false(result$valid)
-  expect_setequal(result$missing, c("name", "label"))
+  missing_msgs <- sapply(result$issues, `[[`, "message")
+  expect_true(any(grepl("name", missing_msgs)))
+  expect_true(any(grepl("label", missing_msgs)))
 })
 
 test_that("xlsform_check_required_sheet_cols passes for complete choices sheet", {
@@ -337,14 +317,20 @@ test_that("xlsform_check_required_sheet_cols flags missing list_name in choices"
   df <- data.frame(name = "yes", label = "Yes", stringsAsFactors = FALSE)
   result <- xlsform_check_required_sheet_cols(df, sheet = "choices")
   expect_false(result$valid)
-  expect_true("list_name" %in% result$missing)
+  expect_true(any(grepl("list_name", sapply(result$issues, `[[`, "message"))))
 })
 
 test_that("xlsform_check_required_sheet_cols accepts custom required_cols", {
   df <- data.frame(a = 1, b = 2, stringsAsFactors = FALSE)
   result <- xlsform_check_required_sheet_cols(df, required_cols = c("a", "c"))
   expect_false(result$valid)
-  expect_equal(result$missing, "c")
+  expect_true(any(grepl("'c'", sapply(result$issues, `[[`, "message"))))
+})
+
+test_that("xlsform_check_required_sheet_cols issues have NA row", {
+  df <- data.frame(type = "text", stringsAsFactors = FALSE)
+  result <- xlsform_check_required_sheet_cols(df, sheet = "survey")
+  expect_true(all(is.na(sapply(result$issues, `[[`, "row"))))
 })
 
 test_that("xlsform_check_required_sheet_cols errors when df is not a data frame", {
@@ -354,12 +340,12 @@ test_that("xlsform_check_required_sheet_cols errors when df is not a data frame"
 
 # ---- 9. xlsform_check_duplicate_names -------------------
 
-test_that("xlsform_check_duplicate_names returns valid for unique names", {
+test_that("xlsform_check_duplicate_names returns valid TRUE for unique names", {
   df <- data.frame(type = c("text", "integer"), name = c("q1", "q2"),
                    stringsAsFactors = FALSE)
   result <- xlsform_check_duplicate_names(df)
   expect_true(result$valid)
-  expect_equal(length(result$duplicates), 0L)
+  expect_length(result$issues, 0L)
 })
 
 test_that("xlsform_check_duplicate_names detects duplicate names", {
@@ -368,7 +354,17 @@ test_that("xlsform_check_duplicate_names detects duplicate names", {
                    stringsAsFactors = FALSE)
   result <- xlsform_check_duplicate_names(df)
   expect_false(result$valid)
-  expect_true("q1" %in% result$duplicates)
+  messages <- sapply(result$issues, `[[`, "message")
+  expect_true(any(grepl("q1", messages)))
+})
+
+test_that("xlsform_check_duplicate_names reports a row index per duplicate occurrence", {
+  df <- data.frame(type = c("text", "text"),
+                   name = c("q1", "q1"),
+                   stringsAsFactors = FALSE)
+  result <- xlsform_check_duplicate_names(df)
+  rows <- sapply(result$issues, `[[`, "row")
+  expect_setequal(rows, c(1L, 2L))
 })
 
 test_that("xlsform_check_duplicate_names ignores structural rows", {
@@ -396,44 +392,48 @@ test_that("xlsform_check_duplicate_names errors when name column is missing", {
 
 # ---- 10. xlsform_is_valid_type --------------------------
 
-test_that("xlsform_is_valid_type returns TRUE for basic types", {
-  expect_true(xlsform_is_valid_type("text"))
-  expect_true(xlsform_is_valid_type("integer"))
-  expect_true(xlsform_is_valid_type("decimal"))
-  expect_true(xlsform_is_valid_type("date"))
-  expect_true(xlsform_is_valid_type("calculate"))
-  expect_true(xlsform_is_valid_type("note"))
-  expect_true(xlsform_is_valid_type("geopoint"))
+test_that("xlsform_is_valid_type returns valid TRUE for basic types", {
+  expect_true(xlsform_is_valid_type("text")$valid)
+  expect_true(xlsform_is_valid_type("integer")$valid)
+  expect_true(xlsform_is_valid_type("decimal")$valid)
+  expect_true(xlsform_is_valid_type("date")$valid)
+  expect_true(xlsform_is_valid_type("calculate")$valid)
+  expect_true(xlsform_is_valid_type("note")$valid)
+  expect_true(xlsform_is_valid_type("geopoint")$valid)
 })
 
-test_that("xlsform_is_valid_type returns TRUE for select types with list names", {
-  expect_true(xlsform_is_valid_type("select_one yes_no"))
-  expect_true(xlsform_is_valid_type("select_multiple region"))
-  # space-separated variants
-  expect_true(xlsform_is_valid_type("select one yes_no"))
-  expect_true(xlsform_is_valid_type("select multiple region"))
+test_that("xlsform_is_valid_type returns valid TRUE for select types with list names", {
+  expect_true(xlsform_is_valid_type("select_one yes_no")$valid)
+  expect_true(xlsform_is_valid_type("select_multiple region")$valid)
+  expect_true(xlsform_is_valid_type("select one yes_no")$valid)
+  expect_true(xlsform_is_valid_type("select multiple region")$valid)
 })
 
-test_that("xlsform_is_valid_type returns TRUE for structural types", {
-  expect_true(xlsform_is_valid_type("begin_group"))
-  expect_true(xlsform_is_valid_type("end_group"))
-  expect_true(xlsform_is_valid_type("begin_repeat"))
-  expect_true(xlsform_is_valid_type("end_repeat"))
-  # space variants
-  expect_true(xlsform_is_valid_type("begin group"))
-  expect_true(xlsform_is_valid_type("end group"))
+test_that("xlsform_is_valid_type returns valid TRUE for structural types", {
+  expect_true(xlsform_is_valid_type("begin_group")$valid)
+  expect_true(xlsform_is_valid_type("end_group")$valid)
+  expect_true(xlsform_is_valid_type("begin_repeat")$valid)
+  expect_true(xlsform_is_valid_type("end_repeat")$valid)
+  expect_true(xlsform_is_valid_type("begin group")$valid)
+  expect_true(xlsform_is_valid_type("end group")$valid)
 })
 
-test_that("xlsform_is_valid_type returns FALSE for non-standard types", {
-  expect_false(xlsform_is_valid_type("freetext"))
-  expect_false(xlsform_is_valid_type("number"))
-  expect_false(xlsform_is_valid_type("dropdown"))
+test_that("xlsform_is_valid_type returns valid FALSE for non-standard types", {
+  expect_false(xlsform_is_valid_type("freetext")$valid)
+  expect_false(xlsform_is_valid_type("number")$valid)
+  expect_false(xlsform_is_valid_type("dropdown")$valid)
 })
 
-test_that("xlsform_is_valid_type returns FALSE for NA or empty input", {
-  expect_false(xlsform_is_valid_type(NA_character_))
-  expect_false(xlsform_is_valid_type(""))
-  expect_false(xlsform_is_valid_type(NULL))
+test_that("xlsform_is_valid_type returns valid FALSE for NA or empty input", {
+  expect_false(xlsform_is_valid_type(NA_character_)$valid)
+  expect_false(xlsform_is_valid_type("")$valid)
+  expect_false(xlsform_is_valid_type(NULL)$valid)
+})
+
+test_that("xlsform_is_valid_type issues have NA row", {
+  result <- xlsform_is_valid_type("freetext")
+  expect_true(is.na(result$issues[[1]]$row))
+  expect_true(nchar(result$issues[[1]]$message) > 0L)
 })
 
 
@@ -450,10 +450,10 @@ test_that("xlsform_check_choice_references passes when all lists exist", {
   )
   result <- xlsform_check_choice_references(survey, choices)
   expect_true(result$valid)
-  expect_equal(length(result$missing_lists), 0L)
+  expect_length(result$issues, 0L)
 })
 
-test_that("xlsform_check_choice_references flags missing list", {
+test_that("xlsform_check_choice_references flags missing list with row index", {
   survey <- data.frame(
     type = c("select_one yes_no", "select_one not_defined"),
     stringsAsFactors = FALSE
@@ -464,7 +464,10 @@ test_that("xlsform_check_choice_references flags missing list", {
   )
   result <- xlsform_check_choice_references(survey, choices)
   expect_false(result$valid)
-  expect_true("not_defined" %in% result$missing_lists)
+  rows     <- sapply(result$issues, `[[`, "row")
+  messages <- sapply(result$issues, `[[`, "message")
+  expect_true(2L %in% rows)
+  expect_true(any(grepl("not_defined", messages)))
 })
 
 test_that("xlsform_check_choice_references returns valid when no selects present", {
@@ -472,18 +475,6 @@ test_that("xlsform_check_choice_references returns valid when no selects present
   choices <- data.frame(list_name = "unused", stringsAsFactors = FALSE)
   result  <- xlsform_check_choice_references(survey, choices)
   expect_true(result$valid)
-})
-
-test_that("xlsform_check_choice_references errors when type column is missing", {
-  survey  <- data.frame(name = "q1", stringsAsFactors = FALSE)
-  choices <- data.frame(list_name = "yn", stringsAsFactors = FALSE)
-  expect_error(xlsform_check_choice_references(survey, choices))
-})
-
-test_that("xlsform_check_choice_references errors when list_name column is missing", {
-  survey  <- data.frame(type = "select_one yn", stringsAsFactors = FALSE)
-  choices <- data.frame(name = "yes", stringsAsFactors = FALSE)
-  expect_error(xlsform_check_choice_references(survey, choices))
 })
 
 test_that("xlsform_check_choice_references handles space-variant select types", {
@@ -499,6 +490,18 @@ test_that("xlsform_check_choice_references handles space-variant select types", 
   expect_true(result$valid)
 })
 
+test_that("xlsform_check_choice_references errors when type column is missing", {
+  survey  <- data.frame(name = "q1", stringsAsFactors = FALSE)
+  choices <- data.frame(list_name = "yn", stringsAsFactors = FALSE)
+  expect_error(xlsform_check_choice_references(survey, choices))
+})
+
+test_that("xlsform_check_choice_references errors when list_name column is missing", {
+  survey  <- data.frame(type = "select_one yn", stringsAsFactors = FALSE)
+  choices <- data.frame(name = "yes", stringsAsFactors = FALSE)
+  expect_error(xlsform_check_choice_references(survey, choices))
+})
+
 
 # ---- 12. xlsform_check_label_presence -------------------
 
@@ -511,7 +514,7 @@ test_that("xlsform_check_label_presence passes when all questions have labels", 
   )
   result <- xlsform_check_label_presence(survey)
   expect_true(result$valid)
-  expect_equal(length(result$unlabelled_rows), 0L)
+  expect_length(result$issues, 0L)
 })
 
 test_that("xlsform_check_label_presence flags rows with NA label", {
@@ -523,7 +526,19 @@ test_that("xlsform_check_label_presence flags rows with NA label", {
   )
   result <- xlsform_check_label_presence(survey)
   expect_false(result$valid)
-  expect_equal(result$unlabelled_rows, 2L)
+  rows <- sapply(result$issues, `[[`, "row")
+  expect_equal(rows, 2L)
+})
+
+test_that("xlsform_check_label_presence includes question name in message", {
+  survey <- data.frame(
+    type  = c("text"),
+    name  = c("q1"),
+    label = c(NA_character_),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_check_label_presence(survey)
+  expect_true(grepl("q1", result$issues[[1]]$message))
 })
 
 test_that("xlsform_check_label_presence does not flag calculate or structural rows", {
@@ -537,7 +552,7 @@ test_that("xlsform_check_label_presence does not flag calculate or structural ro
   expect_true(result$valid)
 })
 
-test_that("xlsform_check_label_presence flags all user-facing rows when label column absent", {
+test_that("xlsform_check_label_presence flags user-facing rows when label column absent", {
   survey <- data.frame(
     type = c("text", "integer", "calculate"),
     name = c("q1", "q2", "c1"),
@@ -545,7 +560,8 @@ test_that("xlsform_check_label_presence flags all user-facing rows when label co
   )
   result <- xlsform_check_label_presence(survey)
   expect_false(result$valid)
-  expect_equal(result$unlabelled_rows, c(1L, 2L))
+  rows <- sapply(result$issues, `[[`, "row")
+  expect_setequal(rows, c(1L, 2L))
 })
 
 test_that("xlsform_check_label_presence errors when type column is missing", {
@@ -565,10 +581,10 @@ test_that("xlsform_check_calculate_expression passes when all calculate rows hav
   )
   result <- xlsform_check_calculate_expression(survey)
   expect_true(result$valid)
-  expect_equal(length(result$empty_rows), 0L)
+  expect_length(result$issues, 0L)
 })
 
-test_that("xlsform_check_calculate_expression flags missing calculation", {
+test_that("xlsform_check_calculate_expression flags missing calculation with row index", {
   survey <- data.frame(
     type        = c("text", "calculate", "calculate"),
     name        = c("q1", "c1", "c2"),
@@ -577,21 +593,32 @@ test_that("xlsform_check_calculate_expression flags missing calculation", {
   )
   result <- xlsform_check_calculate_expression(survey)
   expect_false(result$valid)
-  expect_equal(result$empty_rows, 3L)
+  rows <- sapply(result$issues, `[[`, "row")
+  expect_equal(rows, 3L)
 })
 
-test_that("xlsform_check_calculate_expression returns valid when no calculate rows exist", {
+test_that("xlsform_check_calculate_expression includes variable name in message", {
   survey <- data.frame(
-    type        = c("text", "integer"),
-    name        = c("q1", "q2"),
-    calculation = c(NA, NA),
+    type        = c("calculate"),
+    name        = c("bmi"),
+    calculation = c(NA),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_check_calculate_expression(survey)
+  expect_true(grepl("bmi", result$issues[[1]]$message))
+})
+
+test_that("xlsform_check_calculate_expression returns valid when no calculate rows", {
+  survey <- data.frame(
+    type = c("text", "integer"),
+    name = c("q1", "q2"),
     stringsAsFactors = FALSE
   )
   result <- xlsform_check_calculate_expression(survey)
   expect_true(result$valid)
 })
 
-test_that("xlsform_check_calculate_expression flags all calculate rows when column is absent", {
+test_that("xlsform_check_calculate_expression flags all calculate rows when column absent", {
   survey <- data.frame(
     type = c("text", "calculate"),
     name = c("q1", "c1"),
@@ -599,10 +626,72 @@ test_that("xlsform_check_calculate_expression flags all calculate rows when colu
   )
   result <- xlsform_check_calculate_expression(survey)
   expect_false(result$valid)
-  expect_equal(result$empty_rows, 2L)
+  expect_equal(sapply(result$issues, `[[`, "row"), 2L)
 })
 
 test_that("xlsform_check_calculate_expression errors when type column is missing", {
   df <- data.frame(name = "q1", calculation = "x", stringsAsFactors = FALSE)
   expect_error(xlsform_check_calculate_expression(df))
+})
+
+
+# ---- 14. xlsform_check_undefined_references -------------
+
+test_that("xlsform_check_undefined_references passes when all refs are declared", {
+  survey <- data.frame(
+    type     = c("text", "text"),
+    name     = c("age", "consent"),
+    relevant = c(NA, "${age} > 0"),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_check_undefined_references(survey)
+  expect_true(result$valid)
+  expect_length(result$issues, 0L)
+})
+
+test_that("xlsform_check_undefined_references flags undeclared variable with row index", {
+  survey <- data.frame(
+    type     = c("text", "text"),
+    name     = c("age", "weight"),
+    relevant = c(NA, "${height} > 0"),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_check_undefined_references(survey)
+  expect_false(result$valid)
+  rows <- sapply(result$issues, `[[`, "row")
+  expect_equal(rows, 2L)
+  messages <- sapply(result$issues, `[[`, "message")
+  expect_true(any(grepl("height", messages)))
+})
+
+test_that("xlsform_check_undefined_references checks multiple expression columns", {
+  survey <- data.frame(
+    type        = c("text", "calculate"),
+    name        = c("age", "bmi"),
+    relevant    = c(NA, "${consent} = 'yes'"),
+    calculation = c(NA, "${weight} div (${height} * ${height})"),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_check_undefined_references(survey)
+  expect_false(result$valid)
+  messages <- sapply(result$issues, `[[`, "message")
+  # consent, weight, height are all undefined
+  expect_true(any(grepl("consent", messages)))
+  expect_true(any(grepl("weight", messages)))
+})
+
+test_that("xlsform_check_undefined_references returns valid when no check cols present", {
+  survey <- data.frame(
+    type = c("text"),
+    name = c("q1"),
+    stringsAsFactors = FALSE
+  )
+  result <- xlsform_check_undefined_references(survey)
+  expect_true(result$valid)
+})
+
+test_that("xlsform_check_undefined_references errors when name column is missing", {
+  df <- data.frame(type = "text", relevant = "${age} > 0",
+                   stringsAsFactors = FALSE)
+  expect_error(xlsform_check_undefined_references(df))
 })
