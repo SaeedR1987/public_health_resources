@@ -32,6 +32,7 @@ rm(list = ls())
 devtools::load_all()
 library(tibble)
 library(dplyr)
+library(rsvg)
 
 
 # =============================================================================
@@ -185,7 +186,7 @@ survey_protocol$add_stratum(
   stratum_name            = "Urban North",
   population_size         = 45000,
   pop_design_effect       = 1.5,
-  pop_precision           = 0.05,
+  pop_precision           = 5,
   pop_expected_prevalence = 50,
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
@@ -203,7 +204,7 @@ survey_protocol$add_stratum(
   stratum_name            = "Peri-Urban East",
   population_size         = 28000,
   pop_design_effect       = 1.8,
-  pop_precision           = 0.05,
+  pop_precision           = 5,
   pop_expected_prevalence = 50,
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
@@ -216,13 +217,17 @@ survey_protocol$add_stratum(
   stratum_name            = "Rural South",
   population_size         = 17000,
   pop_design_effect       = 2.0,
-  pop_precision           = 0.07,
+  pop_precision           = 7,
   pop_expected_prevalence = 50,
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
   mort_indicator          = "crude_death_rate",
   sampling_method         = "proportional"
 )
+
+survey_protocol$calculate_sample_sizes()
+
+survey_protocol$sample_table
 
 # Inspect master sample table before sample sizes are calculated
 survey_protocol$get_sample_table()
