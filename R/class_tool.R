@@ -976,7 +976,6 @@ private = list(
   .tool_type = NULL,
   .created_at = NULL,
   .modified_at = NULL,
-
   .modified_survey = NULL,
   .modified_choices = NULL,
   .selected_indicators = NULL,

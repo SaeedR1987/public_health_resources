@@ -350,3 +350,69 @@ test_that("ANAFramework$update_adjusted_svg warns when master_svg is NULL", {
   expect_warning(af$update_adjusted_svg())
 })
 
+# ---- Protocol$add_tools / validate_objective_schema tests ----
+
+test_that("Protocol$add_tools stores tools by name for $ access", {
+  p <- Protocol$new()
+  p$add_tools("household")
+  expect_true("household" %in% names(p$tools))
+  expect_true(inherits(p$tools[["household"]], "HouseholdTool"))
+})
+
+test_that("Protocol$add_tools uses tool_name when provided", {
+  p <- Protocol$new()
+  p$add_tools("household", tool_name = "my_hh_tool")
+  expect_true("my_hh_tool" %in% names(p$tools))
+})
+
+test_that("Protocol$add_tools auto-increments duplicate tool types", {
+  p <- Protocol$new()
+  p$add_tools("household")
+  p$add_tools("household")
+  nms <- names(p$tools)
+  expect_true("household" %in% nms)
+  expect_true(any(grepl("^household_", nms)))
+})
+
+test_that("Protocol$validate_objective_schema works as a method", {
+  p <- Protocol$new()
+  good <- data.frame(
+    sector = "Health", pillar = "P1", sub_pillar = "SP1",
+    short_objective = "H1", text_objective = "Obj 1",
+    stringsAsFactors = FALSE
+  )
+  expect_true(p$validate_objective_schema(good))
+})
+
+test_that("Protocol$validate_objective_schema errors on bad schema via method", {
+  p <- Protocol$new()
+  bad <- data.frame(x = 1:3)
+  expect_error(p$validate_objective_schema(bad))
+})
+
+# ---- Tool public fields tests ----
+
+test_that("Tool$survey is a public field accessible directly", {
+  t <- Tool$new()
+  expect_true(is.data.frame(t$survey))
+  new_survey <- data.frame(type = "text", name = "q1", label = "Question 1",
+                           stringsAsFactors = FALSE)
+  t$survey <- new_survey
+  expect_equal(t$survey$name, "q1")
+})
+
+test_that("Tool$choices is a public field", {
+  t <- Tool$new()
+  expect_true(is.data.frame(t$choices))
+})
+
+test_that("Tool$settings is a public field", {
+  t <- Tool$new()
+  expect_true(is.data.frame(t$settings))
+})
+
+test_that("Framework$render_framework_svg errors when no SVG is set", {
+  fw <- Framework$new()
+  expect_error(fw$render_framework_svg())
+})
+
