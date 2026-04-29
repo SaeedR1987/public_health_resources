@@ -25,61 +25,6 @@
   all(vapply(objectives, function(x) is.list(x) && !is.null(x$short_objective), logical(1L)))
 }
 
-#' Create an objective
-#'
-#' Creates an objective using the standard fields from the reference schema:
-#' sector, pillar, sub_pillar, short_objective, text_objective, and data_source.
-#'
-#' @param sector Character. Sector (e.g. "General", "FSL", "Health", "Nutrition", "WASH").
-#' @param pillar Character. Pillar within the sector (e.g. "Demographics").
-#' @param sub_pillar Character. Sub-pillar within the pillar.
-#' @param short_objective Character. Short label for the objective (should be unique).
-#' @param text_objective Character. Full descriptive text of the objective.
-#' @param data_source Character. Data source type ("primary" or "secondary").  Defaults to
-#'   \code{"primary"} when not supplied.
-#' @return Named list representing an objective.
-#' @export
-create_objective <- function(sector,
-                             pillar,
-                             sub_pillar,
-                             short_objective,
-                             text_objective,
-                             data_source = "primary") {
-
-  origin <- "create_objective"
-
-  phr_try({
-
-    required <- list(
-      sector          = sector,
-      pillar          = pillar,
-      sub_pillar      = sub_pillar,
-      short_objective = short_objective,
-      text_objective  = text_objective
-    )
-
-    for (nm in names(required)) {
-      val <- required[[nm]]
-      phr_assert(
-        !is.null(val) && !(length(val) == 1L && is.na(val)) && nzchar(as.character(val)),
-        message = phr_txt("'{nm}' is a required field and must be a non-empty string."),
-        origin  = origin
-      )
-    }
-
-    list(
-      sector          = as.character(sector),
-      pillar          = as.character(pillar),
-      sub_pillar      = as.character(sub_pillar),
-      short_objective = as.character(short_objective),
-      text_objective  = as.character(text_objective),
-      data_source     = .normalize_data_source(data_source),
-      created_date    = Sys.time()
-    )
-
-  }, on_error = "abort", origin = origin)
-}
-
 #' Create multiple objectives from a data frame
 #'
 #' @param objectives_df Data frame with columns: sector, pillar, sub_pillar,
@@ -105,13 +50,14 @@ create_objectives_from_df <- function(objectives_df) {
       raw_ds      <- if ("data_source" %in% names(row)) row$data_source else NA_character_
       data_source <- .normalize_data_source(raw_ds)
 
-      obj <- create_objective(
+      obj <- list(
         sector          = as.character(row$sector),
         pillar          = as.character(row$pillar),
         sub_pillar      = as.character(row$sub_pillar),
         short_objective = as.character(row$short_objective),
         text_objective  = as.character(row$text_objective),
-        data_source     = data_source
+        data_source     = data_source,
+        created_date    = Sys.time()
       )
 
       objectives_list[[length(objectives_list) + 1]] <- obj
@@ -163,7 +109,7 @@ flatten_objectives <- function(objectives) {
 #' \code{sector → pillar → sub_pillar → data_source → [objectives]} structure.
 #'
 #' @param objectives_flat List.  Flat list of objective named lists as produced
-#'   by \code{create_objective()} or \code{create_objectives_from_df()}.
+#'   by \code{create_objectives_from_df()}.
 #' @return Nested list suitable for assignment to \code{protocol$objectives}.
 #' @export
 nest_objectives <- function(objectives_flat) {

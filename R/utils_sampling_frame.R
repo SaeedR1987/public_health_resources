@@ -8,7 +8,10 @@
 #' Validates a sampling frame for use in sample drawing operations.  Uses
 #' existing \pkg{phr} validator helpers where possible.
 #'
-#' Required column: \code{psu} (primary sampling unit identifier).
+#' Required columns (in the prescribed order for a compliant frame):
+#' \code{stratum}, \code{psu}, \code{population_size}, \code{inclusion}.
+#' The columns \code{sampled_psu} and \code{allocated_sample} are added
+#' automatically by \code{draw_sample()} and are not required on input.
 #'
 #' Optional but validated if present:
 #' \itemize{
@@ -16,12 +19,11 @@
 #'     created with all \code{TRUE} values by \code{set_sampling_frame()} if
 #'     absent.
 #'   \item \code{population_size} — positive numeric sizes.
-#'   \item \code{stratum} — strata labels (empty strata are flagged).
 #' }
 #'
 #' @param frame Data frame. The sampling frame to validate.
 #' @param required_cols Character vector. Additional required column names
-#'   beyond \code{"psu"} (default \code{character(0)}).
+#'   beyond the standard set (default \code{character(0)}).
 #' @return List with \code{valid} (logical), \code{message} (character on
 #'   failure), \code{issues} (named list on failure), or \code{summary}
 #'   (named list on success).
@@ -41,8 +43,9 @@ validate_sampling_frame <- function(frame, required_cols = character(0)) {
     return(list(valid = FALSE, message = "Frame is empty."))
   }
 
-  # ---- Required columns (psu is always required) ----------------------
-  all_required <- unique(c("psu", required_cols))
+  # ---- Required columns: stratum, psu, population_size ----------------
+  standard_required <- c("stratum", "psu", "population_size")
+  all_required <- unique(c(standard_required, required_cols))
   missing_cols <- setdiff(all_required, names(frame))
   if (length(missing_cols) > 0) {
     issues$missing_columns <- missing_cols
@@ -74,15 +77,6 @@ validate_sampling_frame <- function(frame, required_cols = character(0)) {
   if ("population_size" %in% names(frame)) {
     if (any(frame$population_size <= 0, na.rm = TRUE)) {
       issues$invalid_population_size <- sum(frame$population_size <= 0, na.rm = TRUE)
-    }
-  }
-
-  # ---- Stratum checks -------------------------------------------------
-  if ("stratum" %in% names(frame)) {
-    strata_counts <- table(frame$stratum)
-    empty_strata <- names(strata_counts[strata_counts == 0])
-    if (length(empty_strata) > 0) {
-      issues$empty_strata <- empty_strata
     }
   }
 
@@ -174,6 +168,9 @@ check_frame_coverage <- function(frame, sample_table) {
 
 #' Create a synthetic sampling frame for testing
 #'
+#' Creates a synthetic sampling frame with the standard column structure:
+#' \code{stratum}, \code{psu}, \code{population_size}, \code{inclusion}.
+#'
 #' @param strata_config List. Configuration for each stratum with name, size, pop_range
 #' @param seed Integer. Random seed for reproducibility
 #' @return Data frame. A synthetic sampling frame
@@ -196,10 +193,10 @@ create_synthetic_frame <- function(strata_config, seed = NULL) {
                               min = pop_range[1], 
                               max = pop_range[2]))
     
-    # Create frame for this stratum
+    # Create frame for this stratum (standard column order: stratum, psu, population_size, inclusion)
     stratum_frame <- data.frame(
-      psu             = paste0(stratum_name, "_", seq_len(num_units)),
       stratum         = stratum_name,
+      psu             = paste0(stratum_name, "_", seq_len(num_units)),
       population_size = populations,
       inclusion       = TRUE,
       stringsAsFactors = FALSE

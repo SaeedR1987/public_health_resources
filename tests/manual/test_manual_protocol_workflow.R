@@ -46,11 +46,11 @@ month_year       <- "March 2025"
 # =============================================================================
 # Test 1: Create a base Protocol Object ####
 # =============================================================================
-# Use create_protocol() factory (or Protocol$new() directly).
+# Use Protocol$new() directly.
 # The base Protocol handles objectives, tools, and report generation only.
 # Use SurveyProtocol for anything sampling-related (Tests 4-7 below).
 
-protocol <- create_protocol(
+protocol <- Protocol$new(
   assessment_title = assessment_title,
   country_name     = country_name,
   month_year       = month_year
@@ -76,23 +76,46 @@ validate_objective_schema(protocol$framework$master_schema)
 
 
 # =============================================================================
-# Test 2: Define Objectives ####
+# Test 2: Define Objectives via Framework ####
 # =============================================================================
+# Objectives are now managed through the Framework's adjusted_schema.
+# Use Framework$add_objective_row() / remove_objective_row() / update_adjusted_schema().
 
-# -- 2a: Create objectives using create_objective() --
-# data_source distinguishes primary vs secondary
+# -- 2a: Select objectives from the ANAFramework using a preset --
+fsl_preset <- ana_fw$get_preset_objectives("fsl")
+cat("FSL preset objectives:", length(fsl_preset), "\n")
+
+# Set adjusted_schema to the FSL preset selection
+protocol$framework$update_adjusted_schema(fsl_preset)
+stopifnot(is.data.frame(protocol$framework$adjusted_schema))
+stopifnot(nrow(protocol$framework$adjusted_schema) > 0)
+cat("Adjusted schema rows after FSL preset:", nrow(protocol$framework$adjusted_schema), "\n")
+
+# -- 2b: Add an objective row directly to the adjusted schema --
+protocol$framework$add_objective_row(list(
+  sector          = "General",
+  pillar          = "Context",
+  sub_pillar      = "Background",
+  short_objective = "GEN-01",
+  text_objective  = "Review secondary data on humanitarian conditions in the study area"
+))
+cat("Adjusted schema rows after add_objective_row:", nrow(protocol$framework$adjusted_schema), "\n")
+
+# -- 2c: Remove an objective row from the adjusted schema --
+protocol$framework$remove_objective_row("GEN-01")
+cat("Adjusted schema rows after remove_objective_row:", nrow(protocol$framework$adjusted_schema), "\n")
 
 
 # =============================================================================
 # Test 3: Generate Word Report from base Protocol ####
 # =============================================================================
-# generate_report() uses officer + flextable (bundled template used when present).
+# generate_reach_tor() uses officer + flextable (bundled template used when present).
 # The standalone wrapper generate_protocol_report() dispatches to the method.
 
 # -- 3a: Generate report with no tools (tools section shows placeholder text) --
 
 report_no_tools <- tempfile(fileext = ".docx")
-protocol$generate_report(output_file = report_no_tools)
+protocol$generate_reach_tor(output_file = report_no_tools)
 stopifnot(file.exists(report_no_tools))
 cat("Base protocol report (no tools) written to:", report_no_tools, "\n")
 
@@ -130,8 +153,8 @@ survey_protocol <- create_survey_protocol(
 stopifnot(inherits(survey_protocol, "SurveyProtocol"))
 stopifnot(inherits(survey_protocol, "Protocol"))
 
-# Copy the objectives from the base protocol to the survey protocol
-survey_protocol$set_objectives(flatten_objectives(protocol$objectives))
+# Attach the same ANAFramework (with adjusted objectives) to the survey protocol
+survey_protocol$framework <- protocol$framework
 
 # Add target strata to metadata
 survey_protocol$add_target_stratum("strata_A", "Urban North")
@@ -149,36 +172,47 @@ survey_protocol$metadata$target_strata
 # ind_indicator and mort_indicator are required columns
 
 survey_protocol$add_stratum(
-  stratum_id        = "strata_A",
-  stratum_name      = "Urban North",
-  population_size   = 45000,
-  pop_design_effect = 1.5,
-  pop_precision     = 0.05,
-  ind_indicator     = "wasting_prevalence",
-  mort_indicator    = "crude_death_rate",
-  sampling_method   = "proportional"
+  stratum_id              = "strata_A",
+  stratum_name            = "Urban North",
+  population_size         = 45000,
+  pop_design_effect       = 1.5,
+  pop_precision           = 0.05,
+  pop_expected_prevalence = 50,
+  pop_nonresponse         = 10,
+  ind_indicator           = "wasting_prevalence",
+  ind_expected_prevalence = 15,
+  ind_precision           = 5,
+  ind_nonresponse         = 10,
+  ind_design_effect       = 1.5,
+  ind_avg_hh_size         = 5.2,
+  mort_indicator          = "crude_death_rate",
+  sampling_method         = "proportional"
 )
 
 survey_protocol$add_stratum(
-  stratum_id        = "strata_B",
-  stratum_name      = "Peri-Urban East",
-  population_size   = 28000,
-  pop_design_effect = 1.8,
-  pop_precision     = 0.05,
-  ind_indicator     = "wasting_prevalence",
-  mort_indicator    = "crude_death_rate",
-  sampling_method   = "proportional"
+  stratum_id              = "strata_B",
+  stratum_name            = "Peri-Urban East",
+  population_size         = 28000,
+  pop_design_effect       = 1.8,
+  pop_precision           = 0.05,
+  pop_expected_prevalence = 50,
+  pop_nonresponse         = 10,
+  ind_indicator           = "wasting_prevalence",
+  mort_indicator          = "crude_death_rate",
+  sampling_method         = "proportional"
 )
 
 survey_protocol$add_stratum(
-  stratum_id        = "strata_C",
-  stratum_name      = "Rural South",
-  population_size   = 17000,
-  pop_design_effect = 2.0,
-  pop_precision     = 0.07,
-  ind_indicator     = "wasting_prevalence",
-  mort_indicator    = "crude_death_rate",
-  sampling_method   = "proportional"
+  stratum_id              = "strata_C",
+  stratum_name            = "Rural South",
+  population_size         = 17000,
+  pop_design_effect       = 2.0,
+  pop_precision           = 0.07,
+  pop_expected_prevalence = 50,
+  pop_nonresponse         = 10,
+  ind_indicator           = "wasting_prevalence",
+  mort_indicator          = "crude_death_rate",
+  sampling_method         = "proportional"
 )
 
 # Inspect master sample table before sample sizes are calculated
@@ -193,45 +227,22 @@ strata_validation$message
 # Also validate via standalone function
 validate_strata_table(survey_protocol$sample_table)
 
-# -- 5b: Calculate sample sizes for each stratum --
+# -- 5b: Calculate sample sizes via calculate_sample_sizes() method --
+# This replaces the old manual approach of calling calculate_sample_size_general() per stratum
+# and manually writing results back.
 
-ss_A <- calculate_sample_size_general(
-  expected_proportion = 50,
-  desired_precision   = 5,
-  non_response_rate   = 10,
-  design              = "cluster",
-  design_effect       = 1.5,
-  fpc                 = TRUE,
-  total_population    = 45000,
-  confidence_level    = 0.95
-)
-cat("Stratum A – calculated sample size:", ss_A, "\n")
+survey_protocol$calculate_sample_sizes()
+survey_protocol$get_sample_table()
 
-ss_B <- calculate_sample_size_general(
-  expected_proportion = 50,
-  desired_precision   = 5,
-  non_response_rate   = 10,
-  design              = "cluster",
-  design_effect       = 1.8,
-  fpc                 = TRUE,
-  total_population    = 28000,
-  confidence_level    = 0.95
-)
-cat("Stratum B – calculated sample size:", ss_B, "\n")
+# Inspect the new result columns
+st <- survey_protocol$sample_table
+cat("Column names:\n"); print(names(st))
+cat("General_HH_Sample_Size:", st$General_HH_Sample_Size, "\n")
+cat("Ind_HH_Sample_Size:",     st$Ind_HH_Sample_Size, "\n")
+cat("Final_HH_Sample_Size:",   st$Final_HH_Sample_Size, "\n")
+cat("Total planned sample size:", sum(st$General_HH_Sample_Size, na.rm = TRUE), "\n")
 
-ss_C <- calculate_sample_size_general(
-  expected_proportion = 50,
-  desired_precision   = 7,
-  non_response_rate   = 10,
-  design              = "cluster",
-  design_effect       = 2.0,
-  fpc                 = TRUE,
-  total_population    = 17000,
-  confidence_level    = 0.95
-)
-cat("Stratum C – calculated sample size:", ss_C, "\n")
-
-# -- 5c: Individual-level calculation for nutrition screening --
+# -- 5c: Individual-level calculation for nutrition screening (standalone) --
 
 ss_nut <- calculate_sample_size_individual(
   expected_proportion    = 15,
@@ -246,15 +257,6 @@ ss_nut <- calculate_sample_size_individual(
 cat("Nutrition screening – individuals needed:", ss_nut$sample_size_individuals, "\n")
 cat("Nutrition screening – households needed: ", ss_nut$sample_size_households,  "\n")
 
-# -- 5d: Write calculated sample sizes back into the sample table --
-
-survey_protocol$sample_table$pop_result_dummy[survey_protocol$sample_table$stratum_id == "strata_A"] <- ss_A
-survey_protocol$sample_table$pop_result_dummy[survey_protocol$sample_table$stratum_id == "strata_B"] <- ss_B
-survey_protocol$sample_table$pop_result_dummy[survey_protocol$sample_table$stratum_id == "strata_C"] <- ss_C
-
-survey_protocol$get_sample_table()
-cat("Total planned sample size:", sum(survey_protocol$sample_table$pop_result_dummy, na.rm = TRUE), "\n")
-
 # Summary includes sampling fields for SurveyProtocol
 sp_summary <- survey_protocol$get_protocol_summary()
 stopifnot("num_strata" %in% names(sp_summary))
@@ -265,26 +267,28 @@ stopifnot(sp_summary$num_strata == 3L)
 # Test 6: Build and Validate a Sampling Frame ####
 # =============================================================================
 
-# -- 6a: Generate a dummy sampling frame (villages / enumeration areas) --
+# -- 6a: Generate a dummy sampling frame (PSUs / enumeration areas) --
+# Standard column order: stratum, psu, population_size, inclusion
+# (village_name removed — represented by psu)
 
 set.seed(42)
 
-make_villages <- function(stratum_id, n_villages, pop_range) {
+make_psu_frame <- function(stratum_id, n_psu, pop_range) {
   tibble::tibble(
-    psu             = paste0(stratum_id, "_v", seq_len(n_villages)),
     stratum         = stratum_id,
-    village_name    = paste0(stratum_id, "_Village_", seq_len(n_villages)),
-    population_size = sample(pop_range[1]:pop_range[2], n_villages, replace = TRUE)
+    psu             = paste0(stratum_id, "_v", seq_len(n_psu)),
+    population_size = sample(pop_range[1]:pop_range[2], n_psu, replace = TRUE),
+    inclusion       = TRUE
   )
 }
 
-frame_A <- make_villages("strata_A", n_villages = 60, pop_range = c(400, 1200))
-frame_B <- make_villages("strata_B", n_villages = 45, pop_range = c(250, 800))
-frame_C <- make_villages("strata_C", n_villages = 30, pop_range = c(100, 500))
+frame_A <- make_psu_frame("strata_A", n_psu = 60, pop_range = c(400, 1200))
+frame_B <- make_psu_frame("strata_B", n_psu = 45, pop_range = c(250, 800))
+frame_C <- make_psu_frame("strata_C", n_psu = 30, pop_range = c(100, 500))
 
 sampling_frame <- dplyr::bind_rows(frame_A, frame_B, frame_C)
 
-cat("Sampling frame: ", nrow(sampling_frame), "villages across",
+cat("Sampling frame: ", nrow(sampling_frame), "PSUs across",
     length(unique(sampling_frame$stratum)), "strata\n")
 head(sampling_frame)
 
@@ -310,11 +314,11 @@ survey_protocol$get_issues()
 # draw_sample() reads Sampling_Method, Final_HH_Sample_Size, n_psu,
 # n_clusters, cluster_size, and n_sites from the strata table.
 
-# -- 7a: Set Final_HH_Sample_Size for each stratum --
+# -- 7a: Final_HH_Sample_Size is already set by calculate_sample_sizes() above.
+# Verify it was computed correctly:
 
-survey_protocol$sample_table$Final_HH_Sample_Size[survey_protocol$sample_table$stratum_id == "strata_A"] <- ss_A
-survey_protocol$sample_table$Final_HH_Sample_Size[survey_protocol$sample_table$stratum_id == "strata_B"] <- ss_B
-survey_protocol$sample_table$Final_HH_Sample_Size[survey_protocol$sample_table$stratum_id == "strata_C"] <- ss_C
+cat("Final_HH_Sample_Size values:", survey_protocol$sample_table$Final_HH_Sample_Size, "\n")
+stopifnot(!all(is.na(survey_protocol$sample_table$Final_HH_Sample_Size)))
 
 # -- 7b: Draw using proportional method (reads from Sampling_Method column) --
 
@@ -373,7 +377,7 @@ head(sample_result_A[!is.na(sample_result_A$sampled_psu), ])
 purposive_result <- draw_sample_psu_purposive(frame_A)
 sum(is.na(purposive_result$sampled_psu))  # all NA
 
-sample_srs_A <- draw_sample_srs(frame_A, n = ss_A, seed = 789)
+sample_srs_A <- draw_sample_srs(frame_A, n = 100, seed = 789)
 head(sample_srs_A)
 attr(sample_srs_A, "sampling_method")
 attr(sample_srs_A, "n_drawn")
@@ -626,14 +630,20 @@ exported$metadata
 exported$summary
 
 count_objectives(exported$objectives)
-objectives_to_df(exported$objectives)
-
-nrow(exported$objective_schema)
-names(exported$objective_schema)
 
 # Sampling fields present in export
 exported$sample_table
 names(exported$sample_table)
+
+# Confirm new sample size column names
+stopifnot("General_HH_Sample_Size" %in% names(exported$sample_table))
+stopifnot("Ind_HH_Sample_Size" %in% names(exported$sample_table))
+stopifnot("Mort_HH_Sample_Size" %in% names(exported$sample_table))
+stopifnot("Ind_Sample_Size" %in% names(exported$sample_table))
+stopifnot("Mort_Ind_Sample_Size" %in% names(exported$sample_table))
+stopifnot("Mort_PT_Sample_Size" %in% names(exported$sample_table))
+stopifnot("Final_HH_Sample_Size" %in% names(exported$sample_table))
+
 nrow(exported$drawn_sample)
 nrow(exported$drawn_sample_full)
 
@@ -669,14 +679,14 @@ stopifnot(!inherits(restored_base, "SurveyProtocol"))
 # =============================================================================
 # Test 12: Report Generation ####
 # =============================================================================
-# generate_report() / generate_protocol_report() write a .docx file.
-# base Protocol: metadata + objectives + tools (skipped if empty)
-# SurveyProtocol: adds Sampling Design section (strata table + selected PSUs)
+# generate_reach_tor() / generate_protocol_report() write a .docx file.
+# base Protocol: metadata + objectives + tools + sampling placeholder
+# SurveyProtocol: adds full Sampling Design section (strata table + selected PSUs)
 
 # -- 12a: SurveyProtocol report after draw_sample() was called --
 
 report_survey_path <- tempfile(fileext = ".docx")
-survey_protocol$generate_report(output_file = report_survey_path)
+survey_protocol$generate_reach_tor(output_file = report_survey_path)
 stopifnot(file.exists(report_survey_path))
 cat("SurveyProtocol report written to:", report_survey_path, "\n")
 
@@ -703,24 +713,27 @@ sp_no_draw$add_stratum(
   n_psu           = 10
 )
 report_no_draw <- tempfile(fileext = ".docx")
-sp_no_draw$generate_report(output_file = report_no_draw)
+sp_no_draw$generate_reach_tor(output_file = report_no_draw)
 stopifnot(file.exists(report_no_draw))
 cat("SurveyProtocol report (no draw) written to:", report_no_draw, "\n")
 
-# -- 12c: Base Protocol report (no tools) --
+# -- 12c: Base Protocol report using objectives from Framework --
 
-base_only <- create_protocol(
+base_only <- Protocol$new(
   assessment_title = "Secondary Data Review",
   country_name     = "Country X",
   month_year       = "April 2025"
 )
-base_only$add_objective(create_objective(
+# Use a custom Framework to define objectives
+base_only_fw <- Framework$new()
+base_only_fw$add_objective_row(list(
   sector          = "General",
   pillar          = "Context",
   sub_pillar      = "Background",
   short_objective = "GEN-01",
   text_objective  = "Review secondary data on humanitarian conditions"
 ))
+base_only$framework <- base_only_fw
 
 report_base_path <- tempfile(fileext = ".docx")
 generate_protocol_report(base_only, output_file = report_base_path)
@@ -749,23 +762,22 @@ stopifnot(is.null(fw_base$master_schema))
 stopifnot(is.null(fw_base$master_svg))
 
 manual_schema <- data.frame(
-  sector          = c("FSL", "FSL", "WASH"),
-  pillar          = c("Food Security", "Food Security", "Water"),
-  sub_pillar      = c("FoodSecurity", "FoodSecurity", "WaterSecurity"),
-  short_objective = c("FSL-01", "FSL-02", "WASH-01"),
-  text_objective  = c("Estimate food insecurity", "Assess coping strategies", "Assess water access"),
-  core            = c("Core", NA, NA),
-  extended        = c(NA, "Extended", "Extended"),
-  outcomes        = c(NA, NA, NA),
-  fsl             = c("FSL", "FSL", NA),
-  wash            = c(NA, NA, "WASH"),
-  health          = c(NA, NA, NA),
+  sector          = c("FSL", "FSL", "WASH", "WASH"),
+  pillar          = c("Food Security", "Food Security", "Water", "Water"),
+  sub_pillar      = c("FoodSecurity", "FoodSecurity", "WaterSecurity", "WaterSecurity"),
+  short_objective = c("FSL-01", "FSL-01", "WASH-01", "WASH-01"),
+  text_objective  = c("Estimate food insecurity", "Estimate food insecurity", "Assess water access", "Assess water access"),
+  indicator       = c("FCS", "HDDS", "Water Source", "Water Quality"),
+  core            = c("Core", "Core", NA, NA),
+  extended        = c(NA, NA, "Extended", "Extended"),
   stringsAsFactors = FALSE
 )
 
+# Duplicate short_objectives are now ALLOWED (multiple indicators per objective)
 fw_base$set_master_schema(manual_schema)
 stopifnot(is.data.frame(fw_base$master_schema))
-stopifnot(nrow(fw_base$master_schema) == 3)
+stopifnot(nrow(fw_base$master_schema) == 4)
+validate_objective_schema(fw_base$master_schema)  # should pass without warnings
 
 fw_base$set_master_svg('<svg><g id="FoodSecurity"><rect fill="white" stroke="black"/></g><g id="WaterSecurity"><rect fill="white" stroke="black"/></g></svg>')
 stopifnot(!is.null(fw_base$master_svg))
@@ -775,8 +787,8 @@ cat("Base Framework created with manual schema (3 rows) and SVG.\n")
 
 fw_base$update_adjusted_schema(c("FSL-01", "WASH-01"))
 stopifnot(is.data.frame(fw_base$adjusted_schema))
-stopifnot(nrow(fw_base$adjusted_schema) == 2)
-cat("Adjusted schema rows:", nrow(fw_base$adjusted_schema), "(expected 2)\n")
+stopifnot(nrow(fw_base$adjusted_schema) == 4)  # 2 rows each for FSL-01 and WASH-01
+cat("Adjusted schema rows:", nrow(fw_base$adjusted_schema), "(expected 4, 2 per objective)\n")
 
 # -- 13c: Base Framework update_adjusted_svg() hides non-selected elements --
 
@@ -860,7 +872,7 @@ if (length(fsl_sub_pillars) > 0) {
 
 # -- 13i: Attach framework to a Protocol and round-trip via export/restore --
 
-fw_protocol <- create_protocol(
+fw_protocol <- Protocol$new(
   assessment_title = "ANA Framework Integration Test",
   country_name     = "Test Country",
   month_year       = "April 2026"
@@ -906,5 +918,38 @@ af2$update_adjusted_schema(wash_objs)
 af2$update_adjusted_svg(highlight_colour = "lightblue", default_colour = "white")
 stopifnot(!is.null(af2$adjusted_svg))
 cat("WASH preset adjusted SVG generated with lightblue highlight.\n")
+
+# -- 13l: Framework$add_objective_row() and remove_objective_row() --
+
+fw_edit <- Framework$new()
+fw_edit$add_objective_row(list(
+  sector          = "FSL",
+  pillar          = "Food Security",
+  sub_pillar      = "FCS",
+  short_objective = "FSL-01",
+  text_objective  = "Estimate food insecurity prevalence"
+))
+fw_edit$add_objective_row(list(
+  sector          = "FSL",
+  pillar          = "Food Security",
+  sub_pillar      = "FCS",
+  short_objective = "FSL-01",
+  text_objective  = "Estimate food insecurity prevalence",
+  indicator       = "HDDS score"
+))
+stopifnot(nrow(fw_edit$adjusted_schema) == 2L)
+cat("Framework adjusted_schema rows after 2 add_objective_row calls:", nrow(fw_edit$adjusted_schema), "\n")
+
+fw_edit$remove_objective_row("FSL-01")
+stopifnot(is.null(fw_edit$adjusted_schema) || nrow(fw_edit$adjusted_schema) == 0L)
+cat("Framework adjusted_schema rows after remove_objective_row:", nrow(fw_edit$adjusted_schema), "\n")
+
+# -- 13m: render_framework_svg() on a Protocol --
+
+fw_protocol$framework$update_adjusted_svg()
+svg_file <- tempfile(fileext = ".svg")
+fw_protocol$render_framework_svg(output_file = svg_file)
+stopifnot(file.exists(svg_file))
+cat("Framework SVG written to:", svg_file, "\n")
 
 cat("\n=== Framework and ANAFramework workflow test completed successfully ===\n")

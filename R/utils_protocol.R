@@ -6,22 +6,12 @@
 # Minimum columns every master strata table must contain.
 .strata_table_required_cols <- c(
   "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
-  "pop_indicator", "pop_result_dummy",
-  "ind_indicator", "ind_result_dummy",
-  "mort_indicator", "mort_result_dummy",
+  "pop_indicator", "General_HH_Sample_Size",
+  "ind_indicator", "Ind_HH_Sample_Size",
+  "mort_indicator", "Mort_HH_Sample_Size",
+  "Ind_Sample_Size", "Mort_Ind_Sample_Size", "Mort_PT_Sample_Size",
   "Final_HH_Sample_Size"
 )
-
-#' Create a new protocol instance
-#'
-#' @param assessment_title Character. Title of the assessment
-#' @param country_name Character. Country where assessment takes place
-#' @param month_year Character. Month and year of data collection
-#' @return A new Protocol object
-#' @export
-create_protocol <- function(assessment_title = NULL, country_name = NULL, month_year = NULL) {
-  Protocol$new(assessment_title = assessment_title, country_name = country_name, month_year = month_year)
-}
 
 #' Create a new survey protocol instance
 #'
@@ -52,7 +42,7 @@ validate_protocol <- function(protocol) {
       inherits(protocol, "Protocol"),
       message = phr_txt("Object is not a Protocol instance."),
       origin  = origin,
-      hint    = phr_txt("Use create_protocol() or Protocol$new() to create a Protocol object.")
+      hint    = phr_txt("Use Protocol$new() or SurveyProtocol$new() to create a Protocol object.")
     )
 
     issues <- protocol$get_issues()
@@ -114,11 +104,12 @@ validate_strata_table <- function(sample_table) {
 #' Recalculate sample sizes for all rows of a strata table
 #'
 #' Goes row by row through a master strata table and recalculates the
-#' \code{pop_result_dummy}, \code{ind_result_dummy}, and
-#' \code{mort_result_dummy} columns from the stored parameters wherever
-#' sufficient information is available.  After recalculation,
-#' \code{Final_HH_Sample_Size} is set to the maximum household sample size
-#' across the three calculation types for each row.
+#' \code{General_HH_Sample_Size}, \code{Ind_Sample_Size},
+#' \code{Ind_HH_Sample_Size}, \code{Mort_Ind_Sample_Size},
+#' \code{Mort_PT_Sample_Size}, and \code{Mort_HH_Sample_Size} columns from
+#' the stored parameters wherever sufficient information is available.  After
+#' recalculation, \code{Final_HH_Sample_Size} is set to the maximum household
+#' sample size across the three HH-level calculation types for each row.
 #'
 #' @param sample_table A data frame conforming to the master strata table
 #'   schema (validated with \code{validate_strata_table}).
@@ -168,7 +159,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
           step     = phr_txt("General sample size — stratum {row$stratum_id}")
         )
         if (!phr_failed(pop_ss)) {
-          sample_table$pop_result_dummy[i] <- pop_ss
+          sample_table$General_HH_Sample_Size[i] <- pop_ss
         }
       }
 
@@ -199,7 +190,8 @@ calculate_sample_size_strata_table <- function(sample_table) {
           step     = phr_txt("Individual sample size — stratum {row$stratum_id}")
         )
         if (!phr_failed(ind_res) && !is.null(ind_res)) {
-          sample_table$ind_result_dummy[i] <- ind_res$sample_size_households
+          sample_table$Ind_Sample_Size[i]    <- ind_res$sample_size_individuals
+          sample_table$Ind_HH_Sample_Size[i] <- ind_res$sample_size_households
         }
       }
 
@@ -230,15 +222,17 @@ calculate_sample_size_strata_table <- function(sample_table) {
           step     = phr_txt("Mortality sample size — stratum {row$stratum_id}")
         )
         if (!phr_failed(mort_res) && !is.null(mort_res)) {
-          sample_table$mort_result_dummy[i] <- mort_res$sample_size_households
+          sample_table$Mort_Ind_Sample_Size[i] <- mort_res$sample_size_individuals
+          sample_table$Mort_PT_Sample_Size[i]  <- mort_res$sample_size_person_time
+          sample_table$Mort_HH_Sample_Size[i]  <- mort_res$sample_size_households
         }
       }
 
-      # ---- Final household sample size: max across all three types --------
+      # ---- Final household sample size: max across all three HH types -----
       hh_sizes <- c(
-        pop_hh  = if (!is.na(sample_table$pop_result_dummy[i]))  sample_table$pop_result_dummy[i]  else NA_real_,
-        ind_hh  = if (!is.na(sample_table$ind_result_dummy[i]))  sample_table$ind_result_dummy[i]  else NA_real_,
-        mort_hh = if (!is.na(sample_table$mort_result_dummy[i])) sample_table$mort_result_dummy[i] else NA_real_
+        pop_hh  = if (!is.na(sample_table$General_HH_Sample_Size[i])) sample_table$General_HH_Sample_Size[i] else NA_real_,
+        ind_hh  = if (!is.na(sample_table$Ind_HH_Sample_Size[i]))     sample_table$Ind_HH_Sample_Size[i]     else NA_real_,
+        mort_hh = if (!is.na(sample_table$Mort_HH_Sample_Size[i]))    sample_table$Mort_HH_Sample_Size[i]    else NA_real_
       )
 
       valid_hh <- hh_sizes[!is.na(hh_sizes)]
@@ -359,8 +353,8 @@ restore_protocol <- function(protocol_data) {
 
 #' Generate a Word document report from a Protocol or SurveyProtocol object
 #'
-#' Convenience wrapper around \code{Protocol$generate_report()} and
-#' \code{SurveyProtocol$generate_report()}.  Dispatches to the correct method
+#' Convenience wrapper around \code{Protocol$generate_reach_tor()} and
+#' \code{SurveyProtocol$generate_reach_tor()}.  Dispatches to the correct method
 #' based on the class of \code{protocol}.
 #'
 #' @param protocol A \code{\link{Protocol}} or \code{\link{SurveyProtocol}}
@@ -385,10 +379,10 @@ generate_protocol_report <- function(protocol,
       inherits(protocol, "Protocol"),
       message = phr_txt("Object is not a Protocol or SurveyProtocol instance."),
       origin  = origin,
-      hint    = phr_txt("Use create_protocol() or create_survey_protocol() to create a valid object.")
+      hint    = phr_txt("Use Protocol$new() or create_survey_protocol() to create a valid object.")
     )
 
-    protocol$generate_report(
+    protocol$generate_reach_tor(
       output_file    = output_file,
       reference_docx = reference_docx,
       open           = open

@@ -167,10 +167,16 @@ utils::globalVariables(c(
   # LCSI NA count column (intra-mutate reference)
   "lcsi_count_na",
 
-  # ----- class_protocol.R / utils_sample_drawing.R -----
+  # ----- class_protocol.R / utils_sample_drawing.R / utils_protocol.R -----
   # Sampling output columns
   "sampled_psu",
   "allocated_sample",
-  "Final_HH_Sample_Size"
+  "Final_HH_Sample_Size",
+  "General_HH_Sample_Size",
+  "Ind_Sample_Size",
+  "Ind_HH_Sample_Size",
+  "Mort_Ind_Sample_Size",
+  "Mort_PT_Sample_Size",
+  "Mort_HH_Sample_Size"
 
 ))

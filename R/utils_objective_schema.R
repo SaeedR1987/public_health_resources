@@ -84,8 +84,15 @@ load_objective_schema <- function() {
 #' Validate an objective schema data frame
 #'
 #' Checks that a data frame conforms to the expected objective schema
-#' structure (required columns present, no duplicate short-objective names,
-#' non-empty sector values).
+#' structure: required columns are present, key columns are complete (not
+#' all-NA), and text columns are character typed.  Duplicate rows are
+#' permitted because the schema may contain multiple rows per objective when
+#' each row corresponds to a distinct indicator.
+#'
+#' Columns that must be of character type:
+#' \code{sector}, \code{pillar}, \code{sub_pillar}, \code{text_objective}.
+#' \code{short_objective} is allowed to be character or numeric/integer (it
+#' is used as a code and may be imported as an integer).
 #'
 #' @param schema A data frame to validate as an objective schema.
 #' @param soft Logical.  If \code{TRUE}, issues warnings instead of errors
@@ -119,7 +126,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
       phr_error(origin = origin, message = msg)
     }
 
-    # Check required columns
+    # Check required columns are present
     missing_cols <- setdiff(.objective_schema_required_cols, names(schema))
     if (length(missing_cols) > 0) {
       phr_error(
@@ -137,7 +144,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
       )
     }
 
-    # sector must not be all-NA
+    # Completeness: sector must not be all-NA
     if (all(is.na(schema$sector))) {
       phr_error(
         origin  = origin,
@@ -145,19 +152,33 @@ validate_objective_schema <- function(schema, soft = FALSE) {
       )
     }
 
-    # short_objective should be unique within sector (warn if not)
-    dupes <- schema$short_objective[duplicated(schema$short_objective) &
-                                      !is.na(schema$short_objective)]
-    if (length(dupes) > 0) {
-      phr_warning(
-        origin  = origin,
-        message = phr_txt(
-          glue::glue(
-            "Duplicate short_objective values detected: {paste(unique(dupes), collapse = ', ')}"
-          )
-        ),
-        hint = phr_txt("Each objective should have a unique short_objective label.")
+    # Completeness: short_objective must not be all-NA
+    if (all(is.na(schema$short_objective))) {
+      msg <- phr_txt("All 'short_objective' values in the objective schema are NA.")
+      if (soft) {
+        phr_warning(origin = origin, message = msg)
+      } else {
+        phr_error(origin = origin, message = msg)
+      }
+    }
+
+    # Type checks: text columns must be character (or coercible)
+    char_cols <- c("sector", "pillar", "sub_pillar", "text_objective")
+    bad_types <- char_cols[sapply(char_cols, function(col) {
+      col %in% names(schema) && !is.character(schema[[col]]) &&
+        !is.factor(schema[[col]])
+    })]
+    if (length(bad_types) > 0) {
+      msg <- phr_txt(
+        glue::glue(
+          "The following column(s) should be character: {paste(bad_types, collapse = ', ')}"
+        )
       )
+      if (soft) {
+        phr_warning(origin = origin, message = msg)
+      } else {
+        phr_error(origin = origin, message = msg)
+      }
     }
 
     invisible(TRUE)
