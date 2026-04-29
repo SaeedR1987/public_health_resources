@@ -269,16 +269,20 @@ SurveyProtocol <- R6::R6Class(
         self$sample_table <- new_row
       } else {
         if (stratum_id %in% self$sample_table$stratum_id) {
-          phr_error(
-            message = phr_txt("Stratum ID '{stratum_id}' already exists."),
+          phr_warning(
+            message = phr_txt("Stratum ID '{stratum_id}' already exists and will be overwritten."),
             origin  = "SurveyProtocol$add_stratum",
-            hint    = phr_txt("Use a unique stratum_id for each call to add_stratum().")
+            hint    = phr_txt("The existing row for '{stratum_id}' has been replaced with the new values.")
           )
+          self$sample_table <- self$sample_table[
+            self$sample_table$stratum_id != stratum_id, , drop = FALSE
+          ]
         }
         self$sample_table <- rbind(self$sample_table, new_row)
       }
 
       self$metadata$modified_date <- Sys.time()
+      private$add_target_stratum()
       private$check_issues()
       phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
       invisible(self)
@@ -591,6 +595,7 @@ SurveyProtocol <- R6::R6Class(
         )
         self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
         self$metadata$modified_date <- Sys.time()
+        private$add_target_stratum()
         private$check_issues()
         phr_message(
           phr_txt("Sample sizes calculated for {nrow(self$sample_table)} stratum/strata."),
@@ -647,6 +652,20 @@ SurveyProtocol <- R6::R6Class(
   ),
 
   private = list(
+    # Rebuild metadata$target_strata from the current sample_table.
+    # Called automatically after any method that creates or modifies sample_table
+    # so that metadata strata are always aligned with the sample_table.
+    add_target_stratum = function() {
+      if (!is.null(self$sample_table) && nrow(self$sample_table) > 0) {
+        strata_ids   <- as.character(self$sample_table$stratum_id)
+        strata_names <- as.character(self$sample_table$Population_Name)
+        self$metadata$target_strata <- setNames(as.list(strata_names), strata_ids)
+      } else {
+        self$metadata$target_strata <- list()
+      }
+      invisible(NULL)
+    },
+
     # Add the sampling design section after the current cursor position.
     add_sampling_section = function(doc) {
       doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 2", pos = "after")
