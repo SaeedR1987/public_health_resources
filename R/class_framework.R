@@ -218,6 +218,106 @@ Framework <- R6::R6Class(
         master_svg      = self$master_svg,
         adjusted_svg    = self$adjusted_svg
       )
+    },
+
+    #' @description Add a single objective row to the adjusted schema.
+    #'
+    #' Appends a new row to \code{adjusted_schema}.  If \code{adjusted_schema}
+    #' is \code{NULL}, it is initialised from the supplied row.  The row must
+    #' contain at minimum the columns required by
+    #' \code{\link{validate_objective_schema}}: \code{sector},
+    #' \code{pillar}, \code{sub_pillar}, \code{short_objective}, and
+    #' \code{text_objective}.
+    #'
+    #' @param row Named list or single-row data frame representing one
+    #'   objective (must contain required columns).
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_objective_row = function(row) {
+      phr_try({
+        required <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
+        if (is.list(row) && !is.data.frame(row)) {
+          row <- as.data.frame(row, stringsAsFactors = FALSE)
+        }
+        phr_assert(
+          is.data.frame(row) && nrow(row) >= 1L,
+          message = phr_txt("row must be a named list or single-row data frame."),
+          origin  = "Framework$add_objective_row"
+        )
+        missing_cols <- setdiff(required, names(row))
+        if (length(missing_cols) > 0) {
+          phr_error(
+            message = phr_txt(
+              "row is missing required fields: {paste(missing_cols, collapse = ', ')}"
+            ),
+            origin = "Framework$add_objective_row"
+          )
+        }
+        row <- row[1L, , drop = FALSE]
+        if (is.null(self$adjusted_schema)) {
+          self$adjusted_schema <- row
+        } else {
+          # Align columns: add any new columns as NA in the existing schema and vice versa
+          all_cols <- union(names(self$adjusted_schema), names(row))
+          for (col in setdiff(all_cols, names(self$adjusted_schema))) {
+            self$adjusted_schema[[col]] <- NA
+          }
+          for (col in setdiff(all_cols, names(row))) {
+            row[[col]] <- NA
+          }
+          self$adjusted_schema <- rbind(
+            self$adjusted_schema[, all_cols, drop = FALSE],
+            row[, all_cols, drop = FALSE]
+          )
+        }
+        phr_message(
+          phr_txt("Objective row '{row$short_objective}' added to adjusted_schema."),
+          origin = "Framework$add_objective_row"
+        )
+      }, on_error = "abort", origin = "Framework$add_objective_row")
+      invisible(self)
+    },
+
+    #' @description Remove objective row(s) from the adjusted schema by
+    #'   \code{short_objective} value.
+    #'
+    #' Removes all rows in \code{adjusted_schema} whose \code{short_objective}
+    #' matches the supplied value.  Rows with \code{NA} in
+    #' \code{short_objective} are never removed by this method (they must be
+    #' removed by directly modifying \code{adjusted_schema}).
+    #'
+    #' @param short_objective Character. The \code{short_objective} value to
+    #'   remove.
+    #' @return Invisibly returns \code{self} for method chaining.
+    remove_objective_row = function(short_objective) {
+      phr_try({
+        phr_assert(
+          !is.null(self$adjusted_schema) && is.data.frame(self$adjusted_schema) &&
+            nrow(self$adjusted_schema) > 0,
+          message = phr_txt("adjusted_schema is empty or not set; nothing to remove."),
+          origin  = "Framework$remove_objective_row"
+        )
+        before <- nrow(self$adjusted_schema)
+        self$adjusted_schema <- self$adjusted_schema[
+          is.na(self$adjusted_schema$short_objective) |
+            self$adjusted_schema$short_objective != short_objective,
+          , drop = FALSE
+        ]
+        removed <- before - nrow(self$adjusted_schema)
+        if (removed == 0L) {
+          phr_warning(
+            message = phr_txt(
+              "No rows with short_objective '{short_objective}' found in adjusted_schema."
+            ),
+            origin = "Framework$remove_objective_row"
+          )
+        } else {
+          phr_message(
+            phr_txt("{removed} row(s) removed for short_objective '{short_objective}'."),
+            origin = "Framework$remove_objective_row"
+          )
+        }
+      }, on_error = "abort", origin = "Framework$remove_objective_row")
+      invisible(self)
     }
   )
 )

@@ -3,7 +3,7 @@
 #' @description
 #' Base class for managing protocol pipeline workflows.
 #' Handles core components shared across all protocol types:
-#' 1. Objective Selection (nested by sector, pillar, sub-pillar, and data source)
+#' 1. Objective Selection (managed through the associated \code{\link{Framework}} object)
 #' 2. Tool and Indicator Selection
 #'
 #' For survey protocols that require strata definition, sample size
@@ -15,11 +15,10 @@
 Protocol <- R6::R6Class(
   "Protocol",
   public = list(
-    #' @field objectives Nested list of research objectives structured as
-    #'   \code{sector → pillar → sub_pillar → data_source → [list of objectives]}.
-    #'   Use \code{add_objective()}, \code{remove_objective()}, and
-    #'   \code{set_objectives()} to manage; use \code{flatten_objectives()} or
-    #'   \code{objectives_to_df()} to inspect.
+    #' @field objectives Nested list of research objectives (legacy field).
+    #'   Objectives are now primarily managed through the associated
+    #'   \code{\link{Framework}} object via its \code{adjusted_schema}.
+    #'   Use \code{objectives_to_df()} or \code{flatten_objectives()} to inspect.
     objectives = NULL,
 
     #' @field framework A \code{\link{Framework}} object (e.g.
@@ -76,136 +75,6 @@ Protocol <- R6::R6Class(
         self$issues <- list()
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
-      invisible(self)
-    },
-    
-    #' @description Set all objectives at once, replacing the current objectives
-    #'
-    #' Accepts either a flat list of objectives (as produced by
-    #' \code{create_objective()} or \code{create_objectives_from_df()}) or an
-    #' already-nested structure (sector → pillar → sub_pillar → data_source).
-    #' Flat lists are automatically converted with \code{nest_objectives()}.
-    #'
-    #' @param objectives List.  Flat or nested objectives.
-    #' @return Invisibly returns \code{self} for method chaining.
-    set_objectives = function(objectives) {
-      phr_try({
-        phr_assert(is.list(objectives),
-                   message = phr_txt("objectives must be a list."),
-                   origin  = "Protocol$set_objectives")
-
-        # Detect flat vs nested using robust check (all elements have $short_objective).
-        # Empty lists are assigned directly (treated as empty nested structure).
-        if (.is_flat_objectives(objectives)) {
-          self$objectives <- nest_objectives(objectives)
-        } else {
-          self$objectives <- objectives
-        }
-
-        self$metadata$modified_date <- Sys.time()
-        private$check_issues()
-        phr_message(
-          phr_txt("{count_objectives(self$objectives)} objective(s) set."),
-          origin = "Protocol$set_objectives"
-        )
-      }, on_error = "abort", origin = "Protocol$set_objectives")
-      invisible(self)
-    },
-
-    #' @description Add a single objective to the protocol
-    #'
-    #' The objective is placed into the nested structure under its
-    #' \code{sector}, \code{pillar}, \code{sub_pillar}, and \code{data_source}
-    #' keys.  Use \code{create_objective()} to build a conforming objective
-    #' list.
-    #'
-    #' @param objective Named list. Objective to add (see \code{create_objective()}).
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_objective = function(objective) {
-      phr_try({
-        phr_assert(
-          is.list(objective),
-          message = phr_txt("objective must be a named list."),
-          origin  = "Protocol$add_objective",
-          hint    = phr_txt("Use create_objective() to build a conforming objective.")
-        )
-
-        required_fields <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-        missing <- setdiff(required_fields, names(objective))
-        if (length(missing) > 0) {
-          phr_error(
-            message = phr_txt("Objective missing required fields: {paste(missing, collapse=', ')}"),
-            origin  = "Protocol$add_objective",
-            hint    = phr_txt("Use create_objective() to build a conforming objective list.")
-          )
-        }
-
-        # Default data_source to "primary" when absent or NA
-        ds <- .normalize_data_source(objective$data_source)
-
-        s  <- objective$sector
-        p  <- objective$pillar
-        sp <- objective$sub_pillar
-
-        if (is.null(self$objectives[[s]]))            self$objectives[[s]]            <- list()
-        if (is.null(self$objectives[[s]][[p]]))       self$objectives[[s]][[p]]       <- list()
-        if (is.null(self$objectives[[s]][[p]][[sp]])) self$objectives[[s]][[p]][[sp]] <- list()
-        if (is.null(self$objectives[[s]][[p]][[sp]][[ds]])) self$objectives[[s]][[p]][[sp]][[ds]] <- list()
-
-        self$objectives[[s]][[p]][[sp]][[ds]] <- c(
-          self$objectives[[s]][[p]][[sp]][[ds]],
-          list(objective)
-        )
-
-        self$metadata$modified_date <- Sys.time()
-        private$check_issues()
-        phr_message(
-          phr_txt("Objective '{objective$short_objective}' added [{ds}]."),
-          origin = "Protocol$add_objective"
-        )
-      }, on_error = "abort", origin = "Protocol$add_objective")
-      invisible(self)
-    },
-
-    #' @description Remove an objective from the protocol by its short_objective label
-    #'
-    #' Searches the entire nested objectives structure and removes the first
-    #' objective whose \code{short_objective} matches the supplied value.
-    #'
-    #' @param short_objective Character. The \code{short_objective} value of the
-    #'   objective to remove.
-    #' @return Invisibly returns \code{self} for method chaining.
-    remove_objective = function(short_objective) {
-      phr_try({
-        found <- FALSE
-
-        for (s in names(self$objectives)) {
-          for (p in names(self$objectives[[s]])) {
-            for (sp in names(self$objectives[[s]][[p]])) {
-              for (ds in names(self$objectives[[s]][[p]][[sp]])) {
-                before <- length(self$objectives[[s]][[p]][[sp]][[ds]])
-                self$objectives[[s]][[p]][[sp]][[ds]] <- Filter(
-                  function(x) !identical(x$short_objective, short_objective),
-                  self$objectives[[s]][[p]][[sp]][[ds]]
-                )
-                if (length(self$objectives[[s]][[p]][[sp]][[ds]]) < before) {
-                  found <- TRUE
-                }
-              }
-            }
-          }
-        }
-
-        if (!found) {
-          phr_warning(
-            message = phr_txt("No objective with short_objective '{short_objective}' was found."),
-            origin  = "Protocol$remove_objective"
-          )
-        }
-
-        self$metadata$modified_date <- Sys.time()
-        private$check_issues()
-      }, on_error = "abort", origin = "Protocol$remove_objective")
       invisible(self)
     },
     
@@ -305,6 +174,64 @@ Protocol <- R6::R6Class(
       )
     },
 
+    #' @description Render the framework SVG to a file
+    #'
+    #' Writes the adjusted SVG from the associated \code{\link{Framework}} to a
+    #' file.  If the \code{adjusted_svg} is \code{NULL} but \code{master_svg}
+    #' is set, the master SVG is written instead.  The output is always written
+    #' as an SVG file.  When the \pkg{rsvg} package is available, a PNG image
+    #' is also produced alongside the SVG.
+    #'
+    #' @param output_file Character. Path for the output SVG file (including
+    #'   \code{.svg} extension).  Defaults to \code{"framework.svg"} in the
+    #'   current working directory.
+    #' @return Invisibly returns \code{self} for method chaining.
+    render_framework_svg = function(output_file = "framework.svg") {
+      phr_try({
+        phr_assert(
+          !is.null(self$framework) && inherits(self$framework, "Framework"),
+          message = phr_txt("A Framework object must be attached to protocol$framework before calling render_framework_svg()."),
+          origin  = "Protocol$render_framework_svg"
+        )
+        svg_content <- self$framework$adjusted_svg %||% self$framework$master_svg
+        phr_assert(
+          !is.null(svg_content) && nzchar(svg_content),
+          message = phr_txt("Framework has no SVG content. Call update_adjusted_svg() or set_master_svg() first."),
+          origin  = "Protocol$render_framework_svg"
+        )
+
+        # Ensure output directory exists
+        out_dir <- dirname(output_file)
+        if (!nzchar(out_dir) || out_dir == ".") out_dir <- getwd()
+        if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
+
+        # Write SVG
+        writeLines(svg_content, con = output_file)
+        phr_message(
+          phr_txt("Framework SVG saved to: {output_file}"),
+          origin = "Protocol$render_framework_svg"
+        )
+
+        # Optionally render to PNG if rsvg is available
+        if (requireNamespace("rsvg", quietly = TRUE)) {
+          png_file <- sub("\\.svg$", ".png", output_file, ignore.case = TRUE)
+          tryCatch({
+            rsvg::rsvg_png(output_file, png_file)
+            phr_message(
+              phr_txt("Framework PNG saved to: {png_file}"),
+              origin = "Protocol$render_framework_svg"
+            )
+          }, error = function(e) {
+            phr_warning(
+              phr_txt("Could not render SVG to PNG: {conditionMessage(e)}"),
+              origin = "Protocol$render_framework_svg"
+            )
+          })
+        }
+      }, on_error = "abort", origin = "Protocol$render_framework_svg")
+      invisible(self)
+    },
+
     #' @description Generate a Word document report based on the REACH TOR template
     #'
     #' Creates a \code{.docx} file based on the bundled REACH Terms of Reference
@@ -316,6 +243,7 @@ Protocol <- R6::R6Class(
     #' \itemize{
     #'   \item Research Objectives table
     #'   \item Data Collection Tools (one sub-section per tool with indicator list)
+    #'   \item Sampling Design (base Protocol: placeholder; SurveyProtocol: full section)
     #' }
     #'
     #' @param output_file Character. Output file path including the \code{.docx}
@@ -327,22 +255,23 @@ Protocol <- R6::R6Class(
     #' @param open Logical.  Whether to open the generated file after writing.
     #'   Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
-    generate_report = function(output_file = "protocol_report.docx",
-                               reference_docx = NULL,
-                               open = FALSE) {
+    generate_reach_tor = function(output_file = "protocol_report.docx",
+                                  reference_docx = NULL,
+                                  open = FALSE) {
       phr_try({
         doc <- private$create_base_doc(reference_docx)
         doc <- private$add_metadata_section(doc)
         doc <- private$add_objectives_section(doc)
         doc <- private$add_tools_section(doc)
+        doc <- private$add_sampling_section(doc)
 
         print(doc, target = output_file)
         phr_message(
           phr_txt("Protocol report saved to: {output_file}"),
-          origin = "Protocol$generate_report"
+          origin = "Protocol$generate_reach_tor"
         )
         if (isTRUE(open)) utils::browseURL(output_file)
-      }, on_error = "abort", origin = "Protocol$generate_report")
+      }, on_error = "abort", origin = "Protocol$generate_reach_tor")
       invisible(self)
     }
   ),
@@ -539,28 +468,55 @@ Protocol <- R6::R6Class(
     },
 
     # Add the research objectives section after the current cursor position.
+    # When a Framework is attached and has an adjusted_schema, that is used as
+    # the source of objectives.  Falls back to the legacy self$objectives list.
     add_objectives_section = function(doc) {
       doc <- officer::body_add_par(doc, "Research Objectives", style = "heading 2", pos = "after")
 
-      all_objectives <- flatten_objectives(self$objectives)
-      if (length(all_objectives) == 0) {
+      # Prefer framework adjusted_schema when available
+      obj_df <- NULL
+      if (!is.null(self$framework) && inherits(self$framework, "Framework") &&
+          !is.null(self$framework$adjusted_schema) &&
+          is.data.frame(self$framework$adjusted_schema) &&
+          nrow(self$framework$adjusted_schema) > 0) {
+        schema <- self$framework$adjusted_schema
+        cols_map <- list(
+          Sector       = "sector",
+          Pillar       = "pillar",
+          "Sub-Pillar" = "sub_pillar",
+          ID           = "short_objective",
+          Objective    = "text_objective"
+        )
+        obj_df <- as.data.frame(
+          lapply(cols_map, function(col) {
+            if (col %in% names(schema)) as.character(schema[[col]]) else rep("", nrow(schema))
+          }),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+      } else {
+        all_objectives <- flatten_objectives(self$objectives)
+        if (length(all_objectives) > 0) {
+          obj_df <- do.call(rbind, lapply(all_objectives, function(x) {
+            data.frame(
+              Sector        = as.character(x$sector          %||% ""),
+              Pillar        = as.character(x$pillar          %||% ""),
+              "Sub-Pillar"  = as.character(x$sub_pillar      %||% ""),
+              ID            = as.character(x$short_objective %||% ""),
+              Objective     = as.character(x$text_objective  %||% ""),
+              "Data Source" = as.character(x$data_source     %||% "primary"),
+              check.names   = FALSE,
+              stringsAsFactors = FALSE
+            )
+          }))
+        }
+      }
+
+      if (is.null(obj_df) || nrow(obj_df) == 0) {
         return(officer::body_add_par(
           doc, "No objectives have been defined.", style = "Normal", pos = "after"
         ))
       }
-
-      obj_df <- do.call(rbind, lapply(all_objectives, function(x) {
-        data.frame(
-          Sector        = as.character(x$sector          %||% ""),
-          Pillar        = as.character(x$pillar          %||% ""),
-          "Sub-Pillar"  = as.character(x$sub_pillar      %||% ""),
-          ID            = as.character(x$short_objective %||% ""),
-          Objective     = as.character(x$text_objective  %||% ""),
-          "Data Source" = as.character(x$data_source     %||% "primary"),
-          check.names   = FALSE,
-          stringsAsFactors = FALSE
-        )
-      }))
 
       ft <- flextable::flextable(obj_df)
       ft <- flextable::theme_zebra(ft)
@@ -625,6 +581,18 @@ Protocol <- R6::R6Class(
       }
 
       doc
+    },
+
+    # Add a sampling design section (placeholder for base Protocol class).
+    # SurveyProtocol overrides this with a full section.
+    add_sampling_section = function(doc) {
+      doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 2", pos = "after")
+      officer::body_add_par(
+        doc,
+        "No sampling information available for this protocol type.",
+        style = "Normal",
+        pos   = "after"
+      )
     },
 
     # Extract unique non-NA indicator names from an XLSForm survey data frame.

@@ -77,8 +77,8 @@ SurveyProtocol <- R6::R6Class(
     #'   calculation.  Also accepted via the legacy alias \code{design_effect}.
     #' @param pop_fpc Logical. Apply finite population correction at population
     #'   level?  Defaults to \code{FALSE}.
-    #' @param pop_result_dummy Numeric. Calculated (or placeholder) sample size
-    #'   at population level.
+    #' @param General_HH_Sample_Size Numeric. Calculated (or placeholder) general
+    #'   household-level sample size (from population-level calculation).
     #' @param ind_indicator Character. Indicator label for individual-level
     #'   sample size calculation.
     #' @param ind_expected_prevalence Numeric. Expected prevalence for
@@ -95,8 +95,10 @@ SurveyProtocol <- R6::R6Class(
     #'   individual-level calculation.
     #' @param ind_fpc Logical. Apply finite population correction at individual
     #'   level?  Defaults to \code{FALSE}.
-    #' @param ind_result_dummy Numeric. Calculated (or placeholder) sample size
-    #'   at individual level.
+    #' @param Ind_Sample_Size Numeric. Calculated individual-level sample size
+    #'   (number of individuals).
+    #' @param Ind_HH_Sample_Size Numeric. Calculated individual-level sample
+    #'   size expressed in households.
     #' @param mort_indicator Character. Indicator label for mortality-level
     #'   sample size calculation.
     #' @param mort_expected_death_rate Numeric. Expected crude death rate used
@@ -112,8 +114,12 @@ SurveyProtocol <- R6::R6Class(
     #'   level).
     #' @param mort_fpc Logical. Apply finite population correction at mortality
     #'   level?  Defaults to \code{FALSE}.
-    #' @param mort_result_dummy Numeric. Calculated (or placeholder) sample
-    #'   size at mortality level.
+    #' @param Mort_Ind_Sample_Size Numeric. Calculated mortality-level
+    #'   individual sample size.
+    #' @param Mort_PT_Sample_Size Numeric. Calculated mortality-level
+    #'   person-time sample size.
+    #' @param Mort_HH_Sample_Size Numeric. Calculated mortality-level
+    #'   household sample size.
     #' @param teams Numeric. Number of field teams.
     #' @param avg_interview_time Numeric. Average interview time in minutes.
     #' @param clusters_per_day Numeric. Number of clusters visited per day per
@@ -157,7 +163,7 @@ SurveyProtocol <- R6::R6Class(
       pop_nonresponse        = NA_real_,
       pop_design_effect      = NA_real_,
       pop_fpc                = FALSE,
-      pop_result_dummy       = NA_real_,
+      General_HH_Sample_Size = NA_real_,
       ind_indicator          = NA_character_,
       ind_expected_prevalence = NA_real_,
       ind_precision          = NA_real_,
@@ -166,7 +172,8 @@ SurveyProtocol <- R6::R6Class(
       ind_avg_hh_size        = NA_real_,
       ind_subpop_prop        = NA_real_,
       ind_fpc                = FALSE,
-      ind_result_dummy       = NA_real_,
+      Ind_Sample_Size        = NA_real_,
+      Ind_HH_Sample_Size     = NA_real_,
       mort_indicator         = NA_character_,
       mort_expected_death_rate = NA_real_,
       mort_precision         = NA_real_,
@@ -175,7 +182,9 @@ SurveyProtocol <- R6::R6Class(
       mort_recall_days       = NA_real_,
       mort_avg_hh_size       = NA_real_,
       mort_fpc               = FALSE,
-      mort_result_dummy      = NA_real_,
+      Mort_Ind_Sample_Size   = NA_real_,
+      Mort_PT_Sample_Size    = NA_real_,
+      Mort_HH_Sample_Size    = NA_real_,
       teams                  = NA_real_,
       avg_interview_time     = NA_real_,
       clusters_per_day       = NA_real_,
@@ -217,7 +226,6 @@ SurveyProtocol <- R6::R6Class(
         pop_nonresponse          = as.numeric(pop_nonresponse),
         pop_design_effect        = as.numeric(pop_design_effect),
         pop_fpc                  = as.logical(pop_fpc),
-        pop_result_dummy         = as.numeric(pop_result_dummy),
         ind_indicator            = as.character(ind_indicator),
         ind_expected_prevalence  = as.numeric(ind_expected_prevalence),
         ind_precision            = as.numeric(ind_precision),
@@ -226,7 +234,6 @@ SurveyProtocol <- R6::R6Class(
         ind_avg_hh_size          = as.numeric(ind_avg_hh_size),
         ind_subpop_prop          = as.numeric(ind_subpop_prop),
         ind_fpc                  = as.logical(ind_fpc),
-        ind_result_dummy         = as.numeric(ind_result_dummy),
         mort_indicator           = as.character(mort_indicator),
         mort_expected_death_rate = as.numeric(mort_expected_death_rate),
         mort_precision           = as.numeric(mort_precision),
@@ -235,7 +242,6 @@ SurveyProtocol <- R6::R6Class(
         mort_recall_days         = as.numeric(mort_recall_days),
         mort_avg_hh_size         = as.numeric(mort_avg_hh_size),
         mort_fpc                 = as.logical(mort_fpc),
-        mort_result_dummy        = as.numeric(mort_result_dummy),
         teams                    = as.numeric(teams),
         avg_interview_time       = as.numeric(avg_interview_time),
         clusters_per_day         = as.numeric(clusters_per_day),
@@ -244,6 +250,13 @@ SurveyProtocol <- R6::R6Class(
         avg_travel_time          = as.numeric(avg_travel_time),
         start_time               = as.character(start_time),
         end_time                 = as.character(end_time),
+        # Result columns — rightmost, in prescribed order
+        General_HH_Sample_Size   = as.numeric(General_HH_Sample_Size),
+        Ind_Sample_Size          = as.numeric(Ind_Sample_Size),
+        Ind_HH_Sample_Size       = as.numeric(Ind_HH_Sample_Size),
+        Mort_Ind_Sample_Size     = as.numeric(Mort_Ind_Sample_Size),
+        Mort_PT_Sample_Size      = as.numeric(Mort_PT_Sample_Size),
+        Mort_HH_Sample_Size      = as.numeric(Mort_HH_Sample_Size),
         Final_HH_Sample_Size     = NA_real_,
         stringsAsFactors = FALSE
       )
@@ -299,7 +312,7 @@ SurveyProtocol <- R6::R6Class(
             phr_error(
               message = phr_txt("Sampling frame validation failed: {paste(names(hard_issues), unlist(hard_issues), sep=': ', collapse='; ')}"),
               origin  = "SurveyProtocol$set_sampling_frame",
-              hint    = phr_txt("Ensure the frame has a 'psu' column and any 'inclusion' column contains only TRUE/FALSE values.")
+              hint    = phr_txt("Ensure the frame has 'stratum', 'psu', and 'population_size' columns, and that any 'inclusion' column contains only TRUE/FALSE values.")
             )
           }
         }
@@ -542,8 +555,45 @@ SurveyProtocol <- R6::R6Class(
     get_protocol_summary = function() {
       base_summary <- super$get_protocol_summary()
       base_summary$num_strata       <- if (is.null(self$sample_table)) 0L else nrow(self$sample_table)
-      base_summary$total_sample_size <- if (is.null(self$sample_table)) 0 else sum(self$sample_table$pop_result_dummy, na.rm = TRUE)
+      base_summary$total_sample_size <- if (is.null(self$sample_table)) 0 else sum(self$sample_table$General_HH_Sample_Size, na.rm = TRUE)
       base_summary
+    },
+
+    #' @description Calculate sample sizes for all strata in the sample table
+    #'
+    #' Reads each stratum row from \code{sample_table}, determines which
+    #' calculation parameters are available, calls the appropriate
+    #' \code{calculate_sample_size_*} function for each applicable calculation
+    #' type (general, individual, mortality), and stores the results back into
+    #' the table.  Also sets \code{Final_HH_Sample_Size} to the maximum
+    #' household sample size across the three calculation types.
+    #'
+    #' Required parameters per calculation type:
+    #' \itemize{
+    #'   \item \strong{General}: \code{pop_expected_prevalence}, \code{pop_precision}
+    #'   \item \strong{Individual}: \code{ind_expected_prevalence}, \code{ind_precision},
+    #'     \code{ind_avg_hh_size} (> 0)
+    #'   \item \strong{Mortality}: \code{mort_expected_death_rate}, \code{mort_precision},
+    #'     \code{mort_avg_hh_size} (> 0)
+    #' }
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.
+    calculate_sample_sizes = function() {
+      phr_try({
+        phr_assert(
+          !is.null(self$sample_table) && nrow(self$sample_table) > 0,
+          message = phr_txt("sample_table is empty. Call add_stratum() first."),
+          origin  = "SurveyProtocol$calculate_sample_sizes"
+        )
+        self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+        phr_message(
+          phr_txt("Sample sizes calculated for {nrow(self$sample_table)} stratum/strata."),
+          origin = "SurveyProtocol$calculate_sample_sizes"
+        )
+      }, on_error = "abort", origin = "SurveyProtocol$calculate_sample_sizes")
+      invisible(self)
     },
 
     #' @description Export protocol to a list including sampling data
@@ -560,7 +610,7 @@ SurveyProtocol <- R6::R6Class(
 
     #' @description Generate a Word document report including sampling information
     #'
-    #' Extends \code{Protocol$generate_report()} by inserting a
+    #' Extends \code{Protocol$generate_reach_tor()} by inserting a
     #' \strong{Sampling Design} sub-section within the Protocol Data section,
     #' summarising strata definitions, household sample sizes, and (when
     #' \code{draw_sample()} has been called) a table of selected PSUs.
@@ -571,9 +621,9 @@ SurveyProtocol <- R6::R6Class(
     #'   \code{.docx} template.  Uses the bundled REACH TOR template by default.
     #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
-    generate_report = function(output_file = "protocol_report.docx",
-                               reference_docx = NULL,
-                               open = FALSE) {
+    generate_reach_tor = function(output_file = "protocol_report.docx",
+                                  reference_docx = NULL,
+                                  open = FALSE) {
       phr_try({
         doc <- private$create_base_doc(reference_docx)
         doc <- private$add_metadata_section(doc)
@@ -584,10 +634,10 @@ SurveyProtocol <- R6::R6Class(
         print(doc, target = output_file)
         phr_message(
           phr_txt("Protocol report saved to: {output_file}"),
-          origin = "SurveyProtocol$generate_report"
+          origin = "SurveyProtocol$generate_reach_tor"
         )
         if (isTRUE(open)) utils::browseURL(output_file)
-      }, on_error = "abort", origin = "SurveyProtocol$generate_report")
+      }, on_error = "abort", origin = "SurveyProtocol$generate_reach_tor")
       invisible(self)
     }
   ),
@@ -607,9 +657,11 @@ SurveyProtocol <- R6::R6Class(
       doc <- officer::body_add_par(doc, "Strata and Sample Sizes", style = "heading 3", pos = "after")
 
       display_cols <- c("stratum_id", "Population_Name", "Total_Population",
-                        "Sampling_Method", "Final_HH_Sample_Size")
+                        "Sampling_Method", "General_HH_Sample_Size",
+                        "Ind_HH_Sample_Size", "Mort_HH_Sample_Size", "Final_HH_Sample_Size")
       col_labels   <- c("Stratum ID", "Population Name", "Total Population",
-                        "Sampling Method", "Final Sample Size (HH)")
+                        "Sampling Method", "General HH Sample Size",
+                        "Ind. HH Sample Size", "Mort. HH Sample Size", "Final HH Sample Size")
       avail_idx    <- which(display_cols %in% names(self$sample_table))
 
       if (length(avail_idx) > 0) {
@@ -749,7 +801,7 @@ SurveyProtocol <- R6::R6Class(
 
     # Extract sampling parameters from a single strata table row.
     # Returns a named list: method, sample_size, n_psu, n_clusters, cluster_size, n_sites.
-    # sample_size falls back to pop_result_dummy, then a proportional estimate when
+    # sample_size falls back to General_HH_Sample_Size, then a proportional estimate when
     # Final_HH_Sample_Size is NA.
     params_from_strata_row = function(st_row, stratum_n_eligible, total_n_eligible) {
       method <- as.character(st_row$Sampling_Method[1])
@@ -758,9 +810,9 @@ SurveyProtocol <- R6::R6Class(
                 !is.na(st_row$Final_HH_Sample_Size[1])) {
         as.integer(st_row$Final_HH_Sample_Size[1])
       } else {
-        # Fallback: use the calculated population-level sample size if available
-        if ("pop_result_dummy" %in% names(st_row) && !is.na(st_row$pop_result_dummy[1])) {
-          as.integer(st_row$pop_result_dummy[1])
+        # Fallback: use the calculated general population-level sample size if available
+        if ("General_HH_Sample_Size" %in% names(st_row) && !is.na(st_row$General_HH_Sample_Size[1])) {
+          as.integer(st_row$General_HH_Sample_Size[1])
         } else {
           as.integer(round(100 * stratum_n_eligible / max(total_n_eligible, 1L)))
         }
