@@ -62,6 +62,12 @@ A new Framework object.
 \if{latex}{\out{\hypertarget{method-Framework-set_master_schema}{}}}
 \subsection{Method \code{set_master_schema()}}{
 Set the master reference schema.
+
+Validates and stores a data frame as the master schema.  The data frame
+must contain at minimum the columns required by
+\code{\link{validate_objective_schema}}: \code{sector},
+\code{pillar}, \code{sub_pillar}, \code{short_objective}, and
+\code{text_objective}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Framework$set_master_schema(schema)}\if{html}{\out{</div>}}
 }
@@ -82,6 +88,9 @@ Invisibly returns \code{self} for method chaining.
 \if{latex}{\out{\hypertarget{method-Framework-set_master_svg}{}}}
 \subsection{Method \code{set_master_svg()}}{
 Set the master SVG diagram.
+
+Stores a character string as the master SVG diagram for the conceptual
+framework.  The string should be valid SVG markup.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Framework$set_master_svg(svg_content)}\if{html}{\out{</div>}}
 }
@@ -102,6 +111,11 @@ Invisibly returns \code{self} for method chaining.
 \if{latex}{\out{\hypertarget{method-Framework-update_adjusted_schema}{}}}
 \subsection{Method \code{update_adjusted_schema()}}{
 Update the adjusted schema based on selected objectives.
+
+Filters the master schema to retain only the rows whose
+\code{short_objective} value matches one of the supplied identifiers.
+When \code{selected_objectives} is \code{NULL} or an empty vector the
+full master schema is used as the adjusted schema.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Framework$update_adjusted_schema(selected_objectives = NULL)}\if{html}{\out{</div>}}
 }
@@ -123,6 +137,18 @@ Invisibly returns \code{self} for method chaining.
 \if{latex}{\out{\hypertarget{method-Framework-update_adjusted_svg}{}}}
 \subsection{Method \code{update_adjusted_svg()}}{
 Update the adjusted SVG based on the current adjusted schema.
+
+Derives \code{adjusted_svg} from \code{master_svg} by modifying elements
+whose \code{id} attribute matches a \code{short_objective} value in the
+adjusted schema.  Elements whose id is \emph{not} present in the adjusted
+schema have their \code{visibility} set to \code{"hidden"} via an inline
+style attribute.
+
+When \code{master_svg} or \code{adjusted_schema} is \code{NULL} the
+method issues a warning and returns without modifying \code{adjusted_svg}.
+
+Subclasses may override this method to implement richer SVG manipulation
+tailored to a specific diagram structure.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Framework$update_adjusted_svg()}\if{html}{\out{</div>}}
 }
@@ -136,13 +162,17 @@ Invisibly returns \code{self} for method chaining.
 \if{latex}{\out{\hypertarget{method-Framework-export_framework}{}}}
 \subsection{Method \code{export_framework()}}{
 Export framework data to a plain list.
+
+Returns a serialisable list that can be stored alongside a protocol
+export.  R6 references are not preserved; restore with
+\code{\link{restore_framework}}.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Framework$export_framework()}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{
 Named list with elements \code{class}, \code{master_schema},
-\code{adjusted_schema}, \code{master_svg}, and \code{adjusted_svg}.
+  \code{adjusted_schema}, \code{master_svg}, and \code{adjusted_svg}.
 }
 }
 \if{html}{\out{<hr>}}

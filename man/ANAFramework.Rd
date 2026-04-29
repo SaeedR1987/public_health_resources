@@ -6,8 +6,11 @@
 \description{
 Subclass of \code{\link{Framework}} for the ANA (Area-based Needs
 Assessment) conceptual framework.  On initialisation the class automatically
-loads the bundled \code{reference.xlsx} as \code{master_schema} and
-\code{ana_framework.svg} as \code{master_svg}.
+loads:
+\itemize{
+  \item the bundled \code{reference.xlsx} as \code{master_schema};
+  \item the bundled \code{ana_framework.svg} as \code{master_svg}.
+}
 
 Call \code{update_adjusted_schema()} with a vector of \code{short_objective}
 values and then \code{update_adjusted_svg()} to produce a highlighted SVG
@@ -17,6 +20,9 @@ Preset selections based on the columns of the master schema
 (\code{core}, \code{extended}, \code{outcomes}, \code{fsl},
 \code{wash}, \code{health}) can be retrieved with
 \code{get_preset_objectives()}.
+}
+\section{Super class}{
+\code{\link[phr:Framework]{phr::Framework}} -> \code{ANAFramework}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -28,6 +34,16 @@ Preset selections based on the columns of the master schema
 \item \href{#method-ANAFramework-clone}{\code{ANAFramework$clone()}}
 }
 }
+\if{html}{\out{
+<details open><summary>Inherited methods</summary>
+<ul>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="export_framework"><a href='../../phr/html/Framework.html#method-Framework-export_framework'><code>phr::Framework$export_framework()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_master_schema"><a href='../../phr/html/Framework.html#method-Framework-set_master_schema'><code>phr::Framework$set_master_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_master_svg"><a href='../../phr/html/Framework.html#method-Framework-set_master_svg'><code>phr::Framework$set_master_svg()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="update_adjusted_schema"><a href='../../phr/html/Framework.html#method-Framework-update_adjusted_schema'><code>phr::Framework$update_adjusted_schema()</code></a></span></li>
+</ul>
+</details>
+}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ANAFramework-new"></a>}}
 \if{latex}{\out{\hypertarget{method-ANAFramework-new}{}}}
@@ -49,8 +65,12 @@ A new ANAFramework object.
 \if{html}{\out{<a id="method-ANAFramework-filter_schema_by_pillar"></a>}}
 \if{latex}{\out{\hypertarget{method-ANAFramework-filter_schema_by_pillar}{}}}
 \subsection{Method \code{filter_schema_by_pillar()}}{
-Filter the master schema to objectives whose \code{pillar} matches one or
-more of the supplied pillar names.
+Filter the master schema to objectives whose \code{pillar}
+  matches one or more of the supplied pillar names.
+
+This corresponds to the pillar-dimension filter used in the Shiny module
+(\code{reference_objectives[reference_objectives$pillar %in%
+selected_pillars, ]}).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ANAFramework$filter_schema_by_pillar(pillars)}\if{html}{\out{</div>}}
 }
@@ -71,6 +91,9 @@ Data frame subset of \code{master_schema}.
 \if{latex}{\out{\hypertarget{method-ANAFramework-get_preset_objectives}{}}}
 \subsection{Method \code{get_preset_objectives()}}{
 Return the \code{short_objective} values for a named preset.
+
+Preset definitions mirror the column-based presets from the ANA Shiny
+module (core, extended, outcomes, fsl, wash, health).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ANAFramework$get_preset_objectives(preset)}\if{html}{\out{</div>}}
 }
@@ -91,8 +114,18 @@ Character vector of \code{short_objective} values.
 \if{html}{\out{<a id="method-ANAFramework-update_adjusted_svg"></a>}}
 \if{latex}{\out{\hypertarget{method-ANAFramework-update_adjusted_svg}{}}}
 \subsection{Method \code{update_adjusted_svg()}}{
-Update the adjusted SVG by highlighting blocks for the currently selected
-objectives.
+Update the adjusted SVG by highlighting blocks for the
+  currently selected objectives.
+
+For each unique \code{sub_pillar} value in \code{adjusted_schema} the
+corresponding \code{<g id="...">} group's primary \code{<rect>} element
+(the one with \code{stroke="black"}) has its \code{fill} attribute
+changed to \code{highlight_colour}.  All other block rects are reset to
+\code{default_colour}.
+
+This mirrors the JavaScript highlight logic from the ANA Shiny module
+(\code{r.setAttribute('fill','lightgreen')}) but uses pure R string
+manipulation so it works outside of Shiny.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ANAFramework$update_adjusted_svg(
   highlight_colour = "lightgreen",

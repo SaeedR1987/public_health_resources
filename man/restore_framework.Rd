@@ -12,7 +12,7 @@ restore_framework(framework_data)
 }
 \value{
 A \code{Framework} or \code{ANAFramework} object with fields
-restored from \code{framework_data}.
+  restored from \code{framework_data}.
 }
 \description{
 Reconstructs a \code{\link{Framework}} or \code{\link{ANAFramework}} object
