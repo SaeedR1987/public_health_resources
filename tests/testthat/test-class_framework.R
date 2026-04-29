@@ -162,15 +162,15 @@ test_that("create_framework returns a Framework object", {
   expect_true(inherits(fw, "Framework"))
 })
 
-test_that("create_ana_framework returns an ANAFramework object", {
+test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
   skip_if_not(
     file.exists(system.file("resources", "reference.xlsx", package = "phr")) ||
       file.exists(file.path("resources", "reference.xlsx")),
     "reference.xlsx not available"
   )
-  af <- create_ana_framework()
-  expect_true(inherits(af, "ANAFramework"))
-  expect_true(inherits(af, "Framework"))
+  p <- Protocol$new(framework_type = "ana")
+  expect_true(inherits(p$framework, "ANAFramework"))
+  expect_true(inherits(p$framework, "Framework"))
 })
 
 test_that("restore_framework reconstructs a Framework from exported data", {
@@ -192,12 +192,16 @@ test_that("restore_framework reconstructs a Framework from exported data", {
   expect_false(is.null(restored$master_svg))
 })
 
-test_that("Protocol has a framework field defaulting to NULL", {
+test_that("Protocol initializes with a Framework object by default (framework_type='none')", {
   p <- Protocol$new()
-  expect_null(p$framework)
+  expect_true(inherits(p$framework, "Framework"))
 })
 
-test_that("Protocol framework field can be set to a Framework object", {
+test_that("Protocol$new() rejects invalid framework_type", {
+  expect_error(Protocol$new(framework_type = "bogus"))
+})
+
+test_that("Protocol framework field can be replaced with another Framework object", {
   p   <- Protocol$new()
   fw  <- Framework$new()
   p$framework <- fw
@@ -222,10 +226,10 @@ test_that("Protocol$export_protocol includes framework when set", {
   expect_equal(exported$framework$class, "Framework")
 })
 
-test_that("Protocol$export_protocol has NULL framework when none set", {
+test_that("Protocol$export_protocol includes default framework", {
   p        <- Protocol$new()
   exported <- p$export_protocol()
-  expect_null(exported$framework)
+  expect_false(is.null(exported$framework))
 })
 
 test_that("restore_protocol restores framework field", {
@@ -344,5 +348,71 @@ test_that("ANAFramework$update_adjusted_svg warns when master_svg is NULL", {
   af$master_schema <- schema
   af$adjusted_schema <- schema
   expect_warning(af$update_adjusted_svg())
+})
+
+# ---- Protocol$add_tools / validate_objective_schema tests ----
+
+test_that("Protocol$add_tools stores tools by name for $ access", {
+  p <- Protocol$new()
+  p$add_tools("household")
+  expect_true("household" %in% names(p$tools))
+  expect_true(inherits(p$tools[["household"]], "HouseholdTool"))
+})
+
+test_that("Protocol$add_tools uses tool_name when provided", {
+  p <- Protocol$new()
+  p$add_tools("household", tool_name = "my_hh_tool")
+  expect_true("my_hh_tool" %in% names(p$tools))
+})
+
+test_that("Protocol$add_tools auto-increments duplicate tool types", {
+  p <- Protocol$new()
+  p$add_tools("household")
+  p$add_tools("household")
+  nms <- names(p$tools)
+  expect_true("household" %in% nms)
+  expect_true(any(grepl("^household_", nms)))
+})
+
+test_that("Protocol$validate_objective_schema works as a method", {
+  p <- Protocol$new()
+  good <- data.frame(
+    sector = "Health", pillar = "P1", sub_pillar = "SP1",
+    short_objective = "H1", text_objective = "Obj 1",
+    stringsAsFactors = FALSE
+  )
+  expect_true(p$validate_objective_schema(good))
+})
+
+test_that("Protocol$validate_objective_schema errors on bad schema via method", {
+  p <- Protocol$new()
+  bad <- data.frame(x = 1:3)
+  expect_error(p$validate_objective_schema(bad))
+})
+
+# ---- Tool public fields tests ----
+
+test_that("Tool$survey is a public field accessible directly", {
+  t <- Tool$new()
+  expect_true(is.data.frame(t$survey))
+  new_survey <- data.frame(type = "text", name = "q1", label = "Question 1",
+                           stringsAsFactors = FALSE)
+  t$survey <- new_survey
+  expect_equal(t$survey$name, "q1")
+})
+
+test_that("Tool$choices is a public field", {
+  t <- Tool$new()
+  expect_true(is.data.frame(t$choices))
+})
+
+test_that("Tool$settings is a public field", {
+  t <- Tool$new()
+  expect_true(is.data.frame(t$settings))
+})
+
+test_that("Framework$render_framework_svg errors when no SVG is set", {
+  fw <- Framework$new()
+  expect_error(fw$render_framework_svg())
 })
 

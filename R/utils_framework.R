@@ -18,18 +18,6 @@ create_framework <- function() {
 }
 
 
-#' Create a new ANAFramework object
-#'
-#' Convenience constructor for \code{\link{ANAFramework}}.  The bundled
-#' \code{reference.xlsx} master schema is loaded automatically.
-#'
-#' @return A new \code{ANAFramework} object.
-#' @export
-create_ana_framework <- function() {
-  ANAFramework$new()
-}
-
-
 #' Restore a Framework object from exported data
 #'
 #' Reconstructs a \code{\link{Framework}} or \code{\link{ANAFramework}} object

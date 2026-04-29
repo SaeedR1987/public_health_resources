@@ -62,9 +62,22 @@ Protocol <- R6::R6Class(
     #' @param assessment_title Character. Title of the assessment
     #' @param country_name Character. Country where assessment takes place
     #' @param month_year Character. Month and year of data collection (e.g., "January 2024")
+    #' @param framework_type Character. Type of framework to initialise.  Must be
+    #'   one of \code{"none"} (creates a generic \code{\link{Framework}} object) or
+    #'   \code{"ana"} (creates an \code{\link{ANAFramework}} object).
     #' @return A new Protocol object
-    initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL) {
+    initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
+                          framework_type = "none") {
       phr_try({
+        valid_fw_types <- c("none", "ana")
+        phr_assert(
+          is.character(framework_type) && length(framework_type) == 1 &&
+            framework_type %in% valid_fw_types,
+          message = phr_txt(
+            "framework_type must be one of: {paste(valid_fw_types, collapse=', ')}."
+          ),
+          origin = "Protocol$initialize"
+        )
         self$metadata$created_date <- Sys.time()
         self$metadata$modified_date <- Sys.time()
         self$metadata$assessment_title <- assessment_title
@@ -73,6 +86,13 @@ Protocol <- R6::R6Class(
         self$objectives <- list()
         self$tools <- list()
         self$issues <- list()
+
+        self$framework <- if (framework_type == "ana") {
+          ANAFramework$new()
+        } else {
+          Framework$new()
+        }
+
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
       invisible(self)
@@ -89,12 +109,15 @@ Protocol <- R6::R6Class(
     
     #' @description Add a single Tool object to the protocol by specifying its type.
     #' A new tool of the requested type is instantiated (loading its bundled
-    #' default XLSForm template) and appended to the \code{tools} list.
+    #' default XLSForm template) and stored in the \code{tools} named list under
+    #' \code{tool_name} so it is accessible via \code{protocol$tools$<name>}.
     #' Call this method once per tool you wish to add.
     #' @param tool_type Character. Type of tool to create.  One of
     #'   \code{"household"}, \code{"key_informant"}, \code{"observation"}, or
     #'   \code{"generic"}.  Defaults to \code{"household"}.
-    #' @param tool_name Optional character. Name for the new tool.
+    #' @param tool_name Optional character. Name/key for the tool in the
+    #'   \code{tools} list.  When \code{NULL} a key is generated automatically
+    #'   from \code{tool_type} and the current count (e.g. \code{"household_1"}).
     #' @return Invisibly returns self for method chaining.
     add_tools = function(tool_type = "household", tool_name = NULL) {
       phr_try({
@@ -104,6 +127,13 @@ Protocol <- R6::R6Class(
           message = phr_txt("tool_type must be one of: {paste(valid_types, collapse=', ')}."),
           origin  = "Protocol$add_tools"
         )
+
+        # Determine the key to use in the named tools list.
+        if (is.null(tool_name) || !nzchar(tool_name)) {
+          existing_keys <- names(self$tools)
+          n_same_type   <- sum(grepl(paste0("^", tool_type, "(_[0-9]+)?$"), existing_keys))
+          tool_name     <- if (n_same_type == 0) tool_type else paste0(tool_type, "_", n_same_type + 1L)
+        }
 
         tool <- switch(
           tool_type,
@@ -117,10 +147,13 @@ Protocol <- R6::R6Class(
           self$tools <- list()
         }
 
-        self$tools <- c(self$tools, list(tool))
+        self$tools[[tool_name]] <- tool
         self$metadata$modified_date <- Sys.time()
         private$check_issues()
-        phr_message(phr_txt("Tool of type '{tool_type}' added."), origin = "Protocol$add_tools")
+        phr_message(
+          phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
+          origin = "Protocol$add_tools"
+        )
       }, on_error = "abort", origin = "Protocol$add_tools")
       invisible(self)
     },
@@ -174,62 +207,18 @@ Protocol <- R6::R6Class(
       )
     },
 
-    #' @description Render the framework SVG to a file
+    #' @description Validate an objective schema data frame.
     #'
-    #' Writes the adjusted SVG from the associated \code{\link{Framework}} to a
-    #' file.  If the \code{adjusted_svg} is \code{NULL} but \code{master_svg}
-    #' is set, the master SVG is written instead.  The output is always written
-    #' as an SVG file.  When the \pkg{rsvg} package is available, a PNG image
-    #' is also produced alongside the SVG.
+    #' Convenience method that delegates to the standalone
+    #' \code{\link{validate_objective_schema}} function.  Useful for validating
+    #' custom schemas before associating them with this protocol.
     #'
-    #' @param output_file Character. Path for the output SVG file (including
-    #'   \code{.svg} extension).  Defaults to \code{"framework.svg"} in the
-    #'   current working directory.
-    #' @return Invisibly returns \code{self} for method chaining.
-    render_framework_svg = function(output_file = "framework.svg") {
-      phr_try({
-        phr_assert(
-          !is.null(self$framework) && inherits(self$framework, "Framework"),
-          message = phr_txt("A Framework object must be attached to protocol$framework before calling render_framework_svg()."),
-          origin  = "Protocol$render_framework_svg"
-        )
-        svg_content <- self$framework$adjusted_svg %||% self$framework$master_svg
-        phr_assert(
-          !is.null(svg_content) && nzchar(svg_content),
-          message = phr_txt("Framework has no SVG content. Call update_adjusted_svg() or set_master_svg() first."),
-          origin  = "Protocol$render_framework_svg"
-        )
-
-        # Ensure output directory exists
-        out_dir <- dirname(output_file)
-        if (!nzchar(out_dir) || out_dir == ".") out_dir <- getwd()
-        if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
-
-        # Write SVG
-        writeLines(svg_content, con = output_file)
-        phr_message(
-          phr_txt("Framework SVG saved to: {output_file}"),
-          origin = "Protocol$render_framework_svg"
-        )
-
-        # Optionally render to PNG if rsvg is available
-        if (requireNamespace("rsvg", quietly = TRUE)) {
-          png_file <- sub("\\.svg$", ".png", output_file, ignore.case = TRUE)
-          tryCatch({
-            rsvg::rsvg_png(output_file, png_file)
-            phr_message(
-              phr_txt("Framework PNG saved to: {png_file}"),
-              origin = "Protocol$render_framework_svg"
-            )
-          }, error = function(e) {
-            phr_warning(
-              phr_txt("Could not render SVG to PNG: {conditionMessage(e)}"),
-              origin = "Protocol$render_framework_svg"
-            )
-          })
-        }
-      }, on_error = "abort", origin = "Protocol$render_framework_svg")
-      invisible(self)
+    #' @param schema Data frame to validate as an objective schema.
+    #' @param soft Logical. When \code{TRUE} issues warnings rather than errors
+    #'   for recoverable problems.  Defaults to \code{FALSE}.
+    #' @return Invisibly returns \code{TRUE} if valid.
+    validate_objective_schema = function(schema, soft = FALSE) {
+      validate_objective_schema(schema, soft = soft)
     },
 
     #' @description Generate a Word document report based on the REACH TOR template
