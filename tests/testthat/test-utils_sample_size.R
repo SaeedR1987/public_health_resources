@@ -154,7 +154,7 @@ test_that("calculate_sample_size_individual sub_population_percent increases ind
     sub_population_percent = 50,
     non_response_rate      = 0
   )
-  expect_true(sub_pop$sample_size_individuals >= full_pop$sample_size_individuals)
+  expect_true(sub_pop$sample_size_individuals > full_pop$sample_size_individuals)
 })
 
 test_that("calculate_sample_size_individual preserves average_household_size in return value", {
@@ -217,7 +217,7 @@ test_that("calculate_sample_size_individual with fpc=TRUE reduces sample size", 
     fpc                    = TRUE,
     total_population       = 500
   )
-  expect_true(with_fpc$sample_size_individuals <= no_fpc$sample_size_individuals)
+  expect_true(with_fpc$sample_size_individuals < no_fpc$sample_size_individuals)
 })
 
 # ---- calculate_sample_size_mortality --------------------------------------
@@ -261,7 +261,7 @@ test_that("calculate_sample_size_mortality default design is cluster and applies
     design_effect          = 1.5,
     non_response_rate      = 0
   )
-  expect_true(cluster$sample_size_households >= simple$sample_size_households)
+  expect_true(cluster$sample_size_households > simple$sample_size_households)
 })
 
 test_that("calculate_sample_size_mortality design_effect is 1 for simple_random in return value", {

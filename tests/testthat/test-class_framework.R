@@ -428,9 +428,10 @@ test_that("Framework$render_framework_svg accepts version='master' and version='
   )
   fw$set_master_schema(schema)
   fw$set_master_svg('<svg><rect id="H1"/></svg>')
-  # render_framework_svg with version='master' should not error (rsvg/grid may not be available)
-  tryCatch(fw$render_framework_svg(version = "master"), warning = function(w) NULL)
-  tryCatch(fw$render_framework_svg(version = "adjusted"), warning = function(w) NULL)
+  # Both version values should run without error (rsvg/grid may not be available,
+  # in which case a warning is issued and the temp file path is returned).
+  expect_no_error(fw$render_framework_svg(version = "master"))
+  expect_no_error(fw$render_framework_svg(version = "adjusted"))
 })
 
 test_that("Framework$render_framework_svg errors on invalid version argument", {
