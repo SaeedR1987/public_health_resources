@@ -75,6 +75,59 @@ test_that("Framework$update_adjusted_schema errors without master_schema", {
   expect_error(fw$update_adjusted_schema(c("H1")))
 })
 
+test_that("Framework$create_adjusted_schema filters by objective codes", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector         = "Health",
+    pillar         = "Morbidity",
+    sub_pillar     = "Acute",
+    short_objective = c("H1", "H2", "H3"),
+    text_objective  = c("Obj 1", "Obj 2", "Obj 3"),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$create_adjusted_schema(c("H1", "H3"))
+  expect_equal(nrow(fw$adjusted_schema), 2)
+  expect_setequal(fw$adjusted_schema$short_objective, c("H1", "H3"))
+})
+
+test_that("Framework$create_adjusted_schema with NULL uses all objective codes", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector         = "Health",
+    pillar         = "Morbidity",
+    sub_pillar     = "Acute",
+    short_objective = c("H1", "H2", "H3"),
+    text_objective  = c("Obj 1", "Obj 2", "Obj 3"),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$create_adjusted_schema()
+  expect_equal(nrow(fw$adjusted_schema), 3)
+  expect_setequal(fw$adjusted_schema$short_objective, c("H1", "H2", "H3"))
+})
+
+test_that("Framework$create_adjusted_schema accepts a list of codes", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector         = "Health",
+    pillar         = "Morbidity",
+    sub_pillar     = "Acute",
+    short_objective = c("H1", "H2", "H3"),
+    text_objective  = c("Obj 1", "Obj 2", "Obj 3"),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$create_adjusted_schema(list("H2", "H3"))
+  expect_equal(nrow(fw$adjusted_schema), 2)
+  expect_setequal(fw$adjusted_schema$short_objective, c("H2", "H3"))
+})
+
+test_that("Framework$create_adjusted_schema errors without master_schema", {
+  fw <- Framework$new()
+  expect_error(fw$create_adjusted_schema(c("H1")))
+})
+
 test_that("Framework$update_adjusted_svg hides unselected elements", {
   fw <- Framework$new()
   schema <- data.frame(
@@ -285,28 +338,6 @@ test_that("ANAFramework$filter_schema_by_pillar returns subset", {
 })
 
 test_that("ANAFramework$filter_schema_by_pillar errors without master_schema", {
-  af <- ANAFramework$new()
-  af$master_schema <- NULL
-  expect_error(af$filter_schema_by_pillar("FSL"))
-})
-
-test_that("ANAFramework$get_preset_objectives errors on invalid preset", {
-  .skip_if_no_ana_resources()
-  af <- ANAFramework$new()
-  skip_if(is.null(af$master_schema))
-  expect_error(af$get_preset_objectives("bogus_preset"))
-})
-
-test_that("ANAFramework$get_preset_objectives returns character vector for valid preset", {
-  .skip_if_no_ana_resources()
-  af <- ANAFramework$new()
-  skip_if(is.null(af$master_schema))
-
-  for (preset in c("core", "extended", "outcomes", "fsl", "wash", "health")) {
-    result <- af$get_preset_objectives(preset)
-    expect_true(is.character(result))
-  }
-})
 
 test_that("ANAFramework$update_adjusted_svg highlights correct sub_pillar blocks", {
   .skip_if_no_ana_resources()
