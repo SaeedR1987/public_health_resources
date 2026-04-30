@@ -1,4 +1,6 @@
 <svg width="950" height="900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Height: 900px — extended from 800px to accommodate Demographics sub-pillar boxes
+       (Population Size, Vulnerability, Migration) at y=775–830, with bottom margin. -->
 
   <!-- Community Level Factors -->
   <g id="CommLevelFactors">

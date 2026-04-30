@@ -629,7 +629,7 @@ SurveyProtocol <- R6::R6Class(
         if (is.null(strata_names)) {
           phr_assert(
             !is.null(self$sample_table) && "Population_Name" %in% names(self$sample_table),
-            message = phr_txt("strata_names is NULL and sample_table has no 'Population_Name' column. Either call add_stratum() first or pass strata_names explicitly."),
+            message = phr_txt("strata_names is NULL and sample_table has no 'Population_Name' column. Either call add_stratum() to build the sample table first, or pass strata_names explicitly."),
             origin  = "SurveyProtocol$add_strata_to_survey"
           )
           strata_names <- as.character(self$sample_table$Population_Name)
@@ -790,7 +790,8 @@ SurveyProtocol <- R6::R6Class(
 
     #' @description Export protocol to a list including sampling data
     #' @return List containing all protocol data
-    export_protocol = function() {      base_export <- super$export_protocol()
+    export_protocol = function() {
+      base_export <- super$export_protocol()
       base_export$sample_table      <- self$sample_table
       base_export$sampling_frame    <- self$sampling_frame
       base_export$drawn_sample      <- self$drawn_sample
