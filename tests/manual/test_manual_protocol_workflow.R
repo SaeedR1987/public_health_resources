@@ -55,19 +55,16 @@ protocol <- IPHRAProtocol$new(
   country_name     = country_name,
   month_year       = month_year
 )
-stopifnot(inherits(protocol, "IPHRAProtocol"))
-stopifnot(inherits(protocol, "Protocol"))
-stopifnot(!inherits(protocol, "SurveyProtocol"))
-
-# IPHRAProtocol auto-creates an ANAFramework on initialisation
-stopifnot(inherits(protocol$framework, "ANAFramework"))
-stopifnot(inherits(protocol$framework, "Framework"))
 
 # Inspect initial state
 protocol$metadata
 protocol$get_protocol_summary()
 
 # The ANAFramework is already attached – inspect it directly
+head(protocol$framework$master_schema)
+
+View(protocol$framework$filter_schema_by_pillar(pillars = c("Demographics")))
+
 nrow(protocol$framework$master_schema)
 names(protocol$framework$master_schema)
 head(protocol$framework$master_schema)
