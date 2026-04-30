@@ -9,14 +9,10 @@
 #'   \item the bundled \code{ana_framework.svg} as \code{master_svg}.
 #' }
 #'
-#' Call \code{update_adjusted_schema()} with a vector of \code{short_objective}
-#' values and then \code{update_adjusted_svg()} to produce a highlighted SVG
-#' that shows which conceptual framework blocks are covered by the selection.
-#'
-#' Preset selections based on the columns of the master schema
-#' (\code{core}, \code{extended}, \code{outcomes}, \code{fsl},
-#' \code{wash}, \code{health}) can be retrieved with
-#' \code{get_preset_objectives()}.
+#' Call \code{create_adjusted_schema()} or \code{update_adjusted_schema()} with
+#' a vector of \code{short_objective} values and then \code{update_adjusted_svg()}
+#' to produce a highlighted SVG that shows which conceptual framework blocks are
+#' covered by the selection.
 #'
 #' @importFrom R6 R6Class
 #' @export
@@ -111,59 +107,6 @@ ANAFramework <- R6::R6Class(
         )
         self$master_schema[self$master_schema$pillar %in% pillars, , drop = FALSE]
       }, on_error = "abort", origin = "ANAFramework$filter_schema_by_pillar")
-    },
-
-    #' @description Return the \code{short_objective} values for a named preset.
-    #'
-    #' Preset definitions mirror the column-based presets from the ANA Shiny
-    #' module (core, extended, outcomes, fsl, wash, health).
-    #'
-    #' @param preset Character. One of \code{"core"}, \code{"extended"},
-    #'   \code{"outcomes"}, \code{"fsl"}, \code{"wash"}, or \code{"health"}.
-    #' @return Character vector of \code{short_objective} values.
-    get_preset_objectives = function(preset) {
-      .valid_presets <- c("core", "extended", "outcomes", "fsl", "wash", "health")
-      phr_try({
-        phr_assert(
-          !is.null(self$master_schema) && is.data.frame(self$master_schema),
-          message = phr_txt("master_schema must be set before calling get_preset_objectives()."),
-          origin  = "ANAFramework$get_preset_objectives"
-        )
-        phr_assert(
-          is.character(preset) && length(preset) == 1 && preset %in% .valid_presets,
-          message = phr_txt(
-            "preset must be one of: {paste(.valid_presets, collapse=', ')}."
-          ),
-          origin  = "ANAFramework$get_preset_objectives"
-        )
-
-        schema <- self$master_schema
-
-        # Each preset column stores a non-NA marker value:
-        #   core      → "Core"
-        #   extended  → "Extended"
-        #   outcomes  → "Outcome"
-        #   fsl       → "FSL"
-        #   wash      → "WASH"
-        #   health    → "HEALTH"
-        result <- switch(preset,
-          core      = schema$short_objective[!is.na(schema$core)     & schema$core     == "Core"],
-          extended  = schema$short_objective[!is.na(schema$extended)  & schema$extended  == "Extended"],
-          outcomes  = schema$short_objective[!is.na(schema$outcomes)  & schema$outcomes  == "Outcome"],
-          fsl       = schema$short_objective[!is.na(schema$fsl)       & schema$fsl       == "FSL"],
-          wash      = schema$short_objective[!is.na(schema$wash)      & schema$wash      == "WASH"],
-          health    = schema$short_objective[!is.na(schema$health)    & schema$health    == "HEALTH"]
-        )
-
-        result <- result[!is.na(result)]
-        phr_message(
-          phr_txt(
-            "ANAFramework: preset '{preset}' → {length(result)} objective(s)."
-          ),
-          origin = "ANAFramework$get_preset_objectives"
-        )
-        result
-      }, on_error = "abort", origin = "ANAFramework$get_preset_objectives")
     },
 
     #' @description Update the adjusted SVG by highlighting blocks for the

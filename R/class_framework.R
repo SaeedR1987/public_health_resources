@@ -341,6 +341,49 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Create the adjusted schema by filtering the master schema
+    #'   to a specified set of objective codes.
+    #'
+    #' Filters \code{master_schema} to retain only rows whose
+    #' \code{short_objective} value is present in \code{objective_codes} and
+    #' stores the result as \code{adjusted_schema}.  When \code{objective_codes}
+    #' is \code{NULL} or an empty vector all objective codes found in
+    #' \code{master_schema} are used, making \code{adjusted_schema} identical to
+    #' \code{master_schema}.
+    #'
+    #' @param objective_codes Character vector or list of \code{short_objective}
+    #'   values to retain.  Pass \code{NULL} (the default) to include all
+    #'   objectives from the master schema.
+    #' @return Invisibly returns \code{self} for method chaining.
+    create_adjusted_schema = function(objective_codes = NULL) {
+      phr_try({
+        phr_assert(
+          !is.null(self$master_schema) && is.data.frame(self$master_schema) &&
+            nrow(self$master_schema) > 0,
+          message = phr_txt("master_schema must be set before calling create_adjusted_schema()."),
+          origin  = "Framework$create_adjusted_schema"
+        )
+
+        if (is.null(objective_codes) || length(objective_codes) == 0) {
+          objective_codes <- unique(self$master_schema$short_objective)
+        } else {
+          objective_codes <- as.character(unlist(objective_codes))
+        }
+
+        self$adjusted_schema <- self$master_schema[
+          self$master_schema$short_objective %in% objective_codes, ,
+          drop = FALSE
+        ]
+        phr_message(
+          phr_txt(
+            "Adjusted schema created: {nrow(self$adjusted_schema)} of {nrow(self$master_schema)} rows selected."
+          ),
+          origin = "Framework$create_adjusted_schema"
+        )
+      }, on_error = "abort", origin = "Framework$create_adjusted_schema")
+      invisible(self)
+    },
+
     #' @description Remove objective row(s) from the adjusted schema by
     #'   \code{short_objective} value.
     #'
