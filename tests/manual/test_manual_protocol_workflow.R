@@ -63,14 +63,14 @@ protocol$get_protocol_summary()
 # The ANAFramework is already attached – inspect it directly
 head(protocol$framework$master_schema)
 
-View(protocol$framework$filter_schema_by_pillar(pillars = c("Demographics")))
+View(protocol$framework$filter_schema_by_pillar(pillars = c("Demographics", "HHFoodSecurity")))
 
 nrow(protocol$framework$master_schema)
 names(protocol$framework$master_schema)
 head(protocol$framework$master_schema)
 
 # Validate the objective schema via the protocol method
-protocol$validate_objective_schema(protocol$framework$master_schema)
+(protocol$validate_objective_schema(protocol$framework$master_schema))
 
 
 # =============================================================================
@@ -78,16 +78,6 @@ protocol$validate_objective_schema(protocol$framework$master_schema)
 # =============================================================================
 # Objectives are now managed through the Framework's adjusted_schema.
 # Use Framework$add_objective_row() / remove_objective_row() / update_adjusted_schema().
-
-# -- 2a: Select objectives from the ANAFramework using a preset --
-fsl_preset <- protocol$framework$get_preset_objectives("fsl")
-cat("FSL preset objectives:", length(fsl_preset), "\n")
-
-# Set adjusted_schema to the FSL preset selection
-protocol$framework$update_adjusted_schema(fsl_preset)
-stopifnot(is.data.frame(protocol$framework$adjusted_schema))
-stopifnot(nrow(protocol$framework$adjusted_schema) > 0)
-cat("Adjusted schema rows after FSL preset:", nrow(protocol$framework$adjusted_schema), "\n")
 
 # -- 2b: Add an objective row directly to the adjusted schema --
 protocol$framework$add_objective_row(list(
@@ -120,8 +110,31 @@ cat("IPHRAProtocol report (no tools) written to:", report_no_tools, "\n")
 # -- 3b: Add IPHRA tools to the protocol and verify they appear in the report --
 # IPHRAProtocol$add_tools() takes an approved IPHRA tool name only.
 
-protocol$add_tools("tool_household_iphra_v2")
+protocol$add_tools(tool_name = "tool_household_iphra_v2")
+
+View(protocol$tools$tool_household_iphra_v2$survey)
+View(protocol$tools$tool_household_iphra_v2$choices)
+View(protocol$tools$tool_household_iphra_v2$settings)
+
+protocol$tools$tool_household_iphra_v2$validate_tool()
+protocol$tools$tool_household_iphra_v2$validate()
+
+protocol$tools$tool_household_iphra_v2$get_choices()
+protocol$tools$tool_household_iphra_v2$set_selected_indicators(indicators = c("10000"))
+protocol$tools$tool_household_iphra_v2$clone_tool()
+
+protocol$tools$tool_household_iphra_v2$filter_choices_from_survey()
+protocol$tools$tool_household_iphra_v2$get_choice_list_names()
+
+
+View(protocol$tools$tool_household_iphra_v2$get_filtered_survey())
+
 protocol$add_tools("tool_kii_community_iphra_v2")
+
+protocol$tools$tool_kii_community_iphra_v2$validate_tool()
+protocol$tools$tool_kii_community_iphra_v2$validate()
+View(protocol$tools$tool_kii_community_iphra_v2$survey)
+View(protocol$tools$tool_kii_community_iphra_v2$choices)
 
 # Tools are stored by name in the named list
 stopifnot("tool_household_iphra_v2" %in% names(protocol$tools))
@@ -163,11 +176,6 @@ stopifnot(inherits(survey_protocol, "Protocol"))
 # Attach the same ANAFramework (with adjusted objectives) to the survey protocol
 survey_protocol$framework <- protocol$framework
 
-# Add target strata to metadata
-survey_protocol$add_target_stratum("strata_A", "Urban North")
-survey_protocol$add_target_stratum("strata_B", "Peri-Urban East")
-survey_protocol$add_target_stratum("strata_C", "Rural South")
-
 survey_protocol$metadata$target_strata
 
 
@@ -178,7 +186,7 @@ survey_protocol$metadata$target_strata
 # -- 5a: Add strata to the master sample table --
 # ind_indicator and mort_indicator are required columns
 
-survey_protocol$add_stratum(
+protocol$add_stratum(
   stratum_id              = "strata_A",
   stratum_name            = "Urban North",
   population_size         = 45000,

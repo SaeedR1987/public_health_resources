@@ -96,7 +96,7 @@ calculate_sample_size_general <- function(expected_proportion,
 
   # Determine t-statistic for cluster design
   if (design == "cluster") {
-    print(t)
+
     if (is.null(number_clusters) || number_clusters <= 0) {
       # Per SMART survey guidance with higher number of clusters 25+
       const_t <- 2.045
