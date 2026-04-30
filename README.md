@@ -17,7 +17,7 @@ The package is not yet on CRAN. Install the development version directly from Gi
 
 ```r
 # install.packages("remotes")
-remotes::install_github("SaeedR1987/public_health_resources")
+remotes::install_github("impact-initiatives/public_health_resources")
 ```
 
 Then load the package:
