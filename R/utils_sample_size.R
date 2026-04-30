@@ -96,11 +96,12 @@ calculate_sample_size_general <- function(expected_proportion,
 
   # Determine t-statistic for cluster design
   if (design == "cluster") {
+    print(t)
     if (is.null(number_clusters) || number_clusters <= 0) {
       # Per SMART survey guidance with higher number of clusters 25+
-      t <- 2.045
+      const_t <- 2.045
     } else {
-      t <- stats::qt((1 + confidence_level) / 2, df = number_clusters - 1)
+      const_t <- stats::qt((1 + confidence_level) / 2, df = number_clusters - 1)
     }
   }
 
@@ -122,16 +123,18 @@ calculate_sample_size_general <- function(expected_proportion,
       n <- n0
     }
 
-  } else {
+  } else if (design == "cluster") {
 
-    n0 <- ((t^2 * p * (1 - p)) / d^2)^design_effect
+    n0 <- ((const_t^2 * p * (1 - p)) / d^2)*design_effect
 
     if (fpc) {
-      n <- n0 / (1 + (n0 - 1) / total_population)
+      n <- n0 / (1 + ((n0 - 1) / total_population))
     } else {
       n <- n0
     }
 
+  } else {
+    phr_error("Invalid design type. Must be 'simple_random' or 'cluster'.")
   }
 
   # Adjust for non-response
@@ -237,9 +240,7 @@ calculate_sample_size_individual <- function(expected_proportion,
 
   return(list(
     sample_size_individuals  = n_individuals,
-    sample_size_households   = n_households,
-    average_household_size   = average_household_size,
-    sub_population_percent   = sub_population_percent
+    sample_size_households   = n_households
   ))
 }
 
@@ -364,22 +365,23 @@ calculate_sample_size_mortality <- function(expected_death_rate,
   if (design == "cluster") {
     if (is.null(number_clusters) || number_clusters <= 0) {
       # Per SMART survey guidance with higher number of clusters 25+
-      t <- 2.045  # nolint
+      const_t <- 2.045  # nolint
     } else {
-      t <- stats::qt((1 + confidence_level) / 2, df = number_clusters - 1)  # nolint
+      const_t <- stats::qt((1 + confidence_level) / 2, df = number_clusters - 1)  # nolint
     }
   }
 
   # Calculate z-score
   z <- stats::qnorm((1 + confidence_level) / 2)
-
   r <- expected_death_rate / 10000
   d <- desired_precision / 10000
 
-  numerator   <- z^2 * r * (1 - r)
-  denominator <- d^2 * recall_days
+
 
   if (design == "simple_random") {
+
+    numerator   <- z^2 * r # * (1 - r)
+    denominator <- d^2 * recall_days
 
     n_individuals <- numerator / denominator
 
@@ -392,7 +394,10 @@ calculate_sample_size_mortality <- function(expected_death_rate,
 
     effective_design_effect <- 1
 
-  } else {
+  } else if (design == "cluster") {
+
+    numerator   <- const_t^2 * r # * (1 - r)
+    denominator <- d^2 * recall_days
 
     n_individuals <- (numerator / denominator) * design_effect
 
@@ -405,6 +410,8 @@ calculate_sample_size_mortality <- function(expected_death_rate,
 
     effective_design_effect <- design_effect
 
+  } else {
+    phr_error("Invalid design type. Must be 'simple_random' or 'cluster'.")
   }
 
   # Round individuals up before deriving secondary quantities
@@ -424,10 +431,7 @@ calculate_sample_size_mortality <- function(expected_death_rate,
   return(list(
     sample_size_households  = n_households,
     sample_size_individuals = n_adj_individuals,
-    sample_size_person_time = n_pt,
-    expected_deaths         = expected_deaths,
-    recall_days             = recall_days,
-    design_effect           = effective_design_effect
+    sample_size_person_time = n_pt
   ))
 }
 

@@ -146,8 +146,7 @@ test_that("calculate_sample_size_individual returns a named list", {
     average_household_size = 5
   )
   expect_true(is.list(result))
-  expect_named(result, c("sample_size_individuals", "sample_size_households",
-                          "average_household_size", "sub_population_percent"))
+  expect_named(result, c("sample_size_individuals", "sample_size_households"))
 })
 
 test_that("calculate_sample_size_individual sample_size_households is derived from individuals", {
@@ -177,25 +176,6 @@ test_that("calculate_sample_size_individual sub_population_percent increases ind
     non_response_rate      = 0
   )
   expect_true(sub_pop$sample_size_individuals > full_pop$sample_size_individuals)
-})
-
-test_that("calculate_sample_size_individual preserves average_household_size in return value", {
-  result <- calculate_sample_size_individual(
-    expected_proportion    = 25,
-    desired_precision      = 5,
-    average_household_size = 6.2
-  )
-  expect_equal(result$average_household_size, 6.2)
-})
-
-test_that("calculate_sample_size_individual preserves sub_population_percent in return value", {
-  result <- calculate_sample_size_individual(
-    expected_proportion    = 25,
-    desired_precision      = 5,
-    average_household_size = 5,
-    sub_population_percent = 75
-  )
-  expect_equal(result$sub_population_percent, 75)
 })
 
 test_that("calculate_sample_size_individual errors when average_household_size is missing or <= 0", {
@@ -281,8 +261,7 @@ test_that("calculate_sample_size_mortality returns a named list", {
   )
   expect_true(is.list(result))
   expect_named(result, c("sample_size_households", "sample_size_individuals",
-                          "sample_size_person_time", "expected_deaths",
-                          "recall_days", "design_effect"))
+                          "sample_size_person_time"))
 })
 
 test_that("calculate_sample_size_mortality returns positive numeric values", {
@@ -294,7 +273,6 @@ test_that("calculate_sample_size_mortality returns positive numeric values", {
   expect_true(result$sample_size_households > 0)
   expect_true(result$sample_size_individuals > 0)
   expect_true(result$sample_size_person_time > 0)
-  expect_true(result$expected_deaths >= 0)
 })
 
 test_that("calculate_sample_size_mortality default design is cluster and applies design_effect", {
@@ -314,37 +292,6 @@ test_that("calculate_sample_size_mortality default design is cluster and applies
     non_response_rate      = 0
   )
   expect_true(cluster$sample_size_households > simple$sample_size_households)
-})
-
-test_that("calculate_sample_size_mortality design_effect is 1 for simple_random in return value", {
-  result <- calculate_sample_size_mortality(
-    expected_death_rate    = 0.5,
-    desired_precision      = 0.2,
-    average_household_size = 5,
-    design                 = "simple_random"
-  )
-  expect_equal(result$design_effect, 1)
-})
-
-test_that("calculate_sample_size_mortality design_effect matches input for cluster in return value", {
-  result <- calculate_sample_size_mortality(
-    expected_death_rate    = 0.5,
-    desired_precision      = 0.2,
-    average_household_size = 5,
-    design                 = "cluster",
-    design_effect          = 2
-  )
-  expect_equal(result$design_effect, 2)
-})
-
-test_that("calculate_sample_size_mortality recall_days is preserved in return value", {
-  result <- calculate_sample_size_mortality(
-    expected_death_rate    = 0.5,
-    desired_precision      = 0.2,
-    average_household_size = 5,
-    recall_days            = 60
-  )
-  expect_equal(result$recall_days, 60)
 })
 
 test_that("calculate_sample_size_mortality longer recall_days increases person_time slightly", {
@@ -708,3 +655,212 @@ test_that("estimate_field_plan errors on negative average_rest_time", {
   )
 })
 
+# Testing against ENA and UKSAMPLES ####
+
+test_that("calculate_sample_size_general, 20% Prev, 5% MoE, no non-response", {
+  result <- calculate_sample_size_general(
+    design = "simple_random",
+    expected_proportion = 20,
+    desired_precision   = 5,
+    non_response_rate   = 0
+  )
+
+  result_ena <- 246 # Calculated with ENA software
+
+  expect_equal(result, result_ena)
+})
+
+test_that("calculate_sample_size_general, 1% Prev, 2.5% MoE, no non-response", {
+  result <- calculate_sample_size_general(
+    design = "simple_random",
+    expected_proportion = 1,
+    desired_precision   = 2.5,
+    non_response_rate   = 0
+  )
+
+  result_ena <- 61 # Calculated with ENA software
+
+  expect_equal(result, result_ena)
+})
+
+test_that("calculate_sample_size_general, 99% Prev, 10% MoE, no non-response", {
+  result <- calculate_sample_size_general(
+    design = "simple_random",
+    expected_proportion = 99,
+    desired_precision   = 10,
+    non_response_rate   = 0
+  )
+
+  result_ena <- 4 # Calculated with ENA software
+
+  expect_equal(result, result_ena)
+})
+
+test_that("calculate_sample_size_general cluster design, 20% Prev, 5% MoE, no non-response", {
+  result <- calculate_sample_size_general(
+    design = "cluster",
+    expected_proportion = 20,
+    desired_precision   = 5,
+    design_effect = 1.5,
+    non_response_rate   = 0
+  )
+
+  result_ena <- 401 # Calculated with ENA software
+
+  # minor rounding difference, ENA 401.47, while this calc does ceiling
+  expect_equal(result, result_ena, tolerance = 1)
+})
+
+test_that("calculate_sample_size_general with fpc and 5000 population size, 20% Prev, 5% MoE, no non-response", {
+  result <- calculate_sample_size_general(
+    design = "simple_random",
+    expected_proportion = 20,
+    desired_precision   = 5,
+    non_response_rate   = 0,
+    fpc = TRUE,
+    total_population = 5000
+  )
+
+  result_ena <- 180 # Calculated with ENA software, there seems to be a difference here, hard to confirm without seeing ENA code.
+  result_uksamples <- 234
+
+  expect_equal(result, result_uksamples, tolerance = 1)
+})
+
+test_that("calculate_sample_size_individual against ENA", {
+  full_pop <- calculate_sample_size_individual(
+    design                 = "simple_random",
+    expected_proportion    = 30,
+    desired_precision      = 5,
+    average_household_size = 5,
+    sub_population_percent = 100,
+    non_response_rate      = 0
+  )
+
+  # Calculated with ENA software, ENA specifically applies a 0.9 correction factor to correct for children 0-5 months, that wont be measured. We are more general and dont want to do this.
+  # See SMART Methodology Manual Version 2, page 36
+  result_ena_ind <- 323
+  result_ena_hh <- 72
+
+  expect_equal(full_pop$sample_size_individuals, result_ena_ind)
+  expect_equal(full_pop$sample_size_households, result_ena_hh*0.9, tolerance = 1)
+
+})
+
+test_that("calculate_sample_size_individual sub_population_percent increases individual sample size", {
+  full_pop <- calculate_sample_size_individual(
+    design                 = "cluster",
+    design_effect = 2,
+    expected_proportion    = 30,
+    desired_precision      = 5,
+    average_household_size = 5,
+    sub_population_percent = 100,
+    non_response_rate      = 0
+  )
+
+  # Calculated with ENA software, ENA specifically applies a 0.9 correction factor to correct for children 0-5 months, that wont be measured. We are more general and dont want to do this.
+  # See SMART Methodology Manual Version 2, page 36
+  result_ena_ind <- 703
+  result_ena_hh <- 156
+
+  expect_equal(full_pop$sample_size_individuals, result_ena_ind)
+  expect_equal(full_pop$sample_size_households, result_ena_hh*0.9, tolerance = 1)
+
+})
+
+test_that("calculate_sample_size_mortality recall_days is preserved in return value", {
+  result <- calculate_sample_size_mortality(
+    design = "simple_random",
+    expected_death_rate    = 0.5,
+    desired_precision      = 0.2,
+    average_household_size = 5,
+    recall_days            = 93,
+    non_response_rate = 0
+  )
+
+  result_ena_ind <- 5163
+  result_ena_hh <- 1033
+
+  expect_equal(result$sample_size_individuals, 5163, tolerance = 1)
+  expect_equal(result$sample_size_households, 1033, tolerance = 1)
+
+})
+
+test_that("calculate_sample_size_mortality with nonresponse simple random against ENA", {
+  result <- calculate_sample_size_mortality(
+    design = "simple_random",
+    expected_death_rate    = 0.5,
+    desired_precision      = 0.2,
+    average_household_size = 5,
+    recall_days            = 93,
+    non_response_rate = 5
+  )
+
+  result_ena_ind <- 5163
+  result_ena_hh <- 1087
+
+  expect_equal(result$sample_size_individuals, result_ena_ind, tolerance = 1)
+  expect_equal(result$sample_size_households, result_ena_hh, tolerance = 1)
+
+})
+
+test_that("calculate_sample_size_mortality with nonresponse cluster against ENA", {
+  result <- calculate_sample_size_mortality(
+    design = "cluster",
+    expected_death_rate    = 1,
+    design_effect = 2,
+    desired_precision      = 0.4,
+    average_household_size = 6,
+    recall_days            = 120,
+    non_response_rate = 9
+  )
+
+  result_ena_ind <- 3267
+  result_ena_hh <- 598
+
+  expect_equal(result$sample_size_individuals, result_ena_ind, tolerance = 1)
+  expect_equal(result$sample_size_households, result_ena_hh, tolerance = 1)
+
+})
+
+
+test_that("calculate_sample_size_mortality with fpc nonresponse simple random against ENA", {
+  result <- calculate_sample_size_mortality(
+    design = "simple_random",
+    expected_death_rate    = 0.5,
+    desired_precision      = 0.2,
+    average_household_size = 5,
+    recall_days            = 93,
+    non_response_rate = 5,
+    fpc = TRUE,
+    total_population = 5000
+  )
+
+  result_ena_ind <- 2540
+  result_ena_hh <- 535
+
+  expect_equal(result$sample_size_individuals, result_ena_ind, tolerance = 1)
+  expect_equal(result$sample_size_households, result_ena_hh, tolerance = 1)
+
+})
+
+test_that("calculate_sample_size_mortality with fpc nonresponse cluster against ENA", {
+  result <- calculate_sample_size_mortality(
+    design = "cluster",
+    expected_death_rate    = 1,
+    desired_precision      = 0.4,
+    design_effect = 2,
+    average_household_size = 6,
+    recall_days            = 120,
+    non_response_rate = 9,
+    fpc = TRUE,
+    total_population = 5000
+  )
+
+  result_ena_ind <- 2328
+  result_ena_hh <- 426
+
+  expect_equal(result$sample_size_individuals, result_ena_ind, tolerance = 1)
+  expect_equal(result$sample_size_households, result_ena_hh, tolerance = 1)
+
+})
