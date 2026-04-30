@@ -84,29 +84,33 @@ ANAFramework <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Filter the master schema to objectives whose \code{pillar}
-    #'   matches one or more of the supplied pillar names.
+    #' @description Filter the master schema to objectives whose \code{objective_code}
+    #'   matches one or more of the supplied objective code values.
     #'
-    #' This corresponds to the pillar-dimension filter used in the Shiny module
-    #' (\code{reference_objectives[reference_objectives$pillar %in%
-    #' selected_pillars, ]}).
+    #' This corresponds to the objective-code-dimension filter used in the Shiny module.
     #'
-    #' @param pillars Character vector of pillar names to retain.
+    #' @param objective_codes Numeric or character vector of objective codes to retain.
     #' @return Data frame subset of \code{master_schema}.
-    filter_schema_by_pillar = function(pillars) {
+    filter_schema_by_objective = function(objective_codes) {
       phr_try({
         phr_assert(
           !is.null(self$master_schema) && is.data.frame(self$master_schema),
-          message = phr_txt("master_schema must be set before calling filter_schema_by_pillar()."),
-          origin  = "ANAFramework$filter_schema_by_pillar"
+          message = phr_txt("master_schema must be set before calling filter_schema_by_objective()."),
+          origin  = "ANAFramework$filter_schema_by_objective"
         )
         phr_assert(
-          is.character(pillars) && length(pillars) > 0,
-          message = phr_txt("pillars must be a non-empty character vector."),
-          origin  = "ANAFramework$filter_schema_by_pillar"
+          (is.numeric(objective_codes) || is.character(objective_codes)) &&
+            length(objective_codes) > 0,
+          message = phr_txt("objective_codes must be a non-empty numeric or character vector."),
+          origin  = "ANAFramework$filter_schema_by_objective"
         )
-        self$master_schema[self$master_schema$pillar %in% pillars, , drop = FALSE]
-      }, on_error = "abort", origin = "ANAFramework$filter_schema_by_pillar")
+        phr_assert(
+          "objective_code" %in% names(self$master_schema),
+          message = phr_txt("master_schema must contain an 'objective_code' column."),
+          origin  = "ANAFramework$filter_schema_by_objective"
+        )
+        self$master_schema[self$master_schema$objective_code %in% objective_codes, , drop = FALSE]
+      }, on_error = "abort", origin = "ANAFramework$filter_schema_by_objective")
     },
 
     #' @description Update the adjusted SVG by highlighting blocks for the

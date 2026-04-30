@@ -322,22 +322,27 @@ test_that("ANAFramework auto-loads master_svg from ana_framework.svg", {
   expect_true(grepl("<svg", af$master_svg))
 })
 
-test_that("ANAFramework$filter_schema_by_pillar returns subset", {
+test_that("ANAFramework$filter_schema_by_objective returns subset", {
   .skip_if_no_ana_resources()
   af <- ANAFramework$new()
   skip_if(is.null(af$master_schema))
+  skip_if(!"objective_code" %in% names(af$master_schema))
 
-  available_pillars <- unique(af$master_schema$pillar)
-  skip_if(length(available_pillars) == 0)
+  available_codes <- unique(af$master_schema$objective_code)
+  skip_if(length(available_codes) == 0)
 
-  pillar <- available_pillars[[1]]
-  result <- af$filter_schema_by_pillar(pillar)
+  code <- available_codes[[1]]
+  result <- af$filter_schema_by_objective(code)
   expect_true(is.data.frame(result))
   expect_true(nrow(result) > 0)
-  expect_true(all(result$pillar == pillar))
+  expect_true(all(result$objective_code == code))
 })
 
-test_that("ANAFramework$filter_schema_by_pillar errors without master_schema", {
+test_that("ANAFramework$filter_schema_by_objective errors without master_schema", {
+  af <- ANAFramework$new()
+  af$master_schema <- NULL
+  expect_error(af$filter_schema_by_objective(101))
+})
 
 test_that("ANAFramework$update_adjusted_svg highlights correct sub_pillar blocks", {
   .skip_if_no_ana_resources()

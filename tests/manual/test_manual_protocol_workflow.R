@@ -63,7 +63,7 @@ protocol$get_protocol_summary()
 # The ANAFramework is already attached – inspect it directly
 head(protocol$framework$master_schema)
 
-View(protocol$framework$filter_schema_by_pillar(pillars = c("Demographics", "HHFoodSecurity")))
+View(protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116)))
 
 nrow(protocol$framework$master_schema)
 names(protocol$framework$master_schema)
@@ -835,18 +835,18 @@ stopifnot(nzchar(af$master_svg))
 stopifnot(grepl("<svg", af$master_svg))
 cat("ANAFramework master_svg loaded (", nchar(af$master_svg), "chars)\n")
 
-# -- 13e: filter_schema_by_pillar() --
+# -- 13e: filter_schema_by_objective() --
 
-available_pillars <- unique(af$master_schema$pillar)
-cat("Available pillars:", paste(available_pillars, collapse = ", "), "\n")
+available_codes <- unique(af$master_schema$objective_code)
+cat("Available objective codes:", paste(available_codes, collapse = ", "), "\n")
 
-if (length(available_pillars) > 0) {
-  pillar_subset <- af$filter_schema_by_pillar(available_pillars[1])
-  stopifnot(is.data.frame(pillar_subset))
-  stopifnot(nrow(pillar_subset) > 0)
-  stopifnot(all(pillar_subset$pillar == available_pillars[1]))
-  cat("filter_schema_by_pillar('", available_pillars[1], "'): ",
-      nrow(pillar_subset), "rows\n")
+if (length(available_codes) > 0) {
+  code_subset <- af$filter_schema_by_objective(available_codes[1])
+  stopifnot(is.data.frame(code_subset))
+  stopifnot(nrow(code_subset) > 0)
+  stopifnot(all(code_subset$objective_code == available_codes[1]))
+  cat("filter_schema_by_objective('", available_codes[1], "'): ",
+      nrow(code_subset), "rows\n")
 }
 
 # -- 13f: get_preset_objectives() for all named presets --
