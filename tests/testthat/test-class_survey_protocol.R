@@ -187,3 +187,106 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
   expect_false(is.na(s1$num_days))
   expect_true(is.na(s2$num_days))
 })
+
+# ---- calc_method is correctly derived from sampling_method -------------------
+
+test_that("add_stratum derives calc_method correctly for all sampling_method values", {
+  p <- make_protocol()
+
+  simple_random_methods <- c("simple_random", "proportional", "systematic", "purposive")
+  cluster_methods       <- c("pps_cluster", "pps_rlc")
+
+  for (m in simple_random_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+  }
+  for (m in cluster_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+  }
+
+  st <- p$get_sample_table()
+  expect_true("calc_method" %in% names(st))
+
+  for (m in simple_random_methods) {
+    expect_equal(st$calc_method[st$stratum_id == m], "simple_random",
+                 info = paste("calc_method for sampling_method =", m))
+  }
+  for (m in cluster_methods) {
+    expect_equal(st$calc_method[st$stratum_id == m], "cluster",
+                 info = paste("calc_method for sampling_method =", m))
+  }
+})
+
+test_that("add_stratum rejects invalid sampling_method values", {
+  p <- make_protocol()
+  expect_error(
+    p$add_stratum(stratum_id = "s1", stratum_name = "s1", sampling_method = "srs"),
+    regexp = "sampling_method must be one of"
+  )
+})
+
+# ---- SamplingFrame initialises as a blank SamplingFrame object ---------------
+
+test_that("SurveyProtocol initialises sampling_frame as a SamplingFrame object", {
+  p <- make_protocol()
+  expect_true(inherits(p$sampling_frame, "SamplingFrame"))
+  expect_equal(nrow(p$sampling_frame$log_df), 0L)
+  expected_cols <- c("stratum", "psu", "population_size", "inclusion",
+                     "sampled_psu", "allocated_sample")
+  expect_true(all(expected_cols %in% names(p$sampling_frame$log_df)))
+})
+
+test_that("SurveyProtocol accepts a data frame on init and stores it in SamplingFrame", {
+  frame <- data.frame(
+    stratum          = "urban",
+    psu              = "psu_1",
+    population_size  = 500,
+    inclusion        = TRUE,
+    sampled_psu      = NA_real_,
+    allocated_sample = NA_real_,
+    stringsAsFactors = FALSE
+  )
+  p <- create_survey_protocol(sampling_frame = frame)
+  expect_true(inherits(p$sampling_frame, "SamplingFrame"))
+  expect_equal(nrow(p$sampling_frame$log_df), 1L)
+  expect_equal(p$sampling_frame$log_df$psu, "psu_1")
+})
+
+test_that("set_sampling_frame stores data in the SamplingFrame log_df", {
+  p <- make_protocol()
+  frame <- data.frame(
+    stratum          = c("urban", "rural"),
+    psu              = c("psu_1", "psu_2"),
+    population_size  = c(500, 800),
+    inclusion        = c(TRUE, TRUE),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  expect_equal(nrow(p$sampling_frame$log_df), 2L)
+  expect_true("inclusion" %in% names(p$sampling_frame$log_df))
+})
+
+# ---- SamplingFrame class initialises correctly -------------------------------
+
+test_that("SamplingFrame initialises empty with required columns", {
+  sf <- SamplingFrame$new()
+  expect_true(inherits(sf, "SamplingFrame"))
+  expect_equal(nrow(sf$log_df), 0L)
+  expected_cols <- c("stratum", "psu", "population_size", "inclusion",
+                     "sampled_psu", "allocated_sample")
+  expect_true(all(expected_cols %in% names(sf$log_df)))
+})
+
+test_that("SamplingFrame initialises with a provided data frame", {
+  frame <- data.frame(
+    stratum          = "A",
+    psu              = "psu_1",
+    population_size  = 1000,
+    inclusion        = TRUE,
+    sampled_psu      = NA_real_,
+    allocated_sample = NA_real_,
+    stringsAsFactors = FALSE
+  )
+  sf <- SamplingFrame$new(log_df = frame)
+  expect_equal(nrow(sf$log_df), 1L)
+  expect_equal(sf$log_df$stratum, "A")
+})
