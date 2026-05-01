@@ -452,11 +452,17 @@ calculate_sample_size_mortality <- function(expected_death_rate,
 #' @param number_of_psu_per_team_per_day Numeric or \code{NULL}. Number of PSUs
 #'   (clusters) each team can complete in a day; required and must be positive
 #'   when \code{sample_design = "cluster"} (default = \code{NULL}).
-#' @param start_time Character or \code{Date}. Start date of data collection;
-#'   character strings are coerced via \code{as.Date()}.
-#' @param end_time Character or \code{Date}. End date of data collection;
-#'   character strings are coerced via \code{as.Date()}.  Must be after
-#'   \code{start_time}.
+#' @param start_time Character, numeric, or \code{Date}. Daily work start time
+#'   or start date.  Accepts \code{"HH:MM"} 24-hour strings (e.g.\
+#'   \code{"08:00"}) representing the daily work start time, in which case the
+#'   working window is computed as the difference in minutes between
+#'   \code{start_time} and \code{end_time} on a single day.  Also accepts
+#'   \code{Date} objects or \code{"YYYY-MM-DD"} character strings for
+#'   multi-day campaign spans (legacy behaviour).  Numeric values are treated
+#'   as minutes since midnight.
+#' @param end_time Character, numeric, or \code{Date}. Daily work end time or
+#'   end date; must use the same format as \code{start_time}.  Must yield a
+#'   larger minute-count (or later date) than \code{start_time}.
 #' @param average_interview_time Numeric. Average time to complete one
 #'   interview, in minutes (must be positive).
 #' @param average_travel_time Numeric. Average travel time between clusters
@@ -540,13 +546,23 @@ estimate_field_plan <- function(sample_design,
     )
   }
 
-  # Convert times to Date if needed
-  if (is.character(start_time)) start_time <- as.Date(start_time)
-  if (is.character(end_time))   end_time   <- as.Date(end_time)
+  # --- Resolve start_time / end_time to a minute-count or difftime minutes ---
+  # Accepts "HH:MM" time-of-day strings (e.g. "10:00", "18:00") that define
+  # the daily working window, Date objects / "YYYY-MM-DD" strings that span
+  # multiple calendar days, or plain numerics (minutes since midnight).
+  .is_hhmm <- function(v) {
+    is.character(v) && grepl("^[0-9]{1,2}:[0-9]{2}$", trimws(v))
+  }
 
-  # Calculate available working time
-  total_working_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
-  total_working_hours   <- total_working_minutes / 60
+  if (.is_hhmm(start_time) || .is_hhmm(end_time) || is.numeric(start_time)) {
+    start_min <- phr_parse_hhmm(start_time, origin = origin)
+    end_min   <- phr_parse_hhmm(end_time,   origin = origin)
+    total_working_minutes <- end_min - start_min
+  } else {
+    if (is.character(start_time)) start_time <- as.Date(start_time)
+    if (is.character(end_time))   end_time   <- as.Date(end_time)
+    total_working_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+  }
 
   phr_assert(
     total_working_minutes > 0,
