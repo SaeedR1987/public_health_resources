@@ -548,6 +548,41 @@ SurveyProtocol <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Clear sample selection from the sampling frame
+    #'
+    #' Resets the \code{sampled_psu} and \code{allocated_sample} columns of the
+    #' \code{\link{SamplingFrame}} to \code{NA}, leaving all other columns
+    #' (e.g. \code{stratum}, \code{psu}, \code{population_size},
+    #' \code{inclusion}) intact.  Also clears the \code{drawn_sample} and
+    #' \code{drawn_sample_full} fields.
+    #'
+    #' This is useful when you want to re-draw the sample with different
+    #' parameters without discarding the sampling frame itself.
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.
+    clear_sample = function() {
+      phr_try({
+        if (!is.null(self$sampling_frame) &&
+            nrow(self$sampling_frame$log_df) > 0) {
+          if ("sampled_psu" %in% names(self$sampling_frame$log_df)) {
+            self$sampling_frame$log_df$sampled_psu <- NA_real_
+          }
+          if ("allocated_sample" %in% names(self$sampling_frame$log_df)) {
+            self$sampling_frame$log_df$allocated_sample <- NA_real_
+          }
+        }
+        self$drawn_sample      <- NULL
+        self$drawn_sample_full <- NULL
+        self$metadata$modified_date <- Sys.time()
+        private$check_issues()
+        phr_message(
+          phr_txt("Sample cleared from sampling frame."),
+          origin = "SurveyProtocol$clear_sample"
+        )
+      }, on_error = "abort", origin = "SurveyProtocol$clear_sample")
+      invisible(self)
+    },
+
     #' @description Validate the structure of the master sample table
     #'
     #' Checks that \code{sample_table} exists and contains all required master

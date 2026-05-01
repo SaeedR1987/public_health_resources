@@ -290,3 +290,53 @@ test_that("SamplingFrame initialises with a provided data frame", {
   expect_equal(nrow(sf$log_df), 1L)
   expect_equal(sf$log_df$stratum, "A")
 })
+
+# ---- clear_sample clears selection columns but retains frame -----------------
+
+test_that("clear_sample resets sampled_psu and allocated_sample but retains other columns", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id              = "s1",
+    stratum_name            = "Urban",
+    population_size         = 10000,
+    sampling_method         = "simple_random",
+    n_psu                   = 5,
+    pop_expected_prevalence = 50,
+    pop_precision           = 5
+  )
+  p$calculate_sample_sizes()
+
+  frame <- data.frame(
+    stratum          = rep("s1", 10),
+    psu              = paste0("psu_", seq_len(10)),
+    population_size  = rep(500, 10),
+    inclusion        = rep(TRUE, 10),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  # After drawing, at least some PSUs should be selected
+  expect_false(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+  expect_false(is.null(p$drawn_sample))
+
+  # Clear and verify
+  p$clear_sample()
+
+  expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+  expect_true(all(is.na(p$sampling_frame$log_df$allocated_sample)))
+  expect_null(p$drawn_sample)
+  expect_null(p$drawn_sample_full)
+
+  # Frame columns other than the cleared ones are retained
+  expect_equal(nrow(p$sampling_frame$log_df), 10L)
+  expect_true(all(p$sampling_frame$log_df$stratum == "s1"))
+  expect_equal(p$sampling_frame$log_df$psu, paste0("psu_", seq_len(10)))
+})
+
+test_that("clear_sample is a no-op on an empty sampling frame", {
+  p <- make_protocol()
+  expect_no_error(p$clear_sample())
+  expect_equal(nrow(p$sampling_frame$log_df), 0L)
+  expect_null(p$drawn_sample)
+})
