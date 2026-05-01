@@ -105,7 +105,7 @@ validate_strata_table <- function(sample_table) {
   list(valid = TRUE, message = phr_txt("sample_table structure is valid."))
 }
 
-#' Recalculate sample sizes for all rows of a strata table
+#' Recalculate sample sizes and field plan for all rows of a strata table
 #'
 #' Goes row by row through a master strata table and recalculates the
 #' \code{General_HH_Sample_Size}, \code{Ind_Sample_Size},
@@ -115,10 +115,42 @@ validate_strata_table <- function(sample_table) {
 #' recalculation, \code{Final_HH_Sample_Size} is set to the maximum household
 #' sample size across the three HH-level calculation types for each row.
 #'
+#' After computing sample sizes, also calls \code{\link{estimate_field_plan}}
+#' for each stratum where the necessary logistics parameters are present.
+#' The resulting field-plan columns are written back into \code{sample_table}:
+#' \itemize{
+#'   \item \code{num_interview_per_enum_per_day} — estimated interviews per
+#'     enumerator per working day.
+#'   \item \code{num_days} — estimated number of data-collection days needed.
+#'   \item \code{num_psu_needed} — number of PSUs required (\code{NA} for
+#'     simple random designs).
+#'   \item \code{psu_size} — cluster size (\code{NA} for simple random
+#'     designs).
+#' }
+#'
+#' Required parameters per calculation type:
+#' \itemize{
+#'   \item \strong{General}: \code{pop_expected_prevalence}, \code{pop_precision}
+#'   \item \strong{Individual}: \code{ind_expected_prevalence}, \code{ind_precision},
+#'     \code{ind_avg_hh_size} (> 0)
+#'   \item \strong{Mortality}: \code{mort_expected_death_rate}, \code{mort_precision},
+#'     \code{mort_avg_hh_size} (> 0)
+#' }
+#'
+#' Required parameters for the field plan estimate:
+#' \itemize{
+#'   \item \strong{All designs}: \code{teams}, \code{enumerators_per_team},
+#'     \code{start_time}, \code{end_time}, \code{avg_interview_time},
+#'     \code{avg_travel_time}, \code{avg_rest_time}, and
+#'     \code{Final_HH_Sample_Size}.
+#'   \item \strong{Cluster design} (\code{sampling_method = "pps_cluster"}):
+#'     additionally \code{clusters_per_day}.
+#' }
+#'
 #' @param sample_table A data frame conforming to the master strata table
 #'   schema (validated with \code{validate_strata_table}).
 #' @return The updated \code{sample_table} with recalculated sample size
-#'   columns.
+#'   and field plan columns.
 #' @export
 calculate_sample_size_strata_table <- function(sample_table) {
 
@@ -140,10 +172,14 @@ calculate_sample_size_strata_table <- function(sample_table) {
     for (i in seq_len(nrow(sample_table))) {
       row <- sample_table[i, ]
 
+      # Map sampling_method to the design type accepted by calculate_sample_size_*
+      # functions ("simple_random" or "cluster").
+      sample_method <- if (!is.na(row$sampling_method)) row$sampling_method else "srs"
+      design_type   <- if (identical(sample_method, "pps_cluster")) "cluster" else "simple_random"
+
       # ---- General (population-level) sample size -------------------------
       if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
         design_effect <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) row$pop_design_effect else .default_design_effect
-        design_type   <- if (!is.na(row$sampling_method)) row$sampling_method else "simple_random"
         nonresponse   <- if (!is.na(row$pop_nonresponse)) row$pop_nonresponse else 5
         fpc           <- if (!is.na(row$pop_fpc)) as.logical(row$pop_fpc) else FALSE
         total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
@@ -171,7 +207,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
       if (!is.na(row$ind_expected_prevalence) && !is.na(row$ind_precision) &&
           !is.na(row$ind_avg_hh_size) && row$ind_avg_hh_size > 0) {
         design_effect <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) row$ind_design_effect else .default_design_effect
-        design_type   <- if (!is.na(row$sampling_method)) row$sampling_method else "simple_random"
         nonresponse   <- if (!is.na(row$ind_nonresponse)) row$ind_nonresponse else 5
         fpc           <- if (!is.na(row$ind_fpc)) as.logical(row$ind_fpc) else FALSE
         total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
@@ -203,7 +238,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
       if (!is.na(row$mort_expected_death_rate) && !is.na(row$mort_precision) &&
           !is.na(row$mort_avg_hh_size) && row$mort_avg_hh_size > 0) {
         design_effect <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) row$mort_design_effect else .default_design_effect
-        design_type   <- if (!is.na(row$sampling_method)) row$sampling_method else "simple_random"
         nonresponse   <- if (!is.na(row$mort_nonresponse)) row$mort_nonresponse else 5
         fpc           <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE
         total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
@@ -242,6 +276,50 @@ calculate_sample_size_strata_table <- function(sample_table) {
       valid_hh <- hh_sizes[!is.na(hh_sizes)]
       if (length(valid_hh) > 0 && "Final_HH_Sample_Size" %in% names(sample_table)) {
         sample_table$Final_HH_Sample_Size[i] <- max(valid_hh)
+      }
+
+      # ---- Field plan estimate --------------------------------------------
+      # Re-read the row after sample size updates so Final_HH_Sample_Size is current.
+      row <- sample_table[i, ]
+
+      fp_sample_design <- if (identical(sample_method, "pps_cluster")) "cluster" else "simple_random"
+
+      base_fields <- c("teams", "enumerators_per_team", "start_time",
+                       "end_time", "avg_interview_time", "avg_travel_time",
+                       "avg_rest_time", "Final_HH_Sample_Size")
+      has_base <- all(vapply(base_fields, function(f) {
+        f %in% names(row) && !is.na(row[[f]]) && nzchar(as.character(row[[f]]))
+      }, logical(1L)))
+
+      has_cluster_param <- fp_sample_design != "cluster" ||
+        ("clusters_per_day" %in% names(row) &&
+         !is.na(row$clusters_per_day) &&
+         row$clusters_per_day > 0)
+
+      if (has_base && has_cluster_param) {
+        fp <- phr_try(
+          estimate_field_plan(
+            sample_design                  = fp_sample_design,
+            number_of_teams                = row$teams,
+            enumerators_per_team           = row$enumerators_per_team,
+            number_of_psu_per_team_per_day = if (fp_sample_design == "cluster") row$clusters_per_day else NULL,
+            start_time                     = row$start_time,
+            end_time                       = row$end_time,
+            average_interview_time         = row$avg_interview_time,
+            average_travel_time            = row$avg_travel_time,
+            average_rest_time              = row$avg_rest_time,
+            total_sample_size              = row$Final_HH_Sample_Size
+          ),
+          on_error = "return",
+          origin   = origin,
+          step     = phr_txt("Field plan — stratum {row$stratum_id}")
+        )
+        if (!phr_failed(fp)) {
+          sample_table$num_interview_per_enum_per_day[i] <- fp$num_interview_per_enum_per_day
+          sample_table$num_days[i]                       <- fp$num_days
+          sample_table$num_psu_needed[i]                 <- fp$num_psu_needed
+          sample_table$psu_size[i]                       <- fp$psu_size
+        }
       }
     }
 
