@@ -173,9 +173,15 @@ calculate_sample_size_strata_table <- function(sample_table) {
       row <- sample_table[i, ]
 
       # Map sampling_method to the design type accepted by calculate_sample_size_*
-      # functions ("simple_random" or "cluster").
-      sample_method <- if (!is.na(row$sampling_method)) row$sampling_method else "srs"
-      design_type   <- if (identical(sample_method, "pps_cluster")) "cluster" else "simple_random"
+      # functions: "pps_cluster" maps to "cluster"; all other values (including
+      # "srs", "systematic", "rlc", "proportional", "purposive", or NA) map to
+      # "simple_random".
+      design_type <- if (!is.na(row$sampling_method) &&
+                         identical(row$sampling_method, "pps_cluster")) {
+        "cluster"
+      } else {
+        "simple_random"
+      }
 
       # ---- General (population-level) sample size -------------------------
       if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
@@ -282,8 +288,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
       # Re-read the row after sample size updates so Final_HH_Sample_Size is current.
       row <- sample_table[i, ]
 
-      fp_sample_design <- if (identical(sample_method, "pps_cluster")) "cluster" else "simple_random"
-
       base_fields <- c("teams", "enumerators_per_team", "start_time",
                        "end_time", "avg_interview_time", "avg_travel_time",
                        "avg_rest_time", "Final_HH_Sample_Size")
@@ -291,7 +295,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
         f %in% names(row) && !is.na(row[[f]]) && nzchar(as.character(row[[f]]))
       }, logical(1L)))
 
-      has_cluster_param <- fp_sample_design != "cluster" ||
+      has_cluster_param <- design_type != "cluster" ||
         ("clusters_per_day" %in% names(row) &&
          !is.na(row$clusters_per_day) &&
          row$clusters_per_day > 0)
@@ -299,10 +303,10 @@ calculate_sample_size_strata_table <- function(sample_table) {
       if (has_base && has_cluster_param) {
         fp <- phr_try(
           estimate_field_plan(
-            sample_design                  = fp_sample_design,
+            sample_design                  = design_type,
             number_of_teams                = row$teams,
             enumerators_per_team           = row$enumerators_per_team,
-            number_of_psu_per_team_per_day = if (fp_sample_design == "cluster") row$clusters_per_day else NULL,
+            number_of_psu_per_team_per_day = if (design_type == "cluster") row$clusters_per_day else NULL,
             start_time                     = row$start_time,
             end_time                       = row$end_time,
             average_interview_time         = row$avg_interview_time,
