@@ -5,7 +5,7 @@
 
 # Minimum columns every master strata table must contain.
 .strata_table_required_cols <- c(
-  "stratum_id", "strata_name", "total_population", "sampling_method",
+  "stratum_id", "stratum_name", "total_population", "sampling_method",
   "pop_indicator", "General_HH_Sample_Size",
   "ind_indicator", "Ind_HH_Sample_Size",
   "mort_indicator", "Mort_HH_Sample_Size",

@@ -216,7 +216,7 @@ SurveyProtocol <- R6::R6Class(
 
       new_row <- data.frame(
         stratum_id               = stratum_id,
-        strata_name          = stratum_name,
+        stratum_name          = stratum_name,
         total_households         = as.numeric(total_households),
         total_population         = as.numeric(population_size),
         sampling_method          = sampling_method,
@@ -880,7 +880,7 @@ SurveyProtocol <- R6::R6Class(
     add_target_stratum = function() {
       if (!is.null(self$sample_table) && nrow(self$sample_table) > 0) {
         strata_ids   <- as.character(self$sample_table$stratum_id)
-        strata_names <- as.character(self$sample_table$Population_Name)
+        strata_names <- as.character(self$sample_table$stratum_name)
         self$metadata$target_strata <- setNames(as.list(strata_names), strata_ids)
       } else {
         self$metadata$target_strata <- list()
