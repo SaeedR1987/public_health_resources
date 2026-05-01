@@ -587,8 +587,8 @@ estimate_field_plan <- function(sample_design,
 
   } else {
 
-    psu_size <- (interviews_per_enumerator_per_day * enumerators_per_team) /
-      number_of_psu_per_team_per_day
+    psu_size <- floor((interviews_per_enumerator_per_day * enumerators_per_team) /
+      number_of_psu_per_team_per_day)
     number_psu_needed  <- ceiling(total_sample_size / psu_size)
     number_days_needed <- ceiling(
       number_psu_needed / (number_of_psu_per_team_per_day * number_of_teams)

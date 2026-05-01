@@ -59,10 +59,6 @@ protocol <- IPHRAProtocol$new(
 protocol$metadata
 protocol$get_protocol_summary()
 
-nrow(protocol$framework$master_schema)
-names(protocol$framework$master_schema)
-head(protocol$framework$master_schema)
-
 # Validate the objective schema via the protocol method
 (protocol$validate_objective_schema(protocol$framework$master_schema))
 
@@ -155,7 +151,7 @@ protocol$add_stratum(
   stratum_name            = "Urban North",
   population_size         = 45000,
   pop_design_effect       = 1.5,
-  pop_precision           = 5,
+  pop_precision           = 10,
   pop_expected_prevalence = 50,
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
@@ -166,12 +162,17 @@ protocol$add_stratum(
   ind_avg_hh_size         = 5.2,
   mort_indicator          = "crude_death_rate",
   mort_expected_death_rate = 0.5,
-  mort_precision = 0.2,
+  mort_precision = 0.5,
   mort_avg_hh_size = 5.2,
   mort_design_effect = 2,
   mort_fpc = FALSE,
-  mort_nonresponse = 10, teams = 3, start_time = "10:00", end_time = "18:00", enumerators_per_team = 3, clusters_per_day = 1, avg_interview_time = 20, avg_rest_time = 30, avg_travel_time = 60,
-  sampling_method         = "simple_random"
+  mort_nonresponse = 10,
+  teams = 5,
+  enumerators_per_team = 1,
+  start_time = "10:00", end_time = "18:00",
+  clusters_per_day = 2, avg_interview_time = 30,
+  avg_rest_time = 30, avg_travel_time = 60,
+  sampling_method         = "pps_cluster"
 )
 
 protocol$add_stratum(
@@ -190,7 +191,7 @@ protocol$add_stratum(
   mort_design_effect = 2,
   mort_fpc = FALSE,
   mort_nonresponse = 10,
-  sampling_method         = "simple_random"
+  sampling_method         = "proportional"
 )
 
 protocol$add_stratum(
@@ -203,60 +204,17 @@ protocol$add_stratum(
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
   mort_indicator          = "crude_death_rate",
-  sampling_method         = "simple_random"
+  sampling_method         = "pps_rlc"
 )
 
 protocol$calculate_sample_sizes()
-
+protocol$get_sample_table()
 View(protocol$sample_table)
 
-# Inspect master sample table before sample sizes are calculated
-survey_protocol$get_sample_table()
-names(survey_protocol$get_sample_table())
-
 # Validate the master strata table structure
-strata_validation <- survey_protocol$validate_strata_table()
+strata_validation <- protocol$validate_strata_table()
 strata_validation$valid
 strata_validation$message
-
-# Also validate via standalone function
-validate_strata_table(survey_protocol$sample_table)
-
-# -- 5b: Calculate sample sizes via calculate_sample_sizes() method --
-# This replaces the old manual approach of calling calculate_sample_size_general() per stratum
-# and manually writing results back.
-
-survey_protocol$calculate_sample_sizes()
-survey_protocol$get_sample_table()
-
-# Inspect the new result columns
-st <- survey_protocol$sample_table
-cat("Column names:\n"); print(names(st))
-cat("General_HH_Sample_Size:", st$General_HH_Sample_Size, "\n")
-cat("Ind_HH_Sample_Size:",     st$Ind_HH_Sample_Size, "\n")
-cat("Final_HH_Sample_Size:",   st$Final_HH_Sample_Size, "\n")
-cat("Total planned sample size:", sum(st$General_HH_Sample_Size, na.rm = TRUE), "\n")
-
-# -- 5c: Individual-level calculation for nutrition screening (standalone) --
-
-ss_nut <- calculate_sample_size_individual(
-  expected_proportion    = 15,
-  desired_precision      = 5,
-  non_response_rate      = 10,
-  design                 = "cluster",
-  design_effect          = 1.5,
-  average_household_size = 5.2,
-  sub_population_percent = 20,
-  confidence_level       = 0.95
-)
-cat("Nutrition screening – individuals needed:", ss_nut$sample_size_individuals, "\n")
-cat("Nutrition screening – households needed: ", ss_nut$sample_size_households,  "\n")
-
-# Summary includes sampling fields for SurveyProtocol
-sp_summary <- survey_protocol$get_protocol_summary()
-stopifnot("num_strata" %in% names(sp_summary))
-stopifnot(sp_summary$num_strata == 3L)
-
 
 # =============================================================================
 # Test 6: Build and Validate a Sampling Frame ####
@@ -273,7 +231,9 @@ make_psu_frame <- function(stratum_id, n_psu, pop_range) {
     stratum         = stratum_id,
     psu             = paste0(stratum_id, "_v", seq_len(n_psu)),
     population_size = sample(pop_range[1]:pop_range[2], n_psu, replace = TRUE),
-    inclusion       = TRUE
+    inclusion       = TRUE,
+    sampled_psu     = NA,
+    allocated_sample = NA
   )
 }
 
@@ -287,40 +247,25 @@ cat("Sampling frame: ", nrow(sampling_frame), "PSUs across",
     length(unique(sampling_frame$stratum)), "strata\n")
 head(sampling_frame)
 
-# -- 6b: Validate the sampling frame using utility function --
-
-frame_validation <- validate_sampling_frame(sampling_frame)
-frame_validation$valid
-frame_validation$message
-frame_validation$summary
-
 # -- 6c: Set sampling frame on the SurveyProtocol --
 
-survey_protocol$set_sampling_frame(sampling_frame)
+protocol$set_sampling_frame(sampling_frame)
 
-# Check protocol issues after setting frame (strata alignment)
-survey_protocol$get_issues()
+head(protocol$sampling_frame$log_df)
+
+
 
 
 # =============================================================================
 # Test 7: Draw Sample ####
 # =============================================================================
 
-# draw_sample() reads Sampling_Method, Final_HH_Sample_Size, n_psu,
-# n_clusters, cluster_size, and n_sites from the strata table.
-
-# -- 7a: Final_HH_Sample_Size is already set by calculate_sample_sizes() above.
-# Verify it was computed correctly:
-
-cat("Final_HH_Sample_Size values:", survey_protocol$sample_table$Final_HH_Sample_Size, "\n")
-stopifnot(!all(is.na(survey_protocol$sample_table$Final_HH_Sample_Size)))
-
 # -- 7b: Draw using proportional method (reads from Sampling_Method column) --
 
-survey_protocol$draw_sample(seed = 789)
-nrow(survey_protocol$drawn_sample)       # selected PSUs
-nrow(survey_protocol$drawn_sample_full)  # full frame with sampled_psu column
-head(survey_protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
+protocol$draw_sample(seed = 789)
+nrow(protocol$drawn_sample)       # selected PSUs
+nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
+head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
 # -- 7c: Override to pps_cluster --
 

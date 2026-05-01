@@ -944,7 +944,7 @@ SurveyProtocol <- R6::R6Class(
       doc <- officer::body_add_par(doc, "Strata and Sample Sizes", style = "heading 3", pos = "after")
 
       display_cols <- c("stratum_id", "Population_Name", "Total_Population",
-                        "Sampling_Method", "General_HH_Sample_Size",
+                        "sampling_method", "General_HH_Sample_Size",
                         "Ind_HH_Sample_Size", "Mort_HH_Sample_Size", "Final_HH_Sample_Size")
       col_labels   <- c("Stratum ID", "Population Name", "Total Population",
                         "Sampling Method", "General HH Sample Size",
