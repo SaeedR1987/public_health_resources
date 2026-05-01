@@ -605,6 +605,189 @@ SurveyProtocol <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Add strata names to a tool's choices list and insert a
+    #'   \emph{Please select strata} question into the survey form.
+    #'
+    #' Creates (or replaces) a \code{strata} choice list in the tool's
+    #' \code{revised_choices}, then inserts a \code{select_one strata} question
+    #' immediately after the last row whose \code{indicator_code} is
+    #' \code{10000} (the core header block) in \code{revised_survey}.  If
+    #' \code{strata_names} is \code{NULL} the names are taken from the
+    #' \code{Population_Name} column of \code{self$sample_table}.
+    #'
+    #' @param strata_names Character vector of stratum names.  Defaults to
+    #'   \code{NULL}, in which case \code{self$sample_table$Population_Name}
+    #'   is used.
+    #' @param tool_name Character. Name of the tool to modify (key in
+    #'   \code{self$tools}).  When \code{NULL} (default) and exactly one tool
+    #'   is registered, that tool is used.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_strata_to_survey = function(strata_names = NULL, tool_name = NULL) {
+      phr_try({
+
+        # Resolve strata names
+        if (is.null(strata_names)) {
+          phr_assert(
+            !is.null(self$sample_table) && "Population_Name" %in% names(self$sample_table),
+            message = phr_txt("strata_names is NULL and sample_table has no 'Population_Name' column. Either call add_stratum() to build the sample table first, or pass strata_names explicitly."),
+            origin  = "SurveyProtocol$add_strata_to_survey"
+          )
+          strata_names <- as.character(self$sample_table$Population_Name)
+        }
+
+        strata_names <- as.character(strata_names)
+        strata_names <- strata_names[!is.na(strata_names) & nzchar(strata_names)]
+        phr_assert(
+          length(strata_names) > 0,
+          message = phr_txt("strata_names must contain at least one non-empty name."),
+          origin  = "SurveyProtocol$add_strata_to_survey"
+        )
+
+        # Resolve tool
+        tool <- private$resolve_tool(tool_name, "SurveyProtocol$add_strata_to_survey")
+
+        # ----- Build new choices rows -----
+        # Match column structure of existing revised_choices
+        ch <- tool$revised_choices
+        if (is.null(ch)) ch <- tool$choices
+        if (is.null(ch)) ch <- data.frame(list_name = character(0), name = character(0),
+                                           label = character(0), stringsAsFactors = FALSE)
+
+        # Remove any existing 'strata' list
+        if ("list_name" %in% names(ch)) {
+          ch <- ch[ch$list_name != "strata", , drop = FALSE]
+        }
+
+        # Build new strata rows aligned to ch columns
+        strata_rows <- lapply(seq_along(strata_names), function(i) {
+          nm  <- gsub("[^A-Za-z0-9_]", "_", tolower(strata_names[i]))
+          row <- data.frame(list_name = "strata", name = nm, label = strata_names[i],
+                            stringsAsFactors = FALSE)
+          # Add extra columns present in ch but not in row
+          for (col in setdiff(names(ch), names(row))) row[[col]] <- NA
+          row[, union(names(row), names(ch)), drop = FALSE]
+        })
+        strata_df <- do.call(rbind, strata_rows)
+
+        # Align columns to ch
+        all_cols <- union(names(ch), names(strata_df))
+        for (col in setdiff(all_cols, names(ch)))     ch[[col]]        <- NA
+        for (col in setdiff(all_cols, names(strata_df))) strata_df[[col]] <- NA
+        tool$revised_choices <- rbind(ch[, all_cols, drop = FALSE],
+                                      strata_df[, all_cols, drop = FALSE])
+
+        # ----- Insert strata question into revised_survey -----
+        sv <- tool$revised_survey
+        if (is.null(sv)) sv <- tool$survey
+
+        if (!is.null(sv) && nrow(sv) > 0 && "indicator_code" %in% names(sv)) {
+          last_10000 <- max(which(sv$indicator_code == 10000), 0L)
+          insert_after <- if (last_10000 > 0L) last_10000 else 0L
+
+          # Build new survey row
+          new_row <- data.frame(
+            type  = "select_one strata",
+            name  = "strata",
+            label = "Please select strata",
+            stringsAsFactors = FALSE
+          )
+          # Add extra columns
+          for (col in setdiff(names(sv), names(new_row))) new_row[[col]] <- NA
+          new_row <- new_row[, names(sv), drop = FALSE]
+
+          if (insert_after >= 1L && insert_after < nrow(sv)) {
+            tool$revised_survey <- rbind(
+              sv[seq_len(insert_after), , drop = FALSE],
+              new_row,
+              sv[seq(insert_after + 1L, nrow(sv)), , drop = FALSE]
+            )
+          } else if (insert_after == 0L) {
+            tool$revised_survey <- rbind(new_row, sv)
+          } else {
+            tool$revised_survey <- rbind(sv, new_row)
+          }
+        }
+
+        self$metadata$modified_date <- Sys.time()
+        phr_message(
+          phr_txt("Strata choices ({length(strata_names)}) added and strata question inserted."),
+          origin = "SurveyProtocol$add_strata_to_survey"
+        )
+      }, on_error = "abort", origin = "SurveyProtocol$add_strata_to_survey")
+      invisible(self)
+    },
+
+    #' @description Add a \code{teams} choice list to a tool's \code{revised_choices}.
+    #'
+    #' Creates (or replaces) a \code{teams} choice list with entries
+    #' \emph{Team 1} through \emph{Team n}.
+    #'
+    #' @param n_teams Positive integer. Number of teams.
+    #' @param tool_name Character. Name of the tool to modify.  When
+    #'   \code{NULL} (default) and exactly one tool is registered, that tool
+    #'   is used.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_teams_to_choices = function(n_teams, tool_name = NULL) {
+      phr_try({
+        phr_assert(
+          is.numeric(n_teams) && length(n_teams) == 1L && n_teams >= 1L,
+          message = phr_txt("n_teams must be a single positive integer."),
+          origin  = "SurveyProtocol$add_teams_to_choices"
+        )
+        n_teams <- as.integer(n_teams)
+        tool    <- private$resolve_tool(tool_name, "SurveyProtocol$add_teams_to_choices")
+        tool$revised_choices <- private$add_numbered_list(
+          tool$revised_choices %||% tool$choices,
+          list_name  = "teams",
+          prefix_val = "team_",
+          prefix_lbl = "Team ",
+          n          = n_teams
+        )
+        self$metadata$modified_date <- Sys.time()
+        phr_message(
+          phr_txt("{n_teams} team choice(s) added."),
+          origin = "SurveyProtocol$add_teams_to_choices"
+        )
+      }, on_error = "abort", origin = "SurveyProtocol$add_teams_to_choices")
+      invisible(self)
+    },
+
+    #' @description Add an \code{enumerators} choice list to a tool's
+    #'   \code{revised_choices}.
+    #'
+    #' Creates (or replaces) an \code{enumerators} choice list with entries
+    #' \emph{Enumerator 1} through \emph{Enumerator n}.
+    #'
+    #' @param n_enumerators Positive integer. Number of enumerators.
+    #' @param tool_name Character. Name of the tool to modify.  When
+    #'   \code{NULL} (default) and exactly one tool is registered, that tool
+    #'   is used.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_enumerators_to_choices = function(n_enumerators, tool_name = NULL) {
+      phr_try({
+        phr_assert(
+          is.numeric(n_enumerators) && length(n_enumerators) == 1L && n_enumerators >= 1L,
+          message = phr_txt("n_enumerators must be a single positive integer."),
+          origin  = "SurveyProtocol$add_enumerators_to_choices"
+        )
+        n_enumerators <- as.integer(n_enumerators)
+        tool <- private$resolve_tool(tool_name, "SurveyProtocol$add_enumerators_to_choices")
+        tool$revised_choices <- private$add_numbered_list(
+          tool$revised_choices %||% tool$choices,
+          list_name  = "enumerators",
+          prefix_val = "enumerator_",
+          prefix_lbl = "Enumerator ",
+          n          = n_enumerators
+        )
+        self$metadata$modified_date <- Sys.time()
+        phr_message(
+          phr_txt("{n_enumerators} enumerator choice(s) added."),
+          origin = "SurveyProtocol$add_enumerators_to_choices"
+        )
+      }, on_error = "abort", origin = "SurveyProtocol$add_enumerators_to_choices")
+      invisible(self)
+    },
+
     #' @description Export protocol to a list including sampling data
     #' @return List containing all protocol data
     export_protocol = function() {
@@ -664,6 +847,61 @@ SurveyProtocol <- R6::R6Class(
         self$metadata$target_strata <- list()
       }
       invisible(NULL)
+    },
+
+    # Resolve a tool from self$tools.  If tool_name is NULL and there is
+    # exactly one tool registered, return that tool.  Otherwise raise an error.
+    resolve_tool = function(tool_name, origin) {
+      if (is.null(tool_name)) {
+        phr_assert(
+          !is.null(self$tools) && length(self$tools) > 0,
+          message = phr_txt("No tools registered. Add a tool with add_tools() first."),
+          origin  = origin
+        )
+        if (length(self$tools) == 1L) {
+          return(self$tools[[1L]])
+        }
+        phr_assert(
+          FALSE,
+          message = phr_txt("Multiple tools registered; supply tool_name to specify which tool to update. Available: {paste(names(self$tools), collapse=', ')}."),
+          origin  = origin
+        )
+      }
+      phr_assert(
+        tool_name %in% names(self$tools),
+        message = phr_txt("Tool '{tool_name}' not found. Available: {paste(names(self$tools), collapse=', ')}."),
+        origin  = origin
+      )
+      self$tools[[tool_name]]
+    },
+
+    # Build (or replace) a numbered choice list within an existing choices df.
+    # list_name  : name of the choice list (e.g. "teams")
+    # prefix_val : value prefix (e.g. "team_")
+    # prefix_lbl : label prefix (e.g. "Team ")
+    # n          : integer count
+    add_numbered_list = function(choices, list_name, prefix_val, prefix_lbl, n) {
+      if (is.null(choices)) {
+        choices <- data.frame(list_name = character(0), name = character(0),
+                              label = character(0), stringsAsFactors = FALSE)
+      }
+      # Remove any existing entries for this list
+      if ("list_name" %in% names(choices)) {
+        choices <- choices[choices$list_name != list_name, , drop = FALSE]
+      }
+      new_rows <- lapply(seq_len(n), function(i) {
+        row <- data.frame(list_name = list_name,
+                          name  = paste0(prefix_val, i),
+                          label = paste0(prefix_lbl, i),
+                          stringsAsFactors = FALSE)
+        for (col in setdiff(names(choices), names(row))) row[[col]] <- NA
+        row
+      })
+      new_df   <- do.call(rbind, new_rows)
+      all_cols <- union(names(choices), names(new_df))
+      for (col in setdiff(all_cols, names(choices)))  choices[[col]]  <- NA
+      for (col in setdiff(all_cols, names(new_df)))   new_df[[col]]   <- NA
+      rbind(choices[, all_cols, drop = FALSE], new_df[, all_cols, drop = FALSE])
     },
 
     # Add the sampling design section after the current cursor position.

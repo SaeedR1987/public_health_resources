@@ -28,7 +28,7 @@ Preset selections based on the columns of the master schema
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-ANAFramework-new}{\code{ANAFramework$new()}}
-\item \href{#method-ANAFramework-filter_schema_by_pillar}{\code{ANAFramework$filter_schema_by_pillar()}}
+\item \href{#method-ANAFramework-filter_schema_by_objective}{\code{ANAFramework$filter_schema_by_objective()}}
 \item \href{#method-ANAFramework-get_preset_objectives}{\code{ANAFramework$get_preset_objectives()}}
 \item \href{#method-ANAFramework-update_adjusted_svg}{\code{ANAFramework$update_adjusted_svg()}}
 \item \href{#method-ANAFramework-clone}{\code{ANAFramework$clone()}}
@@ -62,23 +62,19 @@ A new ANAFramework object.
 }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-ANAFramework-filter_schema_by_pillar"></a>}}
-\if{latex}{\out{\hypertarget{method-ANAFramework-filter_schema_by_pillar}{}}}
-\subsection{Method \code{filter_schema_by_pillar()}}{
-Filter the master schema to objectives whose \code{pillar}
-  matches one or more of the supplied pillar names.
-
-This corresponds to the pillar-dimension filter used in the Shiny module
-(\code{reference_objectives[reference_objectives$pillar %in%
-selected_pillars, ]}).
+\if{html}{\out{<a id="method-ANAFramework-filter_schema_by_objective"></a>}}
+\if{latex}{\out{\hypertarget{method-ANAFramework-filter_schema_by_objective}{}}}
+\subsection{Method \code{filter_schema_by_objective()}}{
+Filter the master schema to objectives whose \code{objective_code}
+  matches one or more of the supplied objective code values.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$filter_schema_by_pillar(pillars)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$filter_schema_by_objective(objective_codes)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{pillars}}{Character vector of pillar names to retain.}
+\item{\code{objective_codes}}{Numeric or character vector of objective codes to retain.}
 }
 \if{html}{\out{</div>}}
 }

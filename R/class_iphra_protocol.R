@@ -31,7 +31,7 @@
 #' @export
 IPHRAProtocol <- R6::R6Class(
   "IPHRAProtocol",
-  inherit = Protocol,
+  inherit = SurveyProtocol,
 
   public = list(
 
@@ -150,6 +150,82 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Character vector of tool names.
     get_allowable_tools = function() {
       names(private$.iphra_tools)
+    },
+
+    #' @description Update the recall date in the household tool's calculate rows.
+    #'
+    #' Updates the \code{calculation} column of the \code{recall_event},
+    #' \code{recall_date}, and \code{recall_month} rows in the
+    #' \code{tool_household_iphra_v2} tool (both \code{survey} and
+    #' \code{revised_survey}).  The recall date controls the mortality recall
+    #' period used in the form.
+    #'
+    #' @param recall_date Character or Date. The recall start date.  Accepts a
+    #'   \code{Date} object or a character string in \code{"YYYY-MM-DD"} format.
+    #' @param tool_name Character. Name of the household tool to update.
+    #'   Defaults to \code{"tool_household_iphra_v2"}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    update_recall_date = function(recall_date,
+                                  tool_name = "tool_household_iphra_v2") {
+      phr_try({
+        phr_assert(
+          !is.null(recall_date),
+          message = phr_txt("recall_date must not be NULL."),
+          origin  = "IPHRAProtocol$update_recall_date"
+        )
+
+        # Normalise to Date then format
+        date_obj <- tryCatch(
+          as.Date(recall_date),
+          error = function(e) {
+            phr_error(
+              message = phr_txt("recall_date could not be coerced to a Date: {conditionMessage(e)}"),
+              origin  = "IPHRAProtocol$update_recall_date"
+            )
+          }
+        )
+
+        date_str       <- format(date_obj, "%Y-%m-%d")
+        month_first    <- format(date_obj, "%Y-%m-01")
+        recall_event_str <- format(date_obj, "%d %B %Y")
+
+        phr_assert(
+          !is.null(self$tools) && tool_name %in% names(self$tools),
+          message = phr_txt("Tool '{tool_name}' not found. Add it first with add_tools()."),
+          origin  = "IPHRAProtocol$update_recall_date"
+        )
+
+        tool <- self$tools[[tool_name]]
+
+        .update_recall_in_survey <- function(sv) {
+          if (is.null(sv) || !"name" %in% names(sv) || !"calculation" %in% names(sv)) {
+            return(sv)
+          }
+          idx_event <- which(sv$name == "recall_event")
+          idx_date  <- which(sv$name == "recall_date")
+          idx_month <- which(sv$name == "recall_month")
+          if (length(idx_event) > 0) {
+            sv$calculation[idx_event] <- paste0("if(1=1, '", recall_event_str, "','')")
+          }
+          if (length(idx_date) > 0) {
+            sv$calculation[idx_date]  <- paste0("if(1=1, date('", date_str,     "'),'')")
+          }
+          if (length(idx_month) > 0) {
+            sv$calculation[idx_month] <- paste0("if(1=1, date('", month_first,  "'),'')")
+          }
+          sv
+        }
+
+        tool$survey         <- .update_recall_in_survey(tool$survey)
+        tool$revised_survey <- .update_recall_in_survey(tool$revised_survey)
+
+        self$metadata$modified_date <- Sys.time()
+        phr_message(
+          phr_txt("Recall date updated to '{date_str}' in tool '{tool_name}'."),
+          origin = "IPHRAProtocol$update_recall_date"
+        )
+      }, on_error = "abort", origin = "IPHRAProtocol$update_recall_date")
+      invisible(self)
     }
   ),
 
@@ -219,21 +295,30 @@ IPHRAProtocol <- R6::R6Class(
           as.data.frame(readxl::read_excel(path, sheet = "survey")),
           error = function(e) NULL
         )
-        if (!is.null(sv)) tool$survey <- sv
+        if (!is.null(sv)) {
+          tool$survey <- sv
+          tool$revised_survey <- sv
+        }
       }
       if ("choices" %in% available_sheets) {
         ch <- tryCatch(
           as.data.frame(readxl::read_excel(path, sheet = "choices")),
           error = function(e) NULL
         )
-        if (!is.null(ch)) tool$choices <- ch
+        if (!is.null(ch)) {
+          tool$choices <- ch
+          tool$revised_choices <- ch
+        }
       }
       if ("settings" %in% available_sheets) {
         st <- tryCatch(
           as.data.frame(readxl::read_excel(path, sheet = "settings")),
           error = function(e) NULL
         )
-        if (!is.null(st)) tool$settings <- st
+        if (!is.null(st)) {
+          tool$settings <- st
+          tool$revised_settings <- st
+        }
       }
       invisible(NULL)
     }
