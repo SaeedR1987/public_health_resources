@@ -798,39 +798,6 @@ SurveyProtocol <- R6::R6Class(
       base_export$drawn_sample_full <- self$drawn_sample_full
       base_export$summary           <- self$get_protocol_summary()
       base_export
-    },
-
-    #' @description Generate a Word document report including sampling information
-    #'
-    #' Extends \code{Protocol$generate_reach_tor()} by inserting a
-    #' \strong{Sampling Design} sub-section within the Protocol Data section,
-    #' summarising strata definitions, household sample sizes, and (when
-    #' \code{draw_sample()} has been called) a table of selected PSUs.
-    #'
-    #' @param output_file Character. Output \code{.docx} file path.
-    #'   Defaults to \code{"protocol_report.docx"}.
-    #' @param reference_docx Character or \code{NULL}. Path to a custom
-    #'   \code{.docx} template.  Uses the bundled REACH TOR template by default.
-    #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
-    #' @return Invisibly returns \code{self} for method chaining.
-    generate_reach_tor = function(output_file = "protocol_report.docx",
-                                  reference_docx = NULL,
-                                  open = FALSE) {
-      phr_try({
-        doc <- private$create_base_doc(reference_docx)
-        doc <- private$add_metadata_section(doc)
-        doc <- private$add_objectives_section(doc)
-        doc <- private$add_tools_section(doc)
-        doc <- private$add_sampling_section(doc)
-
-        print(doc, target = output_file)
-        phr_message(
-          phr_txt("Protocol report saved to: {output_file}"),
-          origin = "SurveyProtocol$generate_reach_tor"
-        )
-        if (isTRUE(open)) utils::browseURL(output_file)
-      }, on_error = "abort", origin = "SurveyProtocol$generate_reach_tor")
-      invisible(self)
     }
   ),
 

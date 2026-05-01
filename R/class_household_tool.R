@@ -108,25 +108,6 @@ public = list(
     }
 
     survey[(begin_idx[1] + 1):(end_idx - 1), , drop = FALSE]
-  },
-
-  #' @description
-  #' Print summary of the household tool.
-  print = function() {
-    cat("XLSForm Household Tool\n")
-    cat("------------------------\n")
-    cat("Name:", private$.name, "\n")
-    cat("Type:", private$.tool_type, "\n")
-    cat("Created:", format(private$.created_at, "%Y-%m-%d %H:%M:%S"), "\n")
-    cat("Modified:", format(private$.modified_at, "%Y-%m-%d %H:%M:%S"), "\n")
-    cat("Master Survey Questions:", nrow(self$survey), "\n")
-    cat("Has Roster:", self$has_roster(), "\n")
-    if (!is.null(private$.modified_survey)) {
-      cat("Modified Survey Questions:", nrow(private$.modified_survey), "\n")
-    }
-    cat("Choice Lists:", length(unique(self$choices$list_name)), "\n")
-    cat("Selected Indicators:", length(private$.selected_indicators), "\n")
-    invisible(self)
   }
 )
 )

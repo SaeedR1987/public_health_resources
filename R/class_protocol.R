@@ -46,6 +46,11 @@ Protocol <- R6::R6Class(
     #' @field issues List of validation issues and discrepancies
     issues = list(),
 
+    #' @field issues_coherence List of coherence issues found between the
+    #'   \code{adjusted_schema} indicator codes and the tool indicator codes.
+    #'   Populated by \code{validate_coherence()}.
+    issues_coherence = list(),
+
     #' @field metadata List containing protocol metadata
     metadata = list(
       created_date = NULL,
@@ -86,6 +91,7 @@ Protocol <- R6::R6Class(
         self$objectives <- list()
         self$tools <- list()
         self$issues <- list()
+        self$issues_coherence <- list()
 
         self$framework <- if (framework_type == "ana") {
           ANAFramework$new()
@@ -212,46 +218,148 @@ Protocol <- R6::R6Class(
       validate_objective_schema(schema, soft = soft)
     },
 
-    #' @description Generate a Word document report based on the REACH TOR template
+    #' @description Check coherence between the \code{adjusted_schema} indicator
+    #' codes and the \code{indicator_code} values across all tools in
+    #' \code{self$tools} (using each tool's \code{revised_survey}).
     #'
-    #' Creates a \code{.docx} file based on the bundled REACH Terms of Reference
-    #' template (\code{inst/resources/reach_tor_template.docx}).  The document
-    #' inherits the template's formatting, branding, section structure (Executive
-    #' Summary, Rationale, Methodology, DAP, etc.) and key placeholder strings are
-    #' replaced with protocol metadata.  A new \strong{Protocol Data} section is
-    #' inserted directly after the Executive Summary table and contains:
-    #' \itemize{
-    #'   \item Research Objectives table
-    #'   \item Data Collection Tools (one sub-section per tool with indicator list)
-    #'   \item Sampling Design (base Protocol: placeholder; SurveyProtocol: full section)
+    #' Checks performed:
+    #' \enumerate{
+    #'   \item Objectives in \code{adjusted_schema} that have no matching
+    #'     \code{indicator_code} in any tool's \code{revised_survey}.
+    #'   \item \code{indicator_code} values present in tools but absent from
+    #'     \code{adjusted_schema}.
     #' }
     #'
-    #' @param output_file Character. Output file path including the \code{.docx}
-    #'   extension.  Defaults to \code{"protocol_report.docx"} in the current
-    #'   working directory.
-    #' @param reference_docx Character or \code{NULL}.  Path to a custom
-    #'   \code{.docx} template.  When \code{NULL} (default) the package-bundled
-    #'   REACH TOR template is used.
-    #' @param open Logical.  Whether to open the generated file after writing.
-    #'   Defaults to \code{FALSE}.
+    #' Results are stored in \code{self$issues_coherence} as a named list.
+    #' An empty list means no coherence issues were found.
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.
+    validate_coherence = function() {
+      self$issues_coherence <- list()
+
+      if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
+        self$issues_coherence$no_framework <-
+          "No framework is associated with this protocol."
+        return(invisible(self))
+      }
+
+      schema <- self$framework$adjusted_schema
+      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
+        self$issues_coherence$no_schema <-
+          "adjusted_schema is empty or not set in the framework."
+        return(invisible(self))
+      }
+
+      has_obj_col <- "objective_code" %in% names(schema)
+      has_ind_col <- "indicator_code"  %in% names(schema)
+
+      if (!has_obj_col || !has_ind_col) {
+        self$issues_coherence$schema_columns <- paste0(
+          "adjusted_schema must contain 'objective_code' and 'indicator_code' columns. ",
+          "Found: ", paste(names(schema), collapse = ", ")
+        )
+        return(invisible(self))
+      }
+
+      schema_ind_codes <- as.character(schema$indicator_code)
+      schema_ind_codes <- schema_ind_codes[!is.na(schema_ind_codes) & nzchar(schema_ind_codes)]
+
+      # Unique objective rows (objective_code + label for reporting)
+      obj_col  <- as.character(schema$objective_code)
+      name_col <- if ("text_objective" %in% names(schema)) {
+        as.character(schema$text_objective)
+      } else {
+        obj_col
+      }
+      obj_df <- unique(data.frame(
+        objective_code = obj_col,
+        objective_name = name_col,
+        stringsAsFactors = FALSE
+      ))
+      obj_df <- obj_df[!is.na(obj_df$objective_code), , drop = FALSE]
+
+      # Collect all indicator_codes from all tools' revised_survey
+      tool_ind_codes <- character(0)
+      if (!is.null(self$tools) && length(self$tools) > 0) {
+        for (tool in self$tools) {
+          sv <- tryCatch({
+            if (!is.null(tool$revised_survey) && nrow(tool$revised_survey) > 0) {
+              tool$revised_survey
+            } else {
+              tool$survey
+            }
+          }, error = function(e) NULL)
+          if (!is.null(sv) && is.data.frame(sv) && "indicator_code" %in% names(sv)) {
+            codes <- as.character(sv$indicator_code)
+            codes <- codes[!is.na(codes) & nzchar(codes)]
+            tool_ind_codes <- c(tool_ind_codes, codes)
+          }
+        }
+        tool_ind_codes <- unique(tool_ind_codes)
+      }
+
+      # Check 1: objectives with no indicator coverage in tools
+      obj_no_coverage <- list()
+      for (i in seq_len(nrow(obj_df))) {
+        obj_code <- obj_df$objective_code[i]
+        obj_name <- obj_df$objective_name[i]
+        obj_inds <- schema_ind_codes[schema$objective_code == obj_code]
+        obj_inds <- obj_inds[!is.na(obj_inds) & nzchar(obj_inds)]
+        if (length(obj_inds) == 0 || !any(obj_inds %in% tool_ind_codes)) {
+          obj_no_coverage[[obj_code]] <- paste0(
+            "Objective '", obj_code, "' (", obj_name, ") has no indicators ",
+            "in any tool's revised_survey."
+          )
+        }
+      }
+      if (length(obj_no_coverage) > 0) {
+        self$issues_coherence$objectives_without_indicators <- obj_no_coverage
+      }
+
+      # Check 2: tool indicators not matched to any objective in schema
+      if (length(tool_ind_codes) > 0) {
+        unmatched <- tool_ind_codes[!tool_ind_codes %in% schema_ind_codes]
+        if (length(unmatched) > 0) {
+          self$issues_coherence$tool_indicators_without_objectives <- paste0(
+            "The following indicator_code(s) in tools have no match in ",
+            "adjusted_schema: ", paste(unmatched, collapse = ", ")
+          )
+        }
+      }
+
+      if (length(self$issues_coherence) == 0) {
+        phr_message(
+          phr_txt("Coherence validation passed: all objectives have tool coverage and all tool indicators match the schema."),
+          origin = "Protocol$validate_coherence"
+        )
+      } else {
+        phr_message(
+          phr_txt("Coherence validation found {length(self$issues_coherence)} issue(s). Check self$issues_coherence for details."),
+          origin = "Protocol$validate_coherence"
+        )
+      }
+      invisible(self)
+    },
+
+    #' @description Empty hook for generating a Word document report.
+    #'
+    #' This base implementation is a no-op stub.  Subclasses (\emph{e.g.}
+    #' \code{\link{IPHRAProtocol}}) override this method to produce a
+    #' protocol report document.
+    #'
+    #' @param output_file Character. Output \code{.docx} file path.
+    #'   Defaults to \code{"protocol_report.docx"}.
+    #' @param reference_docx Character or \code{NULL}. Path to a custom
+    #'   \code{.docx} template.
+    #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
     generate_reach_tor = function(output_file = "protocol_report.docx",
                                   reference_docx = NULL,
                                   open = FALSE) {
-      phr_try({
-        doc <- private$create_base_doc(reference_docx)
-        doc <- private$add_metadata_section(doc)
-        doc <- private$add_objectives_section(doc)
-        doc <- private$add_tools_section(doc)
-        doc <- private$add_sampling_section(doc)
-
-        print(doc, target = output_file)
-        phr_message(
-          phr_txt("Protocol report saved to: {output_file}"),
-          origin = "Protocol$generate_reach_tor"
-        )
-        if (isTRUE(open)) utils::browseURL(output_file)
-      }, on_error = "abort", origin = "Protocol$generate_reach_tor")
+      phr_message(
+        phr_txt("generate_reach_tor is not implemented for this protocol type. Override in a subclass."),
+        origin = "Protocol$generate_reach_tor"
+      )
       invisible(self)
     }
   ),
@@ -529,7 +637,7 @@ Protocol <- R6::R6Class(
                         origin = "Protocol$add_tools_section")
             "unknown"
           })
-          survey     <- tryCatch(tool$get_survey(),    error = function(e) {
+          survey     <- tryCatch(tool$survey,    error = function(e) {
             phr_warning(phr_txt("Could not read survey sheet for tool {i}: {conditionMessage(e)}"),
                         origin = "Protocol$add_tools_section")
             NULL

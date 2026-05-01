@@ -226,6 +226,39 @@ IPHRAProtocol <- R6::R6Class(
         )
       }, on_error = "abort", origin = "IPHRAProtocol$update_recall_date")
       invisible(self)
+    },
+
+    #' @description Generate a Word document protocol report including sampling
+    #' information.
+    #'
+    #' Produces a \code{.docx} file based on the bundled REACH Terms of Reference
+    #' template.  The document includes sections for metadata, research objectives,
+    #' data collection tools, and a sampling design summary.
+    #'
+    #' @param output_file Character. Output \code{.docx} file path.
+    #'   Defaults to \code{"protocol_report.docx"}.
+    #' @param reference_docx Character or \code{NULL}. Path to a custom
+    #'   \code{.docx} template.  Uses the bundled REACH TOR template by default.
+    #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    generate_reach_tor = function(output_file = "protocol_report.docx",
+                                  reference_docx = NULL,
+                                  open = FALSE) {
+      phr_try({
+        doc <- private$create_base_doc(reference_docx)
+        doc <- private$add_metadata_section(doc)
+        doc <- private$add_objectives_section(doc)
+        doc <- private$add_tools_section(doc)
+        doc <- private$add_sampling_section(doc)
+
+        print(doc, target = output_file)
+        phr_message(
+          phr_txt("Protocol report saved to: {output_file}"),
+          origin = "IPHRAProtocol$generate_reach_tor"
+        )
+        if (isTRUE(open)) utils::browseURL(output_file)
+      }, on_error = "abort", origin = "IPHRAProtocol$generate_reach_tor")
+      invisible(self)
     }
   ),
 
