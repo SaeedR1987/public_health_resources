@@ -170,7 +170,7 @@ protocol$add_stratum(
   mort_avg_hh_size = 5.2,
   mort_design_effect = 2,
   mort_fpc = FALSE,
-  mort_nonresponse = 10,
+  mort_nonresponse = 10, teams = 3, start_time = "10:00", end_time = "18:00", enumerators_per_team = 3, clusters_per_day = 1, avg_interview_time = 20, avg_rest_time = 30, avg_travel_time = 60,
   sampling_method         = "simple_random"
 )
 
