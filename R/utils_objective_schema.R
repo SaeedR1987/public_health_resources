@@ -52,15 +52,12 @@ load_objective_schema <- function() {
   file <- system.file("resources", "reference.xlsx", package = "phr")
 
   if (!file.exists(file) || file == "") {
-    file <- file.path("resources", "reference.xlsx")
-    if (!file.exists(file)) {
-      phr_warning(
-        origin  = "load_objective_schema",
-        message = phr_txt("Could not locate reference.xlsx; returning empty objective schema."),
-        hint    = phr_txt("Ensure the 'resources/reference.xlsx' file is present in the package installation.")
-      )
-      return(data.frame())
-    }
+    phr_warning(
+      origin  = "load_objective_schema",
+      message = phr_txt("Could not locate reference.xlsx; returning empty objective schema."),
+      hint    = phr_txt("Ensure the 'inst/resources/reference.xlsx' file is present in the package installation.")
+    )
+    return(data.frame())
   }
 
   schema <- phr_try(
