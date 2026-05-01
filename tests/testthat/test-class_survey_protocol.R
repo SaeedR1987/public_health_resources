@@ -61,7 +61,7 @@ test_that("calculate_sample_sizes populates field-plan columns for simple_random
     stratum_id              = "s1",
     stratum_name            = "Urban",
     population_size         = 10000,
-    sampling_method         = "srs",
+    sampling_method         = "simple_random",
     pop_expected_prevalence = 50,
     pop_precision           = 5,
     teams                   = 2,
@@ -156,7 +156,7 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
     stratum_id              = "s1",
     stratum_name            = "Urban",
     population_size         = 10000,
-    sampling_method         = "srs",
+    sampling_method         = "simple_random",
     pop_expected_prevalence = 50,
     pop_precision           = 5,
     teams                   = 2,
@@ -173,7 +173,7 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
     stratum_id              = "s2",
     stratum_name            = "Rural",
     population_size         = 5000,
-    sampling_method         = "srs",
+    sampling_method         = "simple_random",
     pop_expected_prevalence = 50,
     pop_precision           = 7
   )

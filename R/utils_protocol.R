@@ -5,7 +5,7 @@
 
 # Minimum columns every master strata table must contain.
 .strata_table_required_cols <- c(
-  "stratum_id", "stratum_name", "total_population", "sampling_method",
+  "stratum_id", "stratum_name", "total_population", "sampling_method", "calc_method",
   "pop_indicator", "General_HH_Sample_Size",
   "ind_indicator", "Ind_HH_Sample_Size",
   "mort_indicator", "Mort_HH_Sample_Size",
@@ -24,12 +24,16 @@
 #' @param month_year Character. Month and year of data collection
 #' @param framework_type Character. Type of framework to initialise.  One of
 #'   \code{"none"} (default) or \code{"ana"}.
+#' @param sampling_frame Optional data frame to initialise the
+#'   \code{\link{SamplingFrame}} with.  When \code{NULL} (default), an empty
+#'   \code{SamplingFrame} is created.
 #' @return A new SurveyProtocol object
 #' @export
 create_survey_protocol <- function(assessment_title = NULL, country_name = NULL, month_year = NULL,
-                                    framework_type = "none") {
+                                    framework_type = "none", sampling_frame = NULL) {
   SurveyProtocol$new(assessment_title = assessment_title, country_name = country_name,
-                     month_year = month_year, framework_type = framework_type)
+                     month_year = month_year, framework_type = framework_type,
+                     sampling_frame = sampling_frame)
 }
 
 #' Validate protocol completeness
@@ -143,7 +147,7 @@ validate_strata_table <- function(sample_table) {
 #'     \code{start_time}, \code{end_time}, \code{avg_interview_time},
 #'     \code{avg_travel_time}, \code{avg_rest_time}, and
 #'     \code{Final_HH_Sample_Size}.
-#'   \item \strong{Cluster design} (\code{sampling_method = "pps_cluster"}):
+#'   \item \strong{Cluster design} (\code{calc_method = "cluster"}):
 #'     additionally \code{clusters_per_day}.
 #' }
 #'
@@ -172,12 +176,11 @@ calculate_sample_size_strata_table <- function(sample_table) {
     for (i in seq_len(nrow(sample_table))) {
       row <- sample_table[i, ]
 
-      # Map sampling_method to the design type accepted by calculate_sample_size_*
-      # functions: "pps_cluster" maps to "cluster"; all other values (including
-      # "srs", "systematic", "rlc", "proportional", "purposive", or NA) map to
-      # "simple_random".
-      design_type <- if (!is.na(row$sampling_method) &&
-                         identical(row$sampling_method, "pps_cluster")) {
+      # Read calc_method directly — it is "simple_random" or "cluster" and
+      # maps directly to the design parameter accepted by calculate_sample_size_*
+      # functions.  Fall back to "simple_random" for robustness if absent.
+      design_type <- if ("calc_method" %in% names(row) && !is.na(row$calc_method) &&
+                         identical(row$calc_method, "cluster")) {
         "cluster"
       } else {
         "simple_random"
@@ -411,7 +414,12 @@ restore_protocol <- function(protocol_data) {
         month_year       = protocol_data$metadata$month_year
       )
       protocol$sample_table      <- protocol_data$sample_table
-      protocol$sampling_frame    <- protocol_data$sampling_frame
+      # sampling_frame is exported as a raw data frame; restore into SamplingFrame object.
+      if (!is.null(protocol_data$sampling_frame) &&
+          is.data.frame(protocol_data$sampling_frame) &&
+          nrow(protocol_data$sampling_frame) > 0) {
+        protocol$sampling_frame$log_df <- tibble::as_tibble(protocol_data$sampling_frame)
+      }
       protocol$drawn_sample      <- protocol_data$drawn_sample
       protocol$drawn_sample_full <- protocol_data$drawn_sample_full
     } else {
