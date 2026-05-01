@@ -1,6 +1,6 @@
-# --------------------------------------------------------------------------------
+
 # R6 Class: Tool (Base Class for XLSForm Management)
-# --------------------------------------------------------------------------------
+
 #
 # This module provides the base Tool R6 class for managing XLSForm data used
 # in Kobo, ODK, and other data collection applications.
@@ -18,13 +18,13 @@
 # - Modify select question options and choices
 #
 # XLSForm Reference: https://xlsform.org/en/
-# --------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------------------
+
+
 # Null-coalescing operator (if not already available)
 # This is also defined in utils_session.R but we define it here to ensure
 # availability regardless of file load order
-# --------------------------------------------------------------------------------
+
 
 if (!exists("%||%", mode = "function")) {
   `%||%` <- function(x, y) {
@@ -32,9 +32,9 @@ if (!exists("%||%", mode = "function")) {
   }
 }
 
-# --------------------------------------------------------------------------------
+
 # R6 Class: Tool (Base Class)
-# --------------------------------------------------------------------------------
+
 
 #' @title Tool R6 Class for XLSForm Management
 #' @description
@@ -99,9 +99,9 @@ public = list(
   #'   construction.
   revised_settings = NULL,
 
-  # ------------------------------------------------------------------------
+
   # Initialization
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Initialize a new Tool object.
@@ -155,9 +155,9 @@ public = list(
     invisible(self)
   },
 
-  # ------------------------------------------------------------------------
+
   # Data Accessors
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Get the tool name.
@@ -254,9 +254,9 @@ public = list(
     invisible(self)
   },
 
-  # ------------------------------------------------------------------------
+
   # Master / Modified Survey and Choices Accessors
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Get the master (template) survey sheet.
@@ -324,9 +324,9 @@ public = list(
     private$.modified_choices
   },
 
-  # ------------------------------------------------------------------------
+
   # Tool Modification Methods
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Change the default language stored in the settings data frame.
@@ -600,9 +600,9 @@ public = list(
     invisible(self)
   },
 
-  # ------------------------------------------------------------------------
+
   # Indicator-code Filtering (revised copies)
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Filter the survey and choices by a vector of \code{indicator_code} values
@@ -673,9 +673,9 @@ public = list(
     invisible(self)
   },
 
-  # ------------------------------------------------------------------------
+
   # Indicator Filtering
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Get the currently selected indicators.
@@ -761,9 +761,9 @@ public = list(
     self$choices[self$choices$list_name %in% list_names, , drop = FALSE]
   },
 
-  # ------------------------------------------------------------------------
+
   # XLSForm Validation
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Validate the entire XLSForm structure.
@@ -798,9 +798,9 @@ public = list(
     self$validate()
   },
 
-  # ------------------------------------------------------------------------
+
   # Question and Choice Modification
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Remove a question from the survey sheet.
@@ -952,9 +952,9 @@ public = list(
     unique(self$choices$list_name)
   },
 
-  # ------------------------------------------------------------------------
+
   # Utility Methods
-  # ------------------------------------------------------------------------
+
 
   #' @description
   #' Get metadata about the tool.

@@ -43,7 +43,6 @@ assessment_title <- "Multi-Sector Humanitarian Needs Assessment – Dummy Countr
 country_name     <- "Dummy Country"
 month_year       <- "March 2025"
 
-
 # =============================================================================
 # Test 1: Create an IPHRAProtocol Object ####
 # =============================================================================
@@ -60,11 +59,6 @@ protocol <- IPHRAProtocol$new(
 protocol$metadata
 protocol$get_protocol_summary()
 
-# The ANAFramework is already attached – inspect it directly
-head(protocol$framework$master_schema)
-
-View(protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116)))
-
 nrow(protocol$framework$master_schema)
 names(protocol$framework$master_schema)
 head(protocol$framework$master_schema)
@@ -72,49 +66,35 @@ head(protocol$framework$master_schema)
 # Validate the objective schema via the protocol method
 (protocol$validate_objective_schema(protocol$framework$master_schema))
 
-
 # =============================================================================
 # Test 2: Define Objectives via Framework ####
 # =============================================================================
 # Objectives are now managed through the Framework's adjusted_schema.
 # Use Framework$add_objective_row() / remove_objective_row() / update_adjusted_schema().
 
-# -- 2b: Add an objective row directly to the adjusted schema --
-protocol$framework$add_objective_row(list(
-  sector          = "General",
-  pillar          = "Context",
-  sub_pillar      = "Background",
-  short_objective = "GEN-01",
-  text_objective  = "Review secondary data on humanitarian conditions in the study area"
-))
-cat("Adjusted schema rows after add_objective_row:", nrow(protocol$framework$adjusted_schema), "\n")
-
-# -- 2c: Remove an objective row from the adjusted schema --
-protocol$framework$remove_objective_row("GEN-01")
-cat("Adjusted schema rows after remove_objective_row:", nrow(protocol$framework$adjusted_schema), "\n")
-
-
-# =============================================================================
-# Test 3: Generate Word Report from IPHRAProtocol ####
-# =============================================================================
-# generate_reach_tor() uses officer + flextable (bundled template used when present).
-# The standalone wrapper generate_protocol_report() dispatches to the method.
-
-# -- 3a: Generate report with no tools (tools section shows placeholder text) --
-
-report_no_tools <- tempfile(fileext = ".docx")
-protocol$generate_reach_tor(output_file = report_no_tools)
-stopifnot(file.exists(report_no_tools))
-cat("IPHRAProtocol report (no tools) written to:", report_no_tools, "\n")
+# The ANAFramework is already attached – inspect it directly
+head(protocol$framework$master_schema)
+protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116))
+protocol$framework$create_adjusted_schema(objective_codes = c(101, 112, 113, 114, 115, 116))
+head(protocol$framework$adjusted_schema)
+View(protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116)))
 
 # -- 3b: Add IPHRA tools to the protocol and verify they appear in the report --
 # IPHRAProtocol$add_tools() takes an approved IPHRA tool name only.
 
+# Household Tool
 protocol$add_tools(tool_name = "tool_household_iphra_v2")
 
 View(protocol$tools$tool_household_iphra_v2$survey)
 View(protocol$tools$tool_household_iphra_v2$choices)
 View(protocol$tools$tool_household_iphra_v2$settings)
+
+protocol$tools$tool_household_iphra_v2$get_roster_groups()
+
+View(protocol$tools$tool_household_iphra_v2$revised_survey)
+View(protocol$tools$tool_household_iphra_v2$revised_choices)
+View(protocol$tools$tool_household_iphra_v2$settings)
+
 
 protocol$tools$tool_household_iphra_v2$validate_tool()
 protocol$tools$tool_household_iphra_v2$validate()
@@ -983,3 +963,17 @@ cat("Framework SVG written to:", svg_file, "\n")
 # fw_protocol$framework$render_framework_svg()  # uncomment when running interactively
 
 cat("\n=== Framework and ANAFramework workflow test completed successfully ===\n")
+
+
+# =============================================================================
+# Test 3: Generate Word Report from IPHRAProtocol ####
+# =============================================================================
+# generate_reach_tor() uses officer + flextable (bundled template used when present).
+# The standalone wrapper generate_protocol_report() dispatches to the method.
+
+# -- 3a: Generate report with no tools (tools section shows placeholder text) --
+
+report_no_tools <- tempfile(fileext = ".docx")
+protocol$generate_reach_tor(output_file = report_no_tools)
+stopifnot(file.exists(report_no_tools))
+cat("IPHRAProtocol report (no tools) written to:", report_no_tools, "\n")
