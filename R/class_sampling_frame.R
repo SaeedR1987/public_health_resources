@@ -12,8 +12,11 @@
 #'   \item \code{psu} — primary sampling unit identifier.
 #'   \item \code{population_size} — population count for the PSU.
 #'   \item \code{inclusion} — logical flag marking PSUs eligible for sampling.
-#'   \item \code{sampled_psu} — cluster number assigned by \code{draw_sample()};
-#'     \code{NA} for unselected PSUs.
+#'   \item \code{sampled_psu} — cluster number(s) assigned by \code{draw_sample()};
+#'     \code{NA} for unselected PSUs.  When a PSU is drawn more than once (as
+#'     can happen with PPS cluster or RLC sampling), this field contains the
+#'     comma-separated consecutive cluster numbers assigned to that PSU
+#'     (e.g. \code{"9, 10, 11"} for a PSU drawn three times).
 #'   \item \code{allocated_sample} — number of households allocated to the PSU
 #'     by \code{draw_sample()}; \code{NA} for unselected PSUs.
 #' }
@@ -65,7 +68,7 @@ SamplingFrame <- R6::R6Class(
           psu              = "character",
           population_size  = "numeric",
           inclusion        = "logical",
-          sampled_psu      = "numeric",
+          sampled_psu      = "character",
           allocated_sample = "numeric"
         )
       )
