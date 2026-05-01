@@ -255,13 +255,17 @@ SurveyProtocol <- R6::R6Class(
         start_time               = as.character(start_time),
         end_time                 = as.character(end_time),
         # Result columns — rightmost, in prescribed order
-        General_HH_Sample_Size   = as.numeric(General_HH_Sample_Size),
-        Ind_Sample_Size          = as.numeric(Ind_Sample_Size),
-        Ind_HH_Sample_Size       = as.numeric(Ind_HH_Sample_Size),
-        Mort_Ind_Sample_Size     = as.numeric(Mort_Ind_Sample_Size),
-        Mort_PT_Sample_Size      = as.numeric(Mort_PT_Sample_Size),
-        Mort_HH_Sample_Size      = as.numeric(Mort_HH_Sample_Size),
-        Final_HH_Sample_Size     = NA_real_,
+        General_HH_Sample_Size         = as.numeric(General_HH_Sample_Size),
+        Ind_Sample_Size                = as.numeric(Ind_Sample_Size),
+        Ind_HH_Sample_Size             = as.numeric(Ind_HH_Sample_Size),
+        Mort_Ind_Sample_Size           = as.numeric(Mort_Ind_Sample_Size),
+        Mort_PT_Sample_Size            = as.numeric(Mort_PT_Sample_Size),
+        Mort_HH_Sample_Size            = as.numeric(Mort_HH_Sample_Size),
+        Final_HH_Sample_Size           = NA_real_,
+        num_interview_per_enum_per_day = NA_real_,
+        num_days                       = NA_real_,
+        num_psu_needed                 = NA_real_,
+        psu_size                       = NA_real_,
         stringsAsFactors = FALSE
       )
 
@@ -576,6 +580,19 @@ SurveyProtocol <- R6::R6Class(
     #' the table.  Also sets \code{Final_HH_Sample_Size} to the maximum
     #' household sample size across the three calculation types.
     #'
+    #' After computing sample sizes, also calls \code{\link{estimate_field_plan}}
+    #' for each stratum where the necessary logistics parameters are present.
+    #' The resulting field-plan columns are written back into \code{sample_table}:
+    #' \itemize{
+    #'   \item \code{num_interview_per_enum_per_day} — estimated interviews per
+    #'     enumerator per working day.
+    #'   \item \code{num_days} — estimated number of data-collection days needed.
+    #'   \item \code{num_psu_needed} — number of PSUs required (\code{NA} for
+    #'     simple random designs).
+    #'   \item \code{psu_size} — cluster size (\code{NA} for simple random
+    #'     designs).
+    #' }
+    #'
     #' Required parameters per calculation type:
     #' \itemize{
     #'   \item \strong{General}: \code{pop_expected_prevalence}, \code{pop_precision}
@@ -583,6 +600,16 @@ SurveyProtocol <- R6::R6Class(
     #'     \code{ind_avg_hh_size} (> 0)
     #'   \item \strong{Mortality}: \code{mort_expected_death_rate}, \code{mort_precision},
     #'     \code{mort_avg_hh_size} (> 0)
+    #' }
+    #'
+    #' Required parameters for the field plan estimate:
+    #' \itemize{
+    #'   \item \strong{All designs}: \code{teams}, \code{enumerators_per_team},
+    #'     \code{start_time}, \code{end_time}, \code{avg_interview_time},
+    #'     \code{avg_travel_time}, \code{avg_rest_time}, and
+    #'     \code{Final_HH_Sample_Size}.
+    #'   \item \strong{Cluster design} (\code{Sampling_Method = "pps_cluster"}):
+    #'     additionally \code{clusters_per_day}.
     #' }
     #'
     #' @return Invisibly returns \code{self} for method chaining.
@@ -594,6 +621,51 @@ SurveyProtocol <- R6::R6Class(
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
         self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
+
+        # Estimate field plan for each stratum where logistics params are present
+        for (i in seq_len(nrow(self$sample_table))) {
+          row <- self$sample_table[i, ]
+
+          sample_design <- if (!is.na(row$Sampling_Method) &&
+                               row$Sampling_Method == "pps_cluster") {
+            "cluster"
+          } else {
+            "simple_random"
+          }
+
+          base_fields <- c("teams", "enumerators_per_team", "start_time",
+                           "end_time", "avg_interview_time", "avg_travel_time",
+                           "avg_rest_time", "Final_HH_Sample_Size")
+          has_base <- all(vapply(base_fields, function(f) {
+            f %in% names(row) && !is.na(row[[f]]) && nzchar(as.character(row[[f]]))
+          }, logical(1L)))
+
+          has_cluster_param <- sample_design != "cluster" ||
+            ("clusters_per_day" %in% names(row) &&
+             !is.na(row$clusters_per_day) &&
+             row$clusters_per_day > 0)
+
+          if (!has_base || !has_cluster_param) next
+
+          fp <- estimate_field_plan(
+            sample_design                  = sample_design,
+            number_of_teams                = row$teams,
+            enumerators_per_team           = row$enumerators_per_team,
+            number_of_psu_per_team_per_day = if (sample_design == "cluster") row$clusters_per_day else NULL,
+            start_time                     = row$start_time,
+            end_time                       = row$end_time,
+            average_interview_time         = row$avg_interview_time,
+            average_travel_time            = row$avg_travel_time,
+            average_rest_time              = row$avg_rest_time,
+            total_sample_size              = row$Final_HH_Sample_Size
+          )
+
+          self$sample_table$num_interview_per_enum_per_day[i] <- fp$num_interview_per_enum_per_day
+          self$sample_table$num_days[i]                       <- fp$num_days
+          self$sample_table$num_psu_needed[i]                 <- fp$num_psu_needed
+          self$sample_table$psu_size[i]                       <- fp$psu_size
+        }
+
         self$metadata$modified_date <- Sys.time()
         private$add_target_stratum()
         private$check_issues()
