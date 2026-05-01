@@ -178,10 +178,10 @@ utils::globalVariables(c(
   "Mort_Ind_Sample_Size",
   "Mort_PT_Sample_Size",
   "Mort_HH_Sample_Size",
-  # Field plan output columns
+  # Field plan output columns (written into existing strata table columns)
   "num_interview_per_enum_per_day",
   "num_days",
-  "num_psu_needed",
-  "psu_size"
+  "n_psu",
+  "cluster_size"
 
 ))

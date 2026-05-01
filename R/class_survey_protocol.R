@@ -151,25 +151,26 @@ SurveyProtocol <- R6::R6Class(
     #' @param design_effect Deprecated alias for \code{pop_design_effect}.
     #' @param precision Deprecated alias for \code{pop_precision}.
     #' @param confidence_level Deprecated / ignored in the new schema.
-    #' @param n_psu Integer.  Number of PSUs to select.  Used by
-    #'   \code{draw_sample()} when \code{sampling_method} is \code{"simple_random"}.
-    #' @param n_clusters Integer.  Number of clusters.  Used by
-    #'   \code{draw_sample()} when \code{sampling_method} is \code{"pps_cluster"}.
+    #' @param n_psu Integer.  Number of PSUs to select.  Required by
+    #'   \code{draw_sample()} when \code{sampling_method} is \code{"pps_cluster"};
+    #'   may be omitted at \code{add_stratum()} time and set later (e.g. by
+    #'   \code{calculate_sample_sizes()}).
     #' @param cluster_size Integer.  Households per cluster.  Used by
     #'   \code{draw_sample()} when \code{sampling_method} is \code{"pps_cluster"}
-    #'   or \code{"pps_rlc"} (defaults to \code{3} for \code{"pps_rlc"} if not set).
-    #' @param n_sites Integer.  Number of sites to select.  Used by
-    #'   \code{draw_sample()} when \code{sampling_method} is \code{"systematic"}.
+    #'   or \code{"pps_rlc"} (automatically set to \code{3} for \code{"pps_rlc"}
+    #'   if not supplied).
+    #' @param n_sites Integer.  Number of sites / PSUs to select.  Required for
+    #'   \code{"simple_random"}, \code{"proportional"}, \code{"pps_rlc"},
+    #'   \code{"systematic"}, and \code{"purposive"} sampling methods.
     #' @return Invisibly returns \code{self} for method chaining.
     add_stratum = function(
       stratum_id,
       stratum_name,
       population_size        = NA_real_,
       total_households       = NA_real_,
-      sampling_method        = "simple_random",
+      sampling_method        = NULL,
       allocation_method      = NULL,   # legacy alias for sampling_method
       n_psu                  = NA_real_,
-      n_clusters             = NA_real_,
       cluster_size           = NA_real_,
       n_sites                = NA_real_,
       pop_indicator          = "General",
@@ -215,7 +216,7 @@ SurveyProtocol <- R6::R6Class(
     ) {
 
       # Resolve legacy aliases
-      if (!is.null(allocation_method) && sampling_method == "simple_random") {
+      if (is.null(sampling_method) && !is.null(allocation_method)) {
         sampling_method <- allocation_method
       }
       if (!is.null(design_effect) && is.na(pop_design_effect)) {
@@ -225,7 +226,14 @@ SurveyProtocol <- R6::R6Class(
         pop_precision <- precision
       }
 
-      # Validate sampling_method
+      # Require sampling_method
+      phr_assert(
+        !is.null(sampling_method),
+        message = phr_txt("sampling_method is required."),
+        origin  = "SurveyProtocol$add_stratum"
+      )
+
+      # Validate sampling_method value
       valid_sampling_methods <- c("simple_random", "proportional", "pps_cluster",
                                   "pps_rlc", "systematic", "purposive")
       phr_assert(
@@ -233,6 +241,22 @@ SurveyProtocol <- R6::R6Class(
         message = phr_txt("sampling_method must be one of: {paste(valid_sampling_methods, collapse=', ')}."),
         origin  = "SurveyProtocol$add_stratum"
       )
+
+      # For non-pps_cluster methods, n_sites is required
+      non_cluster_methods <- c("simple_random", "proportional", "pps_rlc",
+                               "systematic", "purposive")
+      if (sampling_method %in% non_cluster_methods) {
+        phr_assert(
+          !is.null(n_sites) && !is.na(n_sites),
+          message = phr_txt("n_sites is required for sampling_method '{sampling_method}'."),
+          origin  = "SurveyProtocol$add_stratum"
+        )
+      }
+
+      # For pps_rlc, default cluster_size to 3 if not provided
+      if (sampling_method == "pps_rlc" && (is.null(cluster_size) || is.na(cluster_size))) {
+        cluster_size <- 3L
+      }
 
       # Derive calc_method: cluster-based methods use "cluster"; others use "simple_random"
       calc_method <- if (sampling_method %in% c("pps_cluster", "pps_rlc")) "cluster" else "simple_random"
@@ -245,7 +269,6 @@ SurveyProtocol <- R6::R6Class(
         sampling_method          = sampling_method,
         calc_method              = calc_method,
         n_psu                    = as.numeric(n_psu),
-        n_clusters               = as.numeric(n_clusters),
         cluster_size             = as.numeric(cluster_size),
         n_sites                  = as.numeric(n_sites),
         pop_indicator            = pop_indicator,
@@ -288,8 +311,6 @@ SurveyProtocol <- R6::R6Class(
         Final_HH_Sample_Size           = NA_real_,
         num_interview_per_enum_per_day = NA_real_,
         num_days                       = NA_real_,
-        num_psu_needed                 = NA_real_,
-        psu_size                       = NA_real_,
         stringsAsFactors = FALSE
       )
 
@@ -382,18 +403,20 @@ SurveyProtocol <- R6::R6Class(
     #' and \code{drawn_sample} (only the selected rows).
     #'
     #' Sampling method and all method-specific parameters (\code{n_psu},
-    #' \code{n_clusters}, \code{cluster_size}, \code{n_sites}) are read
-    #' from the strata table row(s).  When the frame contains a \code{stratum}
-    #' column and the strata table has multiple rows, sampling is applied
-    #' independently per stratum using that stratum's own method and parameters.
+    #' \code{cluster_size}, \code{n_sites}) are read from the strata table
+    #' row(s).  When the frame contains a \code{stratum} column and the strata
+    #' table has multiple rows, sampling is applied independently per stratum
+    #' using that stratum's own method and parameters.  If a stratum fails
+    #' (e.g. a required parameter is missing), a \code{phr_warning} is issued
+    #' and that stratum is skipped.
     #'
     #' Supported \code{sampling_method} values in the strata table:
     #' \itemize{
-    #'   \item \code{"simple_random"} — simple random sampling; requires \code{n_psu}.
+    #'   \item \code{"simple_random"} — simple random sampling; requires \code{n_sites}.
     #'   \item \code{"proportional"} — proportional allocation; requires
     #'     \code{population_size} in the frame.
     #'   \item \code{"pps_cluster"} — PPS cluster sampling; requires
-    #'     \code{n_clusters} and \code{cluster_size}.
+    #'     \code{n_psu} and \code{cluster_size}.
     #'   \item \code{"pps_rlc"} — random location cluster (PPS variant); \code{cluster_size}
     #'     defaults to \code{3} if not set.
     #'   \item \code{"systematic"} — systematic sampling; requires
@@ -407,9 +430,8 @@ SurveyProtocol <- R6::R6Class(
     #'   \code{NULL} (default), uses \code{self$sampling_frame$log_df}.
     #' @param strata_table Data frame.  The strata table supplying
     #'   \code{sampling_method}, \code{Final_HH_Sample_Size}, and sampling
-    #'   parameters (\code{n_psu}, \code{n_clusters}, \code{cluster_size},
-    #'   \code{n_sites}).  If \code{NULL} (default), uses
-    #'   \code{self$sample_table}.
+    #'   parameters (\code{n_psu}, \code{cluster_size}, \code{n_sites}).  If
+    #'   \code{NULL} (default), uses \code{self$sample_table}.
     #' @param seed Integer. Random seed for reproducibility (default \code{42}).
     #' @return Invisibly returns \code{self} for method chaining.
     draw_sample = function(frame = NULL, strata_table = NULL, seed = 42) {
@@ -443,7 +465,7 @@ SurveyProtocol <- R6::R6Class(
         )
 
         # Ensure method-specific parameter columns exist (add as NA if absent)
-        for (col in c("n_psu", "n_clusters", "cluster_size", "n_sites", "Final_HH_Sample_Size")) {
+        for (col in c("n_psu", "cluster_size", "n_sites", "Final_HH_Sample_Size")) {
           if (!col %in% names(strata_table)) strata_table[[col]] <- NA_real_
         }
 
@@ -485,16 +507,25 @@ SurveyProtocol <- R6::R6Class(
               st_row, nrow(st_frame), nrow(eligible_frame)
             )
 
-            st_result <- private$apply_sampling_method(
-              frame        = st_frame,
-              method       = st_params$method,
-              sample_size  = st_params$sample_size,
-              n_psu        = st_params$n_psu,
-              n_clusters   = st_params$n_clusters,
-              n_sites      = st_params$n_sites,
-              cluster_size = st_params$cluster_size,
-              seed         = seed
+            st_result <- tryCatch(
+              private$apply_sampling_method(
+                frame        = st_frame,
+                method       = st_params$method,
+                sample_size  = st_params$sample_size,
+                n_psu        = st_params$n_psu,
+                n_sites      = st_params$n_sites,
+                cluster_size = st_params$cluster_size,
+                seed         = seed
+              ),
+              error = function(e) {
+                phr_warning(
+                  message = phr_txt("Sampling for stratum '{st_id}' failed and will be skipped: {conditionMessage(e)}"),
+                  origin  = "SurveyProtocol$draw_sample"
+                )
+                NULL
+              }
             )
+            if (is.null(st_result)) next
 
             sel_mask <- !is.na(st_result$sampled_psu)
             if (any(sel_mask)) {
@@ -516,18 +547,28 @@ SurveyProtocol <- R6::R6Class(
             st_row, nrow(eligible_frame), nrow(eligible_frame)
           )
 
-          result <- private$apply_sampling_method(
-            frame        = eligible_frame,
-            method       = st_params$method,
-            sample_size  = st_params$sample_size,
-            n_psu        = st_params$n_psu,
-            n_clusters   = st_params$n_clusters,
-            n_sites      = st_params$n_sites,
-            cluster_size = st_params$cluster_size,
-            seed         = seed
+          result <- tryCatch(
+            private$apply_sampling_method(
+              frame        = eligible_frame,
+              method       = st_params$method,
+              sample_size  = st_params$sample_size,
+              n_psu        = st_params$n_psu,
+              n_sites      = st_params$n_sites,
+              cluster_size = st_params$cluster_size,
+              seed         = seed
+            ),
+            error = function(e) {
+              phr_warning(
+                message = phr_txt("Sampling failed: {conditionMessage(e)}"),
+                origin  = "SurveyProtocol$draw_sample"
+              )
+              NULL
+            }
           )
-          frame$sampled_psu[eligible_rows]      <- result$sampled_psu
-          frame$allocated_sample[eligible_rows] <- result$allocated_sample
+          if (!is.null(result)) {
+            frame$sampled_psu[eligible_rows]      <- result$sampled_psu
+            frame$allocated_sample[eligible_rows] <- result$allocated_sample
+          }
         }
 
         self$drawn_sample_full <- frame
@@ -1049,7 +1090,7 @@ SurveyProtocol <- R6::R6Class(
     },
 
     # Apply a PSU-level sampling method — dispatches to draw_sample_psu_* utilities
-    apply_sampling_method = function(frame, method, sample_size, n_psu, n_clusters,
+    apply_sampling_method = function(frame, method, sample_size, n_psu,
                                      n_sites, cluster_size, seed) {
       origin <- "SurveyProtocol$apply_sampling_method"
       valid_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
@@ -1061,20 +1102,20 @@ SurveyProtocol <- R6::R6Class(
       )
 
       if (method == "simple_random") {
-        phr_assert(!is.null(n_psu) && !is.na(n_psu),
-                   message = phr_txt("n_psu is required for the 'simple_random' method — set the 'n_psu' column in the strata table."),
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'simple_random' method — set the 'n_sites' column in the strata table."),
                    origin = origin)
-        draw_sample_psu_srs(frame, n_psu, sample_size, seed)
+        draw_sample_psu_srs(frame, n_sites, sample_size, seed)
       } else if (method == "proportional") {
         draw_sample_psu_proportional(frame, sample_size, seed)
       } else if (method == "pps_cluster") {
-        phr_assert(!is.null(n_clusters) && !is.na(n_clusters),
-                   message = phr_txt("n_clusters is required for the 'pps_cluster' method — set the 'n_clusters' column in the strata table."),
+        phr_assert(!is.null(n_psu) && !is.na(n_psu),
+                   message = phr_txt("n_psu is required for the 'pps_cluster' method — set the 'n_psu' column in the strata table."),
                    origin = origin)
         phr_assert(!is.null(cluster_size) && !is.na(cluster_size),
                    message = phr_txt("cluster_size is required for the 'pps_cluster' method — set the 'cluster_size' column in the strata table."),
                    origin = origin)
-        draw_sample_psu_pps_cluster(frame, n_clusters, cluster_size, seed)
+        draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
       } else if (method == "pps_rlc") {
         cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
         draw_sample_psu_rlc(frame, sample_size, cs, seed)
@@ -1089,7 +1130,7 @@ SurveyProtocol <- R6::R6Class(
     },
 
     # Extract sampling parameters from a single strata table row.
-    # Returns a named list: method, sample_size, n_psu, n_clusters, cluster_size, n_sites.
+    # Returns a named list: method, sample_size, n_psu, cluster_size, n_sites.
     # sample_size falls back to General_HH_Sample_Size, then a proportional estimate when
     # Final_HH_Sample_Size is NA.
     params_from_strata_row = function(st_row, stratum_n_eligible, total_n_eligible) {
@@ -1114,7 +1155,6 @@ SurveyProtocol <- R6::R6Class(
         method       = method,
         sample_size  = ss,
         n_psu        = .na_as_null(if ("n_psu"        %in% names(st_row)) st_row$n_psu[1]        else NA),
-        n_clusters   = .na_as_null(if ("n_clusters"   %in% names(st_row)) st_row$n_clusters[1]   else NA),
         cluster_size = .na_as_null(if ("cluster_size" %in% names(st_row)) st_row$cluster_size[1] else NA),
         n_sites      = .na_as_null(if ("n_sites"      %in% names(st_row)) st_row$n_sites[1]      else NA)
       )
