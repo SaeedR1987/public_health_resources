@@ -79,8 +79,11 @@ protocol$framework$create_adjusted_schema(objective_codes = c(101, 112, 113, 114
 head(protocol$framework$adjusted_schema)
 View(protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116)))
 
-# -- 3b: Add IPHRA tools to the protocol and verify they appear in the report --
-# IPHRAProtocol$add_tools() takes an approved IPHRA tool name only.
+# =============================================================================
+# Test 3: Testing Tools ####
+# =============================================================================
+
+print(protocol$get_allowable_tools())
 
 # Household Tool
 protocol$add_tools(tool_name = "tool_household_iphra_v2")
@@ -123,7 +126,7 @@ stopifnot(inherits(protocol$tools[["tool_household_iphra_v2"]], "HouseholdTool")
 stopifnot(inherits(protocol$tools[["tool_kii_community_iphra_v2"]], "KeyInformantTool"))
 
 cat("Allowable IPHRA tools:\n")
-print(protocol$get_allowable_tools())
+
 
 report_with_tools <- tempfile(fileext = ".docx")
 generate_protocol_report(protocol, output_file = report_with_tools)
@@ -138,25 +141,6 @@ stopifnot(is.null(base_summary$num_strata))
 
 # Remove the dummy tools so we start fresh on the SurveyProtocol below
 protocol$tools <- list()
-
-
-# =============================================================================
-# Test 4: Create a SurveyProtocol Object ####
-# =============================================================================
-# SurveyProtocol inherits all Protocol capabilities and adds sampling support.
-
-survey_protocol <- create_survey_protocol(
-  assessment_title = assessment_title,
-  country_name     = country_name,
-  month_year       = month_year
-)
-stopifnot(inherits(survey_protocol, "SurveyProtocol"))
-stopifnot(inherits(survey_protocol, "Protocol"))
-
-# Attach the same ANAFramework (with adjusted objectives) to the survey protocol
-survey_protocol$framework <- protocol$framework
-
-survey_protocol$metadata$target_strata
 
 
 # =============================================================================
@@ -181,10 +165,16 @@ protocol$add_stratum(
   ind_design_effect       = 1.5,
   ind_avg_hh_size         = 5.2,
   mort_indicator          = "crude_death_rate",
-  sampling_method         = "proportional"
+  mort_expected_death_rate = 0.5,
+  mort_precision = 0.2,
+  mort_avg_hh_size = 5.2,
+  mort_design_effect = 2,
+  mort_fpc = FALSE,
+  mort_nonresponse = 10,
+  sampling_method         = "simple_random"
 )
 
-survey_protocol$add_stratum(
+protocol$add_stratum(
   stratum_id              = "strata_B",
   stratum_name            = "Peri-Urban East",
   population_size         = 28000,
@@ -194,10 +184,16 @@ survey_protocol$add_stratum(
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
   mort_indicator          = "crude_death_rate",
-  sampling_method         = "proportional"
+  mort_expected_death_rate = 0.2,
+  mort_precision = 0.5,
+  mort_avg_hh_size = 5.2,
+  mort_design_effect = 2,
+  mort_fpc = FALSE,
+  mort_nonresponse = 10,
+  sampling_method         = "simple_random"
 )
 
-survey_protocol$add_stratum(
+protocol$add_stratum(
   stratum_id              = "strata_C",
   stratum_name            = "Rural South",
   population_size         = 17000,
@@ -207,12 +203,12 @@ survey_protocol$add_stratum(
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
   mort_indicator          = "crude_death_rate",
-  sampling_method         = "proportional"
+  sampling_method         = "simple_random"
 )
 
-survey_protocol$calculate_sample_sizes()
+protocol$calculate_sample_sizes()
 
-survey_protocol$sample_table
+View(protocol$sample_table)
 
 # Inspect master sample table before sample sizes are calculated
 survey_protocol$get_sample_table()

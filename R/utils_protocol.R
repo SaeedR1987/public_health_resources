@@ -5,7 +5,7 @@
 
 # Minimum columns every master strata table must contain.
 .strata_table_required_cols <- c(
-  "stratum_id", "Population_Name", "Total_Population", "Sampling_Method",
+  "stratum_id", "strata_name", "total_population", "sampling_method",
   "pop_indicator", "General_HH_Sample_Size",
   "ind_indicator", "Ind_HH_Sample_Size",
   "mort_indicator", "Mort_HH_Sample_Size",
@@ -143,10 +143,10 @@ calculate_sample_size_strata_table <- function(sample_table) {
       # ---- General (population-level) sample size -------------------------
       if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
         design_effect <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) row$pop_design_effect else .default_design_effect
-        design_type   <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) "cluster" else "simple_random"
+        design_type   <- if (!is.na(row$sampling_method)) row$sampling_method else "simple_random"
         nonresponse   <- if (!is.na(row$pop_nonresponse)) row$pop_nonresponse else 5
         fpc           <- if (!is.na(row$pop_fpc)) as.logical(row$pop_fpc) else FALSE
-        total_pop     <- if (!is.na(row$Total_Population) && row$Total_Population > 0) row$Total_Population else NULL
+        total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
 
         pop_ss <- phr_try(
           calculate_sample_size_general(
@@ -171,10 +171,10 @@ calculate_sample_size_strata_table <- function(sample_table) {
       if (!is.na(row$ind_expected_prevalence) && !is.na(row$ind_precision) &&
           !is.na(row$ind_avg_hh_size) && row$ind_avg_hh_size > 0) {
         design_effect <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) row$ind_design_effect else .default_design_effect
-        design_type   <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) "cluster" else "simple_random"
+        design_type   <- if (!is.na(row$sampling_method)) row$sampling_method else "simple_random"
         nonresponse   <- if (!is.na(row$ind_nonresponse)) row$ind_nonresponse else 5
         fpc           <- if (!is.na(row$ind_fpc)) as.logical(row$ind_fpc) else FALSE
-        total_pop     <- if (!is.na(row$Total_Population) && row$Total_Population > 0) row$Total_Population else NULL
+        total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
         subpop        <- if (!is.na(row$ind_subpop_prop)) row$ind_subpop_prop else 100
 
         ind_res <- phr_try(
@@ -203,10 +203,10 @@ calculate_sample_size_strata_table <- function(sample_table) {
       if (!is.na(row$mort_expected_death_rate) && !is.na(row$mort_precision) &&
           !is.na(row$mort_avg_hh_size) && row$mort_avg_hh_size > 0) {
         design_effect <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) row$mort_design_effect else .default_design_effect
-        design_type   <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) "cluster" else "simple_random"
+        design_type   <- if (!is.na(row$sampling_method)) row$sampling_method else "simple_random"
         nonresponse   <- if (!is.na(row$mort_nonresponse)) row$mort_nonresponse else 5
         fpc           <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE
-        total_pop     <- if (!is.na(row$Total_Population) && row$Total_Population > 0) row$Total_Population else NULL
+        total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
         recall_days   <- if (!is.na(row$mort_recall_days) && row$mort_recall_days > 0) row$mort_recall_days else 90
 
         mort_res <- phr_try(

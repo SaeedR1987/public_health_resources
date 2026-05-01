@@ -216,10 +216,10 @@ SurveyProtocol <- R6::R6Class(
 
       new_row <- data.frame(
         stratum_id               = stratum_id,
-        Population_Name          = stratum_name,
-        Total_Households         = as.numeric(total_households),
-        Total_Population         = as.numeric(population_size),
-        Sampling_Method          = sampling_method,
+        strata_name          = stratum_name,
+        total_households         = as.numeric(total_households),
+        total_population         = as.numeric(population_size),
+        sampling_method          = sampling_method,
         n_psu                    = as.numeric(n_psu),
         n_clusters               = as.numeric(n_clusters),
         cluster_size             = as.numeric(cluster_size),
