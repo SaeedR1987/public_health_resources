@@ -52,7 +52,7 @@ if (!exists("%||%", mode = "function")) {
 #' XLSForm file on initialisation and are never altered by filter or
 #' modification methods.  The revised copies (\code{revised_survey},
 #' \code{revised_choices}, \code{revised_settings}) are initialised as copies
-#' of the masters and updated by methods such as \code{filter_survey()}.
+#' of the masters and updated by methods such as \code{filter_survey_by_modules()}.
 #'
 #' \strong{Note:} Tool objects are not cloneable (\code{cloneable = FALSE}).
 #' Copying a Tool can be achieved by constructing a new instance from the
@@ -61,10 +61,10 @@ if (!exists("%||%", mode = "function")) {
 #'
 #' This class provides methods for:
 #' - Loading and storing XLSForm data (master and revised)
-#' - Filtering the survey and choices by indicator codes (\code{filter_survey()})
+#' - Filtering the survey and choices by indicator codes (\code{filter_survey_by_modules()})
 #' - Safely updating specific choice lists with new values
-#' - Changing the default language in settings
-#' - Validating the modified survey against available choices
+#' - Changing the default language in settings (english, french, arabic, spanish)
+#' - Validating the revised survey against available revised choices
 #' - Validating structure according to XLSForm specification
 #'
 #' @importFrom readxl read_excel
@@ -198,12 +198,14 @@ public = list(
   #' @param language Character string for the new default language.
   #' @return Invisibly returns self for method chaining.
   change_default_language = function(language) {
-    allowable <- c("english", "french", "arabic", "spanish")
+    allowable       <- c("english", "french", "arabic", "spanish")
+    allowable_title <- c("English", "French", "Arabic", "Spanish")
     if (!is.character(language) || length(language) != 1 || nchar(language) == 0) {
       stop("language must be a non-empty character string")
     }
     if (!tolower(language) %in% allowable) {
-      stop(paste0("language must be one of: ", paste(allowable, collapse = ", "),
+      stop(paste0("language must be one of: ",
+                  paste(allowable_title, collapse = ", "),
                   ". Got: '", language, "'"))
     }
     # Store normalised to title-case
