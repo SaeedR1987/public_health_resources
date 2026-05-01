@@ -191,7 +191,8 @@ protocol$add_stratum(
   mort_design_effect = 2,
   mort_fpc = FALSE,
   mort_nonresponse = 10,
-  sampling_method         = "proportional"
+  sampling_method         = "proportional",
+  n_sites                 = 30
 )
 
 protocol$add_stratum(
@@ -204,7 +205,8 @@ protocol$add_stratum(
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
   mort_indicator          = "crude_death_rate",
-  sampling_method         = "pps_rlc"
+  sampling_method         = "pps_rlc",
+  n_sites                 = 25
 )
 
 protocol$calculate_sample_sizes()
@@ -270,7 +272,7 @@ head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu
 # -- 7c: Override to pps_cluster --
 
 survey_protocol$sample_table$Sampling_Method <- "pps_cluster"
-survey_protocol$sample_table$n_clusters      <- 30
+survey_protocol$sample_table$n_psu           <- 30
 survey_protocol$sample_table$cluster_size    <- 20
 
 survey_protocol$draw_sample(seed = 456)
@@ -650,8 +652,8 @@ sp_no_draw$add_stratum(
   population_size = 5000,
   ind_indicator   = "wasting_prevalence",
   mort_indicator  = "crude_death_rate",
-  sampling_method = "srs",
-  n_psu           = 10
+  sampling_method = "simple_random",
+  n_sites         = 10
 )
 report_no_draw <- tempfile(fileext = ".docx")
 sp_no_draw$generate_reach_tor(output_file = report_no_draw)

@@ -20,18 +20,16 @@ test_that("add_stratum initialises field-plan columns as NA", {
     stratum_id              = "s1",
     stratum_name            = "Stratum 1",
     population_size         = 10000,
+    sampling_method         = "simple_random",
+    n_sites                 = 5,
     pop_expected_prevalence = 50,
     pop_precision           = 5
   )
   st <- p$get_sample_table()
   expect_true("num_interview_per_enum_per_day" %in% names(st))
   expect_true("num_days"                       %in% names(st))
-  expect_true("num_psu_needed"                 %in% names(st))
-  expect_true("psu_size"                       %in% names(st))
   expect_true(is.na(st$num_interview_per_enum_per_day))
   expect_true(is.na(st$num_days))
-  expect_true(is.na(st$num_psu_needed))
-  expect_true(is.na(st$psu_size))
 })
 
 # ---- field-plan columns remain NA when logistics params absent ----------------
@@ -42,6 +40,8 @@ test_that("calculate_sample_sizes leaves field-plan columns NA when logistics pa
     stratum_id              = "s1",
     stratum_name            = "Stratum 1",
     population_size         = 10000,
+    sampling_method         = "simple_random",
+    n_sites                 = 5,
     pop_expected_prevalence = 50,
     pop_precision           = 5
   )
@@ -49,8 +49,6 @@ test_that("calculate_sample_sizes leaves field-plan columns NA when logistics pa
   st <- p$get_sample_table()
   expect_true(is.na(st$num_interview_per_enum_per_day))
   expect_true(is.na(st$num_days))
-  expect_true(is.na(st$num_psu_needed))
-  expect_true(is.na(st$psu_size))
 })
 
 # ---- simple_random field plan populates columns ------------------------------
@@ -62,6 +60,7 @@ test_that("calculate_sample_sizes populates field-plan columns for simple_random
     stratum_name            = "Urban",
     population_size         = 10000,
     sampling_method         = "simple_random",
+    n_sites                 = 5,
     pop_expected_prevalence = 50,
     pop_precision           = 5,
     teams                   = 2,
@@ -77,8 +76,9 @@ test_that("calculate_sample_sizes populates field-plan columns for simple_random
 
   expect_false(is.na(st$num_interview_per_enum_per_day))
   expect_false(is.na(st$num_days))
-  expect_true(is.na(st$num_psu_needed))
-  expect_true(is.na(st$psu_size))
+  # simple_random: n_psu and cluster_size stay NA (no cluster field plan)
+  expect_true(is.na(st$n_psu))
+  expect_true(is.na(st$cluster_size))
   expect_true(st$num_interview_per_enum_per_day > 0)
   expect_true(st$num_days > 0)
 })
@@ -109,12 +109,13 @@ test_that("calculate_sample_sizes populates all field-plan columns for cluster s
 
   expect_false(is.na(st$num_interview_per_enum_per_day))
   expect_false(is.na(st$num_days))
-  expect_false(is.na(st$num_psu_needed))
-  expect_false(is.na(st$psu_size))
+  # cluster: n_psu and cluster_size are populated from field plan
+  expect_false(is.na(st$n_psu))
+  expect_false(is.na(st$cluster_size))
   expect_true(st$num_interview_per_enum_per_day > 0)
   expect_true(st$num_days > 0)
-  expect_true(st$num_psu_needed > 0)
-  expect_true(st$psu_size > 0)
+  expect_true(st$n_psu > 0)
+  expect_true(st$cluster_size > 0)
 })
 
 # ---- cluster stratum missing clusters_per_day leaves field-plan NA -----------
@@ -142,8 +143,8 @@ test_that("cluster stratum without clusters_per_day leaves field-plan columns NA
 
   expect_true(is.na(st$num_interview_per_enum_per_day))
   expect_true(is.na(st$num_days))
-  expect_true(is.na(st$num_psu_needed))
-  expect_true(is.na(st$psu_size))
+  expect_true(is.na(st$n_psu))
+  expect_true(is.na(st$cluster_size))
 })
 
 # ---- multi-stratum: each row gets its own field plan -------------------------
@@ -157,6 +158,7 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
     stratum_name            = "Urban",
     population_size         = 10000,
     sampling_method         = "simple_random",
+    n_sites                 = 5,
     pop_expected_prevalence = 50,
     pop_precision           = 5,
     teams                   = 2,
@@ -174,6 +176,7 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
     stratum_name            = "Rural",
     population_size         = 5000,
     sampling_method         = "simple_random",
+    n_sites                 = 5,
     pop_expected_prevalence = 50,
     pop_precision           = 7
   )
@@ -197,11 +200,14 @@ test_that("add_stratum derives calc_method correctly for all sampling_method val
   cluster_methods       <- c("pps_cluster", "pps_rlc")
 
   for (m in simple_random_methods) {
-    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m, n_sites = 1)
   }
-  for (m in cluster_methods) {
-    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
-  }
+  # pps_cluster: n_psu optional at add_stratum time
+  p$add_stratum(stratum_id = "pps_cluster", stratum_name = "pps_cluster",
+                sampling_method = "pps_cluster")
+  # pps_rlc requires n_sites
+  p$add_stratum(stratum_id = "pps_rlc", stratum_name = "pps_rlc",
+                sampling_method = "pps_rlc", n_sites = 10)
 
   st <- p$get_sample_table()
   expect_true("calc_method" %in% names(st))
@@ -219,9 +225,35 @@ test_that("add_stratum derives calc_method correctly for all sampling_method val
 test_that("add_stratum rejects invalid sampling_method values", {
   p <- make_protocol()
   expect_error(
-    p$add_stratum(stratum_id = "s1", stratum_name = "s1", sampling_method = "srs"),
+    p$add_stratum(stratum_id = "s1", stratum_name = "s1", sampling_method = "srs",
+                  n_sites = 5),
     regexp = "sampling_method must be one of"
   )
+})
+
+test_that("add_stratum errors when sampling_method is not provided", {
+  p <- make_protocol()
+  expect_error(
+    p$add_stratum(stratum_id = "s1", stratum_name = "s1"),
+    regexp = "sampling_method is required"
+  )
+})
+
+test_that("add_stratum errors when n_sites missing for non-pps_cluster method", {
+  p <- make_protocol()
+  expect_error(
+    p$add_stratum(stratum_id = "s1", stratum_name = "s1",
+                  sampling_method = "simple_random"),
+    regexp = "n_sites is required"
+  )
+})
+
+test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "s1", stratum_name = "s1",
+                sampling_method = "pps_rlc", n_sites = 10)
+  st <- p$get_sample_table()
+  expect_equal(st$cluster_size, 3)
 })
 
 # ---- SamplingFrame initialises as a blank SamplingFrame object ---------------
@@ -300,7 +332,7 @@ test_that("clear_sample resets sampled_psu and allocated_sample but retains othe
     stratum_name            = "Urban",
     population_size         = 10000,
     sampling_method         = "simple_random",
-    n_psu                   = 5,
+    n_sites                 = 5,
     pop_expected_prevalence = 50,
     pop_precision           = 5
   )
@@ -339,4 +371,60 @@ test_that("clear_sample is a no-op on an empty sampling frame", {
   expect_no_error(p$clear_sample())
   expect_equal(nrow(p$sampling_frame$log_df), 0L)
   expect_null(p$drawn_sample)
+})
+
+# ---- draw_sample warns and skips stratum when required param missing ----------
+
+test_that("draw_sample issues warning and skips pps_cluster stratum when n_psu missing", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id      = "s1",
+    stratum_name    = "Rural",
+    sampling_method = "pps_cluster",
+    cluster_size    = 5,
+    General_HH_Sample_Size = 50
+  )
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = round(runif(20, 100, 500)),
+    inclusion       = TRUE,
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  expect_warning(p$draw_sample(), regexp = "skipped")
+  # All PSUs remain unselected
+  expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+})
+
+test_that("draw_sample warns and skips on failure but continues with other strata", {
+  p <- make_protocol()
+  # s1: pps_cluster without n_psu — will warn and skip
+  p$add_stratum(
+    stratum_id      = "s1",
+    stratum_name    = "Rural",
+    sampling_method = "pps_cluster",
+    cluster_size    = 5,
+    General_HH_Sample_Size = 50
+  )
+  # s2: simple_random with n_sites — will succeed
+  p$add_stratum(
+    stratum_id      = "s2",
+    stratum_name    = "Urban",
+    sampling_method = "simple_random",
+    n_sites         = 3,
+    General_HH_Sample_Size = 30
+  )
+  frame <- data.frame(
+    stratum         = c(rep("s1", 10), rep("s2", 10)),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = round(runif(20, 100, 500)),
+    inclusion       = TRUE,
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  expect_warning(p$draw_sample(), regexp = "skipped")
+  # s2 should have some PSUs selected
+  s2_rows <- p$sampling_frame$log_df[p$sampling_frame$log_df$stratum == "s2", ]
+  expect_false(all(is.na(s2_rows$sampled_psu)))
 })

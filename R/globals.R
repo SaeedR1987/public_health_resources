@@ -180,8 +180,6 @@ utils::globalVariables(c(
   "Mort_HH_Sample_Size",
   # Field plan output columns
   "num_interview_per_enum_per_day",
-  "num_days",
-  "num_psu_needed",
-  "psu_size"
+  "num_days"
 
 ))

@@ -121,15 +121,15 @@ validate_strata_table <- function(sample_table) {
 #'
 #' After computing sample sizes, also calls \code{\link{estimate_field_plan}}
 #' for each stratum where the necessary logistics parameters are present.
-#' The resulting field-plan columns are written back into \code{sample_table}:
+#' The resulting field-plan values are written back into \code{sample_table}:
 #' \itemize{
 #'   \item \code{num_interview_per_enum_per_day} — estimated interviews per
 #'     enumerator per working day.
 #'   \item \code{num_days} — estimated number of data-collection days needed.
-#'   \item \code{num_psu_needed} — number of PSUs required (\code{NA} for
-#'     simple random designs).
-#'   \item \code{psu_size} — cluster size (\code{NA} for simple random
-#'     designs).
+#'   \item \code{n_psu} — number of PSUs required (\code{NA} for simple random
+#'     designs); written into the existing \code{n_psu} column.
+#'   \item \code{cluster_size} — cluster size (\code{NA} for simple random
+#'     designs); written into the existing \code{cluster_size} column.
 #' }
 #'
 #' Required parameters per calculation type:
@@ -172,6 +172,11 @@ calculate_sample_size_strata_table <- function(sample_table) {
       origin  = origin,
       hint    = phr_txt("Ensure the strata table was built via add_stratum() or conforms to the required schema.")
     )
+
+    # Ensure field-plan output columns exist (may be absent in tables not built via add_stratum())
+    for (col in c("n_psu", "cluster_size", "num_interview_per_enum_per_day", "num_days")) {
+      if (!col %in% names(sample_table)) sample_table[[col]] <- NA_real_
+    }
 
     for (i in seq_len(nrow(sample_table))) {
       row <- sample_table[i, ]
@@ -324,8 +329,8 @@ calculate_sample_size_strata_table <- function(sample_table) {
         if (!phr_failed(fp)) {
           sample_table$num_interview_per_enum_per_day[i] <- fp$num_interview_per_enum_per_day
           sample_table$num_days[i]                       <- fp$num_days
-          sample_table$num_psu_needed[i]                 <- fp$num_psu_needed
-          sample_table$psu_size[i]                       <- fp$psu_size
+          sample_table$n_psu[i]                          <- fp$num_psu_needed
+          sample_table$cluster_size[i]                   <- fp$psu_size
         }
       }
     }
