@@ -52,7 +52,7 @@ if (!exists("%||%", mode = "function")) {
 #' XLSForm file on initialisation and are never altered by filter or
 #' modification methods.  The revised copies (\code{revised_survey},
 #' \code{revised_choices}, \code{revised_settings}) are initialised as copies
-#' of the masters and updated by methods such as \code{filter_survey()}.
+#' of the masters and updated by methods such as \code{filter_survey_by_modules()}.
 #'
 #' \strong{Note:} Tool objects are not cloneable (\code{cloneable = FALSE}).
 #' Copying a Tool can be achieved by constructing a new instance from the
@@ -61,10 +61,10 @@ if (!exists("%||%", mode = "function")) {
 #'
 #' This class provides methods for:
 #' - Loading and storing XLSForm data (master and revised)
-#' - Filtering the survey and choices by indicator codes (\code{filter_survey()})
+#' - Filtering the survey and choices by indicator codes (\code{filter_survey_by_modules()})
 #' - Safely updating specific choice lists with new values
-#' - Changing the default language in settings
-#' - Validating the modified survey against available choices
+#' - Changing the default language in settings (english, french, arabic, spanish)
+#' - Validating the revised survey against available revised choices
 #' - Validating structure according to XLSForm specification
 #'
 #' @importFrom readxl read_excel
@@ -120,25 +120,28 @@ public = list(
     private$.modified_at <- Sys.time()
     private$.tool_type <- "generic"
 
-    # Initialize empty data frames with required columns if not provided
+    # Initialize data frames with required columns if not provided
     self$survey <- if (!is.null(survey)) {
       private$.validate_survey_structure(survey)
       survey
     } else {
-      private$.create_empty_survey()
+      data.frame(type = character(0), name = character(0), label = character(0),
+                 stringsAsFactors = FALSE)
     }
 
     self$choices <- if (!is.null(choices)) {
       private$.validate_choices_structure(choices)
       choices
     } else {
-      private$.create_empty_choices()
+      data.frame(list_name = character(0), name = character(0), label = character(0),
+                 stringsAsFactors = FALSE)
     }
 
     self$settings <- if (!is.null(settings)) {
       settings
     } else {
-      private$.create_empty_settings()
+      data.frame(form_title = character(0), form_id = character(0),
+                 version = character(0), stringsAsFactors = FALSE)
     }
 
     # Populate revised copies from the originals
@@ -146,11 +149,8 @@ public = list(
     self$revised_choices  <- self$choices
     self$revised_settings <- self$settings
 
-    private$.modified_survey <- NULL
-    private$.modified_choices <- NULL
     private$.selected_indicators <- character(0)
     private$.validation_errors <- list()
-    private$.metadata <- list()
 
     invisible(self)
   },
@@ -186,144 +186,6 @@ public = list(
     private$.tool_type
   },
 
-  #' @description
-  #' Get the survey sheet data.
-  #' @return Data frame containing the survey sheet.
-  get_survey = function() {
-    self$survey
-  },
-
-  #' @description
-  #' Set the survey sheet data.
-  #' @param survey Data frame containing survey data.
-  #' @param validate Logical, whether to validate structure (default TRUE).
-  #' @return Invisibly returns self for method chaining.
-  set_survey = function(survey, validate = TRUE) {
-    if (!is.data.frame(survey)) {
-      stop("Survey must be a data.frame")
-    }
-    if (validate) {
-      private$.validate_survey_structure(survey)
-    }
-    self$survey <- survey
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Get the choices sheet data.
-  #' @return Data frame containing the choices sheet.
-  get_choices = function() {
-    self$choices
-  },
-
-  #' @description
-  #' Set the choices sheet data.
-  #' @param choices Data frame containing choices data.
-  #' @param validate Logical, whether to validate structure (default TRUE).
-  #' @return Invisibly returns self for method chaining.
-  set_choices = function(choices, validate = TRUE) {
-    if (!is.data.frame(choices)) {
-      stop("Choices must be a data.frame")
-    }
-    if (validate) {
-      private$.validate_choices_structure(choices)
-    }
-    self$choices <- choices
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Get the settings sheet data.
-  #' @return Data frame containing the settings sheet.
-  get_settings = function() {
-    self$settings
-  },
-
-  #' @description
-  #' Set the settings sheet data.
-  #' @param settings Data frame containing settings data.
-  #' @return Invisibly returns self for method chaining.
-  set_settings = function(settings) {
-    if (!is.data.frame(settings)) {
-      stop("Settings must be a data.frame")
-    }
-    self$settings <- settings
-    private$.touch()
-    invisible(self)
-  },
-
-
-  # Master / Modified Survey and Choices Accessors
-
-
-  #' @description
-  #' Get the master (template) survey sheet.
-  #' @return Data frame containing the master survey.
-  get_master_survey = function() {
-    self$survey
-  },
-
-  #' @description
-  #' Set the master (template) survey sheet.
-  #' @param survey Data frame containing the master survey.
-  #' @param validate Logical, whether to validate structure (default TRUE).
-  #' @return Invisibly returns self for method chaining.
-  set_master_survey = function(survey, validate = TRUE) {
-    if (!is.data.frame(survey)) {
-      stop("Master survey must be a data.frame")
-    }
-    if (validate) {
-      private$.validate_survey_structure(survey)
-    }
-    self$survey <- survey
-    private$.modified_survey <- NULL
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Get the master (template) choices sheet.
-  #' @return Data frame containing the master choices.
-  get_master_choices = function() {
-    self$choices
-  },
-
-  #' @description
-  #' Set the master (template) choices sheet.
-  #' @param choices Data frame containing the master choices.
-  #' @param validate Logical, whether to validate structure (default TRUE).
-  #' @return Invisibly returns self for method chaining.
-  set_master_choices = function(choices, validate = TRUE) {
-    if (!is.data.frame(choices)) {
-      stop("Master choices must be a data.frame")
-    }
-    if (validate) {
-      private$.validate_choices_structure(choices)
-    }
-    self$choices <- choices
-    private$.modified_choices <- NULL
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Get the modified (filtered) survey sheet.
-  #' Returns NULL if \code{filter_survey_by_modules()} has not been called yet.
-  #' @return Data frame containing the modified survey, or NULL.
-  get_modified_survey = function() {
-    private$.modified_survey
-  },
-
-  #' @description
-  #' Get the modified (filtered) choices sheet.
-  #' Returns NULL if \code{filter_choices_from_survey()} has not been called yet.
-  #' @return Data frame containing the modified choices, or NULL.
-  get_modified_choices = function() {
-    private$.modified_choices
-  },
-
 
   # Tool Modification Methods
 
@@ -331,282 +193,48 @@ public = list(
   #' @description
   #' Change the default language stored in the settings data frame.
   #' Updates the \code{default_language} column if it exists in settings.
-  #' @param language Character string for the new default language (e.g., "English", "French").
+  #' Allowable options: \code{"english"}, \code{"french"}, \code{"arabic"},
+  #' \code{"spanish"} (case-insensitive).
+  #' @param language Character string for the new default language.
   #' @return Invisibly returns self for method chaining.
   change_default_language = function(language) {
+    allowable       <- c("english", "french", "arabic", "spanish")
+    allowable_title <- c("English", "French", "Arabic", "Spanish")
     if (!is.character(language) || length(language) != 1 || nchar(language) == 0) {
       stop("language must be a non-empty character string")
     }
+    if (!tolower(language) %in% allowable) {
+      stop(paste0("language must be one of: ",
+                  paste(allowable_title, collapse = ", "),
+                  ". Got: '", language, "'"))
+    }
+    # Store normalised to title-case
+    language_norm  <- tolower(language)
+    language_title <- paste0(toupper(substring(language_norm, 1, 1)),
+                             substring(language_norm, 2))
     if (nrow(self$settings) == 0) {
       # Create a single-row settings frame when none exists
       self$settings <- data.frame(
         form_title       = NA_character_,
         form_id          = NA_character_,
         version          = NA_character_,
-        default_language = language,
+        default_language = language_title,
         stringsAsFactors = FALSE
       )
     } else {
       if (!"default_language" %in% names(self$settings)) {
         self$settings[["default_language"]] <- NA_character_
       }
-      self$settings[["default_language"]] <- language
+      self$settings[["default_language"]] <- language_title
     }
     private$.touch()
     invisible(self)
   },
 
   #' @description
-  #' Filter the master survey by a list or vector of module/indicator values
-  #' and save the result in the modified survey field.
-  #'
-  #' Rows whose filter column value matches one of the provided \code{modules}
-  #' are retained. Structural rows (begin/end group, begin/end repeat, note,
-  #' calculate, and metadata types) are always included regardless of their
-  #' filter column value.
-  #'
-  #' @param modules Character vector of module or sector values to include
-  #'   (e.g., \code{c("core", "FSL", "WASH")}).
-  #' @param filter_col Character. Name of the column used for filtering.
-  #'   If NULL, the first column of the master survey is used.
-  #' @return Invisibly returns self for method chaining.
-  filter_survey_by_modules = function(modules, filter_col = NULL) {
-    if (!is.character(modules) || length(modules) == 0) {
-      stop("modules must be a non-empty character vector")
-    }
-
-    survey <- self$survey
-
-    if (nrow(survey) == 0) {
-      private$.modified_survey <- survey
-      private$.touch()
-      return(invisible(self))
-    }
-
-    # Determine filter column
-    if (is.null(filter_col)) {
-      filter_col <- names(survey)[1]
-    }
-    if (!filter_col %in% names(survey)) {
-      stop(paste("Filter column", filter_col, "not found in master survey"))
-    }
-
-    # Structural question types that are always included
-    structural_types <- c(
-      "begin_group", "end_group", "begin_repeat", "end_repeat",
-      "note", "calculate", "start", "end", "today",
-      "deviceid", "username", "audit", "phonenumber",
-      "simserial", "subscriberid"
-    )
-
-    is_structural <- if ("type" %in% names(survey)) {
-      base_types <- gsub("\\s+.*$", "", survey$type)
-      base_types %in% structural_types | is.na(base_types) | base_types == ""
-    } else {
-      rep(FALSE, nrow(survey))
-    }
-
-    col_vals <- survey[[filter_col]]
-    is_selected <- !is.na(col_vals) & col_vals %in% modules
-
-    private$.modified_survey <- survey[is_structural | is_selected, , drop = FALSE]
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Filter the master choices dataframe by the choice lists referenced in
-  #' the modified survey and save the result in the modified choices field.
-  #'
-  #' Choice list names are extracted from the \code{type} column of the
-  #' modified survey: for \code{select_one} and \code{select_multiple}
-  #' questions the list name follows the type keyword (e.g.,
-  #' \code{"select_one yes_no"} -> \code{"yes_no"}).
-  #'
-  #' @return Invisibly returns self for method chaining.
-  filter_choices_from_survey = function() {
-    if (is.null(private$.modified_survey)) {
-      stop("Call filter_survey_by_modules() before filter_choices_from_survey()")
-    }
-
-    modified_survey <- private$.modified_survey
-
-    if (!"type" %in% names(modified_survey) || nrow(modified_survey) == 0) {
-      private$.modified_choices <- self$choices[0L, , drop = FALSE]
-      private$.touch()
-      return(invisible(self))
-    }
-
-    # Extract choice list names from select_one / select_multiple types
-    select_types <- modified_survey$type[grepl("^select_", modified_survey$type,
-                                               ignore.case = FALSE)]
-    list_names <- gsub("^select_(one|multiple)\\s+", "", select_types,
-                       ignore.case = TRUE)
-    list_names <- gsub("\\s+.*$", "", list_names)
-    list_names <- unique(list_names[nchar(list_names) > 0])
-
-    if (length(list_names) == 0 || !"list_name" %in% names(self$choices)) {
-      private$.modified_choices <- self$choices[0L, , drop = FALSE]
-      private$.touch()
-      return(invisible(self))
-    }
-
-    private$.modified_choices <- self$choices[
-      self$choices$list_name %in% list_names, , drop = FALSE
-    ]
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Safely update a specific choice list in the modified choices with new
-  #' or revised values.  The existing entries for \code{list_name} are
-  #' replaced entirely with \code{new_choices}.
-  #'
-  #' If the modified choices have not been generated yet (i.e.,
-  #' \code{filter_choices_from_survey()} has not been called), the master
-  #' choices are updated instead.
-  #'
-  #' @param list_name Character. Name of the choice list to replace.
-  #' @param new_choices Data frame with the new choice entries.  Must contain
-  #'   at minimum a \code{name} column.  A \code{list_name} column will be
-  #'   added/overwritten with the value of \code{list_name}.
-  #' @return Invisibly returns self for method chaining.
-  update_choice_list = function(list_name, new_choices) {
-    if (!is.character(list_name) || length(list_name) != 1 || nchar(list_name) == 0) {
-      stop("list_name must be a non-empty character string")
-    }
-    if (!is.data.frame(new_choices)) {
-      stop("new_choices must be a data.frame")
-    }
-    if (!"name" %in% names(new_choices)) {
-      stop("new_choices must have a 'name' column")
-    }
-
-    # Ensure list_name column is set correctly
-    new_choices[["list_name"]] <- list_name
-
-    # Determine target: modified_choices if available, else master choices
-    target <- if (!is.null(private$.modified_choices)) {
-      private$.modified_choices
-    } else {
-      self$choices
-    }
-
-    # Align columns: add any missing columns as NA
-    all_cols <- union(names(target), names(new_choices))
-    for (col in setdiff(all_cols, names(target))) {
-      target[[col]] <- NA
-    }
-    for (col in setdiff(all_cols, names(new_choices))) {
-      new_choices[[col]] <- NA
-    }
-    new_choices <- new_choices[, names(target), drop = FALSE]
-
-    # Remove existing entries for this list and append new ones
-    updated <- rbind(
-      target[target$list_name != list_name, , drop = FALSE],
-      new_choices
-    )
-
-    if (!is.null(private$.modified_choices)) {
-      private$.modified_choices <- updated
-    } else {
-      self$choices <- updated
-    }
-
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Validate that every \code{select_one} / \code{select_multiple} question
-  #' in the modified survey has its choice list present in the modified
-  #' choices.  Results are stored in the validation errors list and can be
-  #' retrieved with \code{get_validation_errors()}.
-  #'
-  #' If neither modified survey nor modified choices exist, the master copies
-  #' are used for validation instead.
-  #'
-  #' @return Logical TRUE if all choice lists are satisfied, FALSE otherwise.
-  validate_tool = function() {
-    private$.validation_errors <- list()
-
-    survey_to_check <- if (!is.null(private$.modified_survey)) {
-      private$.modified_survey
-    } else {
-      self$survey
-    }
-    choices_to_check <- if (!is.null(private$.modified_choices)) {
-      private$.modified_choices
-    } else {
-      self$choices
-    }
-
-    if (!"type" %in% names(survey_to_check) || nrow(survey_to_check) == 0) {
-      return(TRUE)
-    }
-
-    available_lists <- if ("list_name" %in% names(choices_to_check)) {
-      unique(choices_to_check$list_name)
-    } else {
-      character(0)
-    }
-
-    select_rows <- grep("^select_", survey_to_check$type)
-    for (i in select_rows) {
-      type_str  <- survey_to_check$type[i]
-      list_name <- gsub("^select_(one|multiple)\\s+", "", type_str)
-      list_name <- gsub("\\s+.*$", "", list_name)
-
-      if (nchar(list_name) > 0 && !list_name %in% available_lists) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row     = i,
-            column  = "type",
-            message = paste("Choice list not found in modified choices:", list_name)
-          ))
-        )
-      }
-    }
-
-    length(private$.validation_errors) == 0
-  },
-
-  #' @description
-  #' Update a value in the settings data frame.
-  #' @param key Character. Column name in the settings data frame to update.
-  #' @param value The new value for the setting.
-  #' @return Invisibly returns self for method chaining.
-  update_settings = function(key, value) {
-    if (!is.character(key) || length(key) != 1 || nchar(key) == 0) {
-      stop("key must be a non-empty character string")
-    }
-    if (nrow(self$settings) == 0) {
-      # Create a single-row settings frame when none exists
-      self$settings <- data.frame(
-        form_title = NA_character_,
-        form_id    = NA_character_,
-        version    = NA_character_,
-        stringsAsFactors = FALSE
-      )
-    }
-    if (!key %in% names(self$settings)) {
-      self$settings[[key]] <- NA
-    }
-    self$settings[[key]] <- value
-    private$.touch()
-    invisible(self)
-  },
-
-
-  # Indicator-code Filtering (revised copies)
-
-
-  #' @description
-  #' Filter the survey and choices by a vector of \code{indicator_code} values
-  #' and store the results in \code{revised_survey} and \code{revised_choices}.
+  #' Filter the master survey and choices by a vector of \code{indicator_code}
+  #' values and store the results in \code{revised_survey} and
+  #' \code{revised_choices}.
   #'
   #' Rows in \code{survey} whose \code{indicator_code} column matches one of
   #' the supplied codes are retained.  Structural rows (those whose
@@ -619,7 +247,7 @@ public = list(
   #' @param indicator_codes Numeric or character vector (or list) of
   #'   \code{indicator_code} values to retain.
   #' @return Invisibly returns \code{self} for method chaining.
-  filter_survey = function(indicator_codes) {
+  filter_survey_by_modules = function(indicator_codes) {
     if (is.null(indicator_codes) || length(indicator_codes) == 0) {
       stop("indicator_codes must be a non-empty vector or list")
     }
@@ -649,26 +277,89 @@ public = list(
       rep(FALSE, nrow(sv))
     }
 
-    col_vals   <- sv[["indicator_code"]]
+    col_vals    <- sv[["indicator_code"]]
     is_selected <- !is.na(col_vals) & col_vals %in% indicator_codes
 
-    self$revised_survey <- sv[is_structural | is_selected, , drop = FALSE]
+    self$revised_survey  <- sv[is_structural | is_selected, , drop = FALSE]
+    self$revised_choices <- private$.filter_choices_from_survey(self$revised_survey)
 
-    # Derive revised_choices from the revised_survey
-    ch <- self$choices
-    if (!"type" %in% names(self$revised_survey) || nrow(self$revised_survey) == 0 ||
-        !"list_name" %in% names(ch)) {
-      self$revised_choices <- ch[0L, , drop = FALSE]
-    } else {
-      select_types <- self$revised_survey$type[
-        grepl("^select_", self$revised_survey$type, ignore.case = FALSE)
-      ]
-      list_names <- gsub("^select_(one|multiple)\\s+", "", select_types, ignore.case = TRUE)
-      list_names <- gsub("\\s+.*$", "", list_names)
-      list_names <- unique(list_names[nchar(list_names) > 0])
-      self$revised_choices <- ch[ch$list_name %in% list_names, , drop = FALSE]
+    private$.touch()
+    invisible(self)
+  },
+
+  #' @description
+  #' Safely update a specific choice list in the revised choices with new
+  #' or revised values.  The existing entries for \code{list_name} are
+  #' replaced entirely with \code{new_choices}.
+  #'
+  #' @param list_name Character. Name of the choice list to replace.
+  #' @param new_choices Data frame with the new choice entries.  Must contain
+  #'   at minimum a \code{name} column.  A \code{list_name} column will be
+  #'   added/overwritten with the value of \code{list_name}.
+  #' @return Invisibly returns self for method chaining.
+  update_choice_list = function(list_name, new_choices) {
+    if (!is.character(list_name) || length(list_name) != 1 || nchar(list_name) == 0) {
+      stop("list_name must be a non-empty character string")
+    }
+    if (!is.data.frame(new_choices)) {
+      stop("new_choices must be a data.frame")
+    }
+    if (!"name" %in% names(new_choices)) {
+      stop("new_choices must have a 'name' column")
     }
 
+    # Ensure list_name column is set correctly
+    new_choices[["list_name"]] <- list_name
+
+    # Target: revised_choices (falls back to master choices if revised is empty)
+    target <- if (!is.null(self$revised_choices) && nrow(self$revised_choices) > 0) {
+      self$revised_choices
+    } else {
+      self$choices
+    }
+
+    # Align columns: add any missing columns as NA
+    all_cols <- union(names(target), names(new_choices))
+    for (col in setdiff(all_cols, names(target))) {
+      target[[col]] <- NA
+    }
+    for (col in setdiff(all_cols, names(new_choices))) {
+      new_choices[[col]] <- NA
+    }
+    new_choices <- new_choices[, names(target), drop = FALSE]
+
+    # Remove existing entries for this list and append new ones
+    self$revised_choices <- rbind(
+      target[target$list_name != list_name, , drop = FALSE],
+      new_choices
+    )
+
+    private$.touch()
+    invisible(self)
+  },
+
+  #' @description
+  #' Update a value in the settings data frame.
+  #' @param key Character. Column name in the settings data frame to update.
+  #' @param value The new value for the setting.
+  #' @return Invisibly returns self for method chaining.
+  update_settings = function(key, value) {
+    if (!is.character(key) || length(key) != 1 || nchar(key) == 0) {
+      stop("key must be a non-empty character string")
+    }
+    if (nrow(self$settings) == 0) {
+      # Create a single-row settings frame when none exists
+      self$settings <- data.frame(
+        form_title = NA_character_,
+        form_id    = NA_character_,
+        version    = NA_character_,
+        stringsAsFactors = FALSE
+      )
+    }
+    if (!key %in% names(self$settings)) {
+      self$settings[[key]] <- NA
+    }
+    self$settings[[key]] <- value
     private$.touch()
     invisible(self)
   },
@@ -767,19 +458,23 @@ public = list(
 
   #' @description
   #' Validate the entire XLSForm structure.
-  #' Checks for required columns, valid question types, choice list references, etc.
+  #' Checks for required columns, valid question types, choice list references,
+  #' and coherence between revised survey and revised choices.
   #' @return Logical TRUE if valid, FALSE if there are validation errors.
   validate = function() {
     private$.validation_errors <- list()
 
-    # Validate survey sheet structure
+    # Validate survey sheet structure and content
     private$.validate_survey_content()
 
-    # Validate choices sheet structure
+    # Validate choices sheet structure and content
     private$.validate_choices_content()
 
-    # Validate references between survey and choices
+    # Validate references between master survey and master choices
     private$.validate_references()
+
+    # Validate coherence between revised survey and revised choices
+    private$.validate_revised_coherence()
 
     length(private$.validation_errors) == 0
   },
@@ -798,121 +493,8 @@ public = list(
     self$validate()
   },
 
-
-  # Question and Choice Modification
-
-
   #' @description
-  #' Remove a question from the survey sheet.
-  #' @param name Question name to remove.
-  #' @return Invisibly returns self for method chaining.
-  remove_question = function(name) {
-    if (!self$has_question(name)) {
-      warning(paste("Question", name, "not found in survey"))
-      return(invisible(self))
-    }
-
-    self$survey <- self$survey[self$survey$name != name, , drop = FALSE]
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Check if a question exists in the survey.
-  #' @param name Question name to check.
-  #' @return Logical indicating if question exists.
-  has_question = function(name) {
-    "name" %in% names(self$survey) && name %in% self$survey$name
-  },
-
-  #' @description
-  #' Get a specific question from the survey.
-  #' @param name Question name to retrieve.
-  #' @return Data frame row for the question, or NULL if not found.
-  get_question = function(name) {
-    if (!self$has_question(name)) {
-      return(NULL)
-    }
-    self$survey[self$survey$name == name, , drop = FALSE]
-  },
-
-  #' @description
-  #' Update a question's properties.
-  #' @param name Question name to update.
-  #' @param ... Named arguments for columns to update.
-  #' @return Invisibly returns self for method chaining.
-  update_question = function(name, ...) {
-    if (!self$has_question(name)) {
-      stop(paste("Question", name, "not found in survey"))
-    }
-
-    updates <- list(...)
-    row_idx <- which(self$survey$name == name)
-
-    for (col_name in names(updates)) {
-      if (!col_name %in% names(self$survey)) {
-        self$survey[[col_name]] <- NA
-      }
-      self$survey[row_idx, col_name] <- updates[[col_name]]
-    }
-
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Add a choice to the choices sheet.
-  #' @param list_name Name of the choice list.
-  #' @param name Choice value/name.
-  #' @param label Choice label shown to user.
-  #' @param ... Additional columns to set.
-  #' @return Invisibly returns self for method chaining.
-  add_choice = function(list_name, name, label, ...) {
-    new_row <- data.frame(
-      list_name = list_name,
-      name = name,
-      label = label,
-      stringsAsFactors = FALSE
-    )
-
-    # Add any additional columns
-    extra_args <- list(...)
-    for (col_name in names(extra_args)) {
-      new_row[[col_name]] <- extra_args[[col_name]]
-    }
-
-    # Ensure all columns from existing choices are present
-    for (col in names(self$choices)) {
-      if (!col %in% names(new_row)) {
-        new_row[[col]] <- NA
-      }
-    }
-
-    self$choices <- rbind(self$choices, new_row[, names(self$choices), drop = FALSE])
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Remove choices from a specific choice list.
-  #' @param list_name Name of the choice list.
-  #' @param name Optional specific choice name to remove. If NULL, removes all choices in list.
-  #' @return Invisibly returns self for method chaining.
-  remove_choice = function(list_name, name = NULL) {
-    if (is.null(name)) {
-      self$choices <- self$choices[self$choices$list_name != list_name, , drop = FALSE]
-    } else {
-      self$choices <- self$choices[
-        !(self$choices$list_name == list_name & self$choices$name == name),
-        , drop = FALSE
-      ]
-    }
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Get all choices for a specific choice list.
+  #' Get all choices for a specific choice list (from master choices).
   #' @param list_name Name of the choice list.
   #' @return Data frame with choices for the specified list.
   get_choices_for_list = function(list_name) {
@@ -920,93 +502,10 @@ public = list(
   },
 
   #' @description
-  #' Update a choice's properties.
-  #' @param list_name Name of the choice list.
-  #' @param name Choice name to update.
-  #' @param ... Named arguments for columns to update.
-  #' @return Invisibly returns self for method chaining.
-  update_choice = function(list_name, name, ...) {
-    row_idx <- which(self$choices$list_name == list_name &
-                     self$choices$name == name)
-
-    if (length(row_idx) == 0) {
-      stop(paste("Choice", name, "in list", list_name, "not found"))
-    }
-
-    updates <- list(...)
-    for (col_name in names(updates)) {
-      if (!col_name %in% names(self$choices)) {
-        self$choices[[col_name]] <- NA
-      }
-      self$choices[row_idx, col_name] <- updates[[col_name]]
-    }
-
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Get all unique choice list names.
+  #' Get all unique choice list names (from master choices).
   #' @return Character vector of choice list names.
   get_choice_list_names = function() {
     unique(self$choices$list_name)
-  },
-
-
-  # Utility Methods
-
-
-  #' @description
-  #' Get metadata about the tool.
-  #' @return Named list with tool metadata.
-  get_metadata = function() {
-    list(
-      name = private$.name,
-      tool_type = private$.tool_type,
-      created_at = private$.created_at,
-      modified_at = private$.modified_at,
-      num_questions = nrow(self$survey),
-      num_choices = nrow(self$choices),
-      num_indicators = length(private$.selected_indicators),
-      custom = private$.metadata
-    )
-  },
-
-  #' @description
-  #' Set custom metadata.
-  #' @param key Metadata key.
-  #' @param value Metadata value.
-  #' @return Invisibly returns self for method chaining.
-  set_metadata = function(key, value) {
-    private$.metadata[[key]] <- value
-    private$.touch()
-    invisible(self)
-  },
-
-  #' @description
-  #' Print summary of the tool.
-  print = function() {
-    cat("XLSForm Tool\n")
-    cat("--------------------\n")
-    cat("Name:", private$.name, "\n")
-    cat("Type:", private$.tool_type, "\n")
-    cat("Created:", format(private$.created_at, "%Y-%m-%d %H:%M:%S"), "\n")
-    cat("Modified:", format(private$.modified_at, "%Y-%m-%d %H:%M:%S"), "\n")
-    cat("Master Survey Questions:", nrow(self$survey), "\n")
-    cat("Master Choice Lists:", length(unique(self$choices$list_name)), "\n")
-    if (!is.null(private$.modified_survey)) {
-      cat("Modified Survey Questions:", nrow(private$.modified_survey), "\n")
-    }
-    if (!is.null(private$.modified_choices)) {
-      cat("Modified Choice Lists:", length(unique(private$.modified_choices$list_name)), "\n")
-    }
-    cat("Selected Indicators:", length(private$.selected_indicators), "\n")
-
-    if (length(private$.validation_errors) > 0) {
-      cat("\nValidation Errors:", length(private$.validation_errors), "\n")
-    }
-
-    invisible(self)
   }
 ),
 
@@ -1015,11 +514,8 @@ private = list(
   .tool_type = NULL,
   .created_at = NULL,
   .modified_at = NULL,
-  .modified_survey = NULL,
-  .modified_choices = NULL,
   .selected_indicators = NULL,
   .validation_errors = NULL,
-  .metadata = NULL,
 
   # Update modification timestamp
   .touch = function() {
@@ -1088,228 +584,322 @@ private = list(
     invisible(NULL)
   },
 
-  # Create empty survey data frame with required XLSForm columns
-  .create_empty_survey = function() {
-    data.frame(
-      type = character(0),
-      name = character(0),
-      label = character(0),
-      hint = character(0),
-      required = character(0),
-      relevant = character(0),
-      constraint = character(0),
-      constraint_message = character(0),
-      appearance = character(0),
-      calculation = character(0),
-      stringsAsFactors = FALSE
-    )
-  },
-
-  # Create empty choices data frame with required XLSForm columns
-  .create_empty_choices = function() {
-    data.frame(
-      list_name = character(0),
-      name = character(0),
-      label = character(0),
-      stringsAsFactors = FALSE
-    )
-  },
-
-  # Create empty settings data frame
-  .create_empty_settings = function() {
-    data.frame(
-      form_title = character(0),
-      form_id = character(0),
-      version = character(0),
-      stringsAsFactors = FALSE
-    )
-  },
-
-  # Validate survey data frame structure
+  # Validate survey data frame structure (called on construction / assignment)
   .validate_survey_structure = function(survey) {
-    required_cols <- c("type", "name")
-    missing_cols <- setdiff(required_cols, names(survey))
-    if (length(missing_cols) > 0) {
-      stop(paste("Survey sheet missing required columns:",
-                 paste(missing_cols, collapse = ", ")))
+    result <- xlsform_check_required_sheet_cols(survey, required_cols = c("type", "name"))
+    if (!result$valid) {
+      msgs <- vapply(result$issues, function(i) i$message, character(1L))
+      stop(paste("Survey sheet missing required columns:", paste(msgs, collapse = "; ")))
     }
   },
 
-  # Validate choices data frame structure
+  # Validate choices data frame structure (called on construction / assignment)
   .validate_choices_structure = function(choices) {
-    required_cols <- c("list_name", "name")
-    missing_cols <- setdiff(required_cols, names(choices))
-    if (length(missing_cols) > 0) {
-      stop(paste("Choices sheet missing required columns:",
-                 paste(missing_cols, collapse = ", ")))
+    result <- xlsform_check_required_sheet_cols(choices, required_cols = c("list_name", "name"))
+    if (!result$valid) {
+      msgs <- vapply(result$issues, function(i) i$message, character(1L))
+      stop(paste("Choices sheet missing required columns:", paste(msgs, collapse = "; ")))
     }
   },
 
-  # Validate survey content
+  # Validate survey content (types, duplicates, group balance) against master survey
   .validate_survey_content = function() {
-    survey <- self$survey
+    sv <- self$survey
+    if (is.null(sv) || nrow(sv) == 0) return(invisible(NULL))
 
-    if (nrow(survey) == 0) {
-      return(invisible(NULL))
+    # Check required columns
+    struct_result <- xlsform_check_required_sheet_cols(sv, sheet = "survey")
+    if (!struct_result$valid) {
+      private$.validation_errors <- c(private$.validation_errors, struct_result$issues)
     }
 
-    # Check for valid question types
-    valid_types <- c(
-      # Basic input types
-      "text", "integer", "decimal", "range",
-      "note", "date", "time", "dateTime",
-      "geopoint", "geotrace", "geoshape",
-      "barcode", "image", "audio", "video", "file",
-      # Select types (will have list_name appended)
-      "select_one", "select_multiple",
-      "rank",
-      # Structural types
-      "begin_group", "end_group",
-      "begin_repeat", "end_repeat",
-      # Meta types
-      "start", "end", "today", "deviceid", "username",
-      "phonenumber", "simserial", "subscriberid", "audit",
-      # Other
-      "calculate", "acknowledge", "hidden"
-    )
-
-    for (i in seq_len(nrow(survey))) {
-      row_type <- survey$type[i]
-      if (is.na(row_type) || row_type == "") {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = i,
-            column = "type",
-            message = "Question type is missing or empty"
-          ))
-        )
-        next
-      }
-
-      # Extract base type (before any list_name for select types)
-      base_type <- gsub("\\s+.*$", "", row_type)
-
-      if (!base_type %in% valid_types) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = i,
-            column = "type",
-            message = paste("Invalid question type:", row_type)
-          ))
-        )
+    # Check group/repeat balance
+    if ("type" %in% names(sv)) {
+      grp_result <- xlsform_check_group_repeats(sv)
+      if (!grp_result$valid) {
+        private$.validation_errors <- c(private$.validation_errors, grp_result$issues)
       }
     }
 
-    # Check for duplicate names
-    if ("name" %in% names(survey)) {
-      names_valid <- !is.na(survey$name) & survey$name != ""
-      valid_names <- survey$name[names_valid]
-      dup_names <- valid_names[duplicated(valid_names)]
-      if (length(dup_names) > 0) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = NA,
-            column = "name",
-            message = paste("Duplicate question names:", paste(unique(dup_names), collapse = ", "))
-          ))
-        )
+    # Check duplicate variable names
+    if ("name" %in% names(sv)) {
+      dup_result <- xlsform_check_duplicate_names(sv)
+      if (!dup_result$valid) {
+        private$.validation_errors <- c(private$.validation_errors, dup_result$issues)
       }
     }
 
-    # Check for balanced groups
-    if ("type" %in% names(survey)) {
-      begin_groups <- sum(survey$type == "begin_group", na.rm = TRUE)
-      end_groups <- sum(survey$type == "end_group", na.rm = TRUE)
-      if (begin_groups != end_groups) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = NA,
-            column = "type",
-            message = paste("Unbalanced groups: ", begin_groups, "begin_group vs",
-                            end_groups, "end_group")
-          ))
-        )
-      }
-
-      # Check for balanced repeats
-      begin_repeats <- sum(survey$type == "begin_repeat", na.rm = TRUE)
-      end_repeats <- sum(survey$type == "end_repeat", na.rm = TRUE)
-      if (begin_repeats != end_repeats) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = NA,
-            column = "type",
-            message = paste("Unbalanced repeats: ", begin_repeats, "begin_repeat vs",
-                            end_repeats, "end_repeat")
-          ))
-        )
+    # Check each question type using utility function.
+    # Meta/system types that are always valid but not in xlsform_is_valid_type's
+    # list are skipped here so we don't produce false positives.
+    if ("type" %in% names(sv)) {
+      meta_types <- c("start", "end", "today", "deviceid", "username",
+                      "phonenumber", "simserial", "subscriberid", "audit",
+                      "rank")
+      for (i in seq_len(nrow(sv))) {
+        raw_type  <- sv$type[i]
+        base_type <- tolower(trimws(gsub("\\s+.*$", "", as.character(raw_type))))
+        if (is.na(base_type) || base_type %in% meta_types) next
+        type_result <- xlsform_is_valid_type(raw_type)
+        if (!type_result$valid) {
+          issues <- lapply(type_result$issues, function(iss) {
+            iss$row <- as.integer(i)
+            iss
+          })
+          private$.validation_errors <- c(private$.validation_errors, issues)
+        }
       }
     }
+    invisible(NULL)
   },
 
-  # Validate choices content
+  # Validate choices content (duplicate names within each list) against master choices
   .validate_choices_content = function() {
-    choices <- self$choices
+    ch <- self$choices
+    if (is.null(ch) || nrow(ch) == 0) return(invisible(NULL))
 
-    if (nrow(choices) == 0) {
+    # Check required columns
+    struct_result <- xlsform_check_required_sheet_cols(ch, sheet = "choices")
+    if (!struct_result$valid) {
+      private$.validation_errors <- c(private$.validation_errors, struct_result$issues)
       return(invisible(NULL))
     }
 
-    # Check for duplicate choices within each list
-    for (list_name in unique(choices$list_name)) {
-      list_choices <- choices[choices$list_name == list_name, ]
-      dup_names <- list_choices$name[duplicated(list_choices$name)]
-      if (length(dup_names) > 0) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = NA,
-            column = "name",
-            message = paste("Duplicate choice names in list", list_name, ":",
-                            paste(unique(dup_names), collapse = ", "))
-          ))
-        )
+    # Check for duplicate choice names within each list
+    for (list_nm in unique(ch$list_name)) {
+      if (is.na(list_nm)) next
+      list_ch <- ch[ch$list_name == list_nm, , drop = FALSE]
+      if ("name" %in% names(list_ch)) {
+        dup_names <- list_ch$name[duplicated(list_ch$name) & !is.na(list_ch$name)]
+        if (length(dup_names) > 0) {
+          msg <- paste0("Duplicate choice names in list '", list_nm, "': ",
+                        paste(unique(dup_names), collapse = ", "))
+          private$.validation_errors <- c(
+            private$.validation_errors,
+            list(list(row = NA_integer_, column = "name",
+                      message = phr_txt(msg, default = msg)))
+          )
+        }
       }
     }
+    invisible(NULL)
   },
 
-  # Validate references between survey and choices
+  # Validate that select questions in master survey reference valid master choice lists
   .validate_references = function() {
-    survey <- self$survey
-    choices <- self$choices
+    sv <- self$survey
+    ch <- self$choices
+    if (is.null(sv) || is.null(ch)) return(invisible(NULL))
+    if (!"type" %in% names(sv) || nrow(sv) == 0) return(invisible(NULL))
+    if (!"list_name" %in% names(ch)) return(invisible(NULL))
 
-    if (!"type" %in% names(survey)) {
-      return(invisible(NULL))
+    result <- xlsform_check_choice_references(sv, ch)
+    if (!result$valid) {
+      private$.validation_errors <- c(private$.validation_errors, result$issues)
+    }
+    invisible(NULL)
+  },
+
+  # Validate coherence between revised survey and revised choices
+  .validate_revised_coherence = function() {
+    sv <- if (!is.null(self$revised_survey) && nrow(self$revised_survey) > 0) {
+      self$revised_survey
+    } else {
+      self$survey
+    }
+    ch <- if (!is.null(self$revised_choices) && nrow(self$revised_choices) > 0) {
+      self$revised_choices
+    } else {
+      self$choices
+    }
+    if (is.null(sv) || is.null(ch)) return(invisible(NULL))
+    if (!"type" %in% names(sv) || nrow(sv) == 0) return(invisible(NULL))
+    if (!"list_name" %in% names(ch)) return(invisible(NULL))
+
+    result <- xlsform_check_choice_references(sv, ch)
+    if (!result$valid) {
+      # Tag these as revised-coherence issues so they're distinguishable
+      issues <- lapply(result$issues, function(iss) {
+        iss$message <- paste0("[revised] ", iss$message)
+        iss
+      })
+      private$.validation_errors <- c(private$.validation_errors, issues)
+    }
+    invisible(NULL)
+  },
+
+  # Private helper: derive a choices data frame from a given survey data frame.
+  # Extracts all list names referenced by select_one/select_multiple questions and
+  # filters the master choices to include only those lists.
+  .filter_choices_from_survey = function(sv) {
+    ch <- self$choices
+    if (is.null(sv) || is.null(ch) ||
+        !"type" %in% names(sv) || nrow(sv) == 0 ||
+        !"list_name" %in% names(ch)) {
+      return(if (is.null(ch)) NULL else ch[0L, , drop = FALSE])
+    }
+    select_types <- sv$type[grepl("^select_", sv$type, ignore.case = FALSE)]
+    list_names   <- gsub("^select_(one|multiple)\\s+", "", select_types, ignore.case = TRUE)
+    list_names   <- gsub("\\s+.*$", "", list_names)
+    list_names   <- unique(list_names[nchar(list_names) > 0])
+    if (length(list_names) == 0) return(ch[0L, , drop = FALSE])
+    ch[ch$list_name %in% list_names, , drop = FALSE]
+  },
+
+  # Private helper: check whether a question exists in revised_survey
+  .has_question = function(name) {
+    !is.null(self$revised_survey) &&
+      "name" %in% names(self$revised_survey) &&
+      name %in% self$revised_survey$name
+  },
+
+  # Private helper: return a specific question row from revised_survey (or NULL)
+  .get_question = function(name) {
+    if (!private$.has_question(name)) return(NULL)
+    self$revised_survey[self$revised_survey$name == name, , drop = FALSE]
+  },
+
+  # Private helper: remove a question from revised_survey by name
+  .remove_question = function(name) {
+    if (!private$.has_question(name)) {
+      warning(paste("Question", name, "not found in revised_survey"))
+      return(invisible(self))
+    }
+    self$revised_survey <- self$revised_survey[
+      self$revised_survey$name != name, , drop = FALSE
+    ]
+    private$.touch()
+    invisible(self)
+  },
+
+  # Private helper: update column values of a question in revised_survey
+  .update_question = function(name, ...) {
+    if (!private$.has_question(name)) {
+      stop(paste("Question", name, "not found in revised_survey"))
+    }
+    updates <- list(...)
+    row_idx <- which(self$revised_survey$name == name)
+    for (col_name in names(updates)) {
+      if (!col_name %in% names(self$revised_survey)) {
+        self$revised_survey[[col_name]] <- NA
+      }
+      self$revised_survey[row_idx, col_name] <- updates[[col_name]]
+    }
+    private$.touch()
+    invisible(self)
+  },
+
+  # Private helper: insert a new question row into revised_survey at a specific position.
+  # Use `after` (question name or row index) to insert after that position, or
+  # `before` (question name or row index) to insert before it.
+  # If neither is supplied the row is appended at the end.
+  .add_question = function(new_row, after = NULL, before = NULL) {
+    sv <- self$revised_survey
+    if (is.null(sv) || nrow(sv) == 0) {
+      self$revised_survey <- new_row
+      private$.touch()
+      return(invisible(self))
     }
 
-    # Check that select questions reference valid choice lists
-    select_rows <- grep("^select_", survey$type)
+    # Align columns
+    all_cols <- union(names(sv), names(new_row))
+    for (col in setdiff(all_cols, names(sv)))     sv[[col]]      <- NA
+    for (col in setdiff(all_cols, names(new_row))) new_row[[col]] <- NA
+    new_row <- new_row[, all_cols, drop = FALSE]
+    sv      <- sv[, all_cols, drop = FALSE]
 
-    for (i in select_rows) {
-      type_str <- survey$type[i]
-      # Extract list name from type (e.g., "select_one yes_no" -> "yes_no")
-      list_name <- gsub("^select_(one|multiple)\\s+", "", type_str)
-      list_name <- gsub("\\s+.*$", "", list_name)  # Remove any following text
-
-      if (nchar(list_name) > 0 && !list_name %in% choices$list_name) {
-        private$.validation_errors <- c(
-          private$.validation_errors,
-          list(list(
-            row = i,
-            column = "type",
-            message = paste("Choice list not found:", list_name)
-          ))
-        )
+    # Resolve insertion position as an integer index (insert AFTER this row)
+    insert_after <- NULL
+    if (!is.null(after)) {
+      if (is.character(after) && "name" %in% names(sv)) {
+        idx <- which(sv$name == after)
+        if (length(idx) > 0) insert_after <- idx[1L]
+      } else if (is.numeric(after)) {
+        insert_after <- as.integer(after)
+      }
+    } else if (!is.null(before)) {
+      if (is.character(before) && "name" %in% names(sv)) {
+        idx <- which(sv$name == before)
+        if (length(idx) > 0) insert_after <- idx[1L] - 1L
+      } else if (is.numeric(before)) {
+        insert_after <- as.integer(before) - 1L
       }
     }
+
+    n <- nrow(sv)
+    if (!is.null(insert_after) && insert_after >= 1L && insert_after < n) {
+      self$revised_survey <- rbind(
+        sv[seq_len(insert_after), , drop = FALSE],
+        new_row,
+        sv[seq(insert_after + 1L, n), , drop = FALSE]
+      )
+    } else if (!is.null(insert_after) && insert_after <= 0L) {
+      self$revised_survey <- rbind(new_row, sv)
+    } else {
+      self$revised_survey <- rbind(sv, new_row)
+    }
+    private$.touch()
+    invisible(self)
+  },
+
+  # Private helper: add a single choice row to revised_choices
+  .add_choice = function(list_name, name, label, ...) {
+    ch <- if (!is.null(self$revised_choices) && nrow(self$revised_choices) > 0) {
+      self$revised_choices
+    } else {
+      self$choices
+    }
+    if (is.null(ch)) {
+      ch <- data.frame(list_name = character(0), name = character(0),
+                       label = character(0), stringsAsFactors = FALSE)
+    }
+    new_row <- data.frame(list_name = list_name, name = name, label = label,
+                          stringsAsFactors = FALSE)
+    extra_args <- list(...)
+    for (col_name in names(extra_args)) new_row[[col_name]] <- extra_args[[col_name]]
+    for (col in names(ch)) if (!col %in% names(new_row)) new_row[[col]] <- NA
+    self$revised_choices <- rbind(ch, new_row[, names(ch), drop = FALSE])
+    private$.touch()
+    invisible(self)
+  },
+
+  # Private helper: remove choice(s) from revised_choices by list name and optionally
+  # by choice name. When name is NULL the entire list is removed.
+  .remove_choice = function(list_name, name = NULL) {
+    ch <- if (!is.null(self$revised_choices) && nrow(self$revised_choices) > 0) {
+      self$revised_choices
+    } else {
+      self$choices
+    }
+    if (is.null(ch)) return(invisible(self))
+    if (is.null(name)) {
+      ch <- ch[ch$list_name != list_name, , drop = FALSE]
+    } else {
+      ch <- ch[!(ch$list_name == list_name & ch$name == name), , drop = FALSE]
+    }
+    self$revised_choices <- ch
+    private$.touch()
+    invisible(self)
+  },
+
+  # Private helper: update column values of a choice in revised_choices
+  .update_choice = function(list_name, name, ...) {
+    ch <- if (!is.null(self$revised_choices) && nrow(self$revised_choices) > 0) {
+      self$revised_choices
+    } else {
+      self$choices
+    }
+    if (is.null(ch)) stop(paste("Choice", name, "in list", list_name, "not found"))
+    row_idx <- which(ch$list_name == list_name & ch$name == name)
+    if (length(row_idx) == 0) stop(paste("Choice", name, "in list", list_name, "not found"))
+    updates <- list(...)
+    for (col_name in names(updates)) {
+      if (!col_name %in% names(ch)) ch[[col_name]] <- NA
+      ch[row_idx, col_name] <- updates[[col_name]]
+    }
+    self$revised_choices <- ch
+    private$.touch()
+    invisible(self)
   }
 )
 )
-
-
-
