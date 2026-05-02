@@ -1414,10 +1414,11 @@ test_that("generate_weights computes correct weights and writes to 'survey_weigh
 
   df <- hh$raw_data
   expect_true("survey_weight" %in% names(df))
-  # Urban: 1000 / 2 = 500
-  expect_equal(df$survey_weight[df$stratum == "Urban"], c(500, 500))
-  # Rural: 3000 / 2 = 1500
-  expect_equal(df$survey_weight[df$stratum == "Rural"], c(1500, 1500))
+  # N=4000, n=4
+  # Urban: (1000/4000) / (2/4) = 0.25 / 0.5 = 0.5
+  expect_equal(df$survey_weight[df$stratum == "Urban"], c(0.5, 0.5))
+  # Rural: (3000/4000) / (2/4) = 0.75 / 0.5 = 1.5
+  expect_equal(df$survey_weight[df$stratum == "Rural"], c(1.5, 1.5))
   # variable_map should be updated
   expect_equal(hh$variable_map$weight, "survey_weight")
 })
@@ -1456,9 +1457,11 @@ test_that("generate_weights uses existing mapped weight column when available", 
   # Should have written into 'wt', not created 'survey_weight'
   expect_false("survey_weight" %in% names(df))
   expect_equal(hh$variable_map$weight, "wt")
-  # Urban: 800 / 1 = 800; Rural: 2000 / 2 = 1000
-  expect_equal(df$wt[df$stratum == "Urban"], 800)
-  expect_equal(df$wt[df$stratum == "Rural"], c(1000, 1000))
+  # N=2800, n=3
+  # Urban: (800/2800) / (1/3) = (2/7) / (1/3) = 6/7
+  expect_equal(df$wt[df$stratum == "Urban"], 6/7)
+  # Rural: (2000/2800) / (2/3) = (5/7) / (2/3) = 15/14
+  expect_equal(df$wt[df$stratum == "Rural"], c(15/14, 15/14))
 })
 
 test_that("generate_weights produces NA and warns for strata not in SamplingFrame", {
@@ -1492,7 +1495,8 @@ test_that("generate_weights produces NA and warns for strata not in SamplingFram
   )
 
   df <- hh$raw_data
-  expect_equal(df$survey_weight[df$stratum == "Urban"], 500)
+  # Urban: N=500 (only stratum), N_s=500, n=2 valid rows, n_s=1 -> (500/500)/(1/2) = 2
+  expect_equal(df$survey_weight[df$stratum == "Urban"], 2)
   expect_true(is.na(df$survey_weight[df$stratum == "Rural"]))
 })
 
@@ -1527,7 +1531,9 @@ test_that("generate_weights is called automatically inside pre_standardize when 
 
   df <- hh$standardized_data
   expect_true("survey_weight" %in% names(df))
-  # A: 600 / 1 = 600; B: 900 / 2 = 450
-  expect_equal(df$survey_weight[df$stratum == "A"], 600)
-  expect_equal(df$survey_weight[df$stratum == "B"], c(450, 450))
+  # N=1500, n=3
+  # A: (600/1500) / (1/3) = 0.4 / (1/3) = 1.2
+  expect_equal(df$survey_weight[df$stratum == "A"], 1.2)
+  # B: (900/1500) / (2/3) = 0.6 / (2/3) = 0.9
+  expect_equal(df$survey_weight[df$stratum == "B"], c(0.9, 0.9))
 })

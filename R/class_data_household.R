@@ -571,10 +571,14 @@ HouseholdData <- R6::R6Class(
     #' Computes survey weights for each record by matching stratum values in the
     #' dataset against population totals held in a \code{\link{SamplingFrame}}.
     #' The weight for every row in stratum \eqn{s} is:
-    #' \deqn{w_s = \frac{N_s}{n_s}}
+    #' \deqn{w_s = \frac{N_s / N}{n_s / n}}
     #' where \eqn{N_s} is the total population of stratum \eqn{s} (sum of
-    #' \code{population_size} in the \code{SamplingFrame}) and \eqn{n_s} is the
-    #' number of surveyed households in stratum \eqn{s}.
+    #' \code{population_size} in the \code{SamplingFrame}), \eqn{N} is the grand
+    #' total population across all strata, \eqn{n_s} is the number of surveyed
+    #' households in stratum \eqn{s}, and \eqn{n} is the total sample size.
+    #' This is the standard design weight for stratified sampling (proportion of
+    #' population in the stratum divided by the proportion of the sample in the
+    #' stratum).
     #'
     #' @param sampling_frame Optional \code{\link{SamplingFrame}} object. When
     #'   \code{NULL} (default), the method falls back to \code{self$sampling_frame}.
@@ -662,7 +666,7 @@ HouseholdData <- R6::R6Class(
         }
 
         # ------------------------------------------------------------------
-        # 4. Compute population totals per stratum from SamplingFrame
+        # 4. Compute population totals per stratum and grand total (N)
         # ------------------------------------------------------------------
         sf_totals <- sf_df |>
           dplyr::mutate(stratum = as.character(.data$stratum)) |>
@@ -670,15 +674,19 @@ HouseholdData <- R6::R6Class(
           dplyr::summarize(pop_total = sum(.data$population_size, na.rm = TRUE),
                            .groups = "drop")
 
+        N <- sum(sf_totals$pop_total, na.rm = TRUE)
+
         # ------------------------------------------------------------------
-        # 5. Compute sample counts per stratum from dataset and join with totals
+        # 5. Compute sample counts per stratum and total sample size (n)
         # ------------------------------------------------------------------
         stratum_vals <- as.character(df[[stratum_col]])
         valid_mask   <- !is.na(stratum_vals) & stratum_vals != ""
 
+        n <- sum(valid_mask)  # total sample size (excluding NA/empty strata)
+
         sample_counts_df <- data.frame(stratum = stratum_vals[valid_mask]) |>
           dplyr::group_by(.data$stratum) |>
-          dplyr::summarize(n = dplyr::n(), .groups = "drop")
+          dplyr::summarize(n_s = dplyr::n(), .groups = "drop")
 
         # Warn if any strata in dataset had no match in the SamplingFrame
         unmatched <- setdiff(
@@ -694,9 +702,10 @@ HouseholdData <- R6::R6Class(
 
         # ------------------------------------------------------------------
         # 6. Build per-row weight vector via vectorized join
+        #    Formula: w_s = (N_s / N) / (n_s / n)
         # ------------------------------------------------------------------
         weight_lookup <- dplyr::left_join(sample_counts_df, sf_totals, by = "stratum") |>
-          dplyr::mutate(weight = .data$pop_total / .data$n)
+          dplyr::mutate(weight = (.data$pop_total / N) / (.data$n_s / n))
 
         row_strata  <- data.frame(stratum = stratum_vals)
         weight_vec  <- dplyr::left_join(row_strata, weight_lookup, by = "stratum")$weight
