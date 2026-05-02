@@ -1,4 +1,4 @@
-<svg width="950" height="900" xmlns="http://www.w3.org/2000/svg">
+<svg width="950" height="930" xmlns="http://www.w3.org/2000/svg">
   <!-- Height: 900px — extended from 800px to accommodate Demographics sub-pillar boxes
        (Population Size, Vulnerability, Migration) at y=775–830, with bottom margin. -->
 
@@ -356,6 +356,23 @@
   <g id="Migration">
     <rect x="640" y="815" width="80" height="15" fill="white" stroke="lightgrey"/>
     <text x="680" y="825" text-anchor="middle" font-size="7">Migration (104)</text>
+  </g>
+
+  <!-- Legend -->
+  <g id="legend">
+    <text x="10" y="862" font-size="8" font-weight="bold">Key:</text>
+    <!-- Not Selected -->
+    <rect x="50" y="851" width="12" height="12" fill="white" stroke="black" stroke-width="0.5"/>
+    <text x="66" y="862" font-size="8">Not Selected</text>
+    <!-- Primary Collection -->
+    <rect x="245" y="851" width="12" height="12" fill="#90EE90" stroke="black" stroke-width="0.5"/>
+    <text x="261" y="862" font-size="8">Primary Collection</text>
+    <!-- Secondary Data -->
+    <rect x="490" y="851" width="12" height="12" fill="#ADD8E6" stroke="black" stroke-width="0.5"/>
+    <text x="506" y="862" font-size="8">Secondary Data</text>
+    <!-- Primary and Secondary -->
+    <rect x="680" y="851" width="12" height="12" fill="#DDA0DD" stroke="black" stroke-width="0.5"/>
+    <text x="696" y="862" font-size="8">Primary and Secondary</text>
   </g>
 
 </svg>

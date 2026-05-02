@@ -63,7 +63,8 @@ ANAFramework <- R6::R6Class(
         }
         if (file.exists(svg_file)) {
           svg_content <- paste(readLines(svg_file, warn = FALSE), collapse = "\n")
-          self$master_svg <- svg_content
+          self$master_svg  <- svg_content
+          self$adjusted_svg <- svg_content
           phr_message(
             phr_txt("ANAFramework: master SVG loaded from ana_framework.svg."),
             origin = "ANAFramework$initialize"
