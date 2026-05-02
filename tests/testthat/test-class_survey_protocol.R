@@ -196,27 +196,39 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
 test_that("add_stratum derives calc_method correctly for all sampling_method values", {
   p <- make_protocol()
 
-  simple_random_methods <- c("simple_random", "proportional", "systematic", "purposive")
-  cluster_methods       <- c("pps_cluster", "pps_rlc")
+  # Methods that apply to all PSUs (no n_sites required) and use "simple_random" calc_method
+  all_psu_simple_methods <- c("proportional", "purposive")
+  # Methods that select a subset of PSUs and use "simple_random" calc_method
+  site_select_simple_methods <- c("simple_random", "systematic")
+  # Methods that use "cluster" calc_method and select a subset of PSUs
+  site_select_cluster_methods <- c("pps_rlc", "simple_random_rlc", "systematic_rlc")
+  # Methods that use "cluster" calc_method and apply to all PSUs
+  all_psu_cluster_methods <- c("proportional_rlc")
 
-  for (m in simple_random_methods) {
+  for (m in all_psu_simple_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+  }
+  for (m in site_select_simple_methods) {
     p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m, n_sites = 1)
   }
   # pps_cluster: n_psu optional at add_stratum time
   p$add_stratum(stratum_id = "pps_cluster", stratum_name = "pps_cluster",
                 sampling_method = "pps_cluster")
-  # pps_rlc requires n_sites
-  p$add_stratum(stratum_id = "pps_rlc", stratum_name = "pps_rlc",
-                sampling_method = "pps_rlc", n_sites = 10)
+  for (m in site_select_cluster_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m, n_sites = 10)
+  }
+  for (m in all_psu_cluster_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+  }
 
   st <- p$get_sample_table()
   expect_true("calc_method" %in% names(st))
 
-  for (m in simple_random_methods) {
+  for (m in c(all_psu_simple_methods, site_select_simple_methods)) {
     expect_equal(st$calc_method[st$stratum_id == m], "simple_random",
                  info = paste("calc_method for sampling_method =", m))
   }
-  for (m in cluster_methods) {
+  for (m in c("pps_cluster", site_select_cluster_methods, all_psu_cluster_methods)) {
     expect_equal(st$calc_method[st$stratum_id == m], "cluster",
                  info = paste("calc_method for sampling_method =", m))
   }
@@ -239,13 +251,24 @@ test_that("add_stratum errors when sampling_method is not provided", {
   )
 })
 
-test_that("add_stratum errors when n_sites missing for non-pps_cluster method", {
+test_that("add_stratum errors when n_sites missing for site-selection methods", {
   p <- make_protocol()
   expect_error(
     p$add_stratum(stratum_id = "s1", stratum_name = "s1",
                   sampling_method = "simple_random"),
     regexp = "n_sites is required"
   )
+})
+
+test_that("add_stratum accepts proportional and purposive without n_sites", {
+  p <- make_protocol()
+  # proportional applies to all eligible PSUs — n_sites not required
+  p$add_stratum(stratum_id = "prop", stratum_name = "prop",
+                sampling_method = "proportional")
+  # purposive applies to all eligible PSUs — n_sites not required
+  p$add_stratum(stratum_id = "purp", stratum_name = "purp",
+                sampling_method = "purposive")
+  expect_equal(nrow(p$sample_table), 2L)
 })
 
 test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
@@ -679,5 +702,49 @@ test_that("add_stratum accepts simple_random_rlc and systematic_rlc methods", {
   expect_equal(p$sample_table$sampling_method, c("simple_random_rlc", "systematic_rlc"))
   expect_equal(p$sample_table$cluster_size,    c(3L, 3L))
   expect_equal(p$sample_table$calc_method,     c("cluster", "cluster"))
+})
+
+# ---- proportional_rlc ----
+
+test_that("draw_sample_psu_proportional_rlc selects all PSUs and allocates all cluster slots", {
+  frame <- data.frame(population_size = c(300L, 100L, 200L, 150L, 250L))
+  result <- draw_sample_psu_proportional_rlc(frame, sample_size = 30, cluster_size = 3, seed = 42)
+  # All PSUs are selected
+  expect_equal(nrow(result[!is.na(result$sampled_psu), ]), nrow(frame))
+  all_labels <- unlist(strsplit(result$sampled_psu, ",\\s*"))
+  # RC labels must be present
+  expect_true(any(trimws(all_labels) == "RC"))
+  # n_clusters = ceiling(30/3) = 10; n_reserve = 3 (<=10); n_total = 13
+  expect_equal(length(all_labels), 13L)
+})
+
+test_that("draw_sample_psu_proportional_rlc allocates proportional to population size", {
+  # Large PSU (pop 900) vs four small PSUs (pop 100 each) — large should get more slots
+  frame <- data.frame(population_size = c(900L, 100L, 100L, 100L, 100L))
+  result <- draw_sample_psu_proportional_rlc(frame, sample_size = 30, cluster_size = 3, seed = 1)
+  slot_counts <- vapply(result$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  # Large PSU (row 1) should get substantially more slots than any small PSU
+  expect_gt(slot_counts[1], slot_counts[2])
+})
+
+test_that("draw_sample_psu_proportional_rlc errors when population_size is missing", {
+  frame <- data.frame(psu = paste0("p", seq_len(5)))
+  expect_error(
+    draw_sample_psu_proportional_rlc(frame, sample_size = 30),
+    regexp = "population_size"
+  )
+})
+
+test_that("add_stratum accepts proportional_rlc without n_sites and defaults cluster_size to 3", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "r1", stratum_name = "R1",
+                sampling_method = "proportional_rlc",
+                General_HH_Sample_Size = 30)
+  expect_equal(p$sample_table$sampling_method, "proportional_rlc")
+  expect_equal(p$sample_table$cluster_size,    3L)
+  expect_equal(p$sample_table$calc_method,     "cluster")
+  expect_true(is.na(p$sample_table$n_sites))
 })
 

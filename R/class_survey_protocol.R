@@ -78,7 +78,7 @@ SurveyProtocol <- R6::R6Class(
     #'   legacy alias \code{allocation_method}.  Allowable values are
     #'   \code{"simple_random"}, \code{"proportional"}, \code{"pps_cluster"},
     #'   \code{"pps_rlc"}, \code{"systematic"}, \code{"simple_random_rlc"},
-    #'   \code{"systematic_rlc"}, and \code{"purposive"}.
+    #'   \code{"systematic_rlc"}, \code{"proportional_rlc"}, and \code{"purposive"}.
     #'   Defaults to \code{"simple_random"}.
     #' @param allocation_method Deprecated alias for \code{sampling_method}.
     #' @param pop_indicator Character. Indicator label for population-level
@@ -158,12 +158,14 @@ SurveyProtocol <- R6::R6Class(
     #'   \code{calculate_sample_sizes()}).
     #' @param cluster_size Integer.  Households per cluster.  Used by
     #'   \code{draw_sample()} when \code{sampling_method} is \code{"pps_cluster"},
-    #'   \code{"pps_rlc"}, \code{"simple_random_rlc"}, or \code{"systematic_rlc"}
-    #'   (automatically set to \code{3} for RLC methods if not supplied).
+    #'   \code{"pps_rlc"}, \code{"simple_random_rlc"}, \code{"systematic_rlc"}, or
+    #'   \code{"proportional_rlc"} (automatically set to \code{3} for RLC methods if
+    #'   not supplied).
     #' @param n_sites Integer.  Number of sites / PSUs to select.  Required for
-    #'   \code{"simple_random"}, \code{"proportional"}, \code{"pps_rlc"},
-    #'   \code{"systematic"}, \code{"simple_random_rlc"}, \code{"systematic_rlc"},
-    #'   and \code{"purposive"} sampling methods.
+    #'   \code{"simple_random"}, \code{"pps_rlc"}, \code{"systematic"},
+    #'   \code{"simple_random_rlc"}, and \code{"systematic_rlc"} sampling methods.
+    #'   Not used by \code{"proportional"}, \code{"proportional_rlc"}, or
+    #'   \code{"purposive"} (which apply to all eligible PSUs).
     #' @return Invisibly returns \code{self} for method chaining.
     add_stratum = function(
       stratum_id,
@@ -238,18 +240,19 @@ SurveyProtocol <- R6::R6Class(
       # Validate sampling_method value
       valid_sampling_methods <- c("simple_random", "proportional", "pps_cluster",
                                   "pps_rlc", "systematic", "simple_random_rlc",
-                                  "systematic_rlc", "purposive")
+                                  "systematic_rlc", "proportional_rlc", "purposive")
       phr_assert(
         sampling_method %in% valid_sampling_methods,
         message = phr_txt("sampling_method must be one of: {paste(valid_sampling_methods, collapse=', ')}."),
         origin  = "SurveyProtocol$add_stratum"
       )
 
-      # For non-pps_cluster methods, n_sites is required
-      non_cluster_methods <- c("simple_random", "proportional", "pps_rlc",
-                               "systematic", "simple_random_rlc", "systematic_rlc",
-                               "purposive")
-      if (sampling_method %in% non_cluster_methods) {
+      # For site-selection methods, n_sites is required.
+      # Methods that apply to ALL eligible PSUs (proportional, proportional_rlc,
+      # purposive) do NOT require n_sites.
+      site_selection_methods <- c("simple_random", "pps_rlc",
+                                  "systematic", "simple_random_rlc", "systematic_rlc")
+      if (sampling_method %in% site_selection_methods) {
         phr_assert(
           !is.null(n_sites) && !is.na(n_sites),
           message = phr_txt("n_sites is required for sampling_method '{sampling_method}'."),
@@ -258,14 +261,15 @@ SurveyProtocol <- R6::R6Class(
       }
 
       # For RLC methods, default cluster_size to 3 if not provided
-      rlc_methods <- c("pps_rlc", "simple_random_rlc", "systematic_rlc")
+      rlc_methods <- c("pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc")
       if (sampling_method %in% rlc_methods && (is.null(cluster_size) || is.na(cluster_size))) {
         cluster_size <- 3L
       }
 
       # Derive calc_method: cluster-based methods use "cluster"; others use "simple_random"
       calc_method <- if (sampling_method %in% c("pps_cluster", "pps_rlc",
-                                                "simple_random_rlc", "systematic_rlc")) "cluster" else "simple_random"
+                                                "simple_random_rlc", "systematic_rlc",
+                                                "proportional_rlc")) "cluster" else "simple_random"
 
       new_row <- data.frame(
         stratum_id               = stratum_id,
@@ -419,8 +423,9 @@ SurveyProtocol <- R6::R6Class(
     #' Supported \code{sampling_method} values in the strata table:
     #' \itemize{
     #'   \item \code{"simple_random"} — simple random sampling; requires \code{n_sites}.
-    #'   \item \code{"proportional"} — proportional allocation; requires
-    #'     \code{population_size} in the frame.
+    #'   \item \code{"proportional"} — proportional household allocation across
+    #'     \strong{all} eligible PSUs; requires \code{population_size} in the frame.
+    #'     \code{n_sites} does not apply.
     #'   \item \code{"pps_cluster"} — PPS cluster sampling; requires
     #'     \code{n_psu} and \code{cluster_size}.
     #'   \item \code{"pps_rlc"} — random location cluster; sites pre-selected by
@@ -435,11 +440,15 @@ SurveyProtocol <- R6::R6Class(
     #'     site selection; clusters allocated proportional to population size
     #'     when \code{population_size} is available, otherwise evenly.
     #'     Requires \code{n_sites}; defaults \code{cluster_size} to \code{3}.
+    #'   \item \code{"proportional_rlc"} — cluster allocation proportional to
+    #'     population size across \strong{all} eligible PSUs; requires
+    #'     \code{population_size} in the frame.  \code{n_sites} does not apply.
+    #'     Defaults \code{cluster_size} to \code{3}.
     #'   \item \code{"systematic"} — systematic sampling; requires
     #'     \code{n_sites}.
     #'   \item \code{"purposive"} — purposive / convenience sampling; returns
     #'     \code{NA} for \code{sampled_psu} and \code{allocated_sample} —
-    #'     the user manually designates selected PSUs.
+    #'     the user manually designates selected PSUs.  \code{n_sites} does not apply.
     #' }
     #'
     #' @param frame Data frame.  The sampling frame to draw from.  If
@@ -1133,7 +1142,8 @@ SurveyProtocol <- R6::R6Class(
                                      n_sites, cluster_size, seed) {
       origin <- "SurveyProtocol$apply_sampling_method"
       valid_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
-                         "systematic", "simple_random_rlc", "systematic_rlc", "purposive")
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
       phr_assert(
         method %in% valid_methods,
         message = phr_txt("Unknown sampling method '{method}' — must be one of: {paste(valid_methods, collapse=', ')}."),
@@ -1173,6 +1183,9 @@ SurveyProtocol <- R6::R6Class(
                    origin = origin)
         cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
         draw_sample_psu_systematic_rlc(frame, sample_size, n_sites, cs, seed)
+      } else if (method == "proportional_rlc") {
+        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
+        draw_sample_psu_proportional_rlc(frame, sample_size, cs, seed)
       } else if (method == "systematic") {
         phr_assert(!is.null(n_sites) && !is.na(n_sites),
                    message = phr_txt("n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."),

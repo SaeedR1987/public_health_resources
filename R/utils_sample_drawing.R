@@ -179,6 +179,62 @@ draw_sample_psu_proportional <- function(frame, sample_size, seed = 42) {
   }, on_error = "abort", origin = origin)
 }
 
+#' Allocate cluster slots proportional to population size across all PSUs
+#'
+#' All eligible PSUs are included; \code{ceiling(sample_size / cluster_size)}
+#' main cluster slots are allocated proportionally to each PSU's population
+#' size (Hamilton largest-remainder method).  Reserve clusters (RC) are
+#' interleaved with the main slots: 3 RC when \code{n_clusters <= 10}, 4 when
+#' \code{10 < n_clusters <= 20}, and 5 when \code{n_clusters > 20}.
+#'
+#' Requires a \code{population_size} column.  \code{n_sites} does not apply —
+#' all eligible PSUs participate.
+#'
+#' @param frame Data frame. Eligible PSUs with a \code{population_size} column.
+#' @param sample_size Integer. Total household sample size (used to derive
+#'   \code{n_clusters = ceiling(sample_size / cluster_size)}).
+#' @param cluster_size Integer. Households per cluster (default \code{3}).
+#' @param seed Integer. Random seed for RC position draw (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added.  All PSUs are selected.  PSUs that receive only reserve
+#'   cluster slots have \code{allocated_sample = NA}.
+#' @export
+draw_sample_psu_proportional_rlc <- function(frame, sample_size, cluster_size = 3, seed = 42) {
+
+  origin <- "draw_sample_psu_proportional_rlc"
+
+  phr_try({
+    phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+    phr_assert(
+      "population_size" %in% names(frame),
+      message = phr_txt("Frame must have a 'population_size' column for proportional_rlc method."),
+      origin  = origin
+    )
+    phr_assert(sample_size > 0,  message = phr_txt("sample_size must be positive."),            origin = origin)
+    phr_assert(cluster_size > 0, message = phr_txt("cluster_size must be a positive integer."), origin = origin)
+
+    total_pop <- sum(frame$population_size, na.rm = TRUE)
+    phr_assert(
+      total_pop > 0,
+      message = phr_txt("Total population cannot be zero for proportional_rlc method."),
+      origin  = origin
+    )
+
+    n_sites    <- nrow(frame)
+    n_clusters <- ceiling(sample_size / cluster_size)
+    n_reserve  <- n_reserve_clusters(n_clusters)
+    n_total    <- n_clusters + n_reserve
+
+    # Allocate n_total cluster slots proportional to population size (Hamilton method)
+    slot_alloc     <- allocate_slots_to_sites(frame$population_size, n_total, n_sites)
+    selected_sites <- seq_len(n_sites)
+
+    labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+    assign_slots_to_frame(frame, selected_sites, slot_alloc, labels, cluster_size)
+  }, on_error = "abort", origin = origin)
+}
+
 #' Draw PSUs using PPS cluster sampling (with replacement)
 #'
 #' Selects \code{n_clusters} clusters proportional to population size using PPS
