@@ -1,3 +1,60 @@
+# Internal helper: parse an SVG string and return a named list that maps each
+# objective_code (as a character string) to a character vector of SVG <g> group
+# ids that carry that code as a text label.
+#
+# Three label formats are recognised:
+#   1. Leaf sub-pillar blocks whose <text> element contains "(CODE)" in
+#      parentheses, e.g. "HH Consump. (112)".
+#   2. Parent blocks whose second <text> element is exactly "OC: CODE",
+#      e.g. "OC: 105".
+#   3. Parent blocks with a code range "OC: CODE1-CODE2",
+#      e.g. "OC: 152-154" — all codes in the range are mapped.
+#
+# The function works by splitting the SVG markup on </g> so that each
+# chunk contains at most one <g id="..."> opening tag. It never reads
+# reference.xlsx and never uses the sub_pillar column.
+.build_code_svg_map <- function(svg) {
+  code_map <- list()   # named list: code_str -> character vector of group ids
+
+  chunks <- strsplit(svg, "</g>", fixed = TRUE)[[1]]
+
+  for (chunk in chunks) {
+    id_match <- regmatches(chunk, regexpr('<g id="([^"]+)"', chunk, perl = TRUE))
+    if (length(id_match) == 0L || !nzchar(id_match)) next
+    id_val <- sub('<g id="([^"]+)"', "\\1", id_match, perl = TRUE)
+
+    # Pattern 1: leaf node – text contains "(CODE)"
+    leaf_match <- regmatches(chunk, regexpr("\\((\\d+)\\)", chunk, perl = TRUE))
+    if (length(leaf_match) > 0L && nzchar(leaf_match)) {
+      code_str <- sub("\\((\\d+)\\)", "\\1", leaf_match, perl = TRUE)
+      code_map[[code_str]] <- c(code_map[[code_str]], id_val)
+      next
+    }
+
+    # Pattern 2: range "OC: N-M"
+    range_match <- regmatches(chunk, regexpr("OC:\\s*(\\d+)-(\\d+)", chunk, perl = TRUE))
+    if (length(range_match) > 0L && nzchar(range_match)) {
+      from_c <- as.integer(sub("OC:\\s*(\\d+)-(\\d+)", "\\1", range_match, perl = TRUE))
+      to_c   <- as.integer(sub("OC:\\s*(\\d+)-(\\d+)", "\\2", range_match, perl = TRUE))
+      for (c in seq(from_c, to_c)) {
+        code_str <- as.character(c)
+        code_map[[code_str]] <- c(code_map[[code_str]], id_val)
+      }
+      next
+    }
+
+    # Pattern 3: single "OC: N"
+    oc_match <- regmatches(chunk, regexpr("OC:\\s*(\\d+)", chunk, perl = TRUE))
+    if (length(oc_match) > 0L && nzchar(oc_match)) {
+      code_str <- sub("OC:\\s*(\\d+)", "\\1", oc_match, perl = TRUE)
+      code_map[[code_str]] <- c(code_map[[code_str]], id_val)
+    }
+  }
+
+  code_map
+}
+
+
 #' Framework R6 Class
 #'
 #' @description
@@ -270,49 +327,67 @@ Framework <- R6::R6Class(
           origin = "Framework$modify_adjusted_svg"
         )
 
-        phr_assert(
-          "sub_pillar" %in% names(self$master_schema),
-          message = phr_txt(
-            "master_schema must contain a 'sub_pillar' column for modify_adjusted_svg()."
-          ),
-          origin = "Framework$modify_adjusted_svg"
-        )
-
         primary   <- as.numeric(self$primary_objectives)
         secondary <- as.numeric(self$secondary_objectives)
 
         svg <- self$master_svg
 
-        # Work through every unique sub-pillar block in the schema.
-        sub_pillars <- unique(self$master_schema$sub_pillar)
-        sub_pillars <- sub_pillars[!is.na(sub_pillars) & nzchar(sub_pillars)]
+        # Primary lookup: build objective_code -> [svg_group_id, ...] by parsing
+        # the numeric codes embedded in the SVG diagram text labels.  This is the
+        # authoritative source and does not rely on sub_pillar column values.
+        svg_code_map <- .build_code_svg_map(svg)
 
-        for (sp in sub_pillars) {
-          codes <- self$master_schema$objective_code[
-            !is.na(self$master_schema$sub_pillar) &
-              self$master_schema$sub_pillar == sp
-          ]
-          codes <- as.numeric(codes[!is.na(codes)])
+        # Fallback lookup: derive objective_code -> sub_pillar from master_schema.
+        # Used only for codes whose SVG groups do not carry embedded code labels
+        # (e.g. minimal test-fixture SVGs where group ids equal sub_pillar values).
+        schema_code_map <- list()
+        if ("sub_pillar" %in% names(self$master_schema)) {
+          for (i in seq_len(nrow(self$master_schema))) {
+            code <- self$master_schema$objective_code[[i]]
+            sp   <- self$master_schema$sub_pillar[[i]]
+            if (!is.na(code) && !is.na(sp) && nzchar(as.character(sp))) {
+              code_str <- as.character(as.integer(code))
+              if (is.null(schema_code_map[[code_str]])) {
+                schema_code_map[[code_str]] <- as.character(sp)
+              }
+            }
+          }
+        }
 
-          in_primary   <- length(codes) > 0 && any(codes %in% primary)
-          in_secondary <- length(codes) > 0 && any(codes %in% secondary)
+        # Merge: SVG-parsed entries take priority over schema-derived fallbacks.
+        code_map <- schema_code_map
+        for (code_str in names(svg_code_map)) {
+          code_map[[code_str]] <- svg_code_map[[code_str]]
+        }
+
+        # Retain only entries whose key is a valid integer code string.
+        valid_keys <- names(code_map)[grepl("^\\d+$", names(code_map))]
+
+        # Colour each SVG group whose objective_code appears in the selected sets.
+        for (code_str in valid_keys) {
+          code    <- as.numeric(code_str)
+          svg_ids <- code_map[[code_str]]
+
+          in_primary   <- length(primary)   > 0L && code %in% primary
+          in_secondary <- length(secondary) > 0L && code %in% secondary
+
+          if (!in_primary && !in_secondary) next
 
           colour <- if (in_primary && in_secondary) {
             "#DDA0DD"
           } else if (in_primary) {
             "#90EE90"
-          } else if (in_secondary) {
-            "#ADD8E6"
           } else {
-            "white"
+            "#ADD8E6"
           }
 
-          # Replace fill on the first <rect> inside <g id="sp">.
-          pattern <- paste0(
-            '(<g id="', sp, '">[^<]*<rect(?:[^>]*?) )fill="[^"]*"([^>]*>)'
-          )
-          replacement <- paste0('\\1fill="', colour, '"\\2')
-          svg <- gsub(pattern, replacement, svg, perl = TRUE)
+          for (svg_id in svg_ids) {
+            pattern     <- paste0(
+              '(<g id="', svg_id, '">[^<]*<rect(?:[^>]*?) )fill="[^"]*"([^>]*>)'
+            )
+            replacement <- paste0('\\1fill="', colour, '"\\2')
+            svg         <- gsub(pattern, replacement, svg, perl = TRUE)
+          }
         }
 
         self$adjusted_svg <- svg
