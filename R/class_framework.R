@@ -360,10 +360,12 @@ Framework <- R6::R6Class(
           code_map[[code_str]] <- svg_code_map[[code_str]]
         }
 
+        # Retain only entries whose key is a valid integer code string.
+        valid_keys <- names(code_map)[grepl("^\\d+$", names(code_map))]
+
         # Colour each SVG group whose objective_code appears in the selected sets.
-        for (code_str in names(code_map)) {
-          code <- suppressWarnings(as.numeric(code_str))
-          if (is.na(code)) next
+        for (code_str in valid_keys) {
+          code    <- as.numeric(code_str)
           svg_ids <- code_map[[code_str]]
 
           in_primary   <- length(primary)   > 0L && code %in% primary
