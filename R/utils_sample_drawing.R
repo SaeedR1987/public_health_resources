@@ -36,7 +36,8 @@ n_reserve_clusters <- function(n_main) {
 # Returns a character vector of length n_total.
 assign_reserve_labels <- function(n_total, n_reserve, seed) {
   if (n_reserve == 0L) return(as.character(seq_len(n_total)))
-  set.seed(seed + 1L)  # distinct from the draw seed
+  # Use seed + 1L so the RC-position draw is independent of the main draw seed
+  set.seed(seed + 1L)
   rc_positions <- sort(sample(seq_len(n_total), n_reserve, replace = FALSE))
   labels       <- character(n_total)
   main_counter <- 0L
@@ -295,11 +296,10 @@ draw_sample_psu_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, s
       n_sites <- n_available
     }
 
-    # Step 1: Pre-select n_sites PSUs using PPS without replacement
+    # Step 1: Pre-select n_sites PSUs using PPS without replacement (Brewer's method)
     set.seed(seed)
     sizes          <- frame$population_size
-    site_probs     <- sizes / sum(sizes)
-    selected_sites <- sample(seq_len(n_available), n_sites, replace = FALSE, prob = site_probs)
+    selected_sites <- pps::ppswor(sizes, n_sites)  # indices into frame
 
     # Step 2: Allocate clusters within the selected sites using PPS-WR
     sub_sizes  <- sizes[selected_sites]

@@ -529,25 +529,27 @@ SurveyProtocol <- R6::R6Class(
 
             sel_mask <- !is.na(st_result$sampled_psu)
             if (any(sel_mask)) {
-              # Parse only numeric tokens (skip "RC" labels)
-              parse_psu_nums <- function(s) {
+              # Apply cross-stratum offset to numeric cluster labels; keep "RC" unchanged.
+              # After offsetting, also compute the new cluster_offset from the updated values.
+              apply_cluster_offset <- function(s, offset) {
                 parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
-                nums  <- suppressWarnings(as.integer(parts))
-                nums[!is.na(nums)]
+                vapply(parts, function(p) {
+                  n <- suppressWarnings(as.integer(p))
+                  if (is.na(n)) p else as.character(n + offset)
+                }, character(1), USE.NAMES = FALSE)
               }
               st_result$sampled_psu[sel_mask] <- vapply(
                 st_result$sampled_psu[sel_mask],
-                function(s) {
-                  parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
-                  offset_parts <- vapply(parts, function(p) {
-                    n <- suppressWarnings(as.integer(p))
-                    if (is.na(n)) p else as.character(n + cluster_offset)
-                  }, character(1), USE.NAMES = FALSE)
-                  paste(offset_parts, collapse = ", ")
-                },
+                function(s) paste(apply_cluster_offset(s, cluster_offset), collapse = ", "),
                 character(1)
               )
-              all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_psu_nums))
+              all_nums <- unlist(lapply(
+                st_result$sampled_psu[sel_mask],
+                function(s) {
+                  nums <- suppressWarnings(as.integer(apply_cluster_offset(s, 0L)))
+                  nums[!is.na(nums)]
+                }
+              ))
               if (length(all_nums) > 0L) {
                 cluster_offset <- cluster_offset + max(all_nums)
               }
