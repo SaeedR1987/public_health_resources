@@ -77,9 +77,7 @@ HouseholdData <- R6::R6Class(
     survey_design    = NULL,  # store srvyr design object (clean stage)
     # linked_datasets removed - now using inherited linked_objects from Data class
     optional_columns = NULL,  # non-required but commonly present columns
-    #' @field sampling_frame Optional \code{\link{SamplingFrame}} object used by
-    #'   \code{generate_weights()} to derive survey weights from population totals.
-    sampling_frame   = NULL
+    sampling_frame   = NULL   # optional SamplingFrame for generate_weights()
 
 
     #' @description
@@ -666,38 +664,29 @@ HouseholdData <- R6::R6Class(
         # ------------------------------------------------------------------
         # 4. Compute population totals per stratum from SamplingFrame
         # ------------------------------------------------------------------
-        sf_totals <- stats::aggregate(
-          sf_df$population_size,
-          by  = list(stratum = as.character(sf_df$stratum)),
-          FUN = sum,
-          na.rm = TRUE
-        )
-        names(sf_totals) <- c("stratum", "pop_total")
+        sf_totals <- dplyr::group_by(
+          dplyr::mutate(sf_df, stratum = as.character(.data$stratum)),
+          .data$stratum
+        ) |>
+          dplyr::summarize(pop_total = sum(.data$population_size, na.rm = TRUE),
+                           .groups = "drop")
 
         # ------------------------------------------------------------------
-        # 5. Compute sample counts per stratum from dataset
+        # 5. Compute sample counts per stratum from dataset and join with totals
         # ------------------------------------------------------------------
         stratum_vals <- as.character(df[[stratum_col]])
-        sample_counts <- table(stratum_vals[!is.na(stratum_vals) & stratum_vals != ""])
+        valid_mask   <- !is.na(stratum_vals) & stratum_vals != ""
 
-        # ------------------------------------------------------------------
-        # 6. Build per-row weight vector
-        # ------------------------------------------------------------------
-        weight_vec <- vapply(
-          stratum_vals,
-          FUN = function(s) {
-            if (is.na(s) || s == "") return(NA_real_)
-            pop <- sf_totals$pop_total[sf_totals$stratum == s]
-            n   <- sample_counts[s]
-            if (length(pop) == 0 || is.na(pop) || length(n) == 0 || n == 0) return(NA_real_)
-            as.numeric(pop) / as.numeric(n)
-          },
-          FUN.VALUE = numeric(1)
-        )
+        sample_counts_df <- data.frame(
+          stratum = stratum_vals[valid_mask],
+          stringsAsFactors = FALSE
+        ) |>
+          dplyr::group_by(.data$stratum) |>
+          dplyr::summarize(n = dplyr::n(), .groups = "drop")
 
         # Warn if any strata in dataset had no match in the SamplingFrame
         unmatched <- setdiff(
-          unique(stratum_vals[!is.na(stratum_vals) & stratum_vals != ""]),
+          unique(stratum_vals[valid_mask]),
           sf_totals$stratum
         )
         if (length(unmatched) > 0) {
@@ -706,6 +695,15 @@ HouseholdData <- R6::R6Class(
             phr_txt("The following strata in the dataset were not found in the SamplingFrame and received NA weights: {paste(unmatched, collapse=', ')}")
           )
         }
+
+        # ------------------------------------------------------------------
+        # 6. Build per-row weight vector via vectorized join
+        # ------------------------------------------------------------------
+        weight_lookup <- dplyr::left_join(sample_counts_df, sf_totals, by = "stratum") |>
+          dplyr::mutate(weight = .data$pop_total / .data$n)
+
+        row_strata  <- data.frame(stratum = stratum_vals, stringsAsFactors = FALSE)
+        weight_vec  <- dplyr::left_join(row_strata, weight_lookup, by = "stratum")$weight
 
         # ------------------------------------------------------------------
         # 7. Determine weight column name and update variable_map if needed
