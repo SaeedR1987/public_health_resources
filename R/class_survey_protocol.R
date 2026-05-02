@@ -478,7 +478,7 @@ SurveyProtocol <- R6::R6Class(
         eligible_frame <- frame[eligible_rows, , drop = FALSE]
 
         # Initialise output columns on full frame
-        frame$sampled_psu      <- NA_integer_
+        frame$sampled_psu      <- NA_character_
         frame$allocated_sample <- NA_real_
 
         is_stratified <- ("stratum" %in% names(eligible_frame)) &&
@@ -529,10 +529,19 @@ SurveyProtocol <- R6::R6Class(
 
             sel_mask <- !is.na(st_result$sampled_psu)
             if (any(sel_mask)) {
-              st_result$sampled_psu[sel_mask] <-
-                st_result$sampled_psu[sel_mask] + cluster_offset
-              cluster_offset <- cluster_offset +
-                max(st_result$sampled_psu[sel_mask], na.rm = TRUE)
+              parse_psu_nums <- function(s) {
+                as.integer(trimws(strsplit(as.character(s), ",\\s*")[[1]]))
+              }
+              st_result$sampled_psu[sel_mask] <- vapply(
+                st_result$sampled_psu[sel_mask],
+                function(s) {
+                  nums <- parse_psu_nums(s)
+                  paste(nums + cluster_offset, collapse = ", ")
+                },
+                character(1)
+              )
+              all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_psu_nums))
+              cluster_offset <- cluster_offset + max(all_nums)
             }
 
             full_frame_rows <- eligible_rows[st_eligible_rows]
@@ -606,7 +615,7 @@ SurveyProtocol <- R6::R6Class(
         if (!is.null(self$sampling_frame) &&
             nrow(self$sampling_frame$log_df) > 0) {
           if ("sampled_psu" %in% names(self$sampling_frame$log_df)) {
-            self$sampling_frame$log_df$sampled_psu <- NA_real_
+            self$sampling_frame$log_df$sampled_psu <- NA_character_
           }
           if ("allocated_sample" %in% names(self$sampling_frame$log_df)) {
             self$sampling_frame$log_df$allocated_sample <- NA_real_

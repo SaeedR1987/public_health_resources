@@ -6,8 +6,11 @@
 #' already-filtered frame of eligible primary sampling units and return that
 #' frame augmented with two new columns:
 #' \itemize{
-#'   \item \code{sampled_psu} — sequential cluster number for selected PSUs;
-#'     \code{NA} for unselected PSUs.
+#'   \item \code{sampled_psu} — sequential cluster number(s) for selected PSUs;
+#'     \code{NA} for unselected PSUs.  For PPS cluster and RLC methods a PSU
+#'     may be drawn more than once; in that case \code{sampled_psu} contains
+#'     the comma-separated cluster numbers allocated to that PSU
+#'     (e.g. \code{"9, 10, 11"} if selected three times).
 #'   \item \code{allocated_sample} — number of households allocated to that
 #'     PSU; \code{NA} for unselected PSUs.
 #' }
@@ -128,6 +131,8 @@ draw_sample_psu_proportional <- function(frame, sample_size, seed = 42) {
 #' @param seed Integer. Random seed for reproducibility (default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
 #'   columns added.  For PSUs receiving multiple clusters,
+#'   \code{sampled_psu} contains comma-separated consecutive cluster numbers
+#'   (e.g. \code{"3, 4"} for a PSU drawn twice) and
 #'   \code{allocated_sample = n_clusters_at_psu * cluster_size}.
 #'   Unselected PSUs receive \code{NA}.
 #' @export
@@ -151,12 +156,19 @@ draw_sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 
 
     times_selected <- tabulate(selected, nbins = nrow(frame))
 
-    frame$sampled_psu      <- NA_integer_
+    frame$sampled_psu      <- NA_character_
     frame$allocated_sample <- NA_real_
 
-    selected_psus <- which(times_selected > 0)
-    frame$sampled_psu[selected_psus]      <- seq_along(selected_psus)
-    frame$allocated_sample[selected_psus] <- times_selected[selected_psus] * cluster_size
+    selected_psus  <- which(times_selected > 0)
+    cluster_counts <- times_selected[selected_psus]
+    ends           <- cumsum(cluster_counts)
+    starts         <- ends - cluster_counts + 1L
+
+    frame$sampled_psu[selected_psus] <- mapply(
+      function(s, e) paste(seq.int(s, e), collapse = ", "),
+      starts, ends
+    )
+    frame$allocated_sample[selected_psus] <- cluster_counts * cluster_size
 
     frame
   }, on_error = "abort", origin = origin)
@@ -173,7 +185,11 @@ draw_sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 
 #' @param cluster_size Integer. Households per cluster (default \code{3}).
 #' @param seed Integer. Random seed for reproducibility (default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
-#'   columns added.  Unselected PSUs receive \code{NA}.
+#'   columns added.  For PSUs receiving multiple clusters,
+#'   \code{sampled_psu} contains comma-separated consecutive cluster numbers
+#'   (e.g. \code{"3, 4"} for a PSU drawn twice) and
+#'   \code{allocated_sample = n_clusters_at_psu * cluster_size}.
+#'   Unselected PSUs receive \code{NA}.
 #' @export
 draw_sample_psu_rlc <- function(frame, sample_size, cluster_size = 3, seed = 42) {
 
@@ -197,12 +213,19 @@ draw_sample_psu_rlc <- function(frame, sample_size, cluster_size = 3, seed = 42)
 
     times_selected <- tabulate(selected, nbins = nrow(frame))
 
-    frame$sampled_psu      <- NA_integer_
+    frame$sampled_psu      <- NA_character_
     frame$allocated_sample <- NA_real_
 
-    selected_psus <- which(times_selected > 0)
-    frame$sampled_psu[selected_psus]      <- seq_along(selected_psus)
-    frame$allocated_sample[selected_psus] <- times_selected[selected_psus] * cluster_size
+    selected_psus  <- which(times_selected > 0)
+    cluster_counts <- times_selected[selected_psus]
+    ends           <- cumsum(cluster_counts)
+    starts         <- ends - cluster_counts + 1L
+
+    frame$sampled_psu[selected_psus] <- mapply(
+      function(s, e) paste(seq.int(s, e), collapse = ", "),
+      starts, ends
+    )
+    frame$allocated_sample[selected_psus] <- cluster_counts * cluster_size
 
     frame
   }, on_error = "abort", origin = origin)
