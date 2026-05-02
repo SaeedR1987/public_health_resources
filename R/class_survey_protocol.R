@@ -551,6 +551,9 @@ SurveyProtocol <- R6::R6Class(
               )
               all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_cluster_labels))
               if (length(all_nums) > 0L) {
+                # Guard: purposive strata have sel_mask=FALSE and skip this block; other
+                # methods always produce at least one numeric label (n_psu > 0), so
+                # all_nums should be non-empty in practice.
                 cluster_offset <- cluster_offset + max(all_nums)
               }
             }

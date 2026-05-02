@@ -99,8 +99,13 @@ draw_sample_psu_srs <- function(frame, n_psu, sample_size, seed = 42) {
     n_reserve <- n_reserve_clusters(n_psu)
     n_total   <- n_psu + n_reserve
     if (n_total > n_available) {
+      n_original_reserve <- n_reserve
       n_reserve <- max(0L, n_available - n_psu)
       n_total   <- n_psu + n_reserve
+      phr_warning(
+        message = phr_txt("Only {n_reserve} reserve cluster(s) can be drawn (wanted {n_original_reserve}); frame has too few PSUs."),
+        origin  = origin
+      )
     }
 
     selected_idx <- sample(seq_len(n_available), n_total, replace = FALSE)
@@ -377,8 +382,13 @@ draw_sample_psu_systematic <- function(frame, n_sites, sample_size, seed = 42) {
     n_reserve <- n_reserve_clusters(n_sites)
     n_total   <- n_sites + n_reserve
     if (n_total > n_available) {
+      n_original_reserve <- n_reserve
       n_reserve <- max(0L, n_available - n_sites)
       n_total   <- n_sites + n_reserve
+      phr_warning(
+        message = phr_txt("Only {n_reserve} reserve cluster(s) can be drawn (wanted {n_original_reserve}); frame has too few PSUs."),
+        origin  = origin
+      )
     }
 
     interval     <- n_available / n_total

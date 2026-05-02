@@ -556,8 +556,10 @@ test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selec
   result <- draw_sample_psu_rlc(frame, sample_size = 60, n_sites = 5, cluster_size = 3, seed = 42)
 
   selected <- result[!is.na(result$sampled_psu), ]
-  # Clusters (main and RC) are allocated only within the n_sites pre-selected PSUs,
-  # so the number of PSUs with any cluster assignment cannot exceed n_sites.
+  # Each pre-selected PSU occupies exactly one row in `result`.  Clusters (main
+  # and RC) are allocated only within the n_sites=5 pre-selected PSUs, so the
+  # number of rows with non-NA sampled_psu (= number of PSUs with any assignment)
+  # cannot exceed n_sites.
   expect_lte(nrow(selected), 5L)
   # The total slot labels include both main numbers and "RC"
   all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
