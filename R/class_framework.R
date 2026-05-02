@@ -33,15 +33,29 @@ Framework <- R6::R6Class(
     #'   \code{master_svg} and modified to reflect the selected objectives.
     adjusted_svg = NULL,
 
+    #' @field primary_objectives Numeric vector of objective codes selected as
+    #'   primary data collection objectives.  Used by
+    #'   \code{modify_adjusted_svg()} to colour the corresponding sub-pillar
+    #'   blocks light green in the adjusted SVG.
+    primary_objectives = NULL,
+
+    #' @field secondary_objectives Numeric vector of objective codes selected as
+    #'   secondary data objectives.  Used by \code{modify_adjusted_svg()} to
+    #'   colour the corresponding sub-pillar blocks light blue in the adjusted
+    #'   SVG.
+    secondary_objectives = NULL,
+
     #' @description
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
       phr_try({
-        self$master_schema   <- NULL
-        self$adjusted_schema <- NULL
-        self$master_svg      <- NULL
-        self$adjusted_svg    <- NULL
+        self$master_schema       <- NULL
+        self$adjusted_schema     <- NULL
+        self$master_svg          <- NULL
+        self$adjusted_svg        <- NULL
+        self$primary_objectives  <- NULL
+        self$secondary_objectives <- NULL
         phr_message(phr_txt("Framework initialized."), origin = "Framework$initialize")
       }, on_error = "abort", origin = "Framework$initialize")
       invisible(self)
@@ -202,6 +216,114 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Colour sub-pillar blocks in the adjusted SVG according to
+    #'   the \code{primary_objectives} and \code{secondary_objectives} fields.
+    #'
+    #' Derives \code{adjusted_svg} from \code{master_svg} by applying fill
+    #' colours to each sub-pillar block whose \code{objective_code} is present
+    #' in \code{primary_objectives}, \code{secondary_objectives}, or both.
+    #' The mapping from objective codes to SVG group ids uses the
+    #' \code{objective_code} and \code{sub_pillar} columns of
+    #' \code{master_schema}.
+    #'
+    #' Colour rules (applied per sub-pillar, using all objective codes that
+    #' belong to that sub-pillar):
+    #' \itemize{
+    #'   \item \strong{white} – no codes present in either vector (default).
+    #'   \item \strong{\code{#90EE90}} (light green) – one or more codes are
+    #'     present in \code{primary_objectives} only.
+    #'   \item \strong{\code{#ADD8E6}} (light blue) – one or more codes are
+    #'     present in \code{secondary_objectives} only.
+    #'   \item \strong{\code{#DDA0DD}} (light purple) – one or more codes are
+    #'     present in both \code{primary_objectives} and
+    #'     \code{secondary_objectives}.
+    #' }
+    #'
+    #' When \code{master_svg} or \code{master_schema} is \code{NULL} the
+    #' method issues a warning and returns without modifying \code{adjusted_svg}.
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.
+    modify_adjusted_svg = function() {
+      phr_try({
+        if (is.null(self$master_svg)) {
+          phr_warning(
+            message = phr_txt("master_svg is not set; skipping modify_adjusted_svg()."),
+            origin  = "Framework$modify_adjusted_svg"
+          )
+          return(invisible(self))
+        }
+
+        if (is.null(self$master_schema) || !is.data.frame(self$master_schema) ||
+            nrow(self$master_schema) == 0) {
+          phr_warning(
+            message = phr_txt("master_schema is not set; skipping modify_adjusted_svg()."),
+            origin  = "Framework$modify_adjusted_svg"
+          )
+          return(invisible(self))
+        }
+
+        phr_assert(
+          "objective_code" %in% names(self$master_schema),
+          message = phr_txt(
+            "master_schema must contain an 'objective_code' column for modify_adjusted_svg()."
+          ),
+          origin = "Framework$modify_adjusted_svg"
+        )
+
+        phr_assert(
+          "sub_pillar" %in% names(self$master_schema),
+          message = phr_txt(
+            "master_schema must contain a 'sub_pillar' column for modify_adjusted_svg()."
+          ),
+          origin = "Framework$modify_adjusted_svg"
+        )
+
+        primary   <- as.numeric(self$primary_objectives)
+        secondary <- as.numeric(self$secondary_objectives)
+
+        svg <- self$master_svg
+
+        # Work through every unique sub-pillar block in the schema.
+        sub_pillars <- unique(self$master_schema$sub_pillar)
+        sub_pillars <- sub_pillars[!is.na(sub_pillars) & nzchar(sub_pillars)]
+
+        for (sp in sub_pillars) {
+          codes <- self$master_schema$objective_code[
+            !is.na(self$master_schema$sub_pillar) &
+              self$master_schema$sub_pillar == sp
+          ]
+          codes <- as.numeric(codes[!is.na(codes)])
+
+          in_primary   <- length(codes) > 0 && any(codes %in% primary)
+          in_secondary <- length(codes) > 0 && any(codes %in% secondary)
+
+          colour <- if (in_primary && in_secondary) {
+            "#DDA0DD"
+          } else if (in_primary) {
+            "#90EE90"
+          } else if (in_secondary) {
+            "#ADD8E6"
+          } else {
+            "white"
+          }
+
+          # Replace fill on the first <rect> inside <g id="sp">.
+          pattern <- paste0(
+            '(<g id="', sp, '">[^<]*<rect(?:[^>]*?) )fill="[^"]*"([^>]*>)'
+          )
+          replacement <- paste0('\\1fill="', colour, '"\\2')
+          svg <- gsub(pattern, replacement, svg, perl = TRUE)
+        }
+
+        self$adjusted_svg <- svg
+        phr_message(
+          phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
+          origin = "Framework$modify_adjusted_svg"
+        )
+      }, on_error = "abort", origin = "Framework$modify_adjusted_svg")
+      invisible(self)
+    },
+
     #' @description Export framework data to a plain list.
     #'
     #' Returns a serialisable list that can be stored alongside a protocol
@@ -209,14 +331,17 @@ Framework <- R6::R6Class(
     #' \code{\link{restore_framework}}.
     #'
     #' @return Named list with elements \code{class}, \code{master_schema},
-    #'   \code{adjusted_schema}, \code{master_svg}, and \code{adjusted_svg}.
+    #'   \code{adjusted_schema}, \code{master_svg}, \code{adjusted_svg},
+    #'   \code{primary_objectives}, and \code{secondary_objectives}.
     export_framework = function() {
       list(
-        class           = class(self)[1],
-        master_schema   = self$master_schema,
-        adjusted_schema = self$adjusted_schema,
-        master_svg      = self$master_svg,
-        adjusted_svg    = self$adjusted_svg
+        class                = class(self)[1],
+        master_schema        = self$master_schema,
+        adjusted_schema      = self$adjusted_schema,
+        master_svg           = self$master_svg,
+        adjusted_svg         = self$adjusted_svg,
+        primary_objectives   = self$primary_objectives,
+        secondary_objectives = self$secondary_objectives
       )
     },
 

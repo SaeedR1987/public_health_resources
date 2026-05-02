@@ -496,3 +496,169 @@ test_that("Framework$render_framework_svg version='master' uses master_svg even 
   expect_silent(fw$render_framework_svg(version = "master"))
 })
 
+# ---- New field and modify_adjusted_svg tests ----
+
+test_that("Framework initializes primary_objectives and secondary_objectives as NULL", {
+  fw <- Framework$new()
+  expect_null(fw$primary_objectives)
+  expect_null(fw$secondary_objectives)
+})
+
+test_that("Framework primary_objectives and secondary_objectives can be set", {
+  fw <- Framework$new()
+  fw$primary_objectives  <- c(101, 102)
+  fw$secondary_objectives <- c(103, 104)
+  expect_equal(fw$primary_objectives, c(101, 102))
+  expect_equal(fw$secondary_objectives, c(103, 104))
+})
+
+test_that("Framework$export_framework includes primary and secondary objectives", {
+  fw <- Framework$new()
+  fw$primary_objectives  <- c(101)
+  fw$secondary_objectives <- c(102)
+  exported <- fw$export_framework()
+  expect_equal(exported$primary_objectives, c(101))
+  expect_equal(exported$secondary_objectives, c(102))
+})
+
+test_that("restore_framework restores primary_objectives and secondary_objectives", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = "SP",
+    short_objective = "H1", text_objective = "Obj 1",
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$primary_objectives  <- c(101, 102)
+  fw$secondary_objectives <- c(103)
+  exported <- fw$export_framework()
+  restored <- restore_framework(exported)
+  expect_equal(restored$primary_objectives, c(101, 102))
+  expect_equal(restored$secondary_objectives, c(103))
+})
+
+test_that("Framework$modify_adjusted_svg warns when master_svg is NULL", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = "SP1",
+    short_objective = "H1", text_objective = "Obj 1",
+    objective_code = 101L,
+    stringsAsFactors = FALSE
+  )
+  fw$master_schema <- schema
+  expect_warning(fw$modify_adjusted_svg())
+})
+
+test_that("Framework$modify_adjusted_svg warns when master_schema is NULL", {
+  fw <- Framework$new()
+  fw$master_svg <- '<svg><g id="SP1"><rect x="0" y="0" width="10" height="10" fill="white"/></g></svg>'
+  expect_warning(fw$modify_adjusted_svg())
+})
+
+test_that("Framework$modify_adjusted_svg colours primary sub-pillars light green", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = c("SP1", "SP2"),
+    short_objective = c("H1", "H2"), text_objective = c("Obj 1", "Obj 2"),
+    objective_code = c(101L, 102L),
+    stringsAsFactors = FALSE
+  )
+  fw$master_schema <- schema
+  fw$master_svg <- paste0(
+    '<svg>',
+    '<g id="SP1"><rect x="0" y="0" width="10" height="10" fill="white"/></g>',
+    '<g id="SP2"><rect x="20" y="0" width="10" height="10" fill="white"/></g>',
+    '</svg>'
+  )
+  fw$primary_objectives <- c(101)
+  fw$modify_adjusted_svg()
+  expect_true(grepl('#90EE90', fw$adjusted_svg))
+  # SP1 should not be coloured as secondary or both
+  expect_false(grepl('#ADD8E6', fw$adjusted_svg))
+  expect_false(grepl('#DDA0DD', fw$adjusted_svg))
+})
+
+test_that("Framework$modify_adjusted_svg colours secondary sub-pillars light blue", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = "SP1",
+    short_objective = "H1", text_objective = "Obj 1",
+    objective_code = 101L,
+    stringsAsFactors = FALSE
+  )
+  fw$master_schema <- schema
+  fw$master_svg <- '<svg><g id="SP1"><rect x="0" y="0" width="10" height="10" fill="white"/></g></svg>'
+  fw$secondary_objectives <- c(101)
+  fw$modify_adjusted_svg()
+  expect_true(grepl('#ADD8E6', fw$adjusted_svg))
+})
+
+test_that("Framework$modify_adjusted_svg colours both sub-pillars light purple", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = "SP1",
+    short_objective = "H1", text_objective = "Obj 1",
+    objective_code = 101L,
+    stringsAsFactors = FALSE
+  )
+  fw$master_schema <- schema
+  fw$master_svg <- '<svg><g id="SP1"><rect x="0" y="0" width="10" height="10" fill="white"/></g></svg>'
+  fw$primary_objectives  <- c(101)
+  fw$secondary_objectives <- c(101)
+  fw$modify_adjusted_svg()
+  expect_true(grepl('#DDA0DD', fw$adjusted_svg))
+})
+
+test_that("Framework$modify_adjusted_svg leaves unselected sub-pillars white", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector = "Health", pillar = "P", sub_pillar = c("SP1", "SP2"),
+    short_objective = c("H1", "H2"), text_objective = c("Obj 1", "Obj 2"),
+    objective_code = c(101L, 102L),
+    stringsAsFactors = FALSE
+  )
+  fw$master_schema <- schema
+  fw$master_svg <- paste0(
+    '<svg>',
+    '<g id="SP1"><rect x="0" y="0" width="10" height="10" fill="white"/></g>',
+    '<g id="SP2"><rect x="20" y="0" width="10" height="10" fill="white"/></g>',
+    '</svg>'
+  )
+  fw$primary_objectives <- c(101)
+  fw$modify_adjusted_svg()
+  # SP2 (code 102) is not in primary or secondary, should not have a special colour
+  expect_false(grepl('#90EE90', fw$adjusted_svg) && grepl('#ADD8E6', fw$adjusted_svg))
+  expect_false(grepl('#DDA0DD', fw$adjusted_svg))
+  # The adjusted SVG must still contain SP2
+  expect_true(grepl('id="SP2"', fw$adjusted_svg))
+})
+
+test_that("ANAFramework initializes adjusted_svg to match master_svg", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  skip_if(is.null(af$master_svg))
+  expect_equal(af$adjusted_svg, af$master_svg)
+})
+
+test_that("ANAFramework$modify_adjusted_svg uses objective codes to colour sub-pillars", {
+  .skip_if_no_ana_resources()
+  af <- ANAFramework$new()
+  skip_if(is.null(af$master_schema) || is.null(af$master_svg))
+  skip_if(!"objective_code" %in% names(af$master_schema))
+
+  available_codes <- unique(af$master_schema$objective_code)
+  available_codes <- available_codes[!is.na(available_codes)]
+  skip_if(length(available_codes) < 2)
+
+  af$primary_objectives  <- available_codes[1]
+  af$secondary_objectives <- available_codes[2]
+  af$modify_adjusted_svg()
+
+  expect_false(is.null(af$adjusted_svg))
+  expect_true(nzchar(af$adjusted_svg))
+  # At least one coloured block should appear
+  has_colour <- grepl("#90EE90", af$adjusted_svg) ||
+    grepl("#ADD8E6", af$adjusted_svg) ||
+    grepl("#DDA0DD", af$adjusted_svg)
+  expect_true(has_colour)
+})

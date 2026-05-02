@@ -48,10 +48,12 @@ restore_framework <- function(framework_data) {
     }
 
     # Restore fields; prefer the exported values over the defaults loaded on init.
-    if (!is.null(framework_data$master_schema))   fw$master_schema   <- framework_data$master_schema
-    if (!is.null(framework_data$adjusted_schema)) fw$adjusted_schema <- framework_data$adjusted_schema
-    if (!is.null(framework_data$master_svg))      fw$master_svg      <- framework_data$master_svg
-    if (!is.null(framework_data$adjusted_svg))    fw$adjusted_svg    <- framework_data$adjusted_svg
+    if (!is.null(framework_data$master_schema))        fw$master_schema        <- framework_data$master_schema
+    if (!is.null(framework_data$adjusted_schema))      fw$adjusted_schema      <- framework_data$adjusted_schema
+    if (!is.null(framework_data$master_svg))           fw$master_svg           <- framework_data$master_svg
+    if (!is.null(framework_data$adjusted_svg))         fw$adjusted_svg         <- framework_data$adjusted_svg
+    if (!is.null(framework_data$primary_objectives))   fw$primary_objectives   <- framework_data$primary_objectives
+    if (!is.null(framework_data$secondary_objectives)) fw$secondary_objectives <- framework_data$secondary_objectives
 
     phr_message(phr_txt("Framework restored (class: {cls})."), origin = origin)
     fw
