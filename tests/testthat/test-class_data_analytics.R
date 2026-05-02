@@ -1054,15 +1054,15 @@ test_that("NutritionDataAnalytics$post_run_analysis stores muac_weighted results
   expect_false(any(grepl("Other", res$indicator_name, ignore.case = TRUE)))
 })
 
-test_that("NutritionDataAnalytics$post_run_analysis uses 0-23 vs 24-69 age ranges", {
+test_that("NutritionDataAnalytics$post_run_analysis uses 0-23 vs 24-59 age ranges", {
   # age = 0  -> in 0-23 group
   # age = 23 -> in 0-23 group
-  # age = 24 -> in 24-69 group
-  # age = 69 -> in 24-69 group
-  # age = 70 -> outside both groups (should get NA weight)
+  # age = 24 -> in 24-59 group
+  # age = 59 -> in 24-59 group
+  # age = 60 -> outside both groups (should get NA weight)
   df <- tibble::tibble(
     id           = 1:6,
-    age_months   = c(0, 23, 24, 69, 70, NA_real_),
+    age_months   = c(0, 23, 24, 59, 60, NA_real_),
     nut_muac_cat = c(0L, 0L, 1L, 1L, 0L, 0L),
     weight       = rep(1, 6)
   )
@@ -1090,17 +1090,17 @@ test_that("NutritionDataAnalytics$post_run_analysis uses 0-23 vs 24-69 age range
   )
 
   # Verify the private helper returns correct weight values for boundary ages.
-  # Valid rows: ages 0 & 23 → 0-23 group (n=2), ages 24 & 69 → 24-69 group (n=2)
-  # sample_prop_0_23 = 0.5, expected = 2/3 => weight = (2/3) / 0.5 = 4/3
-  # sample_prop_24_69 = 0.5, expected = 1/3 => weight = (1/3) / 0.5 = 2/3
+  # Valid rows: ages 0 & 23 → 0-23 group (n=2), ages 24 & 59 → 24-59 group (n=2)
+  # sample_prop_0_23  = 0.5, expected_prop_0_23  = 1/3 => weight = (1/3) / 0.5 = 2/3
+  # sample_prop_24_59 = 0.5, expected_prop_24_59 = 2/3 => weight = (2/3) / 0.5 = 4/3
   wts <- suppressMessages(suppressWarnings(
-    nut$.__enclos_env__$private$.compute_weights_muac_alt(2 / 3)
+    nut$.__enclos_env__$private$.compute_weights_muac_alt(1 / 3)
   ))
 
   expect_equal(length(wts), nrow(df))
-  expect_true(all(abs(wts[df$age_months %in% c(0, 23)] - (4 / 3)) < 1e-10))
-  expect_true(all(abs(wts[df$age_months %in% c(24, 69)] - (2 / 3)) < 1e-10))
-  expect_true(is.na(wts[df$age_months == 70]))
+  expect_true(all(abs(wts[df$age_months %in% c(0, 23)] - (2 / 3)) < 1e-10))
+  expect_true(all(abs(wts[df$age_months %in% c(24, 59)] - (4 / 3)) < 1e-10))
+  expect_true(is.na(wts[df$age_months == 60]))
   expect_true(is.na(wts[is.na(df$age_months)]))
 
   # Also verify post_run_analysis stores results

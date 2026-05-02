@@ -94,8 +94,8 @@ NutritionDataAnalytics <- R6::R6Class(
     #'         contains \code{"muac"}.
     #'   \item If no such rows exist, returns silently.
     #'   \item Computes MUAC age-adjustment weights (expected proportion of
-    #'         0–23 month children is \code{2/3} by default; 24–69 month
-    #'         children receive the complementary weight).
+    #'         0–23 month children defaults to \code{1/3}; 24–59 month
+    #'         children receive the complementary expected proportion \code{2/3}).
     #'   \item Multiplies the MUAC age-adjustment weight by the existing
     #'         survey weight (if present) to form a composite weight column.
     #'   \item Creates a temporary survey design object using the composite
@@ -110,11 +110,12 @@ NutritionDataAnalytics <- R6::R6Class(
     #' @param muac_age_weights Logical (default \code{FALSE}).  Set to
     #'   \code{TRUE} to compute and apply MUAC age-adjustment weights.
     #' @param expected_prop_0_23 Numeric in (0, 1); expected proportion of
-    #'   children aged 0–23 months among all 0–69 month children.
-    #'   Defaults to \code{2/3}.
+    #'   children aged 0–23 months among all 0–59 month children.
+    #'   Defaults to \code{1/3} (i.e. 1/3 of children are expected to be 0–23
+    #'   months and 2/3 are expected to be 24–59 months).
     #' @return Invisibly returns \code{self}.
     post_run_analysis = function(muac_age_weights = FALSE,
-                                 expected_prop_0_23 = 2 / 3) {
+                                 expected_prop_0_23 = 1 / 3) {
 
       origin <- paste0(self$dataset_name, "$post_run_analysis")
 
@@ -126,6 +127,11 @@ NutritionDataAnalytics <- R6::R6Class(
       }
 
       phr_message(origin, "Running MUAC age-weighted post-analysis...")
+
+      if (is.null(self$survey_design)) {
+        phr_warning(message = "Survey design not set; skipping MUAC post-analysis.", origin = origin)
+        return(invisible(self))
+      }
 
       if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
         phr_warning(message = "No data_analysis_plan available; skipping MUAC post-analysis.", origin = origin)
@@ -158,16 +164,19 @@ NutritionDataAnalytics <- R6::R6Class(
 
       # ------------------------------------------------------------------
       # 4. Build composite weight: original_weight * weights_muac_alt
+      #    Use survey_design$variables so we access the same weights that
+      #    are active in the survey design.
       # ------------------------------------------------------------------
+      sd_vars    <- self$survey_design$variables
       weight_col <- self$variable_map[["weight"]]
-      if (!is.null(weight_col) && weight_col %in% names(self$data)) {
-        composite_wt <- self$data[[weight_col]] * alt_weights
+      if (!is.null(weight_col) && weight_col %in% names(sd_vars)) {
+        composite_wt <- sd_vars[[weight_col]] * alt_weights
       } else {
         composite_wt <- alt_weights
       }
 
       tmp_col       <- ".muac_composite_weight"
-      modified_data <- self$data
+      modified_data <- sd_vars
       modified_data[[tmp_col]] <- composite_wt
 
       # ------------------------------------------------------------------
@@ -618,57 +627,63 @@ NutritionDataAnalytics <- R6::R6Class(
     #
     # For children aged 0-23 months:
     #   weights_muac_alt = expected_prop_0_23 / sample_prop_0_23
-    # For children aged 24-69 months:
-    #   weights_muac_alt = (1 - expected_prop_0_23) / sample_prop_24_69
+    # For children aged 24-59 months:
+    #   weights_muac_alt = (1 - expected_prop_0_23) / sample_prop_24_59
     # All other rows receive NA.
     #
-    # Returns the weight vector (same length as nrow(self$data)) or NULL
-    # if the age column is absent or there are no eligible children.
-    .compute_weights_muac_alt = function(expected_prop_0_23 = 2 / 3) {
+    # Data are sourced from self$survey_design$variables to ensure the same
+    # data (and weights) used in the survey design are referenced.
+    #
+    # Returns the weight vector (same length as nrow(survey_design$variables))
+    # or NULL if the survey design / age column is absent or there are no
+    # eligible children.
+    .compute_weights_muac_alt = function(expected_prop_0_23 = 1 / 3) {
 
       origin <- paste0(self$dataset_name, "$post_run_analysis$.compute_weights_muac_alt")
 
-      if (is.null(self$data)) return(NULL)
+      if (is.null(self$survey_design)) return(NULL)
+
+      sd_vars <- self$survey_design$variables
 
       # Resolve the age-in-months column via variable_map
       age_col <- self$variable_map[["age_months"]]
-      if (is.null(age_col) || !age_col %in% names(self$data)) {
+      if (is.null(age_col) || !age_col %in% names(sd_vars)) {
         phr_message(
           origin,
-          "No age_months column found in data; MUAC age-adjustment weights cannot be computed."
+          "No age_months column found in survey_design$variables; MUAC age-adjustment weights cannot be computed."
         )
         return(NULL)
       }
 
-      age_vec  <- suppressWarnings(as.numeric(self$data[[age_col]]))
+      age_vec  <- suppressWarnings(as.numeric(sd_vars[[age_col]]))
 
       in_0_23  <- !is.na(age_vec) & age_vec >= 0  & age_vec < 24
-      in_24_69 <- !is.na(age_vec) & age_vec >= 24 & age_vec < 70
+      in_24_59 <- !is.na(age_vec) & age_vec >= 24 & age_vec < 60
 
       n_0_23  <- sum(in_0_23)
-      n_24_69 <- sum(in_24_69)
-      n_total <- n_0_23 + n_24_69
+      n_24_59 <- sum(in_24_59)
+      n_total <- n_0_23 + n_24_59
 
       if (n_total == 0) {
         phr_message(
           origin,
-          "No children aged 0-69 months found; MUAC age-adjustment weights cannot be computed."
+          "No children aged 0-59 months found; MUAC age-adjustment weights cannot be computed."
         )
         return(NULL)
       }
 
       sample_prop_0_23  <- n_0_23  / n_total
-      sample_prop_24_69 <- n_24_69 / n_total
+      sample_prop_24_59 <- n_24_59 / n_total
 
-      expected_prop_24_69 <- 1 - expected_prop_0_23
+      expected_prop_24_59 <- 1 - expected_prop_0_23
 
-      alt_weights <- rep(NA_real_, nrow(self$data))
+      alt_weights <- rep(NA_real_, nrow(sd_vars))
 
       if (sample_prop_0_23 > 0) {
         alt_weights[in_0_23]  <- expected_prop_0_23  / sample_prop_0_23
       }
-      if (sample_prop_24_69 > 0) {
-        alt_weights[in_24_69] <- expected_prop_24_69 / sample_prop_24_69
+      if (sample_prop_24_59 > 0) {
+        alt_weights[in_24_59] <- expected_prop_24_59 / sample_prop_24_59
       }
 
       phr_message(
@@ -676,8 +691,8 @@ NutritionDataAnalytics <- R6::R6Class(
         glue::glue(
           "MUAC age-adjustment weights computed: {n_0_23} children 0-23 months ",
           "(sample prop: {round(sample_prop_0_23, 3)}, expected: {round(expected_prop_0_23, 3)}), ",
-          "{n_24_69} children 24-69 months ",
-          "(sample prop: {round(sample_prop_24_69, 3)}, expected: {round(expected_prop_24_69, 3)})."
+          "{n_24_59} children 24-59 months ",
+          "(sample prop: {round(sample_prop_24_59, 3)}, expected: {round(expected_prop_24_59, 3)})."
         )
       )
 
