@@ -664,10 +664,9 @@ HouseholdData <- R6::R6Class(
         # ------------------------------------------------------------------
         # 4. Compute population totals per stratum from SamplingFrame
         # ------------------------------------------------------------------
-        sf_totals <- dplyr::group_by(
-          dplyr::mutate(sf_df, stratum = as.character(.data$stratum)),
-          .data$stratum
-        ) |>
+        sf_totals <- sf_df |>
+          dplyr::mutate(stratum = as.character(.data$stratum)) |>
+          dplyr::group_by(.data$stratum) |>
           dplyr::summarize(pop_total = sum(.data$population_size, na.rm = TRUE),
                            .groups = "drop")
 
@@ -677,10 +676,7 @@ HouseholdData <- R6::R6Class(
         stratum_vals <- as.character(df[[stratum_col]])
         valid_mask   <- !is.na(stratum_vals) & stratum_vals != ""
 
-        sample_counts_df <- data.frame(
-          stratum = stratum_vals[valid_mask],
-          stringsAsFactors = FALSE
-        ) |>
+        sample_counts_df <- data.frame(stratum = stratum_vals[valid_mask]) |>
           dplyr::group_by(.data$stratum) |>
           dplyr::summarize(n = dplyr::n(), .groups = "drop")
 
@@ -702,7 +698,7 @@ HouseholdData <- R6::R6Class(
         weight_lookup <- dplyr::left_join(sample_counts_df, sf_totals, by = "stratum") |>
           dplyr::mutate(weight = .data$pop_total / .data$n)
 
-        row_strata  <- data.frame(stratum = stratum_vals, stringsAsFactors = FALSE)
+        row_strata  <- data.frame(stratum = stratum_vals)
         weight_vec  <- dplyr::left_join(row_strata, weight_lookup, by = "stratum")$weight
 
         # ------------------------------------------------------------------
