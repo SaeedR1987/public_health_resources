@@ -247,16 +247,68 @@ draw_sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 
   }, on_error = "abort", origin = origin)
 }
 
+# Allocate n_total cluster slots across n_sites using Hamilton's
+# largest-remainder method when population sizes are available (sum > 0),
+# otherwise distribute evenly.
+# sub_sizes: numeric vector of length n_sites (population sizes for selected sites).
+# Returns an integer vector of length n_sites with slot counts.
+allocate_slots_to_sites <- function(sub_sizes, n_total, n_sites) {
+  total_pop <- sum(sub_sizes, na.rm = TRUE)
+  if (!is.na(total_pop) && total_pop > 0) {
+    exact_alloc <- sub_sizes / total_pop * n_total
+    slot_alloc  <- floor(exact_alloc)
+    slot_rem    <- n_total - sum(slot_alloc)
+    if (slot_rem > 0L) {
+      fractions <- exact_alloc - slot_alloc
+      frac_idx  <- order(fractions, decreasing = TRUE)
+      slot_alloc[frac_idx[seq_len(slot_rem)]] <-
+        slot_alloc[frac_idx[seq_len(slot_rem)]] + 1L
+    }
+  } else {
+    base       <- n_total %/% n_sites
+    slot_rem   <- n_total %% n_sites
+    slot_alloc <- rep(base, n_sites)
+    if (slot_rem > 0L) slot_alloc[seq_len(slot_rem)] <- slot_alloc[seq_len(slot_rem)] + 1L
+  }
+  slot_alloc
+}
+
+# Populate sampled_psu and allocated_sample columns given a site-selection
+# result (selected_sites: integer indices into frame) and per-site slot counts
+# (slot_alloc).  labels is the global label vector from assign_reserve_labels().
+# Returns the modified frame.
+assign_slots_to_frame <- function(frame, selected_sites, slot_alloc, labels, cluster_size) {
+  n_sites <- length(selected_sites)
+  frame$sampled_psu      <- NA_character_
+  frame$allocated_sample <- NA_real_
+
+  cursor <- 1L
+  for (sub_i in seq_len(n_sites)) {
+    k <- slot_alloc[sub_i]
+    if (k == 0L) next  # guard: skip sites that received no slots (edge case)
+    site_labels   <- labels[cursor:(cursor + k - 1L)]
+    cursor        <- cursor + k
+    frame_row     <- selected_sites[sub_i]
+    frame$sampled_psu[frame_row] <- paste(site_labels, collapse = ", ")
+    n_main_at_psu <- sum(site_labels != "RC")
+    frame$allocated_sample[frame_row] <- if (n_main_at_psu > 0L) {
+      n_main_at_psu * cluster_size
+    } else {
+      NA_real_
+    }
+  }
+  frame
+}
+
 #' Draw PSUs using random location cluster (RLC) sampling
 #'
 #' First selects \code{n_sites} primary sampling units using PPS sampling
 #' (proportional-to-size, without replacement via \code{pps::ppswor}).  Then
-#' allocates \code{ceiling(sample_size / cluster_size)} clusters across those
-#' pre-selected sites proportional to each site's population size (Hamilton
-#' largest-remainder method).  If population sizes for the selected sites all
-#' sum to zero, clusters are distributed evenly.
-#' Requires a \code{population_size} column and \code{n_sites} must be
-#' provided.
+#' distributes \code{ceiling(sample_size / cluster_size)} cluster slots
+#' \strong{evenly} across those pre-selected sites (Hamilton largest-remainder
+#' method on equal weights, i.e. simple floor + remainder distribution).
+#' Requires a \code{population_size} column (needed for the PPS site-selection
+#' step) and \code{n_sites} must be provided.
 #'
 #' Reserve clusters (RC) are drawn at the cluster-allocation stage: 3 RC when
 #' \code{n_clusters <= 10}, 4 when \code{10 < n_clusters <= 20}, and 5 when
@@ -311,59 +363,159 @@ draw_sample_psu_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, s
     sizes          <- frame$population_size
     selected_sites <- pps::ppswor(sizes, n_sites)  # integer indices into frame
 
-    # Step 2: Allocate n_total cluster slots across the selected sites.
-    #   Slots are allocated proportional to each site's population size using
-    #   Hamilton's largest-remainder method.  If sizes sum to zero (unavailable /
-    #   all-zero), fall back to equal allocation across sites.
-    sub_sizes  <- sizes[selected_sites]
+    # Step 2: Distribute n_total cluster slots evenly across the selected sites.
     n_clusters <- ceiling(sample_size / cluster_size)
     n_reserve  <- n_reserve_clusters(n_clusters)
     n_total    <- n_clusters + n_reserve
 
-    total_pop <- sum(sub_sizes, na.rm = TRUE)
-    if (!is.na(total_pop) && total_pop > 0) {
-      exact_alloc <- sub_sizes / total_pop * n_total
-      slot_alloc  <- floor(exact_alloc)
-      slot_rem    <- n_total - sum(slot_alloc)
-      if (slot_rem > 0L) {
-        fractions <- exact_alloc - slot_alloc
-        frac_idx  <- order(fractions, decreasing = TRUE)
-        slot_alloc[frac_idx[seq_len(slot_rem)]] <-
-          slot_alloc[frac_idx[seq_len(slot_rem)]] + 1L
-      }
-    } else {
-      # Equal allocation fallback
-      base       <- n_total %/% n_sites
-      slot_rem   <- n_total %% n_sites
-      slot_alloc <- rep(base, n_sites)
-      if (slot_rem > 0L) slot_alloc[seq_len(slot_rem)] <- slot_alloc[seq_len(slot_rem)] + 1L
-    }
+    base       <- n_total %/% n_sites
+    slot_rem   <- n_total %% n_sites
+    slot_alloc <- rep(base, n_sites)
+    if (slot_rem > 0L) slot_alloc[seq_len(slot_rem)] <- slot_alloc[seq_len(slot_rem)] + 1L
 
     # Produce the global label sequence (sequential numbers interleaved with "RC")
     # and distribute them to sites in the order of site selection.
     labels <- assign_reserve_labels(n_total, n_reserve, seed)
 
     # Step 3: Populate sampled_psu / allocated_sample on the full frame
-    frame$sampled_psu      <- NA_character_
-    frame$allocated_sample <- NA_real_
+    assign_slots_to_frame(frame, selected_sites, slot_alloc, labels, cluster_size)
+  }, on_error = "abort", origin = origin)
+}
 
-    cursor <- 1L
-    for (sub_i in seq_len(n_sites)) {
-      k <- slot_alloc[sub_i]
-      if (k == 0L) next  # guard: skip sites that received no slots (edge case)
-      site_labels   <- labels[cursor:(cursor + k - 1L)]
-      cursor        <- cursor + k
-      frame_row     <- selected_sites[sub_i]
-      frame$sampled_psu[frame_row] <- paste(site_labels, collapse = ", ")
-      n_main_at_psu <- sum(site_labels != "RC")
-      frame$allocated_sample[frame_row] <- if (n_main_at_psu > 0L) {
-        n_main_at_psu * cluster_size
-      } else {
-        NA_real_
-      }
+#' Draw PSUs using simple-random-selection RLC sampling
+#'
+#' First selects \code{n_sites} primary sampling units using simple random
+#' sampling (SRS, without replacement).  Then allocates
+#' \code{ceiling(sample_size / cluster_size)} cluster slots across those
+#' pre-selected sites \strong{proportional to population size} when a
+#' \code{population_size} column is present and sums to a positive value;
+#' otherwise slots are distributed evenly.  \code{n_sites} must be provided.
+#'
+#' Reserve clusters (RC) are drawn at the cluster-allocation stage: 3 RC when
+#' \code{n_clusters <= 10}, 4 when \code{10 < n_clusters <= 20}, and 5 when
+#' \code{n_clusters > 20}.
+#'
+#' @param frame Data frame. Eligible PSUs.  A \code{population_size} column
+#'   is optional; if absent or all-zero the cluster allocation is evenly
+#'   distributed across the selected sites.
+#' @param sample_size Integer. Total household sample size (used to derive
+#'   \code{n_clusters = ceiling(sample_size / cluster_size)}).
+#' @param n_sites Integer. Number of sites (PSUs) to select.  Required.
+#' @param cluster_size Integer. Households per cluster (default \code{3}).
+#' @param seed Integer. Random seed for reproducibility (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added.  PSUs outside the pre-selected sites receive \code{NA}.
+#' @export
+draw_sample_psu_srs_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, seed = 42) {
+
+  origin <- "draw_sample_psu_srs_rlc"
+
+  phr_try({
+    phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+    phr_assert(sample_size > 0,  message = phr_txt("sample_size must be positive."),            origin = origin)
+    phr_assert(cluster_size > 0, message = phr_txt("cluster_size must be a positive integer."), origin = origin)
+    phr_assert(
+      !is.null(n_sites) && !is.na(n_sites) && n_sites > 0,
+      message = phr_txt("n_sites is required and must be a positive integer for the simple_random_rlc method."),
+      origin  = origin
+    )
+
+    n_available <- nrow(frame)
+    if (n_sites > n_available) {
+      phr_warning(
+        message = phr_txt("n_sites ({n_sites}) exceeds available PSUs ({n_available}). Using all available PSUs."),
+        origin  = origin
+      )
+      n_sites <- n_available
     }
 
-    frame
+    # Step 1: Select n_sites PSUs using SRS without replacement
+    set.seed(seed)
+    selected_sites <- sort(sample(seq_len(n_available), n_sites, replace = FALSE))
+
+    # Step 2: Allocate n_total cluster slots proportional to population size
+    #   (Hamilton method), falling back to equal distribution when population
+    #   size is unavailable.
+    sub_sizes  <- if ("population_size" %in% names(frame)) frame$population_size[selected_sites] else rep(0L, n_sites)
+    n_clusters <- ceiling(sample_size / cluster_size)
+    n_reserve  <- n_reserve_clusters(n_clusters)
+    n_total    <- n_clusters + n_reserve
+    slot_alloc <- allocate_slots_to_sites(sub_sizes, n_total, n_sites)
+
+    labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+    # Step 3: Populate sampled_psu / allocated_sample on the full frame
+    assign_slots_to_frame(frame, selected_sites, slot_alloc, labels, cluster_size)
+  }, on_error = "abort", origin = origin)
+}
+
+#' Draw PSUs using systematic-random-selection RLC sampling
+#'
+#' First selects \code{n_sites} primary sampling units via systematic random
+#' sampling.  Then allocates \code{ceiling(sample_size / cluster_size)} cluster
+#' slots across those pre-selected sites \strong{proportional to population
+#' size} when a \code{population_size} column is present and sums to a positive
+#' value; otherwise slots are distributed evenly.  \code{n_sites} must be
+#' provided.
+#'
+#' Reserve clusters (RC) are drawn at the cluster-allocation stage: 3 RC when
+#' \code{n_clusters <= 10}, 4 when \code{10 < n_clusters <= 20}, and 5 when
+#' \code{n_clusters > 20}.
+#'
+#' @param frame Data frame. Eligible PSUs.  A \code{population_size} column
+#'   is optional; if absent or all-zero the cluster allocation is evenly
+#'   distributed across the selected sites.
+#' @param sample_size Integer. Total household sample size (used to derive
+#'   \code{n_clusters = ceiling(sample_size / cluster_size)}).
+#' @param n_sites Integer. Number of sites (PSUs) to select.  Required.
+#' @param cluster_size Integer. Households per cluster (default \code{3}).
+#' @param seed Integer. Random seed for reproducibility (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added.  PSUs outside the pre-selected sites receive \code{NA}.
+#' @export
+draw_sample_psu_systematic_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, seed = 42) {
+
+  origin <- "draw_sample_psu_systematic_rlc"
+
+  phr_try({
+    phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+    phr_assert(sample_size > 0,  message = phr_txt("sample_size must be positive."),            origin = origin)
+    phr_assert(cluster_size > 0, message = phr_txt("cluster_size must be a positive integer."), origin = origin)
+    phr_assert(
+      !is.null(n_sites) && !is.na(n_sites) && n_sites > 0,
+      message = phr_txt("n_sites is required and must be a positive integer for the systematic_rlc method."),
+      origin  = origin
+    )
+
+    n_available <- nrow(frame)
+    if (n_sites > n_available) {
+      phr_warning(
+        message = phr_txt("n_sites ({n_sites}) exceeds available PSUs ({n_available}). Using all available PSUs."),
+        origin  = origin
+      )
+      n_sites <- n_available
+    }
+
+    # Step 1: Select n_sites PSUs using systematic random sampling
+    set.seed(seed)
+    interval       <- n_available / n_sites
+    random_start   <- sample(seq_len(max(1L, round(interval))), 1)
+    selected_sites <- round(seq(random_start, by = interval, length.out = n_sites))
+    selected_sites <- pmin(selected_sites, n_available)
+
+    # Step 2: Allocate n_total cluster slots proportional to population size
+    #   (Hamilton method), falling back to equal distribution when population
+    #   size is unavailable.
+    sub_sizes  <- if ("population_size" %in% names(frame)) frame$population_size[selected_sites] else rep(0L, n_sites)
+    n_clusters <- ceiling(sample_size / cluster_size)
+    n_reserve  <- n_reserve_clusters(n_clusters)
+    n_total    <- n_clusters + n_reserve
+    slot_alloc <- allocate_slots_to_sites(sub_sizes, n_total, n_sites)
+
+    labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+    # Step 3: Populate sampled_psu / allocated_sample on the full frame
+    assign_slots_to_frame(frame, selected_sites, slot_alloc, labels, cluster_size)
   }, on_error = "abort", origin = origin)
 }
 

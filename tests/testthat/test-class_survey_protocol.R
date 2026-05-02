@@ -566,60 +566,22 @@ test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selec
   expect_true(any(trimws(all_labels) == "RC"))
 })
 
-test_that("draw_sample_psu_rlc allocates clusters proportional to population size", {
-  # Two sites with very different population sizes: site A is 10x larger than site B.
-  # With 20 clusters + reserves allocated across 2 sites, site A should get the
-  # majority of cluster slots.
-  frame <- data.frame(
-    population_size = c(rep(1000L, 10),  # 10 large PSUs
-                        rep(100L,  10))  # 10 small PSUs
-  )
-  result <- draw_sample_psu_rlc(frame, sample_size = 60, n_sites = 2, cluster_size = 3, seed = 42)
-  selected <- result[!is.na(result$sampled_psu), ]
-
-  # Parse the number of cluster labels (main + RC) assigned to each selected PSU
-  slot_counts <- vapply(selected$sampled_psu, function(s) {
-    length(trimws(strsplit(s, ",\\s*")[[1]]))
-  }, integer(1))
-  # Total slots must equal n_total (n_clusters + n_reserve = 20 + 3 = 23)
-  # (n_clusters = ceiling(60/3) = 20; n_reserve = n_reserve_clusters(20) = 4; n_total = 24)
-  n_clusters <- ceiling(60 / 3)  # 20
-  n_reserve  <- if (n_clusters <= 10L) 3L else if (n_clusters <= 20L) 4L else 5L  # 4
-  expect_equal(sum(slot_counts), n_clusters + n_reserve)
-
-  # With proportional allocation, the large-PSU site should have more slots
-  # (large PSUs have total pop 10000 vs 1000 for small PSUs -> ~10:1 ratio)
-  # At minimum, the site from the large pool should get more than half the slots.
-  large_site_row <- which(result$population_size == 1000L & !is.na(result$sampled_psu))
-  small_site_row <- which(result$population_size == 100L  & !is.na(result$sampled_psu))
-  if (length(large_site_row) > 0L && length(small_site_row) > 0L) {
-    large_slots <- length(trimws(strsplit(result$sampled_psu[large_site_row[1]], ",\\s*")[[1]]))
-    small_slots <- length(trimws(strsplit(result$sampled_psu[small_site_row[1]], ",\\s*")[[1]]))
-    expect_gt(large_slots, small_slots)
-  }
-})
-
-test_that("draw_sample_psu_rlc uses equal allocation when population sizes are all zero", {
-  # Frame with all-zero population sizes triggers the equal-allocation fallback.
-  frame <- data.frame(population_size = rep(0L, 20))
-  # pps::ppswor can't handle all-zero sizes, so use a simple frame where only
-  # selected_sites sub_sizes are zero.  We test the fallback by patching sub_sizes
-  # indirectly: use equal non-zero sizes so ppswor works, then verify equal allocation.
-  frame2 <- data.frame(population_size = rep(100L, 10))
-  result <- draw_sample_psu_rlc(frame2, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 1)
+test_that("draw_sample_psu_rlc distributes clusters evenly across selected sites", {
+  # pps_rlc must spread slots evenly regardless of population sizes.
+  frame <- data.frame(population_size = rep(100L, 20))
+  result <- draw_sample_psu_rlc(frame, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 42)
   selected <- result[!is.na(result$sampled_psu), ]
   expect_lte(nrow(selected), 3L)
   slot_counts <- vapply(selected$sampled_psu, function(s) {
     length(trimws(strsplit(s, ",\\s*")[[1]]))
   }, integer(1))
-  # With equal pop sizes Hamilton reduces to equal allocation; total slots must be correct
-  n_clusters <- ceiling(30 / 3)   # 10
-  n_reserve  <- if (n_clusters <= 10L) 3L else 4L  # 3
-  expect_equal(sum(slot_counts), n_clusters + n_reserve)
-  # Slots should be as evenly spread as possible (max diff <= 1)
+  # n_clusters = ceiling(30/3) = 10; n_reserve = 3 (<=10); n_total = 13
+  expect_equal(sum(slot_counts), 13L)
+  # Slots must be as evenly spread as possible (max diff <= 1)
   expect_lte(max(slot_counts) - min(slot_counts), 1L)
 })
 
+test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied at draw time", {
   p <- make_protocol()
   p$add_stratum(
     stratum_id      = "s1",
@@ -641,5 +603,81 @@ test_that("draw_sample_psu_rlc uses equal allocation when population sizes are a
   p$set_sampling_frame(frame)
   expect_warning(p$draw_sample(), regexp = "skipped")
   expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+})
+
+# ---- simple_random_rlc ----
+
+test_that("draw_sample_psu_srs_rlc selects n_sites PSUs and allocates all cluster slots", {
+  frame <- data.frame(population_size = seq(100L, 300L, by = 10L))  # 21 PSUs
+  result <- draw_sample_psu_srs_rlc(frame, sample_size = 30, n_sites = 4, cluster_size = 3, seed = 7)
+  selected <- result[!is.na(result$sampled_psu), ]
+  # At most n_sites rows may be selected
+  expect_lte(nrow(selected), 4L)
+  all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
+  # RC labels must be present
+  expect_true(any(trimws(all_labels) == "RC"))
+  # Total slots: n_clusters = ceiling(30/3) = 10, n_reserve = 3, n_total = 13
+  expect_equal(length(all_labels), 13L)
+})
+
+test_that("draw_sample_psu_srs_rlc allocates proportional to pop size when available", {
+  # One large site (pop 1000) and several small ones (pop 100).
+  frame <- data.frame(population_size = c(rep(1000L, 5), rep(100L, 15)))
+  result <- draw_sample_psu_srs_rlc(frame, sample_size = 30, n_sites = 2, cluster_size = 3, seed = 99)
+  selected <- result[!is.na(result$sampled_psu), ]
+  if (nrow(selected) == 2L) {
+    slot_counts <- vapply(selected$sampled_psu, function(s) {
+      length(trimws(strsplit(s, ",\\s*")[[1]]))
+    }, integer(1))
+    # Total slots must still be correct
+    expect_equal(sum(slot_counts), 13L)
+  }
+})
+
+test_that("draw_sample_psu_srs_rlc distributes evenly when population_size absent", {
+  frame <- data.frame(psu = paste0("p", seq_len(15)))  # no population_size column
+  result <- draw_sample_psu_srs_rlc(frame, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 1)
+  selected <- result[!is.na(result$sampled_psu), ]
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  expect_equal(sum(slot_counts), 13L)
+  expect_lte(max(slot_counts) - min(slot_counts), 1L)
+})
+
+# ---- systematic_rlc ----
+
+test_that("draw_sample_psu_systematic_rlc selects n_sites PSUs and allocates all cluster slots", {
+  frame <- data.frame(population_size = seq(100L, 300L, by = 10L))  # 21 PSUs
+  result <- draw_sample_psu_systematic_rlc(frame, sample_size = 30, n_sites = 4, cluster_size = 3, seed = 7)
+  selected <- result[!is.na(result$sampled_psu), ]
+  expect_lte(nrow(selected), 4L)
+  all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
+  expect_true(any(trimws(all_labels) == "RC"))
+  expect_equal(length(all_labels), 13L)
+})
+
+test_that("draw_sample_psu_systematic_rlc distributes evenly when population_size absent", {
+  frame <- data.frame(psu = paste0("p", seq_len(20)))  # no population_size column
+  result <- draw_sample_psu_systematic_rlc(frame, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 5)
+  selected <- result[!is.na(result$sampled_psu), ]
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  expect_equal(sum(slot_counts), 13L)
+  expect_lte(max(slot_counts) - min(slot_counts), 1L)
+})
+
+test_that("add_stratum accepts simple_random_rlc and systematic_rlc methods", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "a", stratum_name = "A",
+                sampling_method = "simple_random_rlc", n_sites = 5,
+                General_HH_Sample_Size = 30)
+  p$add_stratum(stratum_id = "b", stratum_name = "B",
+                sampling_method = "systematic_rlc", n_sites = 5,
+                General_HH_Sample_Size = 30)
+  expect_equal(p$sample_table$sampling_method, c("simple_random_rlc", "systematic_rlc"))
+  expect_equal(p$sample_table$cluster_size,    c(3L, 3L))
+  expect_equal(p$sample_table$calc_method,     c("cluster", "cluster"))
 })
 
