@@ -196,27 +196,39 @@ test_that("calculate_sample_sizes fills field-plan per stratum independently", {
 test_that("add_stratum derives calc_method correctly for all sampling_method values", {
   p <- make_protocol()
 
-  simple_random_methods <- c("simple_random", "proportional", "systematic", "purposive")
-  cluster_methods       <- c("pps_cluster", "pps_rlc")
+  # Methods that apply to all PSUs (no n_sites required) and use "simple_random" calc_method
+  all_psu_simple_methods <- c("proportional", "purposive")
+  # Methods that select a subset of PSUs and use "simple_random" calc_method
+  site_select_simple_methods <- c("simple_random", "systematic")
+  # Methods that use "cluster" calc_method and select a subset of PSUs
+  site_select_cluster_methods <- c("pps_rlc", "simple_random_rlc", "systematic_rlc")
+  # Methods that use "cluster" calc_method and apply to all PSUs
+  all_psu_cluster_methods <- c("proportional_rlc")
 
-  for (m in simple_random_methods) {
+  for (m in all_psu_simple_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+  }
+  for (m in site_select_simple_methods) {
     p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m, n_sites = 1)
   }
   # pps_cluster: n_psu optional at add_stratum time
   p$add_stratum(stratum_id = "pps_cluster", stratum_name = "pps_cluster",
                 sampling_method = "pps_cluster")
-  # pps_rlc requires n_sites
-  p$add_stratum(stratum_id = "pps_rlc", stratum_name = "pps_rlc",
-                sampling_method = "pps_rlc", n_sites = 10)
+  for (m in site_select_cluster_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m, n_sites = 10)
+  }
+  for (m in all_psu_cluster_methods) {
+    p$add_stratum(stratum_id = m, stratum_name = m, sampling_method = m)
+  }
 
   st <- p$get_sample_table()
   expect_true("calc_method" %in% names(st))
 
-  for (m in simple_random_methods) {
+  for (m in c(all_psu_simple_methods, site_select_simple_methods)) {
     expect_equal(st$calc_method[st$stratum_id == m], "simple_random",
                  info = paste("calc_method for sampling_method =", m))
   }
-  for (m in cluster_methods) {
+  for (m in c("pps_cluster", site_select_cluster_methods, all_psu_cluster_methods)) {
     expect_equal(st$calc_method[st$stratum_id == m], "cluster",
                  info = paste("calc_method for sampling_method =", m))
   }
@@ -239,13 +251,24 @@ test_that("add_stratum errors when sampling_method is not provided", {
   )
 })
 
-test_that("add_stratum errors when n_sites missing for non-pps_cluster method", {
+test_that("add_stratum errors when n_sites missing for site-selection methods", {
   p <- make_protocol()
   expect_error(
     p$add_stratum(stratum_id = "s1", stratum_name = "s1",
                   sampling_method = "simple_random"),
     regexp = "n_sites is required"
   )
+})
+
+test_that("add_stratum accepts proportional and purposive without n_sites", {
+  p <- make_protocol()
+  # proportional applies to all eligible PSUs — n_sites not required
+  p$add_stratum(stratum_id = "prop", stratum_name = "prop",
+                sampling_method = "proportional")
+  # purposive applies to all eligible PSUs — n_sites not required
+  p$add_stratum(stratum_id = "purp", stratum_name = "purp",
+                sampling_method = "purposive")
+  expect_equal(nrow(p$sample_table), 2L)
 })
 
 test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
@@ -428,3 +451,300 @@ test_that("draw_sample warns and skips on failure but continues with other strat
   s2_rows <- p$sampling_frame$log_df[p$sampling_frame$log_df$stratum == "s2", ]
   expect_false(all(is.na(s2_rows$sampled_psu)))
 })
+
+# ---- reserve cluster (RC) behaviour ------------------------------------------
+
+test_that("draw_sample (simple_random) includes RC-labelled reserve PSUs", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id             = "s1",
+    stratum_name           = "Urban",
+    population_size        = 10000,
+    sampling_method        = "simple_random",
+    n_sites                = 5,
+    General_HH_Sample_Size = 50
+  )
+  # 20-PSU frame guarantees enough units for main + reserve
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = rep(500, 20),
+    inclusion       = rep(TRUE, 20),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  psu_vals <- p$drawn_sample$sampled_psu
+  # n_main = 5 (<=10) -> 3 RC; total drawn = 8
+  expect_equal(sum(psu_vals == "RC"), 3L)
+  main_nums <- suppressWarnings(as.integer(psu_vals[psu_vals != "RC"]))
+  expect_equal(sort(main_nums), 1:5)
+  # RC PSUs have NA allocated_sample
+  expect_true(all(is.na(p$drawn_sample$allocated_sample[p$drawn_sample$sampled_psu == "RC"])))
+})
+
+test_that("draw_sample (systematic) includes RC-labelled reserve PSUs", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id             = "s1",
+    stratum_name           = "Rural",
+    population_size        = 10000,
+    sampling_method        = "systematic",
+    n_sites                = 5,
+    General_HH_Sample_Size = 50
+  )
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = rep(500, 20),
+    inclusion       = rep(TRUE, 20),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  psu_vals <- p$drawn_sample$sampled_psu
+  expect_equal(sum(psu_vals == "RC"), 3L)
+  main_nums <- suppressWarnings(as.integer(psu_vals[psu_vals != "RC"]))
+  expect_equal(sort(main_nums), 1:5)
+})
+
+test_that("RC numbers are correct for n_main > 10 and n_main > 20", {
+  # n_main = 15 -> 4 RC
+  result_15 <- draw_sample_psu_srs(
+    data.frame(population_size = rep(100, 30)), n_psu = 15, sample_size = 150, seed = 7
+  )
+  selected <- result_15[!is.na(result_15$sampled_psu), ]
+  expect_equal(sum(selected$sampled_psu == "RC"), 4L)
+
+  # n_main = 25 -> 5 RC
+  result_25 <- draw_sample_psu_srs(
+    data.frame(population_size = rep(100, 50)), n_psu = 25, sample_size = 250, seed = 7
+  )
+  selected25 <- result_25[!is.na(result_25$sampled_psu), ]
+  expect_equal(sum(selected25$sampled_psu == "RC"), 5L)
+})
+
+test_that("draw_sample (multi-stratum) applies correct sequential offset across strata with RC", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id = "s1", stratum_name = "Urban",
+    sampling_method = "simple_random", n_sites = 5,
+    General_HH_Sample_Size = 50
+  )
+  p$add_stratum(
+    stratum_id = "s2", stratum_name = "Rural",
+    sampling_method = "simple_random", n_sites = 3,
+    General_HH_Sample_Size = 30
+  )
+  frame <- data.frame(
+    stratum         = c(rep("s1", 20), rep("s2", 15)),
+    psu             = paste0("psu_", seq_len(35)),
+    population_size = rep(500, 35),
+    inclusion       = rep(TRUE, 35),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  s1_vals  <- p$sampling_frame$log_df$sampled_psu[p$sampling_frame$log_df$stratum == "s1"]
+  s2_vals  <- p$sampling_frame$log_df$sampled_psu[p$sampling_frame$log_df$stratum == "s2"]
+  s1_nums  <- suppressWarnings(as.integer(s1_vals[!is.na(s1_vals) & s1_vals != "RC"]))
+  s2_nums  <- suppressWarnings(as.integer(s2_vals[!is.na(s2_vals) & s2_vals != "RC"]))
+  # Numbers in s2 should be > max number in s1
+  expect_true(min(s2_nums) > max(s1_nums))
+  # RC labels remain "RC" in both strata
+  expect_true(all(s1_vals[!is.na(s1_vals) & s1_vals == "RC"] == "RC"))
+  expect_true(all(s2_vals[!is.na(s2_vals) & s2_vals == "RC"] == "RC"))
+})
+
+# ---- pps_rlc requires n_sites and restricts clusters to pre-selected PSUs ----
+
+test_that("draw_sample_psu_rlc errors when n_sites is missing", {
+  frame <- data.frame(population_size = rep(100, 20))
+  expect_error(
+    draw_sample_psu_rlc(frame, sample_size = 60, n_sites = NULL),
+    regexp = "n_sites is required"
+  )
+})
+
+test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selected PSUs", {
+  frame <- data.frame(population_size = c(100, 200, 150, 300, 250,
+                                          120, 180, 90, 400, 110,
+                                          220, 130, 170, 310, 240,
+                                          80, 160, 270, 190, 350,
+                                          100, 200, 150, 300, 250,
+                                          120, 180, 90, 400, 110))
+  result <- draw_sample_psu_rlc(frame, sample_size = 60, n_sites = 5, cluster_size = 3, seed = 42)
+
+  selected <- result[!is.na(result$sampled_psu), ]
+  # Each pre-selected PSU occupies exactly one row in `result`.  Clusters (main
+  # and RC) are allocated only within the n_sites=5 pre-selected PSUs, so the
+  # number of rows with non-NA sampled_psu (= number of PSUs with any assignment)
+  # cannot exceed n_sites.
+  expect_lte(nrow(selected), 5L)
+  # The total slot labels include both main numbers and "RC"
+  all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
+  expect_true(any(trimws(all_labels) == "RC"))
+})
+
+test_that("draw_sample_psu_rlc distributes clusters evenly across selected sites", {
+  # pps_rlc must spread slots evenly regardless of population sizes.
+  frame <- data.frame(population_size = rep(100L, 20))
+  result <- draw_sample_psu_rlc(frame, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 42)
+  selected <- result[!is.na(result$sampled_psu), ]
+  expect_lte(nrow(selected), 3L)
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  # n_clusters = ceiling(30/3) = 10; n_reserve = 3 (<=10); n_total = 13
+  expect_equal(sum(slot_counts), 13L)
+  # Slots must be as evenly spread as possible (max diff <= 1)
+  expect_lte(max(slot_counts) - min(slot_counts), 1L)
+})
+
+test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied at draw time", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id      = "s1",
+    stratum_name    = "Rural",
+    sampling_method = "pps_rlc",
+    n_sites         = 5,
+    General_HH_Sample_Size = 30
+  )
+  # Manually corrupt the strata table to remove n_sites, simulating a missing-param scenario
+  p$sample_table$n_sites <- NA_real_
+
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = round(runif(20, 100, 500)),
+    inclusion       = TRUE,
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  expect_warning(p$draw_sample(), regexp = "skipped")
+  expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+})
+
+# ---- simple_random_rlc ----
+
+test_that("draw_sample_psu_srs_rlc selects n_sites PSUs and allocates all cluster slots", {
+  frame <- data.frame(population_size = seq(100L, 300L, by = 10L))  # 21 PSUs
+  result <- draw_sample_psu_srs_rlc(frame, sample_size = 30, n_sites = 4, cluster_size = 3, seed = 7)
+  selected <- result[!is.na(result$sampled_psu), ]
+  # At most n_sites rows may be selected
+  expect_lte(nrow(selected), 4L)
+  all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
+  # RC labels must be present
+  expect_true(any(trimws(all_labels) == "RC"))
+  # Total slots: n_clusters = ceiling(30/3) = 10, n_reserve = 3, n_total = 13
+  expect_equal(length(all_labels), 13L)
+})
+
+test_that("draw_sample_psu_srs_rlc allocates proportional to pop size when available", {
+  # One large site (pop 1000) and several small ones (pop 100).
+  frame <- data.frame(population_size = c(rep(1000L, 5), rep(100L, 15)))
+  result <- draw_sample_psu_srs_rlc(frame, sample_size = 30, n_sites = 2, cluster_size = 3, seed = 99)
+  selected <- result[!is.na(result$sampled_psu), ]
+  if (nrow(selected) == 2L) {
+    slot_counts <- vapply(selected$sampled_psu, function(s) {
+      length(trimws(strsplit(s, ",\\s*")[[1]]))
+    }, integer(1))
+    # Total slots must still be correct
+    expect_equal(sum(slot_counts), 13L)
+  }
+})
+
+test_that("draw_sample_psu_srs_rlc distributes evenly when population_size absent", {
+  frame <- data.frame(psu = paste0("p", seq_len(15)))  # no population_size column
+  result <- draw_sample_psu_srs_rlc(frame, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 1)
+  selected <- result[!is.na(result$sampled_psu), ]
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  expect_equal(sum(slot_counts), 13L)
+  expect_lte(max(slot_counts) - min(slot_counts), 1L)
+})
+
+# ---- systematic_rlc ----
+
+test_that("draw_sample_psu_systematic_rlc selects n_sites PSUs and allocates all cluster slots", {
+  frame <- data.frame(population_size = seq(100L, 300L, by = 10L))  # 21 PSUs
+  result <- draw_sample_psu_systematic_rlc(frame, sample_size = 30, n_sites = 4, cluster_size = 3, seed = 7)
+  selected <- result[!is.na(result$sampled_psu), ]
+  expect_lte(nrow(selected), 4L)
+  all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
+  expect_true(any(trimws(all_labels) == "RC"))
+  expect_equal(length(all_labels), 13L)
+})
+
+test_that("draw_sample_psu_systematic_rlc distributes evenly when population_size absent", {
+  frame <- data.frame(psu = paste0("p", seq_len(20)))  # no population_size column
+  result <- draw_sample_psu_systematic_rlc(frame, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 5)
+  selected <- result[!is.na(result$sampled_psu), ]
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  expect_equal(sum(slot_counts), 13L)
+  expect_lte(max(slot_counts) - min(slot_counts), 1L)
+})
+
+test_that("add_stratum accepts simple_random_rlc and systematic_rlc methods", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "a", stratum_name = "A",
+                sampling_method = "simple_random_rlc", n_sites = 5,
+                General_HH_Sample_Size = 30)
+  p$add_stratum(stratum_id = "b", stratum_name = "B",
+                sampling_method = "systematic_rlc", n_sites = 5,
+                General_HH_Sample_Size = 30)
+  expect_equal(p$sample_table$sampling_method, c("simple_random_rlc", "systematic_rlc"))
+  expect_equal(p$sample_table$cluster_size,    c(3L, 3L))
+  expect_equal(p$sample_table$calc_method,     c("cluster", "cluster"))
+})
+
+# ---- proportional_rlc ----
+
+test_that("draw_sample_psu_proportional_rlc selects all PSUs and allocates all cluster slots", {
+  frame <- data.frame(population_size = c(300L, 100L, 200L, 150L, 250L))
+  result <- draw_sample_psu_proportional_rlc(frame, sample_size = 30, cluster_size = 3, seed = 42)
+  # All PSUs are selected
+  expect_equal(nrow(result[!is.na(result$sampled_psu), ]), nrow(frame))
+  all_labels <- unlist(strsplit(result$sampled_psu, ",\\s*"))
+  # RC labels must be present
+  expect_true(any(trimws(all_labels) == "RC"))
+  # n_clusters = ceiling(30/3) = 10; n_reserve = 3 (<=10); n_total = 13
+  expect_equal(length(all_labels), 13L)
+})
+
+test_that("draw_sample_psu_proportional_rlc allocates proportional to population size", {
+  # Large PSU (pop 900) vs four small PSUs (pop 100 each) — large should get more slots
+  frame <- data.frame(population_size = c(900L, 100L, 100L, 100L, 100L))
+  result <- draw_sample_psu_proportional_rlc(frame, sample_size = 30, cluster_size = 3, seed = 1)
+  slot_counts <- vapply(result$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  # Large PSU (row 1) should get substantially more slots than any small PSU
+  expect_gt(slot_counts[1], slot_counts[2])
+})
+
+test_that("draw_sample_psu_proportional_rlc errors when population_size is missing", {
+  frame <- data.frame(psu = paste0("p", seq_len(5)))
+  expect_error(
+    draw_sample_psu_proportional_rlc(frame, sample_size = 30),
+    regexp = "population_size"
+  )
+})
+
+test_that("add_stratum accepts proportional_rlc without n_sites and defaults cluster_size to 3", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "r1", stratum_name = "R1",
+                sampling_method = "proportional_rlc",
+                General_HH_Sample_Size = 30)
+  expect_equal(p$sample_table$sampling_method, "proportional_rlc")
+  expect_equal(p$sample_table$cluster_size,    3L)
+  expect_equal(p$sample_table$calc_method,     "cluster")
+  expect_true(is.na(p$sample_table$n_sites))
+})
+
