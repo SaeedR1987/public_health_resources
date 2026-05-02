@@ -1,5 +1,5 @@
-<svg width="950" height="930" xmlns="http://www.w3.org/2000/svg">
-  <!-- Height: 930px — extended from 900px to accommodate the legend at the bottom. -->
+<svg width="950" height="950" xmlns="http://www.w3.org/2000/svg">
+  <!-- Height: 950px — extended to accommodate Sex and Age Composition sub-pillar and centred legend. -->
 
   <!-- Community Level Factors -->
   <g id="CommLevelFactors">
@@ -98,7 +98,7 @@
     <rect x="160" y="322.5" width="80" height="15" fill="white" stroke="lightgrey"/>
     <text x="200" y="332" text-anchor="middle" font-size="7">Availability (113)</text>
   </g>
-  <g id="FoodAccessiblity">
+  <g id="FoodAccessibility">
     <rect x="160" y="342.5" width="80" height="15" fill="white" stroke="lightgrey"/>
     <text x="200" y="352" text-anchor="middle" font-size="7">Accessibility (114)</text>
   </g>
@@ -160,11 +160,11 @@
     <rect x="630" y="260" width="100" height="35" fill="white" stroke="black"/>
     <text x="680" y="280" text-anchor="middle" font-size="9">Living conditions</text>
   </g>
-  <g id="ProtElements">
+  <g id="ProtectionElements">
     <rect x="640" y="302.5" width="80" height="15" fill="white" stroke="lightgrey"/>
     <text x="680" y="312" text-anchor="middle" font-size="7">Prot. Elements (125)</text>
   </g>
-  <g id="ProtVectors">
+  <g id="ProtectionVectors">
     <rect x="640" y="322.5" width="80" height="15" fill="white" stroke="lightgrey"/>
     <text x="680" y="332" text-anchor="middle" font-size="7">Prot. Vectors (126)</text>
   </g>
@@ -342,36 +342,39 @@
       <tspan x="680" dy="0">Population</tspan>
       <tspan x="680" dy="1.2em">demographics</tspan>
     </text>
-    <text x="680" y="762" text-anchor="middle" font-size="6" fill="grey">OC: 101</text>
+  </g>
+  <g id="SexAgeComposition">
+    <rect x="640" y="775" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="785" text-anchor="middle" font-size="7">Sex and Age (101)</text>
   </g>
   <g id="PopulationSize">
-    <rect x="640" y="775" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="680" y="785" text-anchor="middle" font-size="7">Pop. Size (102)</text>
+    <rect x="640" y="795" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="805" text-anchor="middle" font-size="7">Pop. Size (102)</text>
   </g>
   <g id="Vulnerability">
-    <rect x="640" y="795" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="680" y="805" text-anchor="middle" font-size="7">Vulnerability (103)</text>
+    <rect x="640" y="815" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="825" text-anchor="middle" font-size="7">Vulnerability (103)</text>
   </g>
   <g id="Migration">
-    <rect x="640" y="815" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="680" y="825" text-anchor="middle" font-size="7">Migration (104)</text>
+    <rect x="640" y="835" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="845" text-anchor="middle" font-size="7">Migration (104)</text>
   </g>
 
   <!-- Legend -->
   <g id="legend">
-    <text x="10" y="862" font-size="8" font-weight="bold">Key:</text>
+    <text x="224" y="882" font-size="8" font-weight="bold">Key:</text>
     <!-- Not Selected -->
-    <rect x="50" y="851" width="12" height="12" fill="white" stroke="black" stroke-width="0.5"/>
-    <text x="66" y="862" font-size="8">Not Selected</text>
+    <rect x="256" y="871" width="12" height="12" fill="white" stroke="black" stroke-width="0.5"/>
+    <text x="273" y="882" font-size="8">Not Selected</text>
     <!-- Primary Collection -->
-    <rect x="245" y="851" width="12" height="12" fill="#90EE90" stroke="black" stroke-width="0.5"/>
-    <text x="261" y="862" font-size="8">Primary Collection</text>
+    <rect x="354" y="871" width="12" height="12" fill="#90EE90" stroke="black" stroke-width="0.5"/>
+    <text x="371" y="882" font-size="8">Primary Collection</text>
     <!-- Secondary Data -->
-    <rect x="490" y="851" width="12" height="12" fill="#ADD8E6" stroke="black" stroke-width="0.5"/>
-    <text x="506" y="862" font-size="8">Secondary Data</text>
+    <rect x="485" y="871" width="12" height="12" fill="#ADD8E6" stroke="black" stroke-width="0.5"/>
+    <text x="502" y="882" font-size="8">Secondary Data</text>
     <!-- Primary and Secondary -->
-    <rect x="680" y="851" width="12" height="12" fill="#DDA0DD" stroke="black" stroke-width="0.5"/>
-    <text x="696" y="862" font-size="8">Primary and Secondary</text>
+    <rect x="594" y="871" width="12" height="12" fill="#DDA0DD" stroke="black" stroke-width="0.5"/>
+    <text x="611" y="882" font-size="8">Primary and Secondary</text>
   </g>
 
 </svg>
