@@ -428,3 +428,158 @@ test_that("draw_sample warns and skips on failure but continues with other strat
   s2_rows <- p$sampling_frame$log_df[p$sampling_frame$log_df$stratum == "s2", ]
   expect_false(all(is.na(s2_rows$sampled_psu)))
 })
+
+# ---- reserve cluster (RC) behaviour ------------------------------------------
+
+test_that("draw_sample (simple_random) includes RC-labelled reserve PSUs", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id             = "s1",
+    stratum_name           = "Urban",
+    population_size        = 10000,
+    sampling_method        = "simple_random",
+    n_sites                = 5,
+    General_HH_Sample_Size = 50
+  )
+  # 20-PSU frame guarantees enough units for main + reserve
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = rep(500, 20),
+    inclusion       = rep(TRUE, 20),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  psu_vals <- p$drawn_sample$sampled_psu
+  # n_main = 5 (<=10) -> 3 RC; total drawn = 8
+  expect_equal(sum(psu_vals == "RC"), 3L)
+  main_nums <- suppressWarnings(as.integer(psu_vals[psu_vals != "RC"]))
+  expect_equal(sort(main_nums), 1:5)
+  # RC PSUs have NA allocated_sample
+  expect_true(all(is.na(p$drawn_sample$allocated_sample[p$drawn_sample$sampled_psu == "RC"])))
+})
+
+test_that("draw_sample (systematic) includes RC-labelled reserve PSUs", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id             = "s1",
+    stratum_name           = "Rural",
+    population_size        = 10000,
+    sampling_method        = "systematic",
+    n_sites                = 5,
+    General_HH_Sample_Size = 50
+  )
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = rep(500, 20),
+    inclusion       = rep(TRUE, 20),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  psu_vals <- p$drawn_sample$sampled_psu
+  expect_equal(sum(psu_vals == "RC"), 3L)
+  main_nums <- suppressWarnings(as.integer(psu_vals[psu_vals != "RC"]))
+  expect_equal(sort(main_nums), 1:5)
+})
+
+test_that("RC numbers are correct for n_main > 10 and n_main > 20", {
+  # n_main = 15 -> 4 RC
+  result_15 <- draw_sample_psu_srs(
+    data.frame(population_size = rep(100, 30)), n_psu = 15, sample_size = 150, seed = 7
+  )
+  selected <- result_15[!is.na(result_15$sampled_psu), ]
+  expect_equal(sum(selected$sampled_psu == "RC"), 4L)
+
+  # n_main = 25 -> 5 RC
+  result_25 <- draw_sample_psu_srs(
+    data.frame(population_size = rep(100, 50)), n_psu = 25, sample_size = 250, seed = 7
+  )
+  selected25 <- result_25[!is.na(result_25$sampled_psu), ]
+  expect_equal(sum(selected25$sampled_psu == "RC"), 5L)
+})
+
+test_that("draw_sample (multi-stratum) applies correct sequential offset across strata with RC", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id = "s1", stratum_name = "Urban",
+    sampling_method = "simple_random", n_sites = 5,
+    General_HH_Sample_Size = 50
+  )
+  p$add_stratum(
+    stratum_id = "s2", stratum_name = "Rural",
+    sampling_method = "simple_random", n_sites = 3,
+    General_HH_Sample_Size = 30
+  )
+  frame <- data.frame(
+    stratum         = c(rep("s1", 20), rep("s2", 15)),
+    psu             = paste0("psu_", seq_len(35)),
+    population_size = rep(500, 35),
+    inclusion       = rep(TRUE, 35),
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  p$draw_sample()
+
+  s1_vals  <- p$sampling_frame$log_df$sampled_psu[p$sampling_frame$log_df$stratum == "s1"]
+  s2_vals  <- p$sampling_frame$log_df$sampled_psu[p$sampling_frame$log_df$stratum == "s2"]
+  s1_nums  <- suppressWarnings(as.integer(s1_vals[!is.na(s1_vals) & s1_vals != "RC"]))
+  s2_nums  <- suppressWarnings(as.integer(s2_vals[!is.na(s2_vals) & s2_vals != "RC"]))
+  # Numbers in s2 should be > max number in s1
+  expect_true(min(s2_nums) > max(s1_nums))
+  # RC labels remain "RC" in both strata
+  expect_true(all(s1_vals[!is.na(s1_vals) & s1_vals == "RC"] == "RC"))
+  expect_true(all(s2_vals[!is.na(s2_vals) & s2_vals == "RC"] == "RC"))
+})
+
+# ---- pps_rlc requires n_sites and restricts clusters to pre-selected PSUs ----
+
+test_that("draw_sample_psu_rlc errors when n_sites is missing", {
+  frame <- data.frame(population_size = rep(100, 20))
+  expect_error(
+    draw_sample_psu_rlc(frame, sample_size = 60, n_sites = NULL),
+    regexp = "n_sites is required"
+  )
+})
+
+test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selected PSUs", {
+  set.seed(1)
+  frame <- data.frame(population_size = round(runif(30, 50, 500)))
+  result <- draw_sample_psu_rlc(frame, sample_size = 60, n_sites = 5, cluster_size = 3, seed = 42)
+
+  selected <- result[!is.na(result$sampled_psu), ]
+  # No more than n_sites PSUs should receive cluster assignments
+  expect_lte(nrow(selected), 5L)
+  # The total includes both main and RC labels
+  all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
+  expect_true(any(all_labels == "RC"))
+})
+
+test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied at draw time", {
+  p <- make_protocol()
+  p$add_stratum(
+    stratum_id      = "s1",
+    stratum_name    = "Rural",
+    sampling_method = "pps_rlc",
+    n_sites         = 5,
+    General_HH_Sample_Size = 30
+  )
+  # Manually corrupt the strata table to remove n_sites, simulating a missing-param scenario
+  p$sample_table$n_sites <- NA_real_
+
+  frame <- data.frame(
+    stratum         = rep("s1", 20),
+    psu             = paste0("psu_", seq_len(20)),
+    population_size = round(runif(20, 100, 500)),
+    inclusion       = TRUE,
+    stringsAsFactors = FALSE
+  )
+  p$set_sampling_frame(frame)
+  expect_warning(p$draw_sample(), regexp = "skipped")
+  expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+})
+

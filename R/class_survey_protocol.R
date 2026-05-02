@@ -417,8 +417,8 @@ SurveyProtocol <- R6::R6Class(
     #'     \code{population_size} in the frame.
     #'   \item \code{"pps_cluster"} — PPS cluster sampling; requires
     #'     \code{n_psu} and \code{cluster_size}.
-    #'   \item \code{"pps_rlc"} — random location cluster (PPS variant); \code{cluster_size}
-    #'     defaults to \code{3} if not set.
+    #'   \item \code{"pps_rlc"} — random location cluster; requires \code{n_sites}
+    #'     (PSUs pre-selected by PPS) and defaults \code{cluster_size} to \code{3}.
     #'   \item \code{"systematic"} — systematic sampling; requires
     #'     \code{n_sites}.
     #'   \item \code{"purposive"} — purposive / convenience sampling; returns
@@ -529,19 +529,28 @@ SurveyProtocol <- R6::R6Class(
 
             sel_mask <- !is.na(st_result$sampled_psu)
             if (any(sel_mask)) {
+              # Parse only numeric tokens (skip "RC" labels)
               parse_psu_nums <- function(s) {
-                as.integer(trimws(strsplit(as.character(s), ",\\s*")[[1]]))
+                parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
+                nums  <- suppressWarnings(as.integer(parts))
+                nums[!is.na(nums)]
               }
               st_result$sampled_psu[sel_mask] <- vapply(
                 st_result$sampled_psu[sel_mask],
                 function(s) {
-                  nums <- parse_psu_nums(s)
-                  paste(nums + cluster_offset, collapse = ", ")
+                  parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
+                  offset_parts <- vapply(parts, function(p) {
+                    n <- suppressWarnings(as.integer(p))
+                    if (is.na(n)) p else as.character(n + cluster_offset)
+                  }, character(1), USE.NAMES = FALSE)
+                  paste(offset_parts, collapse = ", ")
                 },
                 character(1)
               )
               all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_psu_nums))
-              cluster_offset <- cluster_offset + max(all_nums)
+              if (length(all_nums) > 0L) {
+                cluster_offset <- cluster_offset + max(all_nums)
+              }
             }
 
             full_frame_rows <- eligible_rows[st_eligible_rows]
@@ -1126,8 +1135,11 @@ SurveyProtocol <- R6::R6Class(
                    origin = origin)
         draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
       } else if (method == "pps_rlc") {
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'pps_rlc' method — set the 'n_sites' column in the strata table."),
+                   origin = origin)
         cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
-        draw_sample_psu_rlc(frame, sample_size, cs, seed)
+        draw_sample_psu_rlc(frame, sample_size, n_sites, cs, seed)
       } else if (method == "systematic") {
         phr_assert(!is.null(n_sites) && !is.na(n_sites),
                    message = phr_txt("n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."),
