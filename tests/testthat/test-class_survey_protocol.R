@@ -566,6 +566,39 @@ test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selec
   expect_true(any(trimws(all_labels) == "RC"))
 })
 
+test_that("draw_sample_psu_rlc allocates clusters proportional to population size", {
+  # Two sites with very different population sizes: site A is 10x larger than site B.
+  # With 20 clusters + reserves allocated across 2 sites, site A should get the
+  # majority of cluster slots.
+  frame <- data.frame(
+    population_size = c(rep(1000L, 10),  # 10 large PSUs
+                        rep(100L,  10))  # 10 small PSUs
+  )
+  result <- draw_sample_psu_rlc(frame, sample_size = 60, n_sites = 2, cluster_size = 3, seed = 42)
+  selected <- result[!is.na(result$sampled_psu), ]
+
+  # Parse the number of cluster labels (main + RC) assigned to each selected PSU
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  # Total slots must equal n_total (n_clusters + n_reserve = 20 + 3 = 23)
+  # (n_clusters = ceiling(60/3) = 20; n_reserve = n_reserve_clusters(20) = 4; n_total = 24)
+  n_clusters <- ceiling(60 / 3)  # 20
+  n_reserve  <- if (n_clusters <= 10L) 3L else if (n_clusters <= 20L) 4L else 5L  # 4
+  expect_equal(sum(slot_counts), n_clusters + n_reserve)
+
+  # With proportional allocation, the large-PSU site should have more slots
+  # (large PSUs have total pop 10000 vs 1000 for small PSUs -> ~10:1 ratio)
+  # At minimum, the site from the large pool should get more than half the slots.
+  large_site_row <- which(result$population_size == 1000L & !is.na(result$sampled_psu))
+  small_site_row <- which(result$population_size == 100L  & !is.na(result$sampled_psu))
+  if (length(large_site_row) > 0L && length(small_site_row) > 0L) {
+    large_slots <- length(trimws(strsplit(result$sampled_psu[large_site_row[1]], ",\\s*")[[1]]))
+    small_slots <- length(trimws(strsplit(result$sampled_psu[small_site_row[1]], ",\\s*")[[1]]))
+    expect_gt(large_slots, small_slots)
+  }
+})
+
 test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied at draw time", {
   p <- make_protocol()
   p$add_stratum(

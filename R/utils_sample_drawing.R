@@ -250,9 +250,11 @@ draw_sample_psu_pps_cluster <- function(frame, n_clusters, cluster_size, seed = 
 #' Draw PSUs using random location cluster (RLC) sampling
 #'
 #' First selects \code{n_sites} primary sampling units using PPS sampling
-#' (proportional-to-size, without replacement).  Then allocates
-#' \code{ceiling(sample_size / cluster_size)} clusters within those
-#' pre-selected sites using PPS with replacement (via \code{pps::ppswr}).
+#' (proportional-to-size, without replacement via \code{pps::ppswor}).  Then
+#' allocates \code{ceiling(sample_size / cluster_size)} clusters across those
+#' pre-selected sites proportional to each site's population size (Hamilton
+#' largest-remainder method).  If population sizes for the selected sites all
+#' sum to zero, clusters are distributed evenly.
 #' Requires a \code{population_size} column and \code{n_sites} must be
 #' provided.
 #'
@@ -307,27 +309,52 @@ draw_sample_psu_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, s
     # Step 1: Pre-select n_sites PSUs using PPS without replacement (Brewer's method)
     set.seed(seed)
     sizes          <- frame$population_size
-    selected_sites <- pps::ppswor(sizes, n_sites)  # indices into frame
+    selected_sites <- pps::ppswor(sizes, n_sites)  # integer indices into frame
 
-    # Step 2: Allocate clusters within the selected sites using PPS-WR
+    # Step 2: Allocate n_total cluster slots across the selected sites.
+    #   Slots are allocated proportional to each site's population size using
+    #   Hamilton's largest-remainder method.  If sizes sum to zero (unavailable /
+    #   all-zero), fall back to equal allocation across sites.
     sub_sizes  <- sizes[selected_sites]
     n_clusters <- ceiling(sample_size / cluster_size)
     n_reserve  <- n_reserve_clusters(n_clusters)
     n_total    <- n_clusters + n_reserve
-    labels     <- assign_reserve_labels(n_total, n_reserve, seed)
 
-    selected_clusters <- pps::ppswr(sub_sizes, n_total)  # indices into selected_sites
+    total_pop <- sum(sub_sizes, na.rm = TRUE)
+    if (!is.na(total_pop) && total_pop > 0) {
+      exact_alloc <- sub_sizes / total_pop * n_total
+      slot_alloc  <- floor(exact_alloc)
+      slot_rem    <- n_total - sum(slot_alloc)
+      if (slot_rem > 0L) {
+        frac_idx <- order(exact_alloc - slot_alloc, decreasing = TRUE)
+        slot_alloc[frac_idx[seq_len(slot_rem)]] <-
+          slot_alloc[frac_idx[seq_len(slot_rem)]] + 1L
+      }
+    } else {
+      # Equal allocation fallback
+      base       <- n_total %/% n_sites
+      slot_rem   <- n_total %% n_sites
+      slot_alloc <- rep(base, n_sites)
+      if (slot_rem > 0L) slot_alloc[seq_len(slot_rem)] <- slot_alloc[seq_len(slot_rem)] + 1L
+    }
+
+    # Produce the global label sequence (sequential numbers interleaved with "RC")
+    # and distribute them to sites in the order of site selection.
+    labels <- assign_reserve_labels(n_total, n_reserve, seed)
 
     # Step 3: Populate sampled_psu / allocated_sample on the full frame
     frame$sampled_psu      <- NA_character_
     frame$allocated_sample <- NA_real_
 
-    for (sub_i in unique(selected_clusters)) {
-      cluster_slots   <- which(selected_clusters == sub_i)
-      cluster_labels  <- labels[cluster_slots]
-      frame_row       <- selected_sites[sub_i]
-      frame$sampled_psu[frame_row] <- paste(cluster_labels, collapse = ", ")
-      n_main_at_psu   <- sum(cluster_labels != "RC")
+    cursor <- 1L
+    for (sub_i in seq_len(n_sites)) {
+      k <- slot_alloc[sub_i]
+      if (k == 0L) next
+      site_labels   <- labels[cursor:(cursor + k - 1L)]
+      cursor        <- cursor + k
+      frame_row     <- selected_sites[sub_i]
+      frame$sampled_psu[frame_row] <- paste(site_labels, collapse = ", ")
+      n_main_at_psu <- sum(site_labels != "RC")
       frame$allocated_sample[frame_row] <- if (n_main_at_psu > 0L) {
         n_main_at_psu * cluster_size
       } else {
