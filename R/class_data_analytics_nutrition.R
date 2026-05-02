@@ -10,11 +10,16 @@
 #'   - Anthropometric plausibility (`quality_schema_anthro`)
 #'   - IYCF plausibility (`quality_schema_iycf`)
 #' * All visualizations/tables via outputs_schema
+#' * MUAC age-adjusted weights via `weights_muac_alt` (ratio of expected to
+#'   observed proportion of 6-23 vs 24-59 month children)
 #'
 #' @field quality_schema_anthro Quality check schema for anthropometric data
 #' @field quality_schema_iycf Quality check schema for IYCF data
 #' @field plausibility_results_anthro Results of anthropometric quality checks
 #' @field plausibility_results_iycf Results of IYCF quality checks
+#' @field weights_muac_alt Column name in \code{self$data} holding the
+#'   MUAC age-adjustment weights (expected proportion / sample proportion for
+#'   each 6-23 month and 24-59 month age group).
 #'
 #' @seealso [DataAnalytics]
 #' @export
@@ -32,6 +37,9 @@ NutritionDataAnalytics <- R6::R6Class(
     plausibility_results_anthro = NULL,
     plausibility_results_iycf   = NULL,
 
+    # MUAC age-adjustment weight column name
+    weights_muac_alt = NULL,
+
     #' @description
     #' Initialize a new NutritionDataAnalytics object
     #'
@@ -45,6 +53,10 @@ NutritionDataAnalytics <- R6::R6Class(
     #' @param value_map Value mappings from Data object
     #' @param variable_label Variable labels from Data object
     #' @param value_label Value labels from Data object
+    #' @param expected_prop_6_23 Numeric (0, 1); expected proportion of children
+    #'   aged 6-23 months among all 6-59 month children. Defaults to \code{2/3}.
+    #'   The complementary proportion \code{1 - expected_prop_6_23} is used for
+    #'   the 24-59 month group.
     #' @return A new NutritionDataAnalytics object
     initialize = function(data = NULL,
                           dap = NULL,
@@ -55,7 +67,8 @@ NutritionDataAnalytics <- R6::R6Class(
                           variable_map = NULL,
                           value_map = NULL,
                           variable_label = NULL,
-                          value_label = NULL) {
+                          value_label = NULL,
+                          expected_prop_6_23 = 2 / 3) {
 
       super$initialize(
         data = data,
@@ -78,9 +91,136 @@ NutritionDataAnalytics <- R6::R6Class(
       self$plausibility_results_anthro <- list()
       self$plausibility_results_iycf   <- list()
 
+      # Compute MUAC age-adjustment weights and attach to data
+      private$.compute_weights_muac_alt(expected_prop_6_23)
+
       phr_message(
         phr_txt(glue::glue("{dataset_name} initialized as NutritionDataAnalytics object."))
       )
+    },
+
+    #' @description
+    #' Run the quantitative analysis plan, with optional MUAC age-adjustment weights.
+    #'
+    #' When \code{muac_age_weights = TRUE}, any indicator in the analysis plan
+    #' whose \code{var_name} resolves to a \code{variable_map} role containing
+    #' \code{"muac_cat"} is analysed using a combined weight column equal to the
+    #' original survey weight multiplied by \code{weights_muac_alt}.  All other
+    #' indicators are analysed with the standard survey design unchanged.
+    #'
+    #' @param muac_age_weights Logical (default \code{FALSE}).  Set to \code{TRUE}
+    #'   to apply MUAC age-adjustment weights for \code{muac_cat} indicators.
+    #' @return Invisibly returns \code{self}.
+    run_analysis = function(muac_age_weights = FALSE) {
+
+      origin <- paste0(self$dataset_name, "$run_analysis")
+
+      # ---- Guard: fall back to base class when age-weights not requested ------
+      if (!isTRUE(muac_age_weights) || is.null(self$weights_muac_alt)) {
+        if (isTRUE(muac_age_weights) && is.null(self$weights_muac_alt)) {
+          phr_warning(
+            message = "muac_age_weights requested but weights_muac_alt could not be computed (age column missing or insufficient data). Proceeding without age adjustment.",
+            origin  = origin
+          )
+        }
+        return(super$run_analysis())
+      }
+
+      phr_message(origin, "Running analysis plan with MUAC age-adjustment weights...")
+
+      if (is.null(self$survey_design)) {
+        phr_error(origin, "Survey design not set.")
+        return(invisible(self))
+      }
+
+      if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
+        phr_error(origin, "No data_analysis_plan provided.")
+        return(invisible(self))
+      }
+
+      # ---- Identify muac_cat variable column names via variable_map -----------
+      muac_cat_cols <- character(0)
+      if (!is.null(self$variable_map) && length(self$variable_map) > 0) {
+        muac_roles <- names(self$variable_map)[grepl("muac_cat", names(self$variable_map), fixed = TRUE)]
+        if (length(muac_roles) > 0) {
+          mapped <- unlist(self$variable_map[muac_roles])
+          muac_cat_cols <- unique(mapped[!is.na(mapped) & nzchar(mapped)])
+        }
+      }
+      # Also treat any DAP var_name that itself contains "muac_cat"
+      dap_muac_direct <- self$data_analysis_plan$log_df$var_name[
+        grepl("muac_cat", self$data_analysis_plan$log_df$var_name, fixed = TRUE)
+      ]
+      muac_cat_cols <- unique(c(muac_cat_cols, dap_muac_direct))
+
+      dap_full     <- self$data_analysis_plan$log_df
+      muac_rows    <- dap_full[dap_full$var_name %in% muac_cat_cols, , drop = FALSE]
+      non_muac_rows <- dap_full[!dap_full$var_name %in% muac_cat_cols, , drop = FALSE]
+
+      # ---- Build the combined-weight survey design ----------------------------
+      combined_survey_design <- private$.build_combined_weight_design()
+
+      # ---- Run analysis on non-muac rows with standard design -----------------
+      sd_results_non_muac <- NULL
+      if (nrow(non_muac_rows) > 0 && !is.null(self$survey_design)) {
+        sd_results_non_muac <- phr_try(
+          phr_calc_survey_from_plan(
+            design        = self$survey_design,
+            analysis_plan = non_muac_rows
+          ),
+          on_error = "warn",
+          origin   = origin,
+          hint     = "Verify all variables exist and analysis plan is valid."
+        )
+      }
+
+      # ---- Run analysis on muac rows with combined-weight design --------------
+      sd_results_muac <- NULL
+      if (nrow(muac_rows) > 0 && !is.null(combined_survey_design)) {
+        sd_results_muac <- phr_try(
+          phr_calc_survey_from_plan(
+            design        = combined_survey_design,
+            analysis_plan = muac_rows
+          ),
+          on_error = "warn",
+          origin   = origin,
+          hint     = "Verify muac_cat variables and weights_muac_alt column are valid."
+        )
+      }
+
+      # ---- Merge survey design results ----------------------------------------
+      sd_parts <- Filter(Negate(is.null), list(sd_results_non_muac, sd_results_muac))
+      survey_design_results <- if (length(sd_parts) > 0) dplyr::bind_rows(sd_parts) else NULL
+
+      # ---- Base (unweighted) analysis – run full plan -------------------------
+      base_results <- NULL
+      if (!is.null(self$data)) {
+        base_design <- phr_try(
+          srvyr::as_survey_design(.data = self$data, ids = 1),
+          on_error = "warn",
+          origin   = origin,
+          hint     = "Could not create base (unweighted) survey design from self$data."
+        )
+        if (!is.null(base_design)) {
+          base_results <- phr_try(
+            phr_calc_survey_from_plan(
+              design        = base_design,
+              analysis_plan = dap_full
+            ),
+            on_error = "warn",
+            origin   = origin,
+            hint     = "Verify all variables exist in the base (unweighted) design."
+          )
+        }
+      }
+
+      self$analysis_results <- list(
+        survey_design = survey_design_results,
+        base          = base_results
+      )
+
+      phr_message(origin, "Analysis with MUAC age-adjustment weights completed successfully.")
+      invisible(self)
     },
 
     #' @description
@@ -490,6 +630,150 @@ NutritionDataAnalytics <- R6::R6Class(
       }
 
       results
+    },
+
+    # Compute the weights_muac_alt column and register it in data / variable_map.
+    #
+    # For children aged 6-23 months:
+    #   weights_muac_alt = expected_prop_6_23 / sample_prop_6_23
+    # For children aged 24-59 months:
+    #   weights_muac_alt = (1 - expected_prop_6_23) / sample_prop_24_59
+    # All other rows receive NA.
+    #
+    # After adding the column, self$data is updated and the survey_design is
+    # regenerated so the new column is available downstream.
+    .compute_weights_muac_alt = function(expected_prop_6_23 = 2 / 3) {
+
+      origin <- paste0(self$dataset_name, "$initialize$.compute_weights_muac_alt")
+
+      if (is.null(self$data)) {
+        return(invisible(NULL))
+      }
+
+      # Resolve the age-in-months column via variable_map
+      age_col <- self$variable_map[["age_months"]]
+      if (is.null(age_col) || !age_col %in% names(self$data)) {
+        phr_message(
+          origin,
+          "No age_months column found in data; weights_muac_alt will not be computed."
+        )
+        return(invisible(NULL))
+      }
+
+      age_vec <- suppressWarnings(as.numeric(self$data[[age_col]]))
+
+      in_6_23  <- !is.na(age_vec) & age_vec >= 6  & age_vec < 24
+      in_24_59 <- !is.na(age_vec) & age_vec >= 24 & age_vec < 60
+
+      n_6_23  <- sum(in_6_23)
+      n_24_59 <- sum(in_24_59)
+      n_total <- n_6_23 + n_24_59
+
+      if (n_total == 0) {
+        phr_message(
+          origin,
+          "No children aged 6-59 months found; weights_muac_alt will not be computed."
+        )
+        return(invisible(NULL))
+      }
+
+      sample_prop_6_23  <- n_6_23  / n_total
+      sample_prop_24_59 <- n_24_59 / n_total
+
+      expected_prop_24_59 <- 1 - expected_prop_6_23
+
+      alt_weights <- rep(NA_real_, nrow(self$data))
+
+      if (sample_prop_6_23 > 0) {
+        alt_weights[in_6_23]  <- expected_prop_6_23  / sample_prop_6_23
+      }
+      if (sample_prop_24_59 > 0) {
+        alt_weights[in_24_59] <- expected_prop_24_59 / sample_prop_24_59
+      }
+
+      self$data[["weights_muac_alt"]] <- alt_weights
+
+      # Register the new column in variable_map
+      self$variable_map[["weights_muac_alt"]] <- "weights_muac_alt"
+
+      # Store the column name in the public field
+      self$weights_muac_alt <- "weights_muac_alt"
+
+      # Refresh the survey design to include the new column
+      self$survey_design <- self$create_survey_design()
+
+      phr_message(
+        origin,
+        glue::glue(
+          "weights_muac_alt computed: {n_6_23} children 6-23 months ",
+          "(sample prop: {round(sample_prop_6_23, 3)}, expected: {round(expected_prop_6_23, 3)}), ",
+          "{n_24_59} children 24-59 months ",
+          "(sample prop: {round(sample_prop_24_59, 3)}, expected: {round(expected_prop_24_59, 3)})."
+        )
+      )
+
+      invisible(NULL)
+    },
+
+    # Build a survey design that uses the combined weight:
+    #   combined_weight = original_weight * weights_muac_alt
+    #
+    # Returns NULL when essential columns are missing.
+    .build_combined_weight_design = function() {
+
+      origin <- paste0(self$dataset_name, "$run_analysis$.build_combined_weight_design")
+
+      if (is.null(self$data)) return(NULL)
+      if (is.null(self$weights_muac_alt)) return(NULL)
+
+      alt_col <- self$weights_muac_alt  # column name = "weights_muac_alt"
+      if (!alt_col %in% names(self$data)) return(NULL)
+
+      weight_col <- self$variable_map[["weight"]]
+      if (!is.null(weight_col) && weight_col %in% names(self$data)) {
+        combined_wt <- self$data[[weight_col]] * self$data[[alt_col]]
+      } else {
+        combined_wt <- self$data[[alt_col]]
+      }
+
+      tmp_col <- ".combined_muac_weight"
+      modified_data <- self$data
+      modified_data[[tmp_col]] <- combined_wt
+
+      cluster_col <- self$variable_map[["cluster_id_numeric"]]
+      if (is.null(cluster_col) || !cluster_col %in% names(modified_data)) {
+        cluster_col <- self$variable_map[["cluster_id"]]
+      }
+      if (is.null(cluster_col) || !cluster_col %in% names(modified_data)) {
+        cluster_col <- NULL
+      }
+
+      strata_col <- self$variable_map[["stratum"]]
+      if (is.null(strata_col) || !strata_col %in% names(modified_data)) strata_col <- NULL
+
+      fpc_col <- self$variable_map[["fpc"]]
+      if (is.null(fpc_col) || !fpc_col %in% names(modified_data)) fpc_col <- NULL
+
+      ids_sym    <- if (!is.null(cluster_col)) rlang::sym(cluster_col) else 1
+      strata_sym <- if (!is.null(strata_col))  rlang::sym(strata_col)  else NULL
+      weight_sym <- rlang::sym(tmp_col)
+      fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
+
+      design <- phr_try(
+        srvyr::as_survey_design(
+          .data   = modified_data,
+          ids     = !!ids_sym,
+          strata  = !!strata_sym,
+          weights = !!weight_sym,
+          fpc     = !!fpc_sym,
+          nest    = TRUE
+        ),
+        on_error = "warn",
+        origin   = origin,
+        hint     = "Check that the combined weight column and cluster/strata columns contain valid data."
+      )
+
+      return(design)
     }
   )
 )

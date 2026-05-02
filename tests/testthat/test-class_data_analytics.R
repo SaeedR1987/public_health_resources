@@ -912,3 +912,177 @@ test_that("NutritionDataAnalytics$quality_diagnose does not error when schemas a
 
   expect_true(is.null(result) || tibble::is_tibble(result))
 })
+
+# ============================================================================
+# NutritionDataAnalytics – weights_muac_alt
+# ============================================================================
+
+test_that("NutritionDataAnalytics computes weights_muac_alt when age_months present", {
+  set.seed(42)
+  n <- 60
+  df <- tibble::tibble(
+    id         = seq_len(n),
+    age_months = c(rep(12, 40), rep(36, 20)),  # 40 in 6-23, 20 in 24-59
+    weight     = runif(n, 0.8, 1.2)
+  )
+
+  nut <- suppressMessages(suppressWarnings(
+    NutritionDataAnalytics$new(
+      data         = df,
+      dataset_name = "MuacWeightTest",
+      variable_map = list(age_months = "age_months", weight = "weight")
+    )
+  ))
+
+  expect_false(is.null(nut$weights_muac_alt))
+  expect_equal(nut$weights_muac_alt, "weights_muac_alt")
+  expect_true("weights_muac_alt" %in% names(nut$data))
+  expect_true("weights_muac_alt" %in% names(nut$variable_map))
+
+  # Children aged 6-23: sample_prop = 40/60, expected = 2/3
+  # => weights_muac_alt should be (2/3) / (40/60) = 1
+  expected_6_23  <- (2 / 3) / (40 / 60)
+  expected_24_59 <- (1 / 3) / (20 / 60)
+
+  vals_6_23  <- nut$data$weights_muac_alt[df$age_months == 12]
+  vals_24_59 <- nut$data$weights_muac_alt[df$age_months == 36]
+
+  expect_true(all(abs(vals_6_23  - expected_6_23)  < 1e-10))
+  expect_true(all(abs(vals_24_59 - expected_24_59) < 1e-10))
+})
+
+test_that("NutritionDataAnalytics weights_muac_alt is NA outside 6-59 months", {
+  df <- tibble::tibble(
+    id         = 1:6,
+    age_months = c(3, 6, 12, 24, 59, 61),
+    weight     = rep(1, 6)
+  )
+
+  nut <- suppressMessages(suppressWarnings(
+    NutritionDataAnalytics$new(
+      data         = df,
+      dataset_name = "MuacWeightNATest",
+      variable_map = list(age_months = "age_months", weight = "weight")
+    )
+  ))
+
+  wt <- nut$data$weights_muac_alt
+  expect_true(is.na(wt[df$age_months == 3]))
+  expect_true(is.na(wt[df$age_months == 61]))
+  expect_false(is.na(wt[df$age_months == 6]))
+  expect_false(is.na(wt[df$age_months == 59]))
+})
+
+test_that("NutritionDataAnalytics weights_muac_alt NULL when no age_months column", {
+  df <- tibble::tibble(id = 1:5, x = rnorm(5))
+
+  nut <- suppressMessages(suppressWarnings(
+    NutritionDataAnalytics$new(data = df, dataset_name = "NoAgeTest")
+  ))
+
+  expect_null(nut$weights_muac_alt)
+  expect_false("weights_muac_alt" %in% names(nut$data))
+})
+
+test_that("NutritionDataAnalytics expected_prop_6_23 parameter is respected", {
+  df <- tibble::tibble(
+    id         = 1:60,
+    age_months = c(rep(12, 30), rep(36, 30)),
+    weight     = rep(1, 60)
+  )
+
+  nut <- suppressMessages(suppressWarnings(
+    NutritionDataAnalytics$new(
+      data               = df,
+      dataset_name       = "CustomPropTest",
+      variable_map       = list(age_months = "age_months", weight = "weight"),
+      expected_prop_6_23 = 0.5
+    )
+  ))
+
+  # sample_prop_6_23 = 30/60 = 0.5, expected = 0.5 => weight should be 1
+  vals_6_23 <- nut$data$weights_muac_alt[df$age_months == 12]
+  expect_true(all(abs(vals_6_23 - 1) < 1e-10))
+})
+
+test_that("NutritionDataAnalytics run_analysis falls back without muac_age_weights", {
+  df <- tibble::tibble(
+    id         = 1:10,
+    age_months = c(rep(12, 5), rep(36, 5)),
+    nut_muac_cat = c(rep(0L, 7), rep(1L, 3)),
+    weight     = rep(1, 10)
+  )
+
+  nut <- suppressMessages(suppressWarnings(
+    NutritionDataAnalytics$new(
+      data         = df,
+      dataset_name = "RunAnalysisFallbackTest",
+      variable_map = list(
+        age_months   = "age_months",
+        weight       = "weight",
+        nut_muac_cat = "nut_muac_cat"
+      )
+    )
+  ))
+
+  nut$data_analysis_plan$log_df <- tibble::tibble(
+    indicator_name = "MUAC cat prop",
+    calculation    = "prop",
+    var_name       = "nut_muac_cat",
+    denom_var      = NA_character_,
+    disaggregation = NA_character_,
+    multiplier     = 100,
+    indicator_unit = "%"
+  )
+
+  # muac_age_weights = FALSE (default) should succeed
+  suppressMessages(suppressWarnings(
+    nut$run_analysis(muac_age_weights = FALSE)
+  ))
+  expect_true(is.list(nut$analysis_results))
+})
+
+test_that("NutritionDataAnalytics run_analysis applies muac_age_weights for muac_cat variables", {
+  set.seed(1)
+  n <- 90
+  df <- tibble::tibble(
+    id           = seq_len(n),
+    age_months   = c(rep(12, 60), rep(36, 30)),
+    nut_muac_cat = c(rep(0L, 60), rep(1L, 30)),
+    other_var    = as.integer(c(rep(0L, 45), rep(1L, 45))),
+    weight       = rep(1, n)
+  )
+
+  nut <- suppressMessages(suppressWarnings(
+    NutritionDataAnalytics$new(
+      data         = df,
+      dataset_name = "RunAnalysisMuacTest",
+      variable_map = list(
+        age_months   = "age_months",
+        weight       = "weight",
+        nut_muac_cat = "nut_muac_cat"
+      )
+    )
+  ))
+
+  nut$data_analysis_plan$log_df <- tibble::tibble(
+    indicator_name = c("MUAC cat prop", "Other prop"),
+    calculation    = c("prop", "prop"),
+    var_name       = c("nut_muac_cat", "other_var"),
+    denom_var      = c(NA_character_, NA_character_),
+    disaggregation = c(NA_character_, NA_character_),
+    multiplier     = c(100, 100),
+    indicator_unit = c("%", "%")
+  )
+
+  suppressMessages(suppressWarnings(
+    nut$run_analysis(muac_age_weights = TRUE)
+  ))
+
+  expect_true(is.list(nut$analysis_results))
+  expect_true(!is.null(nut$analysis_results$survey_design))
+  # Both muac_cat and other_var rows should be present in the results
+  res_names <- nut$analysis_results$survey_design$indicator_name
+  expect_true(any(grepl("MUAC", res_names)))
+  expect_true(any(grepl("Other", res_names)))
+})
