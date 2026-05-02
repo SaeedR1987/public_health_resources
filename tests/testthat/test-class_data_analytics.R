@@ -1089,13 +1089,25 @@ test_that("NutritionDataAnalytics$post_run_analysis uses 0-23 vs 24-69 age range
     indicator_unit = "%"
   )
 
-  # Directly test the private helper returns a vector with correct NA pattern
-  # We access it through post_run_analysis and verify results are stored
+  # Verify the private helper returns correct weight values for boundary ages.
+  # Valid rows: ages 0 & 23 → 0-23 group (n=2), ages 24 & 69 → 24-69 group (n=2)
+  # sample_prop_0_23 = 0.5, expected = 2/3 => weight = (2/3) / 0.5 = 4/3
+  # sample_prop_24_69 = 0.5, expected = 1/3 => weight = (1/3) / 0.5 = 2/3
+  wts <- suppressMessages(suppressWarnings(
+    nut$.__enclos_env__$private$.compute_weights_muac_alt(2 / 3)
+  ))
+
+  expect_equal(length(wts), nrow(df))
+  expect_true(all(abs(wts[df$age_months %in% c(0, 23)] - (4 / 3)) < 1e-10))
+  expect_true(all(abs(wts[df$age_months %in% c(24, 69)] - (2 / 3)) < 1e-10))
+  expect_true(is.na(wts[df$age_months == 70]))
+  expect_true(is.na(wts[is.na(df$age_months)]))
+
+  # Also verify post_run_analysis stores results
   suppressMessages(suppressWarnings(nut$run_analysis()))
   suppressMessages(suppressWarnings(
     nut$post_run_analysis(muac_age_weights = TRUE)
   ))
 
-  # Results should exist (age groups are present in the data)
   expect_true(!is.null(nut$analysis_results[["muac_weighted"]]))
 })
