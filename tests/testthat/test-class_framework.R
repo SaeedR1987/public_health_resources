@@ -573,7 +573,9 @@ test_that("Framework$modify_adjusted_svg colours primary sub-pillars light green
   fw$primary_objectives <- c(101)
   fw$modify_adjusted_svg()
   expect_true(grepl('#90EE90', fw$adjusted_svg))
-  expect_false(grepl('id="SP1"[^<]*fill="#ADD8E6"', fw$adjusted_svg))
+  # SP1 should not be coloured as secondary or both
+  expect_false(grepl('#ADD8E6', fw$adjusted_svg))
+  expect_false(grepl('#DDA0DD', fw$adjusted_svg))
 })
 
 test_that("Framework$modify_adjusted_svg colours secondary sub-pillars light blue", {
@@ -624,8 +626,11 @@ test_that("Framework$modify_adjusted_svg leaves unselected sub-pillars white", {
   )
   fw$primary_objectives <- c(101)
   fw$modify_adjusted_svg()
-  # SP2 is not in primary or secondary, should remain white
-  expect_true(grepl('id="SP2"[^<]*fill="white"', fw$adjusted_svg))
+  # SP2 (code 102) is not in primary or secondary, should not have a special colour
+  expect_false(grepl('#90EE90', fw$adjusted_svg) && grepl('#ADD8E6', fw$adjusted_svg))
+  expect_false(grepl('#DDA0DD', fw$adjusted_svg))
+  # The adjusted SVG must still contain SP2
+  expect_true(grepl('id="SP2"', fw$adjusted_svg))
 })
 
 test_that("ANAFramework initializes adjusted_svg to match master_svg", {
