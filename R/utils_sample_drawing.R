@@ -36,7 +36,10 @@ n_reserve_clusters <- function(n_main) {
 # Returns a character vector of length n_total.
 assign_reserve_labels <- function(n_total, n_reserve, seed) {
   if (n_reserve == 0L) return(as.character(seq_len(n_total)))
-  # Use seed + 1L so the RC-position draw is independent of the main draw seed
+  # Use seed + 1L so the RC-position draw uses a distinct starting state from
+  # the main draw seed, ensuring the two draws are statistically independent.
+  # Callers that need the main draw to be reproducible should call set.seed(seed)
+  # *after* this function.
   set.seed(seed + 1L)
   rc_positions <- sort(sample(seq_len(n_total), n_reserve, replace = FALSE))
   labels       <- character(n_total)

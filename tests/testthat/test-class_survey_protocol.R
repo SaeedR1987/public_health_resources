@@ -547,8 +547,12 @@ test_that("draw_sample_psu_rlc errors when n_sites is missing", {
 })
 
 test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selected PSUs", {
-  set.seed(1)
-  frame <- data.frame(population_size = round(runif(30, 50, 500)))
+  frame <- data.frame(population_size = c(100, 200, 150, 300, 250,
+                                          120, 180, 90, 400, 110,
+                                          220, 130, 170, 310, 240,
+                                          80, 160, 270, 190, 350,
+                                          100, 200, 150, 300, 250,
+                                          120, 180, 90, 400, 110))
   result <- draw_sample_psu_rlc(frame, sample_size = 60, n_sites = 5, cluster_size = 3, seed = 42)
 
   selected <- result[!is.na(result$sampled_psu), ]
@@ -557,7 +561,7 @@ test_that("draw_sample_psu_rlc restricts cluster allocation to n_sites pre-selec
   expect_lte(nrow(selected), 5L)
   # The total slot labels include both main numbers and "RC"
   all_labels <- unlist(strsplit(selected$sampled_psu, ",\\s*"))
-  expect_true(any(all_labels == "RC"))
+  expect_true(any(trimws(all_labels) == "RC"))
 })
 
 test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied at draw time", {

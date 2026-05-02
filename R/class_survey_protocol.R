@@ -529,8 +529,14 @@ SurveyProtocol <- R6::R6Class(
 
             sel_mask <- !is.na(st_result$sampled_psu)
             if (any(sel_mask)) {
-              # Apply cross-stratum offset to numeric cluster labels; keep "RC" unchanged.
-              # After offsetting, also compute the new cluster_offset from the updated values.
+              # parse_cluster_labels: extract the numeric cluster numbers from a
+              # comma-separated sampled_psu string, ignoring "RC" tokens.
+              parse_cluster_labels <- function(s) {
+                parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
+                nums  <- suppressWarnings(as.integer(parts))
+                nums[!is.na(nums)]
+              }
+              # Apply cross-stratum offset to numeric labels; "RC" tokens are kept unchanged.
               apply_cluster_offset <- function(s, offset) {
                 parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
                 vapply(parts, function(p) {
@@ -543,13 +549,7 @@ SurveyProtocol <- R6::R6Class(
                 function(s) paste(apply_cluster_offset(s, cluster_offset), collapse = ", "),
                 character(1)
               )
-              all_nums <- unlist(lapply(
-                st_result$sampled_psu[sel_mask],
-                function(s) {
-                  nums <- suppressWarnings(as.integer(apply_cluster_offset(s, 0L)))
-                  nums[!is.na(nums)]
-                }
-              ))
+              all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_cluster_labels))
               if (length(all_nums) > 0L) {
                 cluster_offset <- cluster_offset + max(all_nums)
               }
