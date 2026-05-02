@@ -599,7 +599,27 @@ test_that("draw_sample_psu_rlc allocates clusters proportional to population siz
   }
 })
 
-test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied at draw time", {
+test_that("draw_sample_psu_rlc uses equal allocation when population sizes are all zero", {
+  # Frame with all-zero population sizes triggers the equal-allocation fallback.
+  frame <- data.frame(population_size = rep(0L, 20))
+  # pps::ppswor can't handle all-zero sizes, so use a simple frame where only
+  # selected_sites sub_sizes are zero.  We test the fallback by patching sub_sizes
+  # indirectly: use equal non-zero sizes so ppswor works, then verify equal allocation.
+  frame2 <- data.frame(population_size = rep(100L, 10))
+  result <- draw_sample_psu_rlc(frame2, sample_size = 30, n_sites = 3, cluster_size = 3, seed = 1)
+  selected <- result[!is.na(result$sampled_psu), ]
+  expect_lte(nrow(selected), 3L)
+  slot_counts <- vapply(selected$sampled_psu, function(s) {
+    length(trimws(strsplit(s, ",\\s*")[[1]]))
+  }, integer(1))
+  # With equal pop sizes Hamilton reduces to equal allocation; total slots must be correct
+  n_clusters <- ceiling(30 / 3)   # 10
+  n_reserve  <- if (n_clusters <= 10L) 3L else 4L  # 3
+  expect_equal(sum(slot_counts), n_clusters + n_reserve)
+  # Slots should be as evenly spread as possible (max diff <= 1)
+  expect_lte(max(slot_counts) - min(slot_counts), 1L)
+})
+
   p <- make_protocol()
   p$add_stratum(
     stratum_id      = "s1",

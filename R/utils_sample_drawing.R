@@ -326,7 +326,8 @@ draw_sample_psu_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, s
       slot_alloc  <- floor(exact_alloc)
       slot_rem    <- n_total - sum(slot_alloc)
       if (slot_rem > 0L) {
-        frac_idx <- order(exact_alloc - slot_alloc, decreasing = TRUE)
+        fractions <- exact_alloc - slot_alloc
+        frac_idx  <- order(fractions, decreasing = TRUE)
         slot_alloc[frac_idx[seq_len(slot_rem)]] <-
           slot_alloc[frac_idx[seq_len(slot_rem)]] + 1L
       }
@@ -349,7 +350,7 @@ draw_sample_psu_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, s
     cursor <- 1L
     for (sub_i in seq_len(n_sites)) {
       k <- slot_alloc[sub_i]
-      if (k == 0L) next
+      if (k == 0L) next  # guard: skip sites that received no slots (edge case)
       site_labels   <- labels[cursor:(cursor + k - 1L)]
       cursor        <- cursor + k
       frame_row     <- selected_sites[sub_i]
