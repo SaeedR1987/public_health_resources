@@ -675,36 +675,27 @@ SurveyProtocol <- R6::R6Class(
     #' @description Validate the structure of the master sample table
     #'
     #' Checks that \code{sample_table} exists and contains all required master
-    #' table columns.  Returns a list with a \code{valid} flag and a
-    #' \code{message}.
+    #' table columns.
     #'
-    #' @return Named list with elements \code{valid} (logical) and
-    #'   \code{message} (character).
+    #' @return \code{TRUE} if valid, \code{FALSE} otherwise.
     validate_strata_table = function() {
       if (is.null(self$sample_table)) {
-        return(list(valid = FALSE, message = "sample_table is NULL — no strata have been added yet."))
+        return(FALSE)
       }
 
       required_cols <- .strata_table_required_cols
 
       missing_cols <- setdiff(required_cols, names(self$sample_table))
       if (length(missing_cols) > 0) {
-        return(list(
-          valid   = FALSE,
-          message = paste("sample_table is missing required columns:",
-                          paste(missing_cols, collapse = ", "))
-        ))
+        return(FALSE)
       }
 
       dupes <- self$sample_table$stratum_id[duplicated(self$sample_table$stratum_id)]
       if (length(dupes) > 0) {
-        return(list(
-          valid   = FALSE,
-          message = paste("Duplicate stratum_id values:", paste(dupes, collapse = ", "))
-        ))
+        return(FALSE)
       }
 
-      list(valid = TRUE, message = "sample_table structure is valid.")
+      TRUE
     },
 
     #' @description Get the sample table

@@ -52,18 +52,13 @@ if (!exists("%||%", mode = "function")) {
 #' XLSForm file on initialisation and are never altered by filter or
 #' modification methods.  The revised copies (\code{revised_survey},
 #' \code{revised_choices}, \code{revised_settings}) are initialised as copies
-#' of the masters and updated by methods such as \code{filter_survey_by_modules()}.
-#'
-#' \strong{Note:} Tool objects are not cloneable (\code{cloneable = FALSE}).
-#' Copying a Tool can be achieved by constructing a new instance from the
-#' same source XLSForm, or by extracting the data frames and passing them
-#' directly to the constructor.
+#' of the masters and updated by methods such as \code{filter_survey_by_indicator()}.
 #'
 #' This class provides methods for:
 #' - Loading and storing XLSForm data (master and revised)
-#' - Filtering the survey and choices by indicator codes (\code{filter_survey_by_modules()})
+#' - Filtering the survey and choices by indicator codes (\code{filter_survey_by_indicator()})
 #' - Safely updating specific choice lists with new values
-#' - Changing the default language in settings (english, french, arabic, spanish)
+#' - Changing the default language in revised_settings (english, french, arabic, spanish)
 #' - Validating the revised survey against available revised choices
 #' - Validating structure according to XLSForm specification
 #'
@@ -72,7 +67,7 @@ if (!exists("%||%", mode = "function")) {
 Tool <- R6::R6Class(
 
 "Tool",
-cloneable = FALSE,
+cloneable = TRUE,
 public = list(
 
   #' @field survey Data frame containing the survey sheet of the XLSForm.
@@ -191,8 +186,8 @@ public = list(
 
 
   #' @description
-  #' Change the default language stored in the settings data frame.
-  #' Updates the \code{default_language} column if it exists in settings.
+  #' Change the default language stored in the revised_settings data frame.
+  #' Updates the \code{default_language} column of \code{revised_settings}.
   #' Allowable options: \code{"english"}, \code{"french"}, \code{"arabic"},
   #' \code{"spanish"} (case-insensitive).
   #' @param language Character string for the new default language.
@@ -212,9 +207,9 @@ public = list(
     language_norm  <- tolower(language)
     language_title <- paste0(toupper(substring(language_norm, 1, 1)),
                              substring(language_norm, 2))
-    if (nrow(self$settings) == 0) {
-      # Create a single-row settings frame when none exists
-      self$settings <- data.frame(
+    if (is.null(self$revised_settings) || nrow(self$revised_settings) == 0) {
+      # Create a single-row revised_settings frame when none exists
+      self$revised_settings <- data.frame(
         form_title       = NA_character_,
         form_id          = NA_character_,
         version          = NA_character_,
@@ -222,10 +217,10 @@ public = list(
         stringsAsFactors = FALSE
       )
     } else {
-      if (!"default_language" %in% names(self$settings)) {
-        self$settings[["default_language"]] <- NA_character_
+      if (!"default_language" %in% names(self$revised_settings)) {
+        self$revised_settings[["default_language"]] <- NA_character_
       }
-      self$settings[["default_language"]] <- language_title
+      self$revised_settings[["default_language"]] <- language_title
     }
     private$.touch()
     invisible(self)
@@ -236,22 +231,27 @@ public = list(
   #' values and store the results in \code{revised_survey} and
   #' \code{revised_choices}.
   #'
-  #' Rows in \code{survey} whose \code{indicator_code} column matches one of
-  #' the supplied codes are retained.  Structural rows (those whose
-  #' \code{type} is a meta / group / repeat / calculate type) are always
-  #' included regardless of their \code{indicator_code}.  The
-  #' \code{revised_choices} is then derived from \code{revised_survey} by
-  #' retaining only the choice lists referenced by \code{select_one} and
-  #' \code{select_multiple} questions in \code{revised_survey}.
+  #' Rows in \code{survey} whose \code{indicator_code} column contains at least
+  #' one of the supplied codes are retained (using a grepl pattern match to
+  #' support comma-separated multi-indicator cells).  Code \code{10000} is
+  #' always included in the search regardless of the supplied argument, so
+  #' general/structural questions shared across all indicators are preserved.
+  #' The \code{revised_choices} is then derived from \code{revised_survey} by
+  #' retaining only choice list rows whose \code{indicator_code} column matches
+  #' one of the indicator codes present in \code{revised_survey}.
   #'
   #' @param indicator_codes Numeric or character vector (or list) of
   #'   \code{indicator_code} values to retain.
   #' @return Invisibly returns \code{self} for method chaining.
-  filter_survey_by_modules = function(indicator_codes) {
+  filter_survey_by_indicator = function(indicator_codes) {
     if (is.null(indicator_codes) || length(indicator_codes) == 0) {
       stop("indicator_codes must be a non-empty vector or list")
     }
-    indicator_codes <- unlist(indicator_codes)
+    indicator_codes <- as.character(unlist(indicator_codes))
+    # Always include 10000
+    if (!"10000" %in% indicator_codes) {
+      indicator_codes <- c(indicator_codes, "10000")
+    }
 
     sv <- self$survey
 
@@ -262,25 +262,14 @@ public = list(
       return(invisible(self))
     }
 
-    # Structural question types that are always included
-    structural_types <- c(
-      "begin_group", "end_group", "begin_repeat", "end_repeat",
-      "note", "calculate", "start", "end", "today",
-      "deviceid", "username", "audit", "phonenumber",
-      "simserial", "subscriberid"
-    )
+    # Build a regex pattern that matches any of the indicator codes as
+    # whole values in a possibly comma-separated cell.
+    pattern <- paste(indicator_codes, collapse = "|")
 
-    is_structural <- if ("type" %in% names(sv)) {
-      base_types <- gsub("\\s+.*$", "", sv$type)
-      base_types %in% structural_types | is.na(base_types) | base_types == ""
-    } else {
-      rep(FALSE, nrow(sv))
-    }
+    col_vals    <- as.character(sv[["indicator_code"]])
+    is_selected <- !is.na(col_vals) & grepl(pattern, col_vals)
 
-    col_vals    <- sv[["indicator_code"]]
-    is_selected <- !is.na(col_vals) & col_vals %in% indicator_codes
-
-    self$revised_survey  <- sv[is_structural | is_selected, , drop = FALSE]
+    self$revised_survey  <- sv[is_selected, , drop = FALSE]
     self$revised_choices <- private$.filter_choices_from_survey(self$revised_survey)
 
     private$.touch()
@@ -729,21 +718,27 @@ private = list(
   },
 
   # Private helper: derive a choices data frame from a given survey data frame.
-  # Extracts all list names referenced by select_one/select_multiple questions and
-  # filters the master choices to include only those lists.
+  # Collects all indicator_code values present in the survey and filters the
+  # master choices to rows whose indicator_code column matches (using grepl to
+  # handle comma-separated multi-indicator cells).
   .filter_choices_from_survey = function(sv) {
     ch <- self$choices
     if (is.null(sv) || is.null(ch) ||
-        !"type" %in% names(sv) || nrow(sv) == 0 ||
-        !"list_name" %in% names(ch)) {
+        !"indicator_code" %in% names(sv) || nrow(sv) == 0 ||
+        !"indicator_code" %in% names(ch)) {
       return(if (is.null(ch)) NULL else ch[0L, , drop = FALSE])
     }
-    select_types <- sv$type[grepl("^select_", sv$type, ignore.case = FALSE)]
-    list_names   <- gsub("^select_(one|multiple)\\s+", "", select_types, ignore.case = TRUE)
-    list_names   <- gsub("\\s+.*$", "", list_names)
-    list_names   <- unique(list_names[nchar(list_names) > 0])
-    if (length(list_names) == 0) return(ch[0L, , drop = FALSE])
-    ch[ch$list_name %in% list_names, , drop = FALSE]
+    # Collect all indicator codes present in the (revised) survey
+    sv_codes <- as.character(sv[["indicator_code"]])
+    sv_codes <- sv_codes[!is.na(sv_codes) & nzchar(sv_codes)]
+    # Split comma-separated values and flatten
+    sv_codes <- unique(trimws(unlist(strsplit(sv_codes, ","))))
+    sv_codes <- sv_codes[nzchar(sv_codes)]
+    if (length(sv_codes) == 0) return(ch[0L, , drop = FALSE])
+    pattern  <- paste(sv_codes, collapse = "|")
+    ch_codes <- as.character(ch[["indicator_code"]])
+    keep     <- !is.na(ch_codes) & grepl(pattern, ch_codes)
+    ch[keep, , drop = FALSE]
   },
 
   # Private helper: check whether a question exists in revised_survey

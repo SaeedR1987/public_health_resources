@@ -24,6 +24,7 @@
 KeyInformantTool <- R6::R6Class(
 "KeyInformantTool",
 inherit = Tool,
+cloneable = TRUE,
 public = list(
 
   #' @description

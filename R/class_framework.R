@@ -102,17 +102,36 @@ Framework <- R6::R6Class(
     #'   SVG.
     secondary_objectives = NULL,
 
+    #' @field available_indicator_codes Named list of tool type and
+    #'   \code{indicator_code} values derived from \code{adjusted_schema}.
+    #'   Updated automatically by \code{modify_adjusted_schema()}.
+    available_indicator_codes = NULL,
+
+    #' @field selected_indicator_codes Character vector of indicator codes
+    #'   currently selected by the user.  Does not need to align with
+    #'   \code{available_indicator_codes}; mismatches are surfaced by
+    #'   \code{diagnose_coherence()}.
+    selected_indicator_codes = NULL,
+
+    #' @field issues_coherence List of coherence issues found between
+    #'   \code{available_indicator_codes} and \code{selected_indicator_codes}.
+    #'   Populated by \code{diagnose_coherence()}.
+    issues_coherence = list(),
+
     #' @description
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
       phr_try({
-        self$master_schema       <- NULL
-        self$adjusted_schema     <- NULL
-        self$master_svg          <- NULL
-        self$adjusted_svg        <- NULL
-        self$primary_objectives  <- NULL
-        self$secondary_objectives <- NULL
+        self$master_schema            <- NULL
+        self$adjusted_schema          <- NULL
+        self$master_svg               <- NULL
+        self$adjusted_svg             <- NULL
+        self$primary_objectives       <- NULL
+        self$secondary_objectives     <- NULL
+        self$available_indicator_codes <- NULL
+        self$selected_indicator_codes  <- NULL
+        self$issues_coherence          <- list()
         phr_message(phr_txt("Framework initialized."), origin = "Framework$initialize")
       }, on_error = "abort", origin = "Framework$initialize")
       invisible(self)
@@ -157,119 +176,6 @@ Framework <- R6::R6Class(
         self$master_svg <- svg_content
         phr_message(phr_txt("Master SVG set."), origin = "Framework$set_master_svg")
       }, on_error = "abort", origin = "Framework$set_master_svg")
-      invisible(self)
-    },
-
-    #' @description Update the adjusted schema based on selected objectives.
-    #'
-    #' Filters the master schema to retain only the rows whose
-    #' \code{short_objective} value matches one of the supplied identifiers.
-    #' When \code{selected_objectives} is \code{NULL} or an empty vector the
-    #' full master schema is used as the adjusted schema.
-    #'
-    #' @param selected_objectives Character vector of \code{short_objective}
-    #'   values to retain.  Pass \code{NULL} to reset to the full master schema.
-    #' @return Invisibly returns \code{self} for method chaining.
-    update_adjusted_schema = function(selected_objectives = NULL) {
-      phr_try({
-        phr_assert(
-          !is.null(self$master_schema) && is.data.frame(self$master_schema) &&
-            nrow(self$master_schema) > 0,
-          message = phr_txt("master_schema must be set before calling update_adjusted_schema()."),
-          origin  = "Framework$update_adjusted_schema"
-        )
-
-        if (is.null(selected_objectives) || length(selected_objectives) == 0) {
-          self$adjusted_schema <- self$master_schema
-          phr_message(
-            phr_txt("Adjusted schema reset to full master schema ({nrow(self$adjusted_schema)} rows)."),
-            origin = "Framework$update_adjusted_schema"
-          )
-        } else {
-          self$adjusted_schema <- self$master_schema[
-            self$master_schema$short_objective %in% selected_objectives, ,
-            drop = FALSE
-          ]
-          phr_message(
-            phr_txt(
-              "Adjusted schema updated: {nrow(self$adjusted_schema)} of {nrow(self$master_schema)} rows selected."
-            ),
-            origin = "Framework$update_adjusted_schema"
-          )
-        }
-      }, on_error = "abort", origin = "Framework$update_adjusted_schema")
-      invisible(self)
-    },
-
-    #' @description Update the adjusted SVG based on the current adjusted schema.
-    #'
-    #' Derives \code{adjusted_svg} from \code{master_svg} by modifying elements
-    #' whose \code{id} attribute matches a \code{short_objective} value in the
-    #' adjusted schema.  Elements whose id is \emph{not} present in the adjusted
-    #' schema have their \code{visibility} set to \code{"hidden"} via an inline
-    #' style attribute.
-    #'
-    #' When \code{master_svg} or \code{adjusted_schema} is \code{NULL} the
-    #' method issues a warning and returns without modifying \code{adjusted_svg}.
-    #'
-    #' Subclasses may override this method to implement richer SVG manipulation
-    #' tailored to a specific diagram structure.
-    #'
-    #' @return Invisibly returns \code{self} for method chaining.
-    update_adjusted_svg = function() {
-      phr_try({
-        if (is.null(self$master_svg)) {
-          phr_warning(
-            message = phr_txt("master_svg is not set; skipping adjusted SVG update."),
-            origin  = "Framework$update_adjusted_svg"
-          )
-          return(invisible(self))
-        }
-
-        if (is.null(self$adjusted_schema) || nrow(self$adjusted_schema) == 0) {
-          phr_warning(
-            message = phr_txt(
-              "adjusted_schema is empty or not set; skipping adjusted SVG update."
-            ),
-            origin = "Framework$update_adjusted_svg"
-          )
-          return(invisible(self))
-        }
-
-        selected_ids <- unique(self$adjusted_schema$short_objective)
-        selected_ids <- selected_ids[!is.na(selected_ids)]
-
-        svg <- self$master_svg
-
-        # Find all id="..." occurrences in the SVG and hide those not selected.
-        # Pattern matches id="<value>" and captures the value.
-        all_ids <- regmatches(svg, gregexpr('id="([^"]+)"', svg))[[1]]
-        all_ids <- sub('^id="(.+)"$', "\\1", all_ids)
-
-        for (obj_id in setdiff(all_ids, selected_ids)) {
-          # Append visibility:hidden to an existing style attribute, or add one.
-          pattern_existing <- paste0('(id="', obj_id, '"[^>]*style="[^"]*)(")' )
-          if (grepl(pattern_existing, svg)) {
-            svg <- gsub(
-              pattern_existing,
-              paste0('\\1;visibility:hidden\\2'),
-              svg
-            )
-          } else {
-            svg <- gsub(
-              paste0('(id="', obj_id, '")'),
-              paste0('\\1 style="visibility:hidden"'),
-              svg
-            )
-          }
-        }
-
-        self$adjusted_svg <- svg
-        phr_message(
-          phr_txt("Adjusted SVG updated ({length(selected_ids)} objective(s) visible)."),
-          origin = "Framework$update_adjusted_svg"
-        )
-      }, on_error = "abort", origin = "Framework$update_adjusted_svg")
       invisible(self)
     },
 
@@ -399,84 +305,6 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Export framework data to a plain list.
-    #'
-    #' Returns a serialisable list that can be stored alongside a protocol
-    #' export.  R6 references are not preserved; restore with
-    #' \code{\link{restore_framework}}.
-    #'
-    #' @return Named list with elements \code{class}, \code{master_schema},
-    #'   \code{adjusted_schema}, \code{master_svg}, \code{adjusted_svg},
-    #'   \code{primary_objectives}, and \code{secondary_objectives}.
-    export_framework = function() {
-      list(
-        class                = class(self)[1],
-        master_schema        = self$master_schema,
-        adjusted_schema      = self$adjusted_schema,
-        master_svg           = self$master_svg,
-        adjusted_svg         = self$adjusted_svg,
-        primary_objectives   = self$primary_objectives,
-        secondary_objectives = self$secondary_objectives
-      )
-    },
-
-    #' @description Add a single objective row to the adjusted schema.
-    #'
-    #' Appends a new row to \code{adjusted_schema}.  If \code{adjusted_schema}
-    #' is \code{NULL}, it is initialised from the supplied row.  The row must
-    #' contain at minimum the columns required by
-    #' \code{\link{validate_objective_schema}}: \code{sector},
-    #' \code{pillar}, \code{sub_pillar}, \code{short_objective}, and
-    #' \code{text_objective}.
-    #'
-    #' @param row Named list or single-row data frame representing one
-    #'   objective (must contain required columns).
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_objective_row = function(row) {
-      phr_try({
-        required <- c("sector", "pillar", "sub_pillar", "short_objective", "text_objective")
-        if (is.list(row) && !is.data.frame(row)) {
-          row <- as.data.frame(row, stringsAsFactors = FALSE)
-        }
-        phr_assert(
-          is.data.frame(row) && nrow(row) >= 1L,
-          message = phr_txt("row must be a named list or single-row data frame."),
-          origin  = "Framework$add_objective_row"
-        )
-        missing_cols <- setdiff(required, names(row))
-        if (length(missing_cols) > 0) {
-          phr_error(
-            message = phr_txt(
-              "row is missing required fields: {paste(missing_cols, collapse = ', ')}"
-            ),
-            origin = "Framework$add_objective_row"
-          )
-        }
-        row <- row[1L, , drop = FALSE]
-        if (is.null(self$adjusted_schema)) {
-          self$adjusted_schema <- row
-        } else {
-          # Align columns: add any new columns as NA in the existing schema and vice versa
-          all_cols <- union(names(self$adjusted_schema), names(row))
-          for (col in setdiff(all_cols, names(self$adjusted_schema))) {
-            self$adjusted_schema[[col]] <- NA
-          }
-          for (col in setdiff(all_cols, names(row))) {
-            row[[col]] <- NA
-          }
-          self$adjusted_schema <- rbind(
-            self$adjusted_schema[, all_cols, drop = FALSE],
-            row[, all_cols, drop = FALSE]
-          )
-        }
-        phr_message(
-          phr_txt("Objective row '{row$short_objective}' added to adjusted_schema."),
-          origin = "Framework$add_objective_row"
-        )
-      }, on_error = "abort", origin = "Framework$add_objective_row")
-      invisible(self)
-    },
-
     #' @description Render the framework SVG and display it in the active
     #'   graphics device (e.g. the RStudio Plots pane).
     #'
@@ -511,7 +339,7 @@ Framework <- R6::R6Class(
         phr_assert(
           !is.null(svg_content) && nzchar(svg_content),
           message = phr_txt(
-            "No SVG content available. Call update_adjusted_svg() or set_master_svg() first."
+            "No SVG content available. Call modify_adjusted_schema() or set_master_svg() first."
           ),
           origin = "Framework$render_framework_svg"
         )
@@ -541,90 +369,147 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Create the adjusted schema by filtering the master schema
-    #'   to a specified set of objective codes.
+    #' @description Filter the master schema to the specified objective codes and
+    #'   store the result in \code{adjusted_schema}.
     #'
-    #' Filters \code{master_schema} to retain only rows whose
-    #' \code{short_objective} value is present in \code{objective_codes} and
-    #' stores the result as \code{adjusted_schema}.  When \code{objective_codes}
-    #' is \code{NULL} or an empty vector all objective codes found in
-    #' \code{master_schema} are used, making \code{adjusted_schema} identical to
-    #' \code{master_schema}.
+    #' Filters \code{master_schema} to retain matching rows and stores the result
+    #' as \code{adjusted_schema}.  The column used for matching is determined
+    #' automatically: if \code{master_schema} contains an \code{objective_code}
+    #' column, filtering is done on that column (useful for \code{ANAFramework}
+    #' which uses numeric objective codes); otherwise \code{short_objective} is
+    #' used.  When \code{objective_codes} is \code{NULL} or an empty vector all
+    #' rows from \code{master_schema} are retained.  Also updates
+    #' \code{available_indicator_codes} from the resulting \code{adjusted_schema}.
     #'
-    #' @param objective_codes Character vector or list of \code{short_objective}
-    #'   values to retain.  Pass \code{NULL} (the default) to include all
-    #'   objectives from the master schema.
+    #' @param objective_codes Character or numeric vector (or list) of objective
+    #'   code values to retain.  The type should match the filter column:
+    #'   numeric for \code{objective_code}, character for \code{short_objective}.
+    #'   Pass \code{NULL} (the default) to include all rows.
     #' @return Invisibly returns \code{self} for method chaining.
-    create_adjusted_schema = function(objective_codes = NULL) {
+    modify_adjusted_schema = function(objective_codes = NULL) {
       phr_try({
         phr_assert(
           !is.null(self$master_schema) && is.data.frame(self$master_schema) &&
             nrow(self$master_schema) > 0,
-          message = phr_txt("master_schema must be set before calling create_adjusted_schema()."),
-          origin  = "Framework$create_adjusted_schema"
+          message = phr_txt("master_schema must be set before calling modify_adjusted_schema()."),
+          origin  = "Framework$modify_adjusted_schema"
         )
 
-        if (is.null(objective_codes) || length(objective_codes) == 0) {
-          objective_codes <- unique(self$master_schema$short_objective)
+        # Determine which column to filter on
+        filter_col <- if ("objective_code" %in% names(self$master_schema)) {
+          "objective_code"
         } else {
-          objective_codes <- as.character(unlist(objective_codes))
+          "short_objective"
+        }
+
+        if (is.null(objective_codes) || length(objective_codes) == 0) {
+          objective_codes <- unique(self$master_schema[[filter_col]])
+        } else {
+          objective_codes <- unlist(objective_codes)
         }
 
         self$adjusted_schema <- self$master_schema[
-          self$master_schema$short_objective %in% objective_codes, ,
+          self$master_schema[[filter_col]] %in% objective_codes, ,
           drop = FALSE
         ]
+
+        # Update available_indicator_codes from the adjusted_schema
+        private$.refresh_available_indicator_codes()
+
         phr_message(
           phr_txt(
-            "Adjusted schema created: {nrow(self$adjusted_schema)} of {nrow(self$master_schema)} rows selected."
+            "Adjusted schema modified: {nrow(self$adjusted_schema)} of {nrow(self$master_schema)} rows selected."
           ),
-          origin = "Framework$create_adjusted_schema"
+          origin = "Framework$modify_adjusted_schema"
         )
-      }, on_error = "abort", origin = "Framework$create_adjusted_schema")
+      }, on_error = "abort", origin = "Framework$modify_adjusted_schema")
       invisible(self)
     },
 
-    #' @description Remove objective row(s) from the adjusted schema by
-    #'   \code{short_objective} value.
+    #' @description Diagnose coherence between \code{available_indicator_codes}
+    #'   and \code{selected_indicator_codes}.
     #'
-    #' Removes all rows in \code{adjusted_schema} whose \code{short_objective}
-    #' matches the supplied value.  Rows with \code{NA} in
-    #' \code{short_objective} are never removed by this method (they must be
-    #' removed by directly modifying \code{adjusted_schema}).
+    #' Compares the indicator codes present in \code{available_indicator_codes}
+    #' (derived from \code{adjusted_schema}) with those in
+    #' \code{selected_indicator_codes} (chosen by the user).  Any mismatches are
+    #' collected and stored in \code{issues_coherence}.  An empty
+    #' \code{issues_coherence} list indicates full coherence.
     #'
-    #' @param short_objective Character. The \code{short_objective} value to
-    #'   remove.
     #' @return Invisibly returns \code{self} for method chaining.
-    remove_objective_row = function(short_objective) {
+    diagnose_coherence = function() {
       phr_try({
-        phr_assert(
-          !is.null(self$adjusted_schema) && is.data.frame(self$adjusted_schema) &&
-            nrow(self$adjusted_schema) > 0,
-          message = phr_txt("adjusted_schema is empty or not set; nothing to remove."),
-          origin  = "Framework$remove_objective_row"
-        )
-        before <- nrow(self$adjusted_schema)
-        self$adjusted_schema <- self$adjusted_schema[
-          is.na(self$adjusted_schema$short_objective) |
-            self$adjusted_schema$short_objective != short_objective,
-          , drop = FALSE
-        ]
-        removed <- before - nrow(self$adjusted_schema)
-        if (removed == 0L) {
-          phr_warning(
-            message = phr_txt(
-              "No rows with short_objective '{short_objective}' found in adjusted_schema."
-            ),
-            origin = "Framework$remove_objective_row"
+        self$issues_coherence <- list()
+
+        avail_codes <- if (!is.null(self$available_indicator_codes) &&
+                           is.data.frame(self$available_indicator_codes) &&
+                           "indicator_code" %in% names(self$available_indicator_codes)) {
+          unique(as.character(self$available_indicator_codes[["indicator_code"]]))
+        } else {
+          character(0)
+        }
+
+        sel_codes <- if (!is.null(self$selected_indicator_codes)) {
+          unique(as.character(self$selected_indicator_codes))
+        } else {
+          character(0)
+        }
+
+        in_selected_not_available <- setdiff(sel_codes, avail_codes)
+        in_available_not_selected <- setdiff(avail_codes, sel_codes)
+
+        if (length(in_selected_not_available) > 0) {
+          self$issues_coherence$selected_not_in_available <- paste0(
+            "The following selected_indicator_codes are not in available_indicator_codes: ",
+            paste(in_selected_not_available, collapse = ", ")
+          )
+        }
+
+        if (length(in_available_not_selected) > 0) {
+          self$issues_coherence$available_not_in_selected <- paste0(
+            "The following available_indicator_codes have not been selected: ",
+            paste(in_available_not_selected, collapse = ", ")
+          )
+        }
+
+        if (length(self$issues_coherence) == 0) {
+          phr_message(
+            phr_txt("Coherence check passed: available and selected indicator codes align."),
+            origin = "Framework$diagnose_coherence"
           )
         } else {
           phr_message(
-            phr_txt("{removed} row(s) removed for short_objective '{short_objective}'."),
-            origin = "Framework$remove_objective_row"
+            phr_txt(
+              "Coherence check found {length(self$issues_coherence)} issue(s). Check self$issues_coherence."
+            ),
+            origin = "Framework$diagnose_coherence"
           )
         }
-      }, on_error = "abort", origin = "Framework$remove_objective_row")
+      }, on_error = "abort", origin = "Framework$diagnose_coherence")
       invisible(self)
+    }
+  ),
+
+  private = list(
+    # Rebuild available_indicator_codes from the current adjusted_schema.
+    .refresh_available_indicator_codes = function() {
+      if (!is.null(self$adjusted_schema) &&
+          is.data.frame(self$adjusted_schema) &&
+          "indicator_code" %in% names(self$adjusted_schema)) {
+        tool_type_col <- if ("tool_type" %in% names(self$adjusted_schema)) {
+          as.character(self$adjusted_schema[["tool_type"]])
+        } else {
+          rep(NA_character_, nrow(self$adjusted_schema))
+        }
+        ind_codes <- as.character(self$adjusted_schema[["indicator_code"]])
+        keep <- !is.na(ind_codes) & nzchar(ind_codes)
+        self$available_indicator_codes <- data.frame(
+          tool_type      = tool_type_col[keep],
+          indicator_code = ind_codes[keep],
+          stringsAsFactors = FALSE
+        )
+      } else {
+        self$available_indicator_codes <- NULL
+      }
     }
   )
 )

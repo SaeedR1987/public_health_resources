@@ -21,10 +21,10 @@ create_framework <- function() {
 #' Restore a Framework object from exported data
 #'
 #' Reconstructs a \code{\link{Framework}} or \code{\link{ANAFramework}} object
-#' from a plain list produced by \code{Framework$export_framework()}.
+#' from a plain list produced by \code{Protocol$export_protocol()$framework}.
 #'
-#' @param framework_data Named list as produced by
-#'   \code{Framework$export_framework()}.  Must contain a \code{class} element.
+#' @param framework_data Named list containing framework data.
+#'   Must contain a \code{class} element.
 #' @return A \code{Framework} or \code{ANAFramework} object with fields
 #'   restored from \code{framework_data}.
 #' @export
@@ -35,7 +35,7 @@ restore_framework <- function(framework_data) {
   phr_try({
     phr_assert(
       is.list(framework_data),
-      message = phr_txt("framework_data must be a list produced by Framework$export_framework()."),
+      message = phr_txt("framework_data must be a named list containing framework export data."),
       origin  = origin
     )
 

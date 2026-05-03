@@ -48,7 +48,7 @@ Protocol <- R6::R6Class(
 
     #' @field issues_coherence List of coherence issues found between the
     #'   \code{adjusted_schema} indicator codes and the tool indicator codes.
-    #'   Populated by \code{validate_coherence()}.
+    #'   Populated by \code{diagnose_coherence()}.
     issues_coherence = list(),
 
     #' @field metadata List containing protocol metadata
@@ -188,15 +188,25 @@ Protocol <- R6::R6Class(
     #' @description Export protocol to a list
     #' @return List containing all protocol data
     export_protocol = function() {
+      fw_data <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        fw <- self$framework
+        list(
+          class                = class(fw)[1],
+          master_schema        = fw$master_schema,
+          adjusted_schema      = fw$adjusted_schema,
+          master_svg           = fw$master_svg,
+          adjusted_svg         = fw$adjusted_svg,
+          primary_objectives   = fw$primary_objectives,
+          secondary_objectives = fw$secondary_objectives
+        )
+      } else {
+        NULL
+      }
       list(
         metadata = self$metadata,
         objectives = self$objectives,
         objective_schema = self$objective_schema,
-        framework = if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-          self$framework$export_framework()
-        } else {
-          NULL
-        },
+        framework = fw_data,
         tools = self$tools,
         selected_indicators = self$selected_indicators,
         issues = self$issues,
@@ -218,7 +228,7 @@ Protocol <- R6::R6Class(
       validate_objective_schema(schema, soft = soft)
     },
 
-    #' @description Check coherence between the \code{adjusted_schema} indicator
+    #' @description Diagnose coherence between the \code{adjusted_schema} indicator
     #' codes and the \code{indicator_code} values across all tools in
     #' \code{self$tools} (using each tool's \code{revised_survey}).
     #'
@@ -234,7 +244,7 @@ Protocol <- R6::R6Class(
     #' An empty list means no coherence issues were found.
     #'
     #' @return Invisibly returns \code{self} for method chaining.
-    validate_coherence = function() {
+    diagnose_coherence = function() {
       self$issues_coherence <- list()
 
       if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
@@ -330,12 +340,12 @@ Protocol <- R6::R6Class(
       if (length(self$issues_coherence) == 0) {
         phr_message(
           phr_txt("Coherence validation passed: all objectives have tool coverage and all tool indicators match the schema."),
-          origin = "Protocol$validate_coherence"
+          origin = "Protocol$diagnose_coherence"
         )
       } else {
         phr_message(
           phr_txt("Coherence validation found {length(self$issues_coherence)} issue(s). Check self$issues_coherence for details."),
-          origin = "Protocol$validate_coherence"
+          origin = "Protocol$diagnose_coherence"
         )
       }
       invisible(self)

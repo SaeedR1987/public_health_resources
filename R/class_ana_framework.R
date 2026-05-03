@@ -9,10 +9,9 @@
 #'   \item the bundled \code{ana_framework.svg} as \code{master_svg}.
 #' }
 #'
-#' Call \code{create_adjusted_schema()} or \code{update_adjusted_schema()} with
-#' a vector of \code{short_objective} values and then \code{update_adjusted_svg()}
-#' to produce a highlighted SVG that shows which conceptual framework blocks are
-#' covered by the selection.
+#' Call \code{modify_adjusted_schema()} with
+#' a vector of objective codes to filter the schema, and then
+#' \code{modify_adjusted_svg()} to produce a highlighted SVG.
 #'
 #' @importFrom R6 R6Class
 #' @export
@@ -82,100 +81,6 @@ ANAFramework <- R6::R6Class(
         }
       }, on_error = "warn", origin = "ANAFramework$initialize")
 
-      invisible(self)
-    },
-
-    #' @description Filter the master schema to objectives whose \code{objective_code}
-    #'   matches one or more of the supplied objective code values.
-    #'
-    #' This corresponds to the objective-code-dimension filter used in the Shiny module.
-    #'
-    #' @param objective_codes Numeric or character vector of objective codes to retain.
-    #' @return Data frame subset of \code{master_schema}.
-    filter_schema_by_objective = function(objective_codes) {
-      phr_try({
-        phr_assert(
-          !is.null(self$master_schema) && is.data.frame(self$master_schema),
-          message = phr_txt("master_schema must be set before calling filter_schema_by_objective()."),
-          origin  = "ANAFramework$filter_schema_by_objective"
-        )
-        phr_assert(
-          (is.numeric(objective_codes) || is.character(objective_codes)) &&
-            length(objective_codes) > 0,
-          message = phr_txt("objective_codes must be a non-empty numeric or character vector."),
-          origin  = "ANAFramework$filter_schema_by_objective"
-        )
-        phr_assert(
-          "objective_code" %in% names(self$master_schema),
-          message = phr_txt("master_schema must contain an 'objective_code' column."),
-          origin  = "ANAFramework$filter_schema_by_objective"
-        )
-        self$master_schema[self$master_schema$objective_code %in% objective_codes, , drop = FALSE]
-      }, on_error = "abort", origin = "ANAFramework$filter_schema_by_objective")
-    },
-
-    #' @description Update the adjusted SVG by highlighting blocks for the
-    #'   currently selected objectives.
-    #'
-    #' For each unique \code{sub_pillar} value in \code{adjusted_schema} the
-    #' corresponding \code{<g id="...">} group's primary \code{<rect>} element
-    #' (the one with \code{stroke="black"}) has its \code{fill} attribute
-    #' changed to \code{highlight_colour}.  All other block rects are reset to
-    #' \code{default_colour}.
-    #'
-    #' This mirrors the JavaScript highlight logic from the ANA Shiny module
-    #' (\code{r.setAttribute('fill','lightgreen')}) but uses pure R string
-    #' manipulation so it works outside of Shiny.
-    #'
-    #' @param highlight_colour Character. Fill colour for selected blocks.
-    #'   Defaults to \code{"lightgreen"}.
-    #' @param default_colour Character. Fill colour for unselected blocks.
-    #'   Defaults to \code{"white"}.
-    #' @return Invisibly returns \code{self} for method chaining.
-    update_adjusted_svg = function(highlight_colour = "lightgreen",
-                                   default_colour   = "white") {
-      phr_try({
-        if (is.null(self$master_svg)) {
-          phr_warning(
-            message = phr_txt("master_svg is not set; skipping adjusted SVG update."),
-            origin  = "ANAFramework$update_adjusted_svg"
-          )
-          return(invisible(self))
-        }
-
-        if (is.null(self$adjusted_schema) || nrow(self$adjusted_schema) == 0) {
-          phr_warning(
-            message = phr_txt(
-              "adjusted_schema is empty or not set; skipping adjusted SVG update."
-            ),
-            origin = "ANAFramework$update_adjusted_svg"
-          )
-          return(invisible(self))
-        }
-
-        # sub_pillar values for selected objectives (these are the SVG group IDs)
-        selected_blocks <- unique(self$adjusted_schema$sub_pillar)
-        selected_blocks <- selected_blocks[!is.na(selected_blocks) & nzchar(selected_blocks)]
-
-        # All block IDs present in master_schema
-        all_blocks <- unique(self$master_schema$sub_pillar)
-        all_blocks  <- all_blocks[!is.na(all_blocks) & nzchar(all_blocks)]
-
-        svg <- self$master_svg
-
-        # For every known block, set fill to highlight or default on the first
-        # <rect stroke="black"> inside <g id="BLOCK_ID">
-        svg <- private$set_block_fills(svg, all_blocks, selected_blocks,
-                                       highlight_colour, default_colour)
-
-        self$adjusted_svg <- svg
-        phr_message(
-          phr_txt(
-            "ANAFramework adjusted SVG updated: {length(selected_blocks)} block(s) highlighted."
-          ),
-          origin = "ANAFramework$update_adjusted_svg"
-        )
-      }, on_error = "abort", origin = "ANAFramework$update_adjusted_svg")
       invisible(self)
     }
   ),

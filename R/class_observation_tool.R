@@ -26,6 +26,7 @@
 ObservationTool <- R6::R6Class(
 "ObservationTool",
 inherit = Tool,
+cloneable = TRUE,
 public = list(
 
   #' @description
