@@ -40,7 +40,7 @@ protocol$framework$secondary_objectives <- c(101, 105, 107, 112, 113, 114, 115, 
 
 head(protocol$framework$adjusted_schema)
 protocol$framework$modify_adjusted_schema(objective_codes = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives))
-head(protocol$framework$modify_adjusted_schema(selected_objectives = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives)))
+# modify_adjusted_schema stores result in adjusted_schema; returns self invisibly
 
 protocol$framework$modify_adjusted_svg()
 
@@ -119,8 +119,8 @@ View(protocol$sample_table)
 
 # Validate the master strata table structure
 strata_validation <- protocol$validate_strata_table()
-strata_validation$valid
-strata_validation$message
+# validate_strata_table() now returns TRUE/FALSE directly
+cat("Strata table valid:", strata_validation, "\n")
 
 
 # Test 6: Build and Validate a Sampling Frame ####
@@ -299,14 +299,14 @@ updated_choices[updated_choices$list_name == "admin1", ]
 
 # -- 8i: Inspect roster groups --
 
-roster_groups <- hh_tool$# get_roster_groups removed
+roster_groups <- # get_roster_groups removed: hh_tool$get_roster_groups()
 nrow(roster_groups)
 head(roster_groups)
 
 if (nrow(roster_groups) > 0) {
   first_roster <- roster_groups$name[1]
   cat("First roster group:", first_roster, "\n")
-  roster_qs <- hh_tool$# get_roster_questions removed (first_roster)
+  roster_qs <- # get_roster_questions removed: hh_tool$get_roster_questions(first_roster)
   head(roster_qs)
 }
 
@@ -562,13 +562,7 @@ base_only <- Protocol$new(
 )
 # Use a custom Framework to define objectives
 base_only_fw <- Framework$new()
-base_only_fw$# add_objective_row removed: (list(
-  sector          = "General",
-  pillar          = "Context",
-  sub_pillar      = "Background",
-  short_objective = "GEN-01",
-  text_objective  = "Review secondary data on humanitarian conditions"
-))
+# add_objective_row removed: was base_only_fw$add_objective_row(list(...))
 base_only$framework <- base_only_fw
 
 report_base_path <- tempfile(fileext = ".docx")
@@ -657,12 +651,12 @@ available_codes <- unique(af$master_schema$objective_code)
 cat("Available objective codes:", paste(available_codes, collapse = ", "), "\n")
 
 if (length(available_codes) > 0) {
-  code_subset <- af$modify_adjusted_schema(available_codes[1])
-  stopifnot(is.data.frame(code_subset))
-  stopifnot(nrow(code_subset) > 0)
-  stopifnot(all(code_subset$objective_code == available_codes[1]))
+  af$modify_adjusted_schema(available_codes[1])
+  stopifnot(is.data.frame(af$adjusted_schema))
+  stopifnot(nrow(af$adjusted_schema) > 0)
+  stopifnot(all(af$adjusted_schema$objective_code == available_codes[1]))
   cat("modify_adjusted_schema('", available_codes[1], "'): ",
-      nrow(code_subset), "rows\n")
+      nrow(af$adjusted_schema), "rows\n")
 }
 
 # -- 13f: get_preset_objectives() for all named presets --
@@ -683,7 +677,7 @@ stopifnot(is.data.frame(af$adjusted_schema))
 stopifnot(nrow(af$adjusted_schema) > 0)
 cat("Adjusted schema for FSL preset:", nrow(af$adjusted_schema), "rows\n")
 
-af$modify_adjusted_svg(highlight_colour = "lightgreen", default_colour = "white")
+af$modify_adjusted_svg()
 stopifnot(!is.null(af$adjusted_svg))
 stopifnot(nzchar(af$adjusted_svg))
 cat("ANAFramework adjusted SVG generated (",
@@ -736,7 +730,8 @@ cat("Restored framework master_schema rows:",
 
 # -- 13j: restore_framework() directly --
 
-exported_fw <- af$# export_framework removed -- use export_protocol()$framework
+# export_framework removed -- use export_protocol()$framework
+exported_fw <- af$export_protocol()$framework
 stopifnot(is.list(exported_fw))
 stopifnot(exported_fw$class == "ANAFramework")
 
@@ -753,34 +748,21 @@ cat("restore_framework() restored ANAFramework with",
 af2 <- ANAFramework$new()
 wash_objs <- af2$get_preset_objectives("wash")
 af2$modify_adjusted_schema(wash_objs)
-af2$modify_adjusted_svg(highlight_colour = "lightblue", default_colour = "white")
+af2$modify_adjusted_svg()
 stopifnot(!is.null(af2$adjusted_svg))
 cat("WASH preset adjusted SVG generated with lightblue highlight.\n")
 
-# -- 13l: Framework$# add_objective_row removed: () and # remove_objective_row removed: () --
+# -- 13l: add_objective_row and remove_objective_row removed --
 
 fw_edit <- Framework$new()
-fw_edit$# add_objective_row removed: (list(
-  sector          = "FSL",
-  pillar          = "Food Security",
-  sub_pillar      = "FCS",
-  short_objective = "FSL-01",
-  text_objective  = "Estimate food insecurity prevalence"
-))
-fw_edit$# add_objective_row removed: (list(
-  sector          = "FSL",
-  pillar          = "Food Security",
-  sub_pillar      = "FCS",
-  short_objective = "FSL-01",
-  text_objective  = "Estimate food insecurity prevalence",
-  indicator       = "HDDS score"
-))
-stopifnot(nrow(fw_edit$adjusted_schema) == 2L)
-cat("Framework adjusted_schema rows after 2 add_objective_row calls:", nrow(fw_edit$adjusted_schema), "\n")
+# add_objective_row removed
+# add_objective_row removed
+# stopifnot(nrow(fw_edit$adjusted_schema) == 2L)
+# cat("Framework adjusted_schema rows after 2 add_objective_row calls:", nrow(fw_edit$adjusted_schema), "\n")
 
-fw_edit$# remove_objective_row removed: ("FSL-01")
+# remove_objective_row removed
 stopifnot(is.null(fw_edit$adjusted_schema) || nrow(fw_edit$adjusted_schema) == 0L)
-cat("Framework adjusted_schema rows after remove_objective_row:", nrow(fw_edit$adjusted_schema), "\n")
+# cat("Framework adjusted_schema rows after remove_objective_row:", nrow(fw_edit$adjusted_schema), "\n")
 
 # -- 13m: render_framework_svg() on the Framework (renders to active graphics device) --
 # render_framework_svg() is a Framework method that displays the SVG in the

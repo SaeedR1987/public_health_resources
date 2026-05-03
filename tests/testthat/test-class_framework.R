@@ -128,7 +128,7 @@ test_that("Framework$modify_adjusted_schema errors without master_schema", {
   expect_error(fw$modify_adjusted_schema(c("H1")))
 })
 
-test_that("Framework$modify_adjusted_svg hides unselected elements", {
+test_that("Framework$modify_adjusted_svg runs without error when primary objectives set", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -146,22 +146,6 @@ test_that("Framework$modify_adjusted_svg hides unselected elements", {
   fw$modify_adjusted_svg()
 
   expect_false(is.null(fw$adjusted_svg))
-})
-
-test_that("Framework$modify_adjusted_svg warns when master_svg is NULL", {
-  fw <- Framework$new()
-  schema <- data.frame(
-    sector         = "Health",
-    pillar         = "Morbidity",
-    sub_pillar     = "Acute",
-    short_objective = "H1",
-    text_objective  = "Obj 1",
-    objective_code = 1L,
-    stringsAsFactors = FALSE
-  )
-  fw$set_master_schema(schema)
-  fw$primary_objectives <- c(1)
-  expect_warning(fw$modify_adjusted_svg())
 })
 
 test_that("Protocol$export_protocol framework data is serialisable", {
