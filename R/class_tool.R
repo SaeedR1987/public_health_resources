@@ -270,7 +270,7 @@ public = list(
     is_selected <- !is.na(col_vals) & grepl(pattern, col_vals)
 
     self$revised_survey  <- sv[is_selected, , drop = FALSE]
-    self$revised_choices <- private$.filter_choices_from_survey(self$revised_survey)
+    self$revised_choices <- private$.filter_choices_from_survey(indicator_codes)
 
     private$.touch()
     invisible(self)
@@ -717,25 +717,22 @@ private = list(
     invisible(NULL)
   },
 
-  # Private helper: derive a choices data frame from a given survey data frame.
-  # Collects all indicator_code values present in the survey and filters the
-  # master choices to rows whose indicator_code column matches (using grepl to
-  # handle comma-separated multi-indicator cells).
-  .filter_choices_from_survey = function(sv) {
+  # Private helper: filter the master choices data frame using the supplied
+  # indicator_codes vector.  Uses grepl to handle comma-separated multi-indicator
+  # cells in the choices indicator_code column.
+  .filter_choices_from_survey = function(indicator_codes) {
     ch <- self$choices
-    if (is.null(sv) || is.null(ch) ||
-        !"indicator_code" %in% names(sv) || nrow(sv) == 0 ||
-        !"indicator_code" %in% names(ch)) {
+    if (is.null(ch) || !"indicator_code" %in% names(ch)) {
       return(if (is.null(ch)) NULL else ch[0L, , drop = FALSE])
     }
-    # Collect all indicator codes present in the (revised) survey
-    sv_codes <- as.character(sv[["indicator_code"]])
-    sv_codes <- sv_codes[!is.na(sv_codes) & nzchar(sv_codes)]
-    # Split comma-separated values and flatten
-    sv_codes <- unique(trimws(unlist(strsplit(sv_codes, ","))))
-    sv_codes <- sv_codes[nzchar(sv_codes)]
-    if (length(sv_codes) == 0) return(ch[0L, , drop = FALSE])
-    pattern  <- paste(sv_codes, collapse = "|")
+    if (is.null(indicator_codes) || length(indicator_codes) == 0) {
+      return(ch[0L, , drop = FALSE])
+    }
+    indicator_codes <- as.character(unlist(indicator_codes))
+    indicator_codes <- unique(trimws(indicator_codes))
+    indicator_codes <- indicator_codes[nzchar(indicator_codes)]
+    if (length(indicator_codes) == 0) return(ch[0L, , drop = FALSE])
+    pattern  <- paste(indicator_codes, collapse = "|")
     ch_codes <- as.character(ch[["indicator_code"]])
     keep     <- !is.na(ch_codes) & grepl(pattern, ch_codes)
     ch[keep, , drop = FALSE]
