@@ -82,51 +82,6 @@ ANAFramework <- R6::R6Class(
       }, on_error = "warn", origin = "ANAFramework$initialize")
 
       invisible(self)
-    },
-
-    #' @description Filter the master schema to objectives whose \code{objective_code}
-    #'   matches one or more of the supplied objective code values and store the
-    #'   result in \code{adjusted_schema}.
-    #'
-    #' This corresponds to the objective-code-dimension filter used in the Shiny module.
-    #' Also updates \code{available_indicator_codes} from the resulting
-    #' \code{adjusted_schema}.
-    #'
-    #' @param objective_codes Numeric or character vector of objective codes to retain.
-    #' @return Invisibly returns \code{self} for method chaining.
-    modify_adjusted_schema = function(objective_codes) {
-      phr_try({
-        phr_assert(
-          !is.null(self$master_schema) && is.data.frame(self$master_schema),
-          message = phr_txt("master_schema must be set before calling modify_adjusted_schema()."),
-          origin  = "ANAFramework$modify_adjusted_schema"
-        )
-        phr_assert(
-          (is.numeric(objective_codes) || is.character(objective_codes)) &&
-            length(objective_codes) > 0,
-          message = phr_txt("objective_codes must be a non-empty numeric or character vector."),
-          origin  = "ANAFramework$modify_adjusted_schema"
-        )
-        phr_assert(
-          "objective_code" %in% names(self$master_schema),
-          message = phr_txt("master_schema must contain an 'objective_code' column."),
-          origin  = "ANAFramework$modify_adjusted_schema"
-        )
-        self$adjusted_schema <- self$master_schema[
-          self$master_schema$objective_code %in% objective_codes, , drop = FALSE
-        ]
-
-        # Update available_indicator_codes from the adjusted_schema
-        private$.refresh_available_indicator_codes()
-
-        phr_message(
-          phr_txt(
-            "ANAFramework adjusted_schema updated: {nrow(self$adjusted_schema)} row(s) selected."
-          ),
-          origin = "ANAFramework$modify_adjusted_schema"
-        )
-      }, on_error = "abort", origin = "ANAFramework$modify_adjusted_schema")
-      invisible(self)
     }
   ),
 

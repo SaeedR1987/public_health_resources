@@ -372,17 +372,19 @@ Framework <- R6::R6Class(
     #' @description Filter the master schema to the specified objective codes and
     #'   store the result in \code{adjusted_schema}.
     #'
-    #' Filters \code{master_schema} to retain only rows whose
-    #' \code{short_objective} value is present in \code{objective_codes} and
-    #' stores the result as \code{adjusted_schema}.  When \code{objective_codes}
-    #' is \code{NULL} or an empty vector all objective codes found in
-    #' \code{master_schema} are used, making \code{adjusted_schema} identical to
-    #' \code{master_schema}.  Also updates \code{available_indicator_codes} from
-    #' the resulting \code{adjusted_schema}.
+    #' Filters \code{master_schema} to retain matching rows and stores the result
+    #' as \code{adjusted_schema}.  The column used for matching is determined
+    #' automatically: if \code{master_schema} contains an \code{objective_code}
+    #' column, filtering is done on that column (useful for \code{ANAFramework}
+    #' which uses numeric objective codes); otherwise \code{short_objective} is
+    #' used.  When \code{objective_codes} is \code{NULL} or an empty vector all
+    #' rows from \code{master_schema} are retained.  Also updates
+    #' \code{available_indicator_codes} from the resulting \code{adjusted_schema}.
     #'
-    #' @param objective_codes Character vector or list of \code{short_objective}
-    #'   values to retain.  Pass \code{NULL} (the default) to include all
-    #'   objectives from the master schema.
+    #' @param objective_codes Character or numeric vector (or list) of objective
+    #'   code values to retain.  The type should match the filter column:
+    #'   numeric for \code{objective_code}, character for \code{short_objective}.
+    #'   Pass \code{NULL} (the default) to include all rows.
     #' @return Invisibly returns \code{self} for method chaining.
     modify_adjusted_schema = function(objective_codes = NULL) {
       phr_try({
@@ -393,14 +395,21 @@ Framework <- R6::R6Class(
           origin  = "Framework$modify_adjusted_schema"
         )
 
-        if (is.null(objective_codes) || length(objective_codes) == 0) {
-          objective_codes <- unique(self$master_schema$short_objective)
+        # Determine which column to filter on
+        filter_col <- if ("objective_code" %in% names(self$master_schema)) {
+          "objective_code"
         } else {
-          objective_codes <- as.character(unlist(objective_codes))
+          "short_objective"
+        }
+
+        if (is.null(objective_codes) || length(objective_codes) == 0) {
+          objective_codes <- unique(self$master_schema[[filter_col]])
+        } else {
+          objective_codes <- unlist(objective_codes)
         }
 
         self$adjusted_schema <- self$master_schema[
-          self$master_schema$short_objective %in% objective_codes, ,
+          self$master_schema[[filter_col]] %in% objective_codes, ,
           drop = FALSE
         ]
 

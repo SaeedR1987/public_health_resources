@@ -302,7 +302,7 @@ test_that("ANAFramework auto-loads master_svg from ana_framework.svg", {
   expect_true(grepl("<svg", af$master_svg))
 })
 
-test_that("ANAFramework$modify_adjusted_schema returns subset and stores in adjusted_schema", {
+test_that("ANAFramework inherits modify_adjusted_schema from Framework and filters by objective_code", {
   .skip_if_no_ana_resources()
   af <- ANAFramework$new()
   skip_if(is.null(af$master_schema))
@@ -318,7 +318,7 @@ test_that("ANAFramework$modify_adjusted_schema returns subset and stores in adju
   expect_true(all(af$adjusted_schema$objective_code == code))
 })
 
-test_that("ANAFramework$modify_adjusted_schema errors without master_schema", {
+test_that("ANAFramework inherited modify_adjusted_schema errors without master_schema", {
   af <- ANAFramework$new()
   af$master_schema <- NULL
   expect_error(af$modify_adjusted_schema(101))
