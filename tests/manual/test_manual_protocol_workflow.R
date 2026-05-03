@@ -35,7 +35,7 @@ protocol$get_protocol_summary()
 
 head(protocol$framework$master_schema)
 
-protocol$framework$primary_objectives <- c(101, 106, 108, 112, 113, 114, 115, 116, 118, 147, 148, 153, 154, 125)
+protocol$framework$primary_objectives <- c(101, 106, 108, 112, 113, 114, 115, 118, 147, 148, 153, 154, 125)
 protocol$framework$secondary_objectives <- c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131)
 
 head(protocol$framework$adjusted_schema)
@@ -125,11 +125,6 @@ cat("Strata table valid:", strata_validation, "\n")
 
 # Test 6: Build and Validate a Sampling Frame ####
 
-
-# -- 6a: Generate a dummy sampling frame (PSUs / enumeration areas) --
-# Standard column order: stratum, psu, population_size, inclusion
-# (village_name removed — represented by psu)
-
 set.seed(42)
 
 make_psu_frame <- function(stratum_id, n_psu, pop_range) {
@@ -153,8 +148,6 @@ cat("Sampling frame: ", nrow(sampling_frame), "PSUs across",
     length(unique(sampling_frame$stratum)), "strata\n")
 head(sampling_frame)
 
-# -- 6c: Set sampling frame on the SurveyProtocol --
-
 protocol$set_sampling_frame(sampling_frame)
 
 head(protocol$sampling_frame$log_df)
@@ -163,7 +156,7 @@ protocol$sampling_frame$validated
 
 # Test 7: Draw Sample ####
 
-protocol$draw_sample(seed = 789)
+protocol$draw_sample(seed = 788)
 nrow(protocol$drawn_sample)       # selected PSUs
 nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
 
@@ -173,37 +166,38 @@ View(protocol$drawn_sample_full)
 
 print(protocol$get_allowable_tools())
 
-# Household Tool
+# Household Tool ####
 protocol$add_tools(tool_name = "tool_household_iphra_v2")
 
-head(protocol$tools$tool_household_iphra_v2$survey)
+View(protocol$tools$tool_household_iphra_v2$survey)
 head(protocol$tools$tool_household_iphra_v2$choices)
 head(protocol$tools$tool_household_iphra_v2$settings)
 
 protocol$tools$tool_household_iphra_v2$change_default_language(language = "Arabic")
+head(protocol$tools$tool_household_iphra_v2$revised_settings)
+protocol$tools$tool_household_iphra_v2$change_default_language(language = "Spanish")
+head(protocol$tools$tool_household_iphra_v2$revised_settings)
+protocol$tools$tool_household_iphra_v2$change_default_language(language = "French")
+head(protocol$tools$tool_household_iphra_v2$revised_settings)
+protocol$tools$tool_household_iphra_v2$change_default_language(language = "English")
+head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
-
-
-protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(10000,13202, 10101, 10102, 10103, 10104, 10015))
-
+protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(10000,11301,10001,13202, 10101, 10102, 10103, 10104, 10015, 14401))
 
 View(protocol$tools$tool_household_iphra_v2$revised_survey)
-head(protocol$tools$tool_household_iphra_v2$revised_choices)
+View(protocol$tools$tool_household_iphra_v2$revised_choices)
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
 protocol$tools$tool_household_iphra_v2$validate()
 
-protocol$tools$tool_household_iphra_v2$get_choices()
-protocol$tools$tool_household_iphra_v2$set_selected_indicators(indicators = c("10000"))
-protocol$tools$tool_household_iphra_v2$clone_tool()
-
-protocol$tools$tool_household_iphra_v2$filter_choices_from_survey()
-protocol$tools$tool_household_iphra_v2$get_choice_list_names()
-
-
-View(protocol$tools$tool_household_iphra_v2$get_filtered_survey())
-
+# Community KII Tool ####
 protocol$add_tools("tool_kii_community_iphra_v2")
+
+head(protocol$tools$tool_kii_community_iphra_v2$survey)
+head(protocol$tools$tool_kii_community_iphra_v2$choices)
+head(protocol$tools$tool_kii_community_iphra_v2$settings)
+
+
 
 protocol$tools$tool_kii_community_iphra_v2$validate_tool()
 protocol$tools$tool_kii_community_iphra_v2$validate()
