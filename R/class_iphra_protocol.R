@@ -274,9 +274,9 @@ IPHRAProtocol <- R6::R6Class(
         class = "KeyInformantTool",
         file  = "tool_kii_community_iphra_v2.xlsx"
       ),
-      tool_fsl_service_provider_iphra_v2 = list(
+      tool_kii_fsl_service_provider_iphra_v2 = list(
         class = "KeyInformantTool",
-        file  = "tool_fsl_service_provider_iphra_v2.xlsx"
+        file  = "tool_kii_fsl_service_provider_iphra_v2.xlsx"
       ),
       tool_kii_wash_service_provider_iphra_v2 = list(
         class = "KeyInformantTool",
@@ -286,13 +286,13 @@ IPHRAProtocol <- R6::R6Class(
         class = "KeyInformantTool",
         file  = "tool_kii_markets_iphra_v2.xlsx"
       ),
-      tool_kii_nutrition_provider_iphra_v2 = list(
+      tool_kii_nutrition_service_provider_iphra_v2 = list(
         class = "KeyInformantTool",
-        file  = "tool_kii_nutrition_provider_iphra_v2.xlsx"
+        file  = "tool_kii_nutrition_service_provider_iphra_v2.xlsx"
       ),
-      tool_kii_was_service_provider_iphra_v2 = list(
+      tool_kii_wash_service_provider_iphra_v2 = list(
         class = "KeyInformantTool",
-        file  = "tool_kii_was_service_provider_iphra_v2.xlsx"
+        file  = "tool_kii_wash_service_provider_iphra_v2.xlsx"
       ),
       tool_obs_community_iphra_v2 = list(
         class = "ObservationTool",

@@ -47,7 +47,7 @@ protocol$framework$modify_adjusted_svg()
 protocol$framework$render_framework_svg(version = "master")
 protocol$framework$render_framework_svg(version = "adjusted")
 
-# Test 5: Define Strata and Sample Sizes ####
+# Test 3: Define Strata and Sample Sizes ####
 
 protocol$add_stratum(
   stratum_id              = "strata_A",
@@ -123,7 +123,7 @@ strata_validation <- protocol$validate_strata_table()
 cat("Strata table valid:", strata_validation, "\n")
 
 
-# Test 6: Build and Validate a Sampling Frame ####
+# Test 4: Build and Validate a Sampling Frame ####
 
 set.seed(42)
 
@@ -154,7 +154,7 @@ head(protocol$sampling_frame$log_df)
 protocol$sampling_frame$validate()
 protocol$sampling_frame$validated
 
-# Test 7: Draw Sample ####
+# Test 5: Draw Sample ####
 
 protocol$draw_sample(seed = 788)
 nrow(protocol$drawn_sample)       # selected PSUs
@@ -162,7 +162,7 @@ nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
 
 View(protocol$drawn_sample_full)
 
-# Test 3: Testing Tools ####
+# Test 6: Testing Tools ####
 
 print(protocol$get_allowable_tools())
 
@@ -182,13 +182,14 @@ head(protocol$tools$tool_household_iphra_v2$revised_settings)
 protocol$tools$tool_household_iphra_v2$change_default_language(language = "English")
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
-protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(10000,11301,10001,13202, 10101, 10102, 10103, 10104, 10015, 14401))
+protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$selected_indicator_codes))
 
-View(protocol$tools$tool_household_iphra_v2$revised_survey)
-View(protocol$tools$tool_household_iphra_v2$revised_choices)
+head(protocol$tools$tool_household_iphra_v2$revised_survey)
+head(protocol$tools$tool_household_iphra_v2$revised_choices)
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
-protocol$tools$tool_household_iphra_v2$validate()
+protocol$tools$tool_household_iphra_v2$validate() # this part still needs heavy development
+protocol$tools$tool_household_iphra_v2$get_validation_errors() # this part still needs heavy development
 
 # Community KII Tool ####
 protocol$add_tools("tool_kii_community_iphra_v2")
@@ -197,26 +198,112 @@ head(protocol$tools$tool_kii_community_iphra_v2$survey)
 head(protocol$tools$tool_kii_community_iphra_v2$choices)
 head(protocol$tools$tool_kii_community_iphra_v2$settings)
 
+protocol$tools$tool_kii_community_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$adjusted_schema$indicator_code))
+
+nrow(protocol$tools$tool_kii_community_iphra_v2$survey)
+nrow(protocol$tools$tool_kii_community_iphra_v2$revised_survey)
+
+protocol$framework$adjusted_schema$indicator_code
+
+View(protocol$tools$tool_kii_community_iphra_v2$revised_survey)
+head(protocol$tools$tool_kii_community_iphra_v2$revised_choices)
+head(protocol$tools$tool_kii_community_iphra_v2$revised_settings)
+
+protocol$tools$tool_kii_community_iphra_v2$validate() # this part still needs heavy development
+protocol$tools$tool_kii_community_iphra_v2$get_validation_errors() # this part still needs heavy development
 
 
-protocol$tools$tool_kii_community_iphra_v2$validate_tool()
-protocol$tools$tool_kii_community_iphra_v2$validate()
-View(protocol$tools$tool_kii_community_iphra_v2$survey)
-View(protocol$tools$tool_kii_community_iphra_v2$choices)
+# Community Obseration Tool ####
+
+protocol$add_tools(tool_name = "tool_obs_community_iphra_v2")
+
+head(protocol$tools$tool_obs_community_iphra_v2$survey)
+head(protocol$tools$tool_obs_community_iphra_v2$choices)
+head(protocol$tools$tool_obs_community_iphra_v2$settings)
+
+protocol$tools$tool_obs_community_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$adjusted_schema$indicator_code))
+
+View(protocol$tools$tool_obs_community_iphra_v2$revised_survey)
+head(protocol$tools$tool_obs_community_iphra_v2$revised_choices)
+head(protocol$tools$tool_obs_community_iphra_v2$revised_settings)
+
+protocol$tools$tool_obs_community_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
+protocol$tools$tool_obs_community_iphra_v2$get_validation_errors() # this part still needs heavy development
+
+# FSL Service Provider KII Tool ####
+
+protocol$add_tools(tool_name = "tool_kii_fsl_service_provider_iphra_v2")
+
+head(protocol$tools$tool_kii_fsl_service_provider_iphra_v2$survey)
+head(protocol$tools$tool_kii_fsl_service_provider_iphra_v2$choices)
+head(protocol$tools$tool_kii_fsl_service_provider_iphra_v2$settings)
+
+protocol$tools$tool_kii_fsl_service_provider_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$adjusted_schema$indicator_code))
+
+View(protocol$tools$tool_kii_fsl_service_provider_iphra_v2$revised_survey)
+head(protocol$tools$tool_kii_fsl_service_provider_iphra_v2$revised_choices)
+head(protocol$tools$tool_kii_fsl_service_provider_iphra_v2$revised_settings)
+
+protocol$tools$tool_kii_fsl_service_provider_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
+protocol$tools$tool_kii_fsl_service_provider_iphra_v2$get_validation_errors() # this part still needs heavy development
+
+# WASH Service Provider KII Tool ####
+
+protocol$add_tools(tool_name = "tool_kii_wash_service_provider_iphra_v2")
+
+head(protocol$tools$tool_kii_wash_service_provider_iphra_v2$survey)
+head(protocol$tools$tool_kii_wash_service_provider_iphra_v2$choices)
+head(protocol$tools$tool_kii_wash_service_provider_iphra_v2$settings)
+
+protocol$tools$tool_kii_wash_service_provider_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$adjusted_schema$indicator_code))
+
+View(protocol$tools$tool_kii_wash_service_provider_iphra_v2$revised_survey)
+head(protocol$tools$tool_kii_wash_service_provider_iphra_v2$revised_choices)
+head(protocol$tools$tool_kii_wash_service_provider_iphra_v2$revised_settings)
+
+protocol$tools$tool_kii_wash_service_provider_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
+protocol$tools$tool_kii_wash_service_provider_iphra_v2$get_validation_errors() # this part still needs heavy development
+
+# Market Vendor KII Tool ####
+
+protocol$add_tools(tool_name = "tool_kii_markets_iphra_v2")
+
+head(protocol$tools$tool_kii_markets_iphra_v2$survey)
+head(protocol$tools$tool_kii_markets_iphra_v2$choices)
+head(protocol$tools$tool_kii_markets_iphra_v2$settings)
+
+protocol$tools$tool_kii_markets_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$adjusted_schema$indicator_code))
+
+View(protocol$tools$tool_kii_markets_iphra_v2$revised_survey)
+head(protocol$tools$tool_kii_markets_iphra_v2$revised_choices)
+head(protocol$tools$tool_kii_markets_iphra_v2$revised_settings)
+
+protocol$tools$tool_kii_markets_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
+protocol$tools$tool_kii_markets_iphra_v2$get_validation_errors() # this part still needs heavy development
+
+# Nutrition Facility KII Tool ####
+
+protocol$add_tools(tool_name = "tool_kii_nutrition_service_provider_iphra_v2")
+
+head(protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$survey)
+head(protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$choices)
+head(protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$settings)
+
+protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$adjusted_schema$indicator_code))
+
+View(protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$revised_survey)
+head(protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$revised_choices)
+head(protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$revised_settings)
+
+protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
+protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$get_validation_errors() # this part still needs heavy development
 
 
+# Protocol Coherence Checks ####
 
 (protocol$diagnose_coherence())
+(protocol$issues_coherence)
 
-
-
-# Tools are stored by name in the named list
-stopifnot("tool_household_iphra_v2" %in% names(protocol$tools))
-stopifnot("tool_kii_community_iphra_v2" %in% names(protocol$tools))
-stopifnot(inherits(protocol$tools[["tool_household_iphra_v2"]], "HouseholdTool"))
-stopifnot(inherits(protocol$tools[["tool_kii_community_iphra_v2"]], "KeyInformantTool"))
-
-cat("Allowable IPHRA tools:\n")
 
 
 report_with_tools <- tempfile(fileext = ".docx")
@@ -232,39 +319,6 @@ stopifnot(is.null(base_summary$num_strata))
 
 # Remove the dummy tools so we start fresh on the SurveyProtocol below
 protocol$tools <- list()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Test 8: Household Tool ####
-
-
-
-
-
-
-
-
-
-
-
 
 
 # -- 8a: Instantiate via SurveyProtocol$add_tools() --
