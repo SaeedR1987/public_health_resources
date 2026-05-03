@@ -417,7 +417,7 @@ draw_sample_psu_rlc <- function(frame, sample_size, n_sites, cluster_size = 3, s
     # Step 1: Pre-select n_sites PSUs using PPS without replacement (Brewer's method)
     set.seed(seed)
     sizes          <- frame$population_size
-    selected_sites <- pps::ppswor(sizes, n_sites)  # integer indices into frame
+    selected_sites <- pps::ppswr(sizes, n_sites)  # integer indices into frame
 
     # Step 2: Distribute n_total cluster slots evenly across the selected sites.
     n_clusters <- ceiling(sample_size / cluster_size)

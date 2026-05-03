@@ -77,7 +77,7 @@ HouseholdData <- R6::R6Class(
     survey_design    = NULL,  # store srvyr design object (clean stage)
     # linked_datasets removed - now using inherited linked_objects from Data class
     optional_columns = NULL,  # non-required but commonly present columns
-    sampling_frame   = NULL   # optional SamplingFrame for generate_weights()
+    sampling_frame   = NULL,   # optional SamplingFrame for generate_weights()
 
 
     #' @description
@@ -611,9 +611,9 @@ HouseholdData <- R6::R6Class(
 
       phr_try({
 
-        # ------------------------------------------------------------------
+
         # 1. Resolve SamplingFrame
-        # ------------------------------------------------------------------
+
         sf <- sampling_frame %||% self$sampling_frame
 
         if (is.null(sf)) {
@@ -635,9 +635,9 @@ HouseholdData <- R6::R6Class(
           return(invisible(self))
         }
 
-        # ------------------------------------------------------------------
+
         # 2. Resolve stratum column
-        # ------------------------------------------------------------------
+
         stratum_col <- self$variable_map$stratum
 
         if (is.null(stratum_col) || stratum_col == "" || is.na(stratum_col)) {
@@ -645,9 +645,9 @@ HouseholdData <- R6::R6Class(
           return(invisible(self))
         }
 
-        # ------------------------------------------------------------------
+
         # 3. Get dataset for the requested stage
-        # ------------------------------------------------------------------
+
         df <- self$get_data(stage)
 
         if (is.null(df) || nrow(df) == 0) {
@@ -665,9 +665,9 @@ HouseholdData <- R6::R6Class(
           return(invisible(self))
         }
 
-        # ------------------------------------------------------------------
+
         # 4. Compute population totals per stratum and grand total (N)
-        # ------------------------------------------------------------------
+
         sf_totals <- sf_df |>
           dplyr::mutate(stratum = as.character(.data$stratum)) |>
           dplyr::group_by(.data$stratum) |>
@@ -676,9 +676,9 @@ HouseholdData <- R6::R6Class(
 
         N <- sum(sf_totals$pop_total, na.rm = TRUE)
 
-        # ------------------------------------------------------------------
+
         # 5. Compute sample counts per stratum and total sample size (n)
-        # ------------------------------------------------------------------
+
         stratum_vals <- as.character(df[[stratum_col]])
         valid_mask   <- !is.na(stratum_vals) & stratum_vals != ""
 
@@ -700,19 +700,19 @@ HouseholdData <- R6::R6Class(
           )
         }
 
-        # ------------------------------------------------------------------
+
         # 6. Build per-row weight vector via vectorized join
         #    Formula: w_s = (N_s / N) / (n_s / n)
-        # ------------------------------------------------------------------
+
         weight_lookup <- dplyr::left_join(sample_counts_df, sf_totals, by = "stratum") |>
           dplyr::mutate(weight = (.data$pop_total / N) / (.data$n_s / n))
 
         row_strata  <- data.frame(stratum = stratum_vals)
         weight_vec  <- dplyr::left_join(row_strata, weight_lookup, by = "stratum")$weight
 
-        # ------------------------------------------------------------------
+
         # 7. Determine weight column name and update variable_map if needed
-        # ------------------------------------------------------------------
+
         existing_weight_col <- self$variable_map$weight
         if (!is.null(existing_weight_col) &&
             !is.na(existing_weight_col) &&
@@ -726,9 +726,9 @@ HouseholdData <- R6::R6Class(
           phr_message(phr_txt("No existing weight column mapped. Writing weights to '{weight_col}' and updating variable_map."))
         }
 
-        # ------------------------------------------------------------------
+
         # 8. Add / overwrite weight column in the dataset
-        # ------------------------------------------------------------------
+
         df[[weight_col]] <- weight_vec
 
         if (stage == "standardized") {

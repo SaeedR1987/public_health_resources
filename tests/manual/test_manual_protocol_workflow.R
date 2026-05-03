@@ -1,30 +1,6 @@
 #!/usr/bin/env Rscript
 
 #' Manual Test Script for Protocol and Tool Workflow
-#'
-#' This script demonstrates the complete workflow for the Protocol class
-#' hierarchy (IPHRAProtocol and SurveyProtocol subclass) together with
-#' the Tool class hierarchy (Tool, HouseholdTool, KeyInformantTool, ObservationTool)
-#' and the Framework class hierarchy (Framework base class and ANAFramework subclass).
-#'
-#' Steps covered:
-#'  1.  Create an IPHRAProtocol object (no sampling)
-#'  2.  Define objectives and manage them via the built-in ANAFramework
-#'  3.  Generate a Word report from the IPHRAProtocol (no tools yet, then with tools)
-#'  4.  Create a SurveyProtocol object (with sampling support)
-#'  5.  Define strata and sample sizes on the SurveyProtocol
-#'  6.  Build and validate a sampling frame
-#'  7.  Draw samples from the sampling frame
-#'  8.  Instantiate and inspect Tool subclasses (Household, KII, Observation)
-#'  9.  Modify tools: filter by modules, update choice lists, change language
-#' 10.  Attach tools to the SurveyProtocol
-#' 11.  Finalise and inspect the SurveyProtocol (export, save/load)
-#' 12.  Generate a Word report from the SurveyProtocol
-#' 13.  Framework and ANAFramework workflow (create, preset selection, SVG
-#'      highlighting, Protocol integration, export/restore round-trip)
-#'
-#' Author: Auto-generated for iphRa protocol / tool manual testing
-#' Date: 2025-01-01 (revised 2025-04-29)
 
 rm(list = ls())
 
@@ -34,20 +10,13 @@ library(tibble)
 library(dplyr)
 library(rsvg)
 
-
-# =============================================================================
 # SETUP: Dummy Assessment Information
-# =============================================================================
 
 assessment_title <- "Multi-Sector Humanitarian Needs Assessment – Dummy Country"
 country_name     <- "Dummy Country"
 month_year       <- "March 2025"
 
-# =============================================================================
 # Test 1: Create an IPHRAProtocol Object ####
-# =============================================================================
-# IPHRAProtocol$new() automatically creates an ANAFramework and restricts
-# add_tools() to the approved IPHRA tool list.
 
 protocol <- IPHRAProtocol$new(
   assessment_title = assessment_title,
@@ -62,89 +31,23 @@ protocol$get_protocol_summary()
 # Validate the objective schema via the protocol method
 (protocol$validate_objective_schema(protocol$framework$master_schema))
 
-# =============================================================================
-# Test 2: Define Objectives via Framework ####
-# =============================================================================
-# Objectives are now managed through the Framework's adjusted_schema.
-# Use Framework$add_objective_row() / remove_objective_row() / update_adjusted_schema().
+# Test 2: Framework ####
 
-# The ANAFramework is already attached – inspect it directly
 head(protocol$framework$master_schema)
-protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116))
-protocol$framework$create_adjusted_schema(objective_codes = c(101, 112, 113, 114, 115, 116))
+
+protocol$framework$primary_objectives <- c(101, 106, 108, 112, 113, 114, 115, 116, 118, 147, 148, 153, 154, 125)
+protocol$framework$secondary_objectives <- c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131)
+
 head(protocol$framework$adjusted_schema)
-View(protocol$framework$filter_schema_by_objective(objective_codes = c(101, 112, 113, 114, 115, 116)))
+protocol$framework$filter_schema_by_objective(objective_codes = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives))
+head(protocol$framework$update_adjusted_schema(selected_objectives = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives)))
 
-# =============================================================================
-# Test 3: Testing Tools ####
-# =============================================================================
+protocol$framework$modify_adjusted_svg()
 
-print(protocol$get_allowable_tools())
+protocol$framework$render_framework_svg(version = "master")
+protocol$framework$render_framework_svg(version = "adjusted")
 
-# Household Tool
-protocol$add_tools(tool_name = "tool_household_iphra_v2")
-
-View(protocol$tools$tool_household_iphra_v2$survey)
-View(protocol$tools$tool_household_iphra_v2$choices)
-View(protocol$tools$tool_household_iphra_v2$settings)
-
-protocol$tools$tool_household_iphra_v2$get_roster_groups()
-
-View(protocol$tools$tool_household_iphra_v2$revised_survey)
-View(protocol$tools$tool_household_iphra_v2$revised_choices)
-View(protocol$tools$tool_household_iphra_v2$settings)
-
-
-protocol$tools$tool_household_iphra_v2$validate_tool()
-protocol$tools$tool_household_iphra_v2$validate()
-
-protocol$tools$tool_household_iphra_v2$get_choices()
-protocol$tools$tool_household_iphra_v2$set_selected_indicators(indicators = c("10000"))
-protocol$tools$tool_household_iphra_v2$clone_tool()
-
-protocol$tools$tool_household_iphra_v2$filter_choices_from_survey()
-protocol$tools$tool_household_iphra_v2$get_choice_list_names()
-
-
-View(protocol$tools$tool_household_iphra_v2$get_filtered_survey())
-
-protocol$add_tools("tool_kii_community_iphra_v2")
-
-protocol$tools$tool_kii_community_iphra_v2$validate_tool()
-protocol$tools$tool_kii_community_iphra_v2$validate()
-View(protocol$tools$tool_kii_community_iphra_v2$survey)
-View(protocol$tools$tool_kii_community_iphra_v2$choices)
-
-# Tools are stored by name in the named list
-stopifnot("tool_household_iphra_v2" %in% names(protocol$tools))
-stopifnot("tool_kii_community_iphra_v2" %in% names(protocol$tools))
-stopifnot(inherits(protocol$tools[["tool_household_iphra_v2"]], "HouseholdTool"))
-stopifnot(inherits(protocol$tools[["tool_kii_community_iphra_v2"]], "KeyInformantTool"))
-
-cat("Allowable IPHRA tools:\n")
-
-
-report_with_tools <- tempfile(fileext = ".docx")
-generate_protocol_report(protocol, output_file = report_with_tools)
-stopifnot(file.exists(report_with_tools))
-cat("IPHRAProtocol report (with tools) written to:", report_with_tools, "\n")
-
-# Confirm summary reflects tools
-base_summary <- protocol$get_protocol_summary()
-base_summary$num_tools    # 2
-base_summary$num_strata   # NULL — not a SurveyProtocol
-stopifnot(is.null(base_summary$num_strata))
-
-# Remove the dummy tools so we start fresh on the SurveyProtocol below
-protocol$tools <- list()
-
-
-# =============================================================================
 # Test 5: Define Strata and Sample Sizes ####
-# =============================================================================
-
-# -- 5a: Add strata to the master sample table --
-# ind_indicator and mort_indicator are required columns
 
 protocol$add_stratum(
   stratum_id              = "strata_A",
@@ -160,6 +63,7 @@ protocol$add_stratum(
   ind_nonresponse         = 10,
   ind_design_effect       = 1.5,
   ind_avg_hh_size         = 5.2,
+  ind_subpop_prop = 20,
   mort_indicator          = "crude_death_rate",
   mort_expected_death_rate = 0.5,
   mort_precision = 0.5,
@@ -172,7 +76,7 @@ protocol$add_stratum(
   start_time = "10:00", end_time = "18:00",
   clusters_per_day = 2, avg_interview_time = 30,
   avg_rest_time = 30, avg_travel_time = 60,
-  sampling_method         = "pps_cluster"
+  sampling_method         = "systematic", n_sites = 10
 )
 
 protocol$add_stratum(
@@ -205,8 +109,8 @@ protocol$add_stratum(
   pop_nonresponse         = 10,
   ind_indicator           = "wasting_prevalence",
   mort_indicator          = "crude_death_rate",
-  sampling_method         = "pps_rlc",
-  n_sites                 = 25
+  sampling_method         = "simple_random_rlc",
+  n_sites                 = 10
 )
 
 protocol$calculate_sample_sizes()
@@ -218,9 +122,9 @@ strata_validation <- protocol$validate_strata_table()
 strata_validation$valid
 strata_validation$message
 
-# =============================================================================
+
 # Test 6: Build and Validate a Sampling Frame ####
-# =============================================================================
+
 
 # -- 6a: Generate a dummy sampling frame (PSUs / enumeration areas) --
 # Standard column order: stratum, psu, population_size, inclusion
@@ -254,80 +158,120 @@ head(sampling_frame)
 protocol$set_sampling_frame(sampling_frame)
 
 head(protocol$sampling_frame$log_df)
+protocol$sampling_frame$validate()
+protocol$sampling_frame$validated
 
-
-
-
-# =============================================================================
 # Test 7: Draw Sample ####
-# =============================================================================
-
-# -- 7b: Draw using proportional method (reads from Sampling_Method column) --
 
 protocol$draw_sample(seed = 789)
 nrow(protocol$drawn_sample)       # selected PSUs
 nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
-head(protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
 
-# -- 7c: Override to pps_cluster --
+View(protocol$drawn_sample_full)
 
-survey_protocol$sample_table$Sampling_Method <- "pps_cluster"
-survey_protocol$sample_table$n_psu           <- 30
-survey_protocol$sample_table$cluster_size    <- 20
+# Test 3: Testing Tools ####
 
-survey_protocol$draw_sample(seed = 456)
-nrow(survey_protocol$drawn_sample)
-head(survey_protocol$drawn_sample[, c("psu", "stratum", "population_size", "sampled_psu", "allocated_sample")])
+print(protocol$get_allowable_tools())
 
-# -- 7d: Purposive sampling — no PSUs auto-selected --
+# Household Tool
+protocol$add_tools(tool_name = "tool_household_iphra_v2")
 
-survey_protocol$sample_table$Sampling_Method <- "purposive"
-survey_protocol$draw_sample(seed = 42)
-nrow(survey_protocol$drawn_sample)                              # 0
-sum(is.na(survey_protocol$drawn_sample_full$sampled_psu))       # all NA
+head(protocol$tools$tool_household_iphra_v2$survey)
+head(protocol$tools$tool_household_iphra_v2$choices)
+head(protocol$tools$tool_household_iphra_v2$settings)
 
-# Restore proportional for remaining tests
-survey_protocol$sample_table$Sampling_Method <- "proportional"
-survey_protocol$draw_sample(seed = 789)
-
-# -- 7e: Pass an explicit frame and strata_table --
-
-custom_frame  <- sampling_frame[sampling_frame$stratum == "strata_A", ]
-custom_frame$inclusion <- TRUE
-custom_strata <- survey_protocol$sample_table[survey_protocol$sample_table$stratum_id == "strata_A", ]
-custom_strata$Sampling_Method <- "srs"
-custom_strata$n_psu            <- 15
-
-survey_protocol$draw_sample(frame = custom_frame, strata_table = custom_strata, seed = 111)
-nrow(survey_protocol$drawn_sample)
-
-# Restore full proportional draw for report generation later
-survey_protocol$draw_sample(seed = 789)
-
-# -- 7f: Standalone PSU utility functions --
-
-sample_result_A <- draw_sample_psu_pps_cluster(
-  frame        = frame_A,
-  n_clusters   = 12,
-  cluster_size = 20,
-  seed         = 789
-)
-nrow(sample_result_A)
-sum(!is.na(sample_result_A$sampled_psu))
-head(sample_result_A[!is.na(sample_result_A$sampled_psu), ])
-
-purposive_result <- draw_sample_psu_purposive(frame_A)
-sum(is.na(purposive_result$sampled_psu))  # all NA
-
-sample_srs_A <- draw_sample_srs(frame_A, n = 100, seed = 789)
-head(sample_srs_A)
-attr(sample_srs_A, "sampling_method")
-attr(sample_srs_A, "n_drawn")
+protocol$tools$tool_household_iphra_v2$change_default_language(language = "Arabic")
 
 
-# =============================================================================
+
+protocol$tools$tool_household_iphra_v2$filter_survey_by_modules(indicator_codes = c(10000,13202, 10101, 10102, 10103, 10104, 10015))
+
+
+View(protocol$tools$tool_household_iphra_v2$revised_survey)
+head(protocol$tools$tool_household_iphra_v2$revised_choices)
+head(protocol$tools$tool_household_iphra_v2$revised_settings)
+
+protocol$tools$tool_household_iphra_v2$validate()
+
+protocol$tools$tool_household_iphra_v2$get_choices()
+protocol$tools$tool_household_iphra_v2$set_selected_indicators(indicators = c("10000"))
+protocol$tools$tool_household_iphra_v2$clone_tool()
+
+protocol$tools$tool_household_iphra_v2$filter_choices_from_survey()
+protocol$tools$tool_household_iphra_v2$get_choice_list_names()
+
+
+View(protocol$tools$tool_household_iphra_v2$get_filtered_survey())
+
+protocol$add_tools("tool_kii_community_iphra_v2")
+
+protocol$tools$tool_kii_community_iphra_v2$validate_tool()
+protocol$tools$tool_kii_community_iphra_v2$validate()
+View(protocol$tools$tool_kii_community_iphra_v2$survey)
+View(protocol$tools$tool_kii_community_iphra_v2$choices)
+
+
+
+(protocol$validate_coherence())
+
+
+
+# Tools are stored by name in the named list
+stopifnot("tool_household_iphra_v2" %in% names(protocol$tools))
+stopifnot("tool_kii_community_iphra_v2" %in% names(protocol$tools))
+stopifnot(inherits(protocol$tools[["tool_household_iphra_v2"]], "HouseholdTool"))
+stopifnot(inherits(protocol$tools[["tool_kii_community_iphra_v2"]], "KeyInformantTool"))
+
+cat("Allowable IPHRA tools:\n")
+
+
+report_with_tools <- tempfile(fileext = ".docx")
+generate_protocol_report(protocol, output_file = report_with_tools)
+stopifnot(file.exists(report_with_tools))
+cat("IPHRAProtocol report (with tools) written to:", report_with_tools, "\n")
+
+# Confirm summary reflects tools
+base_summary <- protocol$get_protocol_summary()
+base_summary$num_tools    # 2
+base_summary$num_strata   # NULL — not a SurveyProtocol
+stopifnot(is.null(base_summary$num_strata))
+
+# Remove the dummy tools so we start fresh on the SurveyProtocol below
+protocol$tools <- list()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Test 8: Household Tool ####
-# =============================================================================
+
+
+
+
+
+
+
+
+
+
+
+
 
 # -- 8a: Instantiate via SurveyProtocol$add_tools() --
 
@@ -336,57 +280,6 @@ survey_protocol$add_tools(tool_type = "household", tool_name = "Main Household S
 length(survey_protocol$tools)
 survey_protocol$tools[["Main Household Survey"]]$get_name()
 survey_protocol$tools[["Main Household Survey"]]$get_tool_type()
-
-# -- 8b: Directly instantiate a HouseholdTool --
-
-hh_tool <- HouseholdTool$new(name = "Household Survey Tool – Strata A & B")
-hh_tool$get_name()
-hh_tool$get_tool_type()
-hh_tool$has_roster()
-
-master_survey  <- hh_tool$get_master_survey()
-master_choices <- hh_tool$get_master_choices()
-nrow(master_survey)
-nrow(master_choices)
-head(master_survey)
-
-# -- 8c: Inspect settings --
-
-hh_settings <- hh_tool$get_settings()
-hh_settings
-
-# -- 8d: Change default language --
-
-hh_tool$change_default_language("French")
-hh_tool$get_settings()
-
-hh_tool$change_default_language("English")
-hh_tool$get_settings()
-
-# -- 8e: Filter survey by modules --
-
-head(master_survey[[1]], 30)
-unique(master_survey[[1]])
-
-hh_tool$filter_survey_by_modules(modules = c("core", "FSL", "WASH"))
-
-modified_survey <- hh_tool$get_modified_survey()
-nrow(modified_survey)
-head(modified_survey)
-
-# -- 8f: Filter choices to match modified survey --
-
-hh_tool$filter_choices_from_survey()
-
-modified_choices <- hh_tool$get_modified_choices()
-nrow(modified_choices)
-unique(modified_choices$list_name)
-
-# -- 8g: Validate tool --
-
-is_valid <- hh_tool$validate_tool()
-cat("Household tool valid:", is_valid, "\n")
-hh_tool$get_validation_errors()
 
 # -- 8h: Update a choice list with custom values --
 
@@ -447,9 +340,9 @@ hh_tool$set_selected_indicators(c("hdds_score", "fcs_score", "water_source"))
 hh_tool$get_selected_indicators()
 
 
-# =============================================================================
+
 # Test 9: Key Informant Interview (KII) Tool ####
-# =============================================================================
+
 
 # -- 9a: Instantiate via add_tools() --
 
@@ -489,9 +382,9 @@ kii_tool$has_question("facility_name")
 kii_tool$get_question("facility_name")
 
 
-# =============================================================================
+
 # Test 10: Observation and Generic Tools ####
-# =============================================================================
+
 
 # -- 10a: Observation Tool --
 
@@ -547,9 +440,9 @@ cat("Generic tool valid:", generic_valid, "\n")
 generic_tool$get_validation_errors()
 
 
-# =============================================================================
+
 # Test 11: Finalise and Inspect the SurveyProtocol ####
-# =============================================================================
+
 
 # -- 11a: Check issues --
 
@@ -619,9 +512,9 @@ stopifnot(inherits(restored_base, "Protocol"))
 stopifnot(!inherits(restored_base, "SurveyProtocol"))
 
 
-# =============================================================================
+
 # Test 12: Report Generation ####
-# =============================================================================
+
 # generate_reach_tor() / generate_protocol_report() write a .docx file.
 # base Protocol: metadata + objectives + tools + sampling placeholder
 # SurveyProtocol: adds full Sampling Design section (strata table + selected PSUs)
@@ -691,9 +584,9 @@ validate_protocol(survey_protocol)
 cat("\n=== Protocol and Tool workflow test completed successfully ===\n")
 
 
-# =============================================================================
+
 # Test 13: Framework and ANAFramework Workflow ####
-# =============================================================================
+
 
 cat("\n--- Test 13: Framework and ANAFramework ---\n")
 
@@ -908,9 +801,9 @@ cat("Framework SVG written to:", svg_file, "\n")
 cat("\n=== Framework and ANAFramework workflow test completed successfully ===\n")
 
 
-# =============================================================================
+
 # Test 3: Generate Word Report from IPHRAProtocol ####
-# =============================================================================
+
 # generate_reach_tor() uses officer + flextable (bundled template used when present).
 # The standalone wrapper generate_protocol_report() dispatches to the method.
 
