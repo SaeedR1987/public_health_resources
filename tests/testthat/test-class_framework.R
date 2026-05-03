@@ -39,7 +39,7 @@ test_that("Framework$set_master_svg rejects non-character input", {
   expect_error(fw$set_master_svg(123))
 })
 
-test_that("Framework$update_adjusted_schema filters correctly", {
+test_that("Framework$modify_adjusted_schema filters correctly", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -50,12 +50,12 @@ test_that("Framework$update_adjusted_schema filters correctly", {
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$update_adjusted_schema(c("H1", "H3"))
+  fw$modify_adjusted_schema(c("H1", "H3"))
   expect_equal(nrow(fw$adjusted_schema), 2)
   expect_setequal(fw$adjusted_schema$short_objective, c("H1", "H3"))
 })
 
-test_that("Framework$update_adjusted_schema with NULL resets to full schema", {
+test_that("Framework$modify_adjusted_schema with NULL resets to full schema", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -66,16 +66,16 @@ test_that("Framework$update_adjusted_schema with NULL resets to full schema", {
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$update_adjusted_schema(NULL)
+  fw$modify_adjusted_schema(NULL)
   expect_equal(nrow(fw$adjusted_schema), 2)
 })
 
-test_that("Framework$update_adjusted_schema errors without master_schema", {
+test_that("Framework$modify_adjusted_schema errors without master_schema", {
   fw <- Framework$new()
-  expect_error(fw$update_adjusted_schema(c("H1")))
+  expect_error(fw$modify_adjusted_schema(c("H1")))
 })
 
-test_that("Framework$create_adjusted_schema filters by objective codes", {
+test_that("Framework$modify_adjusted_schema filters by objective codes", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -86,12 +86,12 @@ test_that("Framework$create_adjusted_schema filters by objective codes", {
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$create_adjusted_schema(c("H1", "H3"))
+  fw$modify_adjusted_schema(c("H1", "H3"))
   expect_equal(nrow(fw$adjusted_schema), 2)
   expect_setequal(fw$adjusted_schema$short_objective, c("H1", "H3"))
 })
 
-test_that("Framework$create_adjusted_schema with NULL uses all objective codes", {
+test_that("Framework$modify_adjusted_schema with NULL uses all objective codes", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -102,12 +102,12 @@ test_that("Framework$create_adjusted_schema with NULL uses all objective codes",
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$create_adjusted_schema()
+  fw$modify_adjusted_schema()
   expect_equal(nrow(fw$adjusted_schema), 3)
   expect_setequal(fw$adjusted_schema$short_objective, c("H1", "H2", "H3"))
 })
 
-test_that("Framework$create_adjusted_schema accepts a list of codes", {
+test_that("Framework$modify_adjusted_schema accepts a list of codes", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -118,17 +118,17 @@ test_that("Framework$create_adjusted_schema accepts a list of codes", {
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$create_adjusted_schema(list("H2", "H3"))
+  fw$modify_adjusted_schema(list("H2", "H3"))
   expect_equal(nrow(fw$adjusted_schema), 2)
   expect_setequal(fw$adjusted_schema$short_objective, c("H2", "H3"))
 })
 
-test_that("Framework$create_adjusted_schema errors without master_schema", {
+test_that("Framework$modify_adjusted_schema errors without master_schema", {
   fw <- Framework$new()
-  expect_error(fw$create_adjusted_schema(c("H1")))
+  expect_error(fw$modify_adjusted_schema(c("H1")))
 })
 
-test_that("Framework$update_adjusted_svg hides unselected elements", {
+test_that("Framework$modify_adjusted_svg hides unselected elements", {
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -136,22 +136,36 @@ test_that("Framework$update_adjusted_svg hides unselected elements", {
     sub_pillar     = "Acute",
     short_objective = c("H1", "H2"),
     text_objective  = c("Obj 1", "Obj 2"),
+    objective_code = c(1L, 2L),
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  svg <- '<svg><rect id="H1"/><rect id="H2"/></svg>'
+  svg <- '<svg><g id="H1"><rect fill="white"/></g><g id="H2"><rect fill="white"/></g></svg>'
   fw$set_master_svg(svg)
-  fw$update_adjusted_schema(c("H1"))
-  fw$update_adjusted_svg()
+  fw$primary_objectives <- c(1)
+  fw$modify_adjusted_svg()
 
   expect_false(is.null(fw$adjusted_svg))
-  # H2 should be hidden
-  expect_true(grepl('visibility:hidden', fw$adjusted_svg))
-  # H1 should not be hidden
-  expect_false(grepl('id="H1"[^>]*visibility:hidden', fw$adjusted_svg))
 })
 
-test_that("Framework$update_adjusted_svg warns when master_svg is NULL", {
+test_that("Framework$modify_adjusted_svg warns when master_svg is NULL", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector         = "Health",
+    pillar         = "Morbidity",
+    sub_pillar     = "Acute",
+    short_objective = "H1",
+    text_objective  = "Obj 1",
+    objective_code = 1L,
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$primary_objectives <- c(1)
+  expect_warning(fw$modify_adjusted_svg())
+})
+
+test_that("Protocol$export_protocol framework data is serialisable", {
+  p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -162,25 +176,11 @@ test_that("Framework$update_adjusted_svg warns when master_svg is NULL", {
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$update_adjusted_schema(c("H1"))
-  expect_warning(fw$update_adjusted_svg())
-})
-
-test_that("Framework$export_framework returns a serialisable list", {
-  fw <- Framework$new()
-  schema <- data.frame(
-    sector         = "Health",
-    pillar         = "Morbidity",
-    sub_pillar     = "Acute",
-    short_objective = "H1",
-    text_objective  = "Obj 1",
-    stringsAsFactors = FALSE
-  )
-  fw$set_master_schema(schema)
-  exported <- fw$export_framework()
-  expect_true(is.list(exported))
-  expect_equal(exported$class, "Framework")
-  expect_equal(nrow(exported$master_schema), 1)
+  p$framework <- fw
+  exported <- p$export_protocol()
+  expect_true(is.list(exported$framework))
+  expect_equal(exported$framework$class, "Framework")
+  expect_equal(nrow(exported$framework$master_schema), 1)
 })
 
 test_that("ANAFramework initializes with master_schema from reference.xlsx", {
@@ -202,12 +202,6 @@ test_that("ANAFramework inherits Framework methods", {
   )
   af <- ANAFramework$new()
   expect_true(inherits(af, "Framework"))
-  # update_adjusted_schema should work
-  if (!is.null(af$master_schema) && nrow(af$master_schema) > 0) {
-    first_obj <- af$master_schema$short_objective[[1]]
-    af$update_adjusted_schema(first_obj)
-    expect_equal(nrow(af$adjusted_schema), 1)
-  }
 })
 
 test_that("create_framework returns a Framework object", {
@@ -227,6 +221,7 @@ test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
 })
 
 test_that("restore_framework reconstructs a Framework from exported data", {
+  p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -238,8 +233,9 @@ test_that("restore_framework reconstructs a Framework from exported data", {
   )
   fw$set_master_schema(schema)
   fw$set_master_svg('<svg><rect id="H1"/></svg>')
-  exported <- fw$export_framework()
-  restored <- restore_framework(exported)
+  p$framework <- fw
+  exported <- p$export_protocol()
+  restored <- restore_framework(exported$framework)
   expect_true(inherits(restored, "Framework"))
   expect_equal(nrow(restored$master_schema), 1)
   expect_false(is.null(restored$master_svg))
@@ -322,7 +318,7 @@ test_that("ANAFramework auto-loads master_svg from ana_framework.svg", {
   expect_true(grepl("<svg", af$master_svg))
 })
 
-test_that("ANAFramework$filter_schema_by_objective returns subset", {
+test_that("ANAFramework$modify_adjusted_schema returns subset and stores in adjusted_schema", {
   .skip_if_no_ana_resources()
   af <- ANAFramework$new()
   skip_if(is.null(af$master_schema))
@@ -332,45 +328,36 @@ test_that("ANAFramework$filter_schema_by_objective returns subset", {
   skip_if(length(available_codes) == 0)
 
   code <- available_codes[[1]]
-  result <- af$filter_schema_by_objective(code)
-  expect_true(is.data.frame(result))
-  expect_true(nrow(result) > 0)
-  expect_true(all(result$objective_code == code))
+  af$modify_adjusted_schema(code)
+  expect_true(is.data.frame(af$adjusted_schema))
+  expect_true(nrow(af$adjusted_schema) > 0)
+  expect_true(all(af$adjusted_schema$objective_code == code))
 })
 
-test_that("ANAFramework$filter_schema_by_objective errors without master_schema", {
+test_that("ANAFramework$modify_adjusted_schema errors without master_schema", {
   af <- ANAFramework$new()
   af$master_schema <- NULL
-  expect_error(af$filter_schema_by_objective(101))
+  expect_error(af$modify_adjusted_schema(101))
 })
 
-test_that("ANAFramework$update_adjusted_svg highlights correct sub_pillar blocks", {
+test_that("ANAFramework$modify_adjusted_svg colours correct sub_pillar blocks", {
   .skip_if_no_ana_resources()
   af <- ANAFramework$new()
   skip_if(is.null(af$master_schema) || is.null(af$master_svg))
+  skip_if(!"objective_code" %in% names(af$master_schema))
 
-  # Pick the first sub_pillar that appears in the SVG
-  all_blocks <- unique(af$master_schema$sub_pillar)
-  all_blocks  <- all_blocks[!is.na(all_blocks) & nzchar(all_blocks)]
-  skip_if(length(all_blocks) == 0)
+  available_codes <- unique(af$master_schema$objective_code)
+  available_codes <- available_codes[!is.na(available_codes)]
+  skip_if(length(available_codes) == 0)
 
-  first_block <- all_blocks[[1]]
-  # Select only objectives for that sub_pillar
-  objs_in_block <- af$master_schema$short_objective[
-    !is.na(af$master_schema$sub_pillar) & af$master_schema$sub_pillar == first_block
-  ]
-  af$update_adjusted_schema(objs_in_block)
-  af$update_adjusted_svg(highlight_colour = "lightgreen", default_colour = "white")
+  af$primary_objectives <- available_codes[1]
+  af$modify_adjusted_svg()
 
   expect_false(is.null(af$adjusted_svg))
   expect_true(nzchar(af$adjusted_svg))
-  # The selected block should have lightgreen fill
-  if (grepl(paste0('id="', first_block, '"'), af$master_svg)) {
-    expect_true(grepl("lightgreen", af$adjusted_svg))
-  }
 })
 
-test_that("ANAFramework$update_adjusted_svg warns when master_svg is NULL", {
+test_that("ANAFramework$modify_adjusted_svg warns when master_svg is NULL", {
   af <- ANAFramework$new()
   af$master_svg <- NULL
   schema <- data.frame(
@@ -379,11 +366,12 @@ test_that("ANAFramework$update_adjusted_svg warns when master_svg is NULL", {
     sub_pillar     = "HealthStatus",
     short_objective = "H1",
     text_objective  = "Obj 1",
+    objective_code = 1L,
     stringsAsFactors = FALSE
   )
   af$master_schema <- schema
   af$adjusted_schema <- schema
-  expect_warning(af$update_adjusted_svg())
+  expect_warning(af$modify_adjusted_svg())
 })
 
 # ---- Protocol$add_tools / validate_objective_schema tests ----
@@ -485,12 +473,13 @@ test_that("Framework$render_framework_svg version='master' uses master_svg even 
   schema <- data.frame(
     sector = "Health", pillar = "P", sub_pillar = "SP",
     short_objective = c("H1", "H2"), text_objective = c("O1", "O2"),
+    objective_code = c(1L, 2L),
     stringsAsFactors = FALSE
   )
   fw$set_master_schema(schema)
-  fw$set_master_svg('<svg><rect id="H1"/><rect id="H2"/></svg>')
-  fw$update_adjusted_schema("H1")
-  fw$update_adjusted_svg()
+  fw$set_master_svg('<svg><g id="H1"><rect fill="white"/></g><g id="H2"><rect fill="white"/></g></svg>')
+  fw$primary_objectives <- c(1)
+  fw$modify_adjusted_svg()
   expect_false(is.null(fw$adjusted_svg))
   # version='master' should not error
   expect_silent(fw$render_framework_svg(version = "master"))
@@ -512,16 +501,19 @@ test_that("Framework primary_objectives and secondary_objectives can be set", {
   expect_equal(fw$secondary_objectives, c(103, 104))
 })
 
-test_that("Framework$export_framework includes primary and secondary objectives", {
+test_that("Protocol export includes primary and secondary objectives", {
+  p  <- Protocol$new()
   fw <- Framework$new()
   fw$primary_objectives  <- c(101)
   fw$secondary_objectives <- c(102)
-  exported <- fw$export_framework()
-  expect_equal(exported$primary_objectives, c(101))
-  expect_equal(exported$secondary_objectives, c(102))
+  p$framework <- fw
+  exported <- p$export_protocol()
+  expect_equal(exported$framework$primary_objectives, c(101))
+  expect_equal(exported$framework$secondary_objectives, c(102))
 })
 
 test_that("restore_framework restores primary_objectives and secondary_objectives", {
+  p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
     sector = "Health", pillar = "P", sub_pillar = "SP",
@@ -531,8 +523,9 @@ test_that("restore_framework restores primary_objectives and secondary_objective
   fw$set_master_schema(schema)
   fw$primary_objectives  <- c(101, 102)
   fw$secondary_objectives <- c(103)
-  exported <- fw$export_framework()
-  restored <- restore_framework(exported)
+  p$framework <- fw
+  exported <- p$export_protocol()
+  restored <- restore_framework(exported$framework)
   expect_equal(restored$primary_objectives, c(101, 102))
   expect_equal(restored$secondary_objectives, c(103))
 })

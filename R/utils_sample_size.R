@@ -575,8 +575,10 @@ estimate_field_plan <- function(sample_design,
 
   if (sample_design == "simple_random") {
 
-    number_days_needed <- (total_sample_size * average_interview_time) /
+    number_days_needed <- ceiling(
+      (total_sample_size * average_interview_time) /
       (effective_working_time * number_of_teams * enumerators_per_team)
+    )
 
     return(list(
       num_interview_per_enum_per_day = interviews_per_enumerator_per_day,

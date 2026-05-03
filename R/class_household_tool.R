@@ -23,6 +23,7 @@
 HouseholdTool <- R6::R6Class(
 "HouseholdTool",
 inherit = Tool,
+cloneable = TRUE,
 public = list(
 
   #' @description
@@ -62,52 +63,6 @@ public = list(
     }
 
     invisible(self)
-  },
-
-  #' @description
-  #' Get roster/repeat groups from the survey.
-  #' @return Data frame with roster/repeat group definitions.
-  get_roster_groups = function() {
-    survey <- self$survey
-    if (!"type" %in% names(survey)) {
-      return(data.frame())
-    }
-    survey[survey$type %in% c("begin_repeat", "end_repeat"), , drop = FALSE]
-  },
-
-  #' @description
-  #' Check if the survey has a roster/repeat section.
-  #' @return Logical indicating if roster exists.
-  has_roster = function() {
-    nrow(self$get_roster_groups()) > 0
-  },
-
-  #' @description
-  #' Get questions within a specific roster/repeat group.
-  #' @param roster_name Name of the roster/repeat group.
-  #' @return Data frame with questions in the roster.
-  get_roster_questions = function(roster_name) {
-    survey <- self$survey
-    if (!"type" %in% names(survey) || !"name" %in% names(survey)) {
-      return(data.frame())
-    }
-
-    # Find start and end of roster
-    begin_idx <- which(survey$type == "begin_repeat" & survey$name == roster_name)
-    if (length(begin_idx) == 0) {
-      return(data.frame())
-    }
-
-    # Find matching end_repeat
-    end_idx <- which(survey$type == "end_repeat")
-    end_idx <- end_idx[end_idx > begin_idx[1]]
-    if (length(end_idx) == 0) {
-      end_idx <- nrow(survey)
-    } else {
-      end_idx <- end_idx[1]
-    }
-
-    survey[(begin_idx[1] + 1):(end_idx - 1), , drop = FALSE]
   }
 )
 )

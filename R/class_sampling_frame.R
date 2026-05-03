@@ -79,6 +79,25 @@ SamplingFrame <- R6::R6Class(
         required_columns = required_columns,
         schema           = schema
       )
+    },
+
+    #' @description Sort PSUs from highest to lowest population within each stratum.
+    #'
+    #' Reorders the rows of the internal log data frame so that within each
+    #' stratum, PSUs appear in descending order of \code{population_size}.
+    #' PSUs with missing population values are placed last within their stratum.
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.
+    sort_psu_by_population = function() {
+      df <- self$log_df
+      if (is.null(df) || nrow(df) == 0) return(invisible(self))
+      if (!all(c("stratum", "population_size") %in% names(df))) return(invisible(self))
+      pop <- as.numeric(df$population_size)
+      df <- df[order(df$stratum,
+                     ifelse(is.na(pop), -Inf, pop) * -1L,
+                     na.last = TRUE), , drop = FALSE]
+      self$log_df <- df
+      invisible(self)
     }
   )
 )

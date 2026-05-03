@@ -71,42 +71,33 @@ validate_protocol <- function(protocol) {
 #'
 #' @param sample_table A data frame to validate (typically
 #'   \code{protocol$sample_table}).
-#' @return Named list with elements \code{valid} (logical) and
-#'   \code{message} (character).
+#' @return \code{TRUE} if the table is valid, \code{FALSE} otherwise.
 #' @export
 validate_strata_table <- function(sample_table) {
 
   origin <- "validate_strata_table"
 
   if (is.null(sample_table) || !is.data.frame(sample_table)) {
-    return(list(valid = FALSE,
-                message = phr_txt("sample_table must be a non-NULL data frame.")))
+    return(FALSE)
   }
 
   if (nrow(sample_table) == 0) {
-    return(list(valid = FALSE,
-                message = phr_txt("sample_table is empty (zero rows).")))
+    return(FALSE)
   }
 
   required_cols <- .strata_table_required_cols
 
   missing_cols <- setdiff(required_cols, names(sample_table))
   if (length(missing_cols) > 0) {
-    return(list(
-      valid   = FALSE,
-      message = phr_txt("sample_table is missing required columns: {paste(missing_cols, collapse=', ')}")
-    ))
+    return(FALSE)
   }
 
   dupes <- sample_table$stratum_id[duplicated(sample_table$stratum_id)]
   if (length(dupes) > 0) {
-    return(list(
-      valid   = FALSE,
-      message = phr_txt("Duplicate stratum_id values: {paste(dupes, collapse=', ')}")
-    ))
+    return(FALSE)
   }
 
-  list(valid = TRUE, message = phr_txt("sample_table structure is valid."))
+  TRUE
 }
 
 #' Recalculate sample sizes and field plan for all rows of a strata table
@@ -165,10 +156,9 @@ calculate_sample_size_strata_table <- function(sample_table) {
 
   phr_try({
 
-    val_result <- validate_strata_table(sample_table)
     phr_assert(
-      isTRUE(val_result$valid),
-      message = val_result$message,
+      isTRUE(validate_strata_table(sample_table)),
+      message = phr_txt("sample_table is invalid. Ensure it was built via add_stratum() or conforms to the required schema."),
       origin  = origin,
       hint    = phr_txt("Ensure the strata table was built via add_stratum() or conforms to the required schema.")
     )

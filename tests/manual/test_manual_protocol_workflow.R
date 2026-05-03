@@ -39,8 +39,8 @@ protocol$framework$primary_objectives <- c(101, 106, 108, 112, 113, 114, 115, 11
 protocol$framework$secondary_objectives <- c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131)
 
 head(protocol$framework$adjusted_schema)
-protocol$framework$filter_schema_by_objective(objective_codes = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives))
-head(protocol$framework$update_adjusted_schema(selected_objectives = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives)))
+protocol$framework$modify_adjusted_schema(objective_codes = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives))
+head(protocol$framework$modify_adjusted_schema(selected_objectives = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives)))
 
 protocol$framework$modify_adjusted_svg()
 
@@ -184,7 +184,7 @@ protocol$tools$tool_household_iphra_v2$change_default_language(language = "Arabi
 
 
 
-protocol$tools$tool_household_iphra_v2$filter_survey_by_modules(indicator_codes = c(10000,13202, 10101, 10102, 10103, 10104, 10015))
+protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(10000,13202, 10101, 10102, 10103, 10104, 10015))
 
 
 View(protocol$tools$tool_household_iphra_v2$revised_survey)
@@ -212,7 +212,7 @@ View(protocol$tools$tool_kii_community_iphra_v2$choices)
 
 
 
-(protocol$validate_coherence())
+(protocol$diagnose_coherence())
 
 
 
@@ -299,14 +299,14 @@ updated_choices[updated_choices$list_name == "admin1", ]
 
 # -- 8i: Inspect roster groups --
 
-roster_groups <- hh_tool$get_roster_groups()
+roster_groups <- hh_tool$# get_roster_groups removed
 nrow(roster_groups)
 head(roster_groups)
 
 if (nrow(roster_groups) > 0) {
   first_roster <- roster_groups$name[1]
   cat("First roster group:", first_roster, "\n")
-  roster_qs <- hh_tool$get_roster_questions(first_roster)
+  roster_qs <- hh_tool$# get_roster_questions removed (first_roster)
   head(roster_qs)
 }
 
@@ -562,7 +562,7 @@ base_only <- Protocol$new(
 )
 # Use a custom Framework to define objectives
 base_only_fw <- Framework$new()
-base_only_fw$add_objective_row(list(
+base_only_fw$# add_objective_row removed: (list(
   sector          = "General",
   pillar          = "Context",
   sub_pillar      = "Background",
@@ -620,16 +620,16 @@ fw_base$set_master_svg('<svg><g id="FoodSecurity"><rect fill="white" stroke="bla
 stopifnot(!is.null(fw_base$master_svg))
 cat("Base Framework created with manual schema (3 rows) and SVG.\n")
 
-# -- 13b: update_adjusted_schema() filters to selected objectives --
+# -- 13b: modify_adjusted_schema() filters to selected objectives --
 
-fw_base$update_adjusted_schema(c("FSL-01", "WASH-01"))
+fw_base$modify_adjusted_schema(c("FSL-01", "WASH-01"))
 stopifnot(is.data.frame(fw_base$adjusted_schema))
 stopifnot(nrow(fw_base$adjusted_schema) == 4)  # 2 rows each for FSL-01 and WASH-01
 cat("Adjusted schema rows:", nrow(fw_base$adjusted_schema), "(expected 4, 2 per objective)\n")
 
-# -- 13c: Base Framework update_adjusted_svg() hides non-selected elements --
+# -- 13c: Base Framework modify_adjusted_svg() hides non-selected elements --
 
-fw_base$update_adjusted_svg()
+fw_base$modify_adjusted_svg()
 stopifnot(!is.null(fw_base$adjusted_svg))
 cat("Base Framework adjusted SVG generated.\n")
 
@@ -651,17 +651,17 @@ stopifnot(nzchar(af$master_svg))
 stopifnot(grepl("<svg", af$master_svg))
 cat("ANAFramework master_svg loaded (", nchar(af$master_svg), "chars)\n")
 
-# -- 13e: filter_schema_by_objective() --
+# -- 13e: modify_adjusted_schema() --
 
 available_codes <- unique(af$master_schema$objective_code)
 cat("Available objective codes:", paste(available_codes, collapse = ", "), "\n")
 
 if (length(available_codes) > 0) {
-  code_subset <- af$filter_schema_by_objective(available_codes[1])
+  code_subset <- af$modify_adjusted_schema(available_codes[1])
   stopifnot(is.data.frame(code_subset))
   stopifnot(nrow(code_subset) > 0)
   stopifnot(all(code_subset$objective_code == available_codes[1]))
-  cat("filter_schema_by_objective('", available_codes[1], "'): ",
+  cat("modify_adjusted_schema('", available_codes[1], "'): ",
       nrow(code_subset), "rows\n")
 }
 
@@ -673,17 +673,17 @@ for (preset_name in c("core", "extended", "outcomes", "fsl", "wash", "health")) 
   cat("Preset '", preset_name, "': ", length(preset_objs), "objective(s)\n")
 }
 
-# -- 13g: update_adjusted_schema() + update_adjusted_svg() with preset --
+# -- 13g: modify_adjusted_schema() + modify_adjusted_svg() with preset --
 
 fsl_objs <- af$get_preset_objectives("fsl")
 cat("FSL preset objectives:", length(fsl_objs), "\n")
 
-af$update_adjusted_schema(fsl_objs)
+af$modify_adjusted_schema(fsl_objs)
 stopifnot(is.data.frame(af$adjusted_schema))
 stopifnot(nrow(af$adjusted_schema) > 0)
 cat("Adjusted schema for FSL preset:", nrow(af$adjusted_schema), "rows\n")
 
-af$update_adjusted_svg(highlight_colour = "lightgreen", default_colour = "white")
+af$modify_adjusted_svg(highlight_colour = "lightgreen", default_colour = "white")
 stopifnot(!is.null(af$adjusted_svg))
 stopifnot(nzchar(af$adjusted_svg))
 cat("ANAFramework adjusted SVG generated (",
@@ -736,7 +736,7 @@ cat("Restored framework master_schema rows:",
 
 # -- 13j: restore_framework() directly --
 
-exported_fw <- af$export_framework()
+exported_fw <- af$# export_framework removed -- use export_protocol()$framework
 stopifnot(is.list(exported_fw))
 stopifnot(exported_fw$class == "ANAFramework")
 
@@ -748,26 +748,26 @@ stopifnot(nrow(restored_fw$master_schema) > 0)
 cat("restore_framework() restored ANAFramework with",
     nrow(restored_fw$master_schema), "schema rows.\n")
 
-# -- 13k: update_adjusted_svg() with custom highlight colour --
+# -- 13k: modify_adjusted_svg() with custom highlight colour --
 
 af2 <- ANAFramework$new()
 wash_objs <- af2$get_preset_objectives("wash")
-af2$update_adjusted_schema(wash_objs)
-af2$update_adjusted_svg(highlight_colour = "lightblue", default_colour = "white")
+af2$modify_adjusted_schema(wash_objs)
+af2$modify_adjusted_svg(highlight_colour = "lightblue", default_colour = "white")
 stopifnot(!is.null(af2$adjusted_svg))
 cat("WASH preset adjusted SVG generated with lightblue highlight.\n")
 
-# -- 13l: Framework$add_objective_row() and remove_objective_row() --
+# -- 13l: Framework$# add_objective_row removed: () and # remove_objective_row removed: () --
 
 fw_edit <- Framework$new()
-fw_edit$add_objective_row(list(
+fw_edit$# add_objective_row removed: (list(
   sector          = "FSL",
   pillar          = "Food Security",
   sub_pillar      = "FCS",
   short_objective = "FSL-01",
   text_objective  = "Estimate food insecurity prevalence"
 ))
-fw_edit$add_objective_row(list(
+fw_edit$# add_objective_row removed: (list(
   sector          = "FSL",
   pillar          = "Food Security",
   sub_pillar      = "FCS",
@@ -778,7 +778,7 @@ fw_edit$add_objective_row(list(
 stopifnot(nrow(fw_edit$adjusted_schema) == 2L)
 cat("Framework adjusted_schema rows after 2 add_objective_row calls:", nrow(fw_edit$adjusted_schema), "\n")
 
-fw_edit$remove_objective_row("FSL-01")
+fw_edit$# remove_objective_row removed: ("FSL-01")
 stopifnot(is.null(fw_edit$adjusted_schema) || nrow(fw_edit$adjusted_schema) == 0L)
 cat("Framework adjusted_schema rows after remove_objective_row:", nrow(fw_edit$adjusted_schema), "\n")
 
@@ -786,7 +786,7 @@ cat("Framework adjusted_schema rows after remove_objective_row:", nrow(fw_edit$a
 # render_framework_svg() is a Framework method that displays the SVG in the
 # RStudio Plots pane.  To also save the raw SVG to disk, write the content directly.
 
-fw_protocol$framework$update_adjusted_svg()
+fw_protocol$framework$modify_adjusted_svg()
 svg_file <- tempfile(fileext = ".svg")
 writeLines(
   fw_protocol$framework$adjusted_svg %||% fw_protocol$framework$master_svg,
