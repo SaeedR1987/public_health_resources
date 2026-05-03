@@ -117,22 +117,7 @@ ANAFramework <- R6::R6Class(
         ]
 
         # Update available_indicator_codes from the adjusted_schema
-        if ("indicator_code" %in% names(self$adjusted_schema)) {
-          tool_type_col <- if ("tool_type" %in% names(self$adjusted_schema)) {
-            as.character(self$adjusted_schema[["tool_type"]])
-          } else {
-            rep(NA_character_, nrow(self$adjusted_schema))
-          }
-          ind_codes <- as.character(self$adjusted_schema[["indicator_code"]])
-          keep <- !is.na(ind_codes) & nzchar(ind_codes)
-          self$available_indicator_codes <- data.frame(
-            tool_type      = tool_type_col[keep],
-            indicator_code = ind_codes[keep],
-            stringsAsFactors = FALSE
-          )
-        } else {
-          self$available_indicator_codes <- NULL
-        }
+        private$.refresh_available_indicator_codes()
 
         phr_message(
           phr_txt(
