@@ -914,14 +914,9 @@ IPHRAProtocol <- R6::R6Class(
           stringsAsFactors = FALSE
         )
 
-        # Merge cells for repeated objectives
+        # Merge consecutive cells with the same Objective label
         ft <- flextable::flextable(sdr_df)
-        # Identify rows with the same Objective for merging
-        obj_vals  <- sdr_df$Objective
-        merge_idx <- which(obj_vals == c(obj_vals[-1], ""))  # rows to merge down
-        if (length(merge_idx) > 0) {
-          ft <- flextable::merge_v(ft, j = "Objective")
-        }
+        ft <- flextable::merge_v(ft, j = "Objective")
         ft <- flextable::theme_zebra(ft)
         ft <- flextable::autofit(ft)
 
