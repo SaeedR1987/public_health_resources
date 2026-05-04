@@ -748,3 +748,57 @@ test_that("add_stratum accepts proportional_rlc without n_sites and defaults clu
   expect_true(is.na(p$sample_table$n_sites))
 })
 
+
+# ── SurveyProtocol sampling helpers ─────────────────────────────────────────
+
+test_that("SurveyProtocol$get_sampling_methods returns empty vector before add_stratum", {
+  p <- make_protocol()
+  expect_equal(p$get_sampling_methods(), character(0))
+})
+
+test_that("SurveyProtocol$get_sampling_methods returns methods after add_stratum", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "s1", stratum_name = "S1",
+                sampling_method = "simple_random",
+                General_HH_Sample_Size = 110)
+  methods <- p$get_sampling_methods()
+  expect_equal(methods, "simple_random")
+})
+
+test_that("SurveyProtocol$get_strata_names returns stratum names", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "s1", stratum_name = "S1",
+                sampling_method = "simple_random",
+                General_HH_Sample_Size = 110)
+  p$add_stratum(stratum_id = "s2", stratum_name = "S2",
+                sampling_method = "purposive",
+                General_HH_Sample_Size = 60)
+  names_out <- p$get_strata_names()
+  expect_true("S1" %in% names_out)
+  expect_true("S2" %in% names_out)
+})
+
+test_that("SurveyProtocol$get_strata_names returns empty vector when no sample table", {
+  p <- make_protocol()
+  expect_equal(p$get_strata_names(), character(0))
+})
+
+test_that("SurveyProtocol$get_sample_size_summary returns correct structure", {
+  p <- make_protocol()
+  p$add_stratum(stratum_id = "s1", stratum_name = "S1",
+                sampling_method = "simple_random",
+                General_HH_Sample_Size = 110)
+  summary <- p$get_sample_size_summary()
+  expect_true(is.data.frame(summary))
+  expect_true("stratum"         %in% names(summary))
+  expect_true("sampling_method" %in% names(summary))
+  expect_equal(nrow(summary), 1L)
+  expect_equal(summary$stratum, "S1")
+  expect_equal(summary$sampling_method, "simple_random")
+})
+
+test_that("SurveyProtocol$get_sample_size_summary returns zero-row df when no sample table", {
+  p <- make_protocol()
+  summary <- p$get_sample_size_summary()
+  expect_equal(nrow(summary), 0L)
+})

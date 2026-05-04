@@ -21,6 +21,7 @@ NULL
 
 # All columns present in the bundled reference.xlsx file.
 .objective_schema_all_cols <- c(
+  "objective_code",
   "sector",
   "pillar",
   "sub_pillar",
@@ -31,7 +32,17 @@ NULL
   "wash",
   "health",
   "short_objective",
-  "text_objective"
+  "text_objective",
+  "objective_research_question",
+  "data_source",
+  "indicator_code",
+  "tool",
+  "indicator_name",
+  "indicator_definition",
+  "indicator_numerator",
+  "indicator_denominator",
+  "research_question",
+  "citation"
 )
 
 

@@ -704,6 +704,101 @@ SurveyProtocol <- R6::R6Class(
       return(self$sample_table)
     },
 
+    # ── Sampling helpers ────────────────────────────────────────────────────
+
+    #' @description Return the unique sampling methods used across all strata.
+    #'
+    #' Reads the \code{sampling_method} column of \code{self$sample_table}.
+    #'
+    #' @return Character vector of unique, non-NA sampling method values.
+    #'   Empty character vector when no sample table is set.
+    get_sampling_methods = function() {
+      if (is.null(self$sample_table) ||
+          !"sampling_method" %in% names(self$sample_table)) return(character(0))
+      m <- as.character(self$sample_table$sampling_method)
+      unique(m[!is.na(m) & nzchar(m)])
+    },
+
+    #' @description Return the stratum names from the sample table.
+    #'
+    #' Uses \code{Population_Name} when available, falling back to
+    #' \code{stratum_id}.
+    #'
+    #' @return Character vector of stratum names.  Empty character vector
+    #'   when no sample table is set.
+    get_strata_names = function() {
+      if (is.null(self$sample_table) || nrow(self$sample_table) == 0) {
+        return(character(0))
+      }
+      col <- if ("Population_Name" %in% names(self$sample_table)) {
+        "Population_Name"
+      } else if ("stratum_id" %in% names(self$sample_table)) {
+        "stratum_id"
+      } else {
+        return(character(0))
+      }
+      n <- as.character(self$sample_table[[col]])
+      n[!is.na(n) & nzchar(n)]
+    },
+
+    #' @description Return a compact sample-size summary.
+    #'
+    #' Returns a data frame with one row per stratum containing stratum name,
+    #' sampling method, general HH sample size, and final HH sample size.
+    #' Columns absent from \code{sample_table} are filled with \code{NA}.
+    #'
+    #' @return Data frame.  Zero-row data frame when no sample table is set.
+    get_sample_size_summary = function() {
+      st <- self$sample_table
+      if (is.null(st) || nrow(st) == 0) {
+        return(data.frame(
+          stratum = character(0),
+          sampling_method = character(0),
+          general_hh_sample_size = integer(0),
+          final_hh_sample_size = integer(0),
+          stringsAsFactors = FALSE
+        ))
+      }
+      get_col <- function(col) {
+        if (col %in% names(st)) as.character(st[[col]]) else rep(NA_character_, nrow(st))
+      }
+      get_num <- function(col) {
+        if (col %in% names(st)) suppressWarnings(as.integer(st[[col]])) else rep(NA_integer_, nrow(st))
+      }
+      data.frame(
+        stratum              = get_col(if ("Population_Name" %in% names(st)) "Population_Name" else "stratum_id"),
+        sampling_method      = get_col("sampling_method"),
+        general_hh_sample_size = get_num("General_HH_Sample_Size"),
+        final_hh_sample_size   = get_num("Final_HH_Sample_Size"),
+        stringsAsFactors = FALSE
+      )
+    },
+
+    #' @description Extract a column vector from the sampling frame, optionally
+    #'   filtered to a specific stratum and/or to included PSUs only.
+    #'
+    #' @param col_name Character. Column to extract.
+    #' @param strata Optional character vector of stratum names to filter to.
+    #'   \code{NULL} (default) returns all strata.
+    #' @param included_only Logical. When \code{TRUE} (default) only return
+    #'   rows where the \code{inclusion} column is \code{TRUE}.
+    #' @return Vector of values from the requested column.  \code{NULL} when
+    #'   the sampling frame is not set or the column does not exist.
+    get_frame_column = function(col_name, strata = NULL, included_only = TRUE) {
+      sf <- if (!is.null(self$sampling_frame)) self$sampling_frame$log_df else NULL
+      if (is.null(sf) || !is.data.frame(sf) || !col_name %in% names(sf)) {
+        return(NULL)
+      }
+      df <- as.data.frame(sf, stringsAsFactors = FALSE)
+      if (isTRUE(included_only) && "inclusion" %in% names(df)) {
+        df <- df[!is.na(df$inclusion) & df$inclusion, , drop = FALSE]
+      }
+      if (!is.null(strata) && "stratum" %in% names(df)) {
+        df <- df[df$stratum %in% as.character(strata), , drop = FALSE]
+      }
+      df[[col_name]]
+    },
+
     #' @description Get protocol summary including sampling information
     #' @return List with protocol summary information
     get_protocol_summary = function() {

@@ -59,8 +59,15 @@ Protocol <- R6::R6Class(
       country_name = NULL,
       assessment_title = NULL,
       target_strata = list(),
-      protocol_version = "1.0"
+      protocol_version = "1.0",
+      version = 1L
     ),
+
+    #' @field secondary_data Named list of secondary data sources keyed by
+    #'   objective code.  Each element is a character string naming the source
+    #'   or a URL.  Objective codes must match codes available in the
+    #'   \code{master_schema} of the associated \code{\link{Framework}}.
+    secondary_data = NULL,
 
     #' @description
     #' Creates a new Protocol object
@@ -183,6 +190,187 @@ Protocol <- R6::R6Class(
         num_tools = length(self$tools),
         num_issues = length(self$issues)
       )
+    },
+
+    #' @description Update the \code{modified_date} timestamp to the current
+    #'   system time.  Call this whenever the protocol or any of its held
+    #'   objects (tools, sampling frame, sample table, metadata) is mutated.
+    #' @return Invisibly returns \code{self} for method chaining.
+    touch = function() {
+      self$metadata$modified_date <- Sys.time()
+      invisible(self)
+    },
+
+    # ── Schema / Framework helpers ─────────────────────────────────────────
+
+    #' @description Retrieve a schema data frame from the associated
+    #'   \code{\link{Framework}}.
+    #'
+    #' Returns \code{adjusted_schema} when \code{type = "adjusted"} and
+    #' \code{master_schema} when \code{type = "master"}.  Falls back to
+    #' \code{self$objective_schema} when no framework is attached, and returns
+    #' an empty \code{data.frame()} when neither is available.
+    #'
+    #' @param type Character. One of \code{"master"} (default) or
+    #'   \code{"adjusted"}.
+    #' @return A data frame.
+    get_schema = function(type = c("master", "adjusted")) {
+      type <- match.arg(type)
+      if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        schema <- if (type == "adjusted") {
+          self$framework$adjusted_schema
+        } else {
+          self$framework$master_schema
+        }
+        if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0) {
+          return(as.data.frame(schema, stringsAsFactors = FALSE))
+        }
+      }
+      # Fallback: self$objective_schema
+      if (!is.null(self$objective_schema) && is.data.frame(self$objective_schema) &&
+          nrow(self$objective_schema) > 0) {
+        return(as.data.frame(self$objective_schema, stringsAsFactors = FALSE))
+      }
+      data.frame()
+    },
+
+    #' @description Return all unique, non-NA indicator codes present in a
+    #'   schema.
+    #'
+    #' @param type Character. One of \code{"master"} (default) or
+    #'   \code{"adjusted"}.  Passed to \code{get_schema()}.
+    #' @return Character vector of unique indicator codes.  Empty character
+    #'   vector when none are found.
+    get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
+      schema <- self$get_schema(type = match.arg(type))
+      if (is.data.frame(schema) && "indicator_code" %in% names(schema)) {
+        codes <- as.character(schema$indicator_code)
+        return(unique(codes[!is.na(codes) & nzchar(codes)]))
+      }
+      character(0)
+    },
+
+    #' @description Return the subset of a schema whose \code{indicator_code}
+    #'   matches the supplied codes.
+    #'
+    #' @param indicator_codes Character vector of indicator codes to keep.
+    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
+    #' @return Filtered data frame (zero rows when none match).
+    get_schema_for_indicators = function(indicator_codes,
+                                         type = c("master", "adjusted")) {
+      schema <- self$get_schema(type = match.arg(type))
+      if (!is.data.frame(schema) || nrow(schema) == 0 ||
+          !"indicator_code" %in% names(schema)) {
+        return(data.frame())
+      }
+      ic <- as.character(indicator_codes)
+      schema[as.character(schema$indicator_code) %in% ic, , drop = FALSE]
+    },
+
+    #' @description Extract one column from the schema, optionally filtered to
+    #'   rows whose \code{indicator_code} matches \code{indicator_codes}.
+    #'
+    #' @param col_name Character. Name of the column to extract.
+    #' @param indicator_codes Optional character vector. When supplied, only
+    #'   rows whose \code{indicator_code} matches are used.
+    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
+    #' @param unique_only Logical. When \code{TRUE} (default) return only
+    #'   unique values.
+    #' @param drop_na Logical. When \code{TRUE} (default) remove \code{NA}
+    #'   and empty-string values.
+    #' @return Character vector of values.
+    get_schema_column = function(col_name,
+                                  indicator_codes = NULL,
+                                  type            = c("master", "adjusted"),
+                                  unique_only     = TRUE,
+                                  drop_na         = TRUE) {
+      schema <- if (!is.null(indicator_codes)) {
+        self$get_schema_for_indicators(indicator_codes, type = match.arg(type))
+      } else {
+        self$get_schema(type = match.arg(type))
+      }
+      if (!is.data.frame(schema) || nrow(schema) == 0 ||
+          !col_name %in% names(schema)) {
+        return(character(0))
+      }
+      vals <- as.character(schema[[col_name]])
+      if (drop_na)    vals <- vals[!is.na(vals) & nzchar(vals)]
+      if (unique_only) vals <- unique(vals)
+      vals
+    },
+
+    # ── Tool helpers ────────────────────────────────────────────────────────
+
+    #' @description Return the names of all currently registered tools.
+    #' @return Character vector of tool names (keys of \code{self$tools}).
+    #'   Empty character vector when no tools are registered.
+    get_tool_names = function() {
+      if (is.null(self$tools) || length(self$tools) == 0) return(character(0))
+      names(self$tools)
+    },
+
+    #' @description Check whether a specific tool is registered.
+    #'
+    #' @param tool_name Character. Tool name to look up.
+    #' @return \code{TRUE} if the tool is present in \code{self$tools},
+    #'   \code{FALSE} otherwise.
+    is_tool_included = function(tool_name) {
+      if (is.null(self$tools) || length(self$tools) == 0) return(FALSE)
+      isTRUE(tool_name %in% names(self$tools))
+    },
+
+    #' @description Return the survey data frame for a named tool.
+    #'
+    #' Returns \code{revised_survey} when it is non-NULL and non-empty, and
+    #' falls back to \code{survey}.  Returns \code{NULL} when the tool is not
+    #' found or has no survey data.
+    #'
+    #' @param tool_name Character. Tool name (key of \code{self$tools}).
+    #' @param prefer_revised Logical. When \code{TRUE} (default), prefer
+    #'   \code{revised_survey} over \code{survey}.
+    #' @return Data frame or \code{NULL}.
+    get_tool_survey = function(tool_name, prefer_revised = TRUE) {
+      if (!self$is_tool_included(tool_name)) return(NULL)
+      tool <- self$tools[[tool_name]]
+      if (!methods::is(tool, "R6")) return(NULL)
+      sv <- if (isTRUE(prefer_revised)) {
+        rs <- tryCatch(tool$revised_survey, error = function(e) NULL)
+        if (!is.null(rs) && is.data.frame(rs) && nrow(rs) > 0) rs
+        else tryCatch(tool$survey, error = function(e) NULL)
+      } else {
+        tryCatch(tool$survey, error = function(e) NULL)
+      }
+      sv
+    },
+
+    #' @description Return all unique indicator codes present across the
+    #'   survey data of the specified tools (or all tools when
+    #'   \code{tool_names} is \code{NULL}).
+    #'
+    #' Pulls indicator codes from the \code{indicator_code} column of each
+    #' tool's survey data (preferring \code{revised_survey}).
+    #'
+    #' @param tool_names Optional character vector of tool names to restrict
+    #'   the search.  Defaults to \code{NULL} (all registered tools).
+    #' @param prefer_revised Logical. When \code{TRUE} (default), prefer
+    #'   \code{revised_survey} over \code{survey}.
+    #' @return Character vector of unique, non-NA indicator codes.
+    get_indicator_codes_from_tools = function(tool_names = NULL,
+                                               prefer_revised = TRUE) {
+      all_names <- self$get_tool_names()
+      if (length(all_names) == 0) return(character(0))
+      if (!is.null(tool_names)) {
+        all_names <- intersect(all_names, as.character(tool_names))
+      }
+      codes <- character(0)
+      for (tn in all_names) {
+        sv <- self$get_tool_survey(tn, prefer_revised = prefer_revised)
+        if (!is.null(sv) && is.data.frame(sv) && "indicator_code" %in% names(sv)) {
+          ic <- as.character(sv$indicator_code)
+          codes <- c(codes, ic[!is.na(ic) & nzchar(ic)])
+        }
+      }
+      unique(codes)
     },
     
     #' @description Export protocol to a list
