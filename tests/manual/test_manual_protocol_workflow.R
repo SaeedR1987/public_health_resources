@@ -312,5 +312,16 @@ protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$get_validation_error
 
 # -- 3a: Generate report with no tools (tools section shows placeholder text) --
 
-report_no_tools <- tempfile(fileext = ".docx")
+protocol$metadata$pilot_date <- "2025-04-15"
+protocol$metadata$data_start_date <- "2025-05-01"
+protocol$metadata$data_end_date <- "2025-05-15"
+protocol$metadata$analysis_date <- "2025-05-20"
+protocol$metadata$data_validation_date <- "2025-05-18"
+protocol$metadata$prelim_presentation_date <- "2025-05-25"
+protocol$metadata$output_validation_date <- "2025-05-30"
+protocol$metadata$output_published_date <- "2025-06-05"
+protocol$metadata$final_presentation_date <- "2025-06-10"
+protocol$metadata$audience_type <- "Internal"
+
+# report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = "report_no_tools.docx")
