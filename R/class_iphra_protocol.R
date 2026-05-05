@@ -54,6 +54,10 @@ IPHRAProtocol <- R6::R6Class(
     #' @param mandating_body Character. Name(s) of the mandating body/agency.
     #' @param project_code Character. IMPACT project code.
     #' @param overall_timeframe Character. Overall research timeframe description.
+    #' @param geographic_coverage Character. Description of the geographic area
+    #'   covered.
+    #' @param general_objective Character. The overall/general objective text.
+    #'   Defaults to the standard IPHRA general objective.
     #' @param pilot_date Character or Date. Pilot/training date.
     #' @param data_start_date Character or Date. Data collection start date.
     #' @param data_end_date Character or Date. Data collection end date.
@@ -69,21 +73,39 @@ IPHRAProtocol <- R6::R6Class(
     #' @param humanitarian_milestones Character vector. Any subset of
     #'   \code{"donor"}, \code{"inter_cluster"}, \code{"cluster"},
     #'   \code{"ngo_platform"}, \code{"other"}.
-    #' @param audience_type Character vector. Any subset of
-    #'   \code{"strategic"}, \code{"programmatic"}, \code{"operational"},
-    #'   \code{"other"}.  Defaults to \code{c("programmatic", "operational")}.
+    #' @param audience_type.strategic Logical. Whether the strategic audience
+    #'   type applies.  Defaults to \code{FALSE}.
+    #' @param audience_type.operational Logical. Whether the operational audience
+    #'   type applies.  Defaults to \code{TRUE}.
+    #' @param audience_type.programmatic Logical. Whether the programmatic
+    #'   audience type applies.  Defaults to \code{TRUE}.
+    #' @param audience_type.other Logical. Whether another audience type applies.
+    #'   Defaults to \code{FALSE}.
     #' @param dissemination Character vector. Any subset of
     #'   \code{"general_mailing"}, \code{"cluster_mailing"},
     #'   \code{"presentation"}, \code{"website"}, \code{"other"}.
     #' @param recall_period Character. Recall period description (e.g.
     #'   \code{"Past 6 months"}).
-    #' @param geographic_description Character. Description of the geographic
-    #'   area covered.
-    #' @param population Character vector. Population groups assessed. Any
-    #'   subset of \code{"idp_camp"}, \code{"idp_informal"}, \code{"idp_host"},
-    #'   \code{"idp_other"}, \code{"refugee_camp"}, \code{"refugee_informal"},
-    #'   \code{"refugee_host"}, \code{"refugee_other"}, \code{"host_community"},
-    #'   \code{"other"}.
+    #' @param geographic_description Character. Deprecated alias for
+    #'   \code{geographic_coverage}; retained for backwards compatibility.
+    #' @param population Character vector. Population groups assessed (legacy).
+    #'   Any subset of \code{"idp_camp"}, \code{"idp_informal"},
+    #'   \code{"idp_host"}, \code{"idp_other"}, \code{"refugee_camp"},
+    #'   \code{"refugee_informal"}, \code{"refugee_host"},
+    #'   \code{"refugee_other"}, \code{"host_community"}, \code{"other"}.
+    #' @param pop.idpcamp Logical. IDP camp population included.
+    #' @param pop.idphost Logical. IDP host community population included.
+    #' @param pop.idpinformal Logical. IDP informal settlement population
+    #'   included.
+    #' @param pop.idpother Logical. Other IDP population included.
+    #' @param pop.refugee Logical. Refugee (camp) population included.
+    #' @param pop.refugeeinformal Logical. Refugee informal settlement population
+    #'   included.
+    #' @param pop.refugeehost Logical. Refugee host community population
+    #'   included.
+    #' @param pop.refugeeother Logical. Other refugee population included.
+    #' @param pop.host Logical. Host community population included.
+    #' @param pop.other Logical. Other population group included.
     #' @param gender_disaggregation Logical. Whether gender disaggregation is
     #'   planned.  Defaults to \code{TRUE}.
     #' @param sex_disaggregation Logical. Whether sex/age disaggregation is
@@ -108,6 +130,8 @@ IPHRAProtocol <- R6::R6Class(
                           mandating_body            = NULL,
                           project_code              = NULL,
                           overall_timeframe         = NULL,
+                          geographic_coverage       = NULL,
+                          general_objective         = "To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality.",
                           pilot_date                = NULL,
                           data_start_date           = NULL,
                           data_end_date             = NULL,
@@ -118,11 +142,24 @@ IPHRAProtocol <- R6::R6Class(
                           output_published_date     = NULL,
                           final_presentation_date   = NULL,
                           humanitarian_milestones   = NULL,
-                          audience_type             = c("programmatic", "operational"),
+                          `audience_type.strategic`    = FALSE,
+                          `audience_type.operational`  = TRUE,
+                          `audience_type.programmatic` = TRUE,
+                          `audience_type.other`        = FALSE,
                           dissemination             = NULL,
                           recall_period             = NULL,
                           geographic_description    = NULL,
                           population                = NULL,
+                          `pop.idpcamp`             = FALSE,
+                          `pop.idphost`             = FALSE,
+                          `pop.idpinformal`         = FALSE,
+                          `pop.idpother`            = FALSE,
+                          `pop.refugee`             = FALSE,
+                          `pop.refugeeinformal`     = FALSE,
+                          `pop.refugeehost`         = FALSE,
+                          `pop.refugeeother`        = FALSE,
+                          `pop.host`                = FALSE,
+                          `pop.other`               = FALSE,
                           gender_disaggregation     = TRUE,
                           sex_disaggregation        = TRUE,
                           data_management_platform  = "IMPACT",
@@ -143,6 +180,12 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$mandating_body           <- mandating_body
       self$metadata$project_code             <- project_code
       self$metadata$overall_timeframe        <- overall_timeframe
+      # geographic_coverage supersedes the deprecated geographic_description parameter.
+      # Both are set to the same resolved value so that code that reads either field
+      # continues to work during the transition period.
+      self$metadata$geographic_coverage      <- geographic_coverage %||% geographic_description
+      self$metadata$geographic_description   <- geographic_coverage %||% geographic_description
+      self$metadata$general_objective        <- general_objective
       self$metadata$pilot_date               <- private$.fmt_date(pilot_date)
       self$metadata$data_start_date          <- private$.fmt_date(data_start_date)
       self$metadata$data_end_date            <- private$.fmt_date(data_end_date)
@@ -153,11 +196,25 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$output_published_date    <- private$.fmt_date(output_published_date)
       self$metadata$final_presentation_date  <- private$.fmt_date(final_presentation_date)
       self$metadata$humanitarian_milestones  <- humanitarian_milestones
-      self$metadata$audience_type            <- audience_type
+      # Audience type as four distinct boolean fields
+      self$metadata[["audience_type.strategic"]]    <- isTRUE(`audience_type.strategic`)
+      self$metadata[["audience_type.operational"]]  <- isTRUE(`audience_type.operational`)
+      self$metadata[["audience_type.programmatic"]] <- isTRUE(`audience_type.programmatic`)
+      self$metadata[["audience_type.other"]]        <- isTRUE(`audience_type.other`)
       self$metadata$dissemination            <- dissemination
       self$metadata$recall_period            <- recall_period
-      self$metadata$geographic_description   <- geographic_description
       self$metadata$population               <- population
+      # Population boolean fields
+      self$metadata[["pop.idpcamp"]]         <- isTRUE(`pop.idpcamp`)
+      self$metadata[["pop.idphost"]]         <- isTRUE(`pop.idphost`)
+      self$metadata[["pop.idpinformal"]]     <- isTRUE(`pop.idpinformal`)
+      self$metadata[["pop.idpother"]]        <- isTRUE(`pop.idpother`)
+      self$metadata[["pop.refugee"]]         <- isTRUE(`pop.refugee`)
+      self$metadata[["pop.refugeeinformal"]] <- isTRUE(`pop.refugeeinformal`)
+      self$metadata[["pop.refugeehost"]]     <- isTRUE(`pop.refugeehost`)
+      self$metadata[["pop.refugeeother"]]    <- isTRUE(`pop.refugeeother`)
+      self$metadata[["pop.host"]]            <- isTRUE(`pop.host`)
+      self$metadata[["pop.other"]]           <- isTRUE(`pop.other`)
       self$metadata$gender_disaggregation    <- isTRUE(gender_disaggregation)
       self$metadata$sex_disaggregation       <- isTRUE(sex_disaggregation)
       self$metadata$data_management_platform <- data_management_platform
@@ -364,6 +421,7 @@ IPHRAProtocol <- R6::R6Class(
         doc <- private$add_research_questions_section(doc)
         doc <- private$add_primary_data_sources_table(doc)
         doc <- private$add_sdr_section(doc)
+        doc <- private$remove_remaining_tags(doc)
         print(doc, target = output_file)
         phr_message(
           phr_txt("IPHRA TOR saved to: {output_file}"),
@@ -578,8 +636,10 @@ IPHRAProtocol <- R6::R6Class(
       doc <- private$.replace(doc, "@overall_timeframe",
                                m$overall_timeframe %||% "")
       doc <- private$.replace(doc, "@geographic_coverage",
-                               m$geographic_description %||% "")
+                               m$geographic_coverage %||% m$geographic_description %||% "")
       doc <- private$.replace(doc, "@recall_period", m$recall_period %||% "")
+      doc <- private$.replace(doc, "@general_objective",
+                               m$general_objective %||% "")
 
       # ── Date fields ────────────────────────────────────────────────────
       doc <- private$.replace(doc, "@pilot_date",               m$pilot_date               %||% "")
@@ -612,12 +672,15 @@ IPHRAProtocol <- R6::R6Class(
       doc <- private$.checkbox(doc, "@milestone_ngo_platform",  "ngo_platform"  %in% ms)
       doc <- private$.checkbox(doc, "@milestone_other",         "other"         %in% ms)
 
-      # ── Audience type ──────────────────────────────────────────────────
-      at <- m$audience_type %||% character(0)
-      doc <- private$.checkbox(doc, "@audience_strategic",    "strategic"    %in% at)
-      doc <- private$.checkbox(doc, "@audience_programmatic", "programmatic" %in% at)
-      doc <- private$.checkbox(doc, "@audience_operational",  "operational"  %in% at)
-      doc <- private$.checkbox(doc, "@audience_other",        "other"        %in% at)
+      # ── Audience type (four distinct boolean fields) ───────────────────
+      doc <- private$.checkbox(doc, "@audience_type.strategic",
+                               isTRUE(m[["audience_type.strategic"]]))
+      doc <- private$.checkbox(doc, "@audience_type.programmatic",
+                               isTRUE(m[["audience_type.programmatic"]]))
+      doc <- private$.checkbox(doc, "@audience_type.operational",
+                               isTRUE(m[["audience_type.operational"]]))
+      doc <- private$.checkbox(doc, "@audience_type.other",
+                               isTRUE(m[["audience_type.other"]]))
 
       # ── Dissemination ──────────────────────────────────────────────────
       diss <- m$dissemination %||% character(0)
@@ -627,17 +690,17 @@ IPHRAProtocol <- R6::R6Class(
       doc <- private$.checkbox(doc, "@dissem_website",          "website"          %in% diss)
       doc <- private$.checkbox(doc, "@dissem_other",            "other"            %in% diss)
 
-      # ── Population ────────────────────────────────────────────────────
-      pop_values <- c(
-        "idp_camp", "idp_informal", "idp_host", "idp_other",
-        "refugee_camp", "refugee_informal", "refugee_host", "refugee_other",
-        "host_community", "other"
-      )
-      pop_tags <- paste0("@pop", seq_along(pop_values))  # @pop1 … @pop10
-      pop_sel  <- m$population %||% character(0)
-      for (i in seq_along(pop_values)) {
-        doc <- private$.checkbox(doc, pop_tags[i], pop_values[i] %in% pop_sel)
-      }
+      # ── Population boolean fields ─────────────────────────────────────
+      doc <- private$.checkbox(doc, "@pop.idpcamp",         isTRUE(m[["pop.idpcamp"]]))
+      doc <- private$.checkbox(doc, "@pop.idphost",         isTRUE(m[["pop.idphost"]]))
+      doc <- private$.checkbox(doc, "@pop.idpinformal",     isTRUE(m[["pop.idpinformal"]]))
+      doc <- private$.checkbox(doc, "@pop.idpother",        isTRUE(m[["pop.idpother"]]))
+      doc <- private$.checkbox(doc, "@pop.refugee",         isTRUE(m[["pop.refugee"]]))
+      doc <- private$.checkbox(doc, "@pop.refugeeinformal", isTRUE(m[["pop.refugeeinformal"]]))
+      doc <- private$.checkbox(doc, "@pop.refugeehost",     isTRUE(m[["pop.refugeehost"]]))
+      doc <- private$.checkbox(doc, "@pop.refugeeother",    isTRUE(m[["pop.refugeeother"]]))
+      doc <- private$.checkbox(doc, "@pop.host",            isTRUE(m[["pop.host"]]))
+      doc <- private$.checkbox(doc, "@pop.other",           isTRUE(m[["pop.other"]]))
 
       # ── Gender / Sex disaggregation ────────────────────────────────────
       doc <- private$.checkbox(doc, "@gender_disagg_yes", isTRUE(m$gender_disaggregation))
@@ -683,6 +746,8 @@ IPHRAProtocol <- R6::R6Class(
 
     # Replace @specific_objectives in the metadata table cell with a
     # pillar-grouped list of text objectives for all indicators in tools.
+    # Headers (pillars) are bolded, each objective is on its own line, and a
+    # blank line separates pillar groups.
     add_specific_objectives_section = function(doc) {
       inc_codes <- self$get_indicator_codes_from_tools()
       if (length(inc_codes) == 0) {
@@ -708,21 +773,64 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       pillars <- unique(obj_df$pillar[!is.na(obj_df$pillar) & nzchar(obj_df$pillar)])
-      lines <- character(0)
-      for (p in pillars) {
-        lines <- c(lines, p)
-        sub_objs <- obj_df$text_objective[obj_df$pillar == p]
-        sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
-        for (obj in sub_objs) {
-          lines <- c(lines, paste0("  \u2022 ", obj))
+
+      # Try to insert formatted paragraphs (bold headers) using officer cursor API
+      inserted <- FALSE
+      tryCatch({
+        doc <- officer::cursor_reach(doc, keyword = "@specific_objectives")
+        fp_bold <- officer::fp_text(bold = TRUE)
+        first_pillar <- TRUE
+        for (p in pillars) {
+          sub_objs <- obj_df$text_objective[obj_df$pillar == p]
+          sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
+          if (!first_pillar) {
+            # Blank line before each subsequent pillar group
+            doc <- officer::body_add_par(doc, "", pos = "before")
+            doc <- officer::cursor_forward(doc)
+          }
+          # Bold pillar header
+          header_fpar <- officer::fpar(officer::ftext(p, prop = fp_bold))
+          doc <- officer::body_add_fpar(doc, header_fpar, pos = "before")
+          doc <- officer::cursor_forward(doc)
+          # One bullet per objective
+          for (obj in sub_objs) {
+            doc <- officer::body_add_par(doc, paste0("\u2022 ", obj), pos = "before")
+            doc <- officer::cursor_forward(doc)
+          }
+          first_pillar <- FALSE
         }
+        # Remove the original tag paragraph
+        doc <- officer::body_remove(doc)
+        inserted <- TRUE
+      }, error = function(e) {
+        phr_warning(
+          phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
+          origin = "IPHRAProtocol$add_specific_objectives_section"
+        )
+      })
+
+      if (!inserted) {
+        # Fallback: plain text replacement
+        lines <- character(0)
+        first_pillar <- TRUE
+        for (p in pillars) {
+          if (!first_pillar) lines <- c(lines, "")
+          lines <- c(lines, p)
+          sub_objs <- obj_df$text_objective[obj_df$pillar == p]
+          sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
+          for (obj in sub_objs) {
+            lines <- c(lines, paste0("\u2022 ", obj))
+          }
+          first_pillar <- FALSE
+        }
+        doc <- private$.replace(doc, "@specific_objectives", paste(lines, collapse = "\n"))
       }
-      doc <- private$.replace(doc, "@specific_objectives", paste(lines, collapse = "\n"))
       doc
     },
 
     # Replace @research_questions in the metadata table cell.
-    # Groups research_question values under their objective_research_question.
+    # Groups research_question values under their objective_research_question
+    # (bolded header), each question on its own line, blank line between groups.
     add_research_questions_section = function(doc) {
       inc_codes <- self$get_indicator_codes_from_tools()
       if (length(inc_codes) == 0) {
@@ -754,14 +862,48 @@ IPHRAProtocol <- R6::R6Class(
         }
       }
 
-      lines <- character(0)
-      for (orq in seen_orq) {
-        lines <- c(lines, orq)
-        for (rq in orq_to_rqs[[orq]]) {
-          lines <- c(lines, paste0("  \u2022 ", rq))
+      # Try to insert formatted paragraphs (bold headers) using officer cursor API
+      inserted <- FALSE
+      tryCatch({
+        doc <- officer::cursor_reach(doc, keyword = "@research_questions")
+        fp_bold <- officer::fp_text(bold = TRUE)
+        first_orq <- TRUE
+        for (orq in seen_orq) {
+          if (!first_orq) {
+            doc <- officer::body_add_par(doc, "", pos = "before")
+            doc <- officer::cursor_forward(doc)
+          }
+          header_fpar <- officer::fpar(officer::ftext(orq, prop = fp_bold))
+          doc <- officer::body_add_fpar(doc, header_fpar, pos = "before")
+          doc <- officer::cursor_forward(doc)
+          for (rq in orq_to_rqs[[orq]]) {
+            doc <- officer::body_add_par(doc, paste0("\u2022 ", rq), pos = "before")
+            doc <- officer::cursor_forward(doc)
+          }
+          first_orq <- FALSE
         }
+        doc <- officer::body_remove(doc)
+        inserted <- TRUE
+      }, error = function(e) {
+        phr_warning(
+          phr_txt("Could not insert formatted research questions: {conditionMessage(e)}"),
+          origin = "IPHRAProtocol$add_research_questions_section"
+        )
+      })
+
+      if (!inserted) {
+        lines <- character(0)
+        first_orq <- TRUE
+        for (orq in seen_orq) {
+          if (!first_orq) lines <- c(lines, "")
+          lines <- c(lines, orq)
+          for (rq in orq_to_rqs[[orq]]) {
+            lines <- c(lines, paste0("\u2022 ", rq))
+          }
+          first_orq <- FALSE
+        }
+        doc <- private$.replace(doc, "@research_questions", paste(lines, collapse = "\n"))
       }
-      doc <- private$.replace(doc, "@research_questions", paste(lines, collapse = "\n"))
       doc
     },
 
@@ -827,7 +969,19 @@ IPHRAProtocol <- R6::R6Class(
 
       ft <- flextable::flextable(result_df)
       ft <- flextable::theme_zebra(ft)
-      ft <- flextable::autofit(ft)
+
+      # Page layout: standard portrait page with 1-inch margins ≈ 6.5 in usable
+      page_width_in  <- 6.5
+      n_tool_cols    <- length(tool_names)
+      obj_col_width  <- page_width_in * 0.50
+      tool_col_width <- if (n_tool_cols > 0) (page_width_in * 0.50) / n_tool_cols else 0
+
+      ft <- flextable::width(ft, j = 1, width = obj_col_width)
+      if (n_tool_cols > 0) {
+        ft <- flextable::width(ft, j = seq(2, n_tool_cols + 1), width = tool_col_width)
+      }
+      ft <- flextable::fontsize(ft, size = 7, part = "all")
+      ft <- flextable::set_table_properties(ft, layout = "fixed")
 
       # Navigate to the @primary_data_sources_table paragraph and replace it
       tryCatch({
@@ -843,8 +997,16 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Replace @modified_framework_svg with the adjusted SVG rendered as PNG,
-    # and @secondary_data_sources_table with a flextable.
+    # Replace @modified_framework_svg with the adjusted SVG rendered as a
+    # high-resolution image, and @secondary_data_sources_table with a flextable.
+    #
+    # Resolution strategy (tried in order, first success wins):
+    #   1. magick  — rasterises at 300 DPI (print quality) if available.
+    #   2. rsvg    — renders at 3 000 px wide (≈ 3× previous 900 px).
+    #   3. Fallback placeholder text.
+    #
+    # Display dimensions are fixed to the portrait page content width (6.5 in)
+    # so that Word never stretches a low-resolution image.
     add_sdr_section = function(doc) {
       # ── Framework SVG ──────────────────────────────────────────────────
       svg_content <- tryCatch(
@@ -854,29 +1016,56 @@ IPHRAProtocol <- R6::R6Class(
 
       if (!is.null(svg_content) && nzchar(svg_content)) {
         png_inserted <- FALSE
-        if (requireNamespace("rsvg", quietly = TRUE)) {
+
+        tmp_svg <- tempfile(fileext = ".svg")
+        tmp_png <- tempfile(fileext = ".png")
+        writeLines(svg_content, tmp_svg)
+
+        # Strategy 1: magick — 300 DPI rasterisation (best quality)
+        if (!png_inserted && requireNamespace("magick", quietly = TRUE)) {
           tryCatch({
-            tmp_svg <- tempfile(fileext = ".svg")
-            tmp_png <- tempfile(fileext = ".png")
-            writeLines(svg_content, tmp_svg)
-            rsvg::rsvg_png(tmp_svg, tmp_png, width = 900)
+            img <- magick::image_read_svg(tmp_svg, density = 300)
+            magick::image_write(img, tmp_png, format = "png")
             tryCatch({
               doc <- officer::cursor_reach(doc, keyword = "@modified_framework_svg")
               doc <- officer::body_add_img(doc, src = tmp_png,
-                                           width = 6, height = 4,
+                                           width = 6.5, height = 4.5,
                                            pos = "before")
               doc <- officer::cursor_forward(doc)
               doc <- officer::body_remove(doc)
               png_inserted <- TRUE
             }, error = function(e2) {
-              phr_warning(phr_txt("Could not insert framework SVG image: {conditionMessage(e2)}"),
+              phr_warning(phr_txt("Could not insert framework SVG image (magick): {conditionMessage(e2)}"),
                           origin = "IPHRAProtocol$add_sdr_section")
             })
           }, error = function(e) {
-            phr_warning(phr_txt("SVG-to-PNG conversion failed: {conditionMessage(e)}"),
+            phr_warning(phr_txt("magick SVG rasterisation failed: {conditionMessage(e)}"),
                         origin = "IPHRAProtocol$add_sdr_section")
           })
         }
+
+        # Strategy 2: rsvg — render at 3 000 px wide (high resolution)
+        if (!png_inserted && requireNamespace("rsvg", quietly = TRUE)) {
+          tryCatch({
+            rsvg::rsvg_png(tmp_svg, tmp_png, width = 3000)
+            tryCatch({
+              doc <- officer::cursor_reach(doc, keyword = "@modified_framework_svg")
+              doc <- officer::body_add_img(doc, src = tmp_png,
+                                           width = 6.5, height = 4.5,
+                                           pos = "before")
+              doc <- officer::cursor_forward(doc)
+              doc <- officer::body_remove(doc)
+              png_inserted <- TRUE
+            }, error = function(e2) {
+              phr_warning(phr_txt("Could not insert framework SVG image (rsvg): {conditionMessage(e2)}"),
+                          origin = "IPHRAProtocol$add_sdr_section")
+            })
+          }, error = function(e) {
+            phr_warning(phr_txt("rsvg SVG-to-PNG conversion failed: {conditionMessage(e)}"),
+                        origin = "IPHRAProtocol$add_sdr_section")
+          })
+        }
+
         if (!png_inserted) {
           doc <- private$.replace(doc, "@modified_framework_svg",
                                   "[Framework diagram — attach SVG manually]")
@@ -934,6 +1123,29 @@ IPHRAProtocol <- R6::R6Class(
         doc <- private$.replace(doc, "@secondary_data_sources_table", "")
       }
 
+      doc
+    },
+
+    # After all known tag replacements, remove any remaining @-prefixed tags
+    # so they do not appear in the exported document.
+    remove_remaining_tags = function(doc) {
+      body_xml <- officer::docx_body_xml(doc)
+      ns       <- xml2::xml_ns(body_xml)
+
+      # Collect all text nodes in the document body
+      text_nodes <- xml2::xml_find_all(body_xml, ".//w:t", ns = ns)
+      # Pattern matches all @-prefixed placeholder tags used in TOR templates.
+      # Underscores and periods appear in tag names (e.g. @pop.idpcamp, @data_start_date).
+      # Hyphens are included to handle any hyphenated tag variants in custom templates.
+      tag_pattern <- "@[A-Za-z0-9_.\\-]+"
+
+      for (node in text_nodes) {
+        txt <- xml2::xml_text(node)
+        if (grepl(tag_pattern, txt)) {
+          cleaned <- gsub(tag_pattern, "", txt, perl = TRUE)
+          xml2::xml_text(node) <- cleaned
+        }
+      }
       doc
     },
 

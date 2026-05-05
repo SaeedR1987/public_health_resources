@@ -69,7 +69,8 @@ test_that("IPHRAProtocol stores optional metadata on initialize", {
     pilot_date          = "2025-03-01",
     data_start_date     = "2025-03-05",
     data_end_date       = "2025-03-20",
-    audience_type       = c("strategic", "programmatic"),
+    `audience_type.strategic`    = TRUE,
+    `audience_type.programmatic` = TRUE,
     population          = c("idp_camp", "host_community"),
     gender_disaggregation = TRUE,
     access              = "public"
@@ -83,10 +84,53 @@ test_that("IPHRAProtocol stores optional metadata on initialize", {
   expect_equal(p$metadata$pilot_date, "01/03/2025")
   expect_equal(p$metadata$data_start_date, "05/03/2025")
   expect_equal(p$metadata$data_end_date, "20/03/2025")
-  expect_equal(p$metadata$audience_type, c("strategic", "programmatic"))
+  expect_true(p$metadata[["audience_type.strategic"]])
+  expect_true(p$metadata[["audience_type.programmatic"]])
+  expect_false(p$metadata[["audience_type.other"]])
   expect_equal(p$metadata$population, c("idp_camp", "host_community"))
   expect_true(p$metadata$gender_disaggregation)
   expect_equal(p$metadata$access, "public")
+})
+
+test_that("IPHRAProtocol defaults audience_type.operational and .programmatic to TRUE", {
+  p <- IPHRAProtocol$new()
+  expect_false(p$metadata[["audience_type.strategic"]])
+  expect_true(p$metadata[["audience_type.operational"]])
+  expect_true(p$metadata[["audience_type.programmatic"]])
+  expect_false(p$metadata[["audience_type.other"]])
+})
+
+test_that("IPHRAProtocol stores general_objective with IPHRA default", {
+  p <- IPHRAProtocol$new()
+  expect_true(is.character(p$metadata$general_objective))
+  expect_true(nzchar(p$metadata$general_objective))
+  expect_true(grepl("public health", p$metadata$general_objective))
+})
+
+test_that("IPHRAProtocol stores geographic_coverage", {
+  p <- IPHRAProtocol$new(geographic_coverage = "Northern Somalia")
+  expect_equal(p$metadata$geographic_coverage, "Northern Somalia")
+})
+
+test_that("IPHRAProtocol backward-compat: geographic_description populates geographic_coverage", {
+  p <- IPHRAProtocol$new(geographic_description = "Southern Somalia")
+  expect_equal(p$metadata$geographic_coverage, "Southern Somalia")
+})
+
+test_that("IPHRAProtocol stores pop boolean fields", {
+  p <- IPHRAProtocol$new(`pop.idpcamp` = TRUE, `pop.host` = TRUE)
+  expect_true(p$metadata[["pop.idpcamp"]])
+  expect_true(p$metadata[["pop.host"]])
+  expect_false(p$metadata[["pop.refugee"]])
+  expect_false(p$metadata[["pop.other"]])
+})
+
+test_that("Protocol base class metadata contains new fields", {
+  p <- Protocol$new()
+  expect_null(p$metadata$mandating_body)
+  expect_null(p$metadata$general_objective)
+  expect_false(p$metadata[["audience_type.strategic"]])
+  expect_false(p$metadata[["pop.idpcamp"]])
 })
 
 test_that("IPHRAProtocol stores secondary_data", {
