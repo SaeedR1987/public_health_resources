@@ -997,8 +997,16 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Replace @modified_framework_svg with the adjusted SVG rendered as PNG,
-    # and @secondary_data_sources_table with a flextable.
+    # Replace @modified_framework_svg with the adjusted SVG rendered as a
+    # high-resolution image, and @secondary_data_sources_table with a flextable.
+    #
+    # Resolution strategy (tried in order, first success wins):
+    #   1. magick  — rasterises at 300 DPI (print quality) if available.
+    #   2. rsvg    — renders at 3 000 px wide (≈ 3× previous 900 px).
+    #   3. Fallback placeholder text.
+    #
+    # Display dimensions are fixed to the portrait page content width (6.5 in)
+    # so that Word never stretches a low-resolution image.
     add_sdr_section = function(doc) {
       # ── Framework SVG ──────────────────────────────────────────────────
       svg_content <- tryCatch(
@@ -1008,29 +1016,56 @@ IPHRAProtocol <- R6::R6Class(
 
       if (!is.null(svg_content) && nzchar(svg_content)) {
         png_inserted <- FALSE
-        if (requireNamespace("rsvg", quietly = TRUE)) {
+
+        tmp_svg <- tempfile(fileext = ".svg")
+        tmp_png <- tempfile(fileext = ".png")
+        writeLines(svg_content, tmp_svg)
+
+        # Strategy 1: magick — 300 DPI rasterisation (best quality)
+        if (!png_inserted && requireNamespace("magick", quietly = TRUE)) {
           tryCatch({
-            tmp_svg <- tempfile(fileext = ".svg")
-            tmp_png <- tempfile(fileext = ".png")
-            writeLines(svg_content, tmp_svg)
-            rsvg::rsvg_png(tmp_svg, tmp_png, width = 900)
+            img <- magick::image_read_svg(tmp_svg, density = 300)
+            magick::image_write(img, tmp_png, format = "png")
             tryCatch({
               doc <- officer::cursor_reach(doc, keyword = "@modified_framework_svg")
               doc <- officer::body_add_img(doc, src = tmp_png,
-                                           width = 6, height = 4,
+                                           width = 6.5, height = 4.5,
                                            pos = "before")
               doc <- officer::cursor_forward(doc)
               doc <- officer::body_remove(doc)
               png_inserted <- TRUE
             }, error = function(e2) {
-              phr_warning(phr_txt("Could not insert framework SVG image: {conditionMessage(e2)}"),
+              phr_warning(phr_txt("Could not insert framework SVG image (magick): {conditionMessage(e2)}"),
                           origin = "IPHRAProtocol$add_sdr_section")
             })
           }, error = function(e) {
-            phr_warning(phr_txt("SVG-to-PNG conversion failed: {conditionMessage(e)}"),
+            phr_warning(phr_txt("magick SVG rasterisation failed: {conditionMessage(e)}"),
                         origin = "IPHRAProtocol$add_sdr_section")
           })
         }
+
+        # Strategy 2: rsvg — render at 3 000 px wide (high resolution)
+        if (!png_inserted && requireNamespace("rsvg", quietly = TRUE)) {
+          tryCatch({
+            rsvg::rsvg_png(tmp_svg, tmp_png, width = 3000)
+            tryCatch({
+              doc <- officer::cursor_reach(doc, keyword = "@modified_framework_svg")
+              doc <- officer::body_add_img(doc, src = tmp_png,
+                                           width = 6.5, height = 4.5,
+                                           pos = "before")
+              doc <- officer::cursor_forward(doc)
+              doc <- officer::body_remove(doc)
+              png_inserted <- TRUE
+            }, error = function(e2) {
+              phr_warning(phr_txt("Could not insert framework SVG image (rsvg): {conditionMessage(e2)}"),
+                          origin = "IPHRAProtocol$add_sdr_section")
+            })
+          }, error = function(e) {
+            phr_warning(phr_txt("rsvg SVG-to-PNG conversion failed: {conditionMessage(e)}"),
+                        origin = "IPHRAProtocol$add_sdr_section")
+          })
+        }
+
         if (!png_inserted) {
           doc <- private$.replace(doc, "@modified_framework_svg",
                                   "[Framework diagram — attach SVG manually]")
