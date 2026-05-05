@@ -33,6 +33,7 @@ Imports:
     scales,
     srvyr,
     survey,
+    xml2,
     tibble,
     tidyr,
     zscorer
@@ -43,6 +44,7 @@ Suggests:
     ggridges,
     ggradar,
     mockery,
+    rsvg,
     shiny,
     stringr,
     testthat (>= 3.0.0),
