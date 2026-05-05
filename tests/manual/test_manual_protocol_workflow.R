@@ -321,7 +321,9 @@ protocol$metadata$prelim_presentation_date <- "2025-05-25"
 protocol$metadata$output_validation_date <- "2025-05-30"
 protocol$metadata$output_published_date <- "2025-06-05"
 protocol$metadata$final_presentation_date <- "2025-06-10"
-protocol$metadata$audience_type <- "Internal"
+protocol$metadata$pop.idpinformal <- TRUE
+protocol$metadata$data_management_platform <- "IMPACT"
+# protocol$ <- "Internal"
 
 # report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = "report_no_tools.docx")
