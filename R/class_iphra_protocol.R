@@ -516,6 +516,56 @@ IPHRAProtocol <- R6::R6Class(
       )
     },
 
+    # Build a w:p XML node with plain text, optional bold run, and optional
+    # space-before paragraph spacing (in points).
+    .make_w_para = function(text, bold = FALSE, space_before_pt = 0L) {
+      W <- "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+      esc <- function(s) {
+        s <- gsub("&", "&amp;", s, fixed = TRUE)
+        s <- gsub("<", "&lt;",  s, fixed = TRUE)
+        s <- gsub(">", "&gt;",  s, fixed = TRUE)
+        s
+      }
+      sp <- as.integer(space_before_pt * 20L)
+      ppr_xml <- if (sp > 0L) sprintf('<w:pPr><w:spacing w:before="%d"/></w:pPr>', sp) else ""
+      rpr_xml <- if (bold) "<w:rPr><w:b/></w:rPr>" else ""
+      xml2::read_xml(sprintf(
+        '<w:p xmlns:w="%s">%s<w:r>%s<w:t xml:space="preserve">%s</w:t></w:r></w:p>',
+        W, ppr_xml, rpr_xml, esc(text)
+      ))
+    },
+
+    # Find the paragraph inside a w:tc (table cell) that contains 'tag',
+    # insert 'items' (list of lists with $text, $bold, $space_before_pt) as
+    # sibling w:p nodes immediately before it inside the same cell, then
+    # remove the tag paragraph.  Returns TRUE on success, FALSE if not found.
+    .replace_tag_in_cell = function(doc, tag, items) {
+      body_xml <- officer::docx_body_xml(doc)
+      ns       <- xml2::xml_ns(body_xml)
+
+      tc_paras <- xml2::xml_find_all(body_xml, ".//w:tc/w:p", ns = ns)
+      target_para <- NULL
+      for (p in tc_paras) {
+        if (grepl(tag, xml2::xml_text(p), fixed = TRUE)) {
+          target_para <- p
+          break
+        }
+      }
+      if (is.null(target_para)) return(FALSE)
+
+      # Insert in reverse order so final ordering matches 'items'
+      for (item in rev(items)) {
+        node <- private$.make_w_para(
+          text           = item$text,
+          bold           = isTRUE(item$bold),
+          space_before_pt = item$space_before_pt %||% 0L
+        )
+        xml2::xml_add_sibling(target_para, node, .where = "before")
+      }
+      xml2::xml_remove(target_para)
+      TRUE
+    },
+
     # ── TOR generation private methods ─────────────────────────────────────
 
     # Use the IPHRA-specific template rather than the generic REACH TOR.
@@ -746,8 +796,8 @@ IPHRAProtocol <- R6::R6Class(
 
     # Replace @specific_objectives in the metadata table cell with a
     # pillar-grouped list of text objectives for all indicators in tools.
-    # Headers (pillars) are bolded, each objective is on its own line, and a
-    # blank line separates pillar groups.
+    # Headers (pillars) are bolded; 10 pt space-before separates pillar groups
+    # (applied to every non-first bold header instead of a blank-line paragraph).
     add_specific_objectives_section = function(doc) {
       inc_codes <- self$get_indicator_codes_from_tools()
       if (length(inc_codes) == 0) {
@@ -774,54 +824,46 @@ IPHRAProtocol <- R6::R6Class(
 
       pillars <- unique(obj_df$pillar[!is.na(obj_df$pillar) & nzchar(obj_df$pillar)])
 
-      # Try to insert formatted paragraphs (bold headers) using officer cursor API
-      inserted <- FALSE
-      tryCatch({
-        doc <- officer::cursor_reach(doc, keyword = "@specific_objectives")
-        fp_bold <- officer::fp_text(bold = TRUE)
-        first_pillar <- TRUE
-        for (p in pillars) {
-          sub_objs <- obj_df$text_objective[obj_df$pillar == p]
-          sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
-          if (!first_pillar) {
-            # Blank line before each subsequent pillar group
-            doc <- officer::body_add_par(doc, "", pos = "before")
-            doc <- officer::cursor_forward(doc)
-          }
-          # Bold pillar header
-          header_fpar <- officer::fpar(officer::ftext(p, prop = fp_bold))
-          doc <- officer::body_add_fpar(doc, header_fpar, pos = "before")
-          doc <- officer::cursor_forward(doc)
-          # One bullet per objective
-          for (obj in sub_objs) {
-            doc <- officer::body_add_par(doc, paste0("\u2022 ", obj), pos = "before")
-            doc <- officer::cursor_forward(doc)
-          }
-          first_pillar <- FALSE
+      # Build ordered list of paragraph items for insertion inside the table cell
+      items <- list()
+      first_pillar <- TRUE
+      for (p in pillars) {
+        sub_objs <- obj_df$text_objective[obj_df$pillar == p]
+        sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
+        # 10 pt space-before on every header except the first
+        items <- c(items, list(list(
+          text           = p,
+          bold           = TRUE,
+          space_before_pt = if (first_pillar) 0L else 10L
+        )))
+        for (obj in sub_objs) {
+          items <- c(items, list(list(
+            text           = paste0("\u2022 ", obj),
+            bold           = FALSE,
+            space_before_pt = 0L
+          )))
         }
-        # Remove the original tag paragraph
-        doc <- officer::body_remove(doc)
-        inserted <- TRUE
-      }, error = function(e) {
-        phr_warning(
-          phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
-          origin = "IPHRAProtocol$add_specific_objectives_section"
-        )
-      })
+        first_pillar <- FALSE
+      }
+
+      # Primary path: XML insertion directly inside the table cell
+      inserted <- tryCatch(
+        private$.replace_tag_in_cell(doc, "@specific_objectives", items),
+        error = function(e) {
+          phr_warning(
+            phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
+            origin = "IPHRAProtocol$add_specific_objectives_section"
+          )
+          FALSE
+        }
+      )
 
       if (!inserted) {
-        # Fallback: plain text replacement
+        # Fallback: plain text replacement (no blank lines — just a separator dash)
         lines <- character(0)
         first_pillar <- TRUE
-        for (p in pillars) {
-          if (!first_pillar) lines <- c(lines, "")
-          lines <- c(lines, p)
-          sub_objs <- obj_df$text_objective[obj_df$pillar == p]
-          sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
-          for (obj in sub_objs) {
-            lines <- c(lines, paste0("\u2022 ", obj))
-          }
-          first_pillar <- FALSE
+        for (item in items) {
+          lines <- c(lines, item$text)
         }
         doc <- private$.replace(doc, "@specific_objectives", paste(lines, collapse = "\n"))
       }
@@ -830,7 +872,8 @@ IPHRAProtocol <- R6::R6Class(
 
     # Replace @research_questions in the metadata table cell.
     # Groups research_question values under their objective_research_question
-    # (bolded header), each question on its own line, blank line between groups.
+    # (bolded header), each question on its own line; 10 pt space-before on
+    # every non-first bold header replaces the previous blank-line paragraph.
     add_research_questions_section = function(doc) {
       inc_codes <- self$get_indicator_codes_from_tools()
       if (length(inc_codes) == 0) {
@@ -862,45 +905,41 @@ IPHRAProtocol <- R6::R6Class(
         }
       }
 
-      # Try to insert formatted paragraphs (bold headers) using officer cursor API
-      inserted <- FALSE
-      tryCatch({
-        doc <- officer::cursor_reach(doc, keyword = "@research_questions")
-        fp_bold <- officer::fp_text(bold = TRUE)
-        first_orq <- TRUE
-        for (orq in seen_orq) {
-          if (!first_orq) {
-            doc <- officer::body_add_par(doc, "", pos = "before")
-            doc <- officer::cursor_forward(doc)
-          }
-          header_fpar <- officer::fpar(officer::ftext(orq, prop = fp_bold))
-          doc <- officer::body_add_fpar(doc, header_fpar, pos = "before")
-          doc <- officer::cursor_forward(doc)
-          for (rq in orq_to_rqs[[orq]]) {
-            doc <- officer::body_add_par(doc, paste0("\u2022 ", rq), pos = "before")
-            doc <- officer::cursor_forward(doc)
-          }
-          first_orq <- FALSE
+      # Build ordered list of paragraph items for insertion inside the table cell
+      items <- list()
+      first_orq <- TRUE
+      for (orq in seen_orq) {
+        items <- c(items, list(list(
+          text           = orq,
+          bold           = TRUE,
+          space_before_pt = if (first_orq) 0L else 10L
+        )))
+        for (rq in orq_to_rqs[[orq]]) {
+          items <- c(items, list(list(
+            text           = paste0("\u2022 ", rq),
+            bold           = FALSE,
+            space_before_pt = 0L
+          )))
         }
-        doc <- officer::body_remove(doc)
-        inserted <- TRUE
-      }, error = function(e) {
-        phr_warning(
-          phr_txt("Could not insert formatted research questions: {conditionMessage(e)}"),
-          origin = "IPHRAProtocol$add_research_questions_section"
-        )
-      })
+        first_orq <- FALSE
+      }
+
+      # Primary path: XML insertion directly inside the table cell
+      inserted <- tryCatch(
+        private$.replace_tag_in_cell(doc, "@research_questions", items),
+        error = function(e) {
+          phr_warning(
+            phr_txt("Could not insert formatted research questions: {conditionMessage(e)}"),
+            origin = "IPHRAProtocol$add_research_questions_section"
+          )
+          FALSE
+        }
+      )
 
       if (!inserted) {
         lines <- character(0)
-        first_orq <- TRUE
-        for (orq in seen_orq) {
-          if (!first_orq) lines <- c(lines, "")
-          lines <- c(lines, orq)
-          for (rq in orq_to_rqs[[orq]]) {
-            lines <- c(lines, paste0("\u2022 ", rq))
-          }
-          first_orq <- FALSE
+        for (item in items) {
+          lines <- c(lines, item$text)
         }
         doc <- private$.replace(doc, "@research_questions", paste(lines, collapse = "\n"))
       }
