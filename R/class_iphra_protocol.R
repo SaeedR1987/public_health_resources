@@ -93,19 +93,43 @@ IPHRAProtocol <- R6::R6Class(
     #'   \code{"idp_host"}, \code{"idp_other"}, \code{"refugee_camp"},
     #'   \code{"refugee_informal"}, \code{"refugee_host"},
     #'   \code{"refugee_other"}, \code{"host_community"}, \code{"other"}.
-    #' @param pop.idpcamp Logical. IDP camp population included.
-    #' @param pop.idphost Logical. IDP host community population included.
-    #' @param pop.idpinformal Logical. IDP informal settlement population
+    #' @param pop_idpcamp Logical. IDP camp population included.
+    #' @param pop_idphost Logical. IDP host community population included.
+    #' @param pop_idpinformal Logical. IDP informal settlement population
     #'   included.
-    #' @param pop.idpother Logical. Other IDP population included.
-    #' @param pop.refugee Logical. Refugee (camp) population included.
-    #' @param pop.refugeeinformal Logical. Refugee informal settlement population
+    #' @param pop_idpother Logical. Other IDP population included.
+    #' @param pop_refugee Logical. Refugee (camp) population included.
+    #' @param pop_refugeeinformal Logical. Refugee informal settlement population
     #'   included.
-    #' @param pop.refugeehost Logical. Refugee host community population
+    #' @param pop_refugeehost Logical. Refugee host community population
     #'   included.
-    #' @param pop.refugeeother Logical. Other refugee population included.
-    #' @param pop.host Logical. Host community population included.
-    #' @param pop.other Logical. Other population group included.
+    #' @param pop_refugeeother Logical. Other refugee population included.
+    #' @param pop_host Logical. Host community population included.
+    #' @param pop_other Logical. Other population group included.
+    #' @param stakeholder_mapping Logical. Whether stakeholder mapping is
+    #'   included.  Defaults to \code{FALSE}.
+    #' @param num_geographic_units Numeric. Number of geographic units.
+    #'   Defaults to \code{NA}.
+    #' @param popsize_known_geographic_unit Logical. Whether population size
+    #'   per geographic unit is known.  Defaults to \code{FALSE}.
+    #' @param popsize_known_strata_unit Logical. Whether population size per
+    #'   strata unit is known.  Defaults to \code{FALSE}.
+    #' @param num_kii_health_target Numeric. Target number of health facility
+    #'   KII interviews.  Defaults to \code{NA}.
+    #' @param num_kii_market_target Numeric. Target number of market KII
+    #'   interviews.  Defaults to \code{NA}.
+    #' @param num_kii_fsl_target Numeric. Target number of FSL KII interviews.
+    #'   Defaults to \code{NA}.
+    #' @param num_kii_wash_target Numeric. Target number of WASH KII interviews.
+    #'   Defaults to \code{NA}.
+    #' @param num_kii_nutrition_target Numeric. Target number of nutrition KII
+    #'   interviews.  Defaults to \code{NA}.
+    #' @param num_obs_health_target Numeric. Target number of health facility
+    #'   observations.  Defaults to \code{NA}.
+    #' @param num_obs_latrine_target Numeric. Target number of latrine
+    #'   observations.  Defaults to \code{NA}.
+    #' @param num_obs_waterpoint_target Numeric. Target number of water-point
+    #'   observations.  Defaults to \code{NA}.
     #' @param gender_disaggregation Logical. Whether gender disaggregation is
     #'   planned.  Defaults to \code{TRUE}.
     #' @param sex_disaggregation Logical. Whether sex/age disaggregation is
@@ -131,7 +155,7 @@ IPHRAProtocol <- R6::R6Class(
                           project_code              = NULL,
                           overall_timeframe         = NULL,
                           geographic_coverage       = NULL,
-                          general_objective         = "To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality.",
+                          general_objective         = phr_txt("To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality."),
                           pilot_date                = NULL,
                           data_start_date           = NULL,
                           data_end_date             = NULL,
@@ -150,16 +174,28 @@ IPHRAProtocol <- R6::R6Class(
                           recall_period             = NULL,
                           geographic_description    = NULL,
                           population                = NULL,
-                          `pop.idpcamp`             = FALSE,
-                          `pop.idphost`             = FALSE,
-                          `pop.idpinformal`         = FALSE,
-                          `pop.idpother`            = FALSE,
-                          `pop.refugee`             = FALSE,
-                          `pop.refugeeinformal`     = FALSE,
-                          `pop.refugeehost`         = FALSE,
-                          `pop.refugeeother`        = FALSE,
-                          `pop.host`                = FALSE,
-                          `pop.other`               = FALSE,
+                          pop_idpcamp               = FALSE,
+                          pop_idphost               = FALSE,
+                          pop_idpinformal           = FALSE,
+                          pop_idpother              = FALSE,
+                          pop_refugee               = FALSE,
+                          pop_refugeeinformal       = FALSE,
+                          pop_refugeehost           = FALSE,
+                          pop_refugeeother          = FALSE,
+                          pop_host                  = FALSE,
+                          pop_other                 = FALSE,
+                          stakeholder_mapping       = FALSE,
+                          num_geographic_units      = NA_real_,
+                          popsize_known_geographic_unit = FALSE,
+                          popsize_known_strata_unit = FALSE,
+                          num_kii_health_target     = NA_real_,
+                          num_kii_market_target     = NA_real_,
+                          num_kii_fsl_target        = NA_real_,
+                          num_kii_wash_target       = NA_real_,
+                          num_kii_nutrition_target  = NA_real_,
+                          num_obs_health_target     = NA_real_,
+                          num_obs_latrine_target    = NA_real_,
+                          num_obs_waterpoint_target = NA_real_,
                           gender_disaggregation     = TRUE,
                           sex_disaggregation        = TRUE,
                           data_management_platform  = "IMPACT",
@@ -204,22 +240,41 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$dissemination            <- dissemination
       self$metadata$recall_period            <- recall_period
       self$metadata$population               <- population
-      # Population boolean fields
-      self$metadata[["pop.idpcamp"]]         <- isTRUE(`pop.idpcamp`)
-      self$metadata[["pop.idphost"]]         <- isTRUE(`pop.idphost`)
-      self$metadata[["pop.idpinformal"]]     <- isTRUE(`pop.idpinformal`)
-      self$metadata[["pop.idpother"]]        <- isTRUE(`pop.idpother`)
-      self$metadata[["pop.refugee"]]         <- isTRUE(`pop.refugee`)
-      self$metadata[["pop.refugeeinformal"]] <- isTRUE(`pop.refugeeinformal`)
-      self$metadata[["pop.refugeehost"]]     <- isTRUE(`pop.refugeehost`)
-      self$metadata[["pop.refugeeother"]]    <- isTRUE(`pop.refugeeother`)
-      self$metadata[["pop.host"]]            <- isTRUE(`pop.host`)
-      self$metadata[["pop.other"]]           <- isTRUE(`pop.other`)
+      # Population boolean fields (underscore naming)
+      self$metadata[["pop_idpcamp"]]         <- isTRUE(pop_idpcamp)
+      self$metadata[["pop_idphost"]]         <- isTRUE(pop_idphost)
+      self$metadata[["pop_idpinformal"]]     <- isTRUE(pop_idpinformal)
+      self$metadata[["pop_idpother"]]        <- isTRUE(pop_idpother)
+      self$metadata[["pop_refugee"]]         <- isTRUE(pop_refugee)
+      self$metadata[["pop_refugeeinformal"]] <- isTRUE(pop_refugeeinformal)
+      self$metadata[["pop_refugeehost"]]     <- isTRUE(pop_refugeehost)
+      self$metadata[["pop_refugeeother"]]    <- isTRUE(pop_refugeeother)
+      self$metadata[["pop_host"]]            <- isTRUE(pop_host)
+      self$metadata[["pop_other"]]           <- isTRUE(pop_other)
+      # Stakeholder mapping
+      self$metadata$stakeholder_mapping      <- isTRUE(stakeholder_mapping)
+      # Geographic / strata numeric and boolean fields
+      self$metadata$num_geographic_units     <- as.numeric(num_geographic_units)
+      self$metadata$popsize_known_geographic_unit <- isTRUE(popsize_known_geographic_unit)
+      self$metadata$num_strata_units         <- 0L
+      self$metadata$popsize_known_strata_unit <- isTRUE(popsize_known_strata_unit)
+      # User-defined numeric KII / observation targets
+      self$metadata$num_kii_health_target     <- as.numeric(num_kii_health_target)
+      self$metadata$num_kii_market_target     <- as.numeric(num_kii_market_target)
+      self$metadata$num_kii_fsl_target        <- as.numeric(num_kii_fsl_target)
+      self$metadata$num_kii_wash_target       <- as.numeric(num_kii_wash_target)
+      self$metadata$num_kii_nutrition_target  <- as.numeric(num_kii_nutrition_target)
+      self$metadata$num_obs_health_target     <- as.numeric(num_obs_health_target)
+      self$metadata$num_obs_latrine_target    <- as.numeric(num_obs_latrine_target)
+      self$metadata$num_obs_waterpoint_target <- as.numeric(num_obs_waterpoint_target)
       self$metadata$gender_disaggregation    <- isTRUE(gender_disaggregation)
       self$metadata$sex_disaggregation       <- isTRUE(sex_disaggregation)
       self$metadata$data_management_platform <- data_management_platform
       self$metadata$expected_output_type     <- expected_output_type
       self$metadata$access                   <- access
+
+      # Load protocol schema (tags + defaults) from the bundled resource
+      private$.load_protocol_schema()
 
       phr_message(phr_txt("IPHRAProtocol initialized."), origin = "IPHRAProtocol$initialize")
       invisible(self)
@@ -316,6 +371,28 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Character vector of tool names.
     get_allowable_tools = function() {
       names(private$.iphra_tools)
+    },
+
+    #' @description Override \code{add_stratum()} to keep \code{num_strata_units}
+    #'   in sync with the sample table.
+    #'
+    #' Delegates all arguments to \code{SurveyProtocol$add_stratum()} via
+    #' \code{super$add_stratum(...)}, then recounts the number of unique stratum
+    #' values in the updated sample table and stores the result in
+    #' \code{self$metadata$num_strata_units}.
+    #'
+    #' @param ... Arguments forwarded to \code{SurveyProtocol$add_stratum()}.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_stratum = function(...) {
+      super$add_stratum(...)
+      # Update num_strata_units to number of unique strata in sample_table
+      self$metadata$num_strata_units <- if (!is.null(self$sample_table) &&
+                                             "stratum_id" %in% names(self$sample_table)) {
+        length(unique(self$sample_table$stratum_id))
+      } else {
+        0L
+      }
+      invisible(self)
     },
 
     #' @description Update the recall date in the household tool's calculate rows.
@@ -434,6 +511,10 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   private = list(
+
+    # Protocol schema data frame loaded from protocol_schema_iphra.xlsx.
+    # Two columns: tag_name (character), default_value (character).
+    .protocol_schema = NULL,
 
     # Named list: tool_name -> list(class = <class_name>, file = <xlsx_filename>)
     .iphra_tools = list(
@@ -669,6 +750,71 @@ IPHRAProtocol <- R6::R6Class(
 
       doc <- private$.replace(doc, "@sample_site_target", site_target)
       doc <- private$.replace(doc, "@sample_hh_target",   hh_target)
+
+      # ── Precision indicator tags ───────────────────────────────────────
+      # @precision_ind_indicator: highest ind_precision value + ind_indicator name
+      ind_txt <- if (!is.null(st) && all(c("ind_precision", "ind_indicator") %in% names(st))) {
+        prec <- suppressWarnings(as.numeric(st$ind_precision))
+        idx  <- which(!is.na(prec))
+        if (length(idx) > 0L) {
+          best <- which.max(prec[idx])
+          row  <- idx[best]
+          ind_nm <- as.character(st$ind_indicator[row])
+          if (!is.na(ind_nm) && nzchar(ind_nm)) {
+            sprintf("+/- %s%% margin of error for %s", prec[row], ind_nm)
+          } else ""
+        } else ""
+      } else ""
+      doc <- private$.replace(doc, "@precision_ind_indicator", ind_txt)
+
+      # @precision_mort_indicator: highest mort_precision value + mort_indicator name
+      mort_txt <- if (!is.null(st) && all(c("mort_precision", "mort_indicator") %in% names(st))) {
+        prec <- suppressWarnings(as.numeric(st$mort_precision))
+        idx  <- which(!is.na(prec))
+        if (length(idx) > 0L) {
+          best <- which.max(prec[idx])
+          row  <- idx[best]
+          mort_nm <- as.character(st$mort_indicator[row])
+          if (!is.na(mort_nm) && nzchar(mort_nm)) {
+            sprintf("+/- %s%% margin of error for %s", prec[row], mort_nm)
+          } else ""
+        } else ""
+      } else ""
+      doc <- private$.replace(doc, "@precision_mort_indicator", mort_txt)
+
+      # @precision_gen_indicator: highest pop_precision value + pop_indicator name
+      gen_txt <- if (!is.null(st) && all(c("pop_precision", "pop_indicator") %in% names(st))) {
+        prec <- suppressWarnings(as.numeric(st$pop_precision))
+        idx  <- which(!is.na(prec))
+        if (length(idx) > 0L) {
+          best <- which.max(prec[idx])
+          row  <- idx[best]
+          gen_nm <- as.character(st$pop_indicator[row])
+          if (!is.na(gen_nm) && nzchar(gen_nm)) {
+            sprintf("+/- %s%% margin of error for %s", prec[row], gen_nm)
+          } else ""
+        } else ""
+      } else ""
+      doc <- private$.replace(doc, "@precision_gen_indicator", gen_txt)
+
+      # ── Community KII and observation targets (derived from n_sites) ───
+      total_sites <- if (!is.null(st) && "n_sites" %in% names(st)) {
+        s <- sum(suppressWarnings(as.numeric(st$n_sites)), na.rm = TRUE)
+        if (s > 0) round(s) else 0L
+      } else 0L
+
+      kii_community_txt <- if (self$is_tool_included("tool_kii_community_iphra_v2") &&
+                                total_sites > 0L) {
+        as.character(total_sites * 3L)
+      } else ""
+      doc <- private$.replace(doc, "@num_kii_community_target", kii_community_txt)
+
+      obs_community_txt <- if (self$is_tool_included("tool_obs_community_iphra_v2") &&
+                                total_sites > 0L) {
+        as.character(total_sites)
+      } else ""
+      doc <- private$.replace(doc, "@num_obs_community_target", obs_community_txt)
+
       doc
     },
 
@@ -740,17 +886,61 @@ IPHRAProtocol <- R6::R6Class(
       doc <- private$.checkbox(doc, "@dissem_website",          "website"          %in% diss)
       doc <- private$.checkbox(doc, "@dissem_other",            "other"            %in% diss)
 
-      # ── Population boolean fields ─────────────────────────────────────
-      doc <- private$.checkbox(doc, "@pop.idpcamp",         isTRUE(m[["pop.idpcamp"]]))
-      doc <- private$.checkbox(doc, "@pop.idphost",         isTRUE(m[["pop.idphost"]]))
-      doc <- private$.checkbox(doc, "@pop.idpinformal",     isTRUE(m[["pop.idpinformal"]]))
-      doc <- private$.checkbox(doc, "@pop.idpother",        isTRUE(m[["pop.idpother"]]))
-      doc <- private$.checkbox(doc, "@pop.refugee",         isTRUE(m[["pop.refugee"]]))
-      doc <- private$.checkbox(doc, "@pop.refugeeinformal", isTRUE(m[["pop.refugeeinformal"]]))
-      doc <- private$.checkbox(doc, "@pop.refugeehost",     isTRUE(m[["pop.refugeehost"]]))
-      doc <- private$.checkbox(doc, "@pop.refugeeother",    isTRUE(m[["pop.refugeeother"]]))
-      doc <- private$.checkbox(doc, "@pop.host",            isTRUE(m[["pop.host"]]))
-      doc <- private$.checkbox(doc, "@pop.other",           isTRUE(m[["pop.other"]]))
+      # ── Stakeholder mapping ────────────────────────────────────────────
+      doc <- private$.checkbox(doc, "@stakeholder_mapping_yes", isTRUE(m$stakeholder_mapping))
+      doc <- private$.checkbox(doc, "@stakeholder_mapping_no",  !isTRUE(m$stakeholder_mapping))
+
+      # ── Population boolean fields (underscore naming) ─────────────────
+      doc <- private$.checkbox(doc, "@pop_idpcamp",         isTRUE(m[["pop_idpcamp"]]))
+      doc <- private$.checkbox(doc, "@pop_idphost",         isTRUE(m[["pop_idphost"]]))
+      doc <- private$.checkbox(doc, "@pop_idpinformal",     isTRUE(m[["pop_idpinformal"]]))
+      doc <- private$.checkbox(doc, "@pop_idpother",        isTRUE(m[["pop_idpother"]]))
+      doc <- private$.checkbox(doc, "@pop_refugee",         isTRUE(m[["pop_refugee"]]))
+      doc <- private$.checkbox(doc, "@pop_refugeeinformal", isTRUE(m[["pop_refugeeinformal"]]))
+      doc <- private$.checkbox(doc, "@pop_refugeehost",     isTRUE(m[["pop_refugeehost"]]))
+      doc <- private$.checkbox(doc, "@pop_refugeeother",    isTRUE(m[["pop_refugeeother"]]))
+      doc <- private$.checkbox(doc, "@pop_host",            isTRUE(m[["pop_host"]]))
+      doc <- private$.checkbox(doc, "@pop_other",           isTRUE(m[["pop_other"]]))
+
+      # ── Geographic and strata units ────────────────────────────────────
+      num_geo_str <- {
+        v <- m$num_geographic_units
+        if (!is.null(v) && !is.na(v)) as.character(v) else ""
+      }
+      doc <- private$.replace(doc, "@num_geographic_units", num_geo_str)
+      doc <- private$.checkbox(doc, "@popsize_known_geographic_unit_yes",
+                               isTRUE(m$popsize_known_geographic_unit))
+      doc <- private$.checkbox(doc, "@popsize_known_geographic_unit_no",
+                               !isTRUE(m$popsize_known_geographic_unit))
+      doc <- private$.replace(doc, "@num_strata_units",
+                               as.character(m$num_strata_units %||% 0L))
+      doc <- private$.checkbox(doc, "@popsize_known_strata_unit_yes",
+                               isTRUE(m$popsize_known_strata_unit))
+      doc <- private$.checkbox(doc, "@popsize_known_strata_no",
+                               !isTRUE(m$popsize_known_strata_unit))
+
+      # Helper to convert a potentially-NA numeric metadata value to a string
+      .num_to_str <- function(x) {
+        if (!is.null(x) && !is.na(x)) as.character(x) else ""
+      }
+
+      # ── User-defined KII / observation targets ─────────────────────────
+      doc <- private$.replace(doc, "@num_kii_health_target",
+                               .num_to_str(m$num_kii_health_target))
+      doc <- private$.replace(doc, "@num_kii_market_target",
+                               .num_to_str(m$num_kii_market_target))
+      doc <- private$.replace(doc, "@num_kii_fsl_target",
+                               .num_to_str(m$num_kii_fsl_target))
+      doc <- private$.replace(doc, "@num_kii_wash_target",
+                               .num_to_str(m$num_kii_wash_target))
+      doc <- private$.replace(doc, "@num_kii_nutrition_target",
+                               .num_to_str(m$num_kii_nutrition_target))
+      doc <- private$.replace(doc, "@num_obs_health_target",
+                               .num_to_str(m$num_obs_health_target))
+      doc <- private$.replace(doc, "@num_obs_latrine_target",
+                               .num_to_str(m$num_obs_latrine_target))
+      doc <- private$.replace(doc, "@num_obs_waterpoint_target",
+                               .num_to_str(m$num_obs_waterpoint_target))
 
       # ── Gender / Sex disaggregation ────────────────────────────────────
       doc <- private$.checkbox(doc, "@gender_disagg_yes", isTRUE(m$gender_disaggregation))
@@ -1174,7 +1364,7 @@ IPHRAProtocol <- R6::R6Class(
       # Collect all text nodes in the document body
       text_nodes <- xml2::xml_find_all(body_xml, ".//w:t", ns = ns)
       # Pattern matches all @-prefixed placeholder tags used in TOR templates.
-      # Underscores and periods appear in tag names (e.g. @pop.idpcamp, @data_start_date).
+      # Underscores appear in tag names (e.g. @pop_idpcamp, @data_start_date).
       # Hyphens are included to handle any hyphenated tag variants in custom templates.
       tag_pattern <- "@[A-Za-z0-9_.\\-]+"
 
@@ -1225,6 +1415,40 @@ IPHRAProtocol <- R6::R6Class(
           tool$revised_settings <- st
         }
       }
+      invisible(NULL)
+    },
+
+    # Load protocol_schema_iphra.xlsx and populate metadata with defaults for any
+    # fields not yet set.  The schema has two columns: tag_name (the @-tag as it
+    # appears in the template) and default_value.  Tags that map to known metadata
+    # fields are used to pre-fill values only when the corresponding metadata key
+    # is currently NULL or NA.
+    .load_protocol_schema = function() {
+      schema_path <- tryCatch(
+        system.file("resources", "protocol_schema_iphra.xlsx", package = "phr"),
+        error = function(e) ""
+      )
+      if (!nzchar(schema_path) || !file.exists(schema_path)) {
+        # Try relative path (development / test context)
+        schema_path <- file.path("resources", "protocol_schema_iphra.xlsx")
+      }
+      if (!file.exists(schema_path)) {
+        phr_warning(
+          phr_txt("protocol_schema_iphra.xlsx not found; skipping schema load."),
+          origin = "IPHRAProtocol$.load_protocol_schema"
+        )
+        return(invisible(NULL))
+      }
+      schema <- tryCatch(
+        as.data.frame(readxl::read_excel(schema_path, sheet = "schema",
+                                         col_types = "text")),
+        error = function(e) NULL
+      )
+      if (is.null(schema) || !all(c("tag_name", "default_value") %in% names(schema))) {
+        return(invisible(NULL))
+      }
+      # Store schema for reference
+      private$.protocol_schema <- schema
       invisible(NULL)
     }
   )

@@ -118,11 +118,11 @@ test_that("IPHRAProtocol backward-compat: geographic_description populates geogr
 })
 
 test_that("IPHRAProtocol stores pop boolean fields", {
-  p <- IPHRAProtocol$new(`pop.idpcamp` = TRUE, `pop.host` = TRUE)
-  expect_true(p$metadata[["pop.idpcamp"]])
-  expect_true(p$metadata[["pop.host"]])
-  expect_false(p$metadata[["pop.refugee"]])
-  expect_false(p$metadata[["pop.other"]])
+  p <- IPHRAProtocol$new(pop_idpcamp = TRUE, pop_host = TRUE)
+  expect_true(p$metadata[["pop_idpcamp"]])
+  expect_true(p$metadata[["pop_host"]])
+  expect_false(p$metadata[["pop_refugee"]])
+  expect_false(p$metadata[["pop_other"]])
 })
 
 test_that("Protocol base class metadata contains new fields", {
@@ -130,7 +130,7 @@ test_that("Protocol base class metadata contains new fields", {
   expect_null(p$metadata$mandating_body)
   expect_null(p$metadata$general_objective)
   expect_false(p$metadata[["audience_type.strategic"]])
-  expect_false(p$metadata[["pop.idpcamp"]])
+  expect_false(p$metadata[["pop_idpcamp"]] %||% FALSE)
 })
 
 test_that("IPHRAProtocol stores secondary_data", {
@@ -252,3 +252,84 @@ test_that("Protocol$get_schema_column returns empty vector for missing column", 
   expect_equal(result, character(0))
 })
 
+# ── New metadata fields ───────────────────────────────────────────────────────
+
+test_that("IPHRAProtocol stores stakeholder_mapping field", {
+  p <- IPHRAProtocol$new(stakeholder_mapping = TRUE)
+  expect_true(p$metadata$stakeholder_mapping)
+  p2 <- IPHRAProtocol$new()
+  expect_false(p2$metadata$stakeholder_mapping)
+})
+
+test_that("IPHRAProtocol stores num_geographic_units as numeric", {
+  p <- IPHRAProtocol$new(num_geographic_units = 5)
+  expect_equal(p$metadata$num_geographic_units, 5)
+  expect_true(is.numeric(p$metadata$num_geographic_units))
+})
+
+test_that("IPHRAProtocol stores popsize_known_geographic_unit field", {
+  p <- IPHRAProtocol$new(popsize_known_geographic_unit = TRUE)
+  expect_true(p$metadata$popsize_known_geographic_unit)
+  p2 <- IPHRAProtocol$new()
+  expect_false(p2$metadata$popsize_known_geographic_unit)
+})
+
+test_that("IPHRAProtocol num_strata_units defaults to 0", {
+  p <- IPHRAProtocol$new()
+  expect_equal(p$metadata$num_strata_units, 0L)
+})
+
+test_that("IPHRAProtocol stores popsize_known_strata_unit field", {
+  p <- IPHRAProtocol$new(popsize_known_strata_unit = TRUE)
+  expect_true(p$metadata$popsize_known_strata_unit)
+})
+
+test_that("IPHRAProtocol stores user-defined numeric target fields", {
+  p <- IPHRAProtocol$new(
+    num_kii_health_target    = 10,
+    num_kii_market_target    = 5,
+    num_kii_fsl_target       = 3,
+    num_kii_wash_target      = 4,
+    num_kii_nutrition_target = 6,
+    num_obs_health_target    = 8,
+    num_obs_latrine_target   = 12,
+    num_obs_waterpoint_target = 7
+  )
+  expect_equal(p$metadata$num_kii_health_target, 10)
+  expect_equal(p$metadata$num_kii_market_target, 5)
+  expect_equal(p$metadata$num_kii_fsl_target, 3)
+  expect_equal(p$metadata$num_kii_wash_target, 4)
+  expect_equal(p$metadata$num_kii_nutrition_target, 6)
+  expect_equal(p$metadata$num_obs_health_target, 8)
+  expect_equal(p$metadata$num_obs_latrine_target, 12)
+  expect_equal(p$metadata$num_obs_waterpoint_target, 7)
+})
+
+test_that("Protocol$update_metadata updates fields and touch()", {
+  p <- IPHRAProtocol$new()
+  t_before <- p$metadata$modified_date
+  Sys.sleep(0.01)
+  p$update_metadata(country_name = "Kenya", num_geographic_units = 3)
+  expect_equal(p$metadata$country_name, "Kenya")
+  expect_equal(p$metadata$num_geographic_units, 3)
+  expect_true(p$metadata$modified_date > t_before)
+})
+
+test_that("Protocol$update_metadata errors with no named arguments", {
+  p <- Protocol$new()
+  expect_error(p$update_metadata())
+})
+
+test_that("IPHRAProtocol general_objective default contains 'public health'", {
+  p <- IPHRAProtocol$new()
+  expect_true(grepl("public health", p$metadata$general_objective, ignore.case = TRUE))
+})
+
+test_that("IPHRAProtocol add_stratum updates num_strata_units", {
+  p <- IPHRAProtocol$new()
+  expect_equal(p$metadata$num_strata_units, 0L)
+  p$add_stratum(stratum_id = "north", Population_Name = "Northern Region")
+  expect_equal(p$metadata$num_strata_units, 1L)
+  p$add_stratum(stratum_id = "south", Population_Name = "Southern Region")
+  expect_equal(p$metadata$num_strata_units, 2L)
+})

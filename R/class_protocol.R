@@ -73,16 +73,16 @@ Protocol <- R6::R6Class(
       `audience_type.programmatic` = FALSE,
       `audience_type.other` = FALSE,
       # Population boolean fields
-      `pop.idpcamp` = FALSE,
-      `pop.idphost` = FALSE,
-      `pop.idpinformal` = FALSE,
-      `pop.idpother` = FALSE,
-      `pop.refugee` = FALSE,
-      `pop.refugeeinformal` = FALSE,
-      `pop.refugeehost` = FALSE,
-      `pop.refugeeother` = FALSE,
-      `pop.host` = FALSE,
-      `pop.other` = FALSE
+      `pop_idpcamp` = FALSE,
+      `pop_idphost` = FALSE,
+      `pop_idpinformal` = FALSE,
+      `pop_idpother` = FALSE,
+      `pop_refugee` = FALSE,
+      `pop_refugeeinformal` = FALSE,
+      `pop_refugeehost` = FALSE,
+      `pop_refugeeother` = FALSE,
+      `pop_host` = FALSE,
+      `pop_other` = FALSE
     ),
 
     #' @field secondary_data Named list of secondary data sources keyed by
@@ -220,6 +220,43 @@ Protocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     touch = function() {
       self$metadata$modified_date <- Sys.time()
+      invisible(self)
+    },
+
+    #' @description Update one or more metadata fields by name.
+    #'
+    #' Assigns each named value to the corresponding key in
+    #' \code{self$metadata} and calls \code{touch()} to update the
+    #' \code{modified_date}.  Unknown keys are silently added as new fields;
+    #' existing keys are overwritten.
+    #'
+    #' @param ... Named arguments where each name is a metadata field key and
+    #'   each value is the new value for that field.  At least one named
+    #'   argument must be supplied.
+    #' @return Invisibly returns \code{self} for method chaining.
+    #'
+    #' @examples
+    #' \dontrun{
+    #' p$update_metadata(country_name = "Somalia", version = 2L)
+    #' p$update_metadata(recall_period = "Past 3 months")
+    #' }
+    update_metadata = function(...) {
+      phr_try({
+        args <- list(...)
+        phr_assert(
+          length(args) > 0 && !is.null(names(args)) && all(nzchar(names(args))),
+          message = phr_txt("update_metadata requires at least one named argument."),
+          origin  = "Protocol$update_metadata"
+        )
+        for (key in names(args)) {
+          self$metadata[[key]] <- args[[key]]
+        }
+        self$touch()
+        phr_message(
+          phr_txt("Metadata updated: {paste(names(args), collapse=', ')}."),
+          origin = "Protocol$update_metadata"
+        )
+      }, on_error = "abort", origin = "Protocol$update_metadata")
       invisible(self)
     },
 
