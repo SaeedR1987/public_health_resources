@@ -131,12 +131,7 @@ IPHRAProtocol <- R6::R6Class(
                           project_code              = NULL,
                           overall_timeframe         = NULL,
                           geographic_coverage       = NULL,
-                          general_objective         = paste0(
-                            "To assess the severity of the public health ",
-                            "outcomes and identify initial public health ",
-                            "priorities for response to mitigate excess ",
-                            "morbidity, malnutrition, and mortality."
-                          ),
+                          general_objective         = "To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality.",
                           pilot_date                = NULL,
                           data_start_date           = NULL,
                           data_end_date             = NULL,
@@ -185,7 +180,9 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$mandating_body           <- mandating_body
       self$metadata$project_code             <- project_code
       self$metadata$overall_timeframe        <- overall_timeframe
-      # geographic_coverage supersedes deprecated geographic_description
+      # geographic_coverage supersedes the deprecated geographic_description parameter.
+      # Both are set to the same resolved value so that code that reads either field
+      # continues to work during the transition period.
       self$metadata$geographic_coverage      <- geographic_coverage %||% geographic_description
       self$metadata$geographic_description   <- geographic_coverage %||% geographic_description
       self$metadata$general_objective        <- general_objective
@@ -1102,6 +1099,9 @@ IPHRAProtocol <- R6::R6Class(
 
       # Collect all text nodes in the document body
       text_nodes <- xml2::xml_find_all(body_xml, ".//w:t", ns = ns)
+      # Pattern matches all @-prefixed placeholder tags used in TOR templates.
+      # Underscores and periods appear in tag names (e.g. @pop.idpcamp, @data_start_date).
+      # Hyphens are included to handle any hyphenated tag variants in custom templates.
       tag_pattern <- "@[A-Za-z0-9_.\\-]+"
 
       for (node in text_nodes) {
