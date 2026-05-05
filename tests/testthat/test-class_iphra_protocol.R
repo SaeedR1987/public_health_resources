@@ -130,7 +130,7 @@ test_that("Protocol base class metadata contains new fields", {
   expect_null(p$metadata$mandating_body)
   expect_null(p$metadata$general_objective)
   expect_false(p$metadata[["audience_type.strategic"]])
-  expect_false(p$metadata[["pop_idpcamp"]] %||% FALSE)
+  expect_false(p$metadata[["pop_idpcamp"]])
 })
 
 test_that("IPHRAProtocol stores secondary_data", {
