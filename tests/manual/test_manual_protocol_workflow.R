@@ -323,6 +323,19 @@ protocol$metadata$output_published_date <- "2025-06-05"
 protocol$metadata$final_presentation_date <- "2025-06-10"
 protocol$metadata$pop.idpinformal <- TRUE
 protocol$metadata$data_management_platform <- "IMPACT"
+
+protocol$secondary_data <- list(
+  list(
+    source = "ACLED",
+    description = "Armed Conflict Location & Event Data Project",
+  ),
+  list(
+    source = "UNHCR",
+    description = "UN Refugee Agency Population Statistics",
+  )
+)
+
+
 # protocol$ <- "Internal"
 
 # report_no_tools <- tempfile(fileext = ".docx")
