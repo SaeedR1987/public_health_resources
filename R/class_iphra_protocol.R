@@ -526,7 +526,7 @@ IPHRAProtocol <- R6::R6Class(
         s <- gsub(">", "&gt;",  s, fixed = TRUE)
         s
       }
-      sp <- as.integer(space_before_pt * 20L)
+      sp <- as.integer(space_before_pt) * 20L
       ppr_xml <- if (sp > 0L) sprintf('<w:pPr><w:spacing w:before="%d"/></w:pPr>', sp) else ""
       rpr_xml <- if (bold) "<w:rPr><w:b/></w:rPr>" else ""
       xml2::read_xml(sprintf(
@@ -558,7 +558,7 @@ IPHRAProtocol <- R6::R6Class(
         node <- private$.make_w_para(
           text           = item$text,
           bold           = isTRUE(item$bold),
-          space_before_pt = item$space_before_pt %||% 0L
+          space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt
         )
         xml2::xml_add_sibling(target_para, node, .where = "before")
       }
