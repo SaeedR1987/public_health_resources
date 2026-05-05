@@ -353,7 +353,7 @@ IPHRAProtocol <- R6::R6Class(
     #'   \code{FALSE}.
     #' @return Invisibly returns \code{self} for method chaining.
     generate_reach_tor = function(output_file    = "protocol_report.docx",
-                                  reference_docx = NULL,
+                                  reference_docx = "reach_tor_iphra_template.docx",
                                   open           = FALSE) {
       phr_try({
         doc <- private$create_base_doc(reference_docx)
