@@ -60,7 +60,29 @@ Protocol <- R6::R6Class(
       assessment_title = NULL,
       target_strata = list(),
       protocol_version = "1.0",
-      version = 1L
+      version = 1L,
+      # Text metadata fields
+      mandating_body = NULL,
+      project_code = NULL,
+      overall_timeframe = NULL,
+      geographic_coverage = NULL,
+      general_objective = NULL,
+      # Audience type boolean fields
+      `audience_type.strategic` = FALSE,
+      `audience_type.operational` = FALSE,
+      `audience_type.programmatic` = FALSE,
+      `audience_type.other` = FALSE,
+      # Population boolean fields
+      `pop.idpcamp` = FALSE,
+      `pop.idphost` = FALSE,
+      `pop.idpinformal` = FALSE,
+      `pop.idpother` = FALSE,
+      `pop.refugee` = FALSE,
+      `pop.refugeeinformal` = FALSE,
+      `pop.refugeehost` = FALSE,
+      `pop.refugeeother` = FALSE,
+      `pop.host` = FALSE,
+      `pop.other` = FALSE
     ),
 
     #' @field secondary_data Named list of secondary data sources keyed by
