@@ -35,7 +35,7 @@ protocol$get_protocol_summary()
 
 View(protocol$framework$master_schema)
 
-protocol$framework$primary_objectives <- c(101, 106, 108, 112, 113, 114, 115, 118, 147, 148, 153, 154, 125)
+protocol$framework$primary_objectives <- c(101, 105, 106, 108, 112, 113, 114, 115, 118, 147, 148, 153, 154, 125)
 protocol$framework$secondary_objectives <- c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131)
 
 head(protocol$framework$adjusted_schema)
@@ -323,20 +323,18 @@ protocol$metadata$output_published_date <- "2025-06-05"
 protocol$metadata$final_presentation_date <- "2025-06-10"
 protocol$metadata$pop.idpinformal <- TRUE
 protocol$metadata$data_management_platform <- "IMPACT"
+protocol$metadata$pop_host <- TRUE
+protocol$metadata$pop_idphost <- TRUE
+protocol$metadata$popsize_known_geographic_unit <- FALSE
+protocol$metadata$popsize_known_strata_unit <- TRUE
+protocol$metadata$geographic_coverage <- "Rural areas only in Padamap District"
+
+protocol$update_metadata(stakeholder_mapping = TRUE,
+                         gender_disaggregation = TRUE
+                         )
 
 protocol$secondary_data <- list(
-  list(
-    source = "ACLED",
-    description = "Armed Conflict Location & Event Data Project",
-  ),
-  list(
-    source = "UNHCR",
-    description = "UN Refugee Agency Population Statistics",
-  )
+    "101" = "Armed Conflict Location & Event Data Project",
+    "104" = "UNHCR"
 )
-
-
-# protocol$ <- "Internal"
-
-# report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = "report_no_tools.docx")
