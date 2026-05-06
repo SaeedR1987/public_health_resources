@@ -406,8 +406,8 @@ Protocol <- R6::R6Class(
     #'   survey data of the specified tools (or all tools when
     #'   \code{tool_names} is \code{NULL}).
     #'
-    #' Pulls indicator codes from the \code{indicator_code} column of each
-    #' tool's survey data (preferring \code{revised_survey}).
+    #' Uses each tool's \code{get_indicator_codes()} helper, which correctly
+    #' handles comma-separated multi-code cells (e.g. \code{"10501, 10502"}).
     #'
     #' @param tool_names Optional character vector of tool names to restrict
     #'   the search.  Defaults to \code{NULL} (all registered tools).
@@ -423,10 +423,11 @@ Protocol <- R6::R6Class(
       }
       codes <- character(0)
       for (tn in all_names) {
-        sv <- self$get_tool_survey(tn, prefer_revised = prefer_revised)
-        if (!is.null(sv) && is.data.frame(sv) && "indicator_code" %in% names(sv)) {
-          ic <- as.character(sv$indicator_code)
-          codes <- c(codes, ic[!is.na(ic) & nzchar(ic)])
+        tool <- self$tools[[tn]]
+        if (!is.null(tool) && inherits(tool, "Tool")) {
+          # get_indicator_codes() splits comma-separated cells and returns integers
+          tool_codes <- as.character(tool$get_indicator_codes(prefer_revised = prefer_revised))
+          codes <- c(codes, tool_codes[nzchar(tool_codes)])
         }
       }
       unique(codes)

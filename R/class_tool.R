@@ -358,6 +358,41 @@ public = list(
 
 
   #' @description
+  #' Return a unique integer vector of all indicator codes present in the
+  #' \code{indicator_code} column of \code{revised_survey} (falling back to
+  #' \code{survey}).  Cells that contain multiple comma-separated codes (e.g.
+  #' \code{"10501, 10502"}) are split so every individual code is returned as
+  #' a separate element.
+  #'
+  #' @param prefer_revised Logical.  When \code{TRUE} (default) use
+  #'   \code{revised_survey}; otherwise use the master \code{survey}.
+  #' @return Integer vector of unique indicator codes.  Returns
+  #'   \code{integer(0)} when the sheet is empty or has no
+  #'   \code{indicator_code} column.
+  get_indicator_codes = function(prefer_revised = TRUE) {
+    sv <- if (prefer_revised && !is.null(self$revised_survey) &&
+              is.data.frame(self$revised_survey) && nrow(self$revised_survey) > 0) {
+      self$revised_survey
+    } else {
+      self$survey
+    }
+    if (is.null(sv) || !is.data.frame(sv) || nrow(sv) == 0 ||
+        !"indicator_code" %in% names(sv)) {
+      return(integer(0))
+    }
+    codes_raw <- as.character(sv[["indicator_code"]])
+    codes_raw <- codes_raw[!is.na(codes_raw) & nzchar(trimws(codes_raw))]
+    if (length(codes_raw) == 0L) return(integer(0))
+    # Split on commas (with optional surrounding whitespace) to handle cells
+    # that store multiple codes such as "10501, 10502".
+    codes_split <- unlist(strsplit(codes_raw, "[[:space:]]*,[[:space:]]*"))
+    codes_split <- trimws(codes_split)
+    codes_split <- codes_split[nzchar(codes_split)]
+    codes_int   <- suppressWarnings(as.integer(codes_split))
+    unique(codes_int[!is.na(codes_int)])
+  },
+
+  #' @description
   #' Get the currently selected indicators.
   #' @return Character vector of selected indicator names.
   get_selected_indicators = function() {
