@@ -525,6 +525,15 @@ IPHRAProtocol <- R6::R6Class(
     # Two columns: tag_name (character), default_value (character).
     .protocol_schema = NULL,
 
+    # Row labels in the sample-size tables that represent total/summary values.
+    # These rows receive a light-grey background to visually distinguish them.
+    .sample_size_total_labels = c(
+      "Households to be Included",
+      "Individuals to be Included",
+      "Population to be Included",
+      "Person-Time to be Included"
+    ),
+
     # Named list: tool_name -> list(class = <class_name>, file = <xlsx_filename>)
     .iphra_tools = list(
       tool_household_iphra_v2 = list(
@@ -1606,16 +1615,17 @@ IPHRAProtocol <- R6::R6Class(
 
       # Rows whose Parameter label represents a summary/total value get a
       # light-grey background to visually distinguish them from other rows.
-      total_labels <- c(
-        "Households to be Included",
-        "Individuals to be Included",
-        "Population to be Included",
-        "Person-Time to be Included"
-      )
-      total_row_idx <- which(mat[["Parameter"]] %in% total_labels)
+      total_row_idx <- which(mat[["Parameter"]] %in% private$.sample_size_total_labels)
 
       # REACH1 header colour (first colour in the reach1 palette = #EE5859)
-      reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) "#EE5859")
+      reach1_bg <- tryCatch(
+        get_color_palette("reach1")[[1L]],
+        error = function(e) {
+          phr_warning(phr_txt("Could not load reach1 palette, using fallback colour: {conditionMessage(e)}"),
+                      origin = "IPHRAProtocol$.build_sample_size_table")
+          "#EE5859"
+        }
+      )
 
       fp_col   <- officer::fp_border(color = "black", width = 1)
       fp_outer <- officer::fp_border(color = "black", width = 1.5)
