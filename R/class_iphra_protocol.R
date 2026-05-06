@@ -1659,7 +1659,14 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     # Replace @sample_size_hh_ind_table — individual-level indicator table.
+    # Only inserted when indicator_code 10701 (GAM/MUAC) or 10702 (GAM women)
+    # is present in the included tools.
     add_sample_size_ind_table = function(doc) {
+      inc_codes <- as.character(self$get_indicator_codes_from_tools())
+      if (!any(c("10701", "10702") %in% inc_codes)) {
+        doc <- private$.replace(doc, "@sample_size_hh_ind_table", "")
+        return(doc)
+      }
       params <- list(
         list(label = "Indicator Name",
              col_fn = function(r) as.character(r$ind_indicator %||% "")),
@@ -1696,7 +1703,14 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     # Replace @sample_size_hh_mort_table — mortality indicator table.
+    # Only inserted when indicator_code 10501 (CDR) or 10502 (U5DR)
+    # is present in the included tools.
     add_sample_size_mort_table = function(doc) {
+      inc_codes <- as.character(self$get_indicator_codes_from_tools())
+      if (!any(c("10501", "10502") %in% inc_codes)) {
+        doc <- private$.replace(doc, "@sample_size_hh_mort_table", "")
+        return(doc)
+      }
       params <- list(
         list(label = "Indicator Name",
              col_fn = function(r) as.character(r$mort_indicator %||% "")),
