@@ -210,17 +210,21 @@ IPHRAProtocol <- R6::R6Class(
       # Store version
       self$metadata$version <- as.integer(version)
 
-      # Store all optional IPHRA-specific metadata
-      self$metadata$type_of_emergency        <- type_of_emergency
-      self$metadata$type_of_crisis           <- type_of_crisis
-      self$metadata$mandating_body           <- mandating_body
-      self$metadata$project_code             <- project_code
-      self$metadata$overall_timeframe        <- overall_timeframe
+      # Store all optional IPHRA-specific metadata.
+      # String category fields default to NA_character_ (comparison with "==" safely
+      # yields NA which isTRUE() treats as FALSE — correct "no box checked" default).
+      # Free-text fields default to "" so that %||% "" in the rendering code works
+      # without extra NA guards.  Character-vector fields default to character(0).
+      self$metadata$type_of_emergency        <- type_of_emergency        %||% NA_character_
+      self$metadata$type_of_crisis           <- type_of_crisis           %||% NA_character_
+      self$metadata$mandating_body           <- mandating_body           %||% ""
+      self$metadata$project_code             <- project_code             %||% ""
+      self$metadata$overall_timeframe        <- overall_timeframe        %||% ""
       # geographic_coverage supersedes the deprecated geographic_description parameter.
       # Both are set to the same resolved value so that code that reads either field
       # continues to work during the transition period.
-      self$metadata$geographic_coverage      <- geographic_coverage %||% geographic_description
-      self$metadata$geographic_description   <- geographic_coverage %||% geographic_description
+      self$metadata$geographic_coverage      <- (geographic_coverage %||% geographic_description) %||% ""
+      self$metadata$geographic_description   <- (geographic_coverage %||% geographic_description) %||% ""
       self$metadata$general_objective        <- general_objective
       self$metadata$pilot_date               <- private$.fmt_date(pilot_date)
       self$metadata$data_start_date          <- private$.fmt_date(data_start_date)
@@ -231,15 +235,15 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$output_validation_date   <- private$.fmt_date(output_validation_date)
       self$metadata$output_published_date    <- private$.fmt_date(output_published_date)
       self$metadata$final_presentation_date  <- private$.fmt_date(final_presentation_date)
-      self$metadata$humanitarian_milestones  <- humanitarian_milestones
+      self$metadata$humanitarian_milestones  <- humanitarian_milestones  %||% character(0)
       # Audience type as four distinct boolean fields
       self$metadata[["audience_type.strategic"]]    <- isTRUE(`audience_type.strategic`)
       self$metadata[["audience_type.operational"]]  <- isTRUE(`audience_type.operational`)
       self$metadata[["audience_type.programmatic"]] <- isTRUE(`audience_type.programmatic`)
       self$metadata[["audience_type.other"]]        <- isTRUE(`audience_type.other`)
-      self$metadata$dissemination            <- dissemination
-      self$metadata$recall_period            <- recall_period
-      self$metadata$population               <- population
+      self$metadata$dissemination            <- dissemination            %||% character(0)
+      self$metadata$recall_period            <- recall_period            %||% ""
+      self$metadata$population               <- population               %||% character(0)
       # Population boolean fields (underscore naming)
       self$metadata[["pop_idpcamp"]]         <- isTRUE(pop_idpcamp)
       self$metadata[["pop_idphost"]]         <- isTRUE(pop_idphost)
@@ -269,9 +273,9 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$num_obs_waterpoint_target <- as.numeric(num_obs_waterpoint_target)
       self$metadata$gender_disaggregation    <- isTRUE(gender_disaggregation)
       self$metadata$sex_disaggregation       <- isTRUE(sex_disaggregation)
-      self$metadata$data_management_platform <- data_management_platform
-      self$metadata$expected_output_type     <- expected_output_type
-      self$metadata$access                   <- access
+      self$metadata$data_management_platform <- data_management_platform %||% character(0)
+      self$metadata$expected_output_type     <- expected_output_type     %||% character(0)
+      self$metadata$access                   <- access                   %||% NA_character_
 
       # Load protocol schema (tags + defaults) from the bundled resource
       private$.load_protocol_schema()
@@ -498,6 +502,11 @@ IPHRAProtocol <- R6::R6Class(
         doc <- private$add_research_questions_section(doc)
         doc <- private$add_primary_data_sources_table(doc)
         doc <- private$add_sdr_section(doc)
+        doc <- private$add_list_secondary_data_section(doc)
+        doc <- private$add_definition_tags(doc)
+        doc <- private$add_sample_size_gen_table(doc)
+        doc <- private$add_sample_size_ind_table(doc)
+        doc <- private$add_sample_size_mort_table(doc)
         doc <- private$remove_remaining_tags(doc)
         print(doc, target = output_file)
         phr_message(
@@ -597,9 +606,11 @@ IPHRAProtocol <- R6::R6Class(
       )
     },
 
-    # Build a w:p XML node with plain text, optional bold run, and optional
-    # space-before paragraph spacing (in points).
-    .make_w_para = function(text, bold = FALSE, space_before_pt = 0L) {
+    # Build a w:p XML node with plain text, optional bold run, optional
+    # space-before/after paragraph spacing (in points), and optional font size
+    # (in points, applied to the run).
+    .make_w_para = function(text, bold = FALSE, space_before_pt = 0L,
+                            space_after_pt = 0L, font_size_pt = NULL) {
       W <- "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
       esc <- function(s) {
         s <- gsub("&", "&amp;", s, fixed = TRUE)
@@ -607,9 +618,24 @@ IPHRAProtocol <- R6::R6Class(
         s <- gsub(">", "&gt;",  s, fixed = TRUE)
         s
       }
-      sp <- as.integer(space_before_pt) * 20L
-      ppr_xml <- if (sp > 0L) sprintf('<w:pPr><w:spacing w:before="%d"/></w:pPr>', sp) else ""
-      rpr_xml <- if (bold) "<w:rPr><w:b/></w:rPr>" else ""
+      sp_before <- as.integer(space_before_pt) * 20L
+      sp_after  <- as.integer(space_after_pt)  * 20L
+      # Always emit w:spacing so that both before/after values are explicitly set,
+      # overriding any paragraph-style defaults from the reference document.
+      ppr_xml <- sprintf('<w:pPr><w:spacing w:before="%d" w:after="%d"/></w:pPr>',
+                         sp_before, sp_after)
+      # Build w:rPr with bold and/or font size
+      rpr_parts <- character(0)
+      if (bold)                              rpr_parts <- c(rpr_parts, "<w:b/>")
+      if (!is.null(font_size_pt) && !is.na(font_size_pt)) {
+        sz <- as.integer(font_size_pt) * 2L  # w:sz is half-points
+        rpr_parts <- c(rpr_parts,
+                       sprintf('<w:sz w:val="%d"/>', sz),
+                       sprintf('<w:szCs w:val="%d"/>', sz))
+      }
+      rpr_xml <- if (length(rpr_parts) > 0L) {
+        paste0("<w:rPr>", paste(rpr_parts, collapse = ""), "</w:rPr>")
+      } else ""
       xml2::read_xml(sprintf(
         '<w:p xmlns:w="%s">%s<w:r>%s<w:t xml:space="preserve">%s</w:t></w:r></w:p>',
         W, ppr_xml, rpr_xml, esc(text)
@@ -637,9 +663,11 @@ IPHRAProtocol <- R6::R6Class(
       # Insert in reverse order so final ordering matches 'items'
       for (item in rev(items)) {
         node <- private$.make_w_para(
-          text           = item$text,
-          bold           = isTRUE(item$bold),
-          space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt
+          text            = item$text,
+          bold            = isTRUE(item$bold),
+          space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt,
+          space_after_pt  = if (is.null(item$space_after_pt))  0L else item$space_after_pt,
+          font_size_pt    = item$font_size_pt
         )
         xml2::xml_add_sibling(target_para, node, .where = "before")
       }
@@ -891,14 +919,17 @@ IPHRAProtocol <- R6::R6Class(
       doc <- private$.checkbox(doc, "@stakeholder_mapping_no",  !isTRUE(m$stakeholder_mapping))
 
       # ── Population boolean fields (underscore naming) ─────────────────
+      # Process the longer refugee sub-group tags BEFORE @pop_refugee to
+      # prevent body_replace_all_text from matching the prefix of the
+      # longer tags first and leaving orphaned text fragments (e.g. "host").
       doc <- private$.checkbox(doc, "@pop_idpcamp",         isTRUE(m[["pop_idpcamp"]]))
       doc <- private$.checkbox(doc, "@pop_idphost",         isTRUE(m[["pop_idphost"]]))
       doc <- private$.checkbox(doc, "@pop_idpinformal",     isTRUE(m[["pop_idpinformal"]]))
       doc <- private$.checkbox(doc, "@pop_idpother",        isTRUE(m[["pop_idpother"]]))
-      doc <- private$.checkbox(doc, "@pop_refugee",         isTRUE(m[["pop_refugee"]]))
       doc <- private$.checkbox(doc, "@pop_refugeeinformal", isTRUE(m[["pop_refugeeinformal"]]))
       doc <- private$.checkbox(doc, "@pop_refugeehost",     isTRUE(m[["pop_refugeehost"]]))
       doc <- private$.checkbox(doc, "@pop_refugeeother",    isTRUE(m[["pop_refugeeother"]]))
+      doc <- private$.checkbox(doc, "@pop_refugee",         isTRUE(m[["pop_refugee"]]))
       doc <- private$.checkbox(doc, "@pop_host",            isTRUE(m[["pop_host"]]))
       doc <- private$.checkbox(doc, "@pop_other",           isTRUE(m[["pop_other"]]))
 
@@ -972,15 +1003,6 @@ IPHRAProtocol <- R6::R6Class(
       doc <- private$.checkbox(doc, "@access_public",     ac == "public")
       doc <- private$.checkbox(doc, "@access_restricted", ac == "restricted")
 
-      # ── Secondary data plain list (@list_secondary_data) ──────────────
-      sdr <- self$secondary_data
-      sdr_text <- if (!is.null(sdr) && length(sdr) > 0) {
-        paste(names(sdr), sdr, sep = ": ", collapse = "\n")
-      } else {
-        ""
-      }
-      doc <- private$.replace(doc, "@list_secondary_data", sdr_text)
-
       doc
     },
 
@@ -1020,17 +1042,21 @@ IPHRAProtocol <- R6::R6Class(
       for (p in pillars) {
         sub_objs <- obj_df$text_objective[obj_df$pillar == p]
         sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
-        # 10 pt space-before on every header except the first
+        # 6 pt space-before on every header except the first; 0 pt after on all
         items <- c(items, list(list(
-          text           = p,
-          bold           = TRUE,
-          space_before_pt = if (first_pillar) 0L else 10L
+          text            = p,
+          bold            = TRUE,
+          space_before_pt = if (first_pillar) 0L else 6L,
+          space_after_pt  = 0L,
+          font_size_pt    = 10L
         )))
         for (obj in sub_objs) {
           items <- c(items, list(list(
-            text           = paste0("\u2022 ", obj),
-            bold           = FALSE,
-            space_before_pt = 0L
+            text            = paste0("\u2022 ", obj),
+            bold            = FALSE,
+            space_before_pt = 0L,
+            space_after_pt  = 0L,
+            font_size_pt    = 10L
           )))
         }
         first_pillar <- FALSE
@@ -1100,15 +1126,19 @@ IPHRAProtocol <- R6::R6Class(
       first_orq <- TRUE
       for (orq in seen_orq) {
         items <- c(items, list(list(
-          text           = orq,
-          bold           = TRUE,
-          space_before_pt = if (first_orq) 0L else 10L
+          text            = orq,
+          bold            = TRUE,
+          space_before_pt = if (first_orq) 0L else 6L,
+          space_after_pt  = 0L,
+          font_size_pt    = 10L
         )))
         for (rq in orq_to_rqs[[orq]]) {
           items <- c(items, list(list(
-            text           = paste0("\u2022 ", rq),
-            bold           = FALSE,
-            space_before_pt = 0L
+            text            = paste0("\u2022 ", rq),
+            bold            = FALSE,
+            space_before_pt = 0L,
+            space_after_pt  = 0L,
+            font_size_pt    = 10L
           )))
         }
         first_orq <- FALSE
@@ -1305,6 +1335,8 @@ IPHRAProtocol <- R6::R6Class(
 
       # ── Secondary data sources table ───────────────────────────────────
       sdr <- self$secondary_data
+
+      # Build the data frame (with data, or one blank row if no data provided)
       if (!is.null(sdr) && length(sdr) > 0) {
         master <- self$get_schema(type = "master")
 
@@ -1331,48 +1363,453 @@ IPHRAProtocol <- R6::R6Class(
           Purpose   = "",
           stringsAsFactors = FALSE
         )
-
-        # Merge consecutive cells with the same Objective label
-        ft <- flextable::flextable(sdr_df)
-        ft <- flextable::merge_v(ft, j = "Objective")
-        ft <- flextable::theme_zebra(ft)
-        ft <- flextable::autofit(ft)
-
-        tryCatch({
-          doc <- officer::cursor_reach(doc, keyword = "@secondary_data_sources_table")
-          doc <- flextable::body_add_flextable(doc, ft, pos = "before")
-          doc <- officer::cursor_forward(doc)
-          doc <- officer::body_remove(doc)
-        }, error = function(e) {
-          phr_warning(phr_txt("Could not insert secondary data table: {conditionMessage(e)}"),
-                      origin = "IPHRAProtocol$add_sdr_section")
-          doc <<- private$.replace(doc, "@secondary_data_sources_table", "")
-        })
       } else {
-        doc <- private$.replace(doc, "@secondary_data_sources_table", "")
+        sdr_df <- data.frame(
+          Objective = "",
+          Source    = "",
+          Purpose   = "",
+          stringsAsFactors = FALSE
+        )
       }
+
+      # Page layout: standard portrait with 1-inch margins ≈ 6.5 in usable
+      page_width_in <- 6.5
+      col1_width    <- page_width_in * 0.40
+      col2_width    <- page_width_in * 0.30
+      col3_width    <- page_width_in * 0.30
+
+      ft <- flextable::flextable(sdr_df)
+      if (!is.null(sdr) && length(sdr) > 0) {
+        ft <- flextable::merge_v(ft, j = "Objective")
+      }
+      ft <- flextable::theme_zebra(ft)
+      ft <- flextable::width(ft, j = 1, width = col1_width)
+      ft <- flextable::width(ft, j = 2, width = col2_width)
+      ft <- flextable::width(ft, j = 3, width = col3_width)
+      ft <- flextable::fontsize(ft, size = 7, part = "all")
+      ft <- flextable::set_table_properties(ft, layout = "fixed")
+
+      tryCatch({
+        doc <- officer::cursor_reach(doc, keyword = "@secondary_data_sources_table")
+        doc <- flextable::body_add_flextable(doc, ft, pos = "before")
+        doc <- officer::cursor_forward(doc)
+        doc <- officer::body_remove(doc)
+      }, error = function(e) {
+        phr_warning(phr_txt("Could not insert secondary data table: {conditionMessage(e)}"),
+                    origin = "IPHRAProtocol$add_sdr_section")
+        doc <<- private$.replace(doc, "@secondary_data_sources_table", "")
+      })
 
       doc
     },
 
+    # Replace @list_secondary_data with formatted paragraphs.
+    # Groups sources by objective code, shows the text objective as a bold
+    # header (6 pts space-before on every header except the first, 0 pts after),
+    # and each source on its own plain line (0 pts before/after).
+    add_list_secondary_data_section = function(doc) {
+      sdr <- self$secondary_data
+      if (is.null(sdr) || length(sdr) == 0) {
+        doc <- private$.replace(doc, "@list_secondary_data", "")
+        return(doc)
+      }
+
+      master <- self$get_schema(type = "master")
+
+      get_obj_text <- function(code) {
+        if (!is.null(master) && is.data.frame(master) &&
+            all(c("objective_code", "text_objective") %in% names(master))) {
+          idx <- which(as.character(master$objective_code) == code)
+          if (length(idx) > 0L) return(as.character(master$text_objective[idx[1L]]))
+        }
+        code
+      }
+
+      codes        <- names(sdr)
+      unique_codes <- unique(codes)
+
+      items      <- list()
+      first_obj  <- TRUE
+      for (code in unique_codes) {
+        items <- c(items, list(list(
+          text            = get_obj_text(code),
+          bold            = TRUE,
+          space_before_pt = if (first_obj) 0L else 6L,
+          space_after_pt  = 0L,
+          font_size_pt    = NULL  # inherit from document paragraph style
+        )))
+        first_obj <- FALSE
+        src_indices <- which(codes == code)
+        for (i in src_indices) {
+          items <- c(items, list(list(
+            text            = as.character(sdr[[i]]),
+            bold            = FALSE,
+            space_before_pt = 0L,
+            space_after_pt  = 0L,
+            font_size_pt    = NULL  # inherit from document paragraph style
+          )))
+        }
+      }
+
+      # Try table-cell replacement first; fall back to XML body insertion
+      inserted <- tryCatch(
+        private$.replace_tag_in_cell(doc, "@list_secondary_data", items),
+        error = function(e) FALSE
+      )
+
+      if (!inserted) {
+        # Body-paragraph XML insertion
+        body_xml <- officer::docx_body_xml(doc)
+        ns       <- xml2::xml_ns(body_xml)
+        all_paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
+        target_para <- NULL
+        for (p in all_paras) {
+          if (grepl("@list_secondary_data", xml2::xml_text(p), fixed = TRUE)) {
+            target_para <- p
+            break
+          }
+        }
+        if (!is.null(target_para)) {
+          for (item in rev(items)) {
+            node <- private$.make_w_para(
+              text            = item$text,
+              bold            = isTRUE(item$bold),
+              space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt,
+              space_after_pt  = if (is.null(item$space_after_pt))  0L else item$space_after_pt,
+              font_size_pt    = item$font_size_pt
+            )
+            xml2::xml_add_sibling(target_para, node, .where = "before")
+          }
+          xml2::xml_remove(target_para)
+        } else {
+          # Final fallback: plain text
+          doc <- private$.replace(doc, "@list_secondary_data",
+                                  paste(vapply(items, `[[`, character(1L), "text"),
+                                        collapse = "\n"))
+        }
+      }
+      doc
+    },
+
+    # Replace @definition_* tags with the corresponding text from the
+    # protocol_schema_iphra.xlsx, conditional on which indicator codes are
+    # present in the included tools.
+    #
+    #  10501 or 10502 → @definition_cdr  and @definition_u5dr
+    #  10701          → @definition_gam  and @definition_muac
+    #  10702          → @definition_gam_women
+    #  10802          → @definition_complementary_feeding
+    #
+    # Tags whose condition is not met are left for remove_remaining_tags to clean up.
+    add_definition_tags = function(doc) {
+      inc_codes <- as.character(self$get_indicator_codes_from_tools())
+      schema    <- private$.protocol_schema
+
+      get_def <- function(tag) {
+        if (is.null(schema)) return("")
+        idx <- which(schema$tag_name == tag)
+        if (length(idx) == 0L || is.na(schema$default_value[idx[1L]])) return("")
+        as.character(schema$default_value[idx[1L]])
+      }
+
+      if (any(c("10501", "10502") %in% inc_codes)) {
+        doc <- private$.replace(doc, "@definition_cdr",  get_def("@definition_cdr"))
+        doc <- private$.replace(doc, "@definition_u5dr", get_def("@definition_u5dr"))
+      }
+      if ("10701" %in% inc_codes) {
+        doc <- private$.replace(doc, "@definition_gam",  get_def("@definition_gam"))
+        doc <- private$.replace(doc, "@definition_muac", get_def("@definition_muac"))
+      }
+      if ("10702" %in% inc_codes) {
+        doc <- private$.replace(doc, "@definition_gam_women", get_def("@definition_gam_women"))
+      }
+      if ("10802" %in% inc_codes) {
+        doc <- private$.replace(doc, "@definition_complementary_feeding",
+                                get_def("@definition_complementary_feeding"))
+      }
+      doc
+    },
+
+    # ── Sample-size table helpers ──────────────────────────────────────────
+
+    # Format a numeric value as a percentage string (e.g. 10 → "10%").
+    # Returns "" for NA / non-numeric.
+    .fmt_pct = function(x) {
+      if (is.null(x) || is.na(x) || !is.numeric(x)) return("")
+      paste0(x, "%")
+    },
+
+    # Format a numeric value as a comma-separated integer string.
+    # Returns "" for NA.  An optional suffix is appended (e.g. "households").
+    .fmt_n = function(x, suffix = "") {
+      if (is.null(x) || is.na(x)) return("")
+      s <- formatC(as.integer(round(x)), format = "d", big.mark = ",")
+      if (nzchar(suffix)) paste(s, suffix) else s
+    },
+
+    # Format a logical FPC flag as "Yes" / "No".
+    .fmt_fpc = function(x) {
+      if (is.null(x) || is.na(x)) return("")
+      if (isTRUE(x)) "Yes" else "No"
+    },
+
+    # Human-readable sampling method label.
+    .fmt_method = function(m) {
+      switch(as.character(m),
+        simple_random      = "Simple Random",
+        systematic         = "Systematic",
+        pps_cluster        = "Cluster (PPS)",
+        pps_rlc            = "Cluster (PPS-RLC)",
+        simple_random_rlc  = "Simple Random (RLC)",
+        systematic_rlc     = "Systematic (RLC)",
+        proportional       = "Proportional",
+        proportional_rlc   = "Proportional (RLC)",
+        purposive          = "Purposive",
+        as.character(m)
+      )
+    },
+
+    # Build and insert a sample-size flextable for a given tag.
+    # 'param_rows' is a list; each element has:
+    #   $label     : row label (character)
+    #   $col_fn    : function(st_row) → cell value string for one stratum
+    # 'n_blank'    : number of blank rows appended after the data rows.
+    .build_sample_size_table = function(doc, tag, param_rows, n_blank = 0L) {
+      st <- self$sample_table
+      if (is.null(st) || nrow(st) == 0L) {
+        doc <- private$.replace(doc, tag, "")
+        return(doc)
+      }
+
+      strata_names <- if ("stratum_name" %in% names(st)) as.character(st$stratum_name)
+                      else as.character(st$stratum_id)
+
+      n_strata <- length(strata_names)
+      page_width_in  <- 6.5
+      strata_col_w   <- page_width_in / (6L + n_strata)
+      param_col_w    <- strata_col_w * 3L
+      just_col_w     <- strata_col_w * 3L
+
+      # Build data frame: rows = parameters, cols = Parameter + strata + Justification
+      col_names <- c("Parameter", strata_names, "Justification")
+      rows_list <- lapply(param_rows, function(pr) {
+        vals <- vapply(seq_len(n_strata), function(j) {
+          tryCatch(pr$col_fn(st[j, , drop = FALSE]), error = function(e) "")
+        }, character(1L))
+        as.list(c(pr$label, vals, ""))
+      })
+
+      # Append blank rows
+      blank_row <- as.list(rep("", n_strata + 2L))
+      for (k in seq_len(n_blank)) rows_list <- c(rows_list, list(blank_row))
+
+      mat <- do.call(rbind, lapply(rows_list, function(r) {
+        as.data.frame(r, stringsAsFactors = FALSE, col.names = col_names)
+      }))
+      names(mat) <- col_names
+
+      ft <- flextable::flextable(mat)
+      ft <- flextable::bold(ft, part = "header")
+      ft <- flextable::theme_zebra(ft)
+      ft <- flextable::fontsize(ft, size = 8, part = "all")
+      ft <- flextable::width(ft, j = 1L,                  width = param_col_w)
+      ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
+      ft <- flextable::width(ft, j = n_strata + 2L,       width = just_col_w)
+      ft <- flextable::set_table_properties(ft, layout = "fixed")
+
+      tryCatch({
+        doc <- officer::cursor_reach(doc, keyword = tag)
+        doc <- flextable::body_add_flextable(doc, ft, pos = "before")
+        doc <- officer::cursor_forward(doc)
+        doc <- officer::body_remove(doc)
+      }, error = function(e) {
+        phr_warning(phr_txt("Could not insert sample-size table for '{tag}': {conditionMessage(e)}"),
+                    origin = "IPHRAProtocol$.build_sample_size_table")
+        doc <<- private$.replace(doc, tag, "")
+      })
+      doc
+    },
+
+    # Replace @sample_size_hh_gen_table — general (household-level indicator) table.
+    add_sample_size_gen_table = function(doc) {
+      params <- list(
+        list(label = "Indicator Name",
+             col_fn = function(r) as.character(r$pop_indicator %||% "")),
+        list(label = "Sampling Design",
+             col_fn = function(r) private$.fmt_method(r$sampling_method %||% "")),
+        list(label = "Estimated Prevalence (%)",
+             col_fn = function(r) private$.fmt_pct(r$pop_expected_prevalence)),
+        list(label = "Desired Precision",
+             col_fn = function(r) private$.fmt_pct(r$pop_precision)),
+        list(label = "Estimated population size",
+             col_fn = function(r) private$.fmt_n(r$total_population)),
+        list(label = "Design Effect",
+             col_fn = function(r) {
+               v <- r$pop_design_effect
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "Finite Population Correction (FPC) used?",
+             col_fn = function(r) private$.fmt_fpc(r$pop_fpc)),
+        list(label = "Non-Response Rate",
+             col_fn = function(r) private$.fmt_pct(r$pop_nonresponse)),
+        list(label = "Households to be Included",
+             col_fn = function(r) private$.fmt_n(r$General_HH_Sample_Size))
+      )
+      private$.build_sample_size_table(doc, "@sample_size_hh_gen_table", params, n_blank = 2L)
+    },
+
+    # Replace @sample_size_hh_ind_table — individual-level indicator table.
+    # Only inserted when indicator_code 10701 (GAM/MUAC) or 10702 (GAM women)
+    # is present in the included tools.
+    add_sample_size_ind_table = function(doc) {
+      inc_codes <- as.character(self$get_indicator_codes_from_tools())
+      if (!any(c("10701", "10702") %in% inc_codes)) {
+        doc <- private$.replace(doc, "@sample_size_hh_ind_table", "")
+        return(doc)
+      }
+      params <- list(
+        list(label = "Indicator Name",
+             col_fn = function(r) as.character(r$ind_indicator %||% "")),
+        list(label = "Sampling Design",
+             col_fn = function(r) private$.fmt_method(r$sampling_method %||% "")),
+        list(label = "Estimated Prevalence (%)",
+             col_fn = function(r) private$.fmt_pct(r$ind_expected_prevalence)),
+        list(label = "Desired Precision",
+             col_fn = function(r) private$.fmt_pct(r$ind_precision)),
+        list(label = "Estimated population size",
+             col_fn = function(r) private$.fmt_n(r$total_population)),
+        list(label = "Design Effect",
+             col_fn = function(r) {
+               v <- r$ind_design_effect
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "Finite Population Correction (FPC) used?",
+             col_fn = function(r) private$.fmt_fpc(r$ind_fpc)),
+        list(label = "Individuals to be Included",
+             col_fn = function(r) private$.fmt_n(r$Ind_Sample_Size)),
+        list(label = "Average Household Size",
+             col_fn = function(r) {
+               v <- r$ind_avg_hh_size
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "% sub-population",
+             col_fn = function(r) private$.fmt_pct(r$ind_subpop_prop)),
+        list(label = "Non-Response Rate",
+             col_fn = function(r) private$.fmt_pct(r$ind_nonresponse)),
+        list(label = "Households to be Included",
+             col_fn = function(r) private$.fmt_n(r$Ind_HH_Sample_Size))
+      )
+      private$.build_sample_size_table(doc, "@sample_size_hh_ind_table", params, n_blank = 2L)
+    },
+
+    # Replace @sample_size_hh_mort_table — mortality indicator table.
+    # Only inserted when indicator_code 10501 (CDR) or 10502 (U5DR)
+    # is present in the included tools.
+    add_sample_size_mort_table = function(doc) {
+      inc_codes <- as.character(self$get_indicator_codes_from_tools())
+      if (!any(c("10501", "10502") %in% inc_codes)) {
+        doc <- private$.replace(doc, "@sample_size_hh_mort_table", "")
+        return(doc)
+      }
+      params <- list(
+        list(label = "Indicator Name",
+             col_fn = function(r) as.character(r$mort_indicator %||% "")),
+        list(label = "Sampling Design",
+             col_fn = function(r) private$.fmt_method(r$sampling_method %||% "")),
+        list(label = "Estimated death rate per 10,000/day",
+             col_fn = function(r) {
+               v <- r$mort_expected_death_rate
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "Desired Precision",
+             col_fn = function(r) {
+               v <- r$mort_precision
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "Recall Period",
+             col_fn = function(r) {
+               v <- r$mort_recall_days
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "Population size (overall)",
+             col_fn = function(r) private$.fmt_n(r$total_population)),
+        list(label = "Design Effect",
+             col_fn = function(r) {
+               v <- r$mort_design_effect
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "Finite Population Correction (FPC) used?",
+             col_fn = function(r) private$.fmt_fpc(r$mort_fpc)),
+        list(label = "Population to be Included",
+             col_fn = function(r) private$.fmt_n(r$Mort_Ind_Sample_Size, "people")),
+        list(label = "Person-Time to be Included",
+             col_fn = function(r) private$.fmt_n(r$Mort_PT_Sample_Size, "person days")),
+        list(label = "Average Household Size",
+             col_fn = function(r) {
+               v <- r$mort_avg_hh_size
+               if (is.null(v) || is.na(v)) "" else as.character(v)
+             }),
+        list(label = "% Non-Respondents",
+             col_fn = function(r) private$.fmt_pct(r$mort_nonresponse)),
+        list(label = "Households to be Included",
+             col_fn = function(r) private$.fmt_n(r$Mort_HH_Sample_Size, "households"))
+      )
+      private$.build_sample_size_table(doc, "@sample_size_hh_mort_table", params, n_blank = 0L)
+    },
+
     # After all known tag replacements, remove any remaining @-prefixed tags
     # so they do not appear in the exported document.
+    #
+    # Processes each paragraph as a whole to correctly handle cases where a tag
+    # is split across multiple w:t (text) nodes due to Word formatting.  For each
+    # paragraph, all text node contents are concatenated, the combined string is
+    # scanned for @-prefixed patterns, the characters that form those patterns are
+    # identified, and the corresponding characters are removed from the individual
+    # text nodes (preserving characters that belong to non-tag text).
     remove_remaining_tags = function(doc) {
       body_xml <- officer::docx_body_xml(doc)
       ns       <- xml2::xml_ns(body_xml)
 
-      # Collect all text nodes in the document body
-      text_nodes <- xml2::xml_find_all(body_xml, ".//w:t", ns = ns)
       # Pattern matches all @-prefixed placeholder tags used in TOR templates.
       # Underscores appear in tag names (e.g. @pop_idpcamp, @data_start_date).
       # Hyphens are included to handle any hyphenated tag variants in custom templates.
       tag_pattern <- "@[A-Za-z0-9_.\\-]+"
 
-      for (node in text_nodes) {
-        txt <- xml2::xml_text(node)
-        if (grepl(tag_pattern, txt)) {
-          cleaned <- gsub(tag_pattern, "", txt, perl = TRUE)
-          xml2::xml_text(node) <- cleaned
+      paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
+      for (para in paras) {
+        text_nodes <- xml2::xml_find_all(para, ".//w:t", ns = ns)
+        if (length(text_nodes) == 0L) next
+
+        texts    <- vapply(text_nodes, xml2::xml_text, character(1L))
+        combined <- paste(texts, collapse = "")
+        if (!grepl(tag_pattern, combined, perl = TRUE)) next
+
+        nc <- nchar(combined)
+        if (nc == 0L) next
+
+        # Build a mapping of character index → text-node index
+        node_idx <- rep(seq_along(texts), times = nchar(texts))
+
+        # Mark characters that are part of @-prefixed tags for removal
+        matches     <- gregexpr(tag_pattern, combined, perl = TRUE)[[1L]]
+        match_lens  <- attr(matches, "match.length")
+        remove_pos  <- logical(nc)
+        for (j in seq_along(matches)) {
+          if (matches[j] > 0L) {
+            start <- matches[j]
+            end   <- min(matches[j] + match_lens[j] - 1L, nc)
+            remove_pos[start:end] <- TRUE
+          }
+        }
+
+        # Redistribute cleaned characters back to the original text nodes
+        chars <- strsplit(combined, "", fixed = TRUE)[[1L]]
+        for (i in seq_along(text_nodes)) {
+          node_char_idx <- which(node_idx == i)
+          if (length(node_char_idx) == 0L) next
+          keep     <- !remove_pos[node_char_idx]
+          new_text <- paste(chars[node_char_idx[keep]], collapse = "")
+          xml2::xml_text(text_nodes[[i]]) <- new_text
         }
       }
       doc
