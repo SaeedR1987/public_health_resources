@@ -525,6 +525,15 @@ IPHRAProtocol <- R6::R6Class(
     # Two columns: tag_name (character), default_value (character).
     .protocol_schema = NULL,
 
+    # Row labels in the sample-size tables that represent total/summary values.
+    # These rows receive a light-grey background to visually distinguish them.
+    .sample_size_total_labels = c(
+      "Households to be Included",
+      "Individuals to be Included",
+      "Population to be Included",
+      "Person-Time to be Included"
+    ),
+
     # Named list: tool_name -> list(class = <class_name>, file = <xlsx_filename>)
     .iphra_tools = list(
       tool_household_iphra_v2 = list(
@@ -1574,7 +1583,7 @@ IPHRAProtocol <- R6::R6Class(
     #   $label     : row label (character)
     #   $col_fn    : function(st_row) → cell value string for one stratum
     # 'n_blank'    : number of blank rows appended after the data rows.
-    .build_sample_size_table = function(doc, tag, param_rows, n_blank = 0L) {
+    .build_sample_size_table = function(doc, tag, param_rows) {
       st <- self$sample_table
       if (is.null(st) || nrow(st) == 0L) {
         doc <- private$.replace(doc, tag, "")
@@ -1599,23 +1608,55 @@ IPHRAProtocol <- R6::R6Class(
         as.list(c(pr$label, vals, ""))
       })
 
-      # Append blank rows
-      blank_row <- as.list(rep("", n_strata + 2L))
-      for (k in seq_len(n_blank)) rows_list <- c(rows_list, list(blank_row))
-
       mat <- do.call(rbind, lapply(rows_list, function(r) {
         as.data.frame(r, stringsAsFactors = FALSE, col.names = col_names)
       }))
       names(mat) <- col_names
 
+      # Rows whose Parameter label represents a summary/total value get a
+      # light-grey background to visually distinguish them from other rows.
+      total_row_idx <- which(mat[["Parameter"]] %in% private$.sample_size_total_labels)
+
+      # REACH1 header colour (first colour in the reach1 palette = #EE5859)
+      reach1_bg <- tryCatch(
+        get_color_palette("reach1")[[1L]],
+        error = function(e) {
+          phr_warning(phr_txt("Could not load reach1 palette, using fallback colour: {conditionMessage(e)}"),
+                      origin = "IPHRAProtocol$.build_sample_size_table")
+          "#EE5859"
+        }
+      )
+
+      fp_col   <- officer::fp_border(color = "black", width = 1)
+      fp_outer <- officer::fp_border(color = "black", width = 1.5)
+
       ft <- flextable::flextable(mat)
-      ft <- flextable::bold(ft, part = "header")
-      ft <- flextable::theme_zebra(ft)
       ft <- flextable::fontsize(ft, size = 8, part = "all")
-      ft <- flextable::width(ft, j = 1L,                  width = param_col_w)
+      ft <- flextable::width(ft, j = 1L,                     width = param_col_w)
       ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
-      ft <- flextable::width(ft, j = n_strata + 2L,       width = just_col_w)
+      ft <- flextable::width(ft, j = n_strata + 2L,          width = just_col_w)
       ft <- flextable::set_table_properties(ft, layout = "fixed")
+
+      # Header: bold, REACH1 background, white text
+      ft <- flextable::bold(ft, part = "header")
+      ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
+      ft <- flextable::color(ft, color = "white", part = "header")
+
+      # Body: white background for all rows; light grey for total/summary rows
+      ft <- flextable::bg(ft, bg = "white", part = "body")
+      if (length(total_row_idx) > 0L) {
+        ft <- flextable::bg(ft, i = total_row_idx, bg = "#D3D3D3", part = "body")
+      }
+
+      # Borders: start from a clean slate
+      ft <- flextable::border_remove(ft)
+      # Vertical column separators at 1 pt (body and header)
+      ft <- flextable::vline(ft, border = fp_col, part = "body")
+      ft <- flextable::vline(ft, border = fp_col, part = "header")
+      # Outer border of the whole table at 1.5 pt
+      ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
+      # Header row bottom border at 1.5 pt (visually separates header from body)
+      ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
       tryCatch({
         doc <- officer::cursor_reach(doc, keyword = tag)
@@ -1655,7 +1696,7 @@ IPHRAProtocol <- R6::R6Class(
         list(label = "Households to be Included",
              col_fn = function(r) private$.fmt_n(r$General_HH_Sample_Size))
       )
-      private$.build_sample_size_table(doc, "@sample_size_hh_gen_table", params, n_blank = 2L)
+      private$.build_sample_size_table(doc, "@sample_size_hh_gen_table", params)
     },
 
     # Replace @sample_size_hh_ind_table — individual-level indicator table.
@@ -1699,7 +1740,7 @@ IPHRAProtocol <- R6::R6Class(
         list(label = "Households to be Included",
              col_fn = function(r) private$.fmt_n(r$Ind_HH_Sample_Size))
       )
-      private$.build_sample_size_table(doc, "@sample_size_hh_ind_table", params, n_blank = 2L)
+      private$.build_sample_size_table(doc, "@sample_size_hh_ind_table", params)
     },
 
     # Replace @sample_size_hh_mort_table — mortality indicator table.
@@ -1754,7 +1795,7 @@ IPHRAProtocol <- R6::R6Class(
         list(label = "Households to be Included",
              col_fn = function(r) private$.fmt_n(r$Mort_HH_Sample_Size, "households"))
       )
-      private$.build_sample_size_table(doc, "@sample_size_hh_mort_table", params, n_blank = 0L)
+      private$.build_sample_size_table(doc, "@sample_size_hh_mort_table", params)
     },
 
     # After all known tag replacements, remove any remaining @-prefixed tags
