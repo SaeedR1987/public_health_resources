@@ -1436,7 +1436,7 @@ IPHRAProtocol <- R6::R6Class(
           bold            = TRUE,
           space_before_pt = if (first_obj) 0L else 6L,
           space_after_pt  = 0L,
-          font_size_pt    = NULL
+          font_size_pt    = NULL  # inherit from document paragraph style
         )))
         first_obj <- FALSE
         src_indices <- which(codes == code)
@@ -1446,7 +1446,7 @@ IPHRAProtocol <- R6::R6Class(
             bold            = FALSE,
             space_before_pt = 0L,
             space_after_pt  = 0L,
-            font_size_pt    = NULL
+            font_size_pt    = NULL  # inherit from document paragraph style
           )))
         }
       }
