@@ -184,7 +184,7 @@ head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
 protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$available_indicator_codes$indicator_code))
 
-head(protocol$tools$tool_household_iphra_v2$revised_survey)
+View(protocol$tools$tool_household_iphra_v2$revised_survey)
 head(protocol$tools$tool_household_iphra_v2$revised_choices)
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
@@ -323,18 +323,16 @@ protocol$metadata$output_published_date <- "2025-06-05"
 protocol$metadata$final_presentation_date <- "2025-06-10"
 protocol$metadata$pop.idpinformal <- TRUE
 protocol$metadata$data_management_platform <- "IMPACT"
-protocol$metadata$pop_host <- TRUE
-protocol$metadata$pop_idphost <- TRUE
-protocol$metadata$popsize_known_geographic_unit <- FALSE
-protocol$metadata$popsize_known_strata_unit <- TRUE
-protocol$metadata$geographic_coverage <- "Rural areas only in Padamap District"
 
-protocol$update_metadata(stakeholder_mapping = TRUE,
-                         gender_disaggregation = TRUE
-                         )
+protocol$metadata$popsize_known_strata_unit <- TRUE
 
 protocol$secondary_data <- list(
-    "101" = "Armed Conflict Location & Event Data Project",
+    "101" = "ACLED",
     "104" = "UNHCR"
 )
+
+
+# protocol$ <- "Internal"
+
+# report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = "report_no_tools.docx")
