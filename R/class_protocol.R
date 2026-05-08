@@ -970,7 +970,12 @@ Protocol <- R6::R6Class(
       )
 
       for (handling in handling_order) {
-        idx <- which(as.character(schema$handling %||% "") == handling)
+        schema_handling <- if ("handling" %in% names(schema) && !is.null(schema$handling)) {
+          as.character(schema$handling)
+        } else {
+          rep("", nrow(schema))
+        }
+        idx <- which(schema_handling == handling)
         if (length(idx) == 0L) next
         for (i in idx) {
           row <- schema[i, required_cols, drop = FALSE]

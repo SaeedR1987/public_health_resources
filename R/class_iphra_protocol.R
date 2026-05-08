@@ -813,7 +813,7 @@ IPHRAProtocol <- R6::R6Class(
       )
       if (!tag %in% names(tag_tool_map)) {
         phr_warning(
-          phr_txt("Unrecognized row_delete tag in protocol schema: '{tag}'."),
+          paste0("Unrecognized row_delete tag in protocol schema: '", tag, "'."),
           origin = "IPHRAProtocol$add_row_delete_section"
         )
         return(private$.replace(doc, tag, ""))

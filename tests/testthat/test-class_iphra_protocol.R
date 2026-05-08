@@ -361,7 +361,7 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   doc <- officer::body_add_par(doc, "@tor_title", style = "Normal")
   schema <- p$protocol_schema
   row <- schema[schema$tag_name == "@tor_title", c("tag_name", "handling", "condition", "default_value"), drop = FALSE]
-  expect_true(nrow(row) > 0)
+  expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
   doc <- p$.__enclos_env__$private$.add_replace_section(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
