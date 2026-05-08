@@ -359,12 +359,20 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   p <- IPHRAProtocol$new()
   doc <- officer::read_docx()
   doc <- officer::body_add_par(doc, "@tor_title", style = "Normal")
-  doc <- p$.__enclos_env__$private$.replace(doc, "@tor_title", "OVERRIDE")
+  schema <- p$protocol_schema
+  row <- schema[schema$tag_name == "@tor_title", c("tag_name", "handling", "condition", "default_value"), drop = FALSE]
+  expect_true(nrow(row) > 0)
+  doc <- p$.__enclos_env__$private$.add_replace_section(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
                collapse = "")
   expect_true(grepl("Research Terms of Reference", txt, fixed = TRUE))
-  expect_false(grepl("OVERRIDE", txt, fixed = TRUE))
+})
+
+test_that("IPHRAProtocol normalizes schema tag to @kii_nut_inc", {
+  p <- IPHRAProtocol$new()
+  expect_true("@kii_nut_inc" %in% p$protocol_schema$tag_name)
+  expect_false("@kii_nutrition_inc" %in% p$protocol_schema$tag_name)
 })
 
 test_that("replace_tag_in_cell preserves item order for objective headers and bullets", {
