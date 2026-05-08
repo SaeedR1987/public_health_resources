@@ -812,6 +812,10 @@ IPHRAProtocol <- R6::R6Class(
         "@obs_water_inc"      = "tool_obs_water_point_iphra_v2"
       )
       if (!tag %in% names(tag_tool_map)) {
+        phr_warning(
+          phr_txt("Unrecognized row_delete tag in protocol schema: '{tag}'."),
+          origin = "IPHRAProtocol$add_row_delete_section"
+        )
         return(private$.replace(doc, tag, ""))
       }
 
@@ -2003,10 +2007,18 @@ IPHRAProtocol <- R6::R6Class(
       if (is.null(schema) || !all(required_cols %in% names(schema))) {
         return(invisible(NULL))
       }
-      schema$tag_name[schema$tag_name == "@kii_nutrition_inc"] <- "@kii_nut_inc"
+      schema <- private$.normalize_schema_tags(schema)
       # Store schema for reference
       self$protocol_schema <- schema[required_cols]
       invisible(NULL)
+    },
+
+    .normalize_schema_tags = function(schema) {
+      if (is.null(schema) || !is.data.frame(schema) || !"tag_name" %in% names(schema)) {
+        return(schema)
+      }
+      schema$tag_name[schema$tag_name == "@kii_nutrition_inc"] <- "@kii_nut_inc"
+      schema
     }
   )
 )
