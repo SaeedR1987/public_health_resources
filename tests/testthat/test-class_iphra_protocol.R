@@ -133,6 +133,27 @@ test_that("Protocol base class metadata contains new fields", {
   expect_false(p$metadata[["pop_idpcamp"]])
 })
 
+test_that("Protocol and SurveyProtocol initialize with blank protocol_schema", {
+  p <- Protocol$new()
+  sp <- SurveyProtocol$new()
+  req_cols <- c("tag_name", "handling", "condition", "default_value")
+
+  expect_true(is.data.frame(p$protocol_schema))
+  expect_true(is.data.frame(sp$protocol_schema))
+  expect_true(all(req_cols %in% names(p$protocol_schema)))
+  expect_true(all(req_cols %in% names(sp$protocol_schema)))
+})
+
+test_that("IPHRAProtocol initializes protocol_schema from bundled iphra schema", {
+  p <- IPHRAProtocol$new()
+  req_cols <- c("tag_name", "handling", "condition", "default_value")
+
+  expect_true(is.data.frame(p$protocol_schema))
+  expect_true(all(req_cols %in% names(p$protocol_schema)))
+  expect_true(nrow(p$protocol_schema) > 0)
+  expect_true(any(p$protocol_schema$handling == "row_delete"))
+})
+
 test_that("IPHRAProtocol stores secondary_data", {
   p <- IPHRAProtocol$new()
   p$secondary_data <- list(OBJ01 = "ACLED conflict database",
@@ -332,4 +353,50 @@ test_that("IPHRAProtocol add_stratum updates num_strata_units", {
   expect_equal(p$metadata$num_strata_units, 1L)
   p$add_stratum(stratum_id = "south", Population_Name = "Southern Region")
   expect_equal(p$metadata$num_strata_units, 2L)
+})
+
+test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_value", {
+  p <- IPHRAProtocol$new()
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "@tor_title", style = "Normal")
+  doc <- p$.__enclos_env__$private$.replace(doc, "@tor_title", "OVERRIDE")
+  body_xml <- officer::docx_body_xml(doc)
+  txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+               collapse = "")
+  expect_true(grepl("Research Terms of Reference", txt, fixed = TRUE))
+  expect_false(grepl("OVERRIDE", txt, fixed = TRUE))
+})
+
+test_that("replace_tag_in_cell preserves item order for objective headers and bullets", {
+  p <- IPHRAProtocol$new()
+  doc <- officer::read_docx()
+  doc <- officer::body_add_table(doc, value = data.frame(col1 = "@specific_objectives"))
+  items <- list(
+    list(text = "IncomeCoping", bold = TRUE, space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L),
+    list(text = "\u2022 Coping strategies", bold = FALSE, space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L),
+    list(text = "\u2022 Household income", bold = FALSE, space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L),
+    list(text = "LivingConditions", bold = TRUE, space_before_pt = 6L, space_after_pt = 0L, font_size_pt = 10L),
+    list(text = "\u2022 Crowdedness", bold = FALSE, space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)
+  )
+
+  ok <- p$.__enclos_env__$private$.replace_tag_in_cell(doc, "@specific_objectives", items)
+  expect_true(ok)
+
+  body_xml <- officer::docx_body_xml(doc)
+  ns <- xml2::xml_ns(body_xml)
+  tc <- xml2::xml_find_first(body_xml, ".//w:tc", ns = ns)
+  paras <- xml2::xml_find_all(tc, ".//w:p", ns = ns)
+  texts <- vapply(paras, xml2::xml_text, character(1L))
+  texts <- texts[nzchar(texts)]
+
+  idx_income <- match("IncomeCoping", texts)
+  idx_coping <- match("\u2022 Coping strategies", texts)
+  idx_income_b <- match("\u2022 Household income", texts)
+  idx_living <- match("LivingConditions", texts)
+  idx_crowded <- match("\u2022 Crowdedness", texts)
+
+  expect_true(all(!is.na(c(idx_income, idx_coping, idx_income_b, idx_living, idx_crowded))))
+  expect_true(idx_income < idx_coping)
+  expect_true(idx_coping < idx_income_b)
+  expect_true(idx_living < idx_crowded)
 })

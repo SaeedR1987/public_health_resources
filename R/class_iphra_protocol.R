@@ -496,6 +496,7 @@ IPHRAProtocol <- R6::R6Class(
       phr_try({
         doc <- private$create_base_doc(reference_docx)
         doc <- private$process_tool_row_tags(doc)
+        doc <- private$apply_schema_tag_handlers(doc)
         doc <- private$add_metadata_section(doc)
         doc <- private$process_sampling_tags(doc)
         doc <- private$add_specific_objectives_section(doc)
@@ -520,10 +521,6 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   private = list(
-
-    # Protocol schema data frame loaded from protocol_schema_iphra.xlsx.
-    # Two columns: tag_name (character), default_value (character).
-    .protocol_schema = NULL,
 
     # Row labels in the sample-size tables that represent total/summary values.
     # These rows receive a light-grey background to visually distinguish them.
@@ -597,6 +594,9 @@ IPHRAProtocol <- R6::R6Class(
 
     # Replace tag with "X" if condition is TRUE, "□" if FALSE.
     .checkbox = function(doc, tag, condition) {
+      if (private$.is_tag_missing_from_schema(tag)) {
+        return(private$.replace(doc, tag, ""))
+      }
       officer::body_replace_all_text(doc, tag,
                                      if (isTRUE(condition)) "X" else "\u25a1",
                                      fixed = TRUE)
@@ -604,6 +604,11 @@ IPHRAProtocol <- R6::R6Class(
 
     # Safe body_replace_all_text; warns on failure instead of aborting.
     .replace = function(doc, old, new_val) {
+      if (private$.is_tag_missing_from_schema(old)) {
+        new_val <- ""
+      } else if (private$.schema_handling(old) == "replace") {
+        new_val <- private$.schema_default(old)
+      }
       tryCatch(
         officer::body_replace_all_text(doc, old, as.character(new_val %||% ""),
                                        fixed = TRUE),
@@ -613,6 +618,34 @@ IPHRAProtocol <- R6::R6Class(
           doc
         }
       )
+    },
+
+    .schema_row = function(tag) {
+      schema <- self$protocol_schema
+      if (!is.character(tag) || length(tag) != 1 || !nzchar(tag) ||
+          is.null(schema) || !is.data.frame(schema) ||
+          !"tag_name" %in% names(schema)) {
+        return(NULL)
+      }
+      idx <- which(as.character(schema$tag_name) == tag)
+      if (length(idx) == 0L) return(NULL)
+      schema[idx[1L], , drop = FALSE]
+    },
+
+    .schema_handling = function(tag) {
+      row <- private$.schema_row(tag)
+      if (is.null(row) || !"handling" %in% names(row)) return("")
+      as.character(row$handling[[1L]] %||% "")
+    },
+
+    .schema_default = function(tag) {
+      row <- private$.schema_row(tag)
+      if (is.null(row) || !"default_value" %in% names(row)) return("")
+      as.character(row$default_value[[1L]] %||% "")
+    },
+
+    .is_tag_missing_from_schema = function(tag) {
+      startsWith(as.character(tag %||% ""), "@") && is.null(private$.schema_row(tag))
     },
 
     # Build a w:p XML node with plain text, optional bold run, optional
@@ -669,8 +702,7 @@ IPHRAProtocol <- R6::R6Class(
       }
       if (is.null(target_para)) return(FALSE)
 
-      # Insert in reverse order so final ordering matches 'items'
-      for (item in rev(items)) {
+      for (item in items) {
         node <- private$.make_w_para(
           text            = item$text,
           bold            = isTRUE(item$bold),
@@ -717,6 +749,7 @@ IPHRAProtocol <- R6::R6Class(
         "@kii_fsl_inc"        = "tool_kii_fsl_service_provider_iphra_v2",
         "@kii_wash_inc"       = "tool_kii_wash_service_provider_iphra_v2",
         "@kii_nut_inc"        = "tool_kii_nutrition_service_provider_iphra_v2",
+        "@kii_nutrition_inc"  = "tool_kii_nutrition_service_provider_iphra_v2",
         "@obs_community_inc"  = "tool_obs_community_iphra_v2",
         "@obs_health_inc"     = "tool_obs_health_facility_iphra_v2",
         "@obs_latrine_inc"    = "tool_obs_latrine_iphra_v2",
@@ -727,6 +760,10 @@ IPHRAProtocol <- R6::R6Class(
       ns       <- xml2::xml_ns(body_xml)
 
       for (tag in names(tag_tool_map)) {
+        is_row_delete_tag <- private$.schema_handling(tag) == "row_delete" ||
+          (identical(tag, "@kii_nut_inc") &&
+             private$.schema_handling("@kii_nutrition_inc") == "row_delete")
+        if (!is_row_delete_tag) next
         tool_name <- tag_tool_map[[tag]]
         included  <- self$is_tool_included(tool_name)
 
@@ -741,6 +778,103 @@ IPHRAProtocol <- R6::R6Class(
         } else {
           # Just strip the tag text from the document
           doc <- private$.replace(doc, tag, "")
+        }
+      }
+      doc
+    },
+
+    # Apply schema-driven replacements for simple handling types.
+    apply_schema_tag_handlers = function(doc) {
+      schema <- self$protocol_schema
+      if (is.null(schema) || !is.data.frame(schema) ||
+          !all(c("tag_name", "handling", "default_value") %in% names(schema))) {
+        return(doc)
+      }
+
+      .meta_key <- function(tag) {
+        key <- sub("^@", "", as.character(tag))
+        aliases <- c(
+          country = "country_name",
+          audience_strategic = "audience_type.strategic",
+          audience_operational = "audience_type.operational",
+          audience_programmatic = "audience_type.programmatic",
+          audience_other = "audience_type.other"
+        )
+        aliases[[key]] %||% key
+      }
+
+      .meta_val <- function(tag) {
+        key <- .meta_key(tag)
+        if (key %in% names(self$metadata)) self$metadata[[key]] else NULL
+      }
+
+      .meta_flag <- function(tag) {
+        key <- sub("^@", "", as.character(tag))
+        if (grepl("^crisis_", key)) {
+          if (key %in% c("crisis_natural_disaster", "crisis_conflict", "crisis_other")) {
+            return(isTRUE(self$metadata$type_of_emergency == sub("^crisis_", "", key)))
+          }
+          if (key %in% c("crisis_sudden_onset", "crisis_sudden")) return(isTRUE(self$metadata$type_of_crisis == "sudden_onset"))
+          if (key %in% c("crisis_slow_onset", "crisis_slow")) return(isTRUE(self$metadata$type_of_crisis == "slow_onset"))
+          if (key == "crisis_protracted") return(isTRUE(self$metadata$type_of_crisis == "protracted"))
+        }
+        if (grepl("^milestone_", key)) {
+          ms <- self$metadata$humanitarian_milestones %||% character(0)
+          needle <- if (key == "milestone_intercluster") "inter_cluster" else sub("^milestone_", "", key)
+          return(needle %in% ms)
+        }
+        if (grepl("^platform_", key)) {
+          plat <- self$metadata$data_management_platform %||% character(0)
+          needle <- if (key == "platform_unhcr") "UNHCR" else if (key == "platform_impact") "IMPACT" else "other"
+          return(needle %in% plat)
+        }
+        if (grepl("^output_", key)) {
+          ot <- self$metadata$expected_output_type %||% character(0)
+          return(sub("^output_", "", key) %in% ot)
+        }
+        if (key %in% c("gender_disagg_yes", "gender_disagg_no")) {
+          return(if (key == "gender_disagg_yes") isTRUE(self$metadata$gender_disaggregation) else !isTRUE(self$metadata$gender_disaggregation))
+        }
+        if (key %in% c("sex_disagg_yes", "sex_disagg_no")) {
+          return(if (key == "sex_disagg_yes") isTRUE(self$metadata$sex_disaggregation) else !isTRUE(self$metadata$sex_disaggregation))
+        }
+        if (key %in% c("access_public", "access_restricted")) {
+          return(if (key == "access_public") isTRUE(self$metadata$access == "public") else isTRUE(self$metadata$access == "restricted"))
+        }
+        if (key %in% c("stakeholder_mapping_yes", "stakeholder_mapping_no")) {
+          return(if (key == "stakeholder_mapping_yes") isTRUE(self$metadata$stakeholder_mapping) else !isTRUE(self$metadata$stakeholder_mapping))
+        }
+        if (grepl("^sampling_", key)) {
+          methods_used <- self$get_sampling_methods()
+          if (key == "sampling_srs") return(any(methods_used %in% c("simple_random", "simple_random_rlc")))
+          if (key == "sampling_systematic") return(any(methods_used %in% c("systematic", "systematic_rlc")))
+          if (key == "sampling_cluster") return(any(methods_used %in% c("pps_cluster", "pps_rlc")))
+          if (key == "sampling_exhaustive") return(any(methods_used %in% c("proportional", "proportional_rlc")))
+          if (key == "sampling_purposive") return(any(methods_used %in% c("purposive")))
+          if (key == "sampling_hh_srs") return(any(methods_used %in% c("simple_random", "systematic")))
+          if (key == "sampling_hh_rlc") return(any(methods_used %in% c("pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc")))
+          if (key == "sampling_stratified") return(length(self$get_strata_names()) > 1)
+        }
+
+        v <- .meta_val(tag)
+        isTRUE(v)
+      }
+
+      for (i in seq_len(nrow(schema))) {
+        tag <- as.character(schema$tag_name[i] %||% "")
+        handling <- as.character(schema$handling[i] %||% "")
+        default_value <- as.character(schema$default_value[i] %||% "")
+        if (!nzchar(tag)) next
+
+        if (handling == "replace") {
+          doc <- private$.replace(doc, tag, default_value)
+        } else if (handling == "input") {
+          v <- .meta_val(tag)
+          doc <- private$.replace(doc, tag, as.character(v %||% ""))
+        } else if (handling == "checkbox_replace") {
+          doc <- private$.checkbox(doc, tag, .meta_flag(tag))
+        } else if (handling == "conditional_replace") {
+          doc <- private$.replace(doc, tag, if (.meta_flag(tag)) default_value else "")
         }
       }
       doc
@@ -1479,7 +1613,7 @@ IPHRAProtocol <- R6::R6Class(
           }
         }
         if (!is.null(target_para)) {
-          for (item in rev(items)) {
+          for (item in items) {
             node <- private$.make_w_para(
               text            = item$text,
               bold            = isTRUE(item$bold),
@@ -1512,7 +1646,7 @@ IPHRAProtocol <- R6::R6Class(
     # Tags whose condition is not met are left for remove_remaining_tags to clean up.
     add_definition_tags = function(doc) {
       inc_codes <- as.character(self$get_indicator_codes_from_tools())
-      schema    <- private$.protocol_schema
+      schema    <- self$protocol_schema
 
       get_def <- function(tag) {
         if (is.null(schema)) return("")
@@ -1896,11 +2030,8 @@ IPHRAProtocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    # Load protocol_schema_iphra.xlsx and populate metadata with defaults for any
-    # fields not yet set.  The schema has two columns: tag_name (the @-tag as it
-    # appears in the template) and default_value.  Tags that map to known metadata
-    # fields are used to pre-fill values only when the corresponding metadata key
-    # is currently NULL or NA.
+    # Load protocol_schema_iphra.xlsx into self$protocol_schema.
+    # Expected columns are tag_name, handling, condition, and default_value.
     .load_protocol_schema = function() {
       schema_path <- tryCatch(
         system.file("resources", "protocol_schema_iphra.xlsx", package = "phr"),
@@ -1908,7 +2039,7 @@ IPHRAProtocol <- R6::R6Class(
       )
       if (!nzchar(schema_path) || !file.exists(schema_path)) {
         # Try relative path (development / test context)
-        schema_path <- file.path("resources", "protocol_schema_iphra.xlsx")
+        schema_path <- file.path("inst", "resources", "protocol_schema_iphra.xlsx")
       }
       if (!file.exists(schema_path)) {
         phr_warning(
@@ -1922,11 +2053,12 @@ IPHRAProtocol <- R6::R6Class(
                                          col_types = "text")),
         error = function(e) NULL
       )
-      if (is.null(schema) || !all(c("tag_name", "default_value") %in% names(schema))) {
+      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      if (is.null(schema) || !all(required_cols %in% names(schema))) {
         return(invisible(NULL))
       }
       # Store schema for reference
-      private$.protocol_schema <- schema
+      self$protocol_schema <- schema[required_cols]
       invisible(NULL)
     }
   )

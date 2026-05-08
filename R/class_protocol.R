@@ -37,6 +37,11 @@ Protocol <- R6::R6Class(
     #'   Framework object.
     objective_schema = NULL,
 
+    #' @field protocol_schema Data frame describing TOR placeholder handling
+    #'   rules.  Expected columns are \code{tag_name}, \code{handling},
+    #'   \code{condition}, and \code{default_value}.
+    protocol_schema = NULL,
+
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
 
@@ -121,6 +126,7 @@ Protocol <- R6::R6Class(
         self$tools <- list()
         self$issues <- list()
         self$issues_coherence <- list()
+        self$protocol_schema <- private$.load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
           ANAFramework$new()
@@ -951,6 +957,37 @@ Protocol <- R6::R6Class(
       } else {
         character(0)
       }
+    },
+
+    # Load protocol schema metadata with a blank fallback.
+    .load_protocol_schema = function() {
+      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      empty_schema <- as.data.frame(
+        setNames(replicate(length(required_cols), character(0), simplify = FALSE),
+                 required_cols),
+        stringsAsFactors = FALSE
+      )
+
+      schema_path <- tryCatch(
+        system.file("resources", "protocol_schema_blank.csv", package = "phr"),
+        error = function(e) ""
+      )
+      if (!nzchar(schema_path) || !file.exists(schema_path)) {
+        schema_path <- file.path("inst", "resources", "protocol_schema_blank.csv")
+      }
+      if (!file.exists(schema_path)) {
+        return(empty_schema)
+      }
+
+      schema <- tryCatch(
+        utils::read.csv(schema_path, stringsAsFactors = FALSE, na.strings = character(0)),
+        error = function(e) NULL
+      )
+      if (!is.data.frame(schema)) return(empty_schema)
+      for (nm in required_cols) {
+        if (!nm %in% names(schema)) schema[[nm]] <- character(nrow(schema))
+      }
+      schema[required_cols]
     }
   )
 )
