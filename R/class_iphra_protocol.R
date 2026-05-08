@@ -860,10 +860,8 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     add_image_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      if (identical(tag, "@modified_framework_svg")) {
-        return(private$add_sdr_section(doc))
-      }
+      # The framework image is inserted together with the SDR table in
+      # add_sdr_section(), routed from the @secondary_data_sources_table tag.
       doc
     },
 
