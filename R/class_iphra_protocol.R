@@ -494,11 +494,44 @@ IPHRAProtocol <- R6::R6Class(
                                   reference_docx = "reach_tor_iphra_template.docx",
                                   open           = FALSE) {
       phr_try({
-        doc <- private$create_base_doc(reference_docx)
-        doc <- private$add_metadata_section(doc)
-        doc <- private$process_sampling_tags(doc)
-        doc <- private$add_definition_tags(doc)
-        doc <- private$apply_protocol_schema_sections(doc)
+        doc    <- private$create_base_doc(reference_docx)
+        schema <- self$protocol_schema
+
+        if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0L) {
+          handling <- as.character(schema$handling %||% "")
+
+          replace_rows <- schema[!is.na(handling) & handling == "replace", , drop = FALSE]
+          if (nrow(replace_rows) > 0L)
+            doc <- private$handle_replace(doc, replace_rows)
+
+          checkbox_rows <- schema[!is.na(handling) & handling == "checkbox_replace", , drop = FALSE]
+          if (nrow(checkbox_rows) > 0L)
+            doc <- private$handle_checkbox_replace(doc, checkbox_rows)
+
+          calculate_rows <- schema[!is.na(handling) & handling == "calculate", , drop = FALSE]
+          doc <- private$handle_calculate(doc, calculate_rows)
+
+          row_delete_rows <- schema[!is.na(handling) & handling == "row_delete", , drop = FALSE]
+          if (nrow(row_delete_rows) > 0L)
+            doc <- private$handle_row_delete(doc, row_delete_rows)
+
+          input_rows <- schema[!is.na(handling) & handling == "input", , drop = FALSE]
+          if (nrow(input_rows) > 0L)
+            doc <- private$handle_input(doc, input_rows)
+
+          conditional_rows <- schema[!is.na(handling) & handling == "conditional_replace", , drop = FALSE]
+          if (nrow(conditional_rows) > 0L)
+            doc <- private$handle_conditional_replace(doc, conditional_rows)
+
+          table_rows <- schema[!is.na(handling) & handling == "table", , drop = FALSE]
+          if (nrow(table_rows) > 0L)
+            doc <- private$handle_table(doc, table_rows)
+
+          image_rows <- schema[!is.na(handling) & handling == "image", , drop = FALSE]
+          if (nrow(image_rows) > 0L)
+            doc <- private$handle_image(doc, image_rows)
+        }
+
         doc <- private$remove_remaining_tags(doc)
         print(doc, target = output_file)
         phr_message(
@@ -581,25 +614,101 @@ IPHRAProtocol <- R6::R6Class(
       if (private$.is_tag_missing_from_schema(tag)) {
         return(private$.replace(doc, tag, ""))
       }
-      officer::body_replace_all_text(doc, tag,
-                                     if (isTRUE(condition)) "X" else "\u25a1",
-                                     fixed = TRUE)
+      private$.replace(doc, tag, if (isTRUE(condition)) "X" else "\u25a1")
     },
 
     # Safe body_replace_all_text; warns on failure instead of aborting.
+    # After the standard replacement, also applies cross-run replacement so
+    # that tags split across multiple w:t elements (e.g. @crisis_sudden_onset
+    # stored as '@crisis_sudden' + '_onset') are correctly handled.
     .replace = function(doc, old, new_val) {
       if (private$.is_tag_missing_from_schema(old)) {
         new_val <- ""
       }
-      tryCatch(
-        officer::body_replace_all_text(doc, old, as.character(new_val %||% ""),
-                                       fixed = TRUE),
+      new_val_str <- as.character(new_val %||% "")
+      doc <- tryCatch(
+        officer::body_replace_all_text(doc, old, new_val_str, fixed = TRUE),
         error = function(e) {
           phr_warning(phr_txt("Tag replacement failed for '{old}': {conditionMessage(e)}"),
                       origin = "IPHRAProtocol$generate_reach_tor")
           doc
         }
       )
+      # Handle tags split across multiple w:t runs (not found by body_replace_all_text)
+      private$._replace_across_runs(doc, old, new_val_str)
+    },
+
+    # Replace all occurrences of a fixed-string tag across w:t run boundaries
+    # within every paragraph of the document body.  This handles the case where
+    # Word has stored a tag (e.g. '@crisis_sudden_onset') split across several
+    # consecutive w:t elements ('‌@crisis_sudden' + '_onset').  Characters that
+    # lie outside the matched tag are redistributed back to their original text
+    # nodes; the replacement text is placed in the first node that overlapped
+    # the tag; remaining nodes of the same tag span are cleared.
+    ._replace_across_runs = function(doc, tag, new_val) {
+      if (!is.character(tag) || length(tag) != 1L || !nzchar(tag)) return(doc)
+      new_val <- as.character(new_val %||% "")
+
+      body_xml <- officer::docx_body_xml(doc)
+      ns       <- xml2::xml_ns(body_xml)
+
+      paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
+      for (para in paras) {
+        text_nodes <- xml2::xml_find_all(para, ".//w:t", ns = ns)
+        if (length(text_nodes) == 0L) next
+
+        texts    <- vapply(text_nodes, xml2::xml_text, character(1L))
+        combined <- paste(texts, collapse = "")
+        nc       <- nchar(combined)
+        if (nc == 0L || !grepl(tag, combined, fixed = TRUE)) next
+
+        # Build character-position → text-node-index mapping
+        node_idx <- rep(seq_along(texts), times = nchar(texts))
+
+        m <- regexpr(tag, combined, fixed = TRUE)
+        if (m < 0L) next
+        tag_len   <- attr(m, "match.length")
+        tag_start <- as.integer(m)
+        tag_end   <- tag_start + tag_len - 1L
+
+        # Initialise per-run output strings
+        new_texts <- character(length(text_nodes))
+
+        # 1. Prefix characters (before tag)
+        if (tag_start > 1L) {
+          pre_chars <- strsplit(substr(combined, 1L, tag_start - 1L), "", fixed = TRUE)[[1L]]
+          pre_runs  <- node_idx[seq_len(tag_start - 1L)]
+          for (j in seq_along(pre_chars)) {
+            new_texts[pre_runs[j]] <- paste0(new_texts[pre_runs[j]], pre_chars[j])
+          }
+        }
+
+        # 2. Replacement text — placed in the first run that covered the tag
+        if (tag_start > length(node_idx)) {
+          phr_warning(
+            phr_txt("._replace_across_runs: tag_start ({tag_start}) exceeds node_idx length ({length(node_idx)}) for tag '{tag}'; skipping paragraph."),
+            origin = "IPHRAProtocol$._replace_across_runs"
+          )
+          next
+        }
+        rep_run <- node_idx[[tag_start]]
+        new_texts[[rep_run]] <- paste0(new_texts[[rep_run]], new_val)
+
+        # 3. Suffix characters (after tag)
+        if (tag_end < nc) {
+          suf_chars <- strsplit(substr(combined, tag_end + 1L, nc), "", fixed = TRUE)[[1L]]
+          suf_runs  <- node_idx[seq(tag_end + 1L, nc)]
+          for (j in seq_along(suf_chars)) {
+            new_texts[[suf_runs[j]]] <- paste0(new_texts[[suf_runs[j]]], suf_chars[j])
+          }
+        }
+
+        # Apply updated text to each node
+        for (i in seq_along(text_nodes)) {
+          xml2::xml_text(text_nodes[[i]]) <- new_texts[[i]]
+        }
+      }
+      doc
     },
 
     .schema_row = function(tag) {
@@ -779,181 +888,154 @@ IPHRAProtocol <- R6::R6Class(
       isTRUE(private$.schema_metadata_value(tag))
     },
 
-    add_input_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      v <- private$.schema_metadata_value(tag)
-      private$.replace(doc, tag, as.character(v %||% ""))
-    },
+    # ── Schema-type dispatch methods ───────────────────────────────────────
 
-    add_checkbox_replace_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      private$.checkbox(doc, tag, private$.schema_flag_from_tag(tag))
-    },
-
-    add_conditional_replace_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      default_value <- as.character(row$default_value[[1L]] %||% "")
-      private$.replace(doc, tag, if (private$.schema_flag_from_tag(tag)) default_value else "")
-    },
-
-    add_row_delete_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      tag_tool_map <- c(
-        "@household_tool_inc" = "tool_household_iphra_v2",
-        "@kii_community_inc"  = "tool_kii_community_iphra_v2",
-        "@kii_health_inc"     = "tool_kii_health_service_provider_iphra_v2",
-        "@kii_market_inc"     = "tool_kii_markets_iphra_v2",
-        "@kii_fsl_inc"        = "tool_kii_fsl_service_provider_iphra_v2",
-        "@kii_wash_inc"       = "tool_kii_wash_service_provider_iphra_v2",
-        "@kii_nut_inc"        = "tool_kii_nutrition_service_provider_iphra_v2",
-        "@obs_community_inc"  = "tool_obs_community_iphra_v2",
-        "@obs_health_inc"     = "tool_obs_health_facility_iphra_v2",
-        "@obs_latrine_inc"    = "tool_obs_latrine_iphra_v2",
-        "@obs_water_inc"      = "tool_obs_water_point_iphra_v2"
+    # Handle all schema 'replace' type rows.
+    # Rows are sorted by tag length (longest first) to prevent shorter tag names
+    # from matching as prefixes inside longer ones.  Static replacement text is
+    # taken from the 'condition' column when present, otherwise 'default_value'.
+    # @version_number uses the metadata version field.
+    # @definition_* tags are only replaced when the relevant indicator codes are
+    # present in the included tools (preserving the conditional behaviour from
+    # the previous add_definition_tags method).
+    handle_replace = function(doc, rows) {
+      # Definition tags require specific indicator codes to be present
+      def_tag_codes <- list(
+        "@definition_cdr"                    = c("10501", "10502"),
+        "@definition_u5dr"                   = c("10501", "10502"),
+        "@definition_gam"                    = c("10701"),
+        "@definition_muac"                   = c("10701"),
+        "@definition_gam_women"              = c("10702"),
+        "@definition_complementary_feeding"  = c("10802")
       )
-      if (!tag %in% names(tag_tool_map)) {
-        phr_warning(
-          paste0("Unrecognized row_delete tag in protocol schema: '", tag, "'."),
-          origin = "IPHRAProtocol$add_row_delete_section"
-        )
-        return(private$.replace(doc, tag, ""))
-      }
+      inc_codes <- as.character(self$get_indicator_codes_from_tools())
 
-      included <- self$is_tool_included(tag_tool_map[[tag]])
-      if (included) {
-        return(private$.replace(doc, tag, ""))
-      }
+      rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
+      for (i in seq_len(nrow(rows))) {
+        tag <- as.character(rows$tag_name[i] %||% "")
+        if (!nzchar(tag)) next
 
-      body_xml <- officer::docx_body_xml(doc)
-      ns <- xml2::xml_ns(body_xml)
-      rows <- xml2::xml_find_all(body_xml, ".//w:tr", ns = ns)
-      for (row_node in rows) {
-        if (grepl(tag, xml2::xml_text(row_node), fixed = TRUE)) {
-          xml2::xml_remove(row_node)
+        # Definition tags: skip when required indicators are absent
+        if (tag %in% names(def_tag_codes)) {
+          if (!any(def_tag_codes[[tag]] %in% inc_codes)) next
         }
+
+        # @version_number uses the metadata version field
+        val <- if (tag == "@version_number") {
+          paste0("v", self$metadata$version %||% 1L)
+        } else {
+          cond <- as.character(rows$condition[i] %||% "")
+          dv   <- as.character(rows$default_value[i] %||% "")
+          if (nzchar(cond)) cond else dv
+        }
+
+        doc <- private$.replace(doc, tag, val)
       }
       doc
     },
 
-    add_calculate_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      switch(
-        tag,
-        "@specific_objectives" = private$add_specific_objectives_section(doc),
-        "@research_questions" = private$add_research_questions_section(doc),
-        "@list_secondary_data" = private$add_list_secondary_data_section(doc),
-        doc
-      )
-    },
-
-    add_table_section = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      switch(
-        tag,
-        "@primary_data_sources_table" = private$add_primary_data_sources_table(doc),
-        "@secondary_data_sources_table" = private$add_sdr_section(doc),
-        "@sample_size_hh_gen_table" = private$add_sample_size_gen_table(doc),
-        "@sample_size_hh_ind_table" = private$add_sample_size_ind_table(doc),
-        "@sample_size_hh_mort_table" = private$add_sample_size_mort_table(doc),
-        doc
-      )
-    },
-
-    add_image_section = function(doc, row) {
-      # The framework image is inserted together with the SDR table in
-      # add_sdr_section(), routed from the @secondary_data_sources_table tag.
+    # Handle all schema 'checkbox_replace' type rows.
+    # Rows are sorted by tag length (longest first) so that longer tag names
+    # (e.g. @pop_refugeehost) are processed before shorter prefix matches
+    # (e.g. @pop_refugee), preventing partial replacements.
+    handle_checkbox_replace = function(doc, rows) {
+      rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
+      for (i in seq_len(nrow(rows))) {
+        tag <- as.character(rows$tag_name[i] %||% "")
+        if (nzchar(tag))
+          doc <- private$.checkbox(doc, tag, private$.schema_flag_from_tag(tag))
+      }
       doc
     },
 
-    # Replace all @sampling_* and @sample_*_target tags based on sample_table.
-    process_sampling_tags = function(doc) {
-      methods_used <- self$get_sampling_methods()
-
-      # Site-level method groups
-      is_srs        <- any(methods_used %in% c("simple_random", "simple_random_rlc"))
-      is_systematic <- any(methods_used %in% c("systematic", "systematic_rlc"))
-      is_cluster    <- any(methods_used %in% c("pps_cluster", "pps_rlc"))
-      is_exhaustive <- any(methods_used %in% c("proportional", "proportional_rlc"))
-      is_purposive  <- any(methods_used %in% c("purposive"))
-      # Household-level method groups
-      is_hh_srs  <- any(methods_used %in% c("simple_random", "systematic"))
-      is_hh_rlc  <- any(methods_used %in%
-                          c("pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc"))
-
-      doc <- private$.checkbox(doc, "@sampling_srs",        is_srs)
-      doc <- private$.checkbox(doc, "@sampling_systematic",  is_systematic)
-      doc <- private$.checkbox(doc, "@sampling_cluster",     is_cluster)
-      doc <- private$.checkbox(doc, "@sampling_exhaustive",  is_exhaustive)
-      doc <- private$.checkbox(doc, "@sampling_purposive",   is_purposive)
-      doc <- private$.checkbox(doc, "@sampling_hh_srs",     is_hh_srs)
-      doc <- private$.checkbox(doc, "@sampling_hh_rlc",     is_hh_rlc)
-      # @sampling_stratified — TRUE if more than one stratum
-      is_stratified <- length(self$get_strata_names()) > 1
-      doc <- private$.checkbox(doc, "@sampling_stratified",  is_stratified)
-      # @sampling_modified_epi — not directly derivable; leave as □
-      doc <- private$.replace(doc, "@sampling_modified_epi", "\u25a1")
-
-      # Sample size targets (sum across strata)
+    # Handle all schema 'calculate' type rows plus derived sampling targets.
+    # Schema rows are dispatched by tag name; derived targets (@sample_site_target,
+    # @sample_hh_target, @num_kii_community_target, @num_obs_community_target)
+    # are always computed from the sample table and tool inclusion flags.
+    handle_calculate = function(doc, calculate_rows) {
       st <- self$sample_table
+      m  <- self$metadata
+
+      # ── Schema-driven calculate tags ────────────────────────────────────
+      for (i in seq_len(nrow(calculate_rows))) {
+        tag <- as.character(calculate_rows$tag_name[i] %||% "")
+        doc <- switch(
+          tag,
+          "@release_date" = private$.replace(doc, tag,
+                                             format(Sys.Date(), "%d/%m/%Y")),
+
+          "@num_geographic_units" = private$.replace(doc, tag, {
+            v <- m$num_geographic_units
+            if (!is.null(v) && !is.na(v)) as.character(v) else ""
+          }),
+
+          "@num_strata_units" = private$.replace(doc, tag,
+                                                 as.character(m$num_strata_units %||% 0L)),
+
+          "@num_other_units" = private$.replace(doc, tag, ""),
+
+          "@specific_objectives"  = private$add_specific_objectives_section(doc),
+          "@research_questions"   = private$add_research_questions_section(doc),
+          "@list_secondary_data"  = private$add_list_secondary_data_section(doc),
+
+          "@precision_gen_indicator" = private$.replace(doc, tag, {
+            if (!is.null(st) && all(c("pop_precision", "pop_indicator") %in% names(st))) {
+              prec <- suppressWarnings(as.numeric(st$pop_precision))
+              idx  <- which(!is.na(prec))
+              if (length(idx) > 0L) {
+                best   <- which.max(prec[idx]); row_j <- idx[best]
+                gen_nm <- as.character(st$pop_indicator[row_j])
+                if (!is.na(gen_nm) && nzchar(gen_nm))
+                  sprintf("+/- %s%% margin of error for %s", prec[row_j], gen_nm)
+                else ""
+              } else ""
+            } else ""
+          }),
+
+          "@precision_ind_indicator" = private$.replace(doc, tag, {
+            if (!is.null(st) && all(c("ind_precision", "ind_indicator") %in% names(st))) {
+              prec <- suppressWarnings(as.numeric(st$ind_precision))
+              idx  <- which(!is.na(prec))
+              if (length(idx) > 0L) {
+                best   <- which.max(prec[idx]); row_j <- idx[best]
+                ind_nm <- as.character(st$ind_indicator[row_j])
+                if (!is.na(ind_nm) && nzchar(ind_nm))
+                  sprintf("+/- %s%% margin of error for %s", prec[row_j], ind_nm)
+                else ""
+              } else ""
+            } else ""
+          }),
+
+          "@precision_mort_indicator" = private$.replace(doc, tag, {
+            if (!is.null(st) && all(c("mort_precision", "mort_indicator") %in% names(st))) {
+              prec <- suppressWarnings(as.numeric(st$mort_precision))
+              idx  <- which(!is.na(prec))
+              if (length(idx) > 0L) {
+                best    <- which.max(prec[idx]); row_j <- idx[best]
+                mort_nm <- as.character(st$mort_indicator[row_j])
+                if (!is.na(mort_nm) && nzchar(mort_nm))
+                  sprintf("+/- %s%% margin of error for %s", prec[row_j], mort_nm)
+                else ""
+              } else ""
+            } else ""
+          }),
+
+          doc  # default: leave any unrecognised calculate tag for cleanup
+        )
+      }
+
+      # ── Derived sampling targets (always computed) ───────────────────────
       site_target <- if (!is.null(st) && "n_sites" %in% names(st)) {
-        s <- sum(as.numeric(st$n_sites), na.rm = TRUE)
+        s <- sum(suppressWarnings(as.numeric(st$n_sites)), na.rm = TRUE)
         if (s > 0) as.character(round(s)) else "_"
       } else "_"
       hh_target <- if (!is.null(st) && "Final_HH_Sample_Size" %in% names(st)) {
-        s <- sum(as.numeric(st$Final_HH_Sample_Size), na.rm = TRUE)
+        s <- sum(suppressWarnings(as.numeric(st$Final_HH_Sample_Size)), na.rm = TRUE)
         if (s > 0) as.character(round(s)) else "_"
       } else "_"
-
       doc <- private$.replace(doc, "@sample_site_target", site_target)
       doc <- private$.replace(doc, "@sample_hh_target",   hh_target)
 
-      # ── Precision indicator tags ───────────────────────────────────────
-      # @precision_ind_indicator: highest ind_precision value + ind_indicator name
-      ind_txt <- if (!is.null(st) && all(c("ind_precision", "ind_indicator") %in% names(st))) {
-        prec <- suppressWarnings(as.numeric(st$ind_precision))
-        idx  <- which(!is.na(prec))
-        if (length(idx) > 0L) {
-          best <- which.max(prec[idx])
-          row  <- idx[best]
-          ind_nm <- as.character(st$ind_indicator[row])
-          if (!is.na(ind_nm) && nzchar(ind_nm)) {
-            sprintf("+/- %s%% margin of error for %s", prec[row], ind_nm)
-          } else ""
-        } else ""
-      } else ""
-      doc <- private$.replace(doc, "@precision_ind_indicator", ind_txt)
-
-      # @precision_mort_indicator: highest mort_precision value + mort_indicator name
-      mort_txt <- if (!is.null(st) && all(c("mort_precision", "mort_indicator") %in% names(st))) {
-        prec <- suppressWarnings(as.numeric(st$mort_precision))
-        idx  <- which(!is.na(prec))
-        if (length(idx) > 0L) {
-          best <- which.max(prec[idx])
-          row  <- idx[best]
-          mort_nm <- as.character(st$mort_indicator[row])
-          if (!is.na(mort_nm) && nzchar(mort_nm)) {
-            sprintf("+/- %s%% margin of error for %s", prec[row], mort_nm)
-          } else ""
-        } else ""
-      } else ""
-      doc <- private$.replace(doc, "@precision_mort_indicator", mort_txt)
-
-      # @precision_gen_indicator: highest pop_precision value + pop_indicator name
-      gen_txt <- if (!is.null(st) && all(c("pop_precision", "pop_indicator") %in% names(st))) {
-        prec <- suppressWarnings(as.numeric(st$pop_precision))
-        idx  <- which(!is.na(prec))
-        if (length(idx) > 0L) {
-          best <- which.max(prec[idx])
-          row  <- idx[best]
-          gen_nm <- as.character(st$pop_indicator[row])
-          if (!is.na(gen_nm) && nzchar(gen_nm)) {
-            sprintf("+/- %s%% margin of error for %s", prec[row], gen_nm)
-          } else ""
-        } else ""
-      } else ""
-      doc <- private$.replace(doc, "@precision_gen_indicator", gen_txt)
-
-      # ── Community KII and observation targets (derived from n_sites) ───
       total_sites <- if (!is.null(st) && "n_sites" %in% names(st)) {
         s <- sum(suppressWarnings(as.numeric(st$n_sites)), na.rm = TRUE)
         if (s > 0) round(s) else 0L
@@ -974,163 +1056,113 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Fill in all @-tagged metadata placeholders in the IPHRA template.
-    add_metadata_section = function(doc) {
-      m <- self$metadata
-
-      # ── Simple text fields ─────────────────────────────────────────────
-      doc <- private$.replace(doc, "@country",       m$country_name      %||% "")
-      doc <- private$.replace(doc, "@release_date",  format(Sys.Date(), "%d/%m/%Y"))
-      doc <- private$.replace(doc, "@version_number",
-                               paste0("v", m$version %||% 1L))
-      doc <- private$.replace(doc, "@mandating_body",  m$mandating_body  %||% "")
-      doc <- private$.replace(doc, "@project_code",    m$project_code    %||% "")
-      doc <- private$.replace(doc, "@overall_timeframe",
-                               m$overall_timeframe %||% "")
-      doc <- private$.replace(doc, "@geographic_coverage",
-                               m$geographic_coverage %||% m$geographic_description %||% "")
-      doc <- private$.replace(doc, "@recall_period", m$recall_period %||% "")
-      doc <- private$.replace(doc, "@general_objective",
-                               m$general_objective %||% "")
-
-      # ── Date fields ────────────────────────────────────────────────────
-      doc <- private$.replace(doc, "@pilot_date",               m$pilot_date               %||% "")
-      doc <- private$.replace(doc, "@data_start_date",          m$data_start_date          %||% "")
-      doc <- private$.replace(doc, "@data_end_date",            m$data_end_date            %||% "")
-      doc <- private$.replace(doc, "@analysis_date",            m$analysis_date            %||% "")
-      doc <- private$.replace(doc, "@data_validation_date",     m$data_validation_date     %||% "")
-      doc <- private$.replace(doc, "@prelim_presentation_date", m$prelim_presentation_date %||% "")
-      doc <- private$.replace(doc, "@output_validation_date",   m$output_validation_date   %||% "")
-      doc <- private$.replace(doc, "@output_published_date",    m$output_published_date    %||% "")
-      doc <- private$.replace(doc, "@final_presentation_date",  m$final_presentation_date  %||% "")
-
-      # ── Type of Emergency ──────────────────────────────────────────────
-      em <- m$type_of_emergency %||% ""
-      doc <- private$.checkbox(doc, "@em_natural_d",   em == "natural_disaster")
-      doc <- private$.checkbox(doc, "@em_conflict",    em == "conflict")
-      doc <- private$.checkbox(doc, "@em_other",       em == "other")
-
-      # ── Type of Crisis ─────────────────────────────────────────────────
-      cr <- m$type_of_crisis %||% ""
-      doc <- private$.checkbox(doc, "@crisis_sudden",     cr == "sudden_onset")
-      doc <- private$.checkbox(doc, "@crisis_slow",       cr == "slow_onset")
-      doc <- private$.checkbox(doc, "@crisis_protracted", cr == "protracted")
-
-      # ── Humanitarian milestones ────────────────────────────────────────
-      ms <- m$humanitarian_milestones %||% character(0)
-      doc <- private$.checkbox(doc, "@milestone_donor",         "donor"         %in% ms)
-      doc <- private$.checkbox(doc, "@milestone_inter_cluster", "inter_cluster" %in% ms)
-      doc <- private$.checkbox(doc, "@milestone_cluster",       "cluster"       %in% ms)
-      doc <- private$.checkbox(doc, "@milestone_ngo_platform",  "ngo_platform"  %in% ms)
-      doc <- private$.checkbox(doc, "@milestone_other",         "other"         %in% ms)
-
-      # ── Audience type (four distinct boolean fields) ───────────────────
-      doc <- private$.checkbox(doc, "@audience_type.strategic",
-                               isTRUE(m[["audience_type.strategic"]]))
-      doc <- private$.checkbox(doc, "@audience_type.programmatic",
-                               isTRUE(m[["audience_type.programmatic"]]))
-      doc <- private$.checkbox(doc, "@audience_type.operational",
-                               isTRUE(m[["audience_type.operational"]]))
-      doc <- private$.checkbox(doc, "@audience_type.other",
-                               isTRUE(m[["audience_type.other"]]))
-
-      # ── Dissemination ──────────────────────────────────────────────────
-      diss <- m$dissemination %||% character(0)
-      doc <- private$.checkbox(doc, "@dissem_general_mailing",  "general_mailing"  %in% diss)
-      doc <- private$.checkbox(doc, "@dissem_cluster_mailing",  "cluster_mailing"  %in% diss)
-      doc <- private$.checkbox(doc, "@dissem_presentation",     "presentation"     %in% diss)
-      doc <- private$.checkbox(doc, "@dissem_website",          "website"          %in% diss)
-      doc <- private$.checkbox(doc, "@dissem_other",            "other"            %in% diss)
-
-      # ── Stakeholder mapping ────────────────────────────────────────────
-      doc <- private$.checkbox(doc, "@stakeholder_mapping_yes", isTRUE(m$stakeholder_mapping))
-      doc <- private$.checkbox(doc, "@stakeholder_mapping_no",  !isTRUE(m$stakeholder_mapping))
-
-      # ── Population boolean fields (underscore naming) ─────────────────
-      # Process the longer refugee sub-group tags BEFORE @pop_refugee to
-      # prevent body_replace_all_text from matching the prefix of the
-      # longer tags first and leaving orphaned text fragments (e.g. "host").
-      doc <- private$.checkbox(doc, "@pop_idpcamp",         isTRUE(m[["pop_idpcamp"]]))
-      doc <- private$.checkbox(doc, "@pop_idphost",         isTRUE(m[["pop_idphost"]]))
-      doc <- private$.checkbox(doc, "@pop_idpinformal",     isTRUE(m[["pop_idpinformal"]]))
-      doc <- private$.checkbox(doc, "@pop_idpother",        isTRUE(m[["pop_idpother"]]))
-      doc <- private$.checkbox(doc, "@pop_refugeeinformal", isTRUE(m[["pop_refugeeinformal"]]))
-      doc <- private$.checkbox(doc, "@pop_refugeehost",     isTRUE(m[["pop_refugeehost"]]))
-      doc <- private$.checkbox(doc, "@pop_refugeeother",    isTRUE(m[["pop_refugeeother"]]))
-      doc <- private$.checkbox(doc, "@pop_refugee",         isTRUE(m[["pop_refugee"]]))
-      doc <- private$.checkbox(doc, "@pop_host",            isTRUE(m[["pop_host"]]))
-      doc <- private$.checkbox(doc, "@pop_other",           isTRUE(m[["pop_other"]]))
-
-      # ── Geographic and strata units ────────────────────────────────────
-      num_geo_str <- {
-        v <- m$num_geographic_units
-        if (!is.null(v) && !is.na(v)) as.character(v) else ""
+    # Handle all schema 'row_delete' type rows.
+    # For each tag, look up the corresponding tool name.  If the tool is
+    # included, replace the tag with ""; if not, delete the entire table row
+    # (w:tr) that contains the tag.
+    handle_row_delete = function(doc, rows) {
+      tag_tool_map <- c(
+        "@household_tool_inc" = "tool_household_iphra_v2",
+        "@kii_community_inc"  = "tool_kii_community_iphra_v2",
+        "@kii_health_inc"     = "tool_kii_health_service_provider_iphra_v2",
+        "@kii_market_inc"     = "tool_kii_markets_iphra_v2",
+        "@kii_fsl_inc"        = "tool_kii_fsl_service_provider_iphra_v2",
+        "@kii_wash_inc"       = "tool_kii_wash_service_provider_iphra_v2",
+        "@kii_nut_inc"        = "tool_kii_nutrition_service_provider_iphra_v2",
+        "@obs_community_inc"  = "tool_obs_community_iphra_v2",
+        "@obs_health_inc"     = "tool_obs_health_facility_iphra_v2",
+        "@obs_latrine_inc"    = "tool_obs_latrine_iphra_v2",
+        "@obs_water_inc"      = "tool_obs_water_point_iphra_v2"
+      )
+      for (i in seq_len(nrow(rows))) {
+        tag <- as.character(rows$tag_name[i] %||% "")
+        if (!nzchar(tag)) next
+        if (!tag %in% names(tag_tool_map)) {
+          phr_warning(
+            paste0("Unrecognized row_delete tag in protocol schema: '", tag, "'."),
+            origin = "IPHRAProtocol$handle_row_delete"
+          )
+          doc <- private$.replace(doc, tag, "")
+          next
+        }
+        included <- self$is_tool_included(tag_tool_map[[tag]])
+        if (included) {
+          doc <- private$.replace(doc, tag, "")
+        } else {
+          body_xml <- officer::docx_body_xml(doc)
+          ns       <- xml2::xml_ns(body_xml)
+          tr_nodes <- xml2::xml_find_all(body_xml, ".//w:tr", ns = ns)
+          for (tr in tr_nodes) {
+            if (grepl(tag, xml2::xml_text(tr), fixed = TRUE))
+              xml2::xml_remove(tr)
+          }
+        }
       }
-      doc <- private$.replace(doc, "@num_geographic_units", num_geo_str)
-      doc <- private$.checkbox(doc, "@popsize_known_geographic_unit_yes",
-                               isTRUE(m$popsize_known_geographic_unit))
-      doc <- private$.checkbox(doc, "@popsize_known_geographic_unit_no",
-                               !isTRUE(m$popsize_known_geographic_unit))
-      doc <- private$.replace(doc, "@num_strata_units",
-                               as.character(m$num_strata_units %||% 0L))
-      doc <- private$.checkbox(doc, "@popsize_known_strata_unit_yes",
-                               isTRUE(m$popsize_known_strata_unit))
-      doc <- private$.checkbox(doc, "@popsize_known_strata_no",
-                               !isTRUE(m$popsize_known_strata_unit))
+      doc
+    },
 
-      # Helper to convert a potentially-NA numeric metadata value to a string
-      .num_to_str <- function(x) {
-        if (!is.null(x) && !is.na(x)) as.character(x) else ""
+    # Handle all schema 'input' type rows.
+    # For each tag, look up the corresponding metadata value and replace.
+    handle_input = function(doc, rows) {
+      for (i in seq_len(nrow(rows))) {
+        tag <- as.character(rows$tag_name[i] %||% "")
+        if (!nzchar(tag)) next
+        v   <- private$.schema_metadata_value(tag)
+        doc <- private$.replace(doc, tag, as.character(v %||% ""))
       }
+      doc
+    },
 
-      # ── User-defined KII / observation targets ─────────────────────────
-      doc <- private$.replace(doc, "@num_kii_health_target",
-                               .num_to_str(m$num_kii_health_target))
-      doc <- private$.replace(doc, "@num_kii_market_target",
-                               .num_to_str(m$num_kii_market_target))
-      doc <- private$.replace(doc, "@num_kii_fsl_target",
-                               .num_to_str(m$num_kii_fsl_target))
-      doc <- private$.replace(doc, "@num_kii_wash_target",
-                               .num_to_str(m$num_kii_wash_target))
-      doc <- private$.replace(doc, "@num_kii_nutrition_target",
-                               .num_to_str(m$num_kii_nutrition_target))
-      doc <- private$.replace(doc, "@num_obs_health_target",
-                               .num_to_str(m$num_obs_health_target))
-      doc <- private$.replace(doc, "@num_obs_latrine_target",
-                               .num_to_str(m$num_obs_latrine_target))
-      doc <- private$.replace(doc, "@num_obs_waterpoint_target",
-                               .num_to_str(m$num_obs_waterpoint_target))
+    # Handle all schema 'conditional_replace' type rows.
+    # The 'condition' column names the tag whose flag is evaluated.  When the
+    # flag is TRUE the tag is replaced with the 'default_value'; when FALSE
+    # the tag is replaced with "" (leaving removal to remove_remaining_tags).
+    handle_conditional_replace = function(doc, rows) {
+      for (i in seq_len(nrow(rows))) {
+        tag       <- as.character(rows$tag_name[i]     %||% "")
+        condition <- as.character(rows$condition[i]    %||% "")
+        def_val   <- as.character(rows$default_value[i] %||% "")
+        if (!nzchar(tag)) next
 
-      # ── Gender / Sex disaggregation ────────────────────────────────────
-      doc <- private$.checkbox(doc, "@gender_disagg_yes", isTRUE(m$gender_disaggregation))
-      doc <- private$.checkbox(doc, "@gender_disagg_no",  !isTRUE(m$gender_disaggregation))
-      doc <- private$.checkbox(doc, "@sex_disagg_yes",    isTRUE(m$sex_disaggregation))
-      doc <- private$.checkbox(doc, "@sex_disagg_no",     !isTRUE(m$sex_disaggregation))
+        flag <- if (nzchar(condition) && startsWith(condition, "@")) {
+          private$.schema_flag_from_tag(condition)
+        } else {
+          private$.schema_flag_from_tag(tag)
+        }
+        doc <- private$.replace(doc, tag, if (isTRUE(flag)) def_val else "")
+      }
+      doc
+    },
 
-      # ── Data management platform ───────────────────────────────────────
-      plat <- m$data_management_platform %||% character(0)
-      doc <- private$.checkbox(doc, "@platform_impact", "IMPACT" %in% plat)
-      doc <- private$.checkbox(doc, "@platform_unhcr",  "UNHCR"  %in% plat)
-      doc <- private$.checkbox(doc, "@platform_other",  "other"  %in% plat)
+    # Handle all schema 'table' type rows.
+    # Before delegating to the table-builder, each tag is normalised via
+    # ._replace_across_runs so that cursor_reach can locate it even when
+    # Word has stored the tag split across several w:t runs
+    # (e.g. '@sample_size_hh_mort_table' → '@sample_size_hh_mort_' + 't' + 'able').
+    handle_table = function(doc, rows) {
+      for (i in seq_len(nrow(rows))) {
+        tag <- as.character(rows$tag_name[i] %||% "")
+        if (!nzchar(tag)) next
+        # Normalise any split runs so cursor_reach can find the full tag text
+        doc <- private$._replace_across_runs(doc, tag, tag)
+        doc <- switch(
+          tag,
+          "@primary_data_sources_table"   = private$add_primary_data_sources_table(doc),
+          "@secondary_data_sources_table" = private$add_sdr_section(doc),
+          "@sample_size_hh_gen_table"     = private$add_sample_size_gen_table(doc),
+          "@sample_size_hh_ind_table"     = private$add_sample_size_ind_table(doc),
+          "@sample_size_hh_mort_table"    = private$add_sample_size_mort_table(doc),
+          doc
+        )
+      }
+      doc
+    },
 
-      # ── Expected output type ───────────────────────────────────────────
-      ot <- m$expected_output_type %||% character(0)
-      doc <- private$.checkbox(doc, "@output_situation_overview",   "situation_overview"   %in% ot)
-      doc <- private$.checkbox(doc, "@output_report",               "report"               %in% ot)
-      doc <- private$.checkbox(doc, "@output_profile",              "profile"              %in% ot)
-      doc <- private$.checkbox(doc, "@output_prelim_presentation",  "prelim_presentation"  %in% ot)
-      doc <- private$.checkbox(doc, "@output_final_presentation",   "final_presentation"   %in% ot)
-      doc <- private$.checkbox(doc, "@output_factsheet",            "factsheet"            %in% ot)
-      doc <- private$.checkbox(doc, "@output_dashboard",            "dashboard"            %in% ot)
-      doc <- private$.checkbox(doc, "@output_webmap",               "webmap"               %in% ot)
-      doc <- private$.checkbox(doc, "@output_map",                  "map"                  %in% ot)
-      doc <- private$.checkbox(doc, "@output_other",                "other"                %in% ot)
-
-      # ── Access ─────────────────────────────────────────────────────────
-      ac <- m$access %||% ""
-      doc <- private$.checkbox(doc, "@access_public",     ac == "public")
-      doc <- private$.checkbox(doc, "@access_restricted", ac == "restricted")
-
+    # Handle all schema 'image' type rows.
+    # The IPHRA framework image (@modified_framework_svg) is inserted
+    # together with the SDR table inside add_sdr_section(), which is routed
+    # from the @secondary_data_sources_table tag in handle_table().
+    handle_image = function(doc, rows) {
       doc
     },
 
@@ -1615,45 +1647,6 @@ IPHRAProtocol <- R6::R6Class(
                                   paste(vapply(items, `[[`, character(1L), "text"),
                                         collapse = "\n"))
         }
-      }
-      doc
-    },
-
-    # Replace @definition_* tags with the corresponding text from the
-    # protocol_schema_iphra.xlsx, conditional on which indicator codes are
-    # present in the included tools.
-    #
-    #  10501 or 10502 → @definition_cdr  and @definition_u5dr
-    #  10701          → @definition_gam  and @definition_muac
-    #  10702          → @definition_gam_women
-    #  10802          → @definition_complementary_feeding
-    #
-    # Tags whose condition is not met are left for remove_remaining_tags to clean up.
-    add_definition_tags = function(doc) {
-      inc_codes <- as.character(self$get_indicator_codes_from_tools())
-      schema    <- self$protocol_schema
-
-      get_def <- function(tag) {
-        if (is.null(schema)) return("")
-        idx <- which(schema$tag_name == tag)
-        if (length(idx) == 0L || is.na(schema$default_value[idx[1L]])) return("")
-        as.character(schema$default_value[idx[1L]])
-      }
-
-      if (any(c("10501", "10502") %in% inc_codes)) {
-        doc <- private$.replace(doc, "@definition_cdr",  get_def("@definition_cdr"))
-        doc <- private$.replace(doc, "@definition_u5dr", get_def("@definition_u5dr"))
-      }
-      if ("10701" %in% inc_codes) {
-        doc <- private$.replace(doc, "@definition_gam",  get_def("@definition_gam"))
-        doc <- private$.replace(doc, "@definition_muac", get_def("@definition_muac"))
-      }
-      if ("10702" %in% inc_codes) {
-        doc <- private$.replace(doc, "@definition_gam_women", get_def("@definition_gam_women"))
-      }
-      if ("10802" %in% inc_codes) {
-        doc <- private$.replace(doc, "@definition_complementary_feeding",
-                                get_def("@definition_complementary_feeding"))
       }
       doc
     },
