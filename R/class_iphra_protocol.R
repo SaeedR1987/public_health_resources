@@ -708,7 +708,7 @@ IPHRAProtocol <- R6::R6Class(
 
     .schema_metadata_key = function(tag) {
       key <- sub("^@", "", as.character(tag))
-      aliases <- c(
+      aliases <- list(
         country = "country_name",
         audience_strategic = "audience_type.strategic",
         audience_operational = "audience_type.operational",
