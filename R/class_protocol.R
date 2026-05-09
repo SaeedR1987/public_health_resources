@@ -37,6 +37,11 @@ Protocol <- R6::R6Class(
     #'   Framework object.
     objective_schema = NULL,
 
+    #' @field protocol_schema Data frame describing TOR placeholder handling
+    #'   rules.  Expected columns are \code{tag_name}, \code{handling},
+    #'   \code{condition}, and \code{default_value}.
+    protocol_schema = NULL,
+
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
 
@@ -121,6 +126,7 @@ Protocol <- R6::R6Class(
         self$tools <- list()
         self$issues <- list()
         self$issues_coherence <- list()
+        self$protocol_schema <- private$.load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
           ANAFramework$new()
@@ -941,6 +947,101 @@ Protocol <- R6::R6Class(
       )
     },
 
+    # Apply protocol schema handling in a predictable order.
+    apply_protocol_schema_sections = function(doc) {
+      schema <- self$protocol_schema
+      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
+        return(doc)
+      }
+      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      if (!all(required_cols %in% names(schema))) {
+        return(doc)
+      }
+
+      handling_order <- c(
+        "row_delete",
+        "replace",
+        "input",
+        "checkbox_replace",
+        "conditional_replace",
+        "calculate",
+        "table",
+        "image"
+      )
+
+      for (handling in handling_order) {
+        schema_handling <- if ("handling" %in% names(schema) && !is.null(schema$handling)) {
+          as.character(schema$handling)
+        } else {
+          rep("", nrow(schema))
+        }
+        idx <- which(schema_handling == handling)
+        if (length(idx) == 0L) next
+        for (i in idx) {
+          row <- schema[i, required_cols, drop = FALSE]
+          doc <- switch(
+            handling,
+            replace = private$add_replace_section(doc, row),
+            input = private$add_input_section(doc, row),
+            calculate = private$add_calculate_section(doc, row),
+            checkbox_replace = private$add_checkbox_replace_section(doc, row),
+            row_delete = private$add_row_delete_section(doc, row),
+            table = private$add_table_section(doc, row),
+            image = private$add_image_section(doc, row),
+            conditional_replace = private$add_conditional_replace_section(doc, row),
+            doc
+          )
+        }
+      }
+
+      doc
+    },
+
+    add_replace_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      default_value <- as.character(row$default_value[[1L]] %||% "")
+      private$.replace_schema_tag(doc, tag, default_value)
+    },
+
+    add_input_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      key <- sub("^@", "", tag)
+      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else ""
+      private$.replace_schema_tag(doc, tag, as.character(value %||% ""))
+    },
+
+    add_calculate_section = function(doc, row) {
+      doc
+    },
+
+    add_checkbox_replace_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      key <- sub("^@", "", tag)
+      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
+      private$.replace_schema_tag(doc, tag, if (isTRUE(value)) "X" else "\u25a1")
+    },
+
+    add_row_delete_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      private$.replace_schema_tag(doc, tag, "")
+    },
+
+    add_table_section = function(doc, row) {
+      doc
+    },
+
+    add_image_section = function(doc, row) {
+      doc
+    },
+
+    add_conditional_replace_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      default_value <- as.character(row$default_value[[1L]] %||% "")
+      key <- sub("^@", "", tag)
+      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
+      private$.replace_schema_tag(doc, tag, if (isTRUE(value)) default_value else "")
+    },
+
     # Extract unique non-NA indicator names from an XLSForm survey data frame.
     # Returns an empty character vector when the survey is absent or has no
     # 'name' column.
@@ -951,6 +1052,52 @@ Protocol <- R6::R6Class(
       } else {
         character(0)
       }
+    },
+
+    # Load protocol schema metadata with a blank fallback.
+    .load_protocol_schema = function() {
+      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      empty_schema <- as.data.frame(
+        setNames(replicate(length(required_cols), character(0), simplify = FALSE),
+                 required_cols),
+        stringsAsFactors = FALSE
+      )
+
+      schema_path <- tryCatch(
+        system.file("resources", "protocol_schema_blank.csv", package = "phr"),
+        error = function(e) ""
+      )
+      if (!nzchar(schema_path) || !file.exists(schema_path)) {
+        schema_path <- file.path("inst", "resources", "protocol_schema_blank.csv")
+      }
+      if (!file.exists(schema_path)) {
+        return(empty_schema)
+      }
+
+      schema <- tryCatch(
+        utils::read.csv(schema_path, stringsAsFactors = FALSE, na.strings = character(0)),
+        error = function(e) NULL
+      )
+      if (!is.data.frame(schema)) return(empty_schema)
+      for (nm in required_cols) {
+        if (!nm %in% names(schema)) schema[[nm]] <- character(nrow(schema))
+      }
+      schema[required_cols]
+    },
+
+    .replace_schema_tag = function(doc, tag, value) {
+      if (!is.character(tag) || length(tag) != 1L || !nzchar(tag)) {
+        return(doc)
+      }
+      tryCatch(
+        officer::body_replace_all_text(
+          doc,
+          old_value = tag,
+          new_value = as.character(value %||% ""),
+          fixed = TRUE
+        ),
+        error = function(e) doc
+      )
     }
   )
 )

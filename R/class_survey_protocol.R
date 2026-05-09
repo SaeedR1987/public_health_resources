@@ -1161,6 +1161,20 @@ SurveyProtocol <- R6::R6Class(
       doc
     },
 
+    # Generic hooks for TOR sample-size table tags.
+    # Subclasses can override with protocol-specific table builders.
+    add_sample_size_gen_table = function(doc) {
+      private$.replace_schema_tag(doc, "@sample_size_hh_gen_table", "")
+    },
+
+    add_sample_size_ind_table = function(doc) {
+      private$.replace_schema_tag(doc, "@sample_size_hh_ind_table", "")
+    },
+
+    add_sample_size_mort_table = function(doc) {
+      private$.replace_schema_tag(doc, "@sample_size_hh_mort_table", "")
+    },
+
     # Check for issues and discrepancies in the survey protocol,
     # including strata consistency between frame and sample table.
     check_issues = function() {

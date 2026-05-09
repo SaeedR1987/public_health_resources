@@ -226,15 +226,15 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$geographic_coverage      <- (geographic_coverage %||% geographic_description) %||% ""
       self$metadata$geographic_description   <- (geographic_coverage %||% geographic_description) %||% ""
       self$metadata$general_objective        <- general_objective
-      self$metadata$pilot_date               <- private$.fmt_date(pilot_date)
-      self$metadata$data_start_date          <- private$.fmt_date(data_start_date)
-      self$metadata$data_end_date            <- private$.fmt_date(data_end_date)
-      self$metadata$analysis_date            <- private$.fmt_date(analysis_date)
-      self$metadata$data_validation_date     <- private$.fmt_date(data_validation_date)
-      self$metadata$prelim_presentation_date <- private$.fmt_date(prelim_presentation_date)
-      self$metadata$output_validation_date   <- private$.fmt_date(output_validation_date)
-      self$metadata$output_published_date    <- private$.fmt_date(output_published_date)
-      self$metadata$final_presentation_date  <- private$.fmt_date(final_presentation_date)
+      self$metadata$pilot_date               <- phr_fmt_date_tor(pilot_date)
+      self$metadata$data_start_date          <- phr_fmt_date_tor(data_start_date)
+      self$metadata$data_end_date            <- phr_fmt_date_tor(data_end_date)
+      self$metadata$analysis_date            <- phr_fmt_date_tor(analysis_date)
+      self$metadata$data_validation_date     <- phr_fmt_date_tor(data_validation_date)
+      self$metadata$prelim_presentation_date <- phr_fmt_date_tor(prelim_presentation_date)
+      self$metadata$output_validation_date   <- phr_fmt_date_tor(output_validation_date)
+      self$metadata$output_published_date    <- phr_fmt_date_tor(output_published_date)
+      self$metadata$final_presentation_date  <- phr_fmt_date_tor(final_presentation_date)
       self$metadata$humanitarian_milestones  <- humanitarian_milestones  %||% character(0)
       # Audience type as four distinct boolean fields
       self$metadata[["audience_type.strategic"]]    <- isTRUE(`audience_type.strategic`)
@@ -495,18 +495,10 @@ IPHRAProtocol <- R6::R6Class(
                                   open           = FALSE) {
       phr_try({
         doc <- private$create_base_doc(reference_docx)
-        doc <- private$process_tool_row_tags(doc)
         doc <- private$add_metadata_section(doc)
         doc <- private$process_sampling_tags(doc)
-        doc <- private$add_specific_objectives_section(doc)
-        doc <- private$add_research_questions_section(doc)
-        doc <- private$add_primary_data_sources_table(doc)
-        doc <- private$add_sdr_section(doc)
-        doc <- private$add_list_secondary_data_section(doc)
         doc <- private$add_definition_tags(doc)
-        doc <- private$add_sample_size_gen_table(doc)
-        doc <- private$add_sample_size_ind_table(doc)
-        doc <- private$add_sample_size_mort_table(doc)
+        doc <- private$apply_protocol_schema_sections(doc)
         doc <- private$remove_remaining_tags(doc)
         print(doc, target = output_file)
         phr_message(
@@ -520,10 +512,6 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   private = list(
-
-    # Protocol schema data frame loaded from protocol_schema_iphra.xlsx.
-    # Two columns: tag_name (character), default_value (character).
-    .protocol_schema = NULL,
 
     # Row labels in the sample-size tables that represent total/summary values.
     # These rows receive a light-grey background to visually distinguish them.
@@ -588,15 +576,11 @@ IPHRAProtocol <- R6::R6Class(
 
     # ── Template helpers ────────────────────────────────────────────────────
 
-    # Format a date value to "DD/MM/YYYY" for TOR display.
-    # Returns an empty string for NULL/NA inputs.
-    .fmt_date = function(d) {
-      if (is.null(d) || (length(d) == 1 && is.na(d))) return("")
-      tryCatch(format(as.Date(d), "%d/%m/%Y"), error = function(e) as.character(d))
-    },
-
     # Replace tag with "X" if condition is TRUE, "□" if FALSE.
     .checkbox = function(doc, tag, condition) {
+      if (private$.is_tag_missing_from_schema(tag)) {
+        return(private$.replace(doc, tag, ""))
+      }
       officer::body_replace_all_text(doc, tag,
                                      if (isTRUE(condition)) "X" else "\u25a1",
                                      fixed = TRUE)
@@ -604,6 +588,9 @@ IPHRAProtocol <- R6::R6Class(
 
     # Safe body_replace_all_text; warns on failure instead of aborting.
     .replace = function(doc, old, new_val) {
+      if (private$.is_tag_missing_from_schema(old)) {
+        new_val <- ""
+      }
       tryCatch(
         officer::body_replace_all_text(doc, old, as.character(new_val %||% ""),
                                        fixed = TRUE),
@@ -613,6 +600,22 @@ IPHRAProtocol <- R6::R6Class(
           doc
         }
       )
+    },
+
+    .schema_row = function(tag) {
+      schema <- self$protocol_schema
+      if (!is.character(tag) || length(tag) != 1 || !nzchar(tag) ||
+          is.null(schema) || !is.data.frame(schema) ||
+          !"tag_name" %in% names(schema)) {
+        return(NULL)
+      }
+      idx <- which(as.character(schema$tag_name) == tag)
+      if (length(idx) == 0L) return(NULL)
+      schema[idx[1L], , drop = FALSE]
+    },
+
+    .is_tag_missing_from_schema = function(tag) {
+      startsWith(as.character(tag %||% ""), "@") && is.null(private$.schema_row(tag))
     },
 
     # Build a w:p XML node with plain text, optional bold run, optional
@@ -669,8 +672,7 @@ IPHRAProtocol <- R6::R6Class(
       }
       if (is.null(target_para)) return(FALSE)
 
-      # Insert in reverse order so final ordering matches 'items'
-      for (item in rev(items)) {
+      for (item in items) {
         node <- private$.make_w_para(
           text            = item$text,
           bold            = isTRUE(item$bold),
@@ -704,11 +706,98 @@ IPHRAProtocol <- R6::R6Class(
       officer::read_docx()
     },
 
-    # Delete table rows whose text contains a tool @-tag when that tool is
-    # NOT included in self$tools.  After deletion, remove any residual tag
-    # text from rows that ARE included.
-    process_tool_row_tags = function(doc) {
-      # Mapping: @tag → tool_name in self$tools
+    .schema_metadata_key = function(tag) {
+      key <- sub("^@", "", as.character(tag))
+      aliases <- c(
+        country = "country_name",
+        audience_strategic = "audience_type.strategic",
+        audience_operational = "audience_type.operational",
+        audience_programmatic = "audience_type.programmatic",
+        audience_other = "audience_type.other"
+      )
+      aliases[[key]] %||% key
+    },
+
+    .schema_metadata_value = function(tag) {
+      key <- private$.schema_metadata_key(tag)
+      if (key %in% names(self$metadata)) self$metadata[[key]] else NULL
+    },
+
+    .schema_flag_from_tag = function(tag) {
+      key <- sub("^@", "", as.character(tag))
+      if (grepl("^crisis_", key)) {
+        if (key %in% c("crisis_natural_disaster", "crisis_conflict", "crisis_other")) {
+          return(isTRUE(self$metadata$type_of_emergency == sub("^crisis_", "", key)))
+        }
+        if (key %in% c("crisis_sudden_onset", "crisis_sudden")) {
+          return(isTRUE(self$metadata$type_of_crisis == "sudden_onset"))
+        }
+        if (key %in% c("crisis_slow_onset", "crisis_slow")) {
+          return(isTRUE(self$metadata$type_of_crisis == "slow_onset"))
+        }
+        if (key == "crisis_protracted") {
+          return(isTRUE(self$metadata$type_of_crisis == "protracted"))
+        }
+      }
+      if (grepl("^milestone_", key)) {
+        ms <- self$metadata$humanitarian_milestones %||% character(0)
+        needle <- if (key == "milestone_intercluster") "inter_cluster" else sub("^milestone_", "", key)
+        return(needle %in% ms)
+      }
+      if (grepl("^platform_", key)) {
+        plat <- self$metadata$data_management_platform %||% character(0)
+        needle <- if (key == "platform_unhcr") "UNHCR" else if (key == "platform_impact") "IMPACT" else "other"
+        return(needle %in% plat)
+      }
+      if (grepl("^output_", key)) {
+        ot <- self$metadata$expected_output_type %||% character(0)
+        return(sub("^output_", "", key) %in% ot)
+      }
+      if (key %in% c("gender_disagg_yes", "gender_disagg_no")) {
+        return(if (key == "gender_disagg_yes") isTRUE(self$metadata$gender_disaggregation) else !isTRUE(self$metadata$gender_disaggregation))
+      }
+      if (key %in% c("sex_disagg_yes", "sex_disagg_no")) {
+        return(if (key == "sex_disagg_yes") isTRUE(self$metadata$sex_disaggregation) else !isTRUE(self$metadata$sex_disaggregation))
+      }
+      if (key %in% c("access_public", "access_restricted")) {
+        return(if (key == "access_public") isTRUE(self$metadata$access == "public") else isTRUE(self$metadata$access == "restricted"))
+      }
+      if (key %in% c("stakeholder_mapping_yes", "stakeholder_mapping_no")) {
+        return(if (key == "stakeholder_mapping_yes") isTRUE(self$metadata$stakeholder_mapping) else !isTRUE(self$metadata$stakeholder_mapping))
+      }
+      if (grepl("^sampling_", key)) {
+        methods_used <- self$get_sampling_methods()
+        if (key == "sampling_srs") return(any(methods_used %in% c("simple_random", "simple_random_rlc")))
+        if (key == "sampling_systematic") return(any(methods_used %in% c("systematic", "systematic_rlc")))
+        if (key == "sampling_cluster") return(any(methods_used %in% c("pps_cluster", "pps_rlc")))
+        if (key == "sampling_exhaustive") return(any(methods_used %in% c("proportional", "proportional_rlc")))
+        if (key == "sampling_purposive") return(any(methods_used %in% c("purposive")))
+        if (key == "sampling_hh_srs") return(any(methods_used %in% c("simple_random", "systematic")))
+        if (key == "sampling_hh_rlc") return(any(methods_used %in% c("pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc")))
+        if (key == "sampling_stratified") return(length(self$get_strata_names()) > 1)
+      }
+      isTRUE(private$.schema_metadata_value(tag))
+    },
+
+    add_input_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      v <- private$.schema_metadata_value(tag)
+      private$.replace(doc, tag, as.character(v %||% ""))
+    },
+
+    add_checkbox_replace_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      private$.checkbox(doc, tag, private$.schema_flag_from_tag(tag))
+    },
+
+    add_conditional_replace_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      default_value <- as.character(row$default_value[[1L]] %||% "")
+      private$.replace(doc, tag, if (private$.schema_flag_from_tag(tag)) default_value else "")
+    },
+
+    add_row_delete_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
       tag_tool_map <- c(
         "@household_tool_inc" = "tool_household_iphra_v2",
         "@kii_community_inc"  = "tool_kii_community_iphra_v2",
@@ -722,27 +811,57 @@ IPHRAProtocol <- R6::R6Class(
         "@obs_latrine_inc"    = "tool_obs_latrine_iphra_v2",
         "@obs_water_inc"      = "tool_obs_water_point_iphra_v2"
       )
+      if (!tag %in% names(tag_tool_map)) {
+        phr_warning(
+          paste0("Unrecognized row_delete tag in protocol schema: '", tag, "'."),
+          origin = "IPHRAProtocol$add_row_delete_section"
+        )
+        return(private$.replace(doc, tag, ""))
+      }
+
+      included <- self$is_tool_included(tag_tool_map[[tag]])
+      if (included) {
+        return(private$.replace(doc, tag, ""))
+      }
 
       body_xml <- officer::docx_body_xml(doc)
-      ns       <- xml2::xml_ns(body_xml)
-
-      for (tag in names(tag_tool_map)) {
-        tool_name <- tag_tool_map[[tag]]
-        included  <- self$is_tool_included(tool_name)
-
-        if (!included) {
-          # Remove ALL table rows that mention this tag
-          rows <- xml2::xml_find_all(body_xml, ".//w:tr", ns = ns)
-          for (row_node in rows) {
-            if (grepl(tag, xml2::xml_text(row_node), fixed = TRUE)) {
-              xml2::xml_remove(row_node)
-            }
-          }
-        } else {
-          # Just strip the tag text from the document
-          doc <- private$.replace(doc, tag, "")
+      ns <- xml2::xml_ns(body_xml)
+      rows <- xml2::xml_find_all(body_xml, ".//w:tr", ns = ns)
+      for (row_node in rows) {
+        if (grepl(tag, xml2::xml_text(row_node), fixed = TRUE)) {
+          xml2::xml_remove(row_node)
         }
       }
+      doc
+    },
+
+    add_calculate_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      switch(
+        tag,
+        "@specific_objectives" = private$add_specific_objectives_section(doc),
+        "@research_questions" = private$add_research_questions_section(doc),
+        "@list_secondary_data" = private$add_list_secondary_data_section(doc),
+        doc
+      )
+    },
+
+    add_table_section = function(doc, row) {
+      tag <- as.character(row$tag_name[[1L]] %||% "")
+      switch(
+        tag,
+        "@primary_data_sources_table" = private$add_primary_data_sources_table(doc),
+        "@secondary_data_sources_table" = private$add_sdr_section(doc),
+        "@sample_size_hh_gen_table" = private$add_sample_size_gen_table(doc),
+        "@sample_size_hh_ind_table" = private$add_sample_size_ind_table(doc),
+        "@sample_size_hh_mort_table" = private$add_sample_size_mort_table(doc),
+        doc
+      )
+    },
+
+    add_image_section = function(doc, row) {
+      # The framework image is inserted together with the SDR table in
+      # add_sdr_section(), routed from the @secondary_data_sources_table tag.
       doc
     },
 
@@ -1479,7 +1598,7 @@ IPHRAProtocol <- R6::R6Class(
           }
         }
         if (!is.null(target_para)) {
-          for (item in rev(items)) {
+          for (item in items) {
             node <- private$.make_w_para(
               text            = item$text,
               bold            = isTRUE(item$bold),
@@ -1512,7 +1631,7 @@ IPHRAProtocol <- R6::R6Class(
     # Tags whose condition is not met are left for remove_remaining_tags to clean up.
     add_definition_tags = function(doc) {
       inc_codes <- as.character(self$get_indicator_codes_from_tools())
-      schema    <- private$.protocol_schema
+      schema    <- self$protocol_schema
 
       get_def <- function(tag) {
         if (is.null(schema)) return("")
@@ -1540,43 +1659,6 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     # ── Sample-size table helpers ──────────────────────────────────────────
-
-    # Format a numeric value as a percentage string (e.g. 10 → "10%").
-    # Returns "" for NA / non-numeric.
-    .fmt_pct = function(x) {
-      if (is.null(x) || is.na(x) || !is.numeric(x)) return("")
-      paste0(x, "%")
-    },
-
-    # Format a numeric value as a comma-separated integer string.
-    # Returns "" for NA.  An optional suffix is appended (e.g. "households").
-    .fmt_n = function(x, suffix = "") {
-      if (is.null(x) || is.na(x)) return("")
-      s <- formatC(as.integer(round(x)), format = "d", big.mark = ",")
-      if (nzchar(suffix)) paste(s, suffix) else s
-    },
-
-    # Format a logical FPC flag as "Yes" / "No".
-    .fmt_fpc = function(x) {
-      if (is.null(x) || is.na(x)) return("")
-      if (isTRUE(x)) "Yes" else "No"
-    },
-
-    # Human-readable sampling method label.
-    .fmt_method = function(m) {
-      switch(as.character(m),
-        simple_random      = "Simple Random",
-        systematic         = "Systematic",
-        pps_cluster        = "Cluster (PPS)",
-        pps_rlc            = "Cluster (PPS-RLC)",
-        simple_random_rlc  = "Simple Random (RLC)",
-        systematic_rlc     = "Systematic (RLC)",
-        proportional       = "Proportional",
-        proportional_rlc   = "Proportional (RLC)",
-        purposive          = "Purposive",
-        as.character(m)
-      )
-    },
 
     # Build and insert a sample-size flextable for a given tag.
     # 'param_rows' is a list; each element has:
@@ -1677,24 +1759,24 @@ IPHRAProtocol <- R6::R6Class(
         list(label = "Indicator Name",
              col_fn = function(r) as.character(r$pop_indicator %||% "")),
         list(label = "Sampling Design",
-             col_fn = function(r) private$.fmt_method(r$sampling_method %||% "")),
+             col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
         list(label = "Estimated Prevalence (%)",
-             col_fn = function(r) private$.fmt_pct(r$pop_expected_prevalence)),
+             col_fn = function(r) phr_fmt_pct(r$pop_expected_prevalence)),
         list(label = "Desired Precision",
-             col_fn = function(r) private$.fmt_pct(r$pop_precision)),
+             col_fn = function(r) phr_fmt_pct(r$pop_precision)),
         list(label = "Estimated population size",
-             col_fn = function(r) private$.fmt_n(r$total_population)),
+             col_fn = function(r) phr_fmt_n(r$total_population)),
         list(label = "Design Effect",
              col_fn = function(r) {
                v <- r$pop_design_effect
                if (is.null(v) || is.na(v)) "" else as.character(v)
              }),
         list(label = "Finite Population Correction (FPC) used?",
-             col_fn = function(r) private$.fmt_fpc(r$pop_fpc)),
+             col_fn = function(r) phr_fmt_fpc(r$pop_fpc)),
         list(label = "Non-Response Rate",
-             col_fn = function(r) private$.fmt_pct(r$pop_nonresponse)),
+             col_fn = function(r) phr_fmt_pct(r$pop_nonresponse)),
         list(label = "Households to be Included",
-             col_fn = function(r) private$.fmt_n(r$General_HH_Sample_Size))
+             col_fn = function(r) phr_fmt_n(r$General_HH_Sample_Size))
       )
       private$.build_sample_size_table(doc, "@sample_size_hh_gen_table", params)
     },
@@ -1712,33 +1794,33 @@ IPHRAProtocol <- R6::R6Class(
         list(label = "Indicator Name",
              col_fn = function(r) as.character(r$ind_indicator %||% "")),
         list(label = "Sampling Design",
-             col_fn = function(r) private$.fmt_method(r$sampling_method %||% "")),
+             col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
         list(label = "Estimated Prevalence (%)",
-             col_fn = function(r) private$.fmt_pct(r$ind_expected_prevalence)),
+             col_fn = function(r) phr_fmt_pct(r$ind_expected_prevalence)),
         list(label = "Desired Precision",
-             col_fn = function(r) private$.fmt_pct(r$ind_precision)),
+             col_fn = function(r) phr_fmt_pct(r$ind_precision)),
         list(label = "Estimated population size",
-             col_fn = function(r) private$.fmt_n(r$total_population)),
+             col_fn = function(r) phr_fmt_n(r$total_population)),
         list(label = "Design Effect",
              col_fn = function(r) {
                v <- r$ind_design_effect
                if (is.null(v) || is.na(v)) "" else as.character(v)
              }),
         list(label = "Finite Population Correction (FPC) used?",
-             col_fn = function(r) private$.fmt_fpc(r$ind_fpc)),
+             col_fn = function(r) phr_fmt_fpc(r$ind_fpc)),
         list(label = "Individuals to be Included",
-             col_fn = function(r) private$.fmt_n(r$Ind_Sample_Size)),
+             col_fn = function(r) phr_fmt_n(r$Ind_Sample_Size)),
         list(label = "Average Household Size",
              col_fn = function(r) {
                v <- r$ind_avg_hh_size
                if (is.null(v) || is.na(v)) "" else as.character(v)
              }),
         list(label = "% sub-population",
-             col_fn = function(r) private$.fmt_pct(r$ind_subpop_prop)),
+             col_fn = function(r) phr_fmt_pct(r$ind_subpop_prop)),
         list(label = "Non-Response Rate",
-             col_fn = function(r) private$.fmt_pct(r$ind_nonresponse)),
+             col_fn = function(r) phr_fmt_pct(r$ind_nonresponse)),
         list(label = "Households to be Included",
-             col_fn = function(r) private$.fmt_n(r$Ind_HH_Sample_Size))
+             col_fn = function(r) phr_fmt_n(r$Ind_HH_Sample_Size))
       )
       private$.build_sample_size_table(doc, "@sample_size_hh_ind_table", params)
     },
@@ -1756,7 +1838,7 @@ IPHRAProtocol <- R6::R6Class(
         list(label = "Indicator Name",
              col_fn = function(r) as.character(r$mort_indicator %||% "")),
         list(label = "Sampling Design",
-             col_fn = function(r) private$.fmt_method(r$sampling_method %||% "")),
+             col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
         list(label = "Estimated death rate per 10,000/day",
              col_fn = function(r) {
                v <- r$mort_expected_death_rate
@@ -1773,27 +1855,27 @@ IPHRAProtocol <- R6::R6Class(
                if (is.null(v) || is.na(v)) "" else as.character(v)
              }),
         list(label = "Population size (overall)",
-             col_fn = function(r) private$.fmt_n(r$total_population)),
+             col_fn = function(r) phr_fmt_n(r$total_population)),
         list(label = "Design Effect",
              col_fn = function(r) {
                v <- r$mort_design_effect
                if (is.null(v) || is.na(v)) "" else as.character(v)
              }),
         list(label = "Finite Population Correction (FPC) used?",
-             col_fn = function(r) private$.fmt_fpc(r$mort_fpc)),
+             col_fn = function(r) phr_fmt_fpc(r$mort_fpc)),
         list(label = "Population to be Included",
-             col_fn = function(r) private$.fmt_n(r$Mort_Ind_Sample_Size, "people")),
+             col_fn = function(r) phr_fmt_n(r$Mort_Ind_Sample_Size, "people")),
         list(label = "Person-Time to be Included",
-             col_fn = function(r) private$.fmt_n(r$Mort_PT_Sample_Size, "person days")),
+             col_fn = function(r) phr_fmt_n(r$Mort_PT_Sample_Size, "person days")),
         list(label = "Average Household Size",
              col_fn = function(r) {
                v <- r$mort_avg_hh_size
                if (is.null(v) || is.na(v)) "" else as.character(v)
              }),
         list(label = "% Non-Respondents",
-             col_fn = function(r) private$.fmt_pct(r$mort_nonresponse)),
+             col_fn = function(r) phr_fmt_pct(r$mort_nonresponse)),
         list(label = "Households to be Included",
-             col_fn = function(r) private$.fmt_n(r$Mort_HH_Sample_Size, "households"))
+             col_fn = function(r) phr_fmt_n(r$Mort_HH_Sample_Size, "households"))
       )
       private$.build_sample_size_table(doc, "@sample_size_hh_mort_table", params)
     },
@@ -1896,11 +1978,8 @@ IPHRAProtocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    # Load protocol_schema_iphra.xlsx and populate metadata with defaults for any
-    # fields not yet set.  The schema has two columns: tag_name (the @-tag as it
-    # appears in the template) and default_value.  Tags that map to known metadata
-    # fields are used to pre-fill values only when the corresponding metadata key
-    # is currently NULL or NA.
+    # Load protocol_schema_iphra.xlsx into self$protocol_schema.
+    # Expected columns are tag_name, handling, condition, and default_value.
     .load_protocol_schema = function() {
       schema_path <- tryCatch(
         system.file("resources", "protocol_schema_iphra.xlsx", package = "phr"),
@@ -1908,7 +1987,7 @@ IPHRAProtocol <- R6::R6Class(
       )
       if (!nzchar(schema_path) || !file.exists(schema_path)) {
         # Try relative path (development / test context)
-        schema_path <- file.path("resources", "protocol_schema_iphra.xlsx")
+        schema_path <- file.path("inst", "resources", "protocol_schema_iphra.xlsx")
       }
       if (!file.exists(schema_path)) {
         phr_warning(
@@ -1922,12 +2001,22 @@ IPHRAProtocol <- R6::R6Class(
                                          col_types = "text")),
         error = function(e) NULL
       )
-      if (is.null(schema) || !all(c("tag_name", "default_value") %in% names(schema))) {
+      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      if (is.null(schema) || !all(required_cols %in% names(schema))) {
         return(invisible(NULL))
       }
+      schema <- private$.normalize_schema_tags(schema)
       # Store schema for reference
-      private$.protocol_schema <- schema
+      self$protocol_schema <- schema[required_cols]
       invisible(NULL)
+    },
+
+    .normalize_schema_tags = function(schema) {
+      if (is.null(schema) || !is.data.frame(schema) || !"tag_name" %in% names(schema)) {
+        return(schema)
+      }
+      schema$tag_name[schema$tag_name == "@kii_nutrition_inc"] <- "@kii_nut_inc"
+      schema
     }
   )
 )
