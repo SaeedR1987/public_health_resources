@@ -498,36 +498,36 @@ IPHRAProtocol <- R6::R6Class(
         schema <- self$protocol_schema
 
         if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0L) {
-          h <- as.character(schema$handling %||% "")
+          handling <- as.character(schema$handling %||% "")
 
-          replace_rows <- schema[!is.na(h) & h == "replace", , drop = FALSE]
+          replace_rows <- schema[!is.na(handling) & handling == "replace", , drop = FALSE]
           if (nrow(replace_rows) > 0L)
             doc <- private$handle_replace(doc, replace_rows)
 
-          checkbox_rows <- schema[!is.na(h) & h == "checkbox_replace", , drop = FALSE]
+          checkbox_rows <- schema[!is.na(handling) & handling == "checkbox_replace", , drop = FALSE]
           if (nrow(checkbox_rows) > 0L)
             doc <- private$handle_checkbox_replace(doc, checkbox_rows)
 
-          calculate_rows <- schema[!is.na(h) & h == "calculate", , drop = FALSE]
+          calculate_rows <- schema[!is.na(handling) & handling == "calculate", , drop = FALSE]
           doc <- private$handle_calculate(doc, calculate_rows)
 
-          row_delete_rows <- schema[!is.na(h) & h == "row_delete", , drop = FALSE]
+          row_delete_rows <- schema[!is.na(handling) & handling == "row_delete", , drop = FALSE]
           if (nrow(row_delete_rows) > 0L)
             doc <- private$handle_row_delete(doc, row_delete_rows)
 
-          input_rows <- schema[!is.na(h) & h == "input", , drop = FALSE]
+          input_rows <- schema[!is.na(handling) & handling == "input", , drop = FALSE]
           if (nrow(input_rows) > 0L)
             doc <- private$handle_input(doc, input_rows)
 
-          conditional_rows <- schema[!is.na(h) & h == "conditional_replace", , drop = FALSE]
+          conditional_rows <- schema[!is.na(handling) & handling == "conditional_replace", , drop = FALSE]
           if (nrow(conditional_rows) > 0L)
             doc <- private$handle_conditional_replace(doc, conditional_rows)
 
-          table_rows <- schema[!is.na(h) & h == "table", , drop = FALSE]
+          table_rows <- schema[!is.na(handling) & handling == "table", , drop = FALSE]
           if (nrow(table_rows) > 0L)
             doc <- private$handle_table(doc, table_rows)
 
-          image_rows <- schema[!is.na(h) & h == "image", , drop = FALSE]
+          image_rows <- schema[!is.na(handling) & handling == "image", , drop = FALSE]
           if (nrow(image_rows) > 0L)
             doc <- private$handle_image(doc, image_rows)
         }
@@ -684,7 +684,14 @@ IPHRAProtocol <- R6::R6Class(
         }
 
         # 2. Replacement text — placed in the first run that covered the tag
-        rep_run <- if (tag_start <= length(node_idx)) node_idx[[tag_start]] else 1L
+        if (tag_start > length(node_idx)) {
+          phr_warning(
+            phr_txt("._replace_across_runs: tag_start ({tag_start}) exceeds node_idx length ({length(node_idx)}) for tag '{tag}'; skipping paragraph."),
+            origin = "IPHRAProtocol$._replace_across_runs"
+          )
+          next
+        }
+        rep_run <- node_idx[[tag_start]]
         new_texts[[rep_run]] <- paste0(new_texts[[rep_run]], new_val)
 
         # 3. Suffix characters (after tag)
