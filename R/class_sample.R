@@ -239,15 +239,8 @@ Sample <- R6::R6Class(
     get_strata_names = function() {
       st <- self$sample_table
       if (is.null(st) || nrow(st) == 0) return(character(0))
-      col <- if ("stratum_name" %in% names(st)) {
-        "stratum_name"
-      } else if ("Population_Name" %in% names(st)) {
-        "Population_Name"
-      } else if ("stratum_id" %in% names(st)) {
-        "stratum_id"
-      } else {
-        return(character(0))
-      }
+      col <- private$resolve_stratum_name_col(st)
+      if (is.null(col)) return(character(0))
       n <- as.character(st[[col]])
       n[!is.na(n) & nzchar(n)]
     },
@@ -270,13 +263,28 @@ Sample <- R6::R6Class(
       get_num <- function(col) {
         if (col %in% names(st)) suppressWarnings(as.integer(st[[col]])) else rep(NA_integer_, nrow(st))
       }
+      strata_col <- private$resolve_stratum_name_col(st)
+      if (is.null(strata_col)) strata_col <- "stratum_id"
       data.frame(
-        stratum                = get_col(if ("stratum_name" %in% names(st)) "stratum_name" else "stratum_id"),
+        stratum                = get_col(strata_col),
         sampling_method        = get_col("sampling_method"),
         general_hh_sample_size = get_num("General_HH_Sample_Size"),
         final_hh_sample_size   = get_num("Final_HH_Sample_Size"),
         stringsAsFactors = FALSE
       )
+    }
+  ),
+  private = list(
+    resolve_stratum_name_col = function(st) {
+      if ("stratum_name" %in% names(st)) {
+        "stratum_name"
+      } else if ("Population_Name" %in% names(st)) {
+        "Population_Name"
+      } else if ("stratum_id" %in% names(st)) {
+        "stratum_id"
+      } else {
+        NULL
+      }
     }
   )
 )

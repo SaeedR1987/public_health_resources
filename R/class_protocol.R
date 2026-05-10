@@ -795,9 +795,18 @@ Protocol <- R6::R6Class(
         origin  = origin
       )
       phr_assert(
-        is.character(method) && length(method) == 1L && nzchar(method) &&
-          !is.null(target[[method]]) && is.function(target[[method]]),
+        is.character(method) && length(method) == 1L && nzchar(method),
+        message = phr_txt("method must be a single non-empty character string."),
+        origin  = origin
+      )
+      phr_assert(
+        !is.null(target[[method]]),
         message = phr_txt("Method '{method}' does not exist on target object."),
+        origin  = origin
+      )
+      phr_assert(
+        is.function(target[[method]]),
+        message = phr_txt("Field '{method}' exists on target object but is not callable."),
         origin  = origin
       )
 

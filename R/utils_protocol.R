@@ -411,6 +411,9 @@ restore_protocol <- function(protocol_data) {
       if (!is.null(protocol_data$sample_object) && inherits(protocol_data$sample_object, "Sample")) {
         protocol$sample_table <- protocol_data$sample_object
       } else if (!is.null(protocol_data$sample_table) && is.data.frame(protocol_data$sample_table)) {
+        if (is.null(protocol$sample_table) || !inherits(protocol$sample_table, "Sample")) {
+          protocol$sample_table <- Sample$new()
+        }
         protocol$sample_table$set_sample_table(protocol_data$sample_table)
       }
       # sampling_frame is exported as a raw data frame; restore into SamplingFrame object.
