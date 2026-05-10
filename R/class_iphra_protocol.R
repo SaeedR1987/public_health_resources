@@ -403,8 +403,8 @@ IPHRAProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Override \code{calculate_sample_sizes()} to keep sampling
-    #'   conditional metadata synchronized after sample table updates.
+    #' @description Override inherited \code{SurveyProtocol$calculate_sample_sizes()}
+    #'   to keep sampling conditional metadata synchronized after sample table updates.
     #' @return Invisibly returns \code{self} for method chaining.
     calculate_sample_sizes = function() {
       super$calculate_sample_sizes()
