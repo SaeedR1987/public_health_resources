@@ -48,6 +48,34 @@ Protocol <- R6::R6Class(
     #' @field selected_indicators List of selected indicators
     selected_indicators = NULL,
 
+    #' @field objective_catalog_master Named list keyed by objective code from
+    #'   \code{framework$master_schema}; each value stores objective metadata.
+    objective_catalog_master = list(),
+
+    #' @field objective_catalog_adjusted Named list keyed by objective code from
+    #'   \code{framework$adjusted_schema}; each value stores objective metadata.
+    objective_catalog_adjusted = list(),
+
+    #' @field indicator_catalog_master Named list keyed by indicator code from
+    #'   \code{framework$master_schema}; each value stores indicator metadata.
+    indicator_catalog_master = list(),
+
+    #' @field indicator_catalog_adjusted Named list keyed by indicator code from
+    #'   \code{framework$adjusted_schema}; each value stores indicator metadata.
+    indicator_catalog_adjusted = list(),
+
+    #' @field tool_indicator_catalog_master Named list keyed by tool name with
+    #'   vectors of indicator codes available in master tool surveys.
+    tool_indicator_catalog_master = list(),
+
+    #' @field tool_indicator_catalog_revised Named list keyed by tool name with
+    #'   vectors of indicator codes available in revised tool surveys.
+    tool_indicator_catalog_revised = list(),
+
+    #' @field sampling_frame_strata_names Character vector of unique strata names
+    #'   currently available in the held \code{SamplingFrame}, when present.
+    sampling_frame_strata_names = character(0),
+
     #' @field issues List of validation issues and discrepancies
     issues = list(),
 
@@ -72,6 +100,8 @@ Protocol <- R6::R6Class(
       overall_timeframe = NULL,
       geographic_coverage = NULL,
       general_objective = NULL,
+      sampling_strata_names = character(0),
+      sampling_method_flags = list(),
       # Audience type boolean fields
       `audience_type.strategic` = FALSE,
       `audience_type.operational` = FALSE,
@@ -131,6 +161,13 @@ Protocol <- R6::R6Class(
         self$issues <- list()
         self$issues_coherence <- list()
         self$conditional_metadata <- list()
+        self$objective_catalog_master <- list()
+        self$objective_catalog_adjusted <- list()
+        self$indicator_catalog_master <- list()
+        self$indicator_catalog_adjusted <- list()
+        self$tool_indicator_catalog_master <- list()
+        self$tool_indicator_catalog_revised <- list()
+        self$sampling_frame_strata_names <- character(0)
         self$protocol_schema <- private$.load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
@@ -138,9 +175,116 @@ Protocol <- R6::R6Class(
         } else {
           Framework$new()
         }
+        private$sync_framework_catalog_fields()
+        private$sync_tool_indicator_catalog_fields()
+        private$sync_sample_metadata_fields()
+        private$sync_sampling_frame_fields()
 
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
+      invisible(self)
+    },
+
+    #' @description Set or replace the associated Framework object.
+    #' @param framework A \code{\link{Framework}} object.
+    #' @return Invisibly returns \code{self}.
+    set_framework = function(framework) {
+      phr_assert(
+        !is.null(framework) && inherits(framework, "Framework"),
+        message = phr_txt("framework must be a Framework object."),
+        origin  = "Protocol$set_framework"
+      )
+      self$framework <- framework
+      private$sync_framework_catalog_fields()
+      self$touch()
+      private$check_issues()
+      invisible(self)
+    },
+
+    #' @description Run a Framework method through Protocol orchestration.
+    #' @param method Character. Method name on \code{self$framework}.
+    #' @param ... Arguments forwarded to the framework method.
+    #' @return The underlying Framework method return value.
+    access_framework = function(method, ...) {
+      res <- private$call_orchestrated_method(
+        target   = self$framework,
+        method   = method,
+        args     = list(...),
+        origin   = "Protocol$access_framework",
+        sync_kinds = c("framework")
+      )
+      res
+    },
+
+    #' @description Run a Tool method through Protocol orchestration.
+    #' @param tool_name Character. Tool key in \code{self$tools}.
+    #' @param method Character. Method name on the Tool object.
+    #' @param ... Arguments forwarded to the Tool method.
+    #' @return The underlying Tool method return value.
+    access_tool = function(tool_name, method, ...) {
+      phr_assert(
+        !is.null(self$tools) && tool_name %in% names(self$tools),
+        message = phr_txt("Tool '{tool_name}' not found."),
+        origin  = "Protocol$access_tool"
+      )
+      res <- private$call_orchestrated_method(
+        target   = self$tools[[tool_name]],
+        method   = method,
+        args     = list(...),
+        origin   = "Protocol$access_tool",
+        sync_kinds = c("tools")
+      )
+      res
+    },
+
+    #' @description Run a SamplingFrame method through Protocol orchestration.
+    #' @param method Character. Method name on \code{self$sampling_frame}.
+    #' @param ... Arguments forwarded to the SamplingFrame method.
+    #' @return The underlying SamplingFrame method return value.
+    access_sampling_frame = function(method, ...) {
+      phr_assert(
+        !is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame"),
+        message = phr_txt("No SamplingFrame object is attached to this Protocol."),
+        origin  = "Protocol$access_sampling_frame"
+      )
+      res <- private$call_orchestrated_method(
+        target   = self$sampling_frame,
+        method   = method,
+        args     = list(...),
+        origin   = "Protocol$access_sampling_frame",
+        sync_kinds = c("sampling_frame")
+      )
+      res
+    },
+
+    #' @description Run a Sample method through Protocol orchestration.
+    #' @param method Character. Method name on \code{self$sample_table}.
+    #' @param ... Arguments forwarded to the Sample method.
+    #' @return The underlying Sample method return value.
+    access_sample = function(method, ...) {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$access_sample"
+      )
+      res <- private$call_orchestrated_method(
+        target   = self$sample_table,
+        method   = method,
+        args     = list(...),
+        origin   = "Protocol$access_sample",
+        sync_kinds = c("sample")
+      )
+      res
+    },
+
+    #' @description Synchronize orchestrator-level cached fields from held
+    #'   framework/tool/sample/sampling-frame objects.
+    #' @return Invisibly returns \code{self}.
+    synchronize_state = function() {
+      private$sync_framework_catalog_fields()
+      private$sync_tool_indicator_catalog_fields()
+      private$sync_sample_metadata_fields()
+      private$sync_sampling_frame_fields()
       invisible(self)
     },
     
@@ -185,7 +329,8 @@ Protocol <- R6::R6Class(
         }
 
         self$tools[[tool_name]] <- tool
-        self$metadata$modified_date <- Sys.time()
+        private$sync_tool_indicator_catalog_fields()
+        self$touch()
         private$check_issues()
         phr_message(
           phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
@@ -199,7 +344,8 @@ Protocol <- R6::R6Class(
     #' @param indicator_list List of indicators
     select_indicators = function(indicator_list) {
       self$selected_indicators <- indicator_list
-      self$metadata$modified_date <- Sys.time()
+      private$sync_tool_indicator_catalog_fields()
+      self$touch()
       private$check_issues()
       invisible(self)
     },
@@ -469,6 +615,13 @@ Protocol <- R6::R6Class(
         framework = fw_data,
         tools = self$tools,
         selected_indicators = self$selected_indicators,
+        objective_catalog_master = self$objective_catalog_master,
+        objective_catalog_adjusted = self$objective_catalog_adjusted,
+        indicator_catalog_master = self$indicator_catalog_master,
+        indicator_catalog_adjusted = self$indicator_catalog_adjusted,
+        tool_indicator_catalog_master = self$tool_indicator_catalog_master,
+        tool_indicator_catalog_revised = self$tool_indicator_catalog_revised,
+        sampling_frame_strata_names = self$sampling_frame_strata_names,
         issues = self$issues,
         summary = self$get_protocol_summary()
       )
@@ -635,6 +788,186 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
+    call_orchestrated_method = function(target, method, args, origin, sync_kinds = character(0)) {
+      phr_assert(
+        !is.null(target) && methods::is(target, "R6"),
+        message = phr_txt("Target object is missing or invalid."),
+        origin  = origin
+      )
+      phr_assert(
+        is.character(method) && length(method) == 1L && nzchar(method) &&
+          !is.null(target[[method]]) && is.function(target[[method]]),
+        message = phr_txt("Method '{method}' does not exist on target object."),
+        origin  = origin
+      )
+
+      result <- do.call(target[[method]], args)
+
+      if ("framework" %in% sync_kinds) {
+        private$sync_framework_catalog_fields()
+      }
+      if ("tools" %in% sync_kinds) {
+        private$sync_tool_indicator_catalog_fields()
+      }
+      if ("sample" %in% sync_kinds) {
+        private$sync_sample_metadata_fields()
+      }
+      if ("sampling_frame" %in% sync_kinds) {
+        private$sync_sampling_frame_fields()
+      }
+
+      self$touch()
+      private$check_issues()
+      result
+    },
+
+    build_objective_catalog = function(schema) {
+      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) return(list())
+      code_col <- if ("objective_code" %in% names(schema)) "objective_code" else
+        if ("short_objective" %in% names(schema)) "short_objective" else NULL
+      if (is.null(code_col)) return(list())
+
+      codes <- as.character(schema[[code_col]])
+      codes <- codes[!is.na(codes) & nzchar(codes)]
+      if (length(codes) == 0L) return(list())
+
+      out <- list()
+      uniq_codes <- unique(codes)
+      for (code in uniq_codes) {
+        idx <- which(as.character(schema[[code_col]]) == code)
+        if (length(idx) == 0L) next
+        s <- schema[idx, , drop = FALSE]
+        first_non_empty <- function(col, default = "") {
+          if (!col %in% names(s)) return(default)
+          vals <- as.character(s[[col]])
+          vals <- vals[!is.na(vals) & nzchar(vals)]
+          if (length(vals) == 0L) default else vals[[1L]]
+        }
+        out[[code]] <- list(
+          short_objective = first_non_empty("short_objective"),
+          text_objective = first_non_empty("text_objective"),
+          objective_research_question = first_non_empty("objective_research_question")
+        )
+      }
+      out
+    },
+
+    build_indicator_catalog = function(schema) {
+      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0 ||
+          !"indicator_code" %in% names(schema)) return(list())
+      codes <- as.character(schema$indicator_code)
+      codes <- codes[!is.na(codes) & nzchar(codes)]
+      if (length(codes) == 0L) return(list())
+
+      out <- list()
+      uniq_codes <- unique(codes)
+      for (code in uniq_codes) {
+        idx <- which(as.character(schema$indicator_code) == code)
+        if (length(idx) == 0L) next
+        s <- schema[idx, , drop = FALSE]
+        first_non_empty <- function(cols, default = "") {
+          for (col in cols) {
+            if (!col %in% names(s)) next
+            vals <- as.character(s[[col]])
+            vals <- vals[!is.na(vals) & nzchar(vals)]
+            if (length(vals) > 0L) return(vals[[1L]])
+          }
+          default
+        }
+        out[[code]] <- list(
+          indicator_definition = first_non_empty(c("indicator_definition", "text_indicator", "indicator_name")),
+          research_question = first_non_empty(c("research_question", "objective_research_question"))
+        )
+      }
+      out
+    },
+
+    sync_framework_catalog_fields = function() {
+      master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        self$framework$master_schema
+      } else {
+        NULL
+      }
+      adjusted_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        self$framework$adjusted_schema
+      } else {
+        NULL
+      }
+
+      self$objective_catalog_master <- private$build_objective_catalog(master_schema)
+      self$objective_catalog_adjusted <- private$build_objective_catalog(adjusted_schema)
+      self$indicator_catalog_master <- private$build_indicator_catalog(master_schema)
+      self$indicator_catalog_adjusted <- private$build_indicator_catalog(adjusted_schema)
+      invisible(NULL)
+    },
+
+    sync_tool_indicator_catalog_fields = function() {
+      self$tool_indicator_catalog_master <- list()
+      self$tool_indicator_catalog_revised <- list()
+      if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
+
+      for (tn in names(self$tools)) {
+        tool <- self$tools[[tn]]
+        if (is.null(tool) || !inherits(tool, "Tool")) next
+        self$tool_indicator_catalog_master[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = FALSE))
+        self$tool_indicator_catalog_revised[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
+      }
+      invisible(NULL)
+    },
+
+    sync_sample_metadata_fields = function() {
+      st <- NULL
+      if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        st <- self$sample_table$get_sample_table()
+      } else if (!is.null(self$sample_table) && is.data.frame(self$sample_table)) {
+        st <- self$sample_table
+      }
+      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
+        self$metadata$sampling_strata_names <- character(0)
+        self$metadata$sampling_method_flags <- list()
+        return(invisible(NULL))
+      }
+
+      strata_names <- if ("stratum_name" %in% names(st)) {
+        as.character(st$stratum_name)
+      } else if ("Population_Name" %in% names(st)) {
+        as.character(st$Population_Name)
+      } else {
+        as.character(st$stratum_id %||% character(0))
+      }
+      strata_names <- unique(strata_names[!is.na(strata_names) & nzchar(strata_names)])
+
+      methods_used <- if ("sampling_method" %in% names(st)) {
+        unique(trimws(tolower(as.character(st$sampling_method))))
+      } else {
+        character(0)
+      }
+      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
+      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
+      flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
+
+      self$metadata$sampling_strata_names <- strata_names
+      self$metadata$sampling_method_flags <- flags
+      invisible(NULL)
+    },
+
+    sync_sampling_frame_fields = function() {
+      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
+        self$sampling_frame$log_df
+      } else {
+        NULL
+      }
+      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
+        self$sampling_frame_strata_names <- character(0)
+      } else {
+        vals <- as.character(sf$stratum)
+        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
+      }
+      invisible(NULL)
+    },
+
     # Check for issues and discrepancies in the protocol
     check_issues = function() {
       self$issues <- list()

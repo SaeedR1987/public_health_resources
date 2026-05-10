@@ -268,7 +268,7 @@ test_that("add_stratum accepts proportional and purposive without n_sites", {
   # purposive applies to all eligible PSUs — n_sites not required
   p$add_stratum(stratum_id = "purp", stratum_name = "purp",
                 sampling_method = "purposive")
-  expect_equal(nrow(p$sample_table), 2L)
+  expect_equal(nrow(p$get_sample_table()), 2L)
 })
 
 test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
@@ -283,6 +283,7 @@ test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
 
 test_that("SurveyProtocol initialises sampling_frame as a SamplingFrame object", {
   p <- make_protocol()
+  expect_true(inherits(p$sample_table, "Sample"))
   expect_true(inherits(p$sampling_frame, "SamplingFrame"))
   expect_equal(nrow(p$sampling_frame$log_df), 0L)
   expected_cols <- c("stratum", "psu", "population_size", "inclusion",
@@ -614,7 +615,7 @@ test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied
     General_HH_Sample_Size = 30
   )
   # Manually corrupt the strata table to remove n_sites, simulating a missing-param scenario
-  p$sample_table$n_sites <- NA_real_
+  p$sample_table$sample_table$n_sites <- NA_real_
 
   frame <- data.frame(
     stratum         = rep("s1", 20),
@@ -699,9 +700,10 @@ test_that("add_stratum accepts simple_random_rlc and systematic_rlc methods", {
   p$add_stratum(stratum_id = "b", stratum_name = "B",
                 sampling_method = "systematic_rlc", n_sites = 5,
                 General_HH_Sample_Size = 30)
-  expect_equal(p$sample_table$sampling_method, c("simple_random_rlc", "systematic_rlc"))
-  expect_equal(p$sample_table$cluster_size,    c(3L, 3L))
-  expect_equal(p$sample_table$calc_method,     c("cluster", "cluster"))
+  st <- p$get_sample_table()
+  expect_equal(st$sampling_method, c("simple_random_rlc", "systematic_rlc"))
+  expect_equal(st$cluster_size,    c(3L, 3L))
+  expect_equal(st$calc_method,     c("cluster", "cluster"))
 })
 
 # ---- proportional_rlc ----
@@ -742,10 +744,11 @@ test_that("add_stratum accepts proportional_rlc without n_sites and defaults clu
   p$add_stratum(stratum_id = "r1", stratum_name = "R1",
                 sampling_method = "proportional_rlc",
                 General_HH_Sample_Size = 30)
-  expect_equal(p$sample_table$sampling_method, "proportional_rlc")
-  expect_equal(p$sample_table$cluster_size,    3L)
-  expect_equal(p$sample_table$calc_method,     "cluster")
-  expect_true(is.na(p$sample_table$n_sites))
+  st <- p$get_sample_table()
+  expect_equal(st$sampling_method, "proportional_rlc")
+  expect_equal(st$cluster_size,    3L)
+  expect_equal(st$calc_method,     "cluster")
+  expect_true(is.na(st$n_sites))
 })
 
 

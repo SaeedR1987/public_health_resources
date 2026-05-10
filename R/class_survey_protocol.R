@@ -17,8 +17,8 @@ SurveyProtocol <- R6::R6Class(
   "SurveyProtocol",
   inherit = Protocol,
   public = list(
-    #' @field sample_table Master data frame with one row per stratum and all
-    #'   relevant population, sample-size, and logistics parameters
+    #' @field sample_table A \code{\link{Sample}} object that stores the
+    #'   strata/sample table and sample-size workflows.
     sample_table = NULL,
 
     #' @field sampling_frame A \code{\link{SamplingFrame}} object holding and
@@ -53,7 +53,10 @@ SurveyProtocol <- R6::R6Class(
         month_year       = month_year,
         framework_type   = framework_type
       )
+      self$sample_table <- Sample$new()
       self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
+      private$sync_sample_metadata_fields()
+      private$sync_sampling_frame_fields()
       invisible(self)
     },
 
@@ -218,129 +221,59 @@ SurveyProtocol <- R6::R6Class(
       precision              = NULL,
       confidence_level       = NULL
     ) {
-
-      # Resolve legacy aliases
-      if (is.null(sampling_method) && !is.null(allocation_method)) {
-        sampling_method <- allocation_method
-      }
-      if (!is.null(design_effect) && is.na(pop_design_effect)) {
-        pop_design_effect <- design_effect
-      }
-      if (!is.null(precision) && is.na(pop_precision)) {
-        pop_precision <- precision
-      }
-
-      # Require sampling_method
-      phr_assert(
-        !is.null(sampling_method),
-        message = phr_txt("sampling_method is required."),
-        origin  = "SurveyProtocol$add_stratum"
+      self$sample_table$add_stratum(
+        stratum_id = stratum_id,
+        stratum_name = stratum_name,
+        population_size = population_size,
+        total_households = total_households,
+        sampling_method = sampling_method,
+        allocation_method = allocation_method,
+        n_psu = n_psu,
+        cluster_size = cluster_size,
+        n_sites = n_sites,
+        pop_indicator = pop_indicator,
+        pop_expected_prevalence = pop_expected_prevalence,
+        pop_precision = pop_precision,
+        pop_nonresponse = pop_nonresponse,
+        pop_design_effect = pop_design_effect,
+        pop_fpc = pop_fpc,
+        General_HH_Sample_Size = General_HH_Sample_Size,
+        ind_indicator = ind_indicator,
+        ind_expected_prevalence = ind_expected_prevalence,
+        ind_precision = ind_precision,
+        ind_nonresponse = ind_nonresponse,
+        ind_design_effect = ind_design_effect,
+        ind_avg_hh_size = ind_avg_hh_size,
+        ind_subpop_prop = ind_subpop_prop,
+        ind_fpc = ind_fpc,
+        Ind_Sample_Size = Ind_Sample_Size,
+        Ind_HH_Sample_Size = Ind_HH_Sample_Size,
+        mort_indicator = mort_indicator,
+        mort_expected_death_rate = mort_expected_death_rate,
+        mort_precision = mort_precision,
+        mort_nonresponse = mort_nonresponse,
+        mort_design_effect = mort_design_effect,
+        mort_recall_days = mort_recall_days,
+        mort_avg_hh_size = mort_avg_hh_size,
+        mort_fpc = mort_fpc,
+        Mort_Ind_Sample_Size = Mort_Ind_Sample_Size,
+        Mort_PT_Sample_Size = Mort_PT_Sample_Size,
+        Mort_HH_Sample_Size = Mort_HH_Sample_Size,
+        teams = teams,
+        avg_interview_time = avg_interview_time,
+        clusters_per_day = clusters_per_day,
+        enumerators_per_team = enumerators_per_team,
+        avg_rest_time = avg_rest_time,
+        avg_travel_time = avg_travel_time,
+        start_time = start_time,
+        end_time = end_time,
+        design_effect = design_effect,
+        precision = precision,
+        confidence_level = confidence_level
       )
 
-      # Validate sampling_method value
-      valid_sampling_methods <- c("simple_random", "proportional", "pps_cluster",
-                                  "pps_rlc", "systematic", "simple_random_rlc",
-                                  "systematic_rlc", "proportional_rlc", "purposive")
-      phr_assert(
-        sampling_method %in% valid_sampling_methods,
-        message = phr_txt("sampling_method must be one of: {paste(valid_sampling_methods, collapse=', ')}."),
-        origin  = "SurveyProtocol$add_stratum"
-      )
-
-      # For site-selection methods, n_sites is required.
-      # Methods that apply to ALL eligible PSUs (proportional, proportional_rlc,
-      # purposive) do NOT require n_sites.
-      site_selection_methods <- c("simple_random", "pps_rlc",
-                                  "systematic", "simple_random_rlc", "systematic_rlc")
-      if (sampling_method %in% site_selection_methods) {
-        phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt("n_sites is required for sampling_method '{sampling_method}'."),
-          origin  = "SurveyProtocol$add_stratum"
-        )
-      }
-
-      # For RLC methods, default cluster_size to 3 if not provided
-      rlc_methods <- c("pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc")
-      if (sampling_method %in% rlc_methods && (is.null(cluster_size) || is.na(cluster_size))) {
-        cluster_size <- 3L
-      }
-
-      # Derive calc_method: cluster-based methods use "cluster"; others use "simple_random"
-      calc_method <- if (sampling_method %in% c("pps_cluster", "pps_rlc",
-                                                "simple_random_rlc", "systematic_rlc",
-                                                "proportional_rlc")) "cluster" else "simple_random"
-
-      new_row <- data.frame(
-        stratum_id               = stratum_id,
-        stratum_name          = stratum_name,
-        total_households         = as.numeric(total_households),
-        total_population         = as.numeric(population_size),
-        sampling_method          = sampling_method,
-        calc_method              = calc_method,
-        n_psu                    = as.numeric(n_psu),
-        cluster_size             = as.numeric(cluster_size),
-        n_sites                  = as.numeric(n_sites),
-        pop_indicator            = pop_indicator,
-        pop_expected_prevalence  = as.numeric(pop_expected_prevalence),
-        pop_precision            = as.numeric(pop_precision),
-        pop_nonresponse          = as.numeric(pop_nonresponse),
-        pop_design_effect        = as.numeric(pop_design_effect),
-        pop_fpc                  = as.logical(pop_fpc),
-        ind_indicator            = as.character(ind_indicator),
-        ind_expected_prevalence  = as.numeric(ind_expected_prevalence),
-        ind_precision            = as.numeric(ind_precision),
-        ind_nonresponse          = as.numeric(ind_nonresponse),
-        ind_design_effect        = as.numeric(ind_design_effect),
-        ind_avg_hh_size          = as.numeric(ind_avg_hh_size),
-        ind_subpop_prop          = as.numeric(ind_subpop_prop),
-        ind_fpc                  = as.logical(ind_fpc),
-        mort_indicator           = as.character(mort_indicator),
-        mort_expected_death_rate = as.numeric(mort_expected_death_rate),
-        mort_precision           = as.numeric(mort_precision),
-        mort_nonresponse         = as.numeric(mort_nonresponse),
-        mort_design_effect       = as.numeric(mort_design_effect),
-        mort_recall_days         = as.numeric(mort_recall_days),
-        mort_avg_hh_size         = as.numeric(mort_avg_hh_size),
-        mort_fpc                 = as.logical(mort_fpc),
-        teams                    = as.numeric(teams),
-        avg_interview_time       = as.numeric(avg_interview_time),
-        clusters_per_day         = as.numeric(clusters_per_day),
-        enumerators_per_team     = as.numeric(enumerators_per_team),
-        avg_rest_time            = as.numeric(avg_rest_time),
-        avg_travel_time          = as.numeric(avg_travel_time),
-        start_time               = as.character(start_time),
-        end_time                 = as.character(end_time),
-        # Result columns — rightmost, in prescribed order
-        General_HH_Sample_Size         = as.numeric(General_HH_Sample_Size),
-        Ind_Sample_Size                = as.numeric(Ind_Sample_Size),
-        Ind_HH_Sample_Size             = as.numeric(Ind_HH_Sample_Size),
-        Mort_Ind_Sample_Size           = as.numeric(Mort_Ind_Sample_Size),
-        Mort_PT_Sample_Size            = as.numeric(Mort_PT_Sample_Size),
-        Mort_HH_Sample_Size            = as.numeric(Mort_HH_Sample_Size),
-        Final_HH_Sample_Size           = NA_real_,
-        num_interview_per_enum_per_day = NA_real_,
-        num_days                       = NA_real_,
-        stringsAsFactors = FALSE
-      )
-
-      if (is.null(self$sample_table)) {
-        self$sample_table <- new_row
-      } else {
-        if (stratum_id %in% self$sample_table$stratum_id) {
-          phr_warning(
-            message = phr_txt("Stratum ID '{stratum_id}' already exists and will be overwritten."),
-            origin  = "SurveyProtocol$add_stratum",
-            hint    = phr_txt("The existing row for '{stratum_id}' has been replaced with the new values.")
-          )
-          self$sample_table <- self$sample_table[
-            self$sample_table$stratum_id != stratum_id, , drop = FALSE
-          ]
-        }
-        self$sample_table <- rbind(self$sample_table, new_row)
-      }
-
-      self$metadata$modified_date <- Sys.time()
+      private$sync_sample_metadata_fields()
+      self$touch()
       private$add_target_stratum()
       private$check_issues()
       phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
@@ -394,7 +327,8 @@ SurveyProtocol <- R6::R6Class(
         }
 
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
-        self$metadata$modified_date <- Sys.time()
+        private$sync_sampling_frame_fields()
+        self$touch()
         private$check_issues()
         phr_message(
           phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
@@ -456,7 +390,7 @@ SurveyProtocol <- R6::R6Class(
     #' @param strata_table Data frame.  The strata table supplying
     #'   \code{sampling_method}, \code{Final_HH_Sample_Size}, and sampling
     #'   parameters (\code{n_psu}, \code{cluster_size}, \code{n_sites}).  If
-    #'   \code{NULL} (default), uses \code{self$sample_table}.
+    #'   \code{NULL} (default), uses \code{self$get_sample_table()}.
     #' @param seed Integer. Random seed for reproducibility (default \code{42}).
     #' @return Invisibly returns \code{self} for method chaining.
     draw_sample = function(frame = NULL, strata_table = NULL, seed = 42) {
@@ -475,12 +409,13 @@ SurveyProtocol <- R6::R6Class(
         phr_validate_dataframe(frame, origin = "SurveyProtocol$draw_sample", soft = FALSE)
 
         if (is.null(strata_table)) {
+          st <- self$get_sample_table()
           phr_assert(
-            !is.null(self$sample_table),
+            !is.null(st) && nrow(st) > 0,
             message = phr_txt("No strata table available. Call add_stratum() first or pass a strata_table argument."),
             origin  = "SurveyProtocol$draw_sample"
           )
-          strata_table <- self$sample_table
+          strata_table <- st
         }
         phr_validate_dataframe(strata_table, origin = "SurveyProtocol$draw_sample", soft = FALSE)
         phr_assert(
@@ -626,7 +561,8 @@ SurveyProtocol <- R6::R6Class(
         # Update the SamplingFrame object with the annotated frame
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
 
-        self$metadata$modified_date <- Sys.time()
+        private$sync_sampling_frame_fields()
+        self$touch()
         private$check_issues()
         phr_message(
           phr_txt("Sample drawn: {nrow(self$drawn_sample)} PSU(s) selected."),
@@ -662,7 +598,8 @@ SurveyProtocol <- R6::R6Class(
         }
         self$drawn_sample      <- NULL
         self$drawn_sample_full <- NULL
-        self$metadata$modified_date <- Sys.time()
+        private$sync_sampling_frame_fields()
+        self$touch()
         private$check_issues()
         phr_message(
           phr_txt("Sample cleared from sampling frame."),
@@ -679,44 +616,28 @@ SurveyProtocol <- R6::R6Class(
     #'
     #' @return \code{TRUE} if valid, \code{FALSE} otherwise.
     validate_strata_table = function() {
-      if (is.null(self$sample_table)) {
-        return(FALSE)
-      }
-
-      required_cols <- .strata_table_required_cols
-
-      missing_cols <- setdiff(required_cols, names(self$sample_table))
-      if (length(missing_cols) > 0) {
-        return(FALSE)
-      }
-
-      dupes <- self$sample_table$stratum_id[duplicated(self$sample_table$stratum_id)]
-      if (length(dupes) > 0) {
-        return(FALSE)
-      }
-
-      TRUE
+      if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) return(FALSE)
+      isTRUE(self$sample_table$validate_strata_table())
     },
 
     #' @description Get the sample table
     #' @return Data frame containing the sample table
     get_sample_table = function() {
-      return(self$sample_table)
+      if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) return(NULL)
+      self$sample_table$get_sample_table()
     },
 
     # ── Sampling helpers ────────────────────────────────────────────────────
 
     #' @description Return the unique sampling methods used across all strata.
     #'
-    #' Reads the \code{sampling_method} column of \code{self$sample_table}.
+    #' Reads the \code{sampling_method} column of \code{self$get_sample_table()}.
     #'
     #' @return Character vector of unique, non-NA sampling method values.
     #'   Empty character vector when no sample table is set.
     get_sampling_methods = function() {
-      if (is.null(self$sample_table) ||
-          !"sampling_method" %in% names(self$sample_table)) return(character(0))
-      m <- as.character(self$sample_table$sampling_method)
-      unique(m[!is.na(m) & nzchar(m)])
+      if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) return(character(0))
+      self$sample_table$get_sampling_methods()
     },
 
     #' @description Return the stratum names from the sample table.
@@ -727,18 +648,8 @@ SurveyProtocol <- R6::R6Class(
     #' @return Character vector of stratum names.  Empty character vector
     #'   when no sample table is set.
     get_strata_names = function() {
-      if (is.null(self$sample_table) || nrow(self$sample_table) == 0) {
-        return(character(0))
-      }
-      col <- if ("Population_Name" %in% names(self$sample_table)) {
-        "Population_Name"
-      } else if ("stratum_id" %in% names(self$sample_table)) {
-        "stratum_id"
-      } else {
-        return(character(0))
-      }
-      n <- as.character(self$sample_table[[col]])
-      n[!is.na(n) & nzchar(n)]
+      if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) return(character(0))
+      self$sample_table$get_strata_names()
     },
 
     #' @description Return a compact sample-size summary.
@@ -749,8 +660,7 @@ SurveyProtocol <- R6::R6Class(
     #'
     #' @return Data frame.  Zero-row data frame when no sample table is set.
     get_sample_size_summary = function() {
-      st <- self$sample_table
-      if (is.null(st) || nrow(st) == 0) {
+      if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) {
         return(data.frame(
           stratum = character(0),
           sampling_method = character(0),
@@ -759,19 +669,7 @@ SurveyProtocol <- R6::R6Class(
           stringsAsFactors = FALSE
         ))
       }
-      get_col <- function(col) {
-        if (col %in% names(st)) as.character(st[[col]]) else rep(NA_character_, nrow(st))
-      }
-      get_num <- function(col) {
-        if (col %in% names(st)) suppressWarnings(as.integer(st[[col]])) else rep(NA_integer_, nrow(st))
-      }
-      data.frame(
-        stratum              = get_col(if ("Population_Name" %in% names(st)) "Population_Name" else "stratum_id"),
-        sampling_method      = get_col("sampling_method"),
-        general_hh_sample_size = get_num("General_HH_Sample_Size"),
-        final_hh_sample_size   = get_num("Final_HH_Sample_Size"),
-        stringsAsFactors = FALSE
-      )
+      self$sample_table$get_sample_size_summary()
     },
 
     #' @description Extract a column vector from the sampling frame, optionally
@@ -803,8 +701,9 @@ SurveyProtocol <- R6::R6Class(
     #' @return List with protocol summary information
     get_protocol_summary = function() {
       base_summary <- super$get_protocol_summary()
-      base_summary$num_strata       <- if (is.null(self$sample_table)) 0L else nrow(self$sample_table)
-      base_summary$total_sample_size <- if (is.null(self$sample_table)) 0 else sum(self$sample_table$General_HH_Sample_Size, na.rm = TRUE)
+      st <- self$get_sample_table()
+      base_summary$num_strata       <- if (is.null(st)) 0L else nrow(st)
+      base_summary$total_sample_size <- if (is.null(st)) 0 else sum(st$General_HH_Sample_Size, na.rm = TRUE)
       base_summary
     },
 
@@ -822,17 +721,18 @@ SurveyProtocol <- R6::R6Class(
     calculate_sample_sizes = function() {
       phr_try({
         phr_assert(
-          !is.null(self$sample_table) && nrow(self$sample_table) > 0,
-          message = phr_txt("sample_table is empty. Call add_stratum() first."),
+          !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+          message = phr_txt("sample_table must be a Sample object."),
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
-        self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
+        self$sample_table$calculate_sample_sizes()
 
-        self$metadata$modified_date <- Sys.time()
+        private$sync_sample_metadata_fields()
+        self$touch()
         private$add_target_stratum()
         private$check_issues()
         phr_message(
-          phr_txt("Sample sizes calculated for {nrow(self$sample_table)} stratum/strata."),
+          phr_txt("Sample sizes calculated for {nrow(self$get_sample_table())} stratum/strata."),
           origin = "SurveyProtocol$calculate_sample_sizes"
         )
       }, on_error = "abort", origin = "SurveyProtocol$calculate_sample_sizes")
@@ -847,11 +747,10 @@ SurveyProtocol <- R6::R6Class(
     #' immediately after the last row whose \code{indicator_code} is
     #' \code{10000} (the core header block) in \code{revised_survey}.  If
     #' \code{strata_names} is \code{NULL} the names are taken from the
-    #' \code{Population_Name} column of \code{self$sample_table}.
+    #' stratum names from \code{self$sample_table} (\code{Sample} object).
     #'
     #' @param strata_names Character vector of stratum names.  Defaults to
-    #'   \code{NULL}, in which case \code{self$sample_table$Population_Name}
-    #'   is used.
+    #'   \code{NULL}, in which case \code{self$get_strata_names()} is used.
     #' @param tool_name Character. Name of the tool to modify (key in
     #'   \code{self$tools}).  When \code{NULL} (default) and exactly one tool
     #'   is registered, that tool is used.
@@ -861,12 +760,13 @@ SurveyProtocol <- R6::R6Class(
 
         # Resolve strata names
         if (is.null(strata_names)) {
+          st <- self$get_sample_table()
           phr_assert(
-            !is.null(self$sample_table) && "Population_Name" %in% names(self$sample_table),
-            message = phr_txt("strata_names is NULL and sample_table has no 'Population_Name' column. Either call add_stratum() to build the sample table first, or pass strata_names explicitly."),
+            !is.null(st) && nrow(st) > 0,
+            message = phr_txt("strata_names is NULL and sample_table is empty. Either call add_stratum() first, or pass strata_names explicitly."),
             origin  = "SurveyProtocol$add_strata_to_survey"
           )
-          strata_names <- as.character(self$sample_table$Population_Name)
+          strata_names <- self$get_strata_names()
         }
 
         strata_names <- as.character(strata_names)
@@ -942,7 +842,8 @@ SurveyProtocol <- R6::R6Class(
           }
         }
 
-        self$metadata$modified_date <- Sys.time()
+        private$sync_tool_indicator_catalog_fields()
+        self$touch()
         phr_message(
           phr_txt("Strata choices ({length(strata_names)}) added and strata question inserted."),
           origin = "SurveyProtocol$add_strata_to_survey"
@@ -977,7 +878,8 @@ SurveyProtocol <- R6::R6Class(
           prefix_lbl = "Team ",
           n          = n_teams
         )
-        self$metadata$modified_date <- Sys.time()
+        private$sync_tool_indicator_catalog_fields()
+        self$touch()
         phr_message(
           phr_txt("{n_teams} team choice(s) added."),
           origin = "SurveyProtocol$add_teams_to_choices"
@@ -1013,7 +915,8 @@ SurveyProtocol <- R6::R6Class(
           prefix_lbl = "Enumerator ",
           n          = n_enumerators
         )
-        self$metadata$modified_date <- Sys.time()
+        private$sync_tool_indicator_catalog_fields()
+        self$touch()
         phr_message(
           phr_txt("{n_enumerators} enumerator choice(s) added."),
           origin = "SurveyProtocol$add_enumerators_to_choices"
@@ -1026,7 +929,8 @@ SurveyProtocol <- R6::R6Class(
     #' @return List containing all protocol data
     export_protocol = function() {
       base_export <- super$export_protocol()
-      base_export$sample_table      <- self$sample_table
+      base_export$sample_table      <- self$get_sample_table()
+      base_export$sample_object     <- self$sample_table
       base_export$sampling_frame    <- if (!is.null(self$sampling_frame)) self$sampling_frame$log_df else NULL
       base_export$drawn_sample      <- self$drawn_sample
       base_export$drawn_sample_full <- self$drawn_sample_full
@@ -1040,9 +944,10 @@ SurveyProtocol <- R6::R6Class(
     # Called automatically after any method that creates or modifies sample_table
     # so that metadata strata are always aligned with the sample_table.
     add_target_stratum = function() {
-      if (!is.null(self$sample_table) && nrow(self$sample_table) > 0) {
-        strata_ids   <- as.character(self$sample_table$stratum_id)
-        strata_names <- as.character(self$sample_table$stratum_name)
+      st <- self$get_sample_table()
+      if (!is.null(st) && nrow(st) > 0) {
+        strata_ids   <- as.character(st$stratum_id)
+        strata_names <- as.character(st$stratum_name)
         self$metadata$target_strata <- setNames(as.list(strata_names), strata_ids)
       } else {
         self$metadata$target_strata <- list()
@@ -1109,7 +1014,8 @@ SurveyProtocol <- R6::R6Class(
     add_sampling_section = function(doc) {
       doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 2", pos = "after")
 
-      if (is.null(self$sample_table) || nrow(self$sample_table) == 0) {
+      st <- self$get_sample_table()
+      if (is.null(st) || nrow(st) == 0) {
         return(officer::body_add_par(
           doc, "No strata have been defined.", style = "Normal", pos = "after"
         ))
@@ -1124,10 +1030,10 @@ SurveyProtocol <- R6::R6Class(
       col_labels   <- c("Stratum ID", "Population Name", "Total Population",
                         "Sampling Method", "General HH Sample Size",
                         "Ind. HH Sample Size", "Mort. HH Sample Size", "Final HH Sample Size")
-      avail_idx    <- which(display_cols %in% names(self$sample_table))
+      avail_idx    <- which(display_cols %in% names(st))
 
       if (length(avail_idx) > 0) {
-        strata_df <- self$sample_table[, display_cols[avail_idx], drop = FALSE]
+        strata_df <- st[, display_cols[avail_idx], drop = FALSE]
         names(strata_df) <- col_labels[avail_idx]
         ft <- flextable::flextable(strata_df)
         ft <- flextable::theme_zebra(ft)
@@ -1210,9 +1116,10 @@ SurveyProtocol <- R6::R6Class(
       }
 
       # Check strata consistency between frame and sample table
-      if (!is.null(self$sample_table) && !is.null(self$sampling_frame) &&
+      st <- self$get_sample_table()
+      if (!is.null(st) && !is.null(self$sampling_frame) &&
           nrow(self$sampling_frame$log_df) > 0) {
-        table_strata <- self$sample_table$stratum_id
+        table_strata <- st$stratum_id
         frame_strata <- unique(self$sampling_frame$log_df$stratum)
 
         if (!setequal(table_strata, frame_strata)) {
