@@ -273,7 +273,7 @@ SurveyProtocol <- R6::R6Class(
       )
 
       self$sync_sample_metadata_fields
-      self$touch()
+      private$touch()
       private$add_target_stratum()
       private$check_issues()
       phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
@@ -328,7 +328,7 @@ SurveyProtocol <- R6::R6Class(
 
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
         self$sync_sampling_frame_fields
-        self$touch()
+        private$touch()
         private$check_issues()
         phr_message(
           phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
@@ -562,7 +562,7 @@ SurveyProtocol <- R6::R6Class(
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
 
         self$sync_sampling_frame_fields
-        self$touch()
+        private$touch()
         private$check_issues()
         phr_message(
           phr_txt("Sample drawn: {nrow(self$drawn_sample)} PSU(s) selected."),
@@ -599,7 +599,7 @@ SurveyProtocol <- R6::R6Class(
         self$drawn_sample      <- NULL
         self$drawn_sample_full <- NULL
         self$sync_sampling_frame_fields
-        self$touch()
+        private$touch()
         private$check_issues()
         phr_message(
           phr_txt("Sample cleared from sampling frame."),
@@ -728,7 +728,7 @@ SurveyProtocol <- R6::R6Class(
         self$sample_table$calculate_sample_sizes()
 
         self$sync_sample_metadata_fields
-        self$touch()
+        private$touch()
         private$add_target_stratum()
         private$check_issues()
         phr_message(
@@ -843,7 +843,7 @@ SurveyProtocol <- R6::R6Class(
         }
 
         self$sync_tool_indicator_catalog_fields
-        self$touch()
+        private$touch()
         phr_message(
           phr_txt("Strata choices ({length(strata_names)}) added and strata question inserted."),
           origin = "SurveyProtocol$add_strata_to_survey"
@@ -879,7 +879,7 @@ SurveyProtocol <- R6::R6Class(
           n          = n_teams
         )
         self$sync_tool_indicator_catalog_fields
-        self$touch()
+        private$touch()
         phr_message(
           phr_txt("{n_teams} team choice(s) added."),
           origin = "SurveyProtocol$add_teams_to_choices"
@@ -916,7 +916,7 @@ SurveyProtocol <- R6::R6Class(
           n          = n_enumerators
         )
         self$sync_tool_indicator_catalog_fields
-        self$touch()
+        private$touch()
         phr_message(
           phr_txt("{n_enumerators} enumerator choice(s) added."),
           origin = "SurveyProtocol$add_enumerators_to_choices"
@@ -1008,63 +1008,6 @@ SurveyProtocol <- R6::R6Class(
       for (col in setdiff(all_cols, names(choices)))  choices[[col]]  <- NA
       for (col in setdiff(all_cols, names(new_df)))   new_df[[col]]   <- NA
       rbind(choices[, all_cols, drop = FALSE], new_df[, all_cols, drop = FALSE])
-    },
-
-    # Add the sampling design section after the current cursor position.
-    add_sampling_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 2", pos = "after")
-
-      st <- self$get_sample_table()
-      if (is.null(st) || nrow(st) == 0) {
-        return(officer::body_add_par(
-          doc, "No strata have been defined.", style = "Normal", pos = "after"
-        ))
-      }
-
-      # --- Strata and sample sizes table ---
-      doc <- officer::body_add_par(doc, "Strata and Sample Sizes", style = "heading 3", pos = "after")
-
-      display_cols <- c("stratum_id", "Population_Name", "Total_Population",
-                        "sampling_method", "General_HH_Sample_Size",
-                        "Ind_HH_Sample_Size", "Mort_HH_Sample_Size", "Final_HH_Sample_Size")
-      col_labels   <- c("Stratum ID", "Population Name", "Total Population",
-                        "Sampling Method", "General HH Sample Size",
-                        "Ind. HH Sample Size", "Mort. HH Sample Size", "Final HH Sample Size")
-      avail_idx    <- which(display_cols %in% names(st))
-
-      if (length(avail_idx) > 0) {
-        strata_df <- st[, display_cols[avail_idx], drop = FALSE]
-        names(strata_df) <- col_labels[avail_idx]
-        ft <- flextable::flextable(strata_df)
-        ft <- flextable::theme_zebra(ft)
-        ft <- flextable::autofit(ft)
-        doc <- flextable::body_add_flextable(doc, ft, pos = "after")
-      }
-
-      # --- Selected PSUs (only when draw_sample() has been called) ---
-      if (!is.null(self$drawn_sample) && nrow(self$drawn_sample) > 0) {
-        doc <- officer::body_add_par(doc, "Selected PSUs", style = "heading 3", pos = "after")
-        doc <- officer::body_add_par(
-          doc,
-          paste0("Total PSUs selected: ", nrow(self$drawn_sample)),
-          style = "Normal",
-          pos   = "after"
-        )
-
-        psu_cols <- intersect(
-          c("psu", "stratum", "sampled_psu", "allocated_sample"),
-          names(self$drawn_sample)
-        )
-        if (length(psu_cols) > 0) {
-          psu_df <- self$drawn_sample[, psu_cols, drop = FALSE]
-          ft <- flextable::flextable(psu_df)
-          ft <- flextable::theme_zebra(ft)
-          ft <- flextable::autofit(ft)
-          doc <- flextable::body_add_flextable(doc, ft, pos = "after")
-        }
-      }
-
-      doc
     },
 
     # Generic hooks for TOR sample-size table tags.

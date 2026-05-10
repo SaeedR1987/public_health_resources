@@ -102,38 +102,80 @@ Framework <- R6::R6Class(
     #'   SVG.
     secondary_objectives = NULL,
 
-    #' @field available_indicator_codes Named list of tool type and
+    #' @field master_indicator_codes Named list of tool type and
     #'   \code{indicator_code} values derived from \code{adjusted_schema}.
     #'   Updated automatically by \code{modify_adjusted_schema()}.
-    available_indicator_codes = NULL,
+    master_indicator_codes = NULL,
 
-    #' @field selected_indicator_codes Character vector of indicator codes
-    #'   currently selected by the user.  Does not need to align with
-    #'   \code{available_indicator_codes}; mismatches are surfaced by
-    #'   \code{diagnose_coherence()}.
-    selected_indicator_codes = NULL,
+    #' @field adjusted_indicator_codes Character vector of indicator codes
+    #'   currently selected by the user.
+    adjusted_indicator_codes = NULL,
 
-    #' @field issues_coherence List of coherence issues found between
-    #'   \code{available_indicator_codes} and \code{selected_indicator_codes}.
-    #'   Populated by \code{diagnose_coherence()}.
-    issues_coherence = list(),
+    #' @field metadata List containing framework metadata including
+    #'   \code{created_datetime} and \code{modified_datetime}, both initialised
+    #'   to \code{Sys.time()} on construction.
+    metadata = list(
+      created_datetime  = NULL,
+      modified_datetime = NULL
+    ),
 
     #' @description
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
       phr_try({
-        self$master_schema            <- NULL
-        self$adjusted_schema          <- NULL
-        self$master_svg               <- NULL
-        self$adjusted_svg             <- NULL
-        self$primary_objectives       <- NULL
-        self$secondary_objectives     <- NULL
-        self$available_indicator_codes <- NULL
-        self$selected_indicator_codes  <- NULL
-        self$issues_coherence          <- list()
+        self$master_schema             <- NULL
+        self$adjusted_schema           <- NULL
+        self$master_svg                <- NULL
+        self$adjusted_svg              <- NULL
+        self$primary_objectives        <- NULL
+        self$secondary_objectives      <- NULL
+        self$master_indicator_codes    <- NULL
+        self$adjusted_indicator_codes  <- NULL
+        self$metadata$created_datetime  <- Sys.time()
+        self$metadata$modified_datetime <- Sys.time()
         phr_message(phr_txt("Framework initialized."), origin = "Framework$initialize")
       }, on_error = "abort", origin = "Framework$initialize")
+      invisible(self)
+    },
+
+    #' @description Set the primary objectives for this framework.
+    #'
+    #' Stores a numeric vector of objective codes as
+    #' \code{primary_objectives} and calls \code{touch()} to update the
+    #' \code{modified_datetime}.
+    #'
+    #' @param objective_codes Numeric vector of primary objective codes.
+    #' @return Invisibly returns \code{self} for method chaining.
+    set_primary_objectives = function(objective_codes) {
+      phr_try({
+        self$primary_objectives <- as.numeric(unlist(objective_codes))
+        private$touch()
+        phr_message(
+          phr_txt("Primary objectives set ({length(self$primary_objectives)} code(s))."),
+          origin = "Framework$set_primary_objectives"
+        )
+      }, on_error = "abort", origin = "Framework$set_primary_objectives")
+      invisible(self)
+    },
+
+    #' @description Set the secondary objectives for this framework.
+    #'
+    #' Stores a numeric vector of objective codes as
+    #' \code{secondary_objectives} and calls \code{touch()} to update the
+    #' \code{modified_datetime}.
+    #'
+    #' @param objective_codes Numeric vector of secondary objective codes.
+    #' @return Invisibly returns \code{self} for method chaining.
+    set_secondary_objectives = function(objective_codes) {
+      phr_try({
+        self$secondary_objectives <- as.numeric(unlist(objective_codes))
+        private$touch()
+        phr_message(
+          phr_txt("Secondary objectives set ({length(self$secondary_objectives)} code(s))."),
+          origin = "Framework$set_secondary_objectives"
+        )
+      }, on_error = "abort", origin = "Framework$set_secondary_objectives")
       invisible(self)
     },
 
@@ -205,8 +247,15 @@ Framework <- R6::R6Class(
     #' When \code{master_svg} or \code{master_schema} is \code{NULL} the
     #' method issues a warning and returns without modifying \code{adjusted_svg}.
     #'
+    #' @param primary_objective_codes Numeric vector of primary objective codes
+    #'   to highlight in light green.  When \code{NULL} (the default) the
+    #'   \code{primary_objectives} field is used as a fallback.
+    #' @param secondary_objective_codes Numeric vector of secondary objective
+    #'   codes to highlight in light blue.  When \code{NULL} (the default) the
+    #'   \code{secondary_objectives} field is used as a fallback.
     #' @return Invisibly returns \code{self} for method chaining.
-    modify_adjusted_svg = function() {
+    modify_adjusted_svg = function(primary_objective_codes = NULL,
+                                   secondary_objective_codes = NULL) {
       phr_try({
         if (is.null(self$master_svg)) {
           phr_warning(
@@ -233,8 +282,14 @@ Framework <- R6::R6Class(
           origin = "Framework$modify_adjusted_svg"
         )
 
-        primary   <- as.numeric(self$primary_objectives)
-        secondary <- as.numeric(self$secondary_objectives)
+        primary   <- as.numeric(
+          if (!is.null(primary_objective_codes)) primary_objective_codes
+          else self$primary_objectives
+        )
+        secondary <- as.numeric(
+          if (!is.null(secondary_objective_codes)) secondary_objective_codes
+          else self$secondary_objectives
+        )
 
         svg <- self$master_svg
 
@@ -297,6 +352,7 @@ Framework <- R6::R6Class(
         }
 
         self$adjusted_svg <- svg
+        private$touch()
         phr_message(
           phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
           origin = "Framework$modify_adjusted_svg"
@@ -379,7 +435,7 @@ Framework <- R6::R6Class(
     #' which uses numeric objective codes); otherwise \code{short_objective} is
     #' used.  When \code{objective_codes} is \code{NULL} or an empty vector all
     #' rows from \code{master_schema} are retained.  Also updates
-    #' \code{available_indicator_codes} from the resulting \code{adjusted_schema}.
+    #' \code{master_indicator_codes} from the resulting \code{adjusted_schema}.
     #'
     #' @param objective_codes Character or numeric vector (or list) of objective
     #'   code values to retain.  The type should match the filter column:
@@ -413,8 +469,9 @@ Framework <- R6::R6Class(
           drop = FALSE
         ]
 
-        # Update available_indicator_codes from the adjusted_schema
-        private$.refresh_available_indicator_codes()
+        # Update master_indicator_codes from the adjusted_schema
+        private$.refresh_master_indicator_codes()
+        private$touch()
 
         phr_message(
           phr_txt(
@@ -424,74 +481,18 @@ Framework <- R6::R6Class(
         )
       }, on_error = "abort", origin = "Framework$modify_adjusted_schema")
       invisible(self)
-    },
-
-    #' @description Diagnose coherence between \code{available_indicator_codes}
-    #'   and \code{selected_indicator_codes}.
-    #'
-    #' Compares the indicator codes present in \code{available_indicator_codes}
-    #' (derived from \code{adjusted_schema}) with those in
-    #' \code{selected_indicator_codes} (chosen by the user).  Any mismatches are
-    #' collected and stored in \code{issues_coherence}.  An empty
-    #' \code{issues_coherence} list indicates full coherence.
-    #'
-    #' @return Invisibly returns \code{self} for method chaining.
-    diagnose_coherence = function() {
-      phr_try({
-        self$issues_coherence <- list()
-
-        avail_codes <- if (!is.null(self$available_indicator_codes) &&
-                           is.data.frame(self$available_indicator_codes) &&
-                           "indicator_code" %in% names(self$available_indicator_codes)) {
-          unique(as.character(self$available_indicator_codes[["indicator_code"]]))
-        } else {
-          character(0)
-        }
-
-        sel_codes <- if (!is.null(self$selected_indicator_codes)) {
-          unique(as.character(self$selected_indicator_codes))
-        } else {
-          character(0)
-        }
-
-        in_selected_not_available <- setdiff(sel_codes, avail_codes)
-        in_available_not_selected <- setdiff(avail_codes, sel_codes)
-
-        if (length(in_selected_not_available) > 0) {
-          self$issues_coherence$selected_not_in_available <- paste0(
-            "The following selected_indicator_codes are not in available_indicator_codes: ",
-            paste(in_selected_not_available, collapse = ", ")
-          )
-        }
-
-        if (length(in_available_not_selected) > 0) {
-          self$issues_coherence$available_not_in_selected <- paste0(
-            "The following available_indicator_codes have not been selected: ",
-            paste(in_available_not_selected, collapse = ", ")
-          )
-        }
-
-        if (length(self$issues_coherence) == 0) {
-          phr_message(
-            phr_txt("Coherence check passed: available and selected indicator codes align."),
-            origin = "Framework$diagnose_coherence"
-          )
-        } else {
-          phr_message(
-            phr_txt(
-              "Coherence check found {length(self$issues_coherence)} issue(s). Check self$issues_coherence."
-            ),
-            origin = "Framework$diagnose_coherence"
-          )
-        }
-      }, on_error = "abort", origin = "Framework$diagnose_coherence")
-      invisible(self)
     }
   ),
 
   private = list(
-    # Rebuild available_indicator_codes from the current adjusted_schema.
-    .refresh_available_indicator_codes = function() {
+    # Update modified_datetime timestamp.
+    touch = function() {
+      self$metadata$modified_datetime <- Sys.time()
+      invisible(NULL)
+    },
+
+    # Rebuild master_indicator_codes from the current adjusted_schema.
+    .refresh_master_indicator_codes = function() {
       if (!is.null(self$adjusted_schema) &&
           is.data.frame(self$adjusted_schema) &&
           "indicator_code" %in% names(self$adjusted_schema)) {
@@ -502,13 +503,13 @@ Framework <- R6::R6Class(
         }
         ind_codes <- as.character(self$adjusted_schema[["indicator_code"]])
         keep <- !is.na(ind_codes) & nzchar(ind_codes)
-        self$available_indicator_codes <- data.frame(
+        self$master_indicator_codes <- data.frame(
           tool_type      = tool_type_col[keep],
           indicator_code = ind_codes[keep],
           stringsAsFactors = FALSE
         )
       } else {
-        self$available_indicator_codes <- NULL
+        self$master_indicator_codes <- NULL
       }
     }
   )

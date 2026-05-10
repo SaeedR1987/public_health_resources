@@ -364,7 +364,7 @@ IPHRAProtocol <- R6::R6Class(
 
         if (is.null(self$tools)) self$tools <- list()
         self$tools[[tool_name]] <- tool
-        self$touch()
+        private$touch()
         phr_message(
           phr_txt("IPHRA tool '{tool_name}' added."),
           origin = "IPHRAProtocol$add_tools"
@@ -400,7 +400,7 @@ IPHRAProtocol <- R6::R6Class(
         0L
       }
       private$sync_sampling_conditional_metadata()
-      self$touch()
+      private$touch()
       invisible(self)
     },
 
@@ -410,7 +410,7 @@ IPHRAProtocol <- R6::R6Class(
     calculate_sample_sizes = function() {
       super$calculate_sample_sizes()
       private$sync_sampling_conditional_metadata()
-      self$touch()
+      private$touch()
       invisible(self)
     },
 
@@ -481,7 +481,7 @@ IPHRAProtocol <- R6::R6Class(
         tool$survey         <- .update_recall_in_survey(tool$survey)
         tool$revised_survey <- .update_recall_in_survey(tool$revised_survey)
 
-        self$touch()
+        private$touch()
         phr_message(
           phr_txt("Recall date updated to '{date_str}' in tool '{tool_name}'."),
           origin = "IPHRAProtocol$update_recall_date"
@@ -1093,9 +1093,179 @@ IPHRAProtocol <- R6::R6Class(
 
           "@num_other_units" = private$.replace(doc, tag, ""),
 
-          "@specific_objectives"  = private$add_specific_objectives_section(doc),
-          "@research_questions"   = private$add_research_questions_section(doc),
-          "@list_secondary_data"  = private$add_list_secondary_data_section(doc),
+          "@specific_objectives" = {
+            # Replace @specific_objectives with pillar-grouped text objectives
+            inc_codes <- self$get_indicator_codes_from_tools()
+            if (length(inc_codes) == 0) {
+              private$.replace(doc, "@specific_objectives", "")
+            } else {
+              schema_so <- self$get_schema_for_indicators(inc_codes, type = "master")
+              if (!is.data.frame(schema_so) || nrow(schema_so) == 0) {
+                private$.replace(doc, "@specific_objectives", "")
+              } else {
+                cols_needed_so <- c("pillar", "objective_code", "text_objective")
+                if (!all(cols_needed_so %in% names(schema_so))) {
+                  private$.replace(doc, "@specific_objectives", "")
+                } else {
+                  obj_df_so <- unique(schema_so[, cols_needed_so, drop = FALSE])
+                  obj_df_so <- obj_df_so[!is.na(obj_df_so$text_objective) & nzchar(obj_df_so$text_objective), ]
+                  if (nrow(obj_df_so) == 0) {
+                    private$.replace(doc, "@specific_objectives", "")
+                  } else {
+                    pillars_so <- unique(obj_df_so$pillar[!is.na(obj_df_so$pillar) & nzchar(obj_df_so$pillar)])
+                    items_so <- list()
+                    first_pillar_so <- TRUE
+                    for (p_so in pillars_so) {
+                      sub_objs_so <- obj_df_so$text_objective[obj_df_so$pillar == p_so]
+                      sub_objs_so <- unique(sub_objs_so[!is.na(sub_objs_so) & nzchar(sub_objs_so)])
+                      items_so <- c(items_so, list(list(text = p_so, bold = TRUE,
+                                                        space_before_pt = if (first_pillar_so) 0L else 6L,
+                                                        space_after_pt = 0L, font_size_pt = 10L)))
+                      for (obj_so in sub_objs_so) {
+                        items_so <- c(items_so, list(list(text = paste0("\u2022 ", obj_so), bold = FALSE,
+                                                          space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
+                      }
+                      first_pillar_so <- FALSE
+                    }
+                    inserted_so <- tryCatch(
+                      private$.replace_tag_in_cell(doc, "@specific_objectives", items_so),
+                      error = function(e) {
+                        phr_warning(phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
+                                    origin = "IPHRAProtocol$handle_calculate")
+                        FALSE
+                      }
+                    )
+                    if (!inserted_so) {
+                      lines_so <- vapply(items_so, `[[`, character(1L), "text")
+                      doc <- private$.replace(doc, "@specific_objectives", paste(lines_so, collapse = "\n"))
+                    }
+                    doc
+                  }
+                }
+              }
+            }
+          },
+
+          "@research_questions" = {
+            # Replace @research_questions grouped by objective_research_question
+            inc_codes_rq <- self$get_indicator_codes_from_tools()
+            if (length(inc_codes_rq) == 0) {
+              private$.replace(doc, "@research_questions", "")
+            } else {
+              schema_rq <- self$get_schema_for_indicators(inc_codes_rq, type = "master")
+              if (!is.data.frame(schema_rq) || nrow(schema_rq) == 0 ||
+                  !"research_question" %in% names(schema_rq)) {
+                private$.replace(doc, "@research_questions", "")
+              } else {
+                has_orq_rq <- "objective_research_question" %in% names(schema_rq)
+                seen_orq_rq <- character(0)
+                orq_to_rqs_rq <- list()
+                for (j_rq in seq_len(nrow(schema_rq))) {
+                  orq_rq <- if (has_orq_rq) as.character(schema_rq$objective_research_question[j_rq]) else NA_character_
+                  rq_rq  <- as.character(schema_rq$research_question[j_rq])
+                  if (is.na(orq_rq) || !nzchar(orq_rq)) orq_rq <- "(General)"
+                  if (!orq_rq %in% seen_orq_rq) {
+                    seen_orq_rq <- c(seen_orq_rq, orq_rq)
+                    orq_to_rqs_rq[[orq_rq]] <- character(0)
+                  }
+                  if (!is.na(rq_rq) && nzchar(rq_rq) && !rq_rq %in% orq_to_rqs_rq[[orq_rq]]) {
+                    orq_to_rqs_rq[[orq_rq]] <- c(orq_to_rqs_rq[[orq_rq]], rq_rq)
+                  }
+                }
+                items_rq <- list()
+                first_orq_rq <- TRUE
+                for (orq_rq in seen_orq_rq) {
+                  items_rq <- c(items_rq, list(list(text = orq_rq, bold = TRUE,
+                                                    space_before_pt = if (first_orq_rq) 0L else 6L,
+                                                    space_after_pt = 0L, font_size_pt = 10L)))
+                  for (rq_item in orq_to_rqs_rq[[orq_rq]]) {
+                    items_rq <- c(items_rq, list(list(text = paste0("\u2022 ", rq_item), bold = FALSE,
+                                                      space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
+                  }
+                  first_orq_rq <- FALSE
+                }
+                inserted_rq <- tryCatch(
+                  private$.replace_tag_in_cell(doc, "@research_questions", items_rq),
+                  error = function(e) {
+                    phr_warning(phr_txt("Could not insert formatted research questions: {conditionMessage(e)}"),
+                                origin = "IPHRAProtocol$handle_calculate")
+                    FALSE
+                  }
+                )
+                if (!inserted_rq) {
+                  lines_rq <- vapply(items_rq, `[[`, character(1L), "text")
+                  doc <- private$.replace(doc, "@research_questions", paste(lines_rq, collapse = "\n"))
+                }
+                doc
+              }
+            }
+          },
+
+          "@list_secondary_data" = {
+            # Replace @list_secondary_data with formatted secondary data sources
+            sdr_lsd <- self$secondary_data
+            if (is.null(sdr_lsd) || length(sdr_lsd) == 0) {
+              doc <- private$.replace(doc, "@list_secondary_data", "")
+              doc
+            } else {
+              master_lsd <- self$get_schema(type = "master")
+              get_obj_text_lsd <- function(code_lsd) {
+                if (!is.null(master_lsd) && is.data.frame(master_lsd) &&
+                    all(c("objective_code", "text_objective") %in% names(master_lsd))) {
+                  idx_lsd <- which(as.character(master_lsd$objective_code) == code_lsd)
+                  if (length(idx_lsd) > 0L) return(as.character(master_lsd$text_objective[idx_lsd[1L]]))
+                }
+                code_lsd
+              }
+              codes_lsd <- names(sdr_lsd)
+              unique_codes_lsd <- unique(codes_lsd)
+              items_lsd <- list()
+              first_obj_lsd <- TRUE
+              for (code_lsd in unique_codes_lsd) {
+                items_lsd <- c(items_lsd, list(list(text = get_obj_text_lsd(code_lsd), bold = TRUE,
+                                                    space_before_pt = if (first_obj_lsd) 0L else 6L,
+                                                    space_after_pt = 0L, font_size_pt = NULL)))
+                first_obj_lsd <- FALSE
+                src_indices_lsd <- which(codes_lsd == code_lsd)
+                for (i_lsd in src_indices_lsd) {
+                  items_lsd <- c(items_lsd, list(list(text = as.character(sdr_lsd[[i_lsd]]), bold = FALSE,
+                                                      space_before_pt = 0L, space_after_pt = 0L, font_size_pt = NULL)))
+                }
+              }
+              inserted_lsd <- tryCatch(
+                private$.replace_tag_in_cell(doc, "@list_secondary_data", items_lsd),
+                error = function(e) FALSE
+              )
+              if (!inserted_lsd) {
+                body_xml_lsd <- officer::docx_body_xml(doc)
+                ns_lsd <- xml2::xml_ns(body_xml_lsd)
+                all_paras_lsd <- xml2::xml_find_all(body_xml_lsd, ".//w:p", ns = ns_lsd)
+                target_para_lsd <- NULL
+                for (p_lsd in all_paras_lsd) {
+                  if (grepl("@list_secondary_data", xml2::xml_text(p_lsd), fixed = TRUE)) {
+                    target_para_lsd <- p_lsd
+                    break
+                  }
+                }
+                if (!is.null(target_para_lsd)) {
+                  for (item_lsd in items_lsd) {
+                    node_lsd <- private$.make_w_para(
+                      text = item_lsd$text, bold = isTRUE(item_lsd$bold),
+                      space_before_pt = if (is.null(item_lsd$space_before_pt)) 0L else item_lsd$space_before_pt,
+                      space_after_pt  = if (is.null(item_lsd$space_after_pt))  0L else item_lsd$space_after_pt,
+                      font_size_pt = item_lsd$font_size_pt
+                    )
+                    xml2::xml_add_sibling(target_para_lsd, node_lsd, .where = "before")
+                  }
+                  xml2::xml_remove(target_para_lsd)
+                } else {
+                  doc <- private$.replace(doc, "@list_secondary_data",
+                                          paste(vapply(items_lsd, `[[`, character(1L), "text"), collapse = "\n"))
+                }
+              }
+              doc
+            }
+          },
 
           "@precision_gen_indicator" = private$.replace(doc, tag, {
             if (!is.null(st) && all(c("pop_precision", "pop_indicator") %in% names(st))) {
@@ -1266,7 +1436,7 @@ IPHRAProtocol <- R6::R6Class(
         doc <- switch(
           tag,
           "@primary_data_sources_table"   = private$add_primary_data_sources_table(doc),
-          "@secondary_data_sources_table" = private$add_sdr_section(doc),
+          "@secondary_data_sources_table" = private$add_sdr_table(doc),
           "@sample_size_hh_gen_table"     = private$add_sample_size_gen_table(doc),
           "@sample_size_hh_ind_table"     = private$add_sample_size_ind_table(doc),
           "@sample_size_hh_mort_table"    = private$add_sample_size_mort_table(doc),
@@ -1278,169 +1448,9 @@ IPHRAProtocol <- R6::R6Class(
 
     # Handle all schema 'image' type rows.
     # The IPHRA framework image (@modified_framework_svg) is inserted
-    # together with the SDR table inside add_sdr_section(), which is routed
+    # together with the SDR table inside add_sdr_table(), which is routed
     # from the @secondary_data_sources_table tag in handle_table().
     handle_image = function(doc, rows) {
-      doc
-    },
-
-    # Replace @specific_objectives in the metadata table cell with a
-    # pillar-grouped list of text objectives for all indicators in tools.
-    # Headers (pillars) are bolded; 10 pt space-before separates pillar groups
-    # (applied to every non-first bold header instead of a blank-line paragraph).
-    add_specific_objectives_section = function(doc) {
-      inc_codes <- self$get_indicator_codes_from_tools()
-      if (length(inc_codes) == 0) {
-        return(private$.replace(doc, "@specific_objectives", ""))
-      }
-
-      schema <- self$get_schema_for_indicators(inc_codes, type = "master")
-      if (!is.data.frame(schema) || nrow(schema) == 0) {
-        return(private$.replace(doc, "@specific_objectives", ""))
-      }
-
-      # Build: pillar → unique text_objectives
-      cols_needed <- c("pillar", "objective_code", "text_objective")
-      if (!all(cols_needed %in% names(schema))) {
-        return(private$.replace(doc, "@specific_objectives", ""))
-      }
-
-      obj_df <- unique(schema[, cols_needed, drop = FALSE])
-      obj_df <- obj_df[!is.na(obj_df$text_objective) & nzchar(obj_df$text_objective), ]
-
-      if (nrow(obj_df) == 0) {
-        return(private$.replace(doc, "@specific_objectives", ""))
-      }
-
-      pillars <- unique(obj_df$pillar[!is.na(obj_df$pillar) & nzchar(obj_df$pillar)])
-
-      # Build ordered list of paragraph items for insertion inside the table cell
-      items <- list()
-      first_pillar <- TRUE
-      for (p in pillars) {
-        sub_objs <- obj_df$text_objective[obj_df$pillar == p]
-        sub_objs <- unique(sub_objs[!is.na(sub_objs) & nzchar(sub_objs)])
-        # 6 pt space-before on every header except the first; 0 pt after on all
-        items <- c(items, list(list(
-          text            = p,
-          bold            = TRUE,
-          space_before_pt = if (first_pillar) 0L else 6L,
-          space_after_pt  = 0L,
-          font_size_pt    = 10L
-        )))
-        for (obj in sub_objs) {
-          items <- c(items, list(list(
-            text            = paste0("\u2022 ", obj),
-            bold            = FALSE,
-            space_before_pt = 0L,
-            space_after_pt  = 0L,
-            font_size_pt    = 10L
-          )))
-        }
-        first_pillar <- FALSE
-      }
-
-      # Primary path: XML insertion directly inside the table cell
-      inserted <- tryCatch(
-        private$.replace_tag_in_cell(doc, "@specific_objectives", items),
-        error = function(e) {
-          phr_warning(
-            phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
-            origin = "IPHRAProtocol$add_specific_objectives_section"
-          )
-          FALSE
-        }
-      )
-
-      if (!inserted) {
-        # Fallback: plain text replacement (no blank lines — just a separator dash)
-        lines <- character(0)
-        first_pillar <- TRUE
-        for (item in items) {
-          lines <- c(lines, item$text)
-        }
-        doc <- private$.replace(doc, "@specific_objectives", paste(lines, collapse = "\n"))
-      }
-      doc
-    },
-
-    # Replace @research_questions in the metadata table cell.
-    # Groups research_question values under their objective_research_question
-    # (bolded header), each question on its own line; 10 pt space-before on
-    # every non-first bold header replaces the previous blank-line paragraph.
-    add_research_questions_section = function(doc) {
-      inc_codes <- self$get_indicator_codes_from_tools()
-      if (length(inc_codes) == 0) {
-        return(private$.replace(doc, "@research_questions", ""))
-      }
-
-      schema <- self$get_schema_for_indicators(inc_codes, type = "master")
-      if (!is.data.frame(schema) || nrow(schema) == 0 ||
-          !"research_question" %in% names(schema)) {
-        return(private$.replace(doc, "@research_questions", ""))
-      }
-
-      has_orq <- "objective_research_question" %in% names(schema)
-      # Build objective_research_question → research_questions map
-      # Preserve ordering by first appearance
-      seen_orq <- character(0)
-      orq_to_rqs <- list()
-
-      for (i in seq_len(nrow(schema))) {
-        orq <- if (has_orq) as.character(schema$objective_research_question[i]) else NA_character_
-        rq  <- as.character(schema$research_question[i])
-        if (is.na(orq) || !nzchar(orq)) orq <- "(General)"
-        if (!orq %in% seen_orq) {
-          seen_orq <- c(seen_orq, orq)
-          orq_to_rqs[[orq]] <- character(0)
-        }
-        if (!is.na(rq) && nzchar(rq) && !rq %in% orq_to_rqs[[orq]]) {
-          orq_to_rqs[[orq]] <- c(orq_to_rqs[[orq]], rq)
-        }
-      }
-
-      # Build ordered list of paragraph items for insertion inside the table cell
-      items <- list()
-      first_orq <- TRUE
-      for (orq in seen_orq) {
-        items <- c(items, list(list(
-          text            = orq,
-          bold            = TRUE,
-          space_before_pt = if (first_orq) 0L else 6L,
-          space_after_pt  = 0L,
-          font_size_pt    = 10L
-        )))
-        for (rq in orq_to_rqs[[orq]]) {
-          items <- c(items, list(list(
-            text            = paste0("\u2022 ", rq),
-            bold            = FALSE,
-            space_before_pt = 0L,
-            space_after_pt  = 0L,
-            font_size_pt    = 10L
-          )))
-        }
-        first_orq <- FALSE
-      }
-
-      # Primary path: XML insertion directly inside the table cell
-      inserted <- tryCatch(
-        private$.replace_tag_in_cell(doc, "@research_questions", items),
-        error = function(e) {
-          phr_warning(
-            phr_txt("Could not insert formatted research questions: {conditionMessage(e)}"),
-            origin = "IPHRAProtocol$add_research_questions_section"
-          )
-          FALSE
-        }
-      )
-
-      if (!inserted) {
-        lines <- character(0)
-        for (item in items) {
-          lines <- c(lines, item$text)
-        }
-        doc <- private$.replace(doc, "@research_questions", paste(lines, collapse = "\n"))
-      }
       doc
     },
 
@@ -1544,7 +1554,7 @@ IPHRAProtocol <- R6::R6Class(
     #
     # Display dimensions are fixed to the portrait page content width (6.5 in)
     # so that Word never stretches a low-resolution image.
-    add_sdr_section = function(doc) {
+    add_sdr_table = function(doc) {
       # ── Framework SVG ──────────────────────────────────────────────────
       svg_content <- tryCatch(
         self$framework$adjusted_svg %||% self$framework$master_svg,
@@ -1573,11 +1583,11 @@ IPHRAProtocol <- R6::R6Class(
               png_inserted <- TRUE
             }, error = function(e2) {
               phr_warning(phr_txt("Could not insert framework SVG image (magick): {conditionMessage(e2)}"),
-                          origin = "IPHRAProtocol$add_sdr_section")
+                          origin = "IPHRAProtocol$add_sdr_table")
             })
           }, error = function(e) {
             phr_warning(phr_txt("magick SVG rasterisation failed: {conditionMessage(e)}"),
-                        origin = "IPHRAProtocol$add_sdr_section")
+                        origin = "IPHRAProtocol$add_sdr_table")
           })
         }
 
@@ -1595,11 +1605,11 @@ IPHRAProtocol <- R6::R6Class(
               png_inserted <- TRUE
             }, error = function(e2) {
               phr_warning(phr_txt("Could not insert framework SVG image (rsvg): {conditionMessage(e2)}"),
-                          origin = "IPHRAProtocol$add_sdr_section")
+                          origin = "IPHRAProtocol$add_sdr_table")
             })
           }, error = function(e) {
             phr_warning(phr_txt("rsvg SVG-to-PNG conversion failed: {conditionMessage(e)}"),
-                        origin = "IPHRAProtocol$add_sdr_section")
+                        origin = "IPHRAProtocol$add_sdr_table")
           })
         }
 
@@ -1674,98 +1684,10 @@ IPHRAProtocol <- R6::R6Class(
         doc <- officer::body_remove(doc)
       }, error = function(e) {
         phr_warning(phr_txt("Could not insert secondary data table: {conditionMessage(e)}"),
-                    origin = "IPHRAProtocol$add_sdr_section")
+                    origin = "IPHRAProtocol$add_sdr_table")
         doc <<- private$.replace(doc, "@secondary_data_sources_table", "")
       })
 
-      doc
-    },
-
-    # Replace @list_secondary_data with formatted paragraphs.
-    # Groups sources by objective code, shows the text objective as a bold
-    # header (6 pts space-before on every header except the first, 0 pts after),
-    # and each source on its own plain line (0 pts before/after).
-    add_list_secondary_data_section = function(doc) {
-      sdr <- self$secondary_data
-      if (is.null(sdr) || length(sdr) == 0) {
-        doc <- private$.replace(doc, "@list_secondary_data", "")
-        return(doc)
-      }
-
-      master <- self$get_schema(type = "master")
-
-      get_obj_text <- function(code) {
-        if (!is.null(master) && is.data.frame(master) &&
-            all(c("objective_code", "text_objective") %in% names(master))) {
-          idx <- which(as.character(master$objective_code) == code)
-          if (length(idx) > 0L) return(as.character(master$text_objective[idx[1L]]))
-        }
-        code
-      }
-
-      codes        <- names(sdr)
-      unique_codes <- unique(codes)
-
-      items      <- list()
-      first_obj  <- TRUE
-      for (code in unique_codes) {
-        items <- c(items, list(list(
-          text            = get_obj_text(code),
-          bold            = TRUE,
-          space_before_pt = if (first_obj) 0L else 6L,
-          space_after_pt  = 0L,
-          font_size_pt    = NULL  # inherit from document paragraph style
-        )))
-        first_obj <- FALSE
-        src_indices <- which(codes == code)
-        for (i in src_indices) {
-          items <- c(items, list(list(
-            text            = as.character(sdr[[i]]),
-            bold            = FALSE,
-            space_before_pt = 0L,
-            space_after_pt  = 0L,
-            font_size_pt    = NULL  # inherit from document paragraph style
-          )))
-        }
-      }
-
-      # Try table-cell replacement first; fall back to XML body insertion
-      inserted <- tryCatch(
-        private$.replace_tag_in_cell(doc, "@list_secondary_data", items),
-        error = function(e) FALSE
-      )
-
-      if (!inserted) {
-        # Body-paragraph XML insertion
-        body_xml <- officer::docx_body_xml(doc)
-        ns       <- xml2::xml_ns(body_xml)
-        all_paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
-        target_para <- NULL
-        for (p in all_paras) {
-          if (grepl("@list_secondary_data", xml2::xml_text(p), fixed = TRUE)) {
-            target_para <- p
-            break
-          }
-        }
-        if (!is.null(target_para)) {
-          for (item in items) {
-            node <- private$.make_w_para(
-              text            = item$text,
-              bold            = isTRUE(item$bold),
-              space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt,
-              space_after_pt  = if (is.null(item$space_after_pt))  0L else item$space_after_pt,
-              font_size_pt    = item$font_size_pt
-            )
-            xml2::xml_add_sibling(target_para, node, .where = "before")
-          }
-          xml2::xml_remove(target_para)
-        } else {
-          # Final fallback: plain text
-          doc <- private$.replace(doc, "@list_secondary_data",
-                                  paste(vapply(items, `[[`, character(1L), "text"),
-                                        collapse = "\n"))
-        }
-      }
       doc
     },
 

@@ -164,12 +164,12 @@ test_that("IPHRAProtocol stores secondary_data", {
 
 # ── Protocol helpers ─────────────────────────────────────────────────────────
 
-test_that("Protocol$touch updates modified_date", {
+test_that("Protocol touch updates modified_datetime via update_metadata", {
   p <- Protocol$new()
-  t_before <- p$metadata$modified_date
+  t_before <- p$metadata$modified_datetime
   Sys.sleep(0.01)
-  p$touch()
-  expect_true(p$metadata$modified_date > t_before)
+  p$update_metadata(country_name = "TestLand")
+  expect_true(p$metadata$modified_datetime > t_before)
 })
 
 test_that("Protocol$get_schema returns data frame from framework", {
@@ -328,12 +328,12 @@ test_that("IPHRAProtocol stores user-defined numeric target fields", {
 
 test_that("Protocol$update_metadata updates fields and touch()", {
   p <- IPHRAProtocol$new()
-  t_before <- p$metadata$modified_date
+  t_before <- p$metadata$modified_datetime
   Sys.sleep(0.01)
   p$update_metadata(country_name = "Kenya", num_geographic_units = 3)
   expect_equal(p$metadata$country_name, "Kenya")
   expect_equal(p$metadata$num_geographic_units, 3)
-  expect_true(p$metadata$modified_date > t_before)
+  expect_true(p$metadata$modified_datetime > t_before)
 })
 
 test_that("Protocol$update_metadata errors with no named arguments", {

@@ -87,7 +87,7 @@ Protocol <- R6::R6Class(
     #' @field metadata List containing protocol metadata
     metadata = list(
       created_date = NULL,
-      modified_date = NULL,
+      modified_datetime = NULL,
       month_year = NULL,
       country_name = NULL,
       assessment_title = NULL,
@@ -152,7 +152,7 @@ Protocol <- R6::R6Class(
           origin = "Protocol$initialize"
         )
         self$metadata$created_date <- Sys.time()
-        self$metadata$modified_date <- Sys.time()
+        self$metadata$modified_datetime <- Sys.time()
         self$metadata$assessment_title <- assessment_title
         self$metadata$country_name <- country_name
         self$metadata$month_year <- month_year
@@ -196,85 +196,9 @@ Protocol <- R6::R6Class(
       )
       self$framework <- framework
       self$sync_framework_catalog_fields
-      self$touch()
+      private$touch()
       private$check_issues()
       invisible(self)
-    },
-
-    #' @description Run a Framework method through Protocol orchestration.
-    #' @param method Character. Method name on \code{self$framework}.
-    #' @param ... Arguments forwarded to the framework method.
-    #' @return The underlying Framework method return value.
-    access_framework = function(method, ...) {
-      res <- private$call_orchestrated_method(
-        target   = self$framework,
-        method   = method,
-        args     = list(...),
-        origin   = "Protocol$access_framework",
-        sync_kinds = c("framework")
-      )
-      res
-    },
-
-    #' @description Run a Tool method through Protocol orchestration.
-    #' @param tool_name Character. Tool key in \code{self$tools}.
-    #' @param method Character. Method name on the Tool object.
-    #' @param ... Arguments forwarded to the Tool method.
-    #' @return The underlying Tool method return value.
-    access_tool = function(tool_name, method, ...) {
-      phr_assert(
-        !is.null(self$tools) && tool_name %in% names(self$tools),
-        message = phr_txt("Tool '{tool_name}' not found."),
-        origin  = "Protocol$access_tool"
-      )
-      res <- private$call_orchestrated_method(
-        target   = self$tools[[tool_name]],
-        method   = method,
-        args     = list(...),
-        origin   = "Protocol$access_tool",
-        sync_kinds = c("tools")
-      )
-      res
-    },
-
-    #' @description Run a SamplingFrame method through Protocol orchestration.
-    #' @param method Character. Method name on \code{self$sampling_frame}.
-    #' @param ... Arguments forwarded to the SamplingFrame method.
-    #' @return The underlying SamplingFrame method return value.
-    access_sampling_frame = function(method, ...) {
-      phr_assert(
-        !is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame"),
-        message = phr_txt("No SamplingFrame object is attached to this Protocol."),
-        origin  = "Protocol$access_sampling_frame"
-      )
-      res <- private$call_orchestrated_method(
-        target   = self$sampling_frame,
-        method   = method,
-        args     = list(...),
-        origin   = "Protocol$access_sampling_frame",
-        sync_kinds = c("sampling_frame")
-      )
-      res
-    },
-
-    #' @description Run a Sample method through Protocol orchestration.
-    #' @param method Character. Method name on \code{self$sample_table}.
-    #' @param ... Arguments forwarded to the Sample method.
-    #' @return The underlying Sample method return value.
-    access_sample = function(method, ...) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$access_sample"
-      )
-      res <- private$call_orchestrated_method(
-        target   = self$sample_table,
-        method   = method,
-        args     = list(...),
-        origin   = "Protocol$access_sample",
-        sync_kinds = c("sample")
-      )
-      res
     },
 
     #' @description Synchronize orchestrator-level cached fields from held
@@ -330,7 +254,7 @@ Protocol <- R6::R6Class(
 
         self$tools[[tool_name]] <- tool
         self$sync_tool_indicator_catalog_fields
-        self$touch()
+        private$touch()
         private$check_issues()
         phr_message(
           phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
@@ -345,7 +269,7 @@ Protocol <- R6::R6Class(
     select_indicators = function(indicator_list) {
       self$selected_indicators <- indicator_list
       self$sync_tool_indicator_catalog_fields
-      self$touch()
+      private$touch()
       private$check_issues()
       invisible(self)
     },
@@ -364,27 +288,18 @@ Protocol <- R6::R6Class(
         country_name = self$metadata$country_name,
         month_year = self$metadata$month_year,
         created = self$metadata$created_date,
-        modified = self$metadata$modified_date,
+        modified = self$metadata$modified_datetime,
         num_objectives = count_objectives(self$objectives),
         num_tools = length(self$tools),
         num_issues = length(self$issues)
       )
     },
 
-    #' @description Update the \code{modified_date} timestamp to the current
-    #'   system time.  Call this whenever the protocol or any of its held
-    #'   objects (tools, sampling frame, sample table, metadata) is mutated.
-    #' @return Invisibly returns \code{self} for method chaining.
-    touch = function() {
-      self$metadata$modified_date <- Sys.time()
-      invisible(self)
-    },
-
     #' @description Update one or more metadata fields by name.
     #'
     #' Assigns each named value to the corresponding key in
     #' \code{self$metadata} and calls \code{touch()} to update the
-    #' \code{modified_date}.  Unknown keys are silently added as new fields;
+    #' \code{modified_datetime}.  Unknown keys are silently added as new fields;
     #' existing keys are overwritten.
     #'
     #' @param ... Named arguments where each name is a metadata field key and
@@ -408,7 +323,7 @@ Protocol <- R6::R6Class(
         for (key in names(args)) {
           self$metadata[[key]] <- args[[key]]
         }
-        self$touch()
+        private$touch()
         phr_message(
           phr_txt("Metadata updated: {paste(names(args), collapse=', ')}."),
           origin = "Protocol$update_metadata"
@@ -764,6 +679,137 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
+    # ── Framework delegation methods ───────────────────────────────────────
+
+    #' @description Set primary objectives on the attached Framework.
+    #'
+    #' Delegates to \code{self$framework$set_primary_objectives()} and then
+    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
+    #'
+    #' @param objective_codes Numeric vector of primary objective codes.
+    #' @return Invisibly returns \code{self} for method chaining.
+    framework_set_primary_objectives = function(objective_codes) {
+      phr_assert(
+        !is.null(self$framework) && inherits(self$framework, "Framework"),
+        message = phr_txt("No Framework is attached to this Protocol."),
+        origin  = "Protocol$framework_set_primary_objectives"
+      )
+      self$framework$set_primary_objectives(objective_codes)
+      self$sync_framework_catalog_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Set secondary objectives on the attached Framework.
+    #'
+    #' Delegates to \code{self$framework$set_secondary_objectives()} and then
+    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
+    #'
+    #' @param objective_codes Numeric vector of secondary objective codes.
+    #' @return Invisibly returns \code{self} for method chaining.
+    framework_set_secondary_objectives = function(objective_codes) {
+      phr_assert(
+        !is.null(self$framework) && inherits(self$framework, "Framework"),
+        message = phr_txt("No Framework is attached to this Protocol."),
+        origin  = "Protocol$framework_set_secondary_objectives"
+      )
+      self$framework$set_secondary_objectives(objective_codes)
+      self$sync_framework_catalog_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Modify the adjusted SVG on the attached Framework.
+    #'
+    #' Delegates to \code{self$framework$modify_adjusted_svg()} and then
+    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
+    #'
+    #' @param primary_objective_codes Numeric vector of primary objective codes.
+    #'   When \code{NULL} (default) the Framework's \code{primary_objectives}
+    #'   field is used as a fallback.
+    #' @param secondary_objective_codes Numeric vector of secondary objective
+    #'   codes.  When \code{NULL} (default) the Framework's
+    #'   \code{secondary_objectives} field is used as a fallback.
+    #' @return Invisibly returns \code{self} for method chaining.
+    framework_modify_svg = function(primary_objective_codes = NULL,
+                                    secondary_objective_codes = NULL) {
+      phr_assert(
+        !is.null(self$framework) && inherits(self$framework, "Framework"),
+        message = phr_txt("No Framework is attached to this Protocol."),
+        origin  = "Protocol$framework_modify_svg"
+      )
+      self$framework$modify_adjusted_svg(
+        primary_objective_codes   = primary_objective_codes,
+        secondary_objective_codes = secondary_objective_codes
+      )
+      self$sync_framework_catalog_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Modify the adjusted schema on the attached Framework.
+    #'
+    #' Delegates to \code{self$framework$modify_adjusted_schema()} and then
+    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
+    #'
+    #' @param objective_codes Character or numeric vector of objective codes to
+    #'   retain.  Pass \code{NULL} (the default) to include all rows.
+    #' @return Invisibly returns \code{self} for method chaining.
+    framework_modify_schema = function(objective_codes = NULL) {
+      phr_assert(
+        !is.null(self$framework) && inherits(self$framework, "Framework"),
+        message = phr_txt("No Framework is attached to this Protocol."),
+        origin  = "Protocol$framework_modify_schema"
+      )
+      self$framework$modify_adjusted_schema(objective_codes)
+      self$sync_framework_catalog_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Retrieve a schema data frame directly from the attached
+    #'   Framework.
+    #'
+    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
+    #' @return Data frame of the requested schema, or an empty \code{data.frame()}
+    #'   when the Framework or the requested schema is absent.
+    framework_get_schema = function(type = c("master", "adjusted")) {
+      type <- match.arg(type)
+      phr_assert(
+        !is.null(self$framework) && inherits(self$framework, "Framework"),
+        message = phr_txt("No Framework is attached to this Protocol."),
+        origin  = "Protocol$framework_get_schema"
+      )
+      schema <- if (type == "adjusted") {
+        self$framework$adjusted_schema
+      } else {
+        self$framework$master_schema
+      }
+      if (!is.null(schema) && is.data.frame(schema)) {
+        return(as.data.frame(schema, stringsAsFactors = FALSE))
+      }
+      data.frame()
+    },
+
+    #' @description Retrieve the SVG string directly from the attached Framework.
+    #'
+    #' @param type Character. \code{"master"} or \code{"adjusted"} (default).
+    #' @return Character string containing the SVG markup, or \code{NULL} when
+    #'   unavailable.
+    framework_get_svg = function(type = c("adjusted", "master")) {
+      type <- match.arg(type)
+      phr_assert(
+        !is.null(self$framework) && inherits(self$framework, "Framework"),
+        message = phr_txt("No Framework is attached to this Protocol."),
+        origin  = "Protocol$framework_get_svg"
+      )
+      if (type == "master") {
+        self$framework$master_svg
+      } else {
+        self$framework$adjusted_svg %||% self$framework$master_svg
+      }
+    },
+
     #' @description Empty hook for generating a Word document report.
     #'
     #' This base implementation is a no-op stub.  Subclasses (\emph{e.g.}
@@ -888,38 +934,10 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
-    call_orchestrated_method = function(target, method, args, origin, sync_kinds = character(0)) {
-      phr_assert(
-        !is.null(target) && methods::is(target, "R6"),
-        message = phr_txt("Target object is missing or invalid."),
-        origin  = origin
-      )
-      phr_assert(
-        is.character(method) && length(method) == 1L && nzchar(method),
-        message = phr_txt("method must be a single non-empty character string."),
-        origin  = origin
-      )
-      phr_assert(
-        !is.null(target[[method]]),
-        message = phr_txt("Method '{method}' does not exist on target object."),
-        origin  = origin
-      )
-      phr_assert(
-        is.function(target[[method]]),
-        message = phr_txt("Field '{method}' exists on target object but is not callable."),
-        origin  = origin
-      )
-
-      result <- do.call(target[[method]], args)
-
-      if ("framework" %in% sync_kinds) self$sync_framework_catalog_fields
-      if ("tools" %in% sync_kinds) self$sync_tool_indicator_catalog_fields
-      if ("sample" %in% sync_kinds) self$sync_sample_metadata_fields
-      if ("sampling_frame" %in% sync_kinds) self$sync_sampling_frame_fields
-
-      self$touch()
-      private$check_issues()
-      result
+    # Update the modified_datetime timestamp.
+    touch = function() {
+      self$metadata$modified_datetime <- Sys.time()
+      invisible(NULL)
     },
 
     build_objective_catalog = function(schema) {
@@ -1040,267 +1058,6 @@ Protocol <- R6::R6Class(
       officer::read_docx()
     },
 
-    # Replace REACH TOR template placeholders with actual metadata, then
-    # insert a "Protocol Data" section heading before the "Rationale" heading
-    # so that all protocol-specific content sits directly after the Executive
-    # Summary table in the finished document.
-    add_metadata_section = function(doc) {
-      title   <- self$metadata$assessment_title %||% "Protocol Report"
-      country <- self$metadata$country_name     %||% ""
-      period  <- self$metadata$month_year       %||% ""
-      version <- self$metadata$protocol_version %||% "1.0"
-      date_str <- format(Sys.Date(), "%d/%m/%Y")
-
-      # Build objective summary text for the General Objective / Specific
-      # Objectives / Research Questions cells in the Executive Summary table.
-      all_objectives <- flatten_objectives(self$objectives)
-
-      gen_obj_text <- if (length(all_objectives) > 0) {
-        all_objectives[[1]]$text_objective %||% title
-      } else {
-        title
-      }
-
-      spec_obj_text <- if (length(all_objectives) > 0) {
-        paste(vapply(seq_along(all_objectives), function(i) {
-          obj <- all_objectives[[i]]
-          paste0(i, ". ", obj$text_objective %||% "")
-        }, character(1)), collapse = "; ")
-      } else {
-        ""
-      }
-
-      rq_text <- if (length(all_objectives) > 0) {
-        paste(vapply(seq_along(all_objectives), function(i) {
-          obj <- all_objectives[[i]]
-          paste0(i, ". ", obj$short_objective %||% "")
-        }, character(1)), collapse = "; ")
-      } else {
-        ""
-      }
-
-      # Placeholder → replacement pairs (REACH TOR template placeholders).
-      # Single-run placeholders (reliable cross-run replacements marked below).
-      replace_pairs <- list(
-        c("[Research Cycle title]", title),
-        c("[Country]",              country),
-        c("[Release date]",         date_str),
-        c("[Version number]",       paste0("v", version))
-      )
-      if (nzchar(country)) {
-        replace_pairs <- c(replace_pairs, list(
-          c("[Specify name(s) here]", country),
-          c("[Describe here the geographic area that the research aims to provide findings about]",
-            country)
-        ))
-      }
-      if (nzchar(gen_obj_text)) {
-        replace_pairs <- c(replace_pairs, list(
-          c(paste0("[Describe here what this research aims to inform \u2013",
-                   " for specific guidance on this, see Step 1.2 of the",
-                   " IMPACT Research Design Guidelines]"),
-            gen_obj_text)
-        ))
-      }
-      if (nzchar(spec_obj_text)) {
-        replace_pairs <- c(replace_pairs, list(
-          c(paste0("[List here what the research aims to identify to facilitate",
-                   " the general objective \u2013 for specific guidance on this,",
-                   " see Step 1.2 of the IMPACT Research Design Guidelines]"),
-            spec_obj_text)
-        ))
-      }
-      if (nzchar(rq_text)) {
-        replace_pairs <- c(replace_pairs, list(
-          c(paste0("[List here the research questions that will need to be answered",
-                   " to meet the objectives\u2013 for specific guidance on this,",
-                   " see Step 2.1 of the IMPACT Research Design Guidelines]"),
-            rq_text)
-        ))
-      }
-
-      for (rp in replace_pairs) {
-        tryCatch(
-          doc <- officer::body_replace_all_text(doc,
-                                                old_value = rp[1],
-                                                new_value = rp[2],
-                                                fixed     = TRUE),
-          error = function(e) {
-            phr_warning(
-              phr_txt("Placeholder replacement failed for '{rp[1]}': {conditionMessage(e)}"),
-              origin = "Protocol$add_metadata_section"
-            )
-          }
-        )
-      }
-
-      # Navigate to the "Rationale" heading (present in the REACH TOR template)
-      # and insert the "Protocol Data" section heading immediately before it.
-      # This places all protocol-specific content directly after the Executive
-      # Summary table.  Falls back to appending at the end of the document when
-      # "Rationale" is absent (e.g. a custom template without that section).
-      # NOTE: subsequent section methods (add_objectives_section, add_tools_section,
-      # add_sampling_section) rely on the cursor being positioned at the last
-      # inserted paragraph so they can continue appending with pos = "after".
-      meta_line <- paste(
-        Filter(nzchar, c(
-          if (nzchar(country)) paste0("Country: ", country),
-          if (nzchar(period))  paste0("Period: ",  period),
-          paste0("Generated: ", format(Sys.Date(), "%d %B %Y")),
-          paste0("Version: ", version)
-        )),
-        collapse = "  |  "
-      )
-
-      doc <- tryCatch({
-        doc <- officer::cursor_begin(doc)
-        doc <- officer::cursor_reach(doc, keyword = "Rationale")
-        doc <- officer::body_add_par(doc, "Protocol Data", style = "heading 1", pos = "before")
-        doc <- officer::body_add_par(doc, meta_line, style = "Normal", pos = "after")
-        doc
-      }, error = function(e) {
-        # Fallback when "Rationale" section is absent (e.g. custom template).
-        phr_warning(
-          phr_txt("Could not find 'Rationale' heading in template; appending Protocol Data at end of document."),
-          origin = "Protocol$add_metadata_section"
-        )
-        doc <- officer::cursor_end(doc)
-        doc <- officer::body_add_par(doc, "Protocol Data", style = "heading 1")
-        doc <- officer::body_add_par(doc, meta_line, style = "Normal")
-        doc
-      })
-
-      doc
-    },
-
-    # Add the research objectives section after the current cursor position.
-    # When a Framework is attached and has an adjusted_schema, that is used as
-    # the source of objectives.  Falls back to the legacy self$objectives list.
-    add_objectives_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Research Objectives", style = "heading 2", pos = "after")
-
-      # Prefer framework adjusted_schema when available
-      obj_df <- NULL
-      if (!is.null(self$framework) && inherits(self$framework, "Framework") &&
-          !is.null(self$framework$adjusted_schema) &&
-          is.data.frame(self$framework$adjusted_schema) &&
-          nrow(self$framework$adjusted_schema) > 0) {
-        schema <- self$framework$adjusted_schema
-        cols_map <- list(
-          Sector       = "sector",
-          Pillar       = "pillar",
-          "Sub-Pillar" = "sub_pillar",
-          ID           = "short_objective",
-          Objective    = "text_objective"
-        )
-        obj_df <- as.data.frame(
-          lapply(cols_map, function(col) {
-            if (col %in% names(schema)) as.character(schema[[col]]) else rep("", nrow(schema))
-          }),
-          check.names = FALSE,
-          stringsAsFactors = FALSE
-        )
-      } else {
-        all_objectives <- flatten_objectives(self$objectives)
-        if (length(all_objectives) > 0) {
-          obj_df <- do.call(rbind, lapply(all_objectives, function(x) {
-            data.frame(
-              Sector        = as.character(x$sector          %||% ""),
-              Pillar        = as.character(x$pillar          %||% ""),
-              "Sub-Pillar"  = as.character(x$sub_pillar      %||% ""),
-              ID            = as.character(x$short_objective %||% ""),
-              Objective     = as.character(x$text_objective  %||% ""),
-              "Data Source" = as.character(x$data_source     %||% "primary"),
-              check.names   = FALSE,
-              stringsAsFactors = FALSE
-            )
-          }))
-        }
-      }
-
-      if (is.null(obj_df) || nrow(obj_df) == 0) {
-        return(officer::body_add_par(
-          doc, "No objectives have been defined.", style = "Normal", pos = "after"
-        ))
-      }
-
-      ft <- flextable::flextable(obj_df)
-      ft <- flextable::theme_zebra(ft)
-      ft <- flextable::autofit(ft)
-      flextable::body_add_flextable(doc, ft, pos = "after")
-    },
-
-    # Add the data collection tools section after the current cursor position.
-    # Skipped (with a placeholder note) when self$tools is empty.
-    add_tools_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Data Collection Tools", style = "heading 2", pos = "after")
-
-      if (length(self$tools) == 0) {
-        return(officer::body_add_par(
-          doc, "No data collection tools have been defined.", style = "Normal", pos = "after"
-        ))
-      }
-
-      for (i in seq_along(self$tools)) {
-        tool <- self$tools[[i]]
-
-        if (methods::is(tool, "R6")) {
-          tool_name  <- tryCatch(tool$get_name(),      error = function(e) {
-            phr_warning(phr_txt("Could not read name for tool {i}: {conditionMessage(e)}"),
-                        origin = "Protocol$add_tools_section")
-            paste("Tool", i)
-          })
-          tool_type  <- tryCatch(tool$get_tool_type(), error = function(e) {
-            phr_warning(phr_txt("Could not read type for tool {i}: {conditionMessage(e)}"),
-                        origin = "Protocol$add_tools_section")
-            "unknown"
-          })
-          survey     <- tryCatch(tool$survey,    error = function(e) {
-            phr_warning(phr_txt("Could not read survey sheet for tool {i}: {conditionMessage(e)}"),
-                        origin = "Protocol$add_tools_section")
-            NULL
-          })
-          indicators <- private$extract_indicators_from_survey(survey)
-        } else {
-          tool_name  <- tool$tool_name  %||% paste("Tool", i)
-          tool_type  <- tool$tool_type  %||% "unknown"
-          indicators <- tool$indicators %||% character(0)
-        }
-
-        doc <- officer::body_add_par(
-          doc,
-          paste0(i, ". ", tool_name, " (", tool_type, ")"),
-          style = "heading 3",
-          pos   = "after"
-        )
-
-        if (length(indicators) > 0) {
-          ind_df <- data.frame(Indicator = as.character(indicators), stringsAsFactors = FALSE)
-          ft <- flextable::flextable(ind_df)
-          ft <- flextable::autofit(ft)
-          doc <- flextable::body_add_flextable(doc, ft, pos = "after")
-        } else {
-          doc <- officer::body_add_par(
-            doc, "No indicators defined for this tool.", style = "Normal", pos = "after"
-          )
-        }
-      }
-
-      doc
-    },
-
-    # Add a sampling design section (placeholder for base Protocol class).
-    # SurveyProtocol overrides this with a full section.
-    add_sampling_section = function(doc) {
-      doc <- officer::body_add_par(doc, "Sampling Design", style = "heading 2", pos = "after")
-      officer::body_add_par(
-        doc,
-        "No sampling information available for this protocol type.",
-        style = "Normal",
-        pos   = "after"
-      )
-    },
-
     # Apply protocol schema handling in a predictable order.
     apply_protocol_schema_sections = function(doc) {
       schema <- self$protocol_schema
@@ -1313,14 +1070,8 @@ Protocol <- R6::R6Class(
       }
 
       handling_order <- c(
-        "row_delete",
-        "replace",
-        "input",
-        "checkbox_replace",
-        "conditional_replace",
-        "calculate",
-        "table",
-        "image"
+        "row_delete", "replace", "input", "checkbox_replace",
+        "conditional_replace", "calculate", "table", "image"
       )
 
       for (handling in handling_order) {
@@ -1335,13 +1086,13 @@ Protocol <- R6::R6Class(
           row <- schema[i, required_cols, drop = FALSE]
           doc <- switch(
             handling,
-            replace = private$add_replace_section(doc, row),
-            input = private$add_input_section(doc, row),
-            calculate = private$add_calculate_section(doc, row),
-            checkbox_replace = private$add_checkbox_replace_section(doc, row),
-            row_delete = private$add_row_delete_section(doc, row),
-            table = private$add_table_section(doc, row),
-            image = private$add_image_section(doc, row),
+            replace            = private$add_replace_section(doc, row),
+            input              = private$add_input_section(doc, row),
+            calculate          = private$add_calculate_section(doc, row),
+            checkbox_replace   = private$add_checkbox_replace_section(doc, row),
+            row_delete         = private$add_row_delete_section(doc, row),
+            table              = private$add_table_section(doc, row),
+            image              = private$add_image_section(doc, row),
             conditional_replace = private$add_conditional_replace_section(doc, row),
             doc
           )
@@ -1397,8 +1148,6 @@ Protocol <- R6::R6Class(
     },
 
     # Extract unique non-NA indicator names from an XLSForm survey data frame.
-    # Returns an empty character vector when the survey is absent or has no
-    # 'name' column.
     extract_indicators_from_survey = function(survey) {
       if (!is.null(survey) && is.data.frame(survey) &&
           nrow(survey) > 0 && "name" %in% names(survey)) {
