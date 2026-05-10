@@ -364,8 +364,10 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
   doc <- p$.__enclos_env__$private$.add_replace_section(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
-  txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
-               collapse = "")
+  txt <- paste(
+    xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+    collapse = ""
+  )
   expect_true(grepl("Research Terms of Reference", txt, fixed = TRUE))
 })
 

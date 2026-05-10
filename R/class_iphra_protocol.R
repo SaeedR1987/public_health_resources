@@ -1237,7 +1237,7 @@ IPHRAProtocol <- R6::R6Class(
     handle_conditional_replace = function(doc, rows) {
       for (i in seq_len(nrow(rows))) {
         tag       <- as.character(rows$tag_name[i]     %||% "")
-        condition <- trimws(as.character(rows$condition[i]    %||% ""))
+        condition <- trimws(as.character(rows$condition[i] %||% ""))
         def_val   <- as.character(rows$default_value[i] %||% "")
         if (!nzchar(tag)) next
         if (!nzchar(condition)) next
