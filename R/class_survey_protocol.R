@@ -221,7 +221,7 @@ SurveyProtocol <- R6::R6Class(
       precision              = NULL,
       confidence_level       = NULL
     ) {
-      self$sample_table$add_stratum(
+      super$sample_add_stratum(
         stratum_id = stratum_id,
         stratum_name = stratum_name,
         population_size = population_size,
@@ -272,7 +272,6 @@ SurveyProtocol <- R6::R6Class(
         confidence_level = confidence_level
       )
 
-      self$sync_sample_metadata_fields
       private$touch()
       private$add_target_stratum()
       private$check_issues()
@@ -627,6 +626,49 @@ SurveyProtocol <- R6::R6Class(
       self$sample_table$get_sample_table()
     },
 
+    #' @description Replace the current sample table through the inherited
+    #'   \code{Protocol} sample accessor and keep survey metadata in sync.
+    #' @param sample_table Data frame.
+    #' @return Invisibly returns \code{self}.
+    sample_set_sample_table = function(sample_table) {
+      super$sample_set_sample_table(sample_table)
+      private$add_target_stratum()
+      private$check_issues()
+      invisible(self)
+    },
+
+    #' @description Clear the current sample table through the inherited
+    #'   \code{Protocol} sample accessor and keep survey metadata in sync.
+    #' @return Invisibly returns \code{self}.
+    sample_clear_sample_table = function() {
+      super$sample_clear_sample_table()
+      private$add_target_stratum()
+      private$check_issues()
+      invisible(self)
+    },
+
+    #' @description Add a stratum row through the inherited \code{Protocol}
+    #'   sample accessor and keep survey metadata in sync.
+    #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
+    #' @return Invisibly returns \code{self}.
+    sample_add_stratum = function(...) {
+      super$sample_add_stratum(...)
+      private$add_target_stratum()
+      private$check_issues()
+      invisible(self)
+    },
+
+    #' @description Remove a stratum row through the inherited \code{Protocol}
+    #'   sample accessor and keep survey metadata in sync.
+    #' @param strata_name Character scalar naming the stratum to remove.
+    #' @return Invisibly returns \code{self}.
+    sample_remove_stratum = function(strata_name) {
+      super$sample_remove_stratum(strata_name = strata_name)
+      private$add_target_stratum()
+      private$check_issues()
+      invisible(self)
+    },
+
     # ── Sampling helpers ────────────────────────────────────────────────────
 
     #' @description Return the unique sampling methods used across all strata.
@@ -650,26 +692,6 @@ SurveyProtocol <- R6::R6Class(
     get_strata_names = function() {
       if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) return(character(0))
       self$sample_table$get_strata_names()
-    },
-
-    #' @description Return a compact sample-size summary.
-    #'
-    #' Returns a data frame with one row per stratum containing stratum name,
-    #' sampling method, general HH sample size, and final HH sample size.
-    #' Columns absent from \code{sample_table} are filled with \code{NA}.
-    #'
-    #' @return Data frame.  Zero-row data frame when no sample table is set.
-    get_sample_size_summary = function() {
-      if (is.null(self$sample_table) || !inherits(self$sample_table, "Sample")) {
-        return(data.frame(
-          stratum = character(0),
-          sampling_method = character(0),
-          general_hh_sample_size = integer(0),
-          final_hh_sample_size = integer(0),
-          stringsAsFactors = FALSE
-        ))
-      }
-      self$sample_table$get_sample_size_summary()
     },
 
     #' @description Extract a column vector from the sampling frame, optionally
@@ -725,10 +747,8 @@ SurveyProtocol <- R6::R6Class(
           message = phr_txt("sample_table must be a Sample object."),
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
-        self$sample_table$calculate_sample_sizes()
+        super$sample_calculate_sample_sizes()
 
-        self$sync_sample_metadata_fields
-        private$touch()
         private$add_target_stratum()
         private$check_issues()
         phr_message(
@@ -736,6 +756,16 @@ SurveyProtocol <- R6::R6Class(
           origin = "SurveyProtocol$calculate_sample_sizes"
         )
       }, on_error = "abort", origin = "SurveyProtocol$calculate_sample_sizes")
+      invisible(self)
+    },
+
+    #' @description Calculate sample sizes through the inherited \code{Protocol}
+    #'   sample accessor and keep survey metadata in sync.
+    #' @return Invisibly returns \code{self}.
+    sample_calculate_sample_sizes = function() {
+      super$sample_calculate_sample_sizes()
+      private$add_target_stratum()
+      private$check_issues()
       invisible(self)
     },
 

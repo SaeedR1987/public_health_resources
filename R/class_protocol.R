@@ -791,11 +791,10 @@ Protocol <- R6::R6Class(
       data.frame()
     },
 
-    #' @description Retrieve the SVG string directly from the attached Framework.
+    #' @description Render the Framework SVG directly from the attached Framework.
     #'
     #' @param type Character. \code{"master"} or \code{"adjusted"} (default).
-    #' @return Character string containing the SVG markup, or \code{NULL} when
-    #'   unavailable.
+    #' @return Returns the result of \code{Framework$render_framework_svg()}.
     framework_get_svg = function(type = c("adjusted", "master")) {
       type <- match.arg(type)
       phr_assert(
@@ -803,11 +802,127 @@ Protocol <- R6::R6Class(
         message = phr_txt("No Framework is attached to this Protocol."),
         origin  = "Protocol$framework_get_svg"
       )
-      if (type == "master") {
-        self$framework$master_svg
-      } else {
-        self$framework$adjusted_svg %||% self$framework$master_svg
-      }
+      self$framework$render_framework_svg(version = type)
+    },
+
+    #' @description Replace the current sample table through the attached
+    #'   \code{\link{Sample}} object.
+    #' @param sample_table Data frame.
+    #' @return Invisibly returns \code{self}.
+    sample_set_sample_table = function(sample_table) {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_set_sample_table"
+      )
+      self$sample_table$set_sample_table(sample_table)
+      self$sync_sample_metadata_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Return the current sample table from the attached
+    #'   \code{\link{Sample}} object.
+    #' @return Data frame containing the sample table.
+    sample_get_sample_table = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_get_sample_table"
+      )
+      out <- self$sample_table$get_sample_table()
+      private$touch()
+      out
+    },
+
+    #' @description Clear the current sample table through the attached
+    #'   \code{\link{Sample}} object.
+    #' @return Invisibly returns \code{self}.
+    sample_clear_sample_table = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_clear_sample_table"
+      )
+      self$sample_table$clear_sample_table()
+      self$sync_sample_metadata_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Add a stratum row through the attached \code{\link{Sample}}
+    #'   object.
+    #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
+    #' @return Invisibly returns \code{self}.
+    sample_add_stratum = function(...) {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_add_stratum"
+      )
+      do.call(self$sample_table$add_stratum, list(...))
+      self$sync_sample_metadata_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Remove a stratum row through the attached \code{\link{Sample}}
+    #'   object.
+    #' @param strata_name Character scalar naming the stratum to remove.
+    #' @return Invisibly returns \code{self}.
+    sample_remove_stratum = function(strata_name) {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_remove_stratum"
+      )
+      self$sample_table$remove_stratum(strata_name = strata_name)
+      self$sync_sample_metadata_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Calculate sample sizes through the attached
+    #'   \code{\link{Sample}} object.
+    #' @return Invisibly returns \code{self}.
+    sample_calculate_sample_sizes = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_calculate_sample_sizes"
+      )
+      self$sample_table$calculate_sample_sizes()
+      self$sync_sample_metadata_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Return sampling methods from the attached \code{\link{Sample}}
+    #'   object.
+    #' @return Character vector of sampling methods.
+    sample_get_sampling_methods = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_get_sampling_methods"
+      )
+      out <- self$sample_table$get_sampling_methods()
+      private$touch()
+      out
+    },
+
+    #' @description Return stratum names from the attached \code{\link{Sample}}
+    #'   object.
+    #' @return Character vector of stratum names.
+    sample_get_strata_names = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this Protocol."),
+        origin  = "Protocol$sample_get_strata_names"
+      )
+      out <- self$sample_table$get_strata_names()
+      private$touch()
+      out
     },
 
     #' @description Empty hook for generating a Word document report.
@@ -1086,14 +1201,14 @@ Protocol <- R6::R6Class(
           row <- schema[i, required_cols, drop = FALSE]
           doc <- switch(
             handling,
-            replace            = private$add_replace_section(doc, row),
-            input              = private$add_input_section(doc, row),
-            calculate          = private$add_calculate_section(doc, row),
-            checkbox_replace   = private$add_checkbox_replace_section(doc, row),
-            row_delete         = private$add_row_delete_section(doc, row),
-            table              = private$add_table_section(doc, row),
-            image              = private$add_image_section(doc, row),
-            conditional_replace = private$add_conditional_replace_section(doc, row),
+            replace             = private$handle_replace(doc, row),
+            input               = private$handle_input(doc, row),
+            calculate           = private$handle_calculate(doc, row),
+            checkbox_replace    = private$handle_checkbox_replace(doc, row),
+            row_delete          = private$handle_row_delete(doc, row),
+            table               = private$handle_table(doc, row),
+            image               = private$handle_image(doc, row),
+            conditional_replace = private$handle_conditional_replace(doc, row),
             doc
           )
         }
@@ -1102,44 +1217,44 @@ Protocol <- R6::R6Class(
       doc
     },
 
-    add_replace_section = function(doc, row) {
+    handle_replace = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       default_value <- as.character(row$default_value[[1L]] %||% "")
       private$.replace_schema_tag(doc, tag, default_value)
     },
 
-    add_input_section = function(doc, row) {
+    handle_input = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else ""
       private$.replace_schema_tag(doc, tag, as.character(value %||% ""))
     },
 
-    add_calculate_section = function(doc, row) {
+    handle_calculate = function(doc, row) {
       doc
     },
 
-    add_checkbox_replace_section = function(doc, row) {
+    handle_checkbox_replace = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
       private$.replace_schema_tag(doc, tag, if (isTRUE(value)) "X" else "\u25a1")
     },
 
-    add_row_delete_section = function(doc, row) {
+    handle_row_delete = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       private$.replace_schema_tag(doc, tag, "")
     },
 
-    add_table_section = function(doc, row) {
+    handle_table = function(doc, row) {
       doc
     },
 
-    add_image_section = function(doc, row) {
+    handle_image = function(doc, row) {
       doc
     },
 
-    add_conditional_replace_section = function(doc, row) {
+    handle_conditional_replace = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       default_value <- as.character(row$default_value[[1L]] %||% "")
       key <- sub("^@", "", tag)

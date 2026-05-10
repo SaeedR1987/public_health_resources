@@ -355,6 +355,17 @@ test_that("IPHRAProtocol add_stratum updates num_strata_units", {
   expect_equal(p$metadata$num_strata_units, 2L)
 })
 
+test_that("IPHRAProtocol sample_remove_stratum updates num_strata_units", {
+  p <- IPHRAProtocol$new()
+  p$sample_add_stratum(stratum_id = "north", stratum_name = "Northern Region", sampling_method = "purposive")
+  p$sample_add_stratum(stratum_id = "south", stratum_name = "Southern Region", sampling_method = "purposive")
+
+  p$sample_remove_stratum("Northern Region")
+
+  expect_equal(p$metadata$num_strata_units, 1L)
+  expect_equal(p$sample_get_strata_names(), "Southern Region")
+})
+
 test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_value", {
   p <- IPHRAProtocol$new()
   doc <- officer::read_docx()
@@ -362,7 +373,7 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   schema <- p$protocol_schema
   row <- schema[schema$tag_name == "@tor_title", c("tag_name", "handling", "condition", "default_value"), drop = FALSE]
   expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
-  doc <- p$.__enclos_env__$private$.add_replace_section(doc, row[1, , drop = FALSE])
+  doc <- p$.__enclos_env__$private$handle_replace(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(
     xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),

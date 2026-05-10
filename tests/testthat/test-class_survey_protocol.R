@@ -789,22 +789,69 @@ test_that("SurveyProtocol$get_strata_names returns empty vector when no sample t
   expect_equal(p$get_strata_names(), character(0))
 })
 
-test_that("SurveyProtocol$get_sample_size_summary returns correct structure", {
-  p <- make_protocol()
-  p$add_stratum(stratum_id = "s1", stratum_name = "S1",
-                sampling_method = "simple_random",
-                General_HH_Sample_Size = 110)
-  summary <- p$get_sample_size_summary()
-  expect_true(is.data.frame(summary))
-  expect_true("stratum"         %in% names(summary))
-  expect_true("sampling_method" %in% names(summary))
-  expect_equal(nrow(summary), 1L)
-  expect_equal(summary$stratum, "S1")
-  expect_equal(summary$sampling_method, "simple_random")
+test_that("Sample metadata timestamps update after mutations", {
+  s <- Sample$new()
+  expect_false(is.null(s$metadata$created_datetime))
+  expect_false(is.null(s$metadata$modified_datetime))
+
+  t_before <- s$metadata$modified_datetime
+  Sys.sleep(0.01)
+  s$set_sample_table(data.frame(
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "simple_random",
+    stringsAsFactors = FALSE
+  ))
+
+  expect_true(s$metadata$modified_datetime > t_before)
 })
 
-test_that("SurveyProtocol$get_sample_size_summary returns zero-row df when no sample table", {
+test_that("Sample$remove_stratum removes rows by stratum name", {
+  s <- Sample$new()
+  s$add_stratum(stratum_id = "s1", stratum_name = "S1", sampling_method = "purposive")
+  s$add_stratum(stratum_id = "s2", stratum_name = "S2", sampling_method = "purposive")
+
+  s$remove_stratum("S1")
+  st <- s$get_sample_table()
+
+  expect_equal(nrow(st), 1L)
+  expect_equal(st$stratum_name, "S2")
+})
+
+test_that("Protocol sample_* accessors delegate to Sample and update metadata", {
   p <- make_protocol()
-  summary <- p$get_sample_size_summary()
-  expect_equal(nrow(summary), 0L)
+  t_before <- p$metadata$modified_datetime
+
+  Sys.sleep(0.01)
+  p$sample_add_stratum(
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "simple_random",
+    n_sites = 2
+  )
+
+  expect_true(p$metadata$modified_datetime > t_before)
+  expect_equal(p$sample_get_sampling_methods(), "simple_random")
+  expect_equal(p$sample_get_strata_names(), "S1")
+
+  st <- p$sample_get_sample_table()
+  expect_equal(nrow(st), 1L)
+
+  p$sample_remove_stratum("S1")
+  expect_equal(nrow(p$sample_get_sample_table()), 0L)
+})
+
+test_that("Protocol$framework_get_svg delegates to Framework$render_framework_svg", {
+  p <- Protocol$new()
+  p$framework$set_master_svg('<svg><rect id="H1"/></svg>')
+
+  out <- p$framework_get_svg(type = "master")
+
+  if (requireNamespace("rsvg", quietly = TRUE) &&
+      requireNamespace("grid", quietly = TRUE)) {
+    expect_true(inherits(out, "Framework"))
+  } else {
+    expect_true(is.character(out))
+    expect_true(file.exists(out))
+  }
 })
