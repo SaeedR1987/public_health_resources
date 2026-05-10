@@ -55,8 +55,8 @@ SurveyProtocol <- R6::R6Class(
       )
       self$sample_table <- Sample$new()
       self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
-      private$sync_sample_metadata_fields()
-      private$sync_sampling_frame_fields()
+      self$sync_sample_metadata_fields
+      self$sync_sampling_frame_fields
       invisible(self)
     },
 
@@ -272,7 +272,7 @@ SurveyProtocol <- R6::R6Class(
         confidence_level = confidence_level
       )
 
-      private$sync_sample_metadata_fields()
+      self$sync_sample_metadata_fields
       self$touch()
       private$add_target_stratum()
       private$check_issues()
@@ -327,7 +327,7 @@ SurveyProtocol <- R6::R6Class(
         }
 
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
-        private$sync_sampling_frame_fields()
+        self$sync_sampling_frame_fields
         self$touch()
         private$check_issues()
         phr_message(
@@ -561,7 +561,7 @@ SurveyProtocol <- R6::R6Class(
         # Update the SamplingFrame object with the annotated frame
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
 
-        private$sync_sampling_frame_fields()
+        self$sync_sampling_frame_fields
         self$touch()
         private$check_issues()
         phr_message(
@@ -598,7 +598,7 @@ SurveyProtocol <- R6::R6Class(
         }
         self$drawn_sample      <- NULL
         self$drawn_sample_full <- NULL
-        private$sync_sampling_frame_fields()
+        self$sync_sampling_frame_fields
         self$touch()
         private$check_issues()
         phr_message(
@@ -727,7 +727,7 @@ SurveyProtocol <- R6::R6Class(
         )
         self$sample_table$calculate_sample_sizes()
 
-        private$sync_sample_metadata_fields()
+        self$sync_sample_metadata_fields
         self$touch()
         private$add_target_stratum()
         private$check_issues()
@@ -842,7 +842,7 @@ SurveyProtocol <- R6::R6Class(
           }
         }
 
-        private$sync_tool_indicator_catalog_fields()
+        self$sync_tool_indicator_catalog_fields
         self$touch()
         phr_message(
           phr_txt("Strata choices ({length(strata_names)}) added and strata question inserted."),
@@ -878,7 +878,7 @@ SurveyProtocol <- R6::R6Class(
           prefix_lbl = "Team ",
           n          = n_teams
         )
-        private$sync_tool_indicator_catalog_fields()
+        self$sync_tool_indicator_catalog_fields
         self$touch()
         phr_message(
           phr_txt("{n_teams} team choice(s) added."),
@@ -915,7 +915,7 @@ SurveyProtocol <- R6::R6Class(
           prefix_lbl = "Enumerator ",
           n          = n_enumerators
         )
-        private$sync_tool_indicator_catalog_fields()
+        self$sync_tool_indicator_catalog_fields
         self$touch()
         phr_message(
           phr_txt("{n_enumerators} enumerator choice(s) added."),

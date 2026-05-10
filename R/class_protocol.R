@@ -175,10 +175,10 @@ Protocol <- R6::R6Class(
         } else {
           Framework$new()
         }
-        private$sync_framework_catalog_fields()
-        private$sync_tool_indicator_catalog_fields()
-        private$sync_sample_metadata_fields()
-        private$sync_sampling_frame_fields()
+        self$sync_framework_catalog_fields
+        self$sync_tool_indicator_catalog_fields
+        self$sync_sample_metadata_fields
+        self$sync_sampling_frame_fields
 
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
@@ -195,7 +195,7 @@ Protocol <- R6::R6Class(
         origin  = "Protocol$set_framework"
       )
       self$framework <- framework
-      private$sync_framework_catalog_fields()
+      self$sync_framework_catalog_fields
       self$touch()
       private$check_issues()
       invisible(self)
@@ -281,10 +281,10 @@ Protocol <- R6::R6Class(
     #'   framework/tool/sample/sampling-frame objects.
     #' @return Invisibly returns \code{self}.
     synchronize_state = function() {
-      private$sync_framework_catalog_fields()
-      private$sync_tool_indicator_catalog_fields()
-      private$sync_sample_metadata_fields()
-      private$sync_sampling_frame_fields()
+      self$sync_framework_catalog_fields
+      self$sync_tool_indicator_catalog_fields
+      self$sync_sample_metadata_fields
+      self$sync_sampling_frame_fields
       invisible(self)
     },
     
@@ -329,7 +329,7 @@ Protocol <- R6::R6Class(
         }
 
         self$tools[[tool_name]] <- tool
-        private$sync_tool_indicator_catalog_fields()
+        self$sync_tool_indicator_catalog_fields
         self$touch()
         private$check_issues()
         phr_message(
@@ -344,7 +344,7 @@ Protocol <- R6::R6Class(
     #' @param indicator_list List of indicators
     select_indicators = function(indicator_list) {
       self$selected_indicators <- indicator_list
-      private$sync_tool_indicator_catalog_fields()
+      self$sync_tool_indicator_catalog_fields
       self$touch()
       private$check_issues()
       invisible(self)
@@ -787,6 +787,106 @@ Protocol <- R6::R6Class(
     }
   ),
 
+  active = list(
+    sync_framework_catalog_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_framework_catalog_fields is a read-only active binding.")
+      }
+      master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        self$framework$master_schema
+      } else {
+        NULL
+      }
+      adjusted_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        self$framework$adjusted_schema
+      } else {
+        NULL
+      }
+
+      self$objective_catalog_master <- private$build_objective_catalog(master_schema)
+      self$objective_catalog_adjusted <- private$build_objective_catalog(adjusted_schema)
+      self$indicator_catalog_master <- private$build_indicator_catalog(master_schema)
+      self$indicator_catalog_adjusted <- private$build_indicator_catalog(adjusted_schema)
+      invisible(NULL)
+    },
+
+    sync_tool_indicator_catalog_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_tool_indicator_catalog_fields is a read-only active binding.")
+      }
+      self$tool_indicator_catalog_master <- list()
+      self$tool_indicator_catalog_revised <- list()
+      if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
+
+      for (tn in names(self$tools)) {
+        tool <- self$tools[[tn]]
+        if (is.null(tool) || !inherits(tool, "Tool")) next
+        self$tool_indicator_catalog_master[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = FALSE))
+        self$tool_indicator_catalog_revised[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
+      }
+      invisible(NULL)
+    },
+
+    sync_sample_metadata_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_sample_metadata_fields is a read-only active binding.")
+      }
+      st <- NULL
+      if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        st <- self$sample_table$get_sample_table()
+      } else if (!is.null(self$sample_table) && is.data.frame(self$sample_table)) {
+        st <- self$sample_table
+      }
+      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
+        self$metadata$sampling_strata_names <- character(0)
+        self$metadata$sampling_method_flags <- list()
+        return(invisible(NULL))
+      }
+
+      strata_names <- if ("stratum_name" %in% names(st)) {
+        as.character(st$stratum_name)
+      } else if ("Population_Name" %in% names(st)) {
+        as.character(st$Population_Name)
+      } else {
+        as.character(st$stratum_id %||% character(0))
+      }
+      strata_names <- unique(strata_names[!is.na(strata_names) & nzchar(strata_names)])
+
+      methods_used <- if ("sampling_method" %in% names(st)) {
+        unique(trimws(tolower(as.character(st$sampling_method))))
+      } else {
+        character(0)
+      }
+      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
+      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
+      flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
+
+      self$metadata$sampling_strata_names <- strata_names
+      self$metadata$sampling_method_flags <- flags
+      invisible(NULL)
+    },
+
+    sync_sampling_frame_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_sampling_frame_fields is a read-only active binding.")
+      }
+      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
+        self$sampling_frame$log_df
+      } else {
+        NULL
+      }
+      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
+        self$sampling_frame_strata_names <- character(0)
+      } else {
+        vals <- as.character(sf$stratum)
+        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
+      }
+      invisible(NULL)
+    }
+  ),
+
   private = list(
     call_orchestrated_method = function(target, method, args, origin, sync_kinds = character(0)) {
       phr_assert(
@@ -812,18 +912,10 @@ Protocol <- R6::R6Class(
 
       result <- do.call(target[[method]], args)
 
-      if ("framework" %in% sync_kinds) {
-        private$sync_framework_catalog_fields()
-      }
-      if ("tools" %in% sync_kinds) {
-        private$sync_tool_indicator_catalog_fields()
-      }
-      if ("sample" %in% sync_kinds) {
-        private$sync_sample_metadata_fields()
-      }
-      if ("sampling_frame" %in% sync_kinds) {
-        private$sync_sampling_frame_fields()
-      }
+      if ("framework" %in% sync_kinds) self$sync_framework_catalog_fields
+      if ("tools" %in% sync_kinds) self$sync_tool_indicator_catalog_fields
+      if ("sample" %in% sync_kinds) self$sync_sample_metadata_fields
+      if ("sampling_frame" %in% sync_kinds) self$sync_sampling_frame_fields
 
       self$touch()
       private$check_issues()
@@ -889,92 +981,6 @@ Protocol <- R6::R6Class(
         )
       }
       out
-    },
-
-    sync_framework_catalog_fields = function() {
-      master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        self$framework$master_schema
-      } else {
-        NULL
-      }
-      adjusted_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        self$framework$adjusted_schema
-      } else {
-        NULL
-      }
-
-      self$objective_catalog_master <- private$build_objective_catalog(master_schema)
-      self$objective_catalog_adjusted <- private$build_objective_catalog(adjusted_schema)
-      self$indicator_catalog_master <- private$build_indicator_catalog(master_schema)
-      self$indicator_catalog_adjusted <- private$build_indicator_catalog(adjusted_schema)
-      invisible(NULL)
-    },
-
-    sync_tool_indicator_catalog_fields = function() {
-      self$tool_indicator_catalog_master <- list()
-      self$tool_indicator_catalog_revised <- list()
-      if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
-
-      for (tn in names(self$tools)) {
-        tool <- self$tools[[tn]]
-        if (is.null(tool) || !inherits(tool, "Tool")) next
-        self$tool_indicator_catalog_master[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = FALSE))
-        self$tool_indicator_catalog_revised[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
-      }
-      invisible(NULL)
-    },
-
-    sync_sample_metadata_fields = function() {
-      st <- NULL
-      if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
-        st <- self$sample_table$get_sample_table()
-      } else if (!is.null(self$sample_table) && is.data.frame(self$sample_table)) {
-        st <- self$sample_table
-      }
-      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        self$metadata$sampling_strata_names <- character(0)
-        self$metadata$sampling_method_flags <- list()
-        return(invisible(NULL))
-      }
-
-      strata_names <- if ("stratum_name" %in% names(st)) {
-        as.character(st$stratum_name)
-      } else if ("Population_Name" %in% names(st)) {
-        as.character(st$Population_Name)
-      } else {
-        as.character(st$stratum_id %||% character(0))
-      }
-      strata_names <- unique(strata_names[!is.na(strata_names) & nzchar(strata_names)])
-
-      methods_used <- if ("sampling_method" %in% names(st)) {
-        unique(trimws(tolower(as.character(st$sampling_method))))
-      } else {
-        character(0)
-      }
-      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
-      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
-                         "systematic", "simple_random_rlc", "systematic_rlc",
-                         "proportional_rlc", "purposive")
-      flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
-
-      self$metadata$sampling_strata_names <- strata_names
-      self$metadata$sampling_method_flags <- flags
-      invisible(NULL)
-    },
-
-    sync_sampling_frame_fields = function() {
-      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
-        self$sampling_frame$log_df
-      } else {
-        NULL
-      }
-      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
-        self$sampling_frame_strata_names <- character(0)
-      } else {
-        vals <- as.character(sf$stratum)
-        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
-      }
-      invisible(NULL)
     },
 
     # Check for issues and discrepancies in the protocol
