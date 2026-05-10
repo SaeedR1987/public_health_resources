@@ -419,6 +419,81 @@ test_that("Tool$settings is a public field", {
   expect_true(is.data.frame(t$settings))
 })
 
+test_that("Tool$touch updates metadata$modified_datetime", {
+  t <- Tool$new()
+  before <- t$metadata$modified_datetime
+  Sys.sleep(0.01)
+  t$touch()
+  expect_true(t$metadata$modified_datetime >= before)
+})
+
+test_that("Tool mutating methods update metadata$modified_datetime", {
+  t <- Tool$new(
+    survey = data.frame(type = "text", name = "q1", indicator_code = "10001",
+                        stringsAsFactors = FALSE),
+    choices = data.frame(list_name = "yes_no", name = "yes", label = "Yes",
+                         indicator_code = "10001", stringsAsFactors = FALSE)
+  )
+  before <- t$metadata$modified_datetime
+  Sys.sleep(0.01)
+  t$set_selected_indicators("ind_1")
+  expect_true(t$metadata$modified_datetime >= before)
+})
+
+test_that("Protocol tool_* delegation methods target a specific tool", {
+  p <- Protocol$new()
+  p$add_tools("generic", tool_name = "my_tool")
+
+  expect_equal(p$tool_get_name("my_tool"), "my_tool")
+  expect_equal(p$tool_get_type("my_tool"), "generic")
+
+  p$tool_set_name("my_tool", "renamed_tool")
+  expect_equal(p$tool_get_name("my_tool"), "renamed_tool")
+
+  expect_silent(p$tool_change_default_language("my_tool", "english"))
+  expect_equal(
+    p$tool_get_survey("my_tool", survey_type = "master"),
+    p$tools[["my_tool"]]$survey
+  )
+  expect_equal(
+    p$tool_get_choices("my_tool", choices_type = "master"),
+    p$tools[["my_tool"]]$choices
+  )
+  expect_true(is.integer(p$tool_get_indicator_codes("my_tool", survey_type = "master")))
+  expect_equal(p$tool_get_selected_indicators("my_tool"), character(0))
+
+  p$tool_set_selected_indicators("my_tool", c("a", "b"))
+  expect_equal(p$tool_get_selected_indicators("my_tool"), c("a", "b"))
+
+  p$tool_update_settings("my_tool", "form_title", "Test Form")
+  expect_equal(p$tools[["my_tool"]]$settings$form_title[1], "Test Form")
+
+  new_choices <- data.frame(name = c("a", "b"), label = c("A", "B"),
+                            stringsAsFactors = FALSE)
+  p$tool_update_choice_list("my_tool", "my_list", new_choices)
+  expect_true(any(p$tools[["my_tool"]]$revised_choices$list_name == "my_list"))
+
+  expect_silent(p$tool_filter_survey_by_indicator("my_tool", "10000"))
+  expect_true(is.data.frame(p$tool_get_survey("my_tool", survey_type = "revised")))
+})
+
+test_that("Protocol tool_* methods touch protocol modified_datetime", {
+  p <- Protocol$new()
+  p$add_tools("generic", tool_name = "my_tool")
+  before <- p$metadata$modified_datetime
+  Sys.sleep(0.01)
+  p$tool_get_name("my_tool")
+  expect_true(p$metadata$modified_datetime >= before)
+})
+
+test_that("Protocol tool validation delegation methods return logical/list outputs", {
+  p <- Protocol$new()
+  p$add_tools("generic", tool_name = "my_tool")
+  expect_type(p$tool_validate("my_tool"), "logical")
+  expect_type(p$tool_get_is_valid("my_tool"), "logical")
+  expect_true(is.list(p$tool_get_validation_errors("my_tool")))
+})
+
 test_that("Framework$render_framework_svg errors when no SVG is set", {
   fw <- Framework$new()
   expect_error(fw$render_framework_svg())

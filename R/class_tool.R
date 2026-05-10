@@ -94,6 +94,13 @@ public = list(
   #'   construction.
   revised_settings = NULL,
 
+  #' @field metadata List containing tool metadata including
+  #'   \code{created_datetime} and \code{modified_datetime}.
+  metadata = list(
+    created_datetime = NULL,
+    modified_datetime = NULL
+  ),
+
 
   # Initialization
 
@@ -113,6 +120,8 @@ public = list(
     private$.name <- name %||% "Untitled Tool"
     private$.created_at <- Sys.time()
     private$.modified_at <- Sys.time()
+    self$metadata$created_datetime <- private$.created_at
+    self$metadata$modified_datetime <- private$.modified_at
     private$.tool_type <- "generic"
 
     # Initialize data frames with required columns if not provided
@@ -155,6 +164,15 @@ public = list(
 
 
   #' @description
+  #' Update tool modification metadata timestamps.
+  #' @return Invisibly returns \code{self}.
+  touch = function() {
+    private$.modified_at <- Sys.time()
+    self$metadata$modified_datetime <- private$.modified_at
+    invisible(self)
+  },
+
+  #' @description
   #' Get the tool name.
   #' @return Character string with tool name.
   get_name = function() {
@@ -170,7 +188,7 @@ public = list(
       stop("Tool name must be a non-empty character string")
     }
     private$.name <- name
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -222,7 +240,7 @@ public = list(
       }
       self$revised_settings[["default_language"]] <- language_title
     }
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -258,7 +276,7 @@ public = list(
     if (nrow(sv) == 0 || !"indicator_code" %in% names(sv)) {
       self$revised_survey  <- sv
       self$revised_choices <- self$choices
-      private$.touch()
+      self$touch()
       return(invisible(self))
     }
 
@@ -272,7 +290,7 @@ public = list(
     self$revised_survey  <- sv[is_selected, , drop = FALSE]
     self$revised_choices <- private$.filter_choices_from_survey(indicator_codes)
 
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -323,7 +341,7 @@ public = list(
       new_choices
     )
 
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -349,7 +367,7 @@ public = list(
       self$settings[[key]] <- NA
     }
     self$settings[[key]] <- value
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -408,7 +426,7 @@ public = list(
       stop("Indicators must be a character vector")
     }
     private$.selected_indicators <- indicators
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -540,11 +558,6 @@ private = list(
   .modified_at = NULL,
   .selected_indicators = NULL,
   .validation_errors = NULL,
-
-  # Update modification timestamp
-  .touch = function() {
-    private$.modified_at <- Sys.time()
-  },
 
   # Load a default XLSForm from an xlsx file.
   # Reads the survey, choices, and settings sheets (if present) and stores
@@ -795,7 +808,7 @@ private = list(
     self$revised_survey <- self$revised_survey[
       self$revised_survey$name != name, , drop = FALSE
     ]
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -812,7 +825,7 @@ private = list(
       }
       self$revised_survey[row_idx, col_name] <- updates[[col_name]]
     }
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -824,7 +837,7 @@ private = list(
     sv <- self$revised_survey
     if (is.null(sv) || nrow(sv) == 0) {
       self$revised_survey <- new_row
-      private$.touch()
+      self$touch()
       return(invisible(self))
     }
 
@@ -865,7 +878,7 @@ private = list(
     } else {
       self$revised_survey <- rbind(sv, new_row)
     }
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -886,7 +899,7 @@ private = list(
     for (col_name in names(extra_args)) new_row[[col_name]] <- extra_args[[col_name]]
     for (col in names(ch)) if (!col %in% names(new_row)) new_row[[col]] <- NA
     self$revised_choices <- rbind(ch, new_row[, names(ch), drop = FALSE])
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -905,7 +918,7 @@ private = list(
       ch <- ch[!(ch$list_name == list_name & ch$name == name), , drop = FALSE]
     }
     self$revised_choices <- ch
-    private$.touch()
+    self$touch()
     invisible(self)
   },
 
@@ -925,7 +938,7 @@ private = list(
       ch[row_idx, col_name] <- updates[[col_name]]
     }
     self$revised_choices <- ch
-    private$.touch()
+    self$touch()
     invisible(self)
   }
 )

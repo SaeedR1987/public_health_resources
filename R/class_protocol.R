@@ -805,6 +805,225 @@ Protocol <- R6::R6Class(
       self$framework$render_framework_svg(version = type)
     },
 
+    #' @description Return a tool's name.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @return Character scalar.
+    tool_get_name = function(tool_name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_name"
+      )
+      out <- tool$get_name()
+      private$touch()
+      out
+    },
+
+    #' @description Return a tool's type.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @return Character scalar.
+    tool_get_type = function(tool_name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_type"
+      )
+      out <- tool$get_tool_type()
+      private$touch()
+      out
+    },
+
+    #' @description Set a tool's name.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param name Character. New tool name.
+    #' @return Invisibly returns \code{self}.
+    tool_set_name = function(tool_name, name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_set_name"
+      )
+      tool$set_name(name)
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Update a tool's default language.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param language Character. New default language.
+    #' @return Invisibly returns \code{self}.
+    tool_change_default_language = function(tool_name, language) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_change_default_language"
+      )
+      tool$change_default_language(language)
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Filter a tool survey by indicator codes.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param indicator_codes Character or numeric vector of indicator codes.
+    #' @return Invisibly returns \code{self}.
+    tool_filter_survey_by_indicator = function(tool_name, indicator_codes) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_filter_survey_by_indicator"
+      )
+      tool$filter_survey_by_indicator(indicator_codes)
+      self$sync_tool_indicator_catalog_fields
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Update a tool choice list.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param list_name Character. Name of the choice list to update.
+    #' @param new_choices Data frame of replacement choices.
+    #' @return Invisibly returns \code{self}.
+    tool_update_choice_list = function(tool_name, list_name, new_choices) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_update_choice_list"
+      )
+      tool$update_choice_list(list_name = list_name, new_choices = new_choices)
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Update a tool settings key.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param key Character. Settings key.
+    #' @param value New value for \code{key}.
+    #' @return Invisibly returns \code{self}.
+    tool_update_settings = function(tool_name, key, value) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_update_settings"
+      )
+      tool$update_settings(key = key, value = value)
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Return tool indicator codes from revised or master survey.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param survey_type Character. \code{"revised"} (default) or \code{"master"}.
+    #' @return Integer vector of indicator codes.
+    tool_get_indicator_codes = function(tool_name,
+                                        survey_type = c("revised", "master")) {
+      survey_type <- match.arg(survey_type)
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_indicator_codes"
+      )
+      out <- tool$get_indicator_codes(prefer_revised = identical(survey_type, "revised"))
+      private$touch()
+      out
+    },
+
+    #' @description Return selected indicators from a tool.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @return Character vector of selected indicators.
+    tool_get_selected_indicators = function(tool_name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_selected_indicators"
+      )
+      out <- tool$get_selected_indicators()
+      private$touch()
+      out
+    },
+
+    #' @description Set selected indicators for a tool.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param indicators Character vector of selected indicators.
+    #' @return Invisibly returns \code{self}.
+    tool_set_selected_indicators = function(tool_name, indicators) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_set_selected_indicators"
+      )
+      tool$set_selected_indicators(indicators)
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Return a tool survey sheet from revised or master data.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param survey_type Character. \code{"revised"} (default) or \code{"master"}.
+    #' @return Data frame.
+    tool_get_survey = function(tool_name, survey_type = c("revised", "master")) {
+      survey_type <- match.arg(survey_type)
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_survey"
+      )
+      out <- if (identical(survey_type, "revised")) {
+        tool$revised_survey
+      } else {
+        tool$survey
+      }
+      private$touch()
+      out
+    },
+
+    #' @description Return a tool choices sheet from revised or master data.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @param choices_type Character. \code{"revised"} (default) or \code{"master"}.
+    #' @return Data frame.
+    tool_get_choices = function(tool_name, choices_type = c("revised", "master")) {
+      choices_type <- match.arg(choices_type)
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_choices"
+      )
+      out <- if (identical(choices_type, "revised")) {
+        tool$revised_choices
+      } else {
+        tool$choices
+      }
+      private$touch()
+      out
+    },
+
+    #' @description Return validation errors for a tool.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @return List of validation errors.
+    tool_get_validation_errors = function(tool_name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_validation_errors"
+      )
+      out <- tool$get_validation_errors()
+      private$touch()
+      out
+    },
+
+    #' @description Validate a tool.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @return Logical scalar.
+    tool_validate = function(tool_name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_validate"
+      )
+      out <- tool$validate()
+      private$touch()
+      out
+    },
+
+    #' @description Return whether a tool is valid.
+    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
+    #' @return Logical scalar.
+    tool_get_is_valid = function(tool_name) {
+      tool <- private$get_tool_or_abort(
+        tool_name = tool_name,
+        origin = "Protocol$tool_get_is_valid"
+      )
+      out <- tool$is_valid()
+      private$touch()
+      out
+    },
+
     #' @description Replace the current sample table through the attached
     #'   \code{\link{Sample}} object.
     #' @param sample_table Data frame.
@@ -1049,6 +1268,21 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
+    get_tool_or_abort = function(tool_name, origin) {
+      phr_assert(
+        is.character(tool_name) && length(tool_name) == 1 && nzchar(tool_name),
+        message = phr_txt("tool_name must be a non-empty character string."),
+        origin  = origin
+      )
+      phr_assert(
+        !is.null(self$tools) && !is.null(self$tools[[tool_name]]) &&
+          inherits(self$tools[[tool_name]], "Tool"),
+        message = phr_txt("Tool '{tool_name}' is not attached to this Protocol."),
+        origin  = origin
+      )
+      self$tools[[tool_name]]
+    },
+
     # Update the modified_datetime timestamp.
     touch = function() {
       self$metadata$modified_datetime <- Sys.time()
