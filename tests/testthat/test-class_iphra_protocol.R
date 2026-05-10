@@ -370,7 +370,7 @@ test_that("handle_replace uses default_value when condition is NA (not 'NA' stri
   )
   expect_true(grepl("expected_value", txt, fixed = TRUE))
   expect_false(grepl("@test_tag_na_cond", txt, fixed = TRUE))
-  expect_false(grepl("^NA$", txt))
+  expect_false(grepl("NA", txt, fixed = TRUE))
 })
 
 test_that("handle_replace replaces with empty string when both condition and default_value are NA", {
@@ -391,7 +391,7 @@ test_that("handle_replace replaces with empty string when both condition and def
     collapse = ""
   )
   expect_false(grepl("@test_tag_both_na", txt, fixed = TRUE))
-  expect_false(grepl("^NA$", txt))
+  expect_false(grepl("NA", txt, fixed = TRUE))
 })
 
 test_that("IPHRAProtocol normalizes schema tag to @kii_nut_inc", {
