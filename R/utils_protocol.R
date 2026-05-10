@@ -408,7 +408,14 @@ restore_protocol <- function(protocol_data) {
         country_name     = protocol_data$metadata$country_name,
         month_year       = protocol_data$metadata$month_year
       )
-      protocol$sample_table      <- protocol_data$sample_table
+      if (!is.null(protocol_data$sample_object) && inherits(protocol_data$sample_object, "Sample")) {
+        protocol$sample_table <- protocol_data$sample_object
+      } else if (!is.null(protocol_data$sample_table) && is.data.frame(protocol_data$sample_table)) {
+        if (is.null(protocol$sample_table) || !inherits(protocol$sample_table, "Sample")) {
+          protocol$sample_table <- Sample$new()
+        }
+        protocol$sample_table$set_sample_table(protocol_data$sample_table)
+      }
       # sampling_frame is exported as a raw data frame; restore into SamplingFrame object.
       if (!is.null(protocol_data$sampling_frame) &&
           is.data.frame(protocol_data$sampling_frame) &&
@@ -434,7 +441,18 @@ restore_protocol <- function(protocol_data) {
     }
     protocol$tools               <- protocol_data$tools
     protocol$selected_indicators <- protocol_data$selected_indicators
+    protocol$objective_catalog_master   <- protocol_data$objective_catalog_master   %||% protocol$objective_catalog_master
+    protocol$objective_catalog_adjusted <- protocol_data$objective_catalog_adjusted %||% protocol$objective_catalog_adjusted
+    protocol$indicator_catalog_master   <- protocol_data$indicator_catalog_master   %||% protocol$indicator_catalog_master
+    protocol$indicator_catalog_adjusted <- protocol_data$indicator_catalog_adjusted %||% protocol$indicator_catalog_adjusted
+    protocol$tool_indicator_catalog_master   <- protocol_data$tool_indicator_catalog_master   %||% protocol$tool_indicator_catalog_master
+    protocol$tool_indicator_catalog_revised  <- protocol_data$tool_indicator_catalog_revised  %||% protocol$tool_indicator_catalog_revised
+    protocol$sampling_frame_strata_names     <- protocol_data$sampling_frame_strata_names     %||% protocol$sampling_frame_strata_names
     protocol$issues              <- protocol_data$issues
+    if ("synchronize_state" %in% names(protocol) && is.function(protocol$synchronize_state)) {
+      protocol$synchronize_state()
+    }
+    protocol$touch()
 
     phr_message(phr_txt("Protocol restored successfully."), origin = origin)
     protocol

@@ -392,9 +392,10 @@ IPHRAProtocol <- R6::R6Class(
     add_stratum = function(...) {
       super$add_stratum(...)
       # Update num_strata_units to number of unique strata in sample_table
-      self$metadata$num_strata_units <- if (!is.null(self$sample_table) &&
-                                             "stratum_id" %in% names(self$sample_table)) {
-        length(unique(self$sample_table$stratum_id))
+      st <- self$get_sample_table()
+      self$metadata$num_strata_units <- if (!is.null(st) &&
+                                             "stratum_id" %in% names(st)) {
+        length(unique(st$stratum_id))
       } else {
         0L
       }
@@ -922,10 +923,11 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       methods_used <- character(0)
-      if (!is.null(self$sample_table) &&
-          is.data.frame(self$sample_table) &&
-          "sampling_method" %in% names(self$sample_table)) {
-        methods_used <- trimws(tolower(as.character(self$sample_table$sampling_method %||% character(0))))
+      st <- self$get_sample_table()
+      if (!is.null(st) &&
+          is.data.frame(st) &&
+          "sampling_method" %in% names(st)) {
+        methods_used <- trimws(tolower(as.character(st$sampling_method %||% character(0))))
         methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
       }
 
@@ -1070,7 +1072,7 @@ IPHRAProtocol <- R6::R6Class(
     # @sample_hh_target, @num_kii_community_target, @num_obs_community_target)
     # are always computed from the sample table and tool inclusion flags.
     handle_calculate = function(doc, calculate_rows) {
-      st <- self$sample_table
+      st <- self$get_sample_table()
       m  <- self$metadata
 
       # ── Schema-driven calculate tags ────────────────────────────────────
@@ -1775,7 +1777,7 @@ IPHRAProtocol <- R6::R6Class(
     #   $col_fn    : function(st_row) → cell value string for one stratum
     # 'n_blank'    : number of blank rows appended after the data rows.
     .build_sample_size_table = function(doc, tag, param_rows) {
-      st <- self$sample_table
+      st <- self$get_sample_table()
       if (is.null(st) || nrow(st) == 0L) {
         doc <- private$.replace(doc, tag, "")
         return(doc)
