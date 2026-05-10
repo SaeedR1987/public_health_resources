@@ -426,6 +426,7 @@ restore_protocol <- function(protocol_data) {
     }
 
     protocol$metadata            <- protocol_data$metadata
+    protocol$conditional_metadata <- protocol_data$conditional_metadata %||% list()
     protocol$objectives          <- protocol_data$objectives %||% list()
     protocol$objective_schema    <- protocol_data$objective_schema %||% protocol$objective_schema
     if (!is.null(protocol_data$framework)) {
@@ -515,4 +516,3 @@ print_protocol_summary <- function(protocol) {
     }
   }, on_error = "abort", origin = origin)
 }
-

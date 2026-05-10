@@ -279,6 +279,8 @@ IPHRAProtocol <- R6::R6Class(
 
       # Load protocol schema (tags + defaults) from the bundled resource
       private$.load_protocol_schema()
+      private$initialize_conditional_metadata()
+      private$sync_sampling_conditional_metadata()
 
       phr_message(phr_txt("IPHRAProtocol initialized."), origin = "IPHRAProtocol$initialize")
       invisible(self)
@@ -396,6 +398,18 @@ IPHRAProtocol <- R6::R6Class(
       } else {
         0L
       }
+      private$sync_sampling_conditional_metadata()
+      self$touch()
+      invisible(self)
+    },
+
+    #' @description Override inherited \code{SurveyProtocol$calculate_sample_sizes()}
+    #'   to keep sampling conditional metadata synchronized after sample table updates.
+    #' @return Invisibly returns \code{self} for method chaining.
+    calculate_sample_sizes = function() {
+      super$calculate_sample_sizes()
+      private$sync_sampling_conditional_metadata()
+      self$touch()
       invisible(self)
     },
 
@@ -651,6 +665,19 @@ IPHRAProtocol <- R6::R6Class(
       )
     ),
 
+    .sampling_conditional_keys = c(
+      "srs_srs",
+      "srs_systematic",
+      "srs_rlc",
+      "systematic",
+      "systematic_rlc",
+      "proportional_rlc",
+      "cluster_rlc",
+      "cluster",
+      "proportional",
+      "purposive"
+    ),
+
     # ── Template helpers ────────────────────────────────────────────────────
 
     # Replace tag with "X" if condition is TRUE, "□" if FALSE.
@@ -874,6 +901,52 @@ IPHRAProtocol <- R6::R6Class(
     .schema_metadata_value = function(tag) {
       key <- private$.schema_metadata_key(tag)
       if (key %in% names(self$metadata)) self$metadata[[key]] else NULL
+    },
+
+    initialize_conditional_metadata = function() {
+      schema_conditions <- character(0)
+      if (!is.null(self$protocol_schema) &&
+          is.data.frame(self$protocol_schema) &&
+          "condition" %in% names(self$protocol_schema)) {
+        schema_conditions <- trimws(as.character(self$protocol_schema$condition %||% ""))
+        schema_conditions <- schema_conditions[nzchar(schema_conditions)]
+      }
+      all_keys <- unique(c(private$.sampling_conditional_keys, schema_conditions))
+      self$conditional_metadata <- setNames(as.list(rep(FALSE, length(all_keys))), all_keys)
+      invisible(NULL)
+    },
+
+    sync_sampling_conditional_metadata = function() {
+      if (!is.list(self$conditional_metadata) || length(self$conditional_metadata) == 0L) {
+        private$initialize_conditional_metadata()
+      }
+
+      methods_used <- character(0)
+      if (!is.null(self$sample_table) &&
+          is.data.frame(self$sample_table) &&
+          "sampling_method" %in% names(self$sample_table)) {
+        methods_used <- trimws(tolower(as.character(self$sample_table$sampling_method %||% character(0))))
+        methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
+      }
+
+      has_method <- function(x) any(methods_used %in% x)
+      sampling_flags <- list(
+        srs_srs          = has_method("simple_random"),
+        srs_systematic   = has_method("systematic"),
+        srs_rlc          = has_method("simple_random_rlc"),
+        systematic       = has_method("systematic"),
+        systematic_rlc   = has_method("systematic_rlc"),
+        proportional_rlc = has_method("proportional_rlc"),
+        cluster_rlc      = has_method("pps_rlc"),
+        cluster          = has_method("pps_cluster"),
+        proportional     = has_method("proportional"),
+        purposive        = has_method("purposive")
+      )
+
+      for (nm in names(sampling_flags)) {
+        self$conditional_metadata[[nm]] <- isTRUE(sampling_flags[[nm]])
+      }
+      invisible(NULL)
     },
 
     .schema_flag_from_tag = function(tag) {
@@ -1158,22 +1231,21 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     # Handle all schema 'conditional_replace' type rows.
-    # The 'condition' column names the tag whose flag is evaluated.  When the
-    # flag is TRUE the tag is replaced with the 'default_value'; when FALSE
-    # the tag is replaced with "" (leaving removal to remove_remaining_tags).
+    # Rows with empty 'condition' are skipped. For non-empty conditions, the
+    # condition string is resolved against self$conditional_metadata; when the
+    # corresponding flag is TRUE the tag is replaced with 'default_value'.
     handle_conditional_replace = function(doc, rows) {
       for (i in seq_len(nrow(rows))) {
         tag       <- as.character(rows$tag_name[i]     %||% "")
-        condition <- as.character(rows$condition[i]    %||% "")
+        condition <- trimws(as.character(rows$condition[i] %||% ""))
         def_val   <- as.character(rows$default_value[i] %||% "")
         if (!nzchar(tag)) next
+        if (!nzchar(condition)) next
 
-        flag <- if (nzchar(condition) && startsWith(condition, "@")) {
-          private$.schema_flag_from_tag(condition)
-        } else {
-          private$.schema_flag_from_tag(tag)
+        flag <- isTRUE(self$conditional_metadata[[condition]])
+        if (flag) {
+          doc <- private$.replace(doc, tag, def_val)
         }
-        doc <- private$.replace(doc, tag, if (isTRUE(flag)) def_val else "")
       }
       doc
     },

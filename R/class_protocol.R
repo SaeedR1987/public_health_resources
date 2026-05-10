@@ -90,6 +90,10 @@ Protocol <- R6::R6Class(
       `pop_other` = FALSE
     ),
 
+    #' @field conditional_metadata Named list of boolean flags used for
+    #'   conditional schema replacements.
+    conditional_metadata = list(),
+
     #' @field secondary_data Named list of secondary data sources keyed by
     #'   objective code.  Each element is a character string naming the source
     #'   or a URL.  Objective codes must match codes available in the
@@ -126,6 +130,7 @@ Protocol <- R6::R6Class(
         self$tools <- list()
         self$issues <- list()
         self$issues_coherence <- list()
+        self$conditional_metadata <- list()
         self$protocol_schema <- private$.load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
@@ -458,6 +463,7 @@ Protocol <- R6::R6Class(
       }
       list(
         metadata = self$metadata,
+        conditional_metadata = self$conditional_metadata,
         objectives = self$objectives,
         objective_schema = self$objective_schema,
         framework = fw_data,

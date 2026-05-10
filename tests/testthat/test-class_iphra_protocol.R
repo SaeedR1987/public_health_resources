@@ -364,8 +364,10 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
   doc <- p$.__enclos_env__$private$.add_replace_section(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
-  txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
-               collapse = "")
+  txt <- paste(
+    xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+    collapse = ""
+  )
   expect_true(grepl("Research Terms of Reference", txt, fixed = TRUE))
 })
 
@@ -407,4 +409,73 @@ test_that("replace_tag_in_cell preserves item order for objective headers and bu
   expect_true(idx_income < idx_coping)
   expect_true(idx_coping < idx_income_b)
   expect_true(idx_living < idx_crowded)
+})
+
+test_that("IPHRAProtocol initializes conditional_metadata with FALSE defaults", {
+  p <- IPHRAProtocol$new()
+  expected <- c(
+    "srs_srs", "srs_systematic", "srs_rlc", "systematic", "systematic_rlc",
+    "proportional_rlc", "cluster_rlc", "cluster", "proportional", "purposive"
+  )
+  expect_true(is.list(p$conditional_metadata))
+  expect_true(all(expected %in% names(p$conditional_metadata)))
+  expect_true(all(vapply(p$conditional_metadata[expected], isFALSE, logical(1))))
+  schema_conditions <- if ("condition" %in% names(p$protocol_schema)) {
+    trimws(as.character(p$protocol_schema$condition))
+  } else {
+    character(0)
+  }
+  schema_conditions <- schema_conditions[nzchar(schema_conditions)]
+  expect_true(all(schema_conditions %in% names(p$conditional_metadata)))
+})
+
+test_that("IPHRAProtocol syncs sampling conditional_metadata from sample_table", {
+  p <- IPHRAProtocol$new()
+
+  p$add_stratum(
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "simple_random",
+    n_sites = 2
+  )
+
+  expect_true(isTRUE(p$conditional_metadata$srs_srs))
+  expect_false(isTRUE(p$conditional_metadata$purposive))
+
+  p$add_stratum(
+    stratum_id = "s1",
+    stratum_name = "S1 Updated",
+    sampling_method = "purposive"
+  )
+
+  expect_false(isTRUE(p$conditional_metadata$srs_srs))
+  expect_true(isTRUE(p$conditional_metadata$purposive))
+})
+
+test_that("IPHRAProtocol conditional_replace uses conditional_metadata and skips empty condition", {
+  p <- IPHRAProtocol$new()
+  p$conditional_metadata$srs_srs <- TRUE
+  p$conditional_metadata$srs_systematic <- FALSE
+
+  rows <- data.frame(
+    tag_name = c("@tag_true", "@tag_false", "@tag_empty"),
+    handling = rep("conditional_replace", 3),
+    condition = c("srs_srs", "srs_systematic", ""),
+    default_value = c("YES", "NO", "EMPTY"),
+    stringsAsFactors = FALSE
+  )
+
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "@tag_true", style = "Normal")
+  doc <- officer::body_add_par(doc, "@tag_false", style = "Normal")
+  doc <- officer::body_add_par(doc, "@tag_empty", style = "Normal")
+  doc <- p$.__enclos_env__$private$handle_conditional_replace(doc, rows)
+
+  body_xml <- officer::docx_body_xml(doc)
+  txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+               collapse = "")
+
+  expect_true(grepl("YES", txt, fixed = TRUE))
+  expect_true(grepl("@tag_false", txt, fixed = TRUE))
+  expect_true(grepl("@tag_empty", txt, fixed = TRUE))
 })
