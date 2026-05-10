@@ -616,7 +616,9 @@ test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied
     General_HH_Sample_Size = 30
   )
   # Manually corrupt the strata table to remove n_sites, simulating a missing-param scenario
-  p$sample_table$sample_table$n_sites <- NA_real_
+  st <- p$get_sample_table()
+  st$n_sites <- NA_real_
+  p$sample_table$set_sample_table(st)
 
   frame <- data.frame(
     stratum         = rep("s1", 20),

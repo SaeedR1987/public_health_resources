@@ -424,7 +424,6 @@ restore_protocol <- function(protocol_data) {
       }
       protocol$drawn_sample      <- protocol_data$drawn_sample
       protocol$drawn_sample_full <- protocol_data$drawn_sample_full
-      protocol$touch()
     } else {
       protocol <- Protocol$new(
         assessment_title = protocol_data$metadata$assessment_title,
@@ -453,6 +452,7 @@ restore_protocol <- function(protocol_data) {
     if ("synchronize_state" %in% names(protocol) && is.function(protocol$synchronize_state)) {
       protocol$synchronize_state()
     }
+    protocol$touch()
 
     phr_message(phr_txt("Protocol restored successfully."), origin = origin)
     protocol
