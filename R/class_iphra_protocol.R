@@ -391,15 +391,59 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     add_stratum = function(...) {
       super$add_stratum(...)
-      # Update num_strata_units to number of unique strata in sample_table
-      st <- self$get_sample_table()
-      self$metadata$num_strata_units <- if (!is.null(st) &&
-                                             "stratum_id" %in% names(st)) {
-        length(unique(st$stratum_id))
-      } else {
-        0L
-      }
-      private$sync_sampling_conditional_metadata()
+      private$sync_iphra_sample_metadata()
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Replace the current sample table and refresh IPHRA-specific
+    #'   sample metadata.
+    #' @param sample_table Data frame.
+    #' @return Invisibly returns \code{self}.
+    sample_set_sample_table = function(sample_table) {
+      super$sample_set_sample_table(sample_table)
+      private$sync_iphra_sample_metadata()
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Clear the current sample table and refresh IPHRA-specific
+    #'   sample metadata.
+    #' @return Invisibly returns \code{self}.
+    sample_clear_sample_table = function() {
+      super$sample_clear_sample_table()
+      private$sync_iphra_sample_metadata()
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Add a stratum row and refresh IPHRA-specific sample metadata.
+    #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
+    #' @return Invisibly returns \code{self}.
+    sample_add_stratum = function(...) {
+      super$sample_add_stratum(...)
+      private$sync_iphra_sample_metadata()
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Remove a stratum row and refresh IPHRA-specific sample
+    #'   metadata.
+    #' @param strata_name Character scalar naming the stratum to remove.
+    #' @return Invisibly returns \code{self}.
+    sample_remove_stratum = function(strata_name) {
+      super$sample_remove_stratum(strata_name = strata_name)
+      private$sync_iphra_sample_metadata()
+      private$touch()
+      invisible(self)
+    },
+
+    #' @description Calculate sample sizes and refresh IPHRA-specific sample
+    #'   metadata.
+    #' @return Invisibly returns \code{self}.
+    sample_calculate_sample_sizes = function() {
+      super$sample_calculate_sample_sizes()
+      private$sync_iphra_sample_metadata()
       private$touch()
       invisible(self)
     },
@@ -948,6 +992,19 @@ IPHRAProtocol <- R6::R6Class(
       for (nm in names(sampling_flags)) {
         self$conditional_metadata[[nm]] <- isTRUE(sampling_flags[[nm]])
       }
+      invisible(NULL)
+    },
+
+    sync_iphra_sample_metadata = function() {
+      st <- self$get_sample_table()
+      self$metadata$num_strata_units <- if (!is.null(st) &&
+                                             is.data.frame(st) &&
+                                             "stratum_id" %in% names(st)) {
+        length(unique(st$stratum_id))
+      } else {
+        0L
+      }
+      private$sync_sampling_conditional_metadata()
       invisible(NULL)
     },
 
