@@ -284,11 +284,11 @@ Protocol <- R6::R6Class(
     #'   vector when none are found.
     framework_get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
       schema <- self$framework_get_schema(type = match.arg(type))
+      private$touch()
       if (is.data.frame(schema) && "indicator_code" %in% names(schema)) {
         codes <- as.character(schema$indicator_code)
         return(unique(codes[!is.na(codes) & nzchar(codes)]))
       }
-      private$touch()
       character(0)
     },
 

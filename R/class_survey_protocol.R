@@ -824,7 +824,11 @@ SurveyProtocol <- R6::R6Class(
           message = phr_txt("sample_table must be a Sample object."),
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
-        self$sample_calculate_sample_sizes()
+        self$sample_table$calculate_sample_sizes()
+        self$sync_sample_metadata_fields
+        private$touch()
+        private$add_target_stratum()
+        self$diagnose_coherence()
 
         phr_message(
           phr_txt("Sample sizes calculated for {nrow(self$get_sample_table())} stratum/strata."),

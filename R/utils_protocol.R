@@ -453,9 +453,6 @@ restore_protocol <- function(protocol_data) {
     protocol$indicator_catalog_adjusted <- protocol_data$indicator_catalog_adjusted %||% protocol$indicator_catalog_adjusted
     protocol$tool_indicator_catalog_master   <- protocol_data$tool_indicator_catalog_master   %||% protocol$tool_indicator_catalog_master
     protocol$tool_indicator_catalog_revised  <- protocol_data$tool_indicator_catalog_revised  %||% protocol$tool_indicator_catalog_revised
-    if (inherits(protocol, "SurveyProtocol") && !is.null(protocol_data$sampling_frame_strata_names)) {
-      protocol$sampling_frame_strata_names <- protocol_data$sampling_frame_strata_names
-    }
     protocol$issues              <- protocol_data$issues
     if ("synchronize_state" %in% names(protocol) && is.function(protocol$synchronize_state)) {
       protocol$synchronize_state()
