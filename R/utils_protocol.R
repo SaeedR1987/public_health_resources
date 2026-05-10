@@ -57,8 +57,7 @@ validate_protocol <- function(protocol) {
 
     list(
       has_issues = length(issues) > 0,
-      issues     = issues,
-      summary    = protocol$get_protocol_summary()
+      issues     = issues
     )
   }, on_error = "abort", origin = origin)
 }
@@ -332,6 +331,9 @@ calculate_sample_size_strata_table <- function(sample_table) {
 
 #' Save protocol to RDS file
 #'
+#' Saves the \code{Protocol} or \code{SurveyProtocol} object directly to an
+#' RDS file.  Use \code{\link{load_protocol}} to restore it.
+#'
 #' @param protocol Protocol object to save
 #' @param file Character. File path for saving
 #' @export
@@ -346,16 +348,18 @@ save_protocol <- function(protocol, file) {
       origin  = origin
     )
 
-    protocol_export <- protocol$export_protocol()
-    saveRDS(protocol_export, file = file)
+    saveRDS(protocol, file = file)
     phr_message(phr_txt("Protocol saved to: {file}"), origin = origin)
   }, on_error = "abort", origin = origin)
 }
 
 #' Load protocol from RDS file
 #'
+#' Loads a \code{Protocol} or \code{SurveyProtocol} object saved with
+#' \code{\link{save_protocol}}.
+#'
 #' @param file Character. File path to load from
-#' @return List containing protocol data
+#' @return A \code{Protocol} or \code{SurveyProtocol} object
 #' @export
 load_protocol <- function(file) {
 
@@ -369,9 +373,9 @@ load_protocol <- function(file) {
       hint    = phr_txt("Check the file path and ensure the file has not been moved or deleted.")
     )
 
-    protocol_data <- readRDS(file)
+    protocol <- readRDS(file)
     phr_message(phr_txt("Protocol loaded from: {file}"), origin = origin)
-    protocol_data
+    protocol
   }, on_error = "abort", origin = origin)
 }
 
@@ -381,7 +385,9 @@ load_protocol <- function(file) {
 #' sampling fields (\code{sample_table}, \code{sampling_frame}, etc.),
 #' otherwise restores a base \code{\link{Protocol}}.
 #'
-#' @param protocol_data List. Exported protocol data from export_protocol()
+#' @param protocol_data List. Legacy exported protocol data (a list with a
+#'   \code{metadata} element, as previously produced by the old
+#'   \code{export_protocol()} method).
 #' @return A new Protocol or SurveyProtocol object with restored data
 #' @export
 restore_protocol <- function(protocol_data) {
@@ -391,7 +397,7 @@ restore_protocol <- function(protocol_data) {
   phr_try({
     phr_assert(
       is.list(protocol_data) && !is.null(protocol_data$metadata),
-      message = phr_txt("protocol_data must be a list produced by export_protocol()."),
+      message = phr_txt("protocol_data must be a list with a 'metadata' element."),
       origin  = origin
     )
 
@@ -447,12 +453,13 @@ restore_protocol <- function(protocol_data) {
     protocol$indicator_catalog_adjusted <- protocol_data$indicator_catalog_adjusted %||% protocol$indicator_catalog_adjusted
     protocol$tool_indicator_catalog_master   <- protocol_data$tool_indicator_catalog_master   %||% protocol$tool_indicator_catalog_master
     protocol$tool_indicator_catalog_revised  <- protocol_data$tool_indicator_catalog_revised  %||% protocol$tool_indicator_catalog_revised
-    protocol$sampling_frame_strata_names     <- protocol_data$sampling_frame_strata_names     %||% protocol$sampling_frame_strata_names
+    if (inherits(protocol, "SurveyProtocol") && !is.null(protocol_data$sampling_frame_strata_names)) {
+      protocol$sampling_frame_strata_names <- protocol_data$sampling_frame_strata_names
+    }
     protocol$issues              <- protocol_data$issues
     if ("synchronize_state" %in% names(protocol) && is.function(protocol$synchronize_state)) {
       protocol$synchronize_state()
     }
-    protocol$touch()
 
     phr_message(phr_txt("Protocol restored successfully."), origin = origin)
     protocol
@@ -513,19 +520,23 @@ print_protocol_summary <- function(protocol) {
       origin  = origin
     )
 
-    summary <- protocol$get_protocol_summary()
+    md <- protocol$metadata
 
     phr_message(
-      phr_txt("Protocol: {summary$assessment_title} | Country: {summary$country_name} | {summary$month_year}"),
-      origin = origin
-    )
-    phr_message(
-      phr_txt("Objectives: {summary$num_objectives} | Strata: {if (is.null(summary$num_strata)) 'N/A' else summary$num_strata} | Tools: {summary$num_tools}"),
+      phr_txt("Protocol: {md$assessment_title %||% 'N/A'} | Country: {md$country_name %||% 'N/A'} | {md$month_year %||% 'N/A'}"),
       origin = origin
     )
 
-    if (summary$num_issues > 0) {
-      issues <- protocol$get_issues()
+    n_tools <- length(protocol$tools)
+    n_objectives <- if (!is.null(protocol$objectives)) count_objectives(protocol$objectives) else 0L
+
+    phr_message(
+      phr_txt("Objectives: {n_objectives} | Tools: {n_tools}"),
+      origin = origin
+    )
+
+    issues <- protocol$get_issues()
+    if (length(issues) > 0) {
       for (issue_name in names(issues)) {
         phr_warning(message = phr_txt("{issues[[issue_name]]}"), origin = origin)
       }

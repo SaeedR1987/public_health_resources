@@ -1156,7 +1156,7 @@ IPHRAProtocol <- R6::R6Class(
             if (length(inc_codes) == 0) {
               private$.replace(doc, "@specific_objectives", "")
             } else {
-              schema_so <- self$get_schema_for_indicators(inc_codes, type = "master")
+              schema_so <- self$framework_get_schema_for_indicator_codes(inc_codes, type = "master")
               if (!is.data.frame(schema_so) || nrow(schema_so) == 0) {
                 private$.replace(doc, "@specific_objectives", "")
               } else {
@@ -1209,7 +1209,7 @@ IPHRAProtocol <- R6::R6Class(
             if (length(inc_codes_rq) == 0) {
               private$.replace(doc, "@research_questions", "")
             } else {
-              schema_rq <- self$get_schema_for_indicators(inc_codes_rq, type = "master")
+              schema_rq <- self$framework_get_schema_for_indicator_codes(inc_codes_rq, type = "master")
               if (!is.data.frame(schema_rq) || nrow(schema_rq) == 0 ||
                   !"research_question" %in% names(schema_rq)) {
                 private$.replace(doc, "@research_questions", "")
@@ -1265,7 +1265,7 @@ IPHRAProtocol <- R6::R6Class(
               doc <- private$.replace(doc, "@list_secondary_data", "")
               doc
             } else {
-              master_lsd <- self$get_schema(type = "master")
+              master_lsd <- self$framework_get_schema(type = "master")
               get_obj_text_lsd <- function(code_lsd) {
                 if (!is.null(master_lsd) && is.data.frame(master_lsd) &&
                     all(c("objective_code", "text_objective") %in% names(master_lsd))) {
@@ -1521,7 +1521,7 @@ IPHRAProtocol <- R6::R6Class(
         return(private$.replace(doc, "@primary_data_sources_table", ""))
       }
 
-      master <- self$get_schema(type = "master")
+      master <- self$framework_get_schema(type = "master")
       if (!is.data.frame(master) || nrow(master) == 0 ||
           !all(c("objective_code", "indicator_code", "text_objective") %in% names(master))) {
         return(private$.replace(doc, "@primary_data_sources_table", ""))
@@ -1683,7 +1683,7 @@ IPHRAProtocol <- R6::R6Class(
 
       # Build the data frame (with data, or one blank row if no data provided)
       if (!is.null(sdr) && length(sdr) > 0) {
-        master <- self$get_schema(type = "master")
+        master <- self$framework_get_schema(type = "master")
 
         obj_labels <- setNames(
           if (!is.null(master) && is.data.frame(master) &&

@@ -28,6 +28,10 @@ SurveyProtocol <- R6::R6Class(
     #'   initialisation.
     sampling_frame = NULL,
 
+    #' @field sampling_frame_strata_names Character vector of unique strata names
+    #'   currently available in the held \code{SamplingFrame}, when present.
+    sampling_frame_strata_names = character(0),
+
     #' @field drawn_sample Data frame with selected PSUs (filtered from drawn_sample_full)
     drawn_sample = NULL,
 
@@ -274,7 +278,7 @@ SurveyProtocol <- R6::R6Class(
 
       private$touch()
       private$add_target_stratum()
-      private$check_issues()
+      self$diagnose_coherence()
       phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
       invisible(self)
     },
@@ -328,7 +332,7 @@ SurveyProtocol <- R6::R6Class(
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
         self$sync_sampling_frame_fields
         private$touch()
-        private$check_issues()
+        self$diagnose_coherence()
         phr_message(
           phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
           origin = "SurveyProtocol$set_sampling_frame"
@@ -562,7 +566,7 @@ SurveyProtocol <- R6::R6Class(
 
         self$sync_sampling_frame_fields
         private$touch()
-        private$check_issues()
+        self$diagnose_coherence()
         phr_message(
           phr_txt("Sample drawn: {nrow(self$drawn_sample)} PSU(s) selected."),
           origin = "SurveyProtocol$draw_sample"
@@ -599,7 +603,7 @@ SurveyProtocol <- R6::R6Class(
         self$drawn_sample_full <- NULL
         self$sync_sampling_frame_fields
         private$touch()
-        private$check_issues()
+        self$diagnose_coherence()
         phr_message(
           phr_txt("Sample cleared from sampling frame."),
           origin = "SurveyProtocol$clear_sample"
@@ -626,47 +630,130 @@ SurveyProtocol <- R6::R6Class(
       self$sample_table$get_sample_table()
     },
 
-    #' @description Replace the current sample table through the inherited
-    #'   \code{Protocol} sample accessor and keep survey metadata in sync.
+    #' @description Replace the current sample table through the attached
+    #'   \code{\link{Sample}} object and keep survey metadata in sync.
     #' @param sample_table Data frame.
     #' @return Invisibly returns \code{self}.
     sample_set_sample_table = function(sample_table) {
-      super$sample_set_sample_table(sample_table)
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_set_sample_table"
+      )
+      self$sample_table$set_sample_table(sample_table)
+      self$sync_sample_metadata_fields
+      private$touch()
       private$add_target_stratum()
-      private$check_issues()
+      self$diagnose_coherence()
       invisible(self)
     },
 
-    #' @description Clear the current sample table through the inherited
-    #'   \code{Protocol} sample accessor and keep survey metadata in sync.
+    #' @description Return the current sample table from the attached
+    #'   \code{\link{Sample}} object.
+    #' @return Data frame containing the sample table.
+    sample_get_sample_table = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_get_sample_table"
+      )
+      out <- self$sample_table$get_sample_table()
+      private$touch()
+      out
+    },
+
+    #' @description Clear the current sample table and keep survey metadata in sync.
     #' @return Invisibly returns \code{self}.
     sample_clear_sample_table = function() {
-      super$sample_clear_sample_table()
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_clear_sample_table"
+      )
+      self$sample_table$clear_sample_table()
+      self$sync_sample_metadata_fields
+      private$touch()
       private$add_target_stratum()
-      private$check_issues()
+      self$diagnose_coherence()
       invisible(self)
     },
 
-    #' @description Add a stratum row through the inherited \code{Protocol}
-    #'   sample accessor and keep survey metadata in sync.
+    #' @description Add a stratum row and keep survey metadata in sync.
     #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
     #' @return Invisibly returns \code{self}.
     sample_add_stratum = function(...) {
-      super$sample_add_stratum(...)
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_add_stratum"
+      )
+      do.call(self$sample_table$add_stratum, list(...))
+      self$sync_sample_metadata_fields
+      private$touch()
       private$add_target_stratum()
-      private$check_issues()
+      self$diagnose_coherence()
       invisible(self)
     },
 
-    #' @description Remove a stratum row through the inherited \code{Protocol}
-    #'   sample accessor and keep survey metadata in sync.
+    #' @description Remove a stratum row and keep survey metadata in sync.
     #' @param strata_name Character scalar naming the stratum to remove.
     #' @return Invisibly returns \code{self}.
     sample_remove_stratum = function(strata_name) {
-      super$sample_remove_stratum(strata_name = strata_name)
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_remove_stratum"
+      )
+      self$sample_table$remove_stratum(strata_name = strata_name)
+      self$sync_sample_metadata_fields
+      private$touch()
       private$add_target_stratum()
-      private$check_issues()
+      self$diagnose_coherence()
       invisible(self)
+    },
+
+    #' @description Calculate sample sizes and keep survey metadata in sync.
+    #' @return Invisibly returns \code{self}.
+    sample_calculate_sample_sizes = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_calculate_sample_sizes"
+      )
+      self$sample_table$calculate_sample_sizes()
+      self$sync_sample_metadata_fields
+      private$touch()
+      private$add_target_stratum()
+      self$diagnose_coherence()
+      invisible(self)
+    },
+
+    #' @description Return sampling methods from the attached \code{\link{Sample}}
+    #'   object.
+    #' @return Character vector of sampling methods.
+    sample_get_sampling_methods = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_get_sampling_methods"
+      )
+      out <- self$sample_table$get_sampling_methods()
+      private$touch()
+      out
+    },
+
+    #' @description Return stratum names from the attached \code{\link{Sample}}
+    #'   object.
+    #' @return Character vector of stratum names.
+    sample_get_strata_names = function() {
+      phr_assert(
+        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
+        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
+        origin  = "SurveyProtocol$sample_get_strata_names"
+      )
+      out <- self$sample_table$get_strata_names()
+      private$touch()
+      out
     },
 
     # ── Sampling helpers ────────────────────────────────────────────────────
@@ -719,16 +806,6 @@ SurveyProtocol <- R6::R6Class(
       df[[col_name]]
     },
 
-    #' @description Get protocol summary including sampling information
-    #' @return List with protocol summary information
-    get_protocol_summary = function() {
-      base_summary <- super$get_protocol_summary()
-      st <- self$get_sample_table()
-      base_summary$num_strata       <- if (is.null(st)) 0L else nrow(st)
-      base_summary$total_sample_size <- if (is.null(st)) 0 else sum(st$General_HH_Sample_Size, na.rm = TRUE)
-      base_summary
-    },
-
     #' @description Calculate sample sizes for all strata in the sample table
     #'
     #' Delegates to \code{\link{calculate_sample_size_strata_table}}, which
@@ -747,25 +824,13 @@ SurveyProtocol <- R6::R6Class(
           message = phr_txt("sample_table must be a Sample object."),
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
-        super$sample_calculate_sample_sizes()
+        self$sample_calculate_sample_sizes()
 
-        private$add_target_stratum()
-        private$check_issues()
         phr_message(
           phr_txt("Sample sizes calculated for {nrow(self$get_sample_table())} stratum/strata."),
           origin = "SurveyProtocol$calculate_sample_sizes"
         )
       }, on_error = "abort", origin = "SurveyProtocol$calculate_sample_sizes")
-      invisible(self)
-    },
-
-    #' @description Calculate sample sizes through the inherited \code{Protocol}
-    #'   sample accessor and keep survey metadata in sync.
-    #' @return Invisibly returns \code{self}.
-    sample_calculate_sample_sizes = function() {
-      super$sample_calculate_sample_sizes()
-      private$add_target_stratum()
-      private$check_issues()
       invisible(self)
     },
 
@@ -955,17 +1020,115 @@ SurveyProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Export protocol to a list including sampling data
-    #' @return List containing all protocol data
-    export_protocol = function() {
-      base_export <- super$export_protocol()
-      base_export$sample_table      <- self$get_sample_table()
-      base_export$sample_object     <- self$sample_table
-      base_export$sampling_frame    <- if (!is.null(self$sampling_frame)) self$sampling_frame$log_df else NULL
-      base_export$drawn_sample      <- self$drawn_sample
-      base_export$drawn_sample_full <- self$drawn_sample_full
-      base_export$summary           <- self$get_protocol_summary()
-      base_export
+    #' @description Override \code{synchronize_state} to also sync sampling
+    #'   metadata and sampling frame fields.
+    #' @return Invisibly returns \code{self}.
+    synchronize_state = function() {
+      super$synchronize_state()
+      self$sync_sample_metadata_fields
+      self$sync_sampling_frame_fields
+      invisible(self)
+    },
+
+    #' @description Override \code{diagnose_coherence} to additionally check
+    #'   strata consistency between the sampling frame and the sample table.
+    #'
+    #' Calls the base \code{Protocol$diagnose_coherence()} and then appends
+    #' strata consistency checks to \code{self$issues_coherence}.
+    #'
+    #' @return Invisibly returns \code{self} for method chaining.
+    diagnose_coherence = function() {
+      super$diagnose_coherence()
+
+      # Check strata consistency between frame and sample table
+      st <- self$get_sample_table()
+      if (!is.null(st) && !is.null(self$sampling_frame) &&
+          nrow(self$sampling_frame$log_df) > 0) {
+        table_strata <- st$stratum_id
+        frame_strata <- unique(self$sampling_frame$log_df$stratum)
+
+        if (!setequal(table_strata, frame_strata)) {
+          missing_in_frame <- setdiff(table_strata, frame_strata)
+          missing_in_table <- setdiff(frame_strata, table_strata)
+
+          if (length(missing_in_frame) > 0) {
+            self$issues_coherence$strata_missing_in_frame <- paste(
+              "Strata in sample table but not in frame:",
+              paste(missing_in_frame, collapse = ", ")
+            )
+          }
+          if (length(missing_in_table) > 0) {
+            self$issues_coherence$strata_missing_in_table <- paste(
+              "Strata in frame but not in sample table:",
+              paste(missing_in_table, collapse = ", ")
+            )
+          }
+        }
+      }
+
+      invisible(self)
+    }
+
+  ),
+
+  active = list(
+    sync_sample_metadata_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_sample_metadata_fields is a read-only active binding.")
+      }
+      st <- NULL
+      if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        st <- self$sample_table$get_sample_table()
+      } else if (!is.null(self$sample_table) && is.data.frame(self$sample_table)) {
+        st <- self$sample_table
+      }
+      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
+        self$metadata$sampling_strata_names <- character(0)
+        self$metadata$sampling_method_flags <- list()
+        return(invisible(NULL))
+      }
+
+      strata_names <- if ("stratum_name" %in% names(st)) {
+        as.character(st$stratum_name)
+      } else if ("Population_Name" %in% names(st)) {
+        as.character(st$Population_Name)
+      } else {
+        as.character(st$stratum_id %||% character(0))
+      }
+      strata_names <- unique(strata_names[!is.na(strata_names) & nzchar(strata_names)])
+
+      methods_used <- if ("sampling_method" %in% names(st)) {
+        unique(trimws(tolower(as.character(st$sampling_method))))
+      } else {
+        character(0)
+      }
+      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
+      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
+      flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
+
+      self$metadata$sampling_strata_names <- strata_names
+      self$metadata$sampling_method_flags <- flags
+      invisible(NULL)
+    },
+
+    sync_sampling_frame_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_sampling_frame_fields is a read-only active binding.")
+      }
+      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
+        self$sampling_frame$log_df
+      } else {
+        NULL
+      }
+      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
+        self$sampling_frame_strata_names <- character(0)
+      } else {
+        vals <- as.character(sf$stratum)
+        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
+      }
+      invisible(NULL)
     }
   ),
 
@@ -1052,69 +1215,6 @@ SurveyProtocol <- R6::R6Class(
 
     add_sample_size_mort_table = function(doc) {
       private$.replace_schema_tag(doc, "@sample_size_hh_mort_table", "")
-    },
-
-    # Check for issues and discrepancies in the survey protocol,
-    # including strata consistency between frame and sample table.
-    check_issues = function() {
-      self$issues <- list()
-
-      # Check if objectives have matching indicators in tools
-      all_objectives <- flatten_objectives(self$objectives)
-      if (length(all_objectives) > 0 && length(self$tools) > 0) {
-        obj_sectors <- unique(sapply(all_objectives, function(x) x$sector))
-
-        tool_sectors <- character(0)
-        tryCatch({
-          tool_sectors <- unique(sapply(self$tools, function(x) {
-            if (is.list(x) && "sector" %in% names(x)) {
-              return(x$sector)
-            } else if (methods::is(x, "R6") && "sector" %in% names(x)) {
-              return(x$sector)
-            }
-            return(NA_character_)
-          }))
-          tool_sectors <- tool_sectors[!is.na(tool_sectors)]
-        }, error = function(e) {
-          # Ignore extraction errors
-        })
-
-        missing_sectors <- setdiff(obj_sectors, tool_sectors)
-        if (length(missing_sectors) > 0) {
-          self$issues$tool_coverage <- paste(
-            "Objectives require sectors not covered by tools:",
-            paste(missing_sectors, collapse = ", ")
-          )
-        }
-      }
-
-      # Check strata consistency between frame and sample table
-      st <- self$get_sample_table()
-      if (!is.null(st) && !is.null(self$sampling_frame) &&
-          nrow(self$sampling_frame$log_df) > 0) {
-        table_strata <- st$stratum_id
-        frame_strata <- unique(self$sampling_frame$log_df$stratum)
-
-        if (!setequal(table_strata, frame_strata)) {
-          missing_in_frame <- setdiff(table_strata, frame_strata)
-          missing_in_table <- setdiff(frame_strata, table_strata)
-
-          if (length(missing_in_frame) > 0) {
-            self$issues$strata_missing_in_frame <- paste(
-              "Strata in sample table but not in frame:",
-              paste(missing_in_frame, collapse = ", ")
-            )
-          }
-          if (length(missing_in_table) > 0) {
-            self$issues$strata_missing_in_table <- paste(
-              "Strata in frame but not in sample table:",
-              paste(missing_in_table, collapse = ", ")
-            )
-          }
-        }
-      }
-
-      invisible(self)
     },
 
     # Apply a PSU-level sampling method — dispatches to draw_sample_psu_* utilities

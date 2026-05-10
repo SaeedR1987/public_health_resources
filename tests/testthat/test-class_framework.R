@@ -148,7 +148,7 @@ test_that("Framework$modify_adjusted_svg runs without error when primary objecti
   expect_false(is.null(fw$adjusted_svg))
 })
 
-test_that("Protocol$export_protocol framework data is serialisable", {
+test_that("Protocol framework data is serialisable", {
   p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
@@ -161,10 +161,8 @@ test_that("Protocol$export_protocol framework data is serialisable", {
   )
   fw$set_master_schema(schema)
   p$framework <- fw
-  exported <- p$export_protocol()
-  expect_true(is.list(exported$framework))
-  expect_equal(exported$framework$class, "Framework")
-  expect_equal(nrow(exported$framework$master_schema), 1)
+  expect_true(inherits(p$framework, "Framework"))
+  expect_equal(nrow(p$framework$master_schema), 1)
 })
 
 test_that("ANAFramework initializes with master_schema from reference.xlsx", {
@@ -205,7 +203,6 @@ test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
 })
 
 test_that("restore_framework reconstructs a Framework from exported data", {
-  p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
     sector         = "Health",
@@ -217,9 +214,16 @@ test_that("restore_framework reconstructs a Framework from exported data", {
   )
   fw$set_master_schema(schema)
   fw$set_master_svg('<svg><rect id="H1"/></svg>')
-  p$framework <- fw
-  exported <- p$export_protocol()
-  restored <- restore_framework(exported$framework)
+  fw_data <- list(
+    class                = class(fw)[1],
+    master_schema        = fw$master_schema,
+    adjusted_schema      = fw$adjusted_schema,
+    master_svg           = fw$master_svg,
+    adjusted_svg         = fw$adjusted_svg,
+    primary_objectives   = fw$primary_objectives,
+    secondary_objectives = fw$secondary_objectives
+  )
+  restored <- restore_framework(fw_data)
   expect_true(inherits(restored, "Framework"))
   expect_equal(nrow(restored$master_schema), 1)
   expect_false(is.null(restored$master_svg))
@@ -241,7 +245,7 @@ test_that("Protocol framework field can be replaced with another Framework objec
   expect_true(inherits(p$framework, "Framework"))
 })
 
-test_that("Protocol$export_protocol includes framework when set", {
+test_that("Protocol includes framework when set", {
   p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
@@ -254,15 +258,14 @@ test_that("Protocol$export_protocol includes framework when set", {
   )
   fw$set_master_schema(schema)
   p$framework <- fw
-  exported <- p$export_protocol()
-  expect_false(is.null(exported$framework))
-  expect_equal(exported$framework$class, "Framework")
+  expect_false(is.null(p$framework))
+  expect_true(inherits(p$framework, "Framework"))
 })
 
-test_that("Protocol$export_protocol includes default framework", {
+test_that("Protocol initializes with a default framework", {
   p        <- Protocol$new()
-  exported <- p$export_protocol()
-  expect_false(is.null(exported$framework))
+  expect_false(is.null(p$framework))
+  expect_true(inherits(p$framework, "Framework"))
 })
 
 test_that("restore_protocol restores framework field", {
@@ -278,7 +281,20 @@ test_that("restore_protocol restores framework field", {
   )
   fw$set_master_schema(schema)
   p$framework <- fw
-  exported  <- p$export_protocol()
+  # Simulate legacy export format for restore_protocol
+  fw_data <- list(
+    class                = class(fw)[1],
+    master_schema        = fw$master_schema,
+    adjusted_schema      = fw$adjusted_schema,
+    master_svg           = fw$master_svg,
+    adjusted_svg         = fw$adjusted_svg,
+    primary_objectives   = fw$primary_objectives,
+    secondary_objectives = fw$secondary_objectives
+  )
+  exported <- list(
+    metadata  = p$metadata,
+    framework = fw_data
+  )
   restored  <- restore_protocol(exported)
   expect_true(inherits(restored$framework, "Framework"))
   expect_equal(nrow(restored$framework$master_schema), 1)
@@ -560,19 +576,17 @@ test_that("Framework primary_objectives and secondary_objectives can be set", {
   expect_equal(fw$secondary_objectives, c(103, 104))
 })
 
-test_that("Protocol export includes primary and secondary objectives", {
+test_that("Protocol framework includes primary and secondary objectives", {
   p  <- Protocol$new()
   fw <- Framework$new()
   fw$primary_objectives  <- c(101)
   fw$secondary_objectives <- c(102)
   p$framework <- fw
-  exported <- p$export_protocol()
-  expect_equal(exported$framework$primary_objectives, c(101))
-  expect_equal(exported$framework$secondary_objectives, c(102))
+  expect_equal(p$framework$primary_objectives, c(101))
+  expect_equal(p$framework$secondary_objectives, c(102))
 })
 
 test_that("restore_framework restores primary_objectives and secondary_objectives", {
-  p  <- Protocol$new()
   fw <- Framework$new()
   schema <- data.frame(
     sector = "Health", pillar = "P", sub_pillar = "SP",
@@ -582,9 +596,16 @@ test_that("restore_framework restores primary_objectives and secondary_objective
   fw$set_master_schema(schema)
   fw$primary_objectives  <- c(101, 102)
   fw$secondary_objectives <- c(103)
-  p$framework <- fw
-  exported <- p$export_protocol()
-  restored <- restore_framework(exported$framework)
+  fw_data <- list(
+    class                = class(fw)[1],
+    master_schema        = fw$master_schema,
+    adjusted_schema      = fw$adjusted_schema,
+    master_svg           = fw$master_svg,
+    adjusted_svg         = fw$adjusted_svg,
+    primary_objectives   = fw$primary_objectives,
+    secondary_objectives = fw$secondary_objectives
+  )
+  restored <- restore_framework(fw_data)
   expect_equal(restored$primary_objectives, c(101, 102))
   expect_equal(restored$secondary_objectives, c(103))
 })

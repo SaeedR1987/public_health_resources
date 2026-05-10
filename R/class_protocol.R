@@ -72,10 +72,6 @@ Protocol <- R6::R6Class(
     #'   vectors of indicator codes available in revised tool surveys.
     tool_indicator_catalog_revised = list(),
 
-    #' @field sampling_frame_strata_names Character vector of unique strata names
-    #'   currently available in the held \code{SamplingFrame}, when present.
-    sampling_frame_strata_names = character(0),
-
     #' @field issues List of validation issues and discrepancies
     issues = list(),
 
@@ -167,7 +163,6 @@ Protocol <- R6::R6Class(
         self$indicator_catalog_adjusted <- list()
         self$tool_indicator_catalog_master <- list()
         self$tool_indicator_catalog_revised <- list()
-        self$sampling_frame_strata_names <- character(0)
         self$protocol_schema <- private$.load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
@@ -177,41 +172,12 @@ Protocol <- R6::R6Class(
         }
         self$sync_framework_catalog_fields
         self$sync_tool_indicator_catalog_fields
-        self$sync_sample_metadata_fields
-        self$sync_sampling_frame_fields
 
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
       invisible(self)
     },
 
-    #' @description Set or replace the associated Framework object.
-    #' @param framework A \code{\link{Framework}} object.
-    #' @return Invisibly returns \code{self}.
-    set_framework = function(framework) {
-      phr_assert(
-        !is.null(framework) && inherits(framework, "Framework"),
-        message = phr_txt("framework must be a Framework object."),
-        origin  = "Protocol$set_framework"
-      )
-      self$framework <- framework
-      self$sync_framework_catalog_fields
-      private$touch()
-      private$check_issues()
-      invisible(self)
-    },
-
-    #' @description Synchronize orchestrator-level cached fields from held
-    #'   framework/tool/sample/sampling-frame objects.
-    #' @return Invisibly returns \code{self}.
-    synchronize_state = function() {
-      self$sync_framework_catalog_fields
-      self$sync_tool_indicator_catalog_fields
-      self$sync_sample_metadata_fields
-      self$sync_sampling_frame_fields
-      invisible(self)
-    },
-    
     #' @description Add a single Tool object to the protocol by specifying its type.
     #' A new tool of the requested type is instantiated (loading its bundled
     #' default XLSForm template) and stored in the \code{tools} named list under
@@ -255,7 +221,7 @@ Protocol <- R6::R6Class(
         self$tools[[tool_name]] <- tool
         self$sync_tool_indicator_catalog_fields
         private$touch()
-        private$check_issues()
+        self$diagnose_coherence()
         phr_message(
           phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
           origin = "Protocol$add_tools"
@@ -264,35 +230,10 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
     
-    #' @description Select indicators for data collection
-    #' @param indicator_list List of indicators
-    select_indicators = function(indicator_list) {
-      self$selected_indicators <- indicator_list
-      self$sync_tool_indicator_catalog_fields
-      private$touch()
-      private$check_issues()
-      invisible(self)
-    },
-    
     #' @description Get all issues
     #' @return List of validation issues
     get_issues = function() {
       return(self$issues)
-    },
-    
-    #' @description Get protocol summary
-    #' @return List with protocol summary information
-    get_protocol_summary = function() {
-      list(
-        assessment_title = self$metadata$assessment_title,
-        country_name = self$metadata$country_name,
-        month_year = self$metadata$month_year,
-        created = self$metadata$created_date,
-        modified = self$metadata$modified_datetime,
-        num_objectives = count_objectives(self$objectives),
-        num_tools = length(self$tools),
-        num_issues = length(self$issues)
-      )
     },
 
     #' @description Update one or more metadata fields by name.
@@ -334,50 +275,20 @@ Protocol <- R6::R6Class(
 
     # ── Schema / Framework helpers ─────────────────────────────────────────
 
-    #' @description Retrieve a schema data frame from the associated
-    #'   \code{\link{Framework}}.
-    #'
-    #' Returns \code{adjusted_schema} when \code{type = "adjusted"} and
-    #' \code{master_schema} when \code{type = "master"}.  Falls back to
-    #' \code{self$objective_schema} when no framework is attached, and returns
-    #' an empty \code{data.frame()} when neither is available.
-    #'
-    #' @param type Character. One of \code{"master"} (default) or
-    #'   \code{"adjusted"}.
-    #' @return A data frame.
-    get_schema = function(type = c("master", "adjusted")) {
-      type <- match.arg(type)
-      if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        schema <- if (type == "adjusted") {
-          self$framework$adjusted_schema
-        } else {
-          self$framework$master_schema
-        }
-        if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0) {
-          return(as.data.frame(schema, stringsAsFactors = FALSE))
-        }
-      }
-      # Fallback: self$objective_schema
-      if (!is.null(self$objective_schema) && is.data.frame(self$objective_schema) &&
-          nrow(self$objective_schema) > 0) {
-        return(as.data.frame(self$objective_schema, stringsAsFactors = FALSE))
-      }
-      data.frame()
-    },
-
     #' @description Return all unique, non-NA indicator codes present in a
     #'   schema.
     #'
     #' @param type Character. One of \code{"master"} (default) or
-    #'   \code{"adjusted"}.  Passed to \code{get_schema()}.
+    #'   \code{"adjusted"}.  Passed to \code{framework_get_schema()}.
     #' @return Character vector of unique indicator codes.  Empty character
     #'   vector when none are found.
-    get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
-      schema <- self$get_schema(type = match.arg(type))
+    framework_get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
+      schema <- self$framework_get_schema(type = match.arg(type))
       if (is.data.frame(schema) && "indicator_code" %in% names(schema)) {
         codes <- as.character(schema$indicator_code)
         return(unique(codes[!is.na(codes) & nzchar(codes)]))
       }
+      private$touch()
       character(0)
     },
 
@@ -387,47 +298,18 @@ Protocol <- R6::R6Class(
     #' @param indicator_codes Character vector of indicator codes to keep.
     #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
     #' @return Filtered data frame (zero rows when none match).
-    get_schema_for_indicators = function(indicator_codes,
+    framework_get_schema_for_indicator_codes = function(indicator_codes,
                                          type = c("master", "adjusted")) {
-      schema <- self$get_schema(type = match.arg(type))
+      schema <- self$framework_get_schema(type = match.arg(type))
       if (!is.data.frame(schema) || nrow(schema) == 0 ||
           !"indicator_code" %in% names(schema)) {
+        private$touch()
         return(data.frame())
       }
       ic <- as.character(indicator_codes)
-      schema[as.character(schema$indicator_code) %in% ic, , drop = FALSE]
-    },
-
-    #' @description Extract one column from the schema, optionally filtered to
-    #'   rows whose \code{indicator_code} matches \code{indicator_codes}.
-    #'
-    #' @param col_name Character. Name of the column to extract.
-    #' @param indicator_codes Optional character vector. When supplied, only
-    #'   rows whose \code{indicator_code} matches are used.
-    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
-    #' @param unique_only Logical. When \code{TRUE} (default) return only
-    #'   unique values.
-    #' @param drop_na Logical. When \code{TRUE} (default) remove \code{NA}
-    #'   and empty-string values.
-    #' @return Character vector of values.
-    get_schema_column = function(col_name,
-                                  indicator_codes = NULL,
-                                  type            = c("master", "adjusted"),
-                                  unique_only     = TRUE,
-                                  drop_na         = TRUE) {
-      schema <- if (!is.null(indicator_codes)) {
-        self$get_schema_for_indicators(indicator_codes, type = match.arg(type))
-      } else {
-        self$get_schema(type = match.arg(type))
-      }
-      if (!is.data.frame(schema) || nrow(schema) == 0 ||
-          !col_name %in% names(schema)) {
-        return(character(0))
-      }
-      vals <- as.character(schema[[col_name]])
-      if (drop_na)    vals <- vals[!is.na(vals) & nzchar(vals)]
-      if (unique_only) vals <- unique(vals)
-      vals
+      out <- schema[as.character(schema$indicator_code) %in% ic, , drop = FALSE]
+      private$touch()
+      out
     },
 
     # ── Tool helpers ────────────────────────────────────────────────────────
@@ -448,30 +330,6 @@ Protocol <- R6::R6Class(
     is_tool_included = function(tool_name) {
       if (is.null(self$tools) || length(self$tools) == 0) return(FALSE)
       isTRUE(tool_name %in% names(self$tools))
-    },
-
-    #' @description Return the survey data frame for a named tool.
-    #'
-    #' Returns \code{revised_survey} when it is non-NULL and non-empty, and
-    #' falls back to \code{survey}.  Returns \code{NULL} when the tool is not
-    #' found or has no survey data.
-    #'
-    #' @param tool_name Character. Tool name (key of \code{self$tools}).
-    #' @param prefer_revised Logical. When \code{TRUE} (default), prefer
-    #'   \code{revised_survey} over \code{survey}.
-    #' @return Data frame or \code{NULL}.
-    get_tool_survey = function(tool_name, prefer_revised = TRUE) {
-      if (!self$is_tool_included(tool_name)) return(NULL)
-      tool <- self$tools[[tool_name]]
-      if (!methods::is(tool, "R6")) return(NULL)
-      sv <- if (isTRUE(prefer_revised)) {
-        rs <- tryCatch(tool$revised_survey, error = function(e) NULL)
-        if (!is.null(rs) && is.data.frame(rs) && nrow(rs) > 0) rs
-        else tryCatch(tool$survey, error = function(e) NULL)
-      } else {
-        tryCatch(tool$survey, error = function(e) NULL)
-      }
-      sv
     },
 
     #' @description Return all unique indicator codes present across the
@@ -505,55 +363,90 @@ Protocol <- R6::R6Class(
       unique(codes)
     },
     
-    #' @description Export protocol to a list
-    #' @return List containing all protocol data
-    export_protocol = function() {
-      fw_data <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        fw <- self$framework
-        list(
-          class                = class(fw)[1],
-          master_schema        = fw$master_schema,
-          adjusted_schema      = fw$adjusted_schema,
-          master_svg           = fw$master_svg,
-          adjusted_svg         = fw$adjusted_svg,
-          primary_objectives   = fw$primary_objectives,
-          secondary_objectives = fw$secondary_objectives
-        )
-      } else {
-        NULL
-      }
-      list(
-        metadata = self$metadata,
-        conditional_metadata = self$conditional_metadata,
-        objectives = self$objectives,
-        objective_schema = self$objective_schema,
-        framework = fw_data,
-        tools = self$tools,
-        selected_indicators = self$selected_indicators,
-        objective_catalog_master = self$objective_catalog_master,
-        objective_catalog_adjusted = self$objective_catalog_adjusted,
-        indicator_catalog_master = self$indicator_catalog_master,
-        indicator_catalog_adjusted = self$indicator_catalog_adjusted,
-        tool_indicator_catalog_master = self$tool_indicator_catalog_master,
-        tool_indicator_catalog_revised = self$tool_indicator_catalog_revised,
-        sampling_frame_strata_names = self$sampling_frame_strata_names,
-        issues = self$issues,
-        summary = self$get_protocol_summary()
-      )
-    },
-
     #' @description Validate an objective schema data frame.
     #'
-    #' Convenience method that delegates to the standalone
-    #' \code{\link{validate_objective_schema}} function.  Useful for validating
-    #' custom schemas before associating them with this protocol.
+    #' Validates that \code{schema} is a non-NULL data frame with at least one
+    #' row, contains all required columns, and passes completeness and type
+    #' checks.
     #'
     #' @param schema Data frame to validate as an objective schema.
     #' @param soft Logical. When \code{TRUE} issues warnings rather than errors
     #'   for recoverable problems.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{TRUE} if valid.
     validate_objective_schema = function(schema, soft = FALSE) {
-      validate_objective_schema(schema, soft = soft)
+      phr_try({
+        origin <- "Protocol$validate_objective_schema"
+
+        if (is.null(schema) || !is.data.frame(schema)) {
+          phr_error(
+            origin  = origin,
+            message = phr_txt("Objective schema must be a data frame."),
+            hint    = phr_txt("Use load_objective_schema() to obtain the default schema.")
+          )
+        }
+
+        if (nrow(schema) == 0) {
+          msg <- phr_txt("Objective schema is empty (zero rows).")
+          if (soft) {
+            phr_warning(origin = origin, message = msg)
+            return(invisible(FALSE))
+          }
+          phr_error(origin = origin, message = msg)
+        }
+
+        missing_cols <- setdiff(.objective_schema_required_cols, names(schema))
+        if (length(missing_cols) > 0) {
+          phr_error(
+            origin  = origin,
+            message = phr_txt(
+              glue::glue(
+                "Objective schema is missing required column(s): {paste(missing_cols, collapse = ', ')}"
+              )
+            ),
+            hint = phr_txt(
+              glue::glue(
+                "Required columns are: {paste(.objective_schema_required_cols, collapse = ', ')}"
+              )
+            )
+          )
+        }
+
+        if (all(is.na(schema$sector))) {
+          phr_error(
+            origin  = origin,
+            message = phr_txt("All 'sector' values in the objective schema are NA.")
+          )
+        }
+
+        if (all(is.na(schema$short_objective))) {
+          msg <- phr_txt("All 'short_objective' values in the objective schema are NA.")
+          if (soft) {
+            phr_warning(origin = origin, message = msg)
+          } else {
+            phr_error(origin = origin, message = msg)
+          }
+        }
+
+        char_cols <- c("sector", "pillar", "sub_pillar", "text_objective")
+        bad_types <- char_cols[sapply(char_cols, function(col) {
+          col %in% names(schema) && !is.character(schema[[col]]) &&
+            !is.factor(schema[[col]])
+        })]
+        if (length(bad_types) > 0) {
+          msg <- phr_txt(
+            glue::glue(
+              "The following column(s) should be character (or factor): {paste(bad_types, collapse = ', ')}"
+            )
+          )
+          if (soft) {
+            phr_warning(origin = origin, message = msg)
+          } else {
+            phr_error(origin = origin, message = msg)
+          }
+        }
+
+        invisible(TRUE)
+      }, on_error = "abort", origin = "Protocol$validate_objective_schema")
     },
 
     #' @description Diagnose coherence between the \code{adjusted_schema} indicator
@@ -562,6 +455,8 @@ Protocol <- R6::R6Class(
     #'
     #' Checks performed:
     #' \enumerate{
+    #'   \item Objectives in the legacy \code{objectives} list whose sectors are
+    #'     not represented by any registered tool.
     #'   \item Objectives in \code{adjusted_schema} that have no matching
     #'     \code{indicator_code} in any tool's \code{revised_survey}.
     #'   \item \code{indicator_code} values present in tools but absent from
@@ -574,6 +469,28 @@ Protocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     diagnose_coherence = function() {
       self$issues_coherence <- list()
+
+      # Check 0: sector coverage from legacy objectives vs tools
+      all_objectives <- flatten_objectives(self$objectives)
+      if (length(all_objectives) > 0 && length(self$tools) > 0) {
+        obj_sectors <- unique(sapply(all_objectives, function(x) x$sector))
+        tool_sectors <- character(0)
+        tryCatch({
+          tool_sectors <- unique(sapply(self$tools, function(x) {
+            if (is.list(x) && "sector" %in% names(x)) return(x$sector)
+            else if (methods::is(x, "R6") && "sector" %in% names(x)) return(x$sector)
+            NA_character_
+          }))
+          tool_sectors <- tool_sectors[!is.na(tool_sectors)]
+        }, error = function(e) {})
+        missing_sectors <- setdiff(obj_sectors, tool_sectors)
+        if (length(missing_sectors) > 0) {
+          self$issues_coherence$tool_coverage <- paste(
+            "Objectives require sectors not covered by tools:",
+            paste(missing_sectors, collapse = ", ")
+          )
+        }
+      }
 
       if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
         self$issues_coherence$no_framework <-
@@ -1024,126 +941,6 @@ Protocol <- R6::R6Class(
       out
     },
 
-    #' @description Replace the current sample table through the attached
-    #'   \code{\link{Sample}} object.
-    #' @param sample_table Data frame.
-    #' @return Invisibly returns \code{self}.
-    sample_set_sample_table = function(sample_table) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_set_sample_table"
-      )
-      self$sample_table$set_sample_table(sample_table)
-      self$sync_sample_metadata_fields
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Return the current sample table from the attached
-    #'   \code{\link{Sample}} object.
-    #' @return Data frame containing the sample table.
-    sample_get_sample_table = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_get_sample_table"
-      )
-      out <- self$sample_table$get_sample_table()
-      private$touch()
-      out
-    },
-
-    #' @description Clear the current sample table through the attached
-    #'   \code{\link{Sample}} object.
-    #' @return Invisibly returns \code{self}.
-    sample_clear_sample_table = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_clear_sample_table"
-      )
-      self$sample_table$clear_sample_table()
-      self$sync_sample_metadata_fields
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Add a stratum row through the attached \code{\link{Sample}}
-    #'   object.
-    #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
-    #' @return Invisibly returns \code{self}.
-    sample_add_stratum = function(...) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_add_stratum"
-      )
-      do.call(self$sample_table$add_stratum, list(...))
-      self$sync_sample_metadata_fields
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Remove a stratum row through the attached \code{\link{Sample}}
-    #'   object.
-    #' @param strata_name Character scalar naming the stratum to remove.
-    #' @return Invisibly returns \code{self}.
-    sample_remove_stratum = function(strata_name) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_remove_stratum"
-      )
-      self$sample_table$remove_stratum(strata_name = strata_name)
-      self$sync_sample_metadata_fields
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Calculate sample sizes through the attached
-    #'   \code{\link{Sample}} object.
-    #' @return Invisibly returns \code{self}.
-    sample_calculate_sample_sizes = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_calculate_sample_sizes"
-      )
-      self$sample_table$calculate_sample_sizes()
-      self$sync_sample_metadata_fields
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Return sampling methods from the attached \code{\link{Sample}}
-    #'   object.
-    #' @return Character vector of sampling methods.
-    sample_get_sampling_methods = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_get_sampling_methods"
-      )
-      out <- self$sample_table$get_sampling_methods()
-      private$touch()
-      out
-    },
-
-    #' @description Return stratum names from the attached \code{\link{Sample}}
-    #'   object.
-    #' @return Character vector of stratum names.
-    sample_get_strata_names = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this Protocol."),
-        origin  = "Protocol$sample_get_strata_names"
-      )
-      out <- self$sample_table$get_strata_names()
-      private$touch()
-      out
-    },
-
     #' @description Empty hook for generating a Word document report.
     #'
     #' This base implementation is a no-op stub.  Subclasses (\emph{e.g.}
@@ -1207,64 +1004,6 @@ Protocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    sync_sample_metadata_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_sample_metadata_fields is a read-only active binding.")
-      }
-      st <- NULL
-      if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
-        st <- self$sample_table$get_sample_table()
-      } else if (!is.null(self$sample_table) && is.data.frame(self$sample_table)) {
-        st <- self$sample_table
-      }
-      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        self$metadata$sampling_strata_names <- character(0)
-        self$metadata$sampling_method_flags <- list()
-        return(invisible(NULL))
-      }
-
-      strata_names <- if ("stratum_name" %in% names(st)) {
-        as.character(st$stratum_name)
-      } else if ("Population_Name" %in% names(st)) {
-        as.character(st$Population_Name)
-      } else {
-        as.character(st$stratum_id %||% character(0))
-      }
-      strata_names <- unique(strata_names[!is.na(strata_names) & nzchar(strata_names)])
-
-      methods_used <- if ("sampling_method" %in% names(st)) {
-        unique(trimws(tolower(as.character(st$sampling_method))))
-      } else {
-        character(0)
-      }
-      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
-      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
-                         "systematic", "simple_random_rlc", "systematic_rlc",
-                         "proportional_rlc", "purposive")
-      flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
-
-      self$metadata$sampling_strata_names <- strata_names
-      self$metadata$sampling_method_flags <- flags
-      invisible(NULL)
-    },
-
-    sync_sampling_frame_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_sampling_frame_fields is a read-only active binding.")
-      }
-      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
-        self$sampling_frame$log_df
-      } else {
-        NULL
-      }
-      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
-        self$sampling_frame_strata_names <- character(0)
-      } else {
-        vals <- as.character(sf$stratum)
-        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
-      }
-      invisible(NULL)
-    }
   ),
 
   private = list(
@@ -1348,43 +1087,6 @@ Protocol <- R6::R6Class(
         )
       }
       out
-    },
-
-    # Check for issues and discrepancies in the protocol
-    check_issues = function() {
-      self$issues <- list()
-      
-      # Check if objectives have matching indicators in tools
-      all_objectives <- flatten_objectives(self$objectives)
-      if (length(all_objectives) > 0 && length(self$tools) > 0) {
-        obj_sectors <- unique(sapply(all_objectives, function(x) x$sector))
-        
-        # Placeholder: Check tool coverage (actual Tool class will define how to extract sectors)
-        tool_sectors <- character(0)
-        tryCatch({
-          tool_sectors <- unique(sapply(self$tools, function(x) {
-            if (is.list(x) && "sector" %in% names(x)) {
-              return(x$sector)
-            } else if (methods::is(x, "R6") && "sector" %in% names(x)) {
-              return(x$sector)
-            }
-            return(NA_character_)
-          }))
-          tool_sectors <- tool_sectors[!is.na(tool_sectors)]
-        }, error = function(e) {
-          # Ignore extraction errors
-        })
-        
-        missing_sectors <- setdiff(obj_sectors, tool_sectors)
-        if (length(missing_sectors) > 0) {
-          self$issues$tool_coverage <- paste(
-            "Objectives require sectors not covered by tools:",
-            paste(missing_sectors, collapse = ", ")
-          )
-        }
-      }
-      
-      invisible(self)
     },
 
     # Create an officer doc using the REACH TOR template when available, or blank.
