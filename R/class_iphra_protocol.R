@@ -494,42 +494,86 @@ IPHRAProtocol <- R6::R6Class(
                                   reference_docx = "reach_tor_iphra_template.docx",
                                   open           = FALSE) {
       phr_try({
+        phr_message("entered generater_reach_tor")
         doc    <- private$create_base_doc(reference_docx)
+        phr_message("base doc created")
+
         schema <- self$protocol_schema
 
         if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0L) {
           handling <- as.character(schema$handling %||% "")
 
+
           replace_rows <- schema[!is.na(handling) & handling == "replace", , drop = FALSE]
           if (nrow(replace_rows) > 0L)
+            phr_message("starting handle replace")
+
             doc <- private$handle_replace(doc, replace_rows)
+
+          phr_message("completed handle replace")
 
           checkbox_rows <- schema[!is.na(handling) & handling == "checkbox_replace", , drop = FALSE]
           if (nrow(checkbox_rows) > 0L)
+            phr_message("starting handle checbox replace")
             doc <- private$handle_checkbox_replace(doc, checkbox_rows)
+            phr_message("completed handle checkbox replace")
 
           calculate_rows <- schema[!is.na(handling) & handling == "calculate", , drop = FALSE]
+
+          phr_message("starting handle calculate")
+
           doc <- private$handle_calculate(doc, calculate_rows)
+          phr_message("completed handle calculate")
+
 
           row_delete_rows <- schema[!is.na(handling) & handling == "row_delete", , drop = FALSE]
           if (nrow(row_delete_rows) > 0L)
+            phr_message("starting handle row delete")
+
             doc <- private$handle_row_delete(doc, row_delete_rows)
+
+            phr_message("completed handle row delete")
+
 
           input_rows <- schema[!is.na(handling) & handling == "input", , drop = FALSE]
           if (nrow(input_rows) > 0L)
+
+            phr_message("starting handle input")
+
             doc <- private$handle_input(doc, input_rows)
+
+            phr_message("completed handle input")
+
 
           conditional_rows <- schema[!is.na(handling) & handling == "conditional_replace", , drop = FALSE]
           if (nrow(conditional_rows) > 0L)
+
+            phr_message("starting handle conditional_replace")
+
             doc <- private$handle_conditional_replace(doc, conditional_rows)
+
+            phr_message("completed handle conditional replace")
+
 
           table_rows <- schema[!is.na(handling) & handling == "table", , drop = FALSE]
           if (nrow(table_rows) > 0L)
+
+            phr_message("starting handle table")
+
             doc <- private$handle_table(doc, table_rows)
+
+            phr_message("completed handle table")
+
 
           image_rows <- schema[!is.na(handling) & handling == "image", , drop = FALSE]
           if (nrow(image_rows) > 0L)
+
+            phr_message("starting handle image")
+
             doc <- private$handle_image(doc, image_rows)
+
+            phr_message("completed handle image")
+
         }
 
         doc <- private$remove_remaining_tags(doc)

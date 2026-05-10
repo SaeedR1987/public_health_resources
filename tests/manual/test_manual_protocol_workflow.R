@@ -144,13 +144,8 @@ frame_C <- make_psu_frame("strata_C", n_psu = 30, pop_range = c(100, 500))
 
 sampling_frame <- dplyr::bind_rows(frame_A, frame_B, frame_C)
 
-cat("Sampling frame: ", nrow(sampling_frame), "PSUs across",
-    length(unique(sampling_frame$stratum)), "strata\n")
-head(sampling_frame)
-
 protocol$set_sampling_frame(sampling_frame)
 
-head(protocol$sampling_frame$log_df)
 protocol$sampling_frame$validate()
 protocol$sampling_frame$validated
 
@@ -336,3 +331,4 @@ protocol$secondary_data <- list(
 
 # report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = "report_no_tools.docx")
+
