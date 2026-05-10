@@ -789,26 +789,6 @@ test_that("SurveyProtocol$get_strata_names returns empty vector when no sample t
   expect_equal(p$get_strata_names(), character(0))
 })
 
-test_that("SurveyProtocol$get_sample_size_summary returns correct structure", {
-  p <- make_protocol()
-  p$add_stratum(stratum_id = "s1", stratum_name = "S1",
-                sampling_method = "simple_random",
-                General_HH_Sample_Size = 110)
-  summary <- p$get_sample_size_summary()
-  expect_true(is.data.frame(summary))
-  expect_true("stratum"         %in% names(summary))
-  expect_true("sampling_method" %in% names(summary))
-  expect_equal(nrow(summary), 1L)
-  expect_equal(summary$stratum, "S1")
-  expect_equal(summary$sampling_method, "simple_random")
-})
-
-test_that("SurveyProtocol$get_sample_size_summary returns zero-row df when no sample table", {
-  p <- make_protocol()
-  summary <- p$get_sample_size_summary()
-  expect_equal(nrow(summary), 0L)
-})
-
 test_that("Sample metadata timestamps update after mutations", {
   s <- Sample$new()
   expect_false(is.null(s$metadata$created_datetime))

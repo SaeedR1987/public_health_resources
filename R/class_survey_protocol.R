@@ -694,46 +694,6 @@ SurveyProtocol <- R6::R6Class(
       self$sample_table$get_strata_names()
     },
 
-    #' @description Return a compact sample-size summary.
-    #'
-    #' Returns a data frame with one row per stratum containing stratum name,
-    #' sampling method, general HH sample size, and final HH sample size.
-    #' Columns absent from \code{sample_table} are filled with \code{NA}.
-    #'
-    #' @return Data frame.  Zero-row data frame when no sample table is set.
-    get_sample_size_summary = function() {
-      st <- self$get_sample_table()
-      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        return(data.frame(
-          stratum = character(0),
-          sampling_method = character(0),
-          general_hh_sample_size = integer(0),
-          final_hh_sample_size = integer(0),
-          stringsAsFactors = FALSE
-        ))
-      }
-      get_col <- function(col) {
-        if (col %in% names(st)) as.character(st[[col]]) else rep(NA_character_, nrow(st))
-      }
-      get_num <- function(col) {
-        if (col %in% names(st)) suppressWarnings(as.integer(st[[col]])) else rep(NA_integer_, nrow(st))
-      }
-      strata_col <- if ("stratum_name" %in% names(st)) {
-        "stratum_name"
-      } else if ("Population_Name" %in% names(st)) {
-        "Population_Name"
-      } else {
-        "stratum_id"
-      }
-      data.frame(
-        stratum                = get_col(strata_col),
-        sampling_method        = get_col("sampling_method"),
-        general_hh_sample_size = get_num("General_HH_Sample_Size"),
-        final_hh_sample_size   = get_num("Final_HH_Sample_Size"),
-        stringsAsFactors = FALSE
-      )
-    },
-
     #' @description Extract a column vector from the sampling frame, optionally
     #'   filtered to a specific stratum and/or to included PSUs only.
     #'
