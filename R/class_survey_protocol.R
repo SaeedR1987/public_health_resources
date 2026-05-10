@@ -789,7 +789,6 @@ SurveyProtocol <- R6::R6Class(
         )
         super$sample_calculate_sample_sizes()
 
-        private$touch()
         private$add_target_stratum()
         private$check_issues()
         phr_message(
