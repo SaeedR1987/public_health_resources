@@ -284,6 +284,7 @@ test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
 test_that("SurveyProtocol initialises sampling_frame as a SamplingFrame object", {
   p <- make_protocol()
   expect_true(inherits(p$sample_table, "Sample"))
+  expect_null(p$get_sample_table())
   expect_true(inherits(p$sampling_frame, "SamplingFrame"))
   expect_equal(nrow(p$sampling_frame$log_df), 0L)
   expected_cols <- c("stratum", "psu", "population_size", "inclusion",
