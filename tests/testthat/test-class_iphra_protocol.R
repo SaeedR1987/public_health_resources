@@ -351,6 +351,49 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   expect_true(grepl("Research Terms of Reference", txt, fixed = TRUE))
 })
 
+test_that("handle_replace uses default_value when condition is NA (not 'NA' string)", {
+  p <- IPHRAProtocol$new()
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "@test_tag_na_cond", style = "Normal")
+  rows <- data.frame(
+    tag_name      = "@test_tag_na_cond",
+    handling      = "replace",
+    condition     = NA_character_,
+    default_value = "expected_value",
+    stringsAsFactors = FALSE
+  )
+  doc <- p$.__enclos_env__$private$handle_replace(doc, rows)
+  body_xml <- officer::docx_body_xml(doc)
+  txt <- paste(
+    xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+    collapse = ""
+  )
+  expect_true(grepl("expected_value", txt, fixed = TRUE))
+  expect_false(grepl("@test_tag_na_cond", txt, fixed = TRUE))
+  expect_false(grepl("^NA$", txt))
+})
+
+test_that("handle_replace replaces with empty string when both condition and default_value are NA", {
+  p <- IPHRAProtocol$new()
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "@test_tag_both_na", style = "Normal")
+  rows <- data.frame(
+    tag_name      = "@test_tag_both_na",
+    handling      = "replace",
+    condition     = NA_character_,
+    default_value = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  doc <- p$.__enclos_env__$private$handle_replace(doc, rows)
+  body_xml <- officer::docx_body_xml(doc)
+  txt <- paste(
+    xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+    collapse = ""
+  )
+  expect_false(grepl("@test_tag_both_na", txt, fixed = TRUE))
+  expect_false(grepl("^NA$", txt))
+})
+
 test_that("IPHRAProtocol normalizes schema tag to @kii_nut_inc", {
   p <- IPHRAProtocol$new()
   expect_true("@kii_nut_inc" %in% p$protocol_schema$tag_name)

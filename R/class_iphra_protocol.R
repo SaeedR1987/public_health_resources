@@ -564,18 +564,18 @@ IPHRAProtocol <- R6::R6Class(
 
 
           replace_rows <- schema[!is.na(handling) & handling == "replace", , drop = FALSE]
-          if (nrow(replace_rows) > 0L)
+          if (nrow(replace_rows) > 0L) {
             phr_message("starting handle replace")
-
             doc <- private$handle_replace(doc, replace_rows)
-
-          phr_message("completed handle replace")
+            phr_message("completed handle replace")
+          }
 
           checkbox_rows <- schema[!is.na(handling) & handling == "checkbox_replace", , drop = FALSE]
-          if (nrow(checkbox_rows) > 0L)
+          if (nrow(checkbox_rows) > 0L) {
             phr_message("starting handle checbox replace")
             doc <- private$handle_checkbox_replace(doc, checkbox_rows)
             phr_message("completed handle checkbox replace")
+          }
 
           calculate_rows <- schema[!is.na(handling) & handling == "calculate", , drop = FALSE]
 
@@ -586,52 +586,43 @@ IPHRAProtocol <- R6::R6Class(
 
 
           row_delete_rows <- schema[!is.na(handling) & handling == "row_delete", , drop = FALSE]
-          if (nrow(row_delete_rows) > 0L)
+          if (nrow(row_delete_rows) > 0L) {
             phr_message("starting handle row delete")
-
             doc <- private$handle_row_delete(doc, row_delete_rows)
-
             phr_message("completed handle row delete")
+          }
 
 
           input_rows <- schema[!is.na(handling) & handling == "input", , drop = FALSE]
-          if (nrow(input_rows) > 0L)
-
+          if (nrow(input_rows) > 0L) {
             phr_message("starting handle input")
-
             doc <- private$handle_input(doc, input_rows)
-
             phr_message("completed handle input")
+          }
 
 
           conditional_rows <- schema[!is.na(handling) & handling == "conditional_replace", , drop = FALSE]
-          if (nrow(conditional_rows) > 0L)
-
+          if (nrow(conditional_rows) > 0L) {
             phr_message("starting handle conditional_replace")
-
             doc <- private$handle_conditional_replace(doc, conditional_rows)
-
             phr_message("completed handle conditional replace")
+          }
 
 
           table_rows <- schema[!is.na(handling) & handling == "table", , drop = FALSE]
-          if (nrow(table_rows) > 0L)
-
+          if (nrow(table_rows) > 0L) {
             phr_message("starting handle table")
-
             doc <- private$handle_table(doc, table_rows)
-
             phr_message("completed handle table")
+          }
 
 
           image_rows <- schema[!is.na(handling) & handling == "image", , drop = FALSE]
-          if (nrow(image_rows) > 0L)
-
+          if (nrow(image_rows) > 0L) {
             phr_message("starting handle image")
-
             doc <- private$handle_image(doc, image_rows)
-
             phr_message("completed handle image")
+          }
 
         }
 
@@ -953,8 +944,10 @@ IPHRAProtocol <- R6::R6Class(
       if (!is.null(self$protocol_schema) &&
           is.data.frame(self$protocol_schema) &&
           "condition" %in% names(self$protocol_schema)) {
-        schema_conditions <- trimws(as.character(self$protocol_schema$condition %||% ""))
-        schema_conditions <- schema_conditions[nzchar(schema_conditions)]
+        schema_conditions <- trimws(as.character(self$protocol_schema$condition))
+        schema_conditions <- schema_conditions[
+          !is.na(self$protocol_schema$condition) & nzchar(schema_conditions)
+        ]
       }
       all_keys <- unique(c(private$.sampling_conditional_keys, schema_conditions))
       self$conditional_metadata <- setNames(as.list(rep(FALSE, length(all_keys))), all_keys)
@@ -1100,8 +1093,12 @@ IPHRAProtocol <- R6::R6Class(
         val <- if (tag == "@version_number") {
           paste0("v", self$metadata$version %||% 1L)
         } else {
-          cond <- as.character(rows$condition[i] %||% "")
-          dv   <- as.character(rows$default_value[i] %||% "")
+          # Use is.na() guards: as.character(NA) produces the string "NA",
+          # which would pass nzchar() and incorrectly replace tags with "NA".
+          cond_raw <- rows$condition[i]
+          cond <- if (is.null(cond_raw) || is.na(cond_raw)) "" else as.character(cond_raw)
+          dv_raw <- rows$default_value[i]
+          dv   <- if (is.null(dv_raw) || is.na(dv_raw)) "" else as.character(dv_raw)
           if (nzchar(cond)) cond else dv
         }
 
@@ -1466,8 +1463,11 @@ IPHRAProtocol <- R6::R6Class(
     handle_conditional_replace = function(doc, rows) {
       for (i in seq_len(nrow(rows))) {
         tag       <- as.character(rows$tag_name[i]     %||% "")
-        condition <- trimws(as.character(rows$condition[i] %||% ""))
-        def_val   <- as.character(rows$default_value[i] %||% "")
+        # Guard against NA: as.character(NA) produces "NA" which passes nzchar().
+        cond_raw  <- rows$condition[i]
+        condition <- trimws(if (is.null(cond_raw) || is.na(cond_raw)) "" else as.character(cond_raw))
+        dv_raw    <- rows$default_value[i]
+        def_val   <- if (is.null(dv_raw) || is.na(dv_raw)) "" else as.character(dv_raw)
         if (!nzchar(tag)) next
         if (!nzchar(condition)) next
 
