@@ -1243,7 +1243,7 @@ IPHRAProtocol <- R6::R6Class(
         if (!nzchar(condition)) next
 
         flag <- isTRUE(self$conditional_metadata[[condition]])
-        if (isTRUE(flag)) {
+        if (flag) {
           doc <- private$.replace(doc, tag, def_val)
         }
       }

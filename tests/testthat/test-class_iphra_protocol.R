@@ -420,6 +420,13 @@ test_that("IPHRAProtocol initializes conditional_metadata with FALSE defaults", 
   expect_true(is.list(p$conditional_metadata))
   expect_true(all(expected %in% names(p$conditional_metadata)))
   expect_true(all(vapply(p$conditional_metadata[expected], isFALSE, logical(1))))
+  schema_conditions <- if ("condition" %in% names(p$protocol_schema)) {
+    trimws(as.character(p$protocol_schema$condition))
+  } else {
+    character(0)
+  }
+  schema_conditions <- schema_conditions[nzchar(schema_conditions)]
+  expect_true(all(schema_conditions %in% names(p$conditional_metadata)))
 })
 
 test_that("IPHRAProtocol syncs sampling conditional_metadata from sample_table", {
