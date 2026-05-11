@@ -357,6 +357,29 @@ test_that("IPHRAProtocol normalizes schema tag to @kii_nut_inc", {
   expect_false("@kii_nutrition_inc" %in% p$protocol_schema$tag_name)
 })
 
+test_that("IPHRAProtocol .replace avoids replacing tag prefixes in longer placeholders", {
+  p <- IPHRAProtocol$new()
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "@sample_size_hh_ind_table", style = "Normal")
+  doc <- officer::body_add_par(doc, "@sample_size_hh_ind", style = "Normal")
+
+  doc <- p$.__enclos_env__$private$.replace(
+    doc,
+    "@sample_size_hh_ind",
+    "placeholder ind sampling"
+  )
+
+  body_xml <- officer::docx_body_xml(doc)
+  txt <- paste(
+    xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+    collapse = ""
+  )
+
+  expect_true(grepl("@sample_size_hh_ind_table", txt, fixed = TRUE))
+  expect_false(grepl("placeholder ind sampling_table", txt, fixed = TRUE))
+  expect_true(grepl("placeholder ind sampling", txt, fixed = TRUE))
+})
+
 test_that("replace_tag_in_cell preserves item order for objective headers and bullets", {
   p <- IPHRAProtocol$new()
   doc <- officer::read_docx()
