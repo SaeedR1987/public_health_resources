@@ -229,7 +229,7 @@ Protocol <- R6::R6Class(
       }, on_error = "abort", origin = "Protocol$add_tools")
       invisible(self)
     },
-    
+
     #' @description Get all issues
     #' @return List of validation issues
     get_issues = function() {
@@ -362,7 +362,7 @@ Protocol <- R6::R6Class(
       }
       unique(codes)
     },
-    
+
     #' @description Validate an objective schema data frame.
     #'
     #' Validates that \code{schema} is a non-NULL data frame with at least one
@@ -1002,7 +1002,7 @@ Protocol <- R6::R6Class(
         self$tool_indicator_catalog_revised[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
       }
       invisible(NULL)
-    },
+    }
 
   ),
 

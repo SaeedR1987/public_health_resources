@@ -1100,9 +1100,8 @@ IPHRAProtocol <- R6::R6Class(
         val <- if (tag == "@version_number") {
           paste0("v", self$metadata$version %||% 1L)
         } else {
-          cond <- as.character(rows$condition[i] %||% "")
           dv   <- as.character(rows$default_value[i] %||% "")
-          if (nzchar(cond)) cond else dv
+          dv
         }
 
         doc <- private$.replace(doc, tag, val)

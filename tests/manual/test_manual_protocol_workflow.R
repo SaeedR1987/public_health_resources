@@ -26,7 +26,6 @@ protocol <- IPHRAProtocol$new(
 
 # Inspect initial state
 protocol$metadata
-protocol$get_protocol_summary()
 
 # Validate the objective schema via the protocol method
 (protocol$validate_objective_schema(protocol$framework$master_schema))
@@ -35,21 +34,22 @@ protocol$get_protocol_summary()
 
 View(protocol$framework$master_schema)
 
-protocol$framework$primary_objectives <- c(101, 105, 106, 108, 112, 113, 114, 115, 118, 147, 148, 153, 154, 125)
-protocol$framework$secondary_objectives <- c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131)
+protocol$framework_get_schema(type = "master")
 
-head(protocol$framework$adjusted_schema)
-protocol$framework$modify_adjusted_schema(objective_codes = c(protocol$framework$primary_objectives, protocol$framework$secondary_objectives))
-# modify_adjusted_schema stores result in adjusted_schema; returns self invisibly
+protocol$framework_get_svg(type = "master")
 
-protocol$framework$modify_adjusted_svg()
+protocol$framework_set_primary_objectives(objective_codes = c(101, 105, 106, 108, 112, 113, 114, 115, 118, 147, 148, 153, 154, 125))
+protocol$framework_set_secondary_objectives(objective_codes = c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131))
 
-protocol$framework$render_framework_svg(version = "master")
-protocol$framework$render_framework_svg(version = "adjusted")
+protocol$framework_modify_schema()
+protocol$framework_modify_svg()
+
+protocol$framework_get_svg(type = "adjusted")
+protocol$framework_get_schema(type = "adjusted")
 
 # Test 3: Define Strata and Sample Sizes ####
 
-protocol$add_stratum(
+protocol$sample_add_stratum(
   stratum_id              = "strata_A",
   stratum_name            = "Urban North",
   population_size         = 45000,
@@ -79,7 +79,9 @@ protocol$add_stratum(
   sampling_method         = "systematic", n_sites = 10
 )
 
-protocol$add_stratum(
+
+
+protocol$sample_add_stratum(
   stratum_id              = "strata_B",
   stratum_name            = "Peri-Urban East",
   population_size         = 28000,
@@ -99,7 +101,7 @@ protocol$add_stratum(
   n_sites                 = 30
 )
 
-protocol$add_stratum(
+protocol$sample_add_stratum(
   stratum_id              = "strata_C",
   stratum_name            = "Rural South",
   population_size         = 17000,
@@ -113,15 +115,8 @@ protocol$add_stratum(
   n_sites                 = 10
 )
 
-protocol$calculate_sample_sizes()
-protocol$get_sample_table()
-View(protocol$sample_table)
-
-# Validate the master strata table structure
-strata_validation <- protocol$validate_strata_table()
-# validate_strata_table() now returns TRUE/FALSE directly
-cat("Strata table valid:", strata_validation, "\n")
-
+protocol$sample_calculate_sample_sizes()
+protocol$sample_get_sample_table()
 
 # Test 4: Build and Validate a Sampling Frame ####
 
@@ -152,8 +147,6 @@ protocol$sampling_frame$validated
 # Test 5: Draw Sample ####
 
 protocol$draw_sample(seed = 788)
-nrow(protocol$drawn_sample)       # selected PSUs
-nrow(protocol$drawn_sample_full)  # full frame with sampled_psu column
 
 View(protocol$drawn_sample_full)
 
@@ -177,7 +170,11 @@ head(protocol$tools$tool_household_iphra_v2$revised_settings)
 protocol$tools$tool_household_iphra_v2$change_default_language(language = "English")
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
-protocol$tools$tool_household_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$available_indicator_codes$indicator_code))
+protocol$tool_filter_survey_by_indicator(tool_name = "tool_household_iphra_v2",
+                                         indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
+
+
+View(protocol$tool_get_survey(tool_name = "tool_household_iphra_v2", survey_type = "revised"))
 
 View(protocol$tools$tool_household_iphra_v2$revised_survey)
 head(protocol$tools$tool_household_iphra_v2$revised_choices)
@@ -192,6 +189,9 @@ protocol$add_tools("tool_kii_community_iphra_v2")
 head(protocol$tools$tool_kii_community_iphra_v2$survey)
 head(protocol$tools$tool_kii_community_iphra_v2$choices)
 head(protocol$tools$tool_kii_community_iphra_v2$settings)
+
+protocol$tool_filter_survey_by_indicator(tool_name = "tool_kii_community_iphra_v2",
+                                         indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
 
 protocol$tools$tool_kii_community_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$available_indicator_codes$indicator_code))
 
