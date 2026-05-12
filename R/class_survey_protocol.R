@@ -1210,15 +1210,15 @@ SurveyProtocol <- R6::R6Class(
     # Generic hooks for TOR sample-size table tags.
     # Subclasses can override with protocol-specific table builders.
     add_sample_size_gen_table = function(doc) {
-      private$.replace_schema_tag(doc, "@sample_size_hh_gen_table", "")
+      private$.replace(doc, "@sample_size_hh_gen_table", "")
     },
 
     add_sample_size_ind_table = function(doc) {
-      private$.replace_schema_tag(doc, "@sample_size_hh_ind_table", "")
+      private$.replace(doc, "@sample_size_hh_ind_table", "")
     },
 
     add_sample_size_mort_table = function(doc) {
-      private$.replace_schema_tag(doc, "@sample_size_hh_mort_table", "")
+      private$.replace(doc, "@sample_size_hh_mort_table", "")
     },
 
     # Apply a PSU-level sampling method — dispatches to draw_sample_psu_* utilities

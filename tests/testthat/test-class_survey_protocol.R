@@ -855,3 +855,26 @@ test_that("Protocol$framework_get_svg delegates to Framework$render_framework_sv
     expect_true(file.exists(out))
   }
 })
+
+test_that("Protocol-level .replace matches exact tag tokens only", {
+  p <- make_protocol()
+  doc <- officer::read_docx()
+  doc <- officer::body_add_par(doc, "@this_is_a_tag", style = "Normal")
+  doc <- officer::body_add_par(doc, "@this_is_a", style = "Normal")
+
+  doc <- p$.__enclos_env__$private$.replace(
+    doc,
+    "@this_is_a",
+    "REPLACED_SHORT"
+  )
+
+  body_xml <- officer::docx_body_xml(doc)
+  txt <- paste(
+    xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
+    collapse = ""
+  )
+
+  expect_true(grepl("@this_is_a_tag", txt, fixed = TRUE))
+  expect_false(grepl("REPLACED_SHORT_tag", txt, fixed = TRUE))
+  expect_true(grepl("REPLACED_SHORT", txt, fixed = TRUE))
+})

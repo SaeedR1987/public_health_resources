@@ -1156,14 +1156,14 @@ Protocol <- R6::R6Class(
     handle_replace = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       default_value <- as.character(row$default_value[[1L]] %||% "")
-      private$.replace_schema_tag(doc, tag, default_value)
+      private$.replace(doc, tag, default_value)
     },
 
     handle_input = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else ""
-      private$.replace_schema_tag(doc, tag, as.character(value %||% ""))
+      private$.replace(doc, tag, as.character(value %||% ""))
     },
 
     handle_calculate = function(doc, row) {
@@ -1174,12 +1174,12 @@ Protocol <- R6::R6Class(
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
-      private$.replace_schema_tag(doc, tag, if (isTRUE(value)) "X" else "\u25a1")
+      private$.replace(doc, tag, if (isTRUE(value)) "X" else "\u25a1")
     },
 
     handle_row_delete = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
-      private$.replace_schema_tag(doc, tag, "")
+      private$.replace(doc, tag, "")
     },
 
     handle_table = function(doc, row) {
@@ -1195,7 +1195,7 @@ Protocol <- R6::R6Class(
       default_value <- as.character(row$default_value[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
-      private$.replace_schema_tag(doc, tag, if (isTRUE(value)) default_value else "")
+      private$.replace(doc, tag, if (isTRUE(value)) default_value else "")
     },
 
     # Extract unique non-NA indicator names from an XLSForm survey data frame.
@@ -1239,19 +1239,92 @@ Protocol <- R6::R6Class(
       schema[required_cols]
     },
 
-    .replace_schema_tag = function(doc, tag, value) {
-      if (!is.character(tag) || length(tag) != 1L || !nzchar(tag)) {
+    .replace = function(doc, old, new_val) {
+      if (!is.character(old) || length(old) != 1L || !nzchar(old)) {
         return(doc)
       }
-      tryCatch(
-        officer::body_replace_all_text(
-          doc,
-          old_value = tag,
-          new_value = as.character(value %||% ""),
-          fixed = TRUE
-        ),
-        error = function(e) doc
-      )
+      private$._replace_across_runs(doc, old, as.character(new_val %||% ""))
+    },
+
+    ._replace_across_runs = function(doc, tag, new_val) {
+      if (!is.character(tag) || length(tag) != 1L || !nzchar(tag)) return(doc)
+      new_val <- as.character(new_val %||% "")
+      replacement_is_identity <- identical(tag, new_val)
+
+      body_xml <- officer::docx_body_xml(doc)
+      ns       <- xml2::xml_ns(body_xml)
+
+      paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
+      for (para in paras) {
+        repeat {
+          text_nodes <- xml2::xml_find_all(para, ".//w:t", ns = ns)
+          if (length(text_nodes) == 0L) break
+
+          texts    <- vapply(text_nodes, xml2::xml_text, character(1L))
+          combined <- paste(texts, collapse = "")
+          nc       <- nchar(combined)
+          if (nc == 0L || !grepl(tag, combined, fixed = TRUE)) break
+
+          node_idx <- rep(seq_along(texts), times = nchar(texts))
+
+          matches <- gregexpr(tag, combined, fixed = TRUE)[[1L]]
+          if (length(matches) == 1L && matches[1L] < 0L) break
+          tag_len <- nchar(tag)
+
+          match_start <- NA_integer_
+          for (m in as.integer(matches)) {
+            if (is.na(m) || m < 1L) next
+            end <- m + tag_len - 1L
+            left_char <- if (m > 1L) substr(combined, m - 1L, m - 1L) else ""
+            right_char <- if (end < nc) substr(combined, end + 1L, end + 1L) else ""
+            left_ok  <- !nzchar(left_char)  || !grepl("[A-Za-z0-9_.\\-]", left_char, perl = TRUE)
+            right_ok <- !nzchar(right_char) || !grepl("[A-Za-z0-9_.\\-]", right_char, perl = TRUE)
+            if (left_ok && right_ok) {
+              match_start <- m
+              break
+            }
+          }
+          if (is.na(match_start)) break
+
+          tag_start <- as.integer(match_start)
+          tag_end   <- tag_start + tag_len - 1L
+
+          new_texts <- character(length(text_nodes))
+
+          if (tag_start > 1L) {
+            pre_chars <- strsplit(substr(combined, 1L, tag_start - 1L), "", fixed = TRUE)[[1L]]
+            pre_runs  <- node_idx[seq_len(tag_start - 1L)]
+            for (j in seq_along(pre_chars)) {
+              new_texts[pre_runs[j]] <- paste0(new_texts[pre_runs[j]], pre_chars[j])
+            }
+          }
+
+          if (tag_start > length(node_idx)) {
+            phr_warning(
+              phr_txt("._replace_across_runs: tag_start ({tag_start}) exceeds node_idx length ({length(node_idx)}) for tag '{tag}'; skipping paragraph."),
+              origin = "Protocol$._replace_across_runs"
+            )
+            break
+          }
+          rep_run <- node_idx[[tag_start]]
+          new_texts[[rep_run]] <- paste0(new_texts[[rep_run]], new_val)
+
+          if (tag_end < nc) {
+            suf_chars <- strsplit(substr(combined, tag_end + 1L, nc), "", fixed = TRUE)[[1L]]
+            suf_runs  <- node_idx[seq(tag_end + 1L, nc)]
+            for (j in seq_along(suf_chars)) {
+              new_texts[[suf_runs[j]]] <- paste0(new_texts[[suf_runs[j]]], suf_chars[j])
+            }
+          }
+
+          for (i in seq_along(text_nodes)) {
+            xml2::xml_text(text_nodes[[i]]) <- new_texts[[i]]
+          }
+
+          if (replacement_is_identity) break
+        }
+      }
+      doc
     }
   )
 )
