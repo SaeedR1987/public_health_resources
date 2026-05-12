@@ -1057,94 +1057,129 @@ IPHRAProtocol <- R6::R6Class(
 
           "@specific_objectives" = {
             # Replace @specific_objectives with pillar-grouped text objectives
-            inc_codes <- self$get_indicator_codes_from_tools()
-            if (length(inc_codes) == 0) {
+            # drawn from tool_objective_catalog_revised, which reflects the
+            # actual indicators present in the revised tools.
+            tool_cat_so <- self$tool_objective_catalog_revised
+            if (length(tool_cat_so) == 0) {
               private$.replace(doc, "@specific_objectives", "")
             } else {
-              schema_so <- self$framework_get_schema_for_indicator_codes(inc_codes, type = "master")
-              if (!is.data.frame(schema_so) || nrow(schema_so) == 0) {
-                private$.replace(doc, "@specific_objectives", "")
-              } else {
-                cols_needed_so <- c("pillar", "objective_code", "text_objective")
-                if (!all(cols_needed_so %in% names(schema_so))) {
-                  private$.replace(doc, "@specific_objectives", "")
-                } else {
-                  obj_df_so <- unique(schema_so[, cols_needed_so, drop = FALSE])
-                  obj_df_so <- obj_df_so[!is.na(obj_df_so$text_objective) & nzchar(obj_df_so$text_objective), ]
-                  if (nrow(obj_df_so) == 0) {
-                    private$.replace(doc, "@specific_objectives", "")
-                  } else {
-                    pillars_so <- unique(obj_df_so$pillar[!is.na(obj_df_so$pillar) & nzchar(obj_df_so$pillar)])
-                    items_so <- list()
-                    first_pillar_so <- TRUE
-                    for (p_so in pillars_so) {
-                      sub_objs_so <- obj_df_so$text_objective[obj_df_so$pillar == p_so]
-                      sub_objs_so <- unique(sub_objs_so[!is.na(sub_objs_so) & nzchar(sub_objs_so)])
-                      items_so <- c(items_so, list(list(text = p_so, bold = TRUE,
-                                                        space_before_pt = if (first_pillar_so) 0L else 6L,
-                                                        space_after_pt = 0L, font_size_pt = 10L)))
-                      for (obj_so in sub_objs_so) {
-                        items_so <- c(items_so, list(list(text = paste0("\u2022 ", obj_so), bold = FALSE,
-                                                          space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
-                      }
-                      first_pillar_so <- FALSE
-                    }
-                    inserted_so <- tryCatch(
-                      private$.replace_tag_in_cell(doc, "@specific_objectives", items_so),
-                      error = function(e) {
-                        phr_warning(phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
-                                    origin = "IPHRAProtocol$handle_calculate")
-                        FALSE
-                      }
+              # Aggregate unique objectives across all tools
+              seen_codes_so <- character(0)
+              obj_df_so     <- data.frame(
+                pillar         = character(0),
+                text_objective = character(0),
+                stringsAsFactors = FALSE
+              )
+              for (tn_so in names(tool_cat_so)) {
+                for (code_so in names(tool_cat_so[[tn_so]])) {
+                  if (code_so %in% seen_codes_so) next
+                  obj_so <- tool_cat_so[[tn_so]][[code_so]]
+                  txt_so    <- obj_so$text_objective     %||% ""
+                  pillar_so <- obj_so$pillar             %||% ""
+                  if (nzchar(txt_so)) {
+                    seen_codes_so <- c(seen_codes_so, code_so)
+                    obj_df_so <- rbind(
+                      obj_df_so,
+                      data.frame(pillar = pillar_so, text_objective = txt_so,
+                                 stringsAsFactors = FALSE)
                     )
-                    if (!inserted_so) {
-                      lines_so <- vapply(items_so, `[[`, character(1L), "text")
-                      doc <- private$.replace(doc, "@specific_objectives", paste(lines_so, collapse = "\n"))
-                    }
-                    doc
                   }
                 }
+              }
+              if (nrow(obj_df_so) == 0) {
+                private$.replace(doc, "@specific_objectives", "")
+              } else {
+                pillars_so <- unique(obj_df_so$pillar[nzchar(obj_df_so$pillar)])
+                items_so <- list()
+                first_pillar_so <- TRUE
+                for (p_so in pillars_so) {
+                  sub_objs_so <- unique(obj_df_so$text_objective[obj_df_so$pillar == p_so])
+                  sub_objs_so <- sub_objs_so[nzchar(sub_objs_so)]
+                  items_so <- c(items_so, list(list(text = p_so, bold = TRUE,
+                                                    space_before_pt = if (first_pillar_so) 0L else 6L,
+                                                    space_after_pt = 0L, font_size_pt = 10L)))
+                  for (obj_so in sub_objs_so) {
+                    items_so <- c(items_so, list(list(text = paste0("\u2022 ", obj_so), bold = FALSE,
+                                                      space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
+                  }
+                  first_pillar_so <- FALSE
+                }
+                # Also include objectives with no pillar grouping
+                no_pillar_objs <- unique(obj_df_so$text_objective[!nzchar(obj_df_so$pillar)])
+                for (obj_so in no_pillar_objs) {
+                  items_so <- c(items_so, list(list(text = paste0("\u2022 ", obj_so), bold = FALSE,
+                                                    space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
+                }
+                inserted_so <- tryCatch(
+                  private$.replace_tag_in_cell(doc, "@specific_objectives", items_so),
+                  error = function(e) {
+                    phr_warning(phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
+                                origin = "IPHRAProtocol$handle_calculate")
+                    FALSE
+                  }
+                )
+                if (!inserted_so) {
+                  lines_so <- vapply(items_so, `[[`, character(1L), "text")
+                  doc <- private$.replace(doc, "@specific_objectives", paste(lines_so, collapse = "\n"))
+                }
+                doc
               }
             }
           },
 
           "@research_questions" = {
-            # Replace @research_questions grouped by objective_research_question
-            inc_codes_rq <- self$get_indicator_codes_from_tools()
-            if (length(inc_codes_rq) == 0) {
+            # Replace @research_questions using objective_research_question
+            # values from tool_objective_catalog_revised, grouped by pillar.
+            tool_cat_rq <- self$tool_objective_catalog_revised
+            if (length(tool_cat_rq) == 0) {
               private$.replace(doc, "@research_questions", "")
             } else {
-              schema_rq <- self$framework_get_schema_for_indicator_codes(inc_codes_rq, type = "master")
-              if (!is.data.frame(schema_rq) || nrow(schema_rq) == 0 ||
-                  !"research_question" %in% names(schema_rq)) {
-                private$.replace(doc, "@research_questions", "")
-              } else {
-                has_orq_rq <- "objective_research_question" %in% names(schema_rq)
-                seen_orq_rq <- character(0)
-                orq_to_rqs_rq <- list()
-                for (j_rq in seq_len(nrow(schema_rq))) {
-                  orq_rq <- if (has_orq_rq) as.character(schema_rq$objective_research_question[j_rq]) else NA_character_
-                  rq_rq  <- as.character(schema_rq$research_question[j_rq])
-                  if (is.na(orq_rq) || !nzchar(orq_rq)) orq_rq <- "(General)"
-                  if (!orq_rq %in% seen_orq_rq) {
-                    seen_orq_rq <- c(seen_orq_rq, orq_rq)
-                    orq_to_rqs_rq[[orq_rq]] <- character(0)
-                  }
-                  if (!is.na(rq_rq) && nzchar(rq_rq) && !rq_rq %in% orq_to_rqs_rq[[orq_rq]]) {
-                    orq_to_rqs_rq[[orq_rq]] <- c(orq_to_rqs_rq[[orq_rq]], rq_rq)
+              # Aggregate unique objective_research_questions across all tools
+              seen_codes_rq <- character(0)
+              orq_df_rq <- data.frame(
+                pillar = character(0),
+                orq    = character(0),
+                stringsAsFactors = FALSE
+              )
+              for (tn_rq in names(tool_cat_rq)) {
+                for (code_rq in names(tool_cat_rq[[tn_rq]])) {
+                  if (code_rq %in% seen_codes_rq) next
+                  obj_rq <- tool_cat_rq[[tn_rq]][[code_rq]]
+                  orq_rq    <- obj_rq$objective_research_question %||% ""
+                  pillar_rq <- obj_rq$pillar                      %||% ""
+                  if (nzchar(orq_rq)) {
+                    seen_codes_rq <- c(seen_codes_rq, code_rq)
+                    orq_df_rq <- rbind(
+                      orq_df_rq,
+                      data.frame(pillar = pillar_rq, orq = orq_rq,
+                                 stringsAsFactors = FALSE)
+                    )
                   }
                 }
+              }
+              if (nrow(orq_df_rq) == 0) {
+                private$.replace(doc, "@research_questions", "")
+              } else {
+                pillars_rq <- unique(orq_df_rq$pillar[nzchar(orq_df_rq$pillar)])
                 items_rq <- list()
-                first_orq_rq <- TRUE
-                for (orq_rq in seen_orq_rq) {
-                  items_rq <- c(items_rq, list(list(text = orq_rq, bold = TRUE,
-                                                    space_before_pt = if (first_orq_rq) 0L else 6L,
+                first_pillar_rq <- TRUE
+                for (p_rq in pillars_rq) {
+                  sub_rqs <- unique(orq_df_rq$orq[orq_df_rq$pillar == p_rq])
+                  sub_rqs <- sub_rqs[nzchar(sub_rqs)]
+                  items_rq <- c(items_rq, list(list(text = p_rq, bold = TRUE,
+                                                    space_before_pt = if (first_pillar_rq) 0L else 6L,
                                                     space_after_pt = 0L, font_size_pt = 10L)))
-                  for (rq_item in orq_to_rqs_rq[[orq_rq]]) {
+                  for (rq_item in sub_rqs) {
                     items_rq <- c(items_rq, list(list(text = paste0("\u2022 ", rq_item), bold = FALSE,
                                                       space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
                   }
-                  first_orq_rq <- FALSE
+                  first_pillar_rq <- FALSE
+                }
+                # Also include research questions with no pillar grouping
+                no_pillar_rqs <- unique(orq_df_rq$orq[!nzchar(orq_df_rq$pillar)])
+                for (rq_item in no_pillar_rqs) {
+                  items_rq <- c(items_rq, list(list(text = paste0("\u2022 ", rq_item), bold = FALSE,
+                                                    space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
                 }
                 inserted_rq <- tryCatch(
                   private$.replace_tag_in_cell(doc, "@research_questions", items_rq),

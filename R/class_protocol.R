@@ -15,27 +15,12 @@
 Protocol <- R6::R6Class(
   "Protocol",
   public = list(
-    #' @field objectives Nested list of research objectives (legacy field).
-    #'   Objectives are now primarily managed through the associated
-    #'   \code{\link{Framework}} object via its \code{adjusted_schema}.
-    #'   Use \code{objectives_to_df()} or \code{flatten_objectives()} to inspect.
-    objectives = NULL,
-
     #' @field framework A \code{\link{Framework}} object (e.g.
     #'   \code{\link{ANAFramework}}) that holds the master and adjusted
     #'   reference schemas and SVG diagrams for this protocol.  Assign a
     #'   Framework instance to this field to associate a conceptual framework
     #'   with the protocol.
     framework = NULL,
-
-    #' @field objective_schema Data frame containing the objective schema.
-    #'   This field is no longer auto-populated on initialisation.  When a
-    #'   \code{\link{Framework}} is associated with this protocol, access the
-    #'   schema via \code{self$framework$master_schema} or
-    #'   \code{self$framework$adjusted_schema}.  \code{objective_schema} may
-    #'   still be set manually for custom schemas that do not require a full
-    #'   Framework object.
-    objective_schema = NULL,
 
     #' @field protocol_schema Data frame describing TOR placeholder handling
     #'   rules.  Expected columns are \code{tag_name}, \code{handling},
@@ -45,24 +30,27 @@ Protocol <- R6::R6Class(
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
 
-    #' @field selected_indicators List of selected indicators
-    selected_indicators = NULL,
+    #' @field framework_objective_catalog_master Named list keyed by objective
+    #'   code from \code{framework$master_schema}; each value stores objective
+    #'   metadata including \code{short_objective}, \code{text_objective},
+    #'   \code{objective_research_question}, and \code{pillar}.
+    framework_objective_catalog_master = list(),
 
-    #' @field objective_catalog_master Named list keyed by objective code from
-    #'   \code{framework$master_schema}; each value stores objective metadata.
-    objective_catalog_master = list(),
+    #' @field framework_objective_catalog_adjusted Named list keyed by objective
+    #'   code from \code{framework$adjusted_schema}; each value stores objective
+    #'   metadata including \code{short_objective}, \code{text_objective},
+    #'   \code{objective_research_question}, and \code{pillar}.
+    framework_objective_catalog_adjusted = list(),
 
-    #' @field objective_catalog_adjusted Named list keyed by objective code from
-    #'   \code{framework$adjusted_schema}; each value stores objective metadata.
-    objective_catalog_adjusted = list(),
+    #' @field framework_indicator_catalog_master Named list keyed by indicator
+    #'   code from \code{framework$master_schema}; each value stores indicator
+    #'   metadata.
+    framework_indicator_catalog_master = list(),
 
-    #' @field indicator_catalog_master Named list keyed by indicator code from
-    #'   \code{framework$master_schema}; each value stores indicator metadata.
-    indicator_catalog_master = list(),
-
-    #' @field indicator_catalog_adjusted Named list keyed by indicator code from
-    #'   \code{framework$adjusted_schema}; each value stores indicator metadata.
-    indicator_catalog_adjusted = list(),
+    #' @field framework_indicator_catalog_adjusted Named list keyed by indicator
+    #'   code from \code{framework$adjusted_schema}; each value stores indicator
+    #'   metadata.
+    framework_indicator_catalog_adjusted = list(),
 
     #' @field tool_indicator_catalog_master Named list keyed by tool name with
     #'   vectors of indicator codes available in master tool surveys.
@@ -71,6 +59,24 @@ Protocol <- R6::R6Class(
     #' @field tool_indicator_catalog_revised Named list keyed by tool name with
     #'   vectors of indicator codes available in revised tool surveys.
     tool_indicator_catalog_revised = list(),
+
+    #' @field tool_objective_catalog_master Nested list keyed first by tool name
+    #'   and then by objective code.  Each objective entry contains the same
+    #'   metadata fields as \code{framework_objective_catalog_master}
+    #'   (\code{short_objective}, \code{text_objective},
+    #'   \code{objective_research_question}, \code{pillar}).  Objectives are
+    #'   those whose indicator codes appear in the tool's master survey.
+    #'   Updated automatically by \code{sync_tool_indicator_catalog_fields}.
+    tool_objective_catalog_master = list(),
+
+    #' @field tool_objective_catalog_revised Nested list keyed first by tool
+    #'   name and then by objective code.  Each objective entry contains the
+    #'   same metadata fields as \code{framework_objective_catalog_master}
+    #'   (\code{short_objective}, \code{text_objective},
+    #'   \code{objective_research_question}, \code{pillar}).  Objectives are
+    #'   those whose indicator codes appear in the tool's revised survey.
+    #'   Updated automatically by \code{sync_tool_indicator_catalog_fields}.
+    tool_objective_catalog_revised = list(),
 
     #' @field issues List of validation issues and discrepancies
     issues = list(),
@@ -152,17 +158,18 @@ Protocol <- R6::R6Class(
         self$metadata$assessment_title <- assessment_title
         self$metadata$country_name <- country_name
         self$metadata$month_year <- month_year
-        self$objectives <- list()
         self$tools <- list()
         self$issues <- list()
         self$issues_coherence <- list()
         self$conditional_metadata <- list()
-        self$objective_catalog_master <- list()
-        self$objective_catalog_adjusted <- list()
-        self$indicator_catalog_master <- list()
-        self$indicator_catalog_adjusted <- list()
+        self$framework_objective_catalog_master <- list()
+        self$framework_objective_catalog_adjusted <- list()
+        self$framework_indicator_catalog_master <- list()
+        self$framework_indicator_catalog_adjusted <- list()
         self$tool_indicator_catalog_master <- list()
         self$tool_indicator_catalog_revised <- list()
+        self$tool_objective_catalog_master <- list()
+        self$tool_objective_catalog_revised <- list()
         self$protocol_schema <- private$.load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
@@ -470,28 +477,6 @@ Protocol <- R6::R6Class(
     diagnose_coherence = function() {
       self$issues_coherence <- list()
 
-      # Check 0: sector coverage from legacy objectives vs tools
-      all_objectives <- flatten_objectives(self$objectives)
-      if (length(all_objectives) > 0 && length(self$tools) > 0) {
-        obj_sectors <- unique(sapply(all_objectives, function(x) x$sector))
-        tool_sectors <- character(0)
-        tryCatch({
-          tool_sectors <- unique(sapply(self$tools, function(x) {
-            if (is.list(x) && "sector" %in% names(x)) return(x$sector)
-            else if (methods::is(x, "R6") && "sector" %in% names(x)) return(x$sector)
-            NA_character_
-          }))
-          tool_sectors <- tool_sectors[!is.na(tool_sectors)]
-        }, error = function(e) {})
-        missing_sectors <- setdiff(obj_sectors, tool_sectors)
-        if (length(missing_sectors) > 0) {
-          self$issues_coherence$tool_coverage <- paste(
-            "Objectives require sectors not covered by tools:",
-            paste(missing_sectors, collapse = ", ")
-          )
-        }
-      }
-
       if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
         self$issues_coherence$no_framework <-
           "No framework is associated with this protocol."
@@ -670,7 +655,9 @@ Protocol <- R6::R6Class(
     #' syncs the Protocol catalog fields and updates the last-modified timestamp.
     #'
     #' @param objective_codes Character or numeric vector of objective codes to
-    #'   retain.  Pass \code{NULL} (the default) to include all rows.
+    #'   retain.  Pass \code{NULL} (the default) to use the Framework's
+    #'   \code{primary_objectives} and \code{secondary_objectives} if set,
+    #'   or all rows as a final fallback.
     #' @return Invisibly returns \code{self} for method chaining.
     framework_modify_schema = function(objective_codes = NULL) {
       phr_assert(
@@ -980,10 +967,10 @@ Protocol <- R6::R6Class(
         NULL
       }
 
-      self$objective_catalog_master <- private$build_objective_catalog(master_schema)
-      self$objective_catalog_adjusted <- private$build_objective_catalog(adjusted_schema)
-      self$indicator_catalog_master <- private$build_indicator_catalog(master_schema)
-      self$indicator_catalog_adjusted <- private$build_indicator_catalog(adjusted_schema)
+      self$framework_objective_catalog_master <- private$build_objective_catalog(master_schema)
+      self$framework_objective_catalog_adjusted <- private$build_objective_catalog(adjusted_schema)
+      self$framework_indicator_catalog_master <- private$build_indicator_catalog(master_schema)
+      self$framework_indicator_catalog_adjusted <- private$build_indicator_catalog(adjusted_schema)
       invisible(NULL)
     },
 
@@ -993,13 +980,30 @@ Protocol <- R6::R6Class(
       }
       self$tool_indicator_catalog_master <- list()
       self$tool_indicator_catalog_revised <- list()
+      self$tool_objective_catalog_master <- list()
+      self$tool_objective_catalog_revised <- list()
       if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
+
+      # Get the Framework master schema for objective lookups
+      fw_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+        self$framework$master_schema
+      } else {
+        NULL
+      }
 
       for (tn in names(self$tools)) {
         tool <- self$tools[[tn]]
         if (is.null(tool) || !inherits(tool, "Tool")) next
-        self$tool_indicator_catalog_master[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = FALSE))
-        self$tool_indicator_catalog_revised[[tn]] <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
+        master_codes  <- as.character(tool$get_indicator_codes(prefer_revised = FALSE))
+        revised_codes <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
+        self$tool_indicator_catalog_master[[tn]] <- master_codes
+        self$tool_indicator_catalog_revised[[tn]] <- revised_codes
+        # Build per-tool objective catalogs from Framework schema rows
+        # matching the tool's indicator codes
+        self$tool_objective_catalog_master[[tn]] <-
+          private$build_tool_objective_catalog(fw_schema, master_codes)
+        self$tool_objective_catalog_revised[[tn]] <-
+          private$build_tool_objective_catalog(fw_schema, revised_codes)
       }
       invisible(NULL)
     }
@@ -1053,10 +1057,28 @@ Protocol <- R6::R6Class(
         out[[code]] <- list(
           short_objective = first_non_empty("short_objective"),
           text_objective = first_non_empty("text_objective"),
-          objective_research_question = first_non_empty("objective_research_question")
+          objective_research_question = first_non_empty("objective_research_question"),
+          pillar = first_non_empty("pillar")
         )
       }
       out
+    },
+
+    # Build an objective catalog for a single tool by finding the objectives in
+    # fw_schema whose indicator_code rows match the supplied indicator_codes.
+    build_tool_objective_catalog = function(fw_schema, indicator_codes) {
+      if (is.null(fw_schema) || !is.data.frame(fw_schema) || nrow(fw_schema) == 0 ||
+          length(indicator_codes) == 0L) {
+        return(list())
+      }
+      if (!"indicator_code" %in% names(fw_schema)) return(list())
+      # Filter schema rows to those matching the tool's indicator codes
+      matching_rows <- fw_schema[
+        as.character(fw_schema$indicator_code) %in% as.character(indicator_codes),
+        , drop = FALSE
+      ]
+      if (nrow(matching_rows) == 0L) return(list())
+      private$build_objective_catalog(matching_rows)
     },
 
     build_indicator_catalog = function(schema) {

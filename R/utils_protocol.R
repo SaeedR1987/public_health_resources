@@ -440,19 +440,35 @@ restore_protocol <- function(protocol_data) {
 
     protocol$metadata            <- protocol_data$metadata
     protocol$conditional_metadata <- protocol_data$conditional_metadata %||% list()
-    protocol$objectives          <- protocol_data$objectives %||% list()
-    protocol$objective_schema    <- protocol_data$objective_schema %||% protocol$objective_schema
     if (!is.null(protocol_data$framework)) {
       protocol$framework <- restore_framework(protocol_data$framework)
     }
     protocol$tools               <- protocol_data$tools
-    protocol$selected_indicators <- protocol_data$selected_indicators
-    protocol$objective_catalog_master   <- protocol_data$objective_catalog_master   %||% protocol$objective_catalog_master
-    protocol$objective_catalog_adjusted <- protocol_data$objective_catalog_adjusted %||% protocol$objective_catalog_adjusted
-    protocol$indicator_catalog_master   <- protocol_data$indicator_catalog_master   %||% protocol$indicator_catalog_master
-    protocol$indicator_catalog_adjusted <- protocol_data$indicator_catalog_adjusted %||% protocol$indicator_catalog_adjusted
-    protocol$tool_indicator_catalog_master   <- protocol_data$tool_indicator_catalog_master   %||% protocol$tool_indicator_catalog_master
-    protocol$tool_indicator_catalog_revised  <- protocol_data$tool_indicator_catalog_revised  %||% protocol$tool_indicator_catalog_revised
+    # Support restoring both new field names and the old names from saved data
+    protocol$framework_objective_catalog_master   <-
+      protocol_data$framework_objective_catalog_master   %||%
+      protocol_data$objective_catalog_master              %||%
+      protocol$framework_objective_catalog_master
+    protocol$framework_objective_catalog_adjusted <-
+      protocol_data$framework_objective_catalog_adjusted %||%
+      protocol_data$objective_catalog_adjusted            %||%
+      protocol$framework_objective_catalog_adjusted
+    protocol$framework_indicator_catalog_master   <-
+      protocol_data$framework_indicator_catalog_master   %||%
+      protocol_data$indicator_catalog_master              %||%
+      protocol$framework_indicator_catalog_master
+    protocol$framework_indicator_catalog_adjusted <-
+      protocol_data$framework_indicator_catalog_adjusted %||%
+      protocol_data$indicator_catalog_adjusted            %||%
+      protocol$framework_indicator_catalog_adjusted
+    protocol$tool_indicator_catalog_master   <-
+      protocol_data$tool_indicator_catalog_master   %||% protocol$tool_indicator_catalog_master
+    protocol$tool_indicator_catalog_revised  <-
+      protocol_data$tool_indicator_catalog_revised  %||% protocol$tool_indicator_catalog_revised
+    protocol$tool_objective_catalog_master   <-
+      protocol_data$tool_objective_catalog_master   %||% protocol$tool_objective_catalog_master
+    protocol$tool_objective_catalog_revised  <-
+      protocol_data$tool_objective_catalog_revised  %||% protocol$tool_objective_catalog_revised
     protocol$issues              <- protocol_data$issues
     if ("synchronize_state" %in% names(protocol) && is.function(protocol$synchronize_state)) {
       protocol$synchronize_state()
@@ -525,7 +541,14 @@ print_protocol_summary <- function(protocol) {
     )
 
     n_tools <- length(protocol$tools)
-    n_objectives <- if (!is.null(protocol$objectives)) count_objectives(protocol$objectives) else 0L
+    n_objectives <- if (!is.null(protocol$framework) &&
+                        !is.null(protocol$framework$adjusted_schema) &&
+                        is.data.frame(protocol$framework$adjusted_schema) &&
+                        "objective_code" %in% names(protocol$framework$adjusted_schema)) {
+      length(unique(stats::na.omit(protocol$framework$adjusted_schema$objective_code)))
+    } else {
+      0L
+    }
 
     phr_message(
       phr_txt("Objectives: {n_objectives} | Tools: {n_tools}"),

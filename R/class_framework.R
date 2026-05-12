@@ -433,14 +433,19 @@ Framework <- R6::R6Class(
     #' automatically: if \code{master_schema} contains an \code{objective_code}
     #' column, filtering is done on that column (useful for \code{ANAFramework}
     #' which uses numeric objective codes); otherwise \code{short_objective} is
-    #' used.  When \code{objective_codes} is \code{NULL} or an empty vector all
-    #' rows from \code{master_schema} are retained.  Also updates
-    #' \code{master_indicator_codes} from the resulting \code{adjusted_schema}.
+    #' used.  When \code{objective_codes} is \code{NULL} or an empty vector the
+    #' method first checks whether \code{primary_objectives} or
+    #' \code{secondary_objectives} are set on the Framework; if either is set
+    #' their combined unique codes are used as the filter.  Only if both are
+    #' \code{NULL} does the method fall back to retaining all rows from
+    #' \code{master_schema}.  Also updates \code{master_indicator_codes} from
+    #' the resulting \code{adjusted_schema}.
     #'
     #' @param objective_codes Character or numeric vector (or list) of objective
     #'   code values to retain.  The type should match the filter column:
     #'   numeric for \code{objective_code}, character for \code{short_objective}.
-    #'   Pass \code{NULL} (the default) to include all rows.
+    #'   Pass \code{NULL} (the default) to use \code{primary_objectives} and
+    #'   \code{secondary_objectives}, or all rows as a final fallback.
     #' @return Invisibly returns \code{self} for method chaining.
     modify_adjusted_schema = function(objective_codes = NULL) {
       phr_try({
@@ -459,7 +464,14 @@ Framework <- R6::R6Class(
         }
 
         if (is.null(objective_codes) || length(objective_codes) == 0) {
-          objective_codes <- unique(self$master_schema[[filter_col]])
+          # Use primary_objectives and secondary_objectives if either is set;
+          # fall back to all rows only when both are NULL.
+          combined <- c(self$primary_objectives, self$secondary_objectives)
+          if (!is.null(combined) && length(combined) > 0) {
+            objective_codes <- unique(combined)
+          } else {
+            objective_codes <- unique(self$master_schema[[filter_col]])
+          }
         } else {
           objective_codes <- unlist(objective_codes)
         }
