@@ -193,8 +193,6 @@ head(protocol$tools$tool_kii_community_iphra_v2$settings)
 protocol$tool_filter_survey_by_indicator(tool_name = "tool_kii_community_iphra_v2",
                                          indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
 
-protocol$tools$tool_kii_community_iphra_v2$filter_survey_by_indicator(indicator_codes = c(protocol$framework$available_indicator_codes$indicator_code))
-
 nrow(protocol$tools$tool_kii_community_iphra_v2$survey)
 nrow(protocol$tools$tool_kii_community_iphra_v2$revised_survey)
 
