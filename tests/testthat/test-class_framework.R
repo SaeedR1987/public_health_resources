@@ -735,3 +735,172 @@ test_that("ANAFramework$modify_adjusted_svg uses objective codes to colour sub-p
     grepl("#DDA0DD", af$adjusted_svg)
   expect_true(has_colour)
 })
+
+# ---- New default-objective behaviour for modify_adjusted_schema ----
+
+test_that("Framework$modify_adjusted_schema(NULL) uses primary_objectives when set", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "Morbidity",
+    sub_pillar      = "Acute",
+    short_objective = c("H1", "H2", "H3"),
+    text_objective  = c("Obj 1", "Obj 2", "Obj 3"),
+    objective_code  = c(101L, 102L, 103L),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$primary_objectives <- c(101L, 103L)
+  fw$modify_adjusted_schema()
+  expect_equal(nrow(fw$adjusted_schema), 2)
+  expect_setequal(fw$adjusted_schema$objective_code, c(101L, 103L))
+})
+
+test_that("Framework$modify_adjusted_schema(NULL) uses secondary_objectives when set", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "Morbidity",
+    sub_pillar      = "Acute",
+    short_objective = c("H1", "H2", "H3"),
+    text_objective  = c("Obj 1", "Obj 2", "Obj 3"),
+    objective_code  = c(101L, 102L, 103L),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$secondary_objectives <- c(102L)
+  fw$modify_adjusted_schema()
+  expect_equal(nrow(fw$adjusted_schema), 1)
+  expect_equal(fw$adjusted_schema$objective_code, 102L)
+})
+
+test_that("Framework$modify_adjusted_schema(NULL) combines primary and secondary objectives", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "Morbidity",
+    sub_pillar      = "Acute",
+    short_objective = c("H1", "H2", "H3"),
+    text_objective  = c("Obj 1", "Obj 2", "Obj 3"),
+    objective_code  = c(101L, 102L, 103L),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$primary_objectives   <- c(101L)
+  fw$secondary_objectives <- c(103L)
+  fw$modify_adjusted_schema()
+  expect_equal(nrow(fw$adjusted_schema), 2)
+  expect_setequal(fw$adjusted_schema$objective_code, c(101L, 103L))
+})
+
+test_that("Framework$modify_adjusted_schema(NULL) falls back to all rows when no objectives set", {
+  fw <- Framework$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "Morbidity",
+    sub_pillar      = "Acute",
+    short_objective = c("H1", "H2"),
+    text_objective  = c("Obj 1", "Obj 2"),
+    objective_code  = c(101L, 102L),
+    stringsAsFactors = FALSE
+  )
+  fw$set_master_schema(schema)
+  fw$modify_adjusted_schema()
+  expect_equal(nrow(fw$adjusted_schema), 2)
+})
+
+# ---- Protocol renamed catalog fields ----
+
+test_that("Protocol initializes new framework_* catalog fields as empty lists", {
+  p <- Protocol$new()
+  expect_true(is.list(p$framework_objective_catalog_master))
+  expect_true(is.list(p$framework_objective_catalog_adjusted))
+  expect_true(is.list(p$framework_indicator_catalog_master))
+  expect_true(is.list(p$framework_indicator_catalog_adjusted))
+})
+
+test_that("Protocol no longer has objectives, objective_schema, or selected_indicators fields", {
+  p <- Protocol$new()
+  expect_false("objectives"          %in% names(p))
+  expect_false("objective_schema"    %in% names(p))
+  expect_false("selected_indicators" %in% names(p))
+})
+
+test_that("Protocol sync_framework_catalog_fields populates framework_* catalogs", {
+  p <- Protocol$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "Morbidity",
+    sub_pillar      = "SP1",
+    short_objective = "H1",
+    text_objective  = "Obj 1",
+    objective_code  = 101L,
+    indicator_code  = "10101",
+    stringsAsFactors = FALSE
+  )
+  p$framework$set_master_schema(schema)
+  p$sync_framework_catalog_fields
+  expect_true(length(p$framework_objective_catalog_master) > 0)
+  expect_true(length(p$framework_indicator_catalog_master) > 0)
+})
+
+test_that("Protocol objective catalog entries include pillar field", {
+  p <- Protocol$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "TestPillar",
+    sub_pillar      = "SP1",
+    short_objective = "H1",
+    text_objective  = "Obj 1",
+    objective_code  = 101L,
+    indicator_code  = "10101",
+    stringsAsFactors = FALSE
+  )
+  p$framework$set_master_schema(schema)
+  p$sync_framework_catalog_fields
+  entry <- p$framework_objective_catalog_master[["101"]]
+  expect_equal(entry$pillar, "TestPillar")
+})
+
+# ---- Protocol tool_objective_catalog fields ----
+
+test_that("Protocol initializes tool_objective_catalog_master and _revised as empty lists", {
+  p <- Protocol$new()
+  expect_true(is.list(p$tool_objective_catalog_master))
+  expect_true(is.list(p$tool_objective_catalog_revised))
+  expect_equal(length(p$tool_objective_catalog_master), 0L)
+  expect_equal(length(p$tool_objective_catalog_revised), 0L)
+})
+
+test_that("sync_tool_indicator_catalog_fields populates tool_objective_catalog fields", {
+  p <- Protocol$new()
+  schema <- data.frame(
+    sector          = "Health",
+    pillar          = "Morbidity",
+    sub_pillar      = "SP1",
+    short_objective = "H1",
+    text_objective  = "Obj 1",
+    objective_code  = 101L,
+    objective_research_question = "What is the morbidity burden?",
+    indicator_code  = "10101",
+    stringsAsFactors = FALSE
+  )
+  p$framework$set_master_schema(schema)
+  p$sync_framework_catalog_fields
+  # Add a tool whose revised survey contains indicator_code 10101
+  p$add_tools("generic", tool_name = "my_tool")
+  p$tools[["my_tool"]]$revised_survey <- data.frame(
+    type = "integer", name = "q1", indicator_code = "10101",
+    stringsAsFactors = FALSE
+  )
+  p$sync_tool_indicator_catalog_fields
+  # tool_objective_catalog_revised should now have an entry for my_tool
+  expect_true("my_tool" %in% names(p$tool_objective_catalog_revised))
+  obj_cat <- p$tool_objective_catalog_revised[["my_tool"]]
+  expect_true(length(obj_cat) > 0)
+  # The entry should have objective metadata
+  first_entry <- obj_cat[[1]]
+  expect_true("text_objective" %in% names(first_entry))
+  expect_equal(first_entry$text_objective, "Obj 1")
+  expect_equal(first_entry$pillar, "Morbidity")
+})
