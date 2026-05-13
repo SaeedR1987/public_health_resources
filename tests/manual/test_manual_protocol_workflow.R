@@ -38,14 +38,14 @@ protocol$framework_get_schema(type = "master")
 
 protocol$framework_get_svg(type = "master")
 
-protocol$framework_set_primary_objectives(objective_codes = c(101, 105, 106, 108, 112, 113, 114, 115, 118, 147, 148, 153, 154, 125))
-protocol$framework_set_secondary_objectives(objective_codes = c(101, 105, 107, 112, 113, 114, 115, 116, 117, 142, 137, 131))
+protocol$framework_set_primary_objectives(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$framework_set_secondary_objectives(objective_codes = c(105, 107, 112))
 
-protocol$framework_modify_schema()
+protocol$framework_modify_schema(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
 protocol$framework_modify_svg()
 
 protocol$framework_get_svg(type = "adjusted")
-protocol$framework_get_schema(type = "adjusted")
+View(protocol$framework_get_schema(type = "adjusted"))
 
 # Test 3: Define Strata and Sample Sizes ####
 
