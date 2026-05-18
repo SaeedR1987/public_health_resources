@@ -1,4 +1,5 @@
-<svg width="950" height="800" xmlns="http://www.w3.org/2000/svg">
+<svg width="950" height="950" xmlns="http://www.w3.org/2000/svg">
+  <!-- Height: 950px — extended to accommodate Sex and Age Composition sub-pillar and centered legend. -->
 
   <!-- Community Level Factors -->
   <g id="CommLevelFactors">
@@ -21,22 +22,25 @@
     <text x="345" y="25" text-anchor="middle" font-size="7">Ind. Health Outcomes</text>
   </g>
 
-  <!-- Mortality -->
+  <!-- Mortality (OC: 105) -->
   <g id="Mortality">
     <rect x="400" y="20" width="100" height="35" fill="white" stroke="black"/>
-    <text x="450" y="40" text-anchor="middle" font-size="9">Mortality</text>
+    <text x="450" y="37" text-anchor="middle" font-size="9">Mortality</text>
+    <text x="450" y="49" text-anchor="middle" font-size="6" fill="grey">OC: 105</text>
   </g>
 
-  <!-- Nutrition Status -->
+  <!-- Nutrition Status (OC: 107) -->
   <g id="NutritionStatus">
     <rect x="330" y="90" width="100" height="35" fill="white" stroke="black"/>
-    <text x="380" y="110" text-anchor="middle" font-size="9">Nutrition status</text>
+    <text x="380" y="107" text-anchor="middle" font-size="9">Nutrition status</text>
+    <text x="380" y="119" text-anchor="middle" font-size="6" fill="grey">OC: 107</text>
   </g>
 
-  <!-- Health Status -->
+  <!-- Health Status (OC: 106) -->
   <g id="HealthStatus">
     <rect x="490" y="90" width="100" height="35" fill="white" stroke="black"/>
-    <text x="540" y="110" text-anchor="middle" font-size="9">Health status</text>
+    <text x="540" y="107" text-anchor="middle" font-size="9">Health status</text>
+    <text x="540" y="119" text-anchor="middle" font-size="6" fill="grey">OC: 106</text>
   </g>
 
   <!-- Food Consumption -->
@@ -46,11 +50,11 @@
   </g>
   <g id="FoodQuantity">
     <rect x="240" y="202.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="280" y="210" text-anchor="middle" font-size="7">Quantity</text>
+    <text x="280" y="212" text-anchor="middle" font-size="7">Quantity (108)</text>
   </g>
-  <g id="FoodQuality">
+  <g id="FoodDiversity">
     <rect x="240" y="222.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="280" y="230" text-anchor="middle" font-size="7">Quality</text>
+    <text x="280" y="232" text-anchor="middle" font-size="7">Diversity (108)</text>
   </g>
 
   <!-- Water Consumption -->
@@ -60,11 +64,11 @@
   </g>
   <g id="WaterQuantity">
     <rect x="410" y="202.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="450" y="210" text-anchor="middle" font-size="7">Quantity</text>
+    <text x="450" y="212" text-anchor="middle" font-size="7">Quantity (109)</text>
   </g>
   <g id="WaterQuality">
     <rect x="410" y="222.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="450" y="230" text-anchor="middle" font-size="7">Quality</text>
+    <text x="450" y="232" text-anchor="middle" font-size="7">Quality (109)</text>
   </g>
 
   <!-- Exposure to Disease -->
@@ -72,43 +76,39 @@
     <rect x="560" y="160" width="100" height="35" fill="white" stroke="black"/>
     <text x="610" y="180" text-anchor="middle" font-size="9">Exposure to disease</text>
   </g>
-  <g id="ReproductiveNumber">
+  <g id="DiseaseSpecificChars">
     <rect x="570" y="202.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="610" y="210" text-anchor="middle" font-size="7">Reproductive Number</text>
-  </g>
-  <g id="RiskFactors">
-    <rect x="570" y="222.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="610" y="230" text-anchor="middle" font-size="7">Risk Factors</text>
+    <text x="610" y="212" text-anchor="middle" font-size="7">Disease Chars (110)</text>
   </g>
   <g id="Hygiene">
-    <rect x="570" y="242.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="610" y="250" text-anchor="middle" font-size="7">Hygiene</text>
+    <rect x="570" y="222.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="610" y="232" text-anchor="middle" font-size="7">Hygiene (111)</text>
   </g>
 
-  <!-- Food Security -->
+  <!-- Food Security (HHFoodSecurity) -->
   <g id="FoodSecurity">
     <rect x="150" y="260" width="100" height="35" fill="white" stroke="black"/>
     <text x="200" y="280" text-anchor="middle" font-size="9">Food Security</text>
   </g>
   <g id="HHFoodConsumption">
     <rect x="160" y="302.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="200" y="310" text-anchor="middle" font-size="7">HH Consumption</text>
+    <text x="200" y="312" text-anchor="middle" font-size="7">HH Consump. (112)</text>
   </g>
   <g id="FoodAvailability">
     <rect x="160" y="322.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="200" y="330" text-anchor="middle" font-size="7">Availability</text>
+    <text x="200" y="332" text-anchor="middle" font-size="7">Availability (113)</text>
   </g>
-  <g id="FoodAccessiblity">
+  <g id="FoodAccessibility">
     <rect x="160" y="342.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="200" y="350" text-anchor="middle" font-size="7">Accessibility</text>
+    <text x="200" y="352" text-anchor="middle" font-size="7">Accessibility (114)</text>
   </g>
   <g id="FoodUtilization">
     <rect x="160" y="362.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="200" y="370" text-anchor="middle" font-size="7">Utilization</text>
+    <text x="200" y="372" text-anchor="middle" font-size="7">Utilization (115)</text>
   </g>
   <g id="FoodStability">
     <rect x="160" y="382.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="200" y="390" text-anchor="middle" font-size="7">Stability</text>
+    <text x="200" y="392" text-anchor="middle" font-size="7">Stability (116)</text>
   </g>
 
   <!-- Water Security -->
@@ -118,23 +118,23 @@
   </g>
   <g id="HHWaterConsumption">
     <rect x="320" y="302.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="360" y="310" text-anchor="middle" font-size="7">HH Consumption</text>
+    <text x="360" y="312" text-anchor="middle" font-size="7">HH Consump. (117)</text>
   </g>
   <g id="WaterAvailability">
     <rect x="320" y="322.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="360" y="330" text-anchor="middle" font-size="7">Availability</text>
+    <text x="360" y="332" text-anchor="middle" font-size="7">Availability (118)</text>
   </g>
   <g id="WaterAccessibility">
     <rect x="320" y="342.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="360" y="350" text-anchor="middle" font-size="7">Accessibility</text>
+    <text x="360" y="352" text-anchor="middle" font-size="7">Accessibility (119)</text>
   </g>
   <g id="WaterUtilization">
     <rect x="320" y="362.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="360" y="370" text-anchor="middle" font-size="7">Utilization</text>
+    <text x="360" y="372" text-anchor="middle" font-size="7">Utilization (120)</text>
   </g>
   <g id="WaterStability">
     <rect x="320" y="382.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="360" y="390" text-anchor="middle" font-size="7">Stability</text>
+    <text x="360" y="392" text-anchor="middle" font-size="7">Stability (121)</text>
   </g>
 
   <!-- Income and Coping Capacities -->
@@ -144,15 +144,15 @@
   </g>
   <g id="Income">
     <rect x="480" y="302.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="520" y="310" text-anchor="middle" font-size="7">Income</text>
+    <text x="520" y="312" text-anchor="middle" font-size="7">Income (122)</text>
   </g>
   <g id="CopingCapacity">
     <rect x="480" y="322.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="520" y="330" text-anchor="middle" font-size="7">Coping Capacity</text>
+    <text x="520" y="332" text-anchor="middle" font-size="7">Coping Capacity (123)</text>
   </g>
   <g id="Assets">
     <rect x="480" y="342.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="520" y="350" text-anchor="middle" font-size="7">Assets</text>
+    <text x="520" y="352" text-anchor="middle" font-size="7">Assets (124)</text>
   </g>
 
   <!-- Living Conditions -->
@@ -160,17 +160,17 @@
     <rect x="630" y="260" width="100" height="35" fill="white" stroke="black"/>
     <text x="680" y="280" text-anchor="middle" font-size="9">Living conditions</text>
   </g>
-  <g id="ProtElements">
+  <g id="ProtectionElements">
     <rect x="640" y="302.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="680" y="310" text-anchor="middle" font-size="7">Protection Elements</text>
+    <text x="680" y="312" text-anchor="middle" font-size="7">Prot. Elements (125)</text>
   </g>
-  <g id="ProtVectors">
+  <g id="ProtectionVectors">
     <rect x="640" y="322.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="680" y="330" text-anchor="middle" font-size="7">Protection Vectors</text>
+    <text x="680" y="332" text-anchor="middle" font-size="7">Prot. Vectors (126)</text>
   </g>
   <g id="Crowdedness">
     <rect x="640" y="342.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="680" y="350" text-anchor="middle" font-size="7">Crowdedness</text>
+    <text x="680" y="352" text-anchor="middle" font-size="7">Crowdedness (127)</text>
   </g>
 
   <!-- Livelihoods -->
@@ -180,11 +180,11 @@
   </g>
   <g id="LivAvailability">
     <rect x="70" y="462.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="110" y="470" text-anchor="middle" font-size="7">Availability</text>
+    <text x="110" y="472" text-anchor="middle" font-size="7">Availability (128)</text>
   </g>
   <g id="LivAccessibility">
     <rect x="70" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="110" y="490" text-anchor="middle" font-size="7">Accessibility</text>
+    <text x="110" y="492" text-anchor="middle" font-size="7">Accessibility (129)</text>
   </g>
 
   <!-- Markets -->
@@ -194,15 +194,15 @@
   </g>
   <g id="MarketAvailability">
     <rect x="210" y="462.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="260" y="470" text-anchor="middle" font-size="7">Availability</text>
+    <text x="260" y="472" text-anchor="middle" font-size="7">Availability (130)</text>
   </g>
   <g id="MarketAccessibility">
     <rect x="210" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="260" y="490" text-anchor="middle" font-size="7">Accessibility</text>
+    <text x="260" y="492" text-anchor="middle" font-size="7">Accessibility (131)</text>
   </g>
   <g id="MarketFunctionality">
     <rect x="210" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="260" y="510" text-anchor="middle" font-size="7">Functionality</text>
+    <text x="260" y="512" text-anchor="middle" font-size="7">Functionality (132)</text>
   </g>
 
   <!-- WASH Services -->
@@ -212,19 +212,19 @@
   </g>
   <g id="WASHAvailability">
     <rect x="340" y="462.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="380" y="470" text-anchor="middle" font-size="7">Availability</text>
+    <text x="380" y="472" text-anchor="middle" font-size="7">Availability (133)</text>
   </g>
   <g id="WASHAccessibility">
     <rect x="340" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="380" y="490" text-anchor="middle" font-size="7">Accessibility</text>
+    <text x="380" y="492" text-anchor="middle" font-size="7">Accessibility (134)</text>
   </g>
   <g id="WASHQuality">
     <rect x="340" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="380" y="510" text-anchor="middle" font-size="7">Quality</text>
+    <text x="380" y="512" text-anchor="middle" font-size="7">Quality (135)</text>
   </g>
   <g id="WASHUseBehaviours">
     <rect x="340" y="522.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="380" y="530" text-anchor="middle" font-size="7">Use Behaviours</text>
+    <text x="380" y="532" text-anchor="middle" font-size="7">Utilization (136)</text>
   </g>
 
   <!-- Nutrition Services -->
@@ -234,23 +234,23 @@
   </g>
   <g id="NutAvailability">
     <rect x="470" y="462.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="510" y="470" text-anchor="middle" font-size="7">Availability</text>
+    <text x="510" y="472" text-anchor="middle" font-size="7">Availability (137)</text>
+  </g>
+  <g id="NutCoverage">
+    <rect x="470" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="510" y="492" text-anchor="middle" font-size="7">Coverage (138)</text>
   </g>
   <g id="NutAccessibility">
-    <rect x="470" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="510" y="490" text-anchor="middle" font-size="7">Accessibility</text>
+    <rect x="470" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="510" y="512" text-anchor="middle" font-size="7">Accessibility (139)</text>
   </g>
   <g id="NutQuality">
-    <rect x="470" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="510" y="510" text-anchor="middle" font-size="7">Quality</text>
+    <rect x="470" y="522.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="510" y="532" text-anchor="middle" font-size="7">Quality (140)</text>
   </g>
   <g id="NutUseBehaviours">
-    <rect x="470" y="522.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="510" y="530" text-anchor="middle" font-size="7">Use Behaviours</text>
-  </g>
-  <g id="NutPreventative">
     <rect x="470" y="542.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="510" y="550" text-anchor="middle" font-size="7">Prevention</text>
+    <text x="510" y="552" text-anchor="middle" font-size="7">Utilization (141)</text>
   </g>
 
   <!-- Health Services -->
@@ -260,23 +260,23 @@
   </g>
   <g id="HealthAvailability">
     <rect x="600" y="462.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="640" y="470" text-anchor="middle" font-size="7">Availability</text>
+    <text x="640" y="472" text-anchor="middle" font-size="7">Availability (142)</text>
+  </g>
+  <g id="HealthCoverage">
+    <rect x="600" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="640" y="492" text-anchor="middle" font-size="7">Coverage (143)</text>
   </g>
   <g id="HealthAccessibility">
-    <rect x="600" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="640" y="490" text-anchor="middle" font-size="7">Accessibility</text>
+    <rect x="600" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="640" y="512" text-anchor="middle" font-size="7">Accessibility (144)</text>
   </g>
   <g id="HealthQuality">
-    <rect x="600" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="640" y="510" text-anchor="middle" font-size="7">Quality</text>
+    <rect x="600" y="522.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="640" y="532" text-anchor="middle" font-size="7">Quality (145)</text>
   </g>
   <g id="HealthUseBehaviours">
-    <rect x="600" y="522.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="640" y="530" text-anchor="middle" font-size="7">Use Behaviours</text>
-  </g>
-  <g id="HealthPreventative">
     <rect x="600" y="542.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="640" y="550" text-anchor="middle" font-size="7">Prevention</text>
+    <text x="640" y="552" text-anchor="middle" font-size="7">Utilization (146)</text>
   </g>
 
   <!-- Environment -->
@@ -284,48 +284,97 @@
     <rect x="720" y="420" width="100" height="35" fill="white" stroke="black"/>
     <text x="770" y="440" text-anchor="middle" font-size="9">Environment</text>
   </g>
-  <g id="EnvHygiene">
+  <g id="EnvironmentalHygiene">
     <rect x="730" y="462.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="770" y="470" text-anchor="middle" font-size="7">Env Hygiene</text>
+    <text x="770" y="472" text-anchor="middle" font-size="7">Env. Hygiene (147)</text>
   </g>
-  <g id="Sanitation">
+  <g id="SanitationCoverage">
     <rect x="730" y="482.5" width="80" height="15" fill="white" stroke="lightgrey"/>
-    <text x="770" y="490" text-anchor="middle" font-size="7">Sanitation</text>
+    <text x="770" y="492" text-anchor="middle" font-size="7">San. Coverage (148)</text>
+  </g>
+  <g id="SanitationQuality">
+    <rect x="730" y="502.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="770" y="512" text-anchor="middle" font-size="7">San. Quality (149)</text>
+  </g>
+  <g id="SanitationAccessibility">
+    <rect x="730" y="522.5" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="770" y="532" text-anchor="middle" font-size="7">San. Accessibility (150)</text>
   </g>
 
-  <!-- Shocks and Hazards -->
-  <g id="Hazards">
+  <!-- Shocks and Hazards (OC: 151) -->
+  <g id="ShocksHazards">
     <rect x="250" y="600" width="400" height="60" fill="white" stroke="black"/>
-    <text x="450" y="630" text-anchor="middle" font-size="9">Shocks and Hazards</text>
+    <text x="450" y="624" text-anchor="middle" font-size="9">Shocks and Hazards</text>
+    <text x="450" y="638" text-anchor="middle" font-size="6" fill="grey">OC: 151</text>
   </g>
 
-  <g id="Governance">
-    <rect x="150" y="700" width="100" height="60" fill="white" stroke="black"/>
+  <!-- Governance / Policy / Institutions (OC: 152-154) -->
+  <g id="GovPolicyInstitution">
+    <rect x="150" y="700" width="100" height="70" fill="white" stroke="black"/>
     <text x="200" y="725" text-anchor="middle" font-size="9">
       <tspan x="200" dy="0">Governance, policies</tspan>
       <tspan x="200" dy="1.2em">institutions</tspan>
     </text>
+    <text x="200" y="762" text-anchor="middle" font-size="6" fill="grey">OC: 152-154</text>
   </g>
 
-  <g id="Norms">
-    <rect x="300" y="700" width="120" height="60" fill="white" stroke="black"/>
+  <!-- Cultural beliefs, practices, social norms (OC: 155-156) -->
+  <g id="CultureSocialNorms">
+    <rect x="300" y="700" width="120" height="70" fill="white" stroke="black"/>
     <text x="360" y="725" text-anchor="middle" font-size="9">
       <tspan x="360" dy="0">Cultural beliefs, practices,</tspan>
       <tspan x="360" dy="1.2em">social norms</tspan>
     </text>
+    <text x="360" y="762" text-anchor="middle" font-size="6" fill="grey">OC: 155-156</text>
   </g>
 
+  <!-- Macroeconomy (OC: 157) -->
   <g id="Macroeconomy">
-    <rect x="470" y="700" width="100" height="60" fill="white" stroke="black"/>
+    <rect x="470" y="700" width="100" height="70" fill="white" stroke="black"/>
     <text x="520" y="730" text-anchor="middle" font-size="9">Macroeconomy</text>
+    <text x="520" y="762" text-anchor="middle" font-size="6" fill="grey">OC: 157</text>
   </g>
 
+  <!-- Population demographics -->
   <g id="Demographics">
-    <rect x="630" y="700" width="100" height="60" fill="white" stroke="black"/>
+    <rect x="630" y="700" width="100" height="70" fill="white" stroke="black"/>
     <text x="680" y="725" text-anchor="middle" font-size="9">
       <tspan x="680" dy="0">Population</tspan>
       <tspan x="680" dy="1.2em">demographics</tspan>
     </text>
+  </g>
+  <g id="SexAgeComposition">
+    <rect x="640" y="775" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="785" text-anchor="middle" font-size="7">Sex and Age (101)</text>
+  </g>
+  <g id="PopulationSize">
+    <rect x="640" y="795" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="805" text-anchor="middle" font-size="7">Pop. Size (102)</text>
+  </g>
+  <g id="Vulnerability">
+    <rect x="640" y="815" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="825" text-anchor="middle" font-size="7">Vulnerability (103)</text>
+  </g>
+  <g id="Migration">
+    <rect x="640" y="835" width="80" height="15" fill="white" stroke="lightgrey"/>
+    <text x="680" y="845" text-anchor="middle" font-size="7">Migration (104)</text>
+  </g>
+
+  <!-- Legend -->
+  <g id="legend">
+    <text x="224" y="882" font-size="8" font-weight="bold">Key:</text>
+    <!-- Not Selected -->
+    <rect x="256" y="871" width="12" height="12" fill="white" stroke="black" stroke-width="0.5"/>
+    <text x="273" y="882" font-size="8">Not Selected</text>
+    <!-- Primary Collection -->
+    <rect x="354" y="871" width="12" height="12" fill="#90EE90" stroke="black" stroke-width="0.5"/>
+    <text x="371" y="882" font-size="8">Primary Collection</text>
+    <!-- Secondary Data -->
+    <rect x="485" y="871" width="12" height="12" fill="#ADD8E6" stroke="black" stroke-width="0.5"/>
+    <text x="502" y="882" font-size="8">Secondary Data</text>
+    <!-- Primary and Secondary -->
+    <rect x="594" y="871" width="12" height="12" fill="#DDA0DD" stroke="black" stroke-width="0.5"/>
+    <text x="611" y="882" font-size="8">Primary and Secondary</text>
   </g>
 
 </svg>

@@ -165,7 +165,7 @@ Log <- R6::R6Class(
 
         if (!is.null(schema_to_use) && length(schema_to_use) > 0) {
 
-          # ---- TYPE CHECKS ----
+          # ---- TYPE CHECKS
           if (!is.null(schema_to_use$types)) {
 
             for (nm in names(schema_to_use$types)) {
@@ -414,7 +414,7 @@ Log <- R6::R6Class(
     #'
     #' @return NULL (default implementation is empty)
     pre_validate   = function() {},
-    
+
     #' Post-Validation Hook
     #'
     #' @description
