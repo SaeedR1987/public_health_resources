@@ -31,25 +31,27 @@ Protocol <- R6::R6Class(
     tools = NULL,
 
     #' @field framework_objective_catalog_master Named list keyed by objective
-    #'   code from \code{framework$master_schema}; each value stores objective
-    #'   metadata including \code{short_objective}, \code{text_objective},
-    #'   \code{objective_research_question}, and \code{pillar}.
+    #'   code from \code{framework$master_objectives_schema}; each value stores
+    #'   objective metadata including \code{short_objective},
+    #'   \code{text_objective}, \code{objective_research_question}, and
+    #'   \code{pillar}.
     framework_objective_catalog_master = list(),
 
     #' @field framework_objective_catalog_adjusted Named list keyed by objective
-    #'   code from \code{framework$adjusted_schema}; each value stores objective
-    #'   metadata including \code{short_objective}, \code{text_objective},
-    #'   \code{objective_research_question}, and \code{pillar}.
+    #'   code from \code{framework$modified_objectives_schema}; each value stores
+    #'   objective metadata including \code{short_objective},
+    #'   \code{text_objective}, \code{objective_research_question}, and
+    #'   \code{pillar}.
     framework_objective_catalog_adjusted = list(),
 
     #' @field framework_indicator_catalog_master Named list keyed by indicator
-    #'   code from \code{framework$master_schema}; each value stores indicator
-    #'   metadata.
+    #'   code from \code{framework$master_objectives_schema}; each value stores
+    #'   indicator metadata.
     framework_indicator_catalog_master = list(),
 
     #' @field framework_indicator_catalog_adjusted Named list keyed by indicator
-    #'   code from \code{framework$adjusted_schema}; each value stores indicator
-    #'   metadata.
+    #'   code from \code{framework$modified_objectives_schema}; each value stores
+    #'   indicator metadata.
     framework_indicator_catalog_adjusted = list(),
 
     #' @field tool_indicator_catalog_master Named list keyed by tool name with
@@ -82,8 +84,8 @@ Protocol <- R6::R6Class(
     issues = list(),
 
     #' @field issues_coherence List of coherence issues found between the
-    #'   \code{adjusted_schema} indicator codes and the tool indicator codes.
-    #'   Populated by \code{diagnose_coherence()}.
+    #'   \code{modified_objectives_schema} indicator codes and the tool indicator
+    #'   codes.  Populated by \code{diagnose_coherence()}.
     issues_coherence = list(),
 
     #' @field metadata List containing protocol metadata
@@ -129,7 +131,7 @@ Protocol <- R6::R6Class(
     #' @field secondary_data Named list of secondary data sources keyed by
     #'   objective code.  Each element is a character string naming the source
     #'   or a URL.  Objective codes must match codes available in the
-    #'   \code{master_schema} of the associated \code{\link{Framework}}.
+    #'   \code{master_objectives_schema} of the associated \code{\link{Framework}}.
     secondary_data = NULL,
 
     #' @description
@@ -456,18 +458,18 @@ Protocol <- R6::R6Class(
       }, on_error = "abort", origin = "Protocol$validate_objective_schema")
     },
 
-    #' @description Diagnose coherence between the \code{adjusted_schema} indicator
-    #' codes and the \code{indicator_code} values across all tools in
+    #' @description Diagnose coherence between the \code{modified_objectives_schema}
+    #' indicator codes and the \code{indicator_code} values across all tools in
     #' \code{self$tools} (using each tool's \code{revised_survey}).
     #'
     #' Checks performed:
     #' \enumerate{
     #'   \item Objectives in the legacy \code{objectives} list whose sectors are
     #'     not represented by any registered tool.
-    #'   \item Objectives in \code{adjusted_schema} that have no matching
-    #'     \code{indicator_code} in any tool's \code{revised_survey}.
+    #'   \item Objectives in \code{modified_objectives_schema} that have no
+    #'     matching \code{indicator_code} in any tool's \code{revised_survey}.
     #'   \item \code{indicator_code} values present in tools but absent from
-    #'     \code{adjusted_schema}.
+    #'     \code{modified_objectives_schema}.
     #' }
     #'
     #' Results are stored in \code{self$issues_coherence} as a named list.
@@ -483,10 +485,10 @@ Protocol <- R6::R6Class(
         return(invisible(self))
       }
 
-      schema <- self$framework$adjusted_schema
+      schema <- self$framework$modified_objectives_schema
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
         self$issues_coherence$no_schema <-
-          "adjusted_schema is empty or not set in the framework."
+          "modified_objectives_schema is empty or not set in the framework."
         return(invisible(self))
       }
 
@@ -495,7 +497,7 @@ Protocol <- R6::R6Class(
 
       if (!has_obj_col || !has_ind_col) {
         self$issues_coherence$schema_columns <- paste0(
-          "adjusted_schema must contain 'objective_code' and 'indicator_code' columns. ",
+          "modified_objectives_schema must contain 'objective_code' and 'indicator_code' columns. ",
           "Found: ", paste(names(schema), collapse = ", ")
         )
         return(invisible(self))
@@ -562,7 +564,7 @@ Protocol <- R6::R6Class(
         if (length(unmatched) > 0) {
           self$issues_coherence$tool_indicators_without_objectives <- paste0(
             "The following indicator_code(s) in tools have no match in ",
-            "adjusted_schema: ", paste(unmatched, collapse = ", ")
+            "modified_objectives_schema: ", paste(unmatched, collapse = ", ")
           )
         }
       }
@@ -685,9 +687,9 @@ Protocol <- R6::R6Class(
         origin  = "Protocol$framework_get_schema"
       )
       schema <- if (type == "adjusted") {
-        self$framework$adjusted_schema
+        self$framework$modified_objectives_schema
       } else {
-        self$framework$master_schema
+        self$framework$master_objectives_schema
       }
       if (!is.null(schema) && is.data.frame(schema)) {
         return(as.data.frame(schema, stringsAsFactors = FALSE))
@@ -957,12 +959,12 @@ Protocol <- R6::R6Class(
         stop("sync_framework_catalog_fields is a read-only active binding.")
       }
       master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        self$framework$master_schema
+        self$framework$master_objectives_schema
       } else {
         NULL
       }
       adjusted_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        self$framework$adjusted_schema
+        self$framework$modified_objectives_schema
       } else {
         NULL
       }
@@ -984,9 +986,9 @@ Protocol <- R6::R6Class(
       self$tool_objective_catalog_revised <- list()
       if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
 
-      # Get the Framework master schema for objective lookups
+      # Get the Framework master objectives schema for objective lookups
       fw_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
-        self$framework$master_schema
+        self$framework$master_objectives_schema
       } else {
         NULL
       }

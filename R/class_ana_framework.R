@@ -5,15 +5,17 @@
 #' Assessment) conceptual framework.  On initialisation the class automatically
 #' loads:
 #' \itemize{
-#'   \item the bundled \code{reference_objectives.xlsx} as \code{master_schema};
+#'   \item the bundled \code{reference_objectives.xlsx} as
+#'     \code{master_objectives_schema};
 #'   \item the bundled \code{reference_indicator_bank.xlsx} as
-#'     \code{indicator_bank};
+#'     \code{master_indicator_bank} (and \code{modified_indicator_bank});
 #'   \item the bundled \code{ana_framework.svg} as \code{master_svg}.
 #' }
 #'
-#' Call \code{modify_adjusted_schema()} with
-#' a vector of objective codes to filter the schema, and then
-#' \code{modify_adjusted_svg()} to produce a highlighted SVG.
+#' Call \code{modify_adjusted_schema()} with a vector of objective codes to
+#' filter \code{master_objectives_schema} into \code{modified_objectives_schema},
+#' and \code{modify_indicator_bank()} to filter the indicator bank.
+#' Call \code{modify_adjusted_svg()} to produce a highlighted SVG.
 #'
 #' @importFrom R6 R6Class
 #' @export
@@ -25,8 +27,9 @@ ANAFramework <- R6::R6Class(
     #' Creates a new ANAFramework object.
     #'
     #' The bundled \code{reference_objectives.xlsx} is loaded as
-    #' \code{master_schema} and \code{reference_indicator_bank.xlsx} is loaded
-    #' as \code{indicator_bank}.  Both are stored as separate fields.
+    #' \code{master_objectives_schema} and \code{reference_indicator_bank.xlsx}
+    #' is loaded as both \code{master_indicator_bank} and
+    #' \code{modified_indicator_bank}.  All are stored as separate fields.
     #' \code{ana_framework.svg} is loaded as \code{master_svg}.  Warnings are
     #' issued if any file cannot be found or read.
     #'
@@ -34,21 +37,21 @@ ANAFramework <- R6::R6Class(
     initialize = function() {
       super$initialize()
 
-      # ---- Load master schema (objectives) from reference_objectives.xlsx ----
+      # ---- Load master objectives schema from reference_objectives.xlsx ----
       phr_try({
         objectives <- load_objective_schema()
         if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
-          self$master_schema <- objectives
+          self$master_objectives_schema <- objectives
           phr_message(
             phr_txt(
-              "ANAFramework: master schema loaded ({nrow(objectives)} rows)."
+              "ANAFramework: master objectives schema loaded ({nrow(objectives)} rows)."
             ),
             origin = "ANAFramework$initialize"
           )
         } else {
           phr_warning(
             message = phr_txt(
-              "ANAFramework: reference_objectives.xlsx could not be loaded; master_schema is NULL."
+              "ANAFramework: reference_objectives.xlsx could not be loaded; master_objectives_schema is NULL."
             ),
             origin = "ANAFramework$initialize",
             hint   = phr_txt(
@@ -62,7 +65,8 @@ ANAFramework <- R6::R6Class(
       phr_try({
         indicators <- load_indicator_bank()
         if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
-          self$indicator_bank <- indicators
+          self$master_indicator_bank   <- indicators
+          self$modified_indicator_bank <- indicators
           phr_message(
             phr_txt(
               "ANAFramework: indicator bank loaded ({nrow(indicators)} rows)."
@@ -72,7 +76,7 @@ ANAFramework <- R6::R6Class(
         } else {
           phr_warning(
             message = phr_txt(
-              "ANAFramework: reference_indicator_bank.xlsx could not be loaded; indicator_bank is NULL."
+              "ANAFramework: reference_indicator_bank.xlsx could not be loaded; master_indicator_bank is NULL."
             ),
             origin = "ANAFramework$initialize",
             hint   = phr_txt(
