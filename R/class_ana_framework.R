@@ -44,12 +44,15 @@ ANAFramework <- R6::R6Class(
           if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
             # Left-join objectives with indicators so every objective is retained
             # even if it has no indicators yet, and each indicator row carries
-            # the full objective-level metadata.
+            # the full objective-level metadata.  Suffixes are applied to any
+            # column names that appear in both data frames (other than the join
+            # key) to prevent silent data loss or ambiguous column names.
             schema <- merge(
               objectives, indicators,
               by        = "objective_code",
               all.x     = TRUE,
-              sort      = FALSE
+              sort      = FALSE,
+              suffixes  = c("_obj", "_ind")
             )
           } else {
             schema <- objectives

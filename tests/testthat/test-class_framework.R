@@ -167,9 +167,11 @@ test_that("Protocol framework data is serialisable", {
 
 test_that("ANAFramework initializes with master_schema from reference_objectives.xlsx", {
   skip_if_not(
-    file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
-      file.exists(file.path("resources", "reference_objectives.xlsx")),
-    "reference_objectives.xlsx not available"
+    (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
+       file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
+      (file.exists(system.file("resources", "reference_indicator_bank.xlsx", package = "phr")) ||
+         file.exists(file.path("resources", "reference_indicator_bank.xlsx"))),
+    "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   af <- ANAFramework$new()
   expect_true(is.data.frame(af$master_schema))
@@ -178,9 +180,11 @@ test_that("ANAFramework initializes with master_schema from reference_objectives
 
 test_that("ANAFramework inherits Framework methods", {
   skip_if_not(
-    file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
-      file.exists(file.path("resources", "reference_objectives.xlsx")),
-    "reference_objectives.xlsx not available"
+    (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
+       file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
+      (file.exists(system.file("resources", "reference_indicator_bank.xlsx", package = "phr")) ||
+         file.exists(file.path("resources", "reference_indicator_bank.xlsx"))),
+    "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   af <- ANAFramework$new()
   expect_true(inherits(af, "Framework"))
@@ -193,9 +197,11 @@ test_that("create_framework returns a Framework object", {
 
 test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
   skip_if_not(
-    file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
-      file.exists(file.path("resources", "reference_objectives.xlsx")),
-    "reference_objectives.xlsx not available"
+    (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
+       file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
+      (file.exists(system.file("resources", "reference_indicator_bank.xlsx", package = "phr")) ||
+         file.exists(file.path("resources", "reference_indicator_bank.xlsx"))),
+    "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- Protocol$new(framework_type = "ana")
   expect_true(inherits(p$framework, "ANAFramework"))
@@ -304,8 +310,10 @@ test_that("restore_protocol restores framework field", {
 
 .skip_if_no_ana_resources <- function() {
   skip_if_not(
-    file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
-      file.exists(file.path("resources", "reference_objectives.xlsx")),
+    (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
+       file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
+      (file.exists(system.file("resources", "reference_indicator_bank.xlsx", package = "phr")) ||
+         file.exists(file.path("resources", "reference_indicator_bank.xlsx"))),
     "ANA resources not available"
   )
 }
