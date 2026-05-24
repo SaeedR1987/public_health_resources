@@ -12,7 +12,7 @@
 #
 # The function works by splitting the SVG markup on </g> so that each
 # chunk contains at most one <g id="..."> opening tag. It never reads
-# reference.xlsx and never uses the sub_pillar column.
+# It never reads the reference files and never uses the sub_pillar column.
 .build_code_svg_map <- function(svg) {
   code_map <- list()   # named list: code_str -> character vector of group ids
 

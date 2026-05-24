@@ -5,7 +5,9 @@
 #' Assessment) conceptual framework.  On initialisation the class automatically
 #' loads:
 #' \itemize{
-#'   \item the bundled \code{reference.xlsx} as \code{master_schema};
+#'   \item the bundled \code{reference_objectives.xlsx} and
+#'     \code{reference_indicator_bank.xlsx} (merged on \code{objective_code})
+#'     as \code{master_schema};
 #'   \item the bundled \code{ana_framework.svg} as \code{master_svg}.
 #' }
 #'
@@ -22,18 +24,36 @@ ANAFramework <- R6::R6Class(
     #' @description
     #' Creates a new ANAFramework object.
     #'
-    #' The bundled \code{reference.xlsx} is loaded as \code{master_schema} and
+    #' The bundled \code{reference_objectives.xlsx} and
+    #' \code{reference_indicator_bank.xlsx} are loaded and merged on
+    #' \code{objective_code} to form \code{master_schema}.
     #' \code{ana_framework.svg} is loaded as \code{master_svg}.  Warnings are
-    #' issued if either file cannot be found or read.
+    #' issued if any file cannot be found or read.
     #'
     #' @return A new ANAFramework object.
     initialize = function() {
       super$initialize()
 
-      # ---- Load master schema from reference.xlsx ----
+      # ---- Load master schema from reference_objectives.xlsx and
+      #      reference_indicator_bank.xlsx, then merge on objective_code ----
       phr_try({
-        schema <- load_objective_schema()
-        if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0) {
+        objectives <- load_objective_schema()
+        indicators <- load_indicator_bank()
+
+        if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
+          if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
+            # Left-join objectives with indicators so every objective is retained
+            # even if it has no indicators yet, and each indicator row carries
+            # the full objective-level metadata.
+            schema <- merge(
+              objectives, indicators,
+              by        = "objective_code",
+              all.x     = TRUE,
+              sort      = FALSE
+            )
+          } else {
+            schema <- objectives
+          }
           self$master_schema <- schema
           phr_message(
             phr_txt(
@@ -44,11 +64,11 @@ ANAFramework <- R6::R6Class(
         } else {
           phr_warning(
             message = phr_txt(
-              "ANAFramework: reference.xlsx could not be loaded; master_schema is NULL."
+              "ANAFramework: reference_objectives.xlsx could not be loaded; master_schema is NULL."
             ),
             origin = "ANAFramework$initialize",
             hint   = phr_txt(
-              "Ensure reference.xlsx is present in the package resources folder."
+              "Ensure reference_objectives.xlsx is present in the package resources folder."
             )
           )
         }
