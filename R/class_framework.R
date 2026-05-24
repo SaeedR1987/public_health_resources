@@ -12,7 +12,7 @@
 #
 # The function works by splitting the SVG markup on </g> so that each
 # chunk contains at most one <g id="..."> opening tag. It never reads
-# reference.xlsx and never uses the sub_pillar column.
+# It never reads the reference files and never uses the sub_pillar column.
 .build_code_svg_map <- function(svg) {
   code_map <- list()   # named list: code_str -> character vector of group ids
 
@@ -59,11 +59,12 @@
 #'
 #' @description
 #' Base class for conceptual frameworks used in protocol planning.
-#' A Framework holds a master reference schema (all objectives and indicators),
-#' an adjusted schema filtered to the currently selected objectives, a
-#' master SVG diagram representing the full conceptual framework, and an
-#' adjusted SVG diagram derived from the master and trimmed to the selected
-#' objectives.
+#' A Framework holds a master objectives schema (all objectives), a modified
+#' objectives schema filtered to the currently selected objectives, a master
+#' indicator bank (all indicators), a modified indicator bank filtered to
+#' selected objective codes, a master SVG diagram representing the full
+#' conceptual framework, and an adjusted SVG diagram derived from the master
+#' and trimmed to the selected objectives.
 #'
 #' Subclasses are responsible for loading domain-specific master schemas and
 #' master SVG diagrams.  Use \code{\link{ANAFramework}} for the ANA
@@ -74,13 +75,27 @@
 Framework <- R6::R6Class(
   "Framework",
   public = list(
-    #' @field master_schema Data frame containing the full reference schema with
-    #'   all available objectives and indicators.
-    master_schema = NULL,
+    #' @field master_objectives_schema Data frame containing the full reference
+    #'   schema with all available objectives.
+    master_objectives_schema = NULL,
 
-    #' @field adjusted_schema Data frame derived from \code{master_schema} and
-    #'   filtered to the currently selected objectives.
-    adjusted_schema = NULL,
+    #' @field master_indicator_bank Data frame containing the full indicator
+    #'   bank with all available indicators and their associated metadata,
+    #'   including threshold columns.  Loaded separately from
+    #'   \code{master_objectives_schema}.
+    master_indicator_bank = NULL,
+
+    #' @field modified_objectives_schema Data frame derived from
+    #'   \code{master_objectives_schema} and filtered to the currently selected
+    #'   objectives.
+    modified_objectives_schema = NULL,
+
+    #' @field modified_indicator_bank Data frame derived from
+    #'   \code{master_indicator_bank} and filtered to the currently selected
+    #'   objective codes.  Initialised to the same value as
+    #'   \code{master_indicator_bank} on construction and updated by
+    #'   \code{modify_indicator_bank()}.
+    modified_indicator_bank = NULL,
 
     #' @field master_svg Character string with the full SVG diagram for the
     #'   conceptual framework.  Can be set with \code{set_master_svg()}.
@@ -103,7 +118,7 @@ Framework <- R6::R6Class(
     secondary_objectives = NULL,
 
     #' @field master_indicator_codes Named list of tool type and
-    #'   \code{indicator_code} values derived from \code{adjusted_schema}.
+    #'   \code{indicator_code} values derived from \code{modified_objectives_schema}.
     #'   Updated automatically by \code{modify_adjusted_schema()}.
     master_indicator_codes = NULL,
 
@@ -124,8 +139,10 @@ Framework <- R6::R6Class(
     #' @return A new Framework object.
     initialize = function() {
       phr_try({
-        self$master_schema             <- NULL
-        self$adjusted_schema           <- NULL
+        self$master_objectives_schema  <- NULL
+        self$master_indicator_bank     <- NULL
+        self$modified_objectives_schema <- NULL
+        self$modified_indicator_bank   <- NULL
         self$master_svg                <- NULL
         self$adjusted_svg              <- NULL
         self$primary_objectives        <- NULL
@@ -179,10 +196,10 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Set the master reference schema.
+    #' @description Set the master reference schema (objectives).
     #'
-    #' Validates and stores a data frame as the master schema.  The data frame
-    #' must contain at minimum the columns required by
+    #' Validates and stores a data frame as the master objectives schema.  The
+    #' data frame must contain at minimum the columns required by
     #' \code{\link{validate_objective_schema}}: \code{sector},
     #' \code{pillar}, \code{sub_pillar}, \code{short_objective}, and
     #' \code{text_objective}.
@@ -192,9 +209,9 @@ Framework <- R6::R6Class(
     set_master_schema = function(schema) {
       phr_try({
         validate_objective_schema(schema, soft = FALSE)
-        self$master_schema <- as.data.frame(schema, stringsAsFactors = FALSE)
+        self$master_objectives_schema <- as.data.frame(schema, stringsAsFactors = FALSE)
         phr_message(
-          phr_txt("Master schema set ({nrow(self$master_schema)} rows)."),
+          phr_txt("Master objectives schema set ({nrow(self$master_objectives_schema)} rows)."),
           origin = "Framework$set_master_schema"
         )
       }, on_error = "abort", origin = "Framework$set_master_schema")
@@ -244,7 +261,7 @@ Framework <- R6::R6Class(
     #'     \code{secondary_objectives}.
     #' }
     #'
-    #' When \code{master_svg} or \code{master_schema} is \code{NULL} the
+    #' \code{master_svg} and \code{master_objectives_schema} is \code{NULL} the
     #' method issues a warning and returns without modifying \code{adjusted_svg}.
     #'
     #' @param primary_objective_codes Numeric vector of primary objective codes
@@ -265,19 +282,19 @@ Framework <- R6::R6Class(
           return(invisible(self))
         }
 
-        if (is.null(self$master_schema) || !is.data.frame(self$master_schema) ||
-            nrow(self$master_schema) == 0) {
+        if (is.null(self$master_objectives_schema) || !is.data.frame(self$master_objectives_schema) ||
+            nrow(self$master_objectives_schema) == 0) {
           phr_warning(
-            message = phr_txt("master_schema is not set; skipping modify_adjusted_svg()."),
+            message = phr_txt("master_objectives_schema is not set; skipping modify_adjusted_svg()."),
             origin  = "Framework$modify_adjusted_svg"
           )
           return(invisible(self))
         }
 
         phr_assert(
-          "objective_code" %in% names(self$master_schema),
+          "objective_code" %in% names(self$master_objectives_schema),
           message = phr_txt(
-            "master_schema must contain an 'objective_code' column for modify_adjusted_svg()."
+            "master_objectives_schema must contain an 'objective_code' column for modify_adjusted_svg()."
           ),
           origin = "Framework$modify_adjusted_svg"
         )
@@ -298,14 +315,14 @@ Framework <- R6::R6Class(
         # authoritative source and does not rely on sub_pillar column values.
         svg_code_map <- .build_code_svg_map(svg)
 
-        # Fallback lookup: derive objective_code -> sub_pillar from master_schema.
+        # Fallback lookup: derive objective_code -> sub_pillar from master_objectives_schema.
         # Used only for codes whose SVG groups do not carry embedded code labels
         # (e.g. minimal test-fixture SVGs where group ids equal sub_pillar values).
         schema_code_map <- list()
-        if ("sub_pillar" %in% names(self$master_schema)) {
-          for (i in seq_len(nrow(self$master_schema))) {
-            code <- self$master_schema$objective_code[[i]]
-            sp   <- self$master_schema$sub_pillar[[i]]
+        if ("sub_pillar" %in% names(self$master_objectives_schema)) {
+          for (i in seq_len(nrow(self$master_objectives_schema))) {
+            code <- self$master_objectives_schema$objective_code[[i]]
+            sp   <- self$master_objectives_schema$sub_pillar[[i]]
             if (!is.na(code) && !is.na(sp) && nzchar(as.character(sp))) {
               code_str <- as.character(as.integer(code))
               if (is.null(schema_code_map[[code_str]])) {
@@ -425,21 +442,22 @@ Framework <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Filter the master schema to the specified objective codes and
-    #'   store the result in \code{adjusted_schema}.
+    #' @description Filter the master objectives schema to the specified
+    #'   objective codes and store the result in \code{modified_objectives_schema}.
     #'
-    #' Filters \code{master_schema} to retain matching rows and stores the result
-    #' as \code{adjusted_schema}.  The column used for matching is determined
-    #' automatically: if \code{master_schema} contains an \code{objective_code}
-    #' column, filtering is done on that column (useful for \code{ANAFramework}
-    #' which uses numeric objective codes); otherwise \code{short_objective} is
-    #' used.  When \code{objective_codes} is \code{NULL} or an empty vector the
-    #' method first checks whether \code{primary_objectives} or
-    #' \code{secondary_objectives} are set on the Framework; if either is set
-    #' their combined unique codes are used as the filter.  Only if both are
-    #' \code{NULL} does the method fall back to retaining all rows from
-    #' \code{master_schema}.  Also updates \code{master_indicator_codes} from
-    #' the resulting \code{adjusted_schema}.
+    #' Filters \code{master_objectives_schema} to retain matching rows and
+    #' stores the result as \code{modified_objectives_schema}.  The column used
+    #' for matching is determined automatically: if \code{master_objectives_schema}
+    #' contains an \code{objective_code} column, filtering is done on that column
+    #' (useful for \code{ANAFramework} which uses numeric objective codes);
+    #' otherwise \code{short_objective} is used.  When \code{objective_codes} is
+    #' \code{NULL} or an empty vector the method first checks whether
+    #' \code{primary_objectives} or \code{secondary_objectives} are set on the
+    #' Framework; if either is set their combined unique codes are used as the
+    #' filter.  Only if both are \code{NULL} does the method fall back to
+    #' retaining all rows from \code{master_objectives_schema}.  Also updates
+    #' \code{master_indicator_codes} from the resulting
+    #' \code{modified_objectives_schema}.
     #'
     #' @param objective_codes Character or numeric vector (or list) of objective
     #'   code values to retain.  The type should match the filter column:
@@ -450,14 +468,14 @@ Framework <- R6::R6Class(
     modify_adjusted_schema = function(objective_codes = NULL) {
       phr_try({
         phr_assert(
-          !is.null(self$master_schema) && is.data.frame(self$master_schema) &&
-            nrow(self$master_schema) > 0,
-          message = phr_txt("master_schema must be set before calling modify_adjusted_schema()."),
+          !is.null(self$master_objectives_schema) && is.data.frame(self$master_objectives_schema) &&
+            nrow(self$master_objectives_schema) > 0,
+          message = phr_txt("master_objectives_schema must be set before calling modify_adjusted_schema()."),
           origin  = "Framework$modify_adjusted_schema"
         )
 
         # Determine which column to filter on
-        filter_col <- if ("objective_code" %in% names(self$master_schema)) {
+        filter_col <- if ("objective_code" %in% names(self$master_objectives_schema)) {
           "objective_code"
         } else {
           "short_objective"
@@ -470,28 +488,92 @@ Framework <- R6::R6Class(
           if (!is.null(combined) && length(combined) > 0) {
             objective_codes <- unique(combined)
           } else {
-            objective_codes <- unique(self$master_schema[[filter_col]])
+            objective_codes <- unique(self$master_objectives_schema[[filter_col]])
           }
         } else {
           objective_codes <- unlist(objective_codes)
         }
 
-        self$adjusted_schema <- self$master_schema[
-          self$master_schema[[filter_col]] %in% objective_codes, ,
+        self$modified_objectives_schema <- self$master_objectives_schema[
+          self$master_objectives_schema[[filter_col]] %in% objective_codes, ,
           drop = FALSE
         ]
 
-        # Update master_indicator_codes from the adjusted_schema
+        # Update master_indicator_codes from the modified_objectives_schema
         private$.refresh_master_indicator_codes()
         private$touch()
 
         phr_message(
           phr_txt(
-            "Adjusted schema modified: {nrow(self$adjusted_schema)} of {nrow(self$master_schema)} rows selected."
+            "Modified objectives schema updated: {nrow(self$modified_objectives_schema)} of {nrow(self$master_objectives_schema)} rows selected."
           ),
           origin = "Framework$modify_adjusted_schema"
         )
       }, on_error = "abort", origin = "Framework$modify_adjusted_schema")
+      invisible(self)
+    },
+
+    #' @description Filter the master indicator bank to the specified objective
+    #'   codes and store the result in \code{modified_indicator_bank}.
+    #'
+    #' Filters \code{master_indicator_bank} to retain only rows whose
+    #' \code{objective_code} column matches one of the supplied codes, and
+    #' stores the result as \code{modified_indicator_bank}.  When
+    #' \code{objective_codes} is \code{NULL} or an empty vector the full
+    #' \code{master_indicator_bank} is copied to \code{modified_indicator_bank}
+    #' (i.e. no filtering).  The method silently returns without modifying
+    #' \code{modified_indicator_bank} when \code{master_indicator_bank} is
+    #' \code{NULL} or does not contain an \code{objective_code} column.
+    #'
+    #' @param objective_codes Numeric or character vector (or list) of objective
+    #'   codes to filter by.  Pass \code{NULL} (the default) to reset
+    #'   \code{modified_indicator_bank} to the full master.
+    #' @return Invisibly returns \code{self} for method chaining.
+    modify_indicator_bank = function(objective_codes = NULL) {
+      phr_try({
+        if (is.null(self$master_indicator_bank) ||
+            !is.data.frame(self$master_indicator_bank)) {
+          phr_warning(
+            message = phr_txt("master_indicator_bank is not set; skipping modify_indicator_bank()."),
+            origin  = "Framework$modify_indicator_bank"
+          )
+          return(invisible(self))
+        }
+
+        if (is.null(objective_codes) || length(objective_codes) == 0) {
+          self$modified_indicator_bank <- self$master_indicator_bank
+          phr_message(
+            phr_txt(
+              "Modified indicator bank reset to full master ({nrow(self$master_indicator_bank)} rows)."
+            ),
+            origin = "Framework$modify_indicator_bank"
+          )
+          return(invisible(self))
+        }
+
+        if (!"objective_code" %in% names(self$master_indicator_bank)) {
+          phr_warning(
+            message = phr_txt(
+              "master_indicator_bank does not contain an 'objective_code' column; skipping modify_indicator_bank()."
+            ),
+            origin = "Framework$modify_indicator_bank"
+          )
+          return(invisible(self))
+        }
+
+        codes <- unlist(objective_codes)
+        self$modified_indicator_bank <- self$master_indicator_bank[
+          self$master_indicator_bank[["objective_code"]] %in% codes, ,
+          drop = FALSE
+        ]
+        private$touch()
+        phr_message(
+          phr_txt(
+            "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
+          ),
+          origin = "Framework$modify_indicator_bank"
+        )
+      }, on_error = "abort", origin = "Framework$modify_indicator_bank")
       invisible(self)
     }
   ),
@@ -503,17 +585,17 @@ Framework <- R6::R6Class(
       invisible(NULL)
     },
 
-    # Rebuild master_indicator_codes from the current adjusted_schema.
+    # Rebuild master_indicator_codes from the current modified_objectives_schema.
     .refresh_master_indicator_codes = function() {
-      if (!is.null(self$adjusted_schema) &&
-          is.data.frame(self$adjusted_schema) &&
-          "indicator_code" %in% names(self$adjusted_schema)) {
-        tool_type_col <- if ("tool_type" %in% names(self$adjusted_schema)) {
-          as.character(self$adjusted_schema[["tool_type"]])
+      if (!is.null(self$modified_objectives_schema) &&
+          is.data.frame(self$modified_objectives_schema) &&
+          "indicator_code" %in% names(self$modified_objectives_schema)) {
+        tool_type_col <- if ("tool_type" %in% names(self$modified_objectives_schema)) {
+          as.character(self$modified_objectives_schema[["tool_type"]])
         } else {
-          rep(NA_character_, nrow(self$adjusted_schema))
+          rep(NA_character_, nrow(self$modified_objectives_schema))
         }
-        ind_codes <- as.character(self$adjusted_schema[["indicator_code"]])
+        ind_codes <- as.character(self$modified_objectives_schema[["indicator_code"]])
         keep <- !is.na(ind_codes) & nzchar(ind_codes)
         self$master_indicator_codes <- data.frame(
           tool_type      = tool_type_col[keep],

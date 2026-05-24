@@ -542,10 +542,10 @@ print_protocol_summary <- function(protocol) {
 
     n_tools <- length(protocol$tools)
     n_objectives <- if (!is.null(protocol$framework) &&
-                        !is.null(protocol$framework$adjusted_schema) &&
-                        is.data.frame(protocol$framework$adjusted_schema) &&
-                        "objective_code" %in% names(protocol$framework$adjusted_schema)) {
-      length(unique(stats::na.omit(protocol$framework$adjusted_schema$objective_code)))
+                        !is.null(protocol$framework$modified_objectives_schema) &&
+                        is.data.frame(protocol$framework$modified_objectives_schema) &&
+                        "objective_code" %in% names(protocol$framework$modified_objectives_schema)) {
+      length(unique(stats::na.omit(protocol$framework$modified_objectives_schema$objective_code)))
     } else {
       0L
     }

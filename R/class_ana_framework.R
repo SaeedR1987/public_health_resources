@@ -5,13 +5,17 @@
 #' Assessment) conceptual framework.  On initialisation the class automatically
 #' loads:
 #' \itemize{
-#'   \item the bundled \code{reference.xlsx} as \code{master_schema};
+#'   \item the bundled \code{reference_objectives.xlsx} as
+#'     \code{master_objectives_schema};
+#'   \item the bundled \code{reference_indicator_bank.xlsx} as
+#'     \code{master_indicator_bank} (and \code{modified_indicator_bank});
 #'   \item the bundled \code{ana_framework.svg} as \code{master_svg}.
 #' }
 #'
-#' Call \code{modify_adjusted_schema()} with
-#' a vector of objective codes to filter the schema, and then
-#' \code{modify_adjusted_svg()} to produce a highlighted SVG.
+#' Call \code{modify_adjusted_schema()} with a vector of objective codes to
+#' filter \code{master_objectives_schema} into \code{modified_objectives_schema},
+#' and \code{modify_indicator_bank()} to filter the indicator bank.
+#' Call \code{modify_adjusted_svg()} to produce a highlighted SVG.
 #'
 #' @importFrom R6 R6Class
 #' @export
@@ -22,33 +26,61 @@ ANAFramework <- R6::R6Class(
     #' @description
     #' Creates a new ANAFramework object.
     #'
-    #' The bundled \code{reference.xlsx} is loaded as \code{master_schema} and
+    #' The bundled \code{reference_objectives.xlsx} is loaded as
+    #' \code{master_objectives_schema} and \code{reference_indicator_bank.xlsx}
+    #' is loaded as both \code{master_indicator_bank} and
+    #' \code{modified_indicator_bank}.  All are stored as separate fields.
     #' \code{ana_framework.svg} is loaded as \code{master_svg}.  Warnings are
-    #' issued if either file cannot be found or read.
+    #' issued if any file cannot be found or read.
     #'
     #' @return A new ANAFramework object.
     initialize = function() {
       super$initialize()
 
-      # ---- Load master schema from reference.xlsx ----
+      # ---- Load master objectives schema from reference_objectives.xlsx ----
       phr_try({
-        schema <- load_objective_schema()
-        if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0) {
-          self$master_schema <- schema
+        objectives <- load_objective_schema()
+        if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
+          self$master_objectives_schema <- objectives
           phr_message(
             phr_txt(
-              "ANAFramework: master schema loaded ({nrow(schema)} rows)."
+              "ANAFramework: master objectives schema loaded ({nrow(objectives)} rows)."
             ),
             origin = "ANAFramework$initialize"
           )
         } else {
           phr_warning(
             message = phr_txt(
-              "ANAFramework: reference.xlsx could not be loaded; master_schema is NULL."
+              "ANAFramework: reference_objectives.xlsx could not be loaded; master_objectives_schema is NULL."
             ),
             origin = "ANAFramework$initialize",
             hint   = phr_txt(
-              "Ensure reference.xlsx is present in the package resources folder."
+              "Ensure reference_objectives.xlsx is present in the package resources folder."
+            )
+          )
+        }
+      }, on_error = "warn", origin = "ANAFramework$initialize")
+
+      # ---- Load indicator bank from reference_indicator_bank.xlsx ----
+      phr_try({
+        indicators <- load_indicator_bank()
+        if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
+          self$master_indicator_bank   <- indicators
+          self$modified_indicator_bank <- indicators
+          phr_message(
+            phr_txt(
+              "ANAFramework: indicator bank loaded ({nrow(indicators)} rows)."
+            ),
+            origin = "ANAFramework$initialize"
+          )
+        } else {
+          phr_warning(
+            message = phr_txt(
+              "ANAFramework: reference_indicator_bank.xlsx could not be loaded; master_indicator_bank is NULL."
+            ),
+            origin = "ANAFramework$initialize",
+            hint   = phr_txt(
+              "Ensure reference_indicator_bank.xlsx is present in the package resources folder."
             )
           )
         }
