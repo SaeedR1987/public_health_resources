@@ -5,9 +5,9 @@
 #' Assessment) conceptual framework.  On initialisation the class automatically
 #' loads:
 #' \itemize{
-#'   \item the bundled \code{reference_objectives.xlsx} and
-#'     \code{reference_indicator_bank.xlsx} (merged on \code{objective_code})
-#'     as \code{master_schema};
+#'   \item the bundled \code{reference_objectives.xlsx} as \code{master_schema};
+#'   \item the bundled \code{reference_indicator_bank.xlsx} as
+#'     \code{indicator_bank};
 #'   \item the bundled \code{ana_framework.svg} as \code{master_svg}.
 #' }
 #'
@@ -24,9 +24,9 @@ ANAFramework <- R6::R6Class(
     #' @description
     #' Creates a new ANAFramework object.
     #'
-    #' The bundled \code{reference_objectives.xlsx} and
-    #' \code{reference_indicator_bank.xlsx} are loaded and merged on
-    #' \code{objective_code} to form \code{master_schema}.
+    #' The bundled \code{reference_objectives.xlsx} is loaded as
+    #' \code{master_schema} and \code{reference_indicator_bank.xlsx} is loaded
+    #' as \code{indicator_bank}.  Both are stored as separate fields.
     #' \code{ana_framework.svg} is loaded as \code{master_svg}.  Warnings are
     #' issued if any file cannot be found or read.
     #'
@@ -34,33 +34,14 @@ ANAFramework <- R6::R6Class(
     initialize = function() {
       super$initialize()
 
-      # ---- Load master schema from reference_objectives.xlsx and
-      #      reference_indicator_bank.xlsx, then merge on objective_code ----
+      # ---- Load master schema (objectives) from reference_objectives.xlsx ----
       phr_try({
         objectives <- load_objective_schema()
-        indicators <- load_indicator_bank()
-
         if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
-          if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
-            # Left-join objectives with indicators so every objective is retained
-            # even if it has no indicators yet, and each indicator row carries
-            # the full objective-level metadata.  Suffixes are applied to any
-            # column names that appear in both data frames (other than the join
-            # key) to prevent silent data loss or ambiguous column names.
-            schema <- merge(
-              objectives, indicators,
-              by        = "objective_code",
-              all.x     = TRUE,
-              sort      = FALSE,
-              suffixes  = c("_obj", "_ind")
-            )
-          } else {
-            schema <- objectives
-          }
-          self$master_schema <- schema
+          self$master_schema <- objectives
           phr_message(
             phr_txt(
-              "ANAFramework: master schema loaded ({nrow(schema)} rows)."
+              "ANAFramework: master schema loaded ({nrow(objectives)} rows)."
             ),
             origin = "ANAFramework$initialize"
           )
@@ -72,6 +53,30 @@ ANAFramework <- R6::R6Class(
             origin = "ANAFramework$initialize",
             hint   = phr_txt(
               "Ensure reference_objectives.xlsx is present in the package resources folder."
+            )
+          )
+        }
+      }, on_error = "warn", origin = "ANAFramework$initialize")
+
+      # ---- Load indicator bank from reference_indicator_bank.xlsx ----
+      phr_try({
+        indicators <- load_indicator_bank()
+        if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
+          self$indicator_bank <- indicators
+          phr_message(
+            phr_txt(
+              "ANAFramework: indicator bank loaded ({nrow(indicators)} rows)."
+            ),
+            origin = "ANAFramework$initialize"
+          )
+        } else {
+          phr_warning(
+            message = phr_txt(
+              "ANAFramework: reference_indicator_bank.xlsx could not be loaded; indicator_bank is NULL."
+            ),
+            origin = "ANAFramework$initialize",
+            hint   = phr_txt(
+              "Ensure reference_indicator_bank.xlsx is present in the package resources folder."
             )
           )
         }

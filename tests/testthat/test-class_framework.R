@@ -1,6 +1,7 @@
 test_that("Framework initializes with NULL fields", {
   fw <- Framework$new()
   expect_null(fw$master_schema)
+  expect_null(fw$indicator_bank)
   expect_null(fw$adjusted_schema)
   expect_null(fw$master_svg)
   expect_null(fw$adjusted_svg)
@@ -176,6 +177,19 @@ test_that("ANAFramework initializes with master_schema from reference_objectives
   af <- ANAFramework$new()
   expect_true(is.data.frame(af$master_schema))
   expect_gt(nrow(af$master_schema), 0)
+})
+
+test_that("ANAFramework initializes with indicator_bank from reference_indicator_bank.xlsx", {
+  skip_if_not(
+    (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
+       file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
+      (file.exists(system.file("resources", "reference_indicator_bank.xlsx", package = "phr")) ||
+         file.exists(file.path("resources", "reference_indicator_bank.xlsx"))),
+    "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
+  )
+  af <- ANAFramework$new()
+  expect_true(is.data.frame(af$indicator_bank))
+  expect_gt(nrow(af$indicator_bank), 0)
 })
 
 test_that("ANAFramework inherits Framework methods", {

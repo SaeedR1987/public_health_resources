@@ -75,8 +75,13 @@ Framework <- R6::R6Class(
   "Framework",
   public = list(
     #' @field master_schema Data frame containing the full reference schema with
-    #'   all available objectives and indicators.
+    #'   all available objectives.
     master_schema = NULL,
+
+    #' @field indicator_bank Data frame containing the full indicator bank with
+    #'   all available indicators and their associated metadata, including
+    #'   threshold columns.  Loaded separately from \code{master_schema}.
+    indicator_bank = NULL,
 
     #' @field adjusted_schema Data frame derived from \code{master_schema} and
     #'   filtered to the currently selected objectives.
@@ -125,6 +130,7 @@ Framework <- R6::R6Class(
     initialize = function() {
       phr_try({
         self$master_schema             <- NULL
+        self$indicator_bank            <- NULL
         self$adjusted_schema           <- NULL
         self$master_svg                <- NULL
         self$adjusted_svg              <- NULL

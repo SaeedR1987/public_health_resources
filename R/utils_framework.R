@@ -49,6 +49,7 @@ restore_framework <- function(framework_data) {
 
     # Restore fields; prefer the exported values over the defaults loaded on init.
     if (!is.null(framework_data$master_schema))        fw$master_schema        <- framework_data$master_schema
+    if (!is.null(framework_data$indicator_bank))       fw$indicator_bank       <- framework_data$indicator_bank
     if (!is.null(framework_data$adjusted_schema))      fw$adjusted_schema      <- framework_data$adjusted_schema
     if (!is.null(framework_data$master_svg))           fw$master_svg           <- framework_data$master_svg
     if (!is.null(framework_data$adjusted_svg))         fw$adjusted_svg         <- framework_data$adjusted_svg
