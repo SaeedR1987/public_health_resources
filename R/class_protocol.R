@@ -290,7 +290,7 @@ Protocol <- R6::R6Class(
     #'   schema.
     #'
     #' @param type Character. One of \code{"master"} (default) or
-    #'   \code{"adjusted"}.  Passed to \code{get_schema()}.
+    #'   \code{"adjusted"} indicating which framework schema to read.
     #' @return Character vector of unique indicator codes.  Empty character
     #'   vector when none are found.
     get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
