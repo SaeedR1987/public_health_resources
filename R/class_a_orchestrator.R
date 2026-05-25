@@ -10,7 +10,7 @@ Orchestrator <- R6::R6Class(
   public = list(
     #' @field metadata List containing orchestration metadata.
     metadata = list(
-      created_date = NULL,
+      created_datetime = NULL,
       modified_datetime = NULL
     ),
 
@@ -18,7 +18,7 @@ Orchestrator <- R6::R6Class(
     #' Creates a new Orchestrator object.
     #' @return A new Orchestrator object.
     initialize = function() {
-      self$metadata$created_date <- Sys.time()
+      self$metadata$created_datetime <- Sys.time()
       self$metadata$modified_datetime <- Sys.time()
       invisible(self)
     },
