@@ -887,6 +887,37 @@ test_that("Framework$modify_adjusted_schema(NULL) falls back to all rows when no
   expect_equal(nrow(fw$modified_objectives_schema), 2)
 })
 
+test_that("Framework set_primary_indicators and set_secondary_indicators accept vectors/lists", {
+  fw <- Framework$new()
+  fw$set_primary_indicators(c("1001", "1002"))
+  fw$set_secondary_indicators(list("2001", "2002"))
+
+  expect_equal(fw$primary_indicator_codes, c("1001", "1002"))
+  expect_equal(fw$secondary_indicator_codes, c("2001", "2002"))
+})
+
+test_that("Framework builds modified primary/secondary indicator caches from adjusted schema", {
+  fw <- Framework$new()
+  fw$set_master_schema(data.frame(
+    sector = "Health",
+    pillar = "P1",
+    sub_pillar = "SP1",
+    short_objective = c("H1", "H2"),
+    text_objective = c("Obj 1", "Obj 2"),
+    objective_code = c(101L, 102L),
+    indicator_code = c("1001", "2001"),
+    stringsAsFactors = FALSE
+  ))
+  fw$set_primary_objectives(101L)
+  fw$set_secondary_objectives(102L)
+  fw$modify_adjusted_schema(c(101L, 102L))
+
+  expect_true(is.data.frame(fw$modified_primary_indicator_codes))
+  expect_true(is.data.frame(fw$modified_secondary_indicator_codes))
+  expect_equal(fw$modified_primary_indicator_codes$indicator_code, "1001")
+  expect_equal(fw$modified_secondary_indicator_codes$indicator_code, "2001")
+})
+
 # ---- Protocol renamed catalog fields ----
 
 test_that("Protocol initializes new framework_* catalog fields as empty lists", {
