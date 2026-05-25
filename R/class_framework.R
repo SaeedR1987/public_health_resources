@@ -117,14 +117,21 @@ Framework <- R6::R6Class(
     #'   SVG.
     secondary_objectives = NULL,
 
-    #' @field master_indicator_codes Named list of tool type and
-    #'   \code{indicator_code} values derived from \code{modified_objectives_schema}.
-    #'   Updated automatically by \code{modify_adjusted_schema()}.
-    master_indicator_codes = NULL,
+    #' @field primary_indicator_codes Character vector of primary indicator codes
+    #'   selected by the user.
+    primary_indicator_codes = NULL,
 
-    #' @field adjusted_indicator_codes Character vector of indicator codes
-    #'   currently selected by the user.
-    adjusted_indicator_codes = NULL,
+    #' @field secondary_indicator_codes Character vector of secondary indicator
+    #'   codes selected by the user.
+    secondary_indicator_codes = NULL,
+
+    #' @field modified_primary_indicator_codes Data frame of primary indicator
+    #'   codes derived from \code{modified_objectives_schema}.
+    modified_primary_indicator_codes = NULL,
+
+    #' @field modified_secondary_indicator_codes Data frame of secondary
+    #'   indicator codes derived from \code{modified_objectives_schema}.
+    modified_secondary_indicator_codes = NULL,
 
     #' @field metadata List containing framework metadata including
     #'   \code{created_datetime} and \code{modified_datetime}, both initialised
@@ -147,8 +154,10 @@ Framework <- R6::R6Class(
         self$adjusted_svg              <- NULL
         self$primary_objectives        <- NULL
         self$secondary_objectives      <- NULL
-        self$master_indicator_codes    <- NULL
-        self$adjusted_indicator_codes  <- NULL
+        self$primary_indicator_codes   <- NULL
+        self$secondary_indicator_codes <- NULL
+        self$modified_primary_indicator_codes   <- NULL
+        self$modified_secondary_indicator_codes <- NULL
         self$metadata$created_datetime  <- Sys.time()
         self$metadata$modified_datetime <- Sys.time()
         phr_message(phr_txt("Framework initialized."), origin = "Framework$initialize")
@@ -193,6 +202,50 @@ Framework <- R6::R6Class(
           origin = "Framework$set_secondary_objectives"
         )
       }, on_error = "abort", origin = "Framework$set_secondary_objectives")
+      invisible(self)
+    },
+
+    #' @description Set primary indicator codes for this framework.
+    #'
+    #' Stores a character vector of indicator codes as
+    #' \code{primary_indicator_codes} and updates modified primary indicator
+    #' caches from the current adjusted schema.
+    #'
+    #' @param indicator_codes Character/numeric vector (or list) of indicator
+    #'   codes.
+    #' @return Invisibly returns \code{self} for method chaining.
+    set_primary_indicators = function(indicator_codes) {
+      phr_try({
+        self$primary_indicator_codes <- as.character(unlist(indicator_codes))
+        private$.refresh_modified_indicator_codes()
+        private$touch()
+        phr_message(
+          phr_txt("Primary indicators set ({length(self$primary_indicator_codes)} code(s))."),
+          origin = "Framework$set_primary_indicators"
+        )
+      }, on_error = "abort", origin = "Framework$set_primary_indicators")
+      invisible(self)
+    },
+
+    #' @description Set secondary indicator codes for this framework.
+    #'
+    #' Stores a character vector of indicator codes as
+    #' \code{secondary_indicator_codes} and updates modified secondary indicator
+    #' caches from the current adjusted schema.
+    #'
+    #' @param indicator_codes Character/numeric vector (or list) of indicator
+    #'   codes.
+    #' @return Invisibly returns \code{self} for method chaining.
+    set_secondary_indicators = function(indicator_codes) {
+      phr_try({
+        self$secondary_indicator_codes <- as.character(unlist(indicator_codes))
+        private$.refresh_modified_indicator_codes()
+        private$touch()
+        phr_message(
+          phr_txt("Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."),
+          origin = "Framework$set_secondary_indicators"
+        )
+      }, on_error = "abort", origin = "Framework$set_secondary_indicators")
       invisible(self)
     },
 
@@ -456,7 +509,8 @@ Framework <- R6::R6Class(
     #' Framework; if either is set their combined unique codes are used as the
     #' filter.  Only if both are \code{NULL} does the method fall back to
     #' retaining all rows from \code{master_objectives_schema}.  Also updates
-    #' \code{master_indicator_codes} from the resulting
+    #' \code{modified_primary_indicator_codes} and
+    #' \code{modified_secondary_indicator_codes} from the resulting
     #' \code{modified_objectives_schema}.
     #'
     #' @param objective_codes Character or numeric vector (or list) of objective
@@ -499,8 +553,8 @@ Framework <- R6::R6Class(
           drop = FALSE
         ]
 
-        # Update master_indicator_codes from the modified_objectives_schema
-        private$.refresh_master_indicator_codes()
+        # Update modified indicator code caches from the modified_objectives_schema
+        private$.refresh_modified_indicator_codes()
         private$touch()
 
         phr_message(
@@ -585,25 +639,40 @@ Framework <- R6::R6Class(
       invisible(NULL)
     },
 
-    # Rebuild master_indicator_codes from the current modified_objectives_schema.
-    .refresh_master_indicator_codes = function() {
+    # Rebuild modified indicator code fields from the current
+    # modified_objectives_schema.
+    .refresh_modified_indicator_codes = function() {
       if (!is.null(self$modified_objectives_schema) &&
           is.data.frame(self$modified_objectives_schema) &&
           "indicator_code" %in% names(self$modified_objectives_schema)) {
-        tool_type_col <- if ("tool_type" %in% names(self$modified_objectives_schema)) {
-          as.character(self$modified_objectives_schema[["tool_type"]])
-        } else {
-          rep(NA_character_, nrow(self$modified_objectives_schema))
+        schema <- self$modified_objectives_schema
+        code_col <- if ("objective_code" %in% names(schema)) "objective_code" else
+          if ("short_objective" %in% names(schema)) "short_objective" else NULL
+        ind_codes <- as.character(schema[["indicator_code"]])
+        valid_ind <- !is.na(ind_codes) & nzchar(ind_codes)
+
+        build_indicator_df <- function(objective_codes) {
+          if (is.null(code_col) || is.null(objective_codes) || length(objective_codes) == 0L) {
+            return(NULL)
+          }
+          objective_codes <- as.character(unique(unlist(objective_codes)))
+          obj_vals <- as.character(schema[[code_col]])
+          keep <- valid_ind & obj_vals %in% objective_codes
+          if (!any(keep)) return(NULL)
+          out <- data.frame(
+            indicator_code = ind_codes[keep],
+            stringsAsFactors = FALSE
+          )
+          unique(out)
         }
-        ind_codes <- as.character(self$modified_objectives_schema[["indicator_code"]])
-        keep <- !is.na(ind_codes) & nzchar(ind_codes)
-        self$master_indicator_codes <- data.frame(
-          tool_type      = tool_type_col[keep],
-          indicator_code = ind_codes[keep],
-          stringsAsFactors = FALSE
-        )
+
+        self$modified_primary_indicator_codes <-
+          build_indicator_df(self$primary_objectives)
+        self$modified_secondary_indicator_codes <-
+          build_indicator_df(self$secondary_objectives)
       } else {
-        self$master_indicator_codes <- NULL
+        self$modified_primary_indicator_codes <- NULL
+        self$modified_secondary_indicator_codes <- NULL
       }
     }
   )

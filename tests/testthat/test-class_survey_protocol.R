@@ -841,11 +841,11 @@ test_that("Protocol sample_* accessors delegate to Sample and update metadata", 
   expect_equal(nrow(p$sample_get_sample_table()), 0L)
 })
 
-test_that("Protocol$framework_get_svg delegates to Framework$render_framework_svg", {
+test_that("Protocol$get_framework_svg delegates to Framework$render_framework_svg", {
   p <- Protocol$new()
   p$framework$set_master_svg('<svg><rect id="H1"/></svg>')
 
-  out <- p$framework_get_svg(type = "master")
+  out <- p$get_framework_svg(type = "master")
 
   if (requireNamespace("rsvg", quietly = TRUE) &&
       requireNamespace("grid", quietly = TRUE)) {

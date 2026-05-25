@@ -34,18 +34,18 @@ protocol$metadata
 
 View(protocol$framework$master_schema)
 
-protocol$framework_get_schema(type = "master")
+protocol$get_schema(type = "master")
 
-protocol$framework_get_svg(type = "master")
+protocol$get_framework_svg(type = "master")
 
-protocol$framework_set_primary_objectives(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
-protocol$framework_set_secondary_objectives(objective_codes = c(105, 107, 112))
+protocol$set_primary_objectives(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$set_secondary_objectives(objective_codes = c(105, 107, 112))
 
-protocol$framework_modify_schema(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
-protocol$framework_modify_svg()
+protocol$modify_schema(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$modify_svg()
 
-protocol$framework_get_svg(type = "adjusted")
-View(protocol$framework_get_schema(type = "adjusted"))
+protocol$get_framework_svg(type = "adjusted")
+View(protocol$get_schema(type = "adjusted"))
 
 # Test 3: Define Strata and Sample Sizes ####
 
@@ -170,11 +170,15 @@ head(protocol$tools$tool_household_iphra_v2$revised_settings)
 protocol$tools$tool_household_iphra_v2$change_default_language(language = "English")
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
-protocol$tool_filter_survey_by_indicator(tool_name = "tool_household_iphra_v2",
-                                         indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
+protocol$access_nested(
+  field = "tools",
+  name = "tool_household_iphra_v2",
+  member = "filter_survey_by_indicator",
+  indicator_codes = protocol$get_indicator_codes_from_schema(type = "adjusted")
+)
 
 
-View(protocol$tool_get_survey(tool_name = "tool_household_iphra_v2", survey_type = "revised"))
+View(protocol$access_nested(field = "tools", name = "tool_household_iphra_v2", member = "revised_survey"))
 
 View(protocol$tools$tool_household_iphra_v2$revised_survey)
 head(protocol$tools$tool_household_iphra_v2$revised_choices)
@@ -190,8 +194,12 @@ head(protocol$tools$tool_kii_community_iphra_v2$survey)
 head(protocol$tools$tool_kii_community_iphra_v2$choices)
 head(protocol$tools$tool_kii_community_iphra_v2$settings)
 
-protocol$tool_filter_survey_by_indicator(tool_name = "tool_kii_community_iphra_v2",
-                                         indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
+protocol$access_nested(
+  field = "tools",
+  name = "tool_kii_community_iphra_v2",
+  member = "filter_survey_by_indicator",
+  indicator_codes = protocol$get_indicator_codes_from_schema(type = "adjusted")
+)
 
 nrow(protocol$tools$tool_kii_community_iphra_v2$survey)
 nrow(protocol$tools$tool_kii_community_iphra_v2$revised_survey)
@@ -329,4 +337,3 @@ protocol$secondary_data <- list(
 
 # report_no_tools <- tempfile(fileext = ".docx")
 protocol$generate_reach_tor(output_file = "report_no_tools.docx")
-

@@ -14,6 +14,7 @@
 #' @export
 Protocol <- R6::R6Class(
   "Protocol",
+  inherit = Document,
   public = list(
     #' @field framework A \code{\link{Framework}} object (e.g.
     #'   \code{\link{ANAFramework}}) that holds the master and adjusted
@@ -146,6 +147,7 @@ Protocol <- R6::R6Class(
     initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
                           framework_type = "none") {
       phr_try({
+        super$initialize()
         valid_fw_types <- c("none", "ana")
         phr_assert(
           is.character(framework_type) && length(framework_type) == 1 &&
@@ -288,11 +290,11 @@ Protocol <- R6::R6Class(
     #'   schema.
     #'
     #' @param type Character. One of \code{"master"} (default) or
-    #'   \code{"adjusted"}.  Passed to \code{framework_get_schema()}.
+    #'   \code{"adjusted"}.  Passed to \code{get_schema()}.
     #' @return Character vector of unique indicator codes.  Empty character
     #'   vector when none are found.
-    framework_get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
-      schema <- self$framework_get_schema(type = match.arg(type))
+    get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
+      schema <- self$get_schema(type = match.arg(type))
       private$touch()
       if (is.data.frame(schema) && "indicator_code" %in% names(schema)) {
         codes <- as.character(schema$indicator_code)
@@ -307,9 +309,9 @@ Protocol <- R6::R6Class(
     #' @param indicator_codes Character vector of indicator codes to keep.
     #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
     #' @return Filtered data frame (zero rows when none match).
-    framework_get_schema_for_indicator_codes = function(indicator_codes,
-                                         type = c("master", "adjusted")) {
-      schema <- self$framework_get_schema(type = match.arg(type))
+    get_schema_for_indicator_codes = function(indicator_codes,
+                                              type = c("master", "adjusted")) {
+      schema <- self$get_schema(type = match.arg(type))
       if (!is.data.frame(schema) || nrow(schema) == 0 ||
           !"indicator_code" %in% names(schema)) {
         private$touch()
@@ -583,351 +585,87 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
-    # ── Framework delegation methods ───────────────────────────────────────
+    # ── Framework convenience methods ──────────────────────────────────────
 
     #' @description Set primary objectives on the attached Framework.
-    #'
-    #' Delegates to \code{self$framework$set_primary_objectives()} and then
-    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
-    #'
     #' @param objective_codes Numeric vector of primary objective codes.
     #' @return Invisibly returns \code{self} for method chaining.
-    framework_set_primary_objectives = function(objective_codes) {
-      phr_assert(
-        !is.null(self$framework) && inherits(self$framework, "Framework"),
-        message = phr_txt("No Framework is attached to this Protocol."),
-        origin  = "Protocol$framework_set_primary_objectives"
-      )
-      self$framework$set_primary_objectives(objective_codes)
-      self$sync_framework_catalog_fields
-      private$touch()
+    set_primary_objectives = function(objective_codes) {
+      self$access_nested("framework", member = "set_primary_objectives", objective_codes)
       invisible(self)
     },
 
     #' @description Set secondary objectives on the attached Framework.
-    #'
-    #' Delegates to \code{self$framework$set_secondary_objectives()} and then
-    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
-    #'
     #' @param objective_codes Numeric vector of secondary objective codes.
     #' @return Invisibly returns \code{self} for method chaining.
-    framework_set_secondary_objectives = function(objective_codes) {
-      phr_assert(
-        !is.null(self$framework) && inherits(self$framework, "Framework"),
-        message = phr_txt("No Framework is attached to this Protocol."),
-        origin  = "Protocol$framework_set_secondary_objectives"
-      )
-      self$framework$set_secondary_objectives(objective_codes)
-      self$sync_framework_catalog_fields
-      private$touch()
+    set_secondary_objectives = function(objective_codes) {
+      self$access_nested("framework", member = "set_secondary_objectives", objective_codes)
       invisible(self)
     },
 
-    #' @description Modify the adjusted SVG on the attached Framework.
-    #'
-    #' Delegates to \code{self$framework$modify_adjusted_svg()} and then
-    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
-    #'
-    #' @param primary_objective_codes Numeric vector of primary objective codes.
-    #'   When \code{NULL} (default) the Framework's \code{primary_objectives}
-    #'   field is used as a fallback.
-    #' @param secondary_objective_codes Numeric vector of secondary objective
-    #'   codes.  When \code{NULL} (default) the Framework's
-    #'   \code{secondary_objectives} field is used as a fallback.
-    #' @return Invisibly returns \code{self} for method chaining.
-    framework_modify_svg = function(primary_objective_codes = NULL,
-                                    secondary_objective_codes = NULL) {
-      phr_assert(
-        !is.null(self$framework) && inherits(self$framework, "Framework"),
-        message = phr_txt("No Framework is attached to this Protocol."),
-        origin  = "Protocol$framework_modify_svg"
-      )
-      self$framework$modify_adjusted_svg(
-        primary_objective_codes   = primary_objective_codes,
-        secondary_objective_codes = secondary_objective_codes
-      )
-      self$sync_framework_catalog_fields
-      private$touch()
+    #' @description Set primary indicator codes on the attached Framework.
+    #' @param indicator_codes Character/numeric vector (or list) of indicator
+    #'   codes.
+    #' @return Invisibly returns \code{self}.
+    set_primary_indicators = function(indicator_codes) {
+      self$access_nested("framework", member = "set_primary_indicators", indicator_codes)
+      invisible(self)
+    },
+
+    #' @description Set secondary indicator codes on the attached Framework.
+    #' @param indicator_codes Character/numeric vector (or list) of indicator
+    #'   codes.
+    #' @return Invisibly returns \code{self}.
+    set_secondary_indicators = function(indicator_codes) {
+      self$access_nested("framework", member = "set_secondary_indicators", indicator_codes)
       invisible(self)
     },
 
     #' @description Modify the adjusted schema on the attached Framework.
-    #'
-    #' Delegates to \code{self$framework$modify_adjusted_schema()} and then
-    #' syncs the Protocol catalog fields and updates the last-modified timestamp.
-    #'
-    #' @param objective_codes Character or numeric vector of objective codes to
-    #'   retain.  Pass \code{NULL} (the default) to use the Framework's
-    #'   \code{primary_objectives} and \code{secondary_objectives} if set,
-    #'   or all rows as a final fallback.
-    #' @return Invisibly returns \code{self} for method chaining.
-    framework_modify_schema = function(objective_codes = NULL) {
-      phr_assert(
-        !is.null(self$framework) && inherits(self$framework, "Framework"),
-        message = phr_txt("No Framework is attached to this Protocol."),
-        origin  = "Protocol$framework_modify_schema"
-      )
-      self$framework$modify_adjusted_schema(objective_codes)
-      self$sync_framework_catalog_fields
-      private$touch()
+    #' @param objective_codes Character or numeric vector of objective codes.
+    #' @return Invisibly returns \code{self}.
+    modify_schema = function(objective_codes = NULL) {
+      self$access_nested("framework", member = "modify_adjusted_schema", objective_codes)
       invisible(self)
     },
 
-    #' @description Retrieve a schema data frame directly from the attached
-    #'   Framework.
-    #'
-    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
-    #' @return Data frame of the requested schema, or an empty \code{data.frame()}
-    #'   when the Framework or the requested schema is absent.
-    framework_get_schema = function(type = c("master", "adjusted")) {
-      type <- match.arg(type)
-      phr_assert(
-        !is.null(self$framework) && inherits(self$framework, "Framework"),
-        message = phr_txt("No Framework is attached to this Protocol."),
-        origin  = "Protocol$framework_get_schema"
+    #' @description Modify the adjusted SVG on the attached Framework.
+    #' @param primary_objective_codes Numeric vector of primary objective codes.
+    #' @param secondary_objective_codes Numeric vector of secondary objective
+    #'   codes.
+    #' @return Invisibly returns \code{self}.
+    modify_svg = function(primary_objective_codes = NULL,
+                          secondary_objective_codes = NULL) {
+      self$access_nested(
+        "framework",
+        member = "modify_adjusted_svg",
+        primary_objective_codes = primary_objective_codes,
+        secondary_objective_codes = secondary_objective_codes
       )
-      schema <- if (type == "adjusted") {
-        self$framework$modified_objectives_schema
-      } else {
-        self$framework$master_objectives_schema
-      }
+      invisible(self)
+    },
+
+    #' @description Retrieve a schema data frame from the attached Framework.
+    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
+    #' @return Data frame of the requested schema.
+    get_schema = function(type = c("master", "adjusted")) {
+      type <- match.arg(type)
+      schema <- self$access_nested(
+        "framework",
+        member = if (type == "adjusted") "modified_objectives_schema" else "master_objectives_schema"
+      )
       if (!is.null(schema) && is.data.frame(schema)) {
         return(as.data.frame(schema, stringsAsFactors = FALSE))
       }
       data.frame()
     },
 
-    #' @description Render the Framework SVG directly from the attached Framework.
-    #'
+    #' @description Render framework SVG.
     #' @param type Character. \code{"master"} or \code{"adjusted"} (default).
-    #' @return Returns the result of \code{Framework$render_framework_svg()}.
-    framework_get_svg = function(type = c("adjusted", "master")) {
+    #' @return Result of \code{Framework$render_framework_svg()}.
+    get_framework_svg = function(type = c("adjusted", "master")) {
       type <- match.arg(type)
-      phr_assert(
-        !is.null(self$framework) && inherits(self$framework, "Framework"),
-        message = phr_txt("No Framework is attached to this Protocol."),
-        origin  = "Protocol$framework_get_svg"
-      )
-      self$framework$render_framework_svg(version = type)
-    },
-
-    #' @description Return a tool's name.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @return Character scalar.
-    tool_get_name = function(tool_name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_name"
-      )
-      out <- tool$get_name()
-      private$touch()
-      out
-    },
-
-    #' @description Return a tool's type.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @return Character scalar.
-    tool_get_type = function(tool_name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_type"
-      )
-      out <- tool$get_tool_type()
-      private$touch()
-      out
-    },
-
-    #' @description Set a tool's name.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param name Character. New tool name.
-    #' @return Invisibly returns \code{self}.
-    tool_set_name = function(tool_name, name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_set_name"
-      )
-      tool$set_name(name)
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Update a tool's default language.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param language Character. New default language.
-    #' @return Invisibly returns \code{self}.
-    tool_change_default_language = function(tool_name, language) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_change_default_language"
-      )
-      tool$change_default_language(language)
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Filter a tool survey by indicator codes.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param indicator_codes Character or numeric vector of indicator codes.
-    #' @return Invisibly returns \code{self}.
-    tool_filter_survey_by_indicator = function(tool_name, indicator_codes) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_filter_survey_by_indicator"
-      )
-      tool$filter_survey_by_indicator(indicator_codes)
-      self$sync_tool_indicator_catalog_fields
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Update a tool choice list.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param list_name Character. Name of the choice list to update.
-    #' @param new_choices Data frame of replacement choices.
-    #' @return Invisibly returns \code{self}.
-    tool_update_choice_list = function(tool_name, list_name, new_choices) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_update_choice_list"
-      )
-      tool$update_choice_list(list_name = list_name, new_choices = new_choices)
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Update a tool settings key.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param key Character. Settings key.
-    #' @param value New value for \code{key}.
-    #' @return Invisibly returns \code{self}.
-    tool_update_settings = function(tool_name, key, value) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_update_settings"
-      )
-      tool$update_settings(key = key, value = value)
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Return tool indicator codes from revised or master survey.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param survey_type Character. \code{"revised"} (default) or \code{"master"}.
-    #' @return Integer vector of indicator codes.
-    tool_get_indicator_codes = function(tool_name,
-                                        survey_type = c("revised", "master")) {
-      survey_type <- match.arg(survey_type)
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_indicator_codes"
-      )
-      out <- tool$get_indicator_codes(prefer_revised = identical(survey_type, "revised"))
-      private$touch()
-      out
-    },
-
-    #' @description Return selected indicators from a tool.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @return Character vector of selected indicators.
-    tool_get_selected_indicators = function(tool_name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_selected_indicators"
-      )
-      out <- tool$get_selected_indicators()
-      private$touch()
-      out
-    },
-
-    #' @description Set selected indicators for a tool.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param indicators Character vector of selected indicators.
-    #' @return Invisibly returns \code{self}.
-    tool_set_selected_indicators = function(tool_name, indicators) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_set_selected_indicators"
-      )
-      tool$set_selected_indicators(indicators)
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Return a tool survey sheet from revised or master data.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param survey_type Character. \code{"revised"} (default) or \code{"master"}.
-    #' @return Data frame.
-    tool_get_survey = function(tool_name, survey_type = c("revised", "master")) {
-      survey_type <- match.arg(survey_type)
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_survey"
-      )
-      out <- if (identical(survey_type, "revised")) {
-        tool$revised_survey
-      } else {
-        tool$survey
-      }
-      private$touch()
-      out
-    },
-
-    #' @description Return a tool choices sheet from revised or master data.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @param choices_type Character. \code{"revised"} (default) or \code{"master"}.
-    #' @return Data frame.
-    tool_get_choices = function(tool_name, choices_type = c("revised", "master")) {
-      choices_type <- match.arg(choices_type)
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_choices"
-      )
-      out <- if (identical(choices_type, "revised")) {
-        tool$revised_choices
-      } else {
-        tool$choices
-      }
-      private$touch()
-      out
-    },
-
-    #' @description Return validation errors for a tool.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @return List of validation errors.
-    tool_get_validation_errors = function(tool_name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_validation_errors"
-      )
-      out <- tool$get_validation_errors()
-      private$touch()
-      out
-    },
-
-    #' @description Validate a tool.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @return Logical scalar.
-    tool_validate = function(tool_name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_validate"
-      )
-      out <- tool$validate()
-      private$touch()
-      out
-    },
-
-    #' @description Return whether a tool is valid.
-    #' @param tool_name Character. Name/key of the tool in \code{self$tools}.
-    #' @return Logical scalar.
-    tool_get_is_valid = function(tool_name) {
-      tool <- private$get_tool_or_abort(
-        tool_name = tool_name,
-        origin = "Protocol$tool_get_is_valid"
-      )
-      out <- tool$is_valid()
-      private$touch()
-      out
+      self$access_nested("framework", member = "render_framework_svg", version = type)
     },
 
     #' @description Empty hook for generating a Word document report.
@@ -1013,27 +751,6 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
-    get_tool_or_abort = function(tool_name, origin) {
-      phr_assert(
-        is.character(tool_name) && length(tool_name) == 1 && nzchar(tool_name),
-        message = phr_txt("tool_name must be a non-empty character string."),
-        origin  = origin
-      )
-      phr_assert(
-        !is.null(self$tools) && !is.null(self$tools[[tool_name]]) &&
-          inherits(self$tools[[tool_name]], "Tool"),
-        message = phr_txt("Tool '{tool_name}' is not attached to this Protocol."),
-        origin  = origin
-      )
-      self$tools[[tool_name]]
-    },
-
-    # Update the modified_datetime timestamp.
-    touch = function() {
-      self$metadata$modified_datetime <- Sys.time()
-      invisible(NULL)
-    },
-
     build_objective_catalog = function(schema) {
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) return(list())
       code_col <- if ("objective_code" %in% names(schema)) "objective_code" else
@@ -1111,244 +828,6 @@ Protocol <- R6::R6Class(
         )
       }
       out
-    },
-
-    # Create an officer doc using the REACH TOR template when available, or blank.
-    create_base_doc = function(reference_docx = NULL) {
-      # Caller-supplied path takes highest priority
-      if (!is.null(reference_docx) && file.exists(reference_docx)) {
-        return(officer::read_docx(reference_docx))
-      }
-      # Try the REACH TOR-based template first
-      reach_path <- system.file("resources", "reach_tor_template.docx", package = "phr")
-      if (nzchar(reach_path)) {
-        return(officer::read_docx(reach_path))
-      }
-      # Fall back to the older protocol report template
-      sys_path <- system.file("resources", "protocol_report_template.docx", package = "phr")
-      if (nzchar(sys_path)) {
-        return(officer::read_docx(sys_path))
-      }
-      # No template found — use a blank Word document with default styles
-      officer::read_docx()
-    },
-
-    # Apply protocol schema handling in a predictable order.
-    apply_protocol_schema_sections = function(doc) {
-      schema <- self$protocol_schema
-      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
-        return(doc)
-      }
-      required_cols <- c("tag_name", "handling", "condition", "default_value")
-      if (!all(required_cols %in% names(schema))) {
-        return(doc)
-      }
-
-      handling_order <- c(
-        "row_delete", "replace", "input", "checkbox_replace",
-        "conditional_replace", "calculate", "table", "image"
-      )
-
-      for (handling in handling_order) {
-        schema_handling <- if ("handling" %in% names(schema) && !is.null(schema$handling)) {
-          as.character(schema$handling)
-        } else {
-          rep("", nrow(schema))
-        }
-        idx <- which(schema_handling == handling)
-        if (length(idx) == 0L) next
-        for (i in idx) {
-          row <- schema[i, required_cols, drop = FALSE]
-          doc <- switch(
-            handling,
-            replace             = private$handle_replace(doc, row),
-            input               = private$handle_input(doc, row),
-            calculate           = private$handle_calculate(doc, row),
-            checkbox_replace    = private$handle_checkbox_replace(doc, row),
-            row_delete          = private$handle_row_delete(doc, row),
-            table               = private$handle_table(doc, row),
-            image               = private$handle_image(doc, row),
-            conditional_replace = private$handle_conditional_replace(doc, row),
-            doc
-          )
-        }
-      }
-
-      doc
-    },
-
-    handle_replace = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      default_value <- as.character(row$default_value[[1L]] %||% "")
-      private$.replace(doc, tag, default_value)
-    },
-
-    handle_input = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      key <- sub("^@", "", tag)
-      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else ""
-      private$.replace(doc, tag, as.character(value %||% ""))
-    },
-
-    handle_calculate = function(doc, row) {
-      doc
-    },
-
-    handle_checkbox_replace = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      key <- sub("^@", "", tag)
-      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
-      private$.replace(doc, tag, if (isTRUE(value)) "X" else "\u25a1")
-    },
-
-    handle_row_delete = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      private$.replace(doc, tag, "")
-    },
-
-    handle_table = function(doc, row) {
-      doc
-    },
-
-    handle_image = function(doc, row) {
-      doc
-    },
-
-    handle_conditional_replace = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      default_value <- as.character(row$default_value[[1L]] %||% "")
-      key <- sub("^@", "", tag)
-      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
-      private$.replace(doc, tag, if (isTRUE(value)) default_value else "")
-    },
-
-    # Extract unique non-NA indicator names from an XLSForm survey data frame.
-    extract_indicators_from_survey = function(survey) {
-      if (!is.null(survey) && is.data.frame(survey) &&
-          nrow(survey) > 0 && "name" %in% names(survey)) {
-        unique(stats::na.omit(survey$name))
-      } else {
-        character(0)
-      }
-    },
-
-    # Load protocol schema metadata with a blank fallback.
-    .load_protocol_schema = function() {
-      required_cols <- c("tag_name", "handling", "condition", "default_value")
-      empty_schema <- as.data.frame(
-        setNames(replicate(length(required_cols), character(0), simplify = FALSE),
-                 required_cols),
-        stringsAsFactors = FALSE
-      )
-
-      schema_path <- tryCatch(
-        system.file("resources", "protocol_schema_blank.csv", package = "phr"),
-        error = function(e) ""
-      )
-      if (!nzchar(schema_path) || !file.exists(schema_path)) {
-        schema_path <- file.path("inst", "resources", "protocol_schema_blank.csv")
-      }
-      if (!file.exists(schema_path)) {
-        return(empty_schema)
-      }
-
-      schema <- tryCatch(
-        utils::read.csv(schema_path, stringsAsFactors = FALSE, na.strings = character(0)),
-        error = function(e) NULL
-      )
-      if (!is.data.frame(schema)) return(empty_schema)
-      for (nm in required_cols) {
-        if (!nm %in% names(schema)) schema[[nm]] <- character(nrow(schema))
-      }
-      schema[required_cols]
-    },
-
-    .replace = function(doc, old, new_val) {
-      if (!is.character(old) || length(old) != 1L || !nzchar(old)) {
-        return(doc)
-      }
-      private$._replace_across_runs(doc, old, as.character(new_val %||% ""))
-    },
-
-    ._replace_across_runs = function(doc, tag, new_val) {
-      if (!is.character(tag) || length(tag) != 1L || !nzchar(tag)) return(doc)
-      new_val <- as.character(new_val %||% "")
-      replacement_is_identity <- identical(tag, new_val)
-
-      body_xml <- officer::docx_body_xml(doc)
-      ns       <- xml2::xml_ns(body_xml)
-
-      paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
-      for (para in paras) {
-        repeat {
-          text_nodes <- xml2::xml_find_all(para, ".//w:t", ns = ns)
-          if (length(text_nodes) == 0L) break
-
-          texts    <- vapply(text_nodes, xml2::xml_text, character(1L))
-          combined <- paste(texts, collapse = "")
-          nc       <- nchar(combined)
-          if (nc == 0L || !grepl(tag, combined, fixed = TRUE)) break
-
-          node_idx <- rep(seq_along(texts), times = nchar(texts))
-
-          matches <- gregexpr(tag, combined, fixed = TRUE)[[1L]]
-          if (length(matches) == 1L && matches[1L] < 0L) break
-          tag_len <- nchar(tag)
-
-          match_start <- NA_integer_
-          for (m in as.integer(matches)) {
-            if (is.na(m) || m < 1L) next
-            end <- m + tag_len - 1L
-            left_char <- if (m > 1L) substr(combined, m - 1L, m - 1L) else ""
-            right_char <- if (end < nc) substr(combined, end + 1L, end + 1L) else ""
-            left_ok  <- !nzchar(left_char)  || !grepl("[A-Za-z0-9_.\\-]", left_char, perl = TRUE)
-            right_ok <- !nzchar(right_char) || !grepl("[A-Za-z0-9_.\\-]", right_char, perl = TRUE)
-            if (left_ok && right_ok) {
-              match_start <- m
-              break
-            }
-          }
-          if (is.na(match_start)) break
-
-          tag_start <- as.integer(match_start)
-          tag_end   <- tag_start + tag_len - 1L
-
-          new_texts <- character(length(text_nodes))
-
-          if (tag_start > 1L) {
-            pre_chars <- strsplit(substr(combined, 1L, tag_start - 1L), "", fixed = TRUE)[[1L]]
-            pre_runs  <- node_idx[seq_len(tag_start - 1L)]
-            for (j in seq_along(pre_chars)) {
-              new_texts[pre_runs[j]] <- paste0(new_texts[pre_runs[j]], pre_chars[j])
-            }
-          }
-
-          if (tag_start > length(node_idx)) {
-            phr_warning(
-              phr_txt("._replace_across_runs: tag_start ({tag_start}) exceeds node_idx length ({length(node_idx)}) for tag '{tag}'; skipping paragraph."),
-              origin = "Protocol$._replace_across_runs"
-            )
-            break
-          }
-          rep_run <- node_idx[[tag_start]]
-          new_texts[[rep_run]] <- paste0(new_texts[[rep_run]], new_val)
-
-          if (tag_end < nc) {
-            suf_chars <- strsplit(substr(combined, tag_end + 1L, nc), "", fixed = TRUE)[[1L]]
-            suf_runs  <- node_idx[seq(tag_end + 1L, nc)]
-            for (j in seq_along(suf_chars)) {
-              new_texts[[suf_runs[j]]] <- paste0(new_texts[[suf_runs[j]]], suf_chars[j])
-            }
-          }
-
-          for (i in seq_along(text_nodes)) {
-            xml2::xml_text(text_nodes[[i]]) <- new_texts[[i]]
-          }
-
-          if (replacement_is_identity) break
-        }
-      }
-      doc
     }
   )
 )

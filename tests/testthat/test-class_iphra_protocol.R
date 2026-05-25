@@ -174,7 +174,7 @@ test_that("Protocol touch updates modified_datetime via update_metadata", {
   expect_true(p$metadata$modified_datetime > t_before)
 })
 
-test_that("Protocol$framework_get_schema returns data frame from framework", {
+test_that("Protocol$get_schema returns data frame from framework", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -183,12 +183,12 @@ test_that("Protocol$framework_get_schema returns data frame from framework", {
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  schema <- p$framework_get_schema("master")
+  schema <- p$get_schema("master")
   expect_true(is.data.frame(schema))
   expect_true(nrow(schema) > 0)
 })
 
-test_that("Protocol$framework_get_indicator_codes_from_schema returns character vector", {
+test_that("Protocol$get_indicator_codes_from_schema returns character vector", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -197,7 +197,7 @@ test_that("Protocol$framework_get_indicator_codes_from_schema returns character 
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  codes <- p$framework_get_indicator_codes_from_schema("master")
+  codes <- p$get_indicator_codes_from_schema("master")
   expect_true(is.character(codes))
   expect_true(length(codes) > 0)
 })
@@ -231,7 +231,7 @@ test_that("Protocol$get_indicator_codes_from_tools returns character vector", {
   expect_true(is.character(codes))
 })
 
-test_that("Protocol$framework_get_schema_for_indicator_codes filters schema rows", {
+test_that("Protocol$get_schema_for_indicator_codes filters schema rows", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -240,10 +240,10 @@ test_that("Protocol$framework_get_schema_for_indicator_codes filters schema rows
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  all_codes <- p$framework_get_indicator_codes_from_schema("master")
+  all_codes <- p$get_indicator_codes_from_schema("master")
   if (length(all_codes) >= 2) {
     sub_codes <- all_codes[1:2]
-    filtered  <- p$framework_get_schema_for_indicator_codes(sub_codes)
+    filtered  <- p$get_schema_for_indicator_codes(sub_codes)
     expect_true(is.data.frame(filtered))
     expect_true(nrow(filtered) > 0)
     expect_true(all(as.character(filtered$indicator_code) %in% sub_codes))
