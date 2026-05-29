@@ -391,7 +391,7 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     add_stratum = function(...) {
       super$add_stratum(...)
-      private$sync_iphra_sample_metadata()
+      self$synchronize_state()
       private$touch()
       invisible(self)
     },
@@ -401,8 +401,24 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     calculate_sample_sizes = function() {
       super$calculate_sample_sizes()
-      private$sync_sampling_conditional_metadata()
+      self$synchronize_state()
       private$touch()
+      invisible(self)
+    },
+
+    #' @description Synchronize IPHRA sample-derived metadata fields.
+    #' @return Invisibly returns \code{self}.
+    synchronize_state = function() {
+      super$synchronize_state()
+      st <- private$sync_state(field = "sample_table", member = "get_sample_table")
+      self$metadata$num_strata_units <- if (!is.null(st) &&
+                                             is.data.frame(st) &&
+                                             "stratum_id" %in% names(st)) {
+        length(unique(st$stratum_id))
+      } else {
+        0L
+      }
+      private$sync_sampling_conditional_metadata()
       invisible(self)
     },
 
@@ -595,20 +611,7 @@ IPHRAProtocol <- R6::R6Class(
     }
   ),
 
-  active = list(
-    #' @description Internal sync hook used by inherited \code{access_nested()}.
-    #'
-    #' Any \code{self$access_nested(...)} call triggers \code{sync_*} hooks, so
-    #' this keeps IPHRA sample-derived metadata aligned with \code{sample_table}
-    #' after nested Sample mutations.
-    sync_iphra_sample_metadata_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_iphra_sample_metadata_fields is a read-only internal synchronization hook and cannot be assigned a value.")
-      }
-      private$sync_iphra_sample_metadata()
-      invisible(NULL)
-    }
-  ),
+  active = list(),
 
   private = list(
 
@@ -861,19 +864,6 @@ IPHRAProtocol <- R6::R6Class(
       for (nm in names(sampling_flags)) {
         self$conditional_metadata[[nm]] <- isTRUE(sampling_flags[[nm]])
       }
-      invisible(NULL)
-    },
-
-    sync_iphra_sample_metadata = function() {
-      st <- self$get_sample_table()
-      self$metadata$num_strata_units <- if (!is.null(st) &&
-                                             is.data.frame(st) &&
-                                             "stratum_id" %in% names(st)) {
-        length(unique(st$stratum_id))
-      } else {
-        0L
-      }
-      private$sync_sampling_conditional_metadata()
       invisible(NULL)
     },
 

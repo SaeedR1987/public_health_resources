@@ -59,8 +59,7 @@ SurveyProtocol <- R6::R6Class(
       )
       self$sample_table <- Sample$new()
       self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
-      self$sync_sample_metadata_fields
-      self$sync_sampling_frame_fields
+      self$synchronize_state()
       invisible(self)
     },
 
@@ -278,8 +277,8 @@ SurveyProtocol <- R6::R6Class(
         confidence_level = confidence_level
       )
 
+      self$synchronize_state()
       private$touch()
-      private$add_target_stratum()
       self$diagnose_coherence()
       phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
       invisible(self)
@@ -332,7 +331,7 @@ SurveyProtocol <- R6::R6Class(
         }
 
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
-        self$sync_sampling_frame_fields
+        self$synchronize_state()
         private$touch()
         self$diagnose_coherence()
         phr_message(
@@ -400,8 +399,6 @@ SurveyProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     draw_sample = function(frame = NULL, strata_table = NULL, seed = 42) {
       phr_try({
-
-        # -- Resolve frame and strata_table --
         if (is.null(frame)) {
           phr_assert(
             !is.null(self$sampling_frame) && nrow(self$sampling_frame$log_df) > 0,
@@ -411,7 +408,6 @@ SurveyProtocol <- R6::R6Class(
           )
           frame <- as.data.frame(self$sampling_frame$log_df)
         }
-        phr_validate_dataframe(frame, origin = "SurveyProtocol$draw_sample", soft = FALSE)
 
         if (is.null(strata_table)) {
           st <- self$get_sample_table()
@@ -422,151 +418,11 @@ SurveyProtocol <- R6::R6Class(
           )
           strata_table <- st
         }
-        phr_validate_dataframe(strata_table, origin = "SurveyProtocol$draw_sample", soft = FALSE)
-        phr_assert(
-          "sampling_method" %in% names(strata_table),
-          message = phr_txt("strata_table must contain a 'sampling_method' column."),
-          origin  = "SurveyProtocol$draw_sample"
-        )
-
-        # Ensure method-specific parameter columns exist (add as NA if absent)
-        for (col in c("n_psu", "cluster_size", "n_sites", "Final_HH_Sample_Size")) {
-          if (!col %in% names(strata_table)) strata_table[[col]] <- NA_real_
-        }
-
-        # Eligible PSUs
-        if ("inclusion" %in% names(frame)) {
-          eligible_rows <- which(!is.na(frame$inclusion) & frame$inclusion)
-        } else {
-          eligible_rows <- seq_len(nrow(frame))
-        }
-        eligible_frame <- frame[eligible_rows, , drop = FALSE]
-
-        # Initialise output columns on full frame
-        frame$sampled_psu      <- NA_character_
-        frame$allocated_sample <- NA_real_
-
-        is_stratified <- ("stratum" %in% names(eligible_frame)) &&
-          ("stratum_id" %in% names(strata_table)) &&
-          (nrow(strata_table) > 1L || !is.null(strata_table$stratum_id))
-
-        if (is_stratified) {
-          strata_ids     <- unique(strata_table$stratum_id)
-          cluster_offset <- 0L
-
-          for (st_id in strata_ids) {
-            st_row <- strata_table[strata_table$stratum_id == st_id, ]
-            if (nrow(st_row) == 0L) next
-
-            st_eligible_rows <- which(eligible_frame$stratum == st_id)
-            if (length(st_eligible_rows) == 0L) {
-              phr_warning(
-                message = phr_txt("Stratum '{st_id}' not found in sampling frame — skipping."),
-                origin  = "SurveyProtocol$draw_sample"
-              )
-              next
-            }
-            st_frame <- eligible_frame[st_eligible_rows, , drop = FALSE]
-
-            st_params <- private$params_from_strata_row(
-              st_row, nrow(st_frame), nrow(eligible_frame)
-            )
-
-            st_result <- tryCatch(
-              private$apply_sampling_method(
-                frame        = st_frame,
-                method       = st_params$method,
-                sample_size  = st_params$sample_size,
-                n_psu        = st_params$n_psu,
-                n_sites      = st_params$n_sites,
-                cluster_size = st_params$cluster_size,
-                seed         = seed
-              ),
-              error = function(e) {
-                phr_warning(
-                  message = phr_txt("Sampling for stratum '{st_id}' failed and will be skipped: {conditionMessage(e)}"),
-                  origin  = "SurveyProtocol$draw_sample"
-                )
-                NULL
-              }
-            )
-            if (is.null(st_result)) next
-
-            sel_mask <- !is.na(st_result$sampled_psu)
-            if (any(sel_mask)) {
-              # parse_cluster_labels: extract the numeric cluster numbers from a
-              # comma-separated sampled_psu string, ignoring "RC" tokens.
-              parse_cluster_labels <- function(s) {
-                parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
-                nums  <- suppressWarnings(as.integer(parts))
-                nums[!is.na(nums)]
-              }
-              # Apply cross-stratum offset to numeric labels; "RC" tokens are kept unchanged.
-              apply_cluster_offset <- function(s, offset) {
-                parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
-                vapply(parts, function(p) {
-                  n <- suppressWarnings(as.integer(p))
-                  if (is.na(n)) p else as.character(n + offset)
-                }, character(1), USE.NAMES = FALSE)
-              }
-              st_result$sampled_psu[sel_mask] <- vapply(
-                st_result$sampled_psu[sel_mask],
-                function(s) paste(apply_cluster_offset(s, cluster_offset), collapse = ", "),
-                character(1)
-              )
-              all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_cluster_labels))
-              if (length(all_nums) > 0L) {
-                # Guard: purposive strata have sel_mask=FALSE and skip this block; other
-                # methods always produce at least one numeric label (n_psu > 0), so
-                # all_nums should be non-empty in practice.
-                cluster_offset <- cluster_offset + max(all_nums)
-              }
-            }
-
-            full_frame_rows <- eligible_rows[st_eligible_rows]
-            frame$sampled_psu[full_frame_rows]      <- st_result$sampled_psu
-            frame$allocated_sample[full_frame_rows] <- st_result$allocated_sample
-          }
-
-        } else {
-          # Non-stratified: use first strata table row for the whole frame
-          st_row    <- strata_table[1L, ]
-          st_params <- private$params_from_strata_row(
-            st_row, nrow(eligible_frame), nrow(eligible_frame)
-          )
-
-          result <- tryCatch(
-            private$apply_sampling_method(
-              frame        = eligible_frame,
-              method       = st_params$method,
-              sample_size  = st_params$sample_size,
-              n_psu        = st_params$n_psu,
-              n_sites      = st_params$n_sites,
-              cluster_size = st_params$cluster_size,
-              seed         = seed
-            ),
-            error = function(e) {
-              phr_warning(
-                message = phr_txt("Sampling failed: {conditionMessage(e)}"),
-                origin  = "SurveyProtocol$draw_sample"
-              )
-              NULL
-            }
-          )
-          if (!is.null(result)) {
-            frame$sampled_psu[eligible_rows]      <- result$sampled_psu
-            frame$allocated_sample[eligible_rows] <- result$allocated_sample
-          }
-        }
-
-        self$drawn_sample_full <- frame
-        # For purposive, drawn_sample is empty (user fills manually)
-        self$drawn_sample <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
-
-        # Update the SamplingFrame object with the annotated frame
-        self$sampling_frame$log_df <- tibble::as_tibble(frame)
-
-        self$sync_sampling_frame_fields
+        self$sample_table$draw_sample(frame = frame, strata_table = strata_table, seed = seed)
+        self$drawn_sample <- self$sample_table$drawn_sample
+        self$drawn_sample_full <- self$sample_table$drawn_sample_full
+        self$sampling_frame$log_df <- tibble::as_tibble(self$drawn_sample_full)
+        self$synchronize_state()
         private$touch()
         self$diagnose_coherence()
         phr_message(
@@ -592,18 +448,11 @@ SurveyProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     clear_sample = function() {
       phr_try({
-        if (!is.null(self$sampling_frame) &&
-            nrow(self$sampling_frame$log_df) > 0) {
-          if ("sampled_psu" %in% names(self$sampling_frame$log_df)) {
-            self$sampling_frame$log_df$sampled_psu <- NA_character_
-          }
-          if ("allocated_sample" %in% names(self$sampling_frame$log_df)) {
-            self$sampling_frame$log_df$allocated_sample <- NA_real_
-          }
-        }
-        self$drawn_sample      <- NULL
-        self$drawn_sample_full <- NULL
-        self$sync_sampling_frame_fields
+        frame <- if (!is.null(self$sampling_frame)) self$sampling_frame$log_df else NULL
+        self$sampling_frame$log_df <- tibble::as_tibble(self$sample_table$clear_sample(frame))
+        self$drawn_sample <- self$sample_table$drawn_sample
+        self$drawn_sample_full <- self$sample_table$drawn_sample_full
+        self$synchronize_state()
         private$touch()
         self$diagnose_coherence()
         phr_message(
@@ -700,10 +549,9 @@ SurveyProtocol <- R6::R6Class(
           message = phr_txt("sample_table must be a Sample object."),
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
-        self$sample_table$calculate_sample_sizes()
-        self$sync_sample_metadata_fields
+        self$access_nested(field = "sample_table", member = "calculate_sample_sizes")
+        self$synchronize_state()
         private$touch()
-        private$add_target_stratum()
         self$diagnose_coherence()
 
         phr_message(
@@ -827,87 +675,42 @@ SurveyProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Add a \code{teams} choice list to a tool's \code{revised_choices}.
-    #'
-    #' Creates (or replaces) a \code{teams} choice list with entries
-    #' \emph{Team 1} through \emph{Team n}.
-    #'
-    #' @param n_teams Positive integer. Number of teams.
-    #' @param tool_name Character. Name of the tool to modify.  When
-    #'   \code{NULL} (default) and exactly one tool is registered, that tool
-    #'   is used.
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_teams_to_choices = function(n_teams, tool_name = NULL) {
-      phr_try({
-        phr_assert(
-          is.numeric(n_teams) && length(n_teams) == 1L && n_teams >= 1L,
-          message = phr_txt("n_teams must be a single positive integer."),
-          origin  = "SurveyProtocol$add_teams_to_choices"
-        )
-        n_teams <- as.integer(n_teams)
-        tool    <- private$resolve_tool(tool_name, "SurveyProtocol$add_teams_to_choices")
-        tool$revised_choices <- private$add_numbered_list(
-          tool$revised_choices %||% tool$choices,
-          list_name  = "teams",
-          prefix_val = "team_",
-          prefix_lbl = "Team ",
-          n          = n_teams
-        )
-        self$sync_tool_indicator_catalog_fields
-        private$touch()
-        phr_message(
-          phr_txt("{n_teams} team choice(s) added."),
-          origin = "SurveyProtocol$add_teams_to_choices"
-        )
-      }, on_error = "abort", origin = "SurveyProtocol$add_teams_to_choices")
-      invisible(self)
-    },
-
-    #' @description Add an \code{enumerators} choice list to a tool's
-    #'   \code{revised_choices}.
-    #'
-    #' Creates (or replaces) an \code{enumerators} choice list with entries
-    #' \emph{Enumerator 1} through \emph{Enumerator n}.
-    #'
-    #' @param n_enumerators Positive integer. Number of enumerators.
-    #' @param tool_name Character. Name of the tool to modify.  When
-    #'   \code{NULL} (default) and exactly one tool is registered, that tool
-    #'   is used.
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_enumerators_to_choices = function(n_enumerators, tool_name = NULL) {
-      phr_try({
-        phr_assert(
-          is.numeric(n_enumerators) && length(n_enumerators) == 1L && n_enumerators >= 1L,
-          message = phr_txt("n_enumerators must be a single positive integer."),
-          origin  = "SurveyProtocol$add_enumerators_to_choices"
-        )
-        n_enumerators <- as.integer(n_enumerators)
-        tool <- private$resolve_tool(tool_name, "SurveyProtocol$add_enumerators_to_choices")
-        tool$revised_choices <- private$add_numbered_list(
-          tool$revised_choices %||% tool$choices,
-          list_name  = "enumerators",
-          prefix_val = "enumerator_",
-          prefix_lbl = "Enumerator ",
-          n          = n_enumerators
-        )
-        self$sync_tool_indicator_catalog_fields
-        private$touch()
-        phr_message(
-          phr_txt("{n_enumerators} enumerator choice(s) added."),
-          origin = "SurveyProtocol$add_enumerators_to_choices"
-        )
-      }, on_error = "abort", origin = "SurveyProtocol$add_enumerators_to_choices")
-      invisible(self)
-    },
-
     #' @description Override \code{synchronize_state} to also sync sampling
     #'   metadata and sampling frame fields.
     #' @return Invisibly returns \code{self}.
     synchronize_state = function() {
       super$synchronize_state()
-      self$sync_sample_metadata_fields
-      self$sync_sampling_frame_fields
-      self$sync_target_strata_fields
+
+      private$sync_state(
+        field = "sample_table",
+        member = "get_strata_names",
+        target_field = "metadata$sampling_strata_names"
+      )
+      methods_used <- private$sync_state(
+        field = "sample_table",
+        member = "get_sampling_methods"
+      )
+      if (is.null(methods_used)) methods_used <- character(0)
+      methods_used <- unique(trimws(tolower(as.character(methods_used))))
+      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
+      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
+      self$metadata$sampling_strata_names <- as.character(self$metadata$sampling_strata_names %||% character(0))
+      self$metadata$sampling_method_flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
+
+      sf <- private$sync_state(
+        field = "sampling_frame",
+        member = "log_df"
+      )
+      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
+        self$sampling_frame_strata_names <- character(0)
+      } else {
+        vals <- as.character(sf$stratum)
+        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
+      }
+
+      private$add_target_stratum()
       invisible(self)
     },
 
@@ -952,78 +755,7 @@ SurveyProtocol <- R6::R6Class(
 
   ),
 
-  active = list(
-    sync_sample_metadata_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_sample_metadata_fields is a read-only active binding.")
-      }
-      st <- NULL
-      if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
-        st <- self$sample_table$get_sample_table()
-      } else if (!is.null(self$sample_table) && is.data.frame(self$sample_table)) {
-        st <- self$sample_table
-      }
-      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        self$metadata$sampling_strata_names <- character(0)
-        self$metadata$sampling_method_flags <- list()
-        return(invisible(NULL))
-      }
-
-      strata_names <- if ("stratum_name" %in% names(st)) {
-        as.character(st$stratum_name)
-      } else if ("Population_Name" %in% names(st)) {
-        as.character(st$Population_Name)
-      } else {
-        as.character(st$stratum_id %||% character(0))
-      }
-      strata_names <- unique(strata_names[!is.na(strata_names) & nzchar(strata_names)])
-
-      methods_used <- if ("sampling_method" %in% names(st)) {
-        unique(trimws(tolower(as.character(st$sampling_method))))
-      } else {
-        character(0)
-      }
-      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
-      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
-                         "systematic", "simple_random_rlc", "systematic_rlc",
-                         "proportional_rlc", "purposive")
-      flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
-
-      self$metadata$sampling_strata_names <- strata_names
-      self$metadata$sampling_method_flags <- flags
-      invisible(NULL)
-    },
-
-    sync_sampling_frame_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_sampling_frame_fields is a read-only active binding.")
-      }
-      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
-        self$sampling_frame$log_df
-      } else {
-        NULL
-      }
-      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
-        self$sampling_frame_strata_names <- character(0)
-      } else {
-        vals <- as.character(sf$stratum)
-        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
-      }
-      invisible(NULL)
-    },
-
-    #' @description Internal sync hook used by inherited \code{access_nested()}.
-    #'
-    #' Any \code{self$access_nested(...)} call triggers \code{sync_*} hooks, so
-    #' this rebuilds \code{metadata$target_strata} after nested Sample mutations.
-    sync_target_strata_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_target_strata_fields is a read-only internal synchronization hook and cannot be assigned a value.")
-      }
-      private$add_target_stratum()
-      invisible(NULL)
-    }
-  ),
+  active = list(),
 
   private = list(
     # Rebuild metadata$target_strata from the current sample_table.
@@ -1067,35 +799,6 @@ SurveyProtocol <- R6::R6Class(
       self$tools[[tool_name]]
     },
 
-    # Build (or replace) a numbered choice list within an existing choices df.
-    # list_name  : name of the choice list (e.g. "teams")
-    # prefix_val : value prefix (e.g. "team_")
-    # prefix_lbl : label prefix (e.g. "Team ")
-    # n          : integer count
-    add_numbered_list = function(choices, list_name, prefix_val, prefix_lbl, n) {
-      if (is.null(choices)) {
-        choices <- data.frame(list_name = character(0), name = character(0),
-                              label = character(0), stringsAsFactors = FALSE)
-      }
-      # Remove any existing entries for this list
-      if ("list_name" %in% names(choices)) {
-        choices <- choices[choices$list_name != list_name, , drop = FALSE]
-      }
-      new_rows <- lapply(seq_len(n), function(i) {
-        row <- data.frame(list_name = list_name,
-                          name  = paste0(prefix_val, i),
-                          label = paste0(prefix_lbl, i),
-                          stringsAsFactors = FALSE)
-        for (col in setdiff(names(choices), names(row))) row[[col]] <- NA
-        row
-      })
-      new_df   <- do.call(rbind, new_rows)
-      all_cols <- union(names(choices), names(new_df))
-      for (col in setdiff(all_cols, names(choices)))  choices[[col]]  <- NA
-      for (col in setdiff(all_cols, names(new_df)))   new_df[[col]]   <- NA
-      rbind(choices[, all_cols, drop = FALSE], new_df[, all_cols, drop = FALSE])
-    },
-
     # Generic hooks for TOR sample-size table tags.
     # Subclasses can override with protocol-specific table builders.
     add_sample_size_gen_table = function(doc) {
@@ -1108,96 +811,6 @@ SurveyProtocol <- R6::R6Class(
 
     add_sample_size_mort_table = function(doc) {
       private$.replace(doc, "@sample_size_hh_mort_table", "")
-    },
-
-    # Apply a PSU-level sampling method — dispatches to draw_sample_psu_* utilities
-    apply_sampling_method = function(frame, method, sample_size, n_psu,
-                                     n_sites, cluster_size, seed) {
-      origin <- "SurveyProtocol$apply_sampling_method"
-      valid_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
-                         "systematic", "simple_random_rlc", "systematic_rlc",
-                         "proportional_rlc", "purposive")
-      phr_assert(
-        method %in% valid_methods,
-        message = phr_txt("Unknown sampling method '{method}' — must be one of: {paste(valid_methods, collapse=', ')}."),
-        origin  = origin
-      )
-
-      if (method == "simple_random") {
-        phr_assert(!is.null(n_sites) && !is.na(n_sites),
-                   message = phr_txt("n_sites is required for the 'simple_random' method — set the 'n_sites' column in the strata table."),
-                   origin = origin)
-        draw_sample_psu_srs(frame, n_sites, sample_size, seed)
-      } else if (method == "proportional") {
-        draw_sample_psu_proportional(frame, sample_size, seed)
-      } else if (method == "pps_cluster") {
-        phr_assert(!is.null(n_psu) && !is.na(n_psu),
-                   message = phr_txt("n_psu is required for the 'pps_cluster' method — set the 'n_psu' column in the strata table."),
-                   origin = origin)
-        phr_assert(!is.null(cluster_size) && !is.na(cluster_size),
-                   message = phr_txt("cluster_size is required for the 'pps_cluster' method — set the 'cluster_size' column in the strata table."),
-                   origin = origin)
-        draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
-      } else if (method == "pps_rlc") {
-        phr_assert(!is.null(n_sites) && !is.na(n_sites),
-                   message = phr_txt("n_sites is required for the 'pps_rlc' method — set the 'n_sites' column in the strata table."),
-                   origin = origin)
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
-        draw_sample_psu_rlc(frame, sample_size, n_sites, cs, seed)
-      } else if (method == "simple_random_rlc") {
-        phr_assert(!is.null(n_sites) && !is.na(n_sites),
-                   message = phr_txt("n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."),
-                   origin = origin)
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
-        draw_sample_psu_srs_rlc(frame, sample_size, n_sites, cs, seed)
-      } else if (method == "systematic_rlc") {
-        phr_assert(!is.null(n_sites) && !is.na(n_sites),
-                   message = phr_txt("n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."),
-                   origin = origin)
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
-        draw_sample_psu_systematic_rlc(frame, sample_size, n_sites, cs, seed)
-      } else if (method == "proportional_rlc") {
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
-        draw_sample_psu_proportional_rlc(frame, sample_size, cs, seed)
-      } else if (method == "systematic") {
-        phr_assert(!is.null(n_sites) && !is.na(n_sites),
-                   message = phr_txt("n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."),
-                   origin = origin)
-        draw_sample_psu_systematic(frame, n_sites, sample_size, seed)
-      } else {  # purposive
-        draw_sample_psu_purposive(frame, seed)
-      }
-    },
-
-    # Extract sampling parameters from a single strata table row.
-    # Returns a named list: method, sample_size, n_psu, cluster_size, n_sites.
-    # sample_size falls back to General_HH_Sample_Size, then a proportional estimate when
-    # Final_HH_Sample_Size is NA.
-    params_from_strata_row = function(st_row, stratum_n_eligible, total_n_eligible) {
-      method <- as.character(st_row$sampling_method[1])
-
-      ss <- if ("Final_HH_Sample_Size" %in% names(st_row) &&
-                !is.na(st_row$Final_HH_Sample_Size[1])) {
-        as.integer(st_row$Final_HH_Sample_Size[1])
-      } else {
-        # Fallback: use the calculated general population-level sample size if available
-        if ("General_HH_Sample_Size" %in% names(st_row) && !is.na(st_row$General_HH_Sample_Size[1])) {
-          as.integer(st_row$General_HH_Sample_Size[1])
-        } else {
-          as.integer(round(100 * stratum_n_eligible / max(total_n_eligible, 1L)))
-        }
-      }
-
-      # Convert NA to NULL so callers can use is.null() checks
-      .na_as_null <- function(x) if (length(x) == 0L || is.na(x)) NULL else x
-
-      list(
-        method       = method,
-        sample_size  = ss,
-        n_psu        = .na_as_null(if ("n_psu"        %in% names(st_row)) st_row$n_psu[1]        else NA),
-        cluster_size = .na_as_null(if ("cluster_size" %in% names(st_row)) st_row$cluster_size[1] else NA),
-        n_sites      = .na_as_null(if ("n_sites"      %in% names(st_row)) st_row$n_sites[1]      else NA)
-      )
     }
   )
 )

@@ -116,7 +116,42 @@ Orchestrator <- R6::R6Class(
       invisible(NULL)
     },
 
-    sync_state = function() {
+    sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                          name = NULL, role = NULL) {
+      if (!is.null(field) || !is.null(member) || !is.null(target_field) ||
+          !is.null(name) || !is.null(role)) {
+        phr_assert(
+          is.character(field) && length(field) == 1L && nzchar(field),
+          message = phr_txt("field must be a non-empty character string."),
+          origin = "Orchestrator$sync_state"
+        )
+        phr_assert(
+          is.character(member) && length(member) == 1L && nzchar(member),
+          message = phr_txt("member must be a non-empty character string."),
+          origin = "Orchestrator$sync_state"
+        )
+        target <- private$.resolve_nested_target(field = field, name = name, role = role)
+        phr_assert(
+          !is.null(target[[member]]),
+          message = phr_txt("Member '{member}' does not exist on the resolved target."),
+          origin = "Orchestrator$sync_state"
+        )
+        value <- target[[member]]
+        if (is.function(value)) {
+          value <- value()
+        }
+        if (!is.null(target_field)) {
+          private$.assign_sync_value(target_field = target_field, value = value)
+        }
+        return(invisible(value))
+      }
+
+      sync_runner <- tryCatch(self$synchronize_state, error = function(e) NULL)
+      if (is.function(sync_runner)) {
+        sync_runner()
+        return(invisible(NULL))
+      }
+
       sync_names <- grep("^sync_", names(self), value = TRUE)
       if (length(sync_names) == 0L) return(invisible(NULL))
       for (nm in sync_names) {
@@ -208,6 +243,49 @@ Orchestrator <- R6::R6Class(
       x <- gsub("_iphra(_v[0-9]+)?$", "", x)
       x <- gsub("_v[0-9]+$", "", x)
       x
+    },
+
+    .assign_sync_value = function(target_field, value) {
+      phr_assert(
+        is.character(target_field) && length(target_field) == 1L && nzchar(target_field),
+        message = phr_txt("target_field must be a non-empty character string."),
+        origin = "Orchestrator$.assign_sync_value"
+      )
+
+      path <- strsplit(target_field, "\\$", fixed = FALSE)[[1L]]
+      path <- path[nzchar(path)]
+      phr_assert(
+        length(path) >= 1L,
+        message = phr_txt("target_field path is invalid."),
+        origin = "Orchestrator$.assign_sync_value"
+      )
+
+      if (length(path) == 1L) {
+        self[[path[[1L]]]] <- value
+        return(invisible(NULL))
+      }
+
+      set_path <- function(x, keys, val) {
+        if (length(keys) == 1L) {
+          x[[keys[[1L]]]] <- val
+          return(x)
+        }
+        key <- keys[[1L]]
+        next_val <- x[[key]]
+        if (is.null(next_val) || (!is.list(next_val) && !is.environment(next_val))) {
+          next_val <- list()
+        }
+        x[[key]] <- set_path(next_val, keys[-1L], val)
+        x
+      }
+
+      root_name <- path[[1L]]
+      root <- self[[root_name]]
+      if (is.null(root) || (!is.list(root) && !is.environment(root))) {
+        root <- list()
+      }
+      self[[root_name]] <- set_path(root, path[-1L], value)
+      invisible(NULL)
     }
   )
 )

@@ -241,6 +241,14 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Synchronize protocol-level derived catalogs.
+    #' @return Invisibly returns \code{self}.
+    synchronize_state = function() {
+      self$sync_framework_catalog_fields
+      self$sync_tool_indicator_catalog_fields
+      invisible(self)
+    },
+
     #' @description Get all issues
     #' @return List of validation issues
     get_issues = function() {
