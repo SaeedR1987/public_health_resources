@@ -549,7 +549,7 @@ SurveyProtocol <- R6::R6Class(
           message = phr_txt("sample_table must be a Sample object."),
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
-        self$access_nested(field = "sample_table", member = "calculate_sample_sizes")
+        self$sample_table$calculate_sample_sizes()
         self$synchronize_state()
         private$touch()
         self$diagnose_coherence()
