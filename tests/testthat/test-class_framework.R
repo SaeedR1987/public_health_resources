@@ -588,6 +588,16 @@ test_that("Protocol nested accessor tool validation calls return logical/list ou
   expect_true(is.list(p$access_nested("tools", "my_tool", "get_validation_errors")))
 })
 
+test_that("Protocol nested accessor supports role-based lookup for list fields", {
+  p <- Protocol$new()
+  p$add_tools("household", tool_name = "tool_household_iphra_v2")
+
+  expect_equal(
+    p$access_nested(field = "tools", role = "household", member = "get_name"),
+    "tool_household_iphra_v2"
+  )
+})
+
 test_that("Framework$render_framework_svg errors when no SVG is set", {
   fw <- Framework$new()
   expect_error(fw$render_framework_svg())

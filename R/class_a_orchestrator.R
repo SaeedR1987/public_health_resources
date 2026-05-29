@@ -35,12 +35,15 @@ Orchestrator <- R6::R6Class(
     #'   \code{field}.
     #' @param member Optional character scalar naming a field or method on the
     #'   resolved object.
+    #' @param role Optional character scalar used to resolve a list element in
+    #'   \code{field} by role-like name (for example \code{"household"} for
+    #'   \code{"tool_household_iphra_v2"}).
     #' @param ... Arguments passed to the nested method when \code{member}
     #'   resolves to a function.
     #' @return The requested nested value, or the nested method result.
-    access_nested = function(field, name = NULL, member = NULL, ...) {
+    access_nested = function(field, name = NULL, member = NULL, role = NULL, ...) {
       phr_try({
-        target <- private$.resolve_nested_target(field = field, name = name)
+        target <- private$.resolve_nested_target(field = field, name = name, role = role)
 
         if (is.null(member)) {
           private$sync_state()
@@ -86,14 +89,16 @@ Orchestrator <- R6::R6Class(
     #' @param name Optional character scalar naming a list element in
     #'   \code{field}.
     #' @return Invisibly returns \code{self}.
-    set_nested = function(field, member, value, name = NULL) {
+    #' @param role Optional character scalar used to resolve a list element in
+    #'   \code{field} by role-like name.
+    set_nested = function(field, member, value, name = NULL, role = NULL) {
       phr_try({
         phr_assert(
           is.character(member) && length(member) == 1L && nzchar(member),
           message = phr_txt("member must be a non-empty character string."),
           origin = "Orchestrator$set_nested"
         )
-        target <- private$.resolve_nested_target(field = field, name = name)
+        target <- private$.resolve_nested_target(field = field, name = name, role = role)
         target[[member]] <- value
         private$sync_state()
         private$touch()
@@ -123,7 +128,7 @@ Orchestrator <- R6::R6Class(
       invisible(NULL)
     },
 
-    .resolve_nested_target = function(field, name = NULL) {
+    .resolve_nested_target = function(field, name = NULL, role = NULL) {
       phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
         message = phr_txt("field must be a non-empty character string."),
@@ -136,19 +141,73 @@ Orchestrator <- R6::R6Class(
       )
       container <- self[[field]]
 
-      if (is.null(name)) return(container)
+      phr_assert(
+        !( !is.null(name) && !is.null(role) ),
+        message = phr_txt("Provide only one of name or role."),
+        origin = "Orchestrator$.resolve_nested_target"
+      )
+
+      if (is.null(name) && is.null(role)) return(container)
 
       phr_assert(
-        is.character(name) && length(name) == 1L && nzchar(name),
-        message = phr_txt("name must be a non-empty character string when provided."),
+        is.list(container),
+        message = phr_txt("Field '{field}' must be a list when resolving name/role."),
         origin = "Orchestrator$.resolve_nested_target"
       )
+
+      if (!is.null(name)) {
+        phr_assert(
+          is.character(name) && length(name) == 1L && nzchar(name),
+          message = phr_txt("name must be a non-empty character string when provided."),
+          origin = "Orchestrator$.resolve_nested_target"
+        )
+        phr_assert(
+          !is.null(container[[name]]),
+          message = phr_txt("Name '{name}' was not found in field '{field}'."),
+          origin = "Orchestrator$.resolve_nested_target"
+        )
+        return(container[[name]])
+      }
+
       phr_assert(
-        is.list(container) && !is.null(container[[name]]),
-        message = phr_txt("Name '{name}' was not found in field '{field}'."),
+        is.character(role) && length(role) == 1L && nzchar(role),
+        message = phr_txt("role must be a non-empty character string when provided."),
         origin = "Orchestrator$.resolve_nested_target"
       )
-      container[[name]]
+
+      nms <- names(container)
+      phr_assert(
+        !is.null(nms) && length(nms) > 0L,
+        message = phr_txt("Field '{field}' has no named elements for role-based lookup."),
+        origin = "Orchestrator$.resolve_nested_target"
+      )
+
+      role_key <- private$.normalize_role_name(role)
+      normalized_names <- vapply(nms, private$.normalize_role_name, character(1L))
+      idx <- which(normalized_names == role_key)
+
+      if (length(idx) == 0L) {
+        idx <- grep(paste0("^", role_key, "$|_", role_key, "_|_", role_key, "$"), normalized_names)
+      }
+
+      phr_assert(
+        length(idx) == 1L,
+        message = if (length(idx) == 0L) {
+          phr_txt("Role '{role}' was not found in field '{field}'.")
+        } else {
+          phr_txt("Role '{role}' matched multiple elements in field '{field}'.")
+        },
+        origin = "Orchestrator$.resolve_nested_target"
+      )
+      container[[idx]]
+    },
+
+    .normalize_role_name = function(x) {
+      x <- tolower(as.character(x %||% ""))
+      x <- gsub("^tool_", "", x)
+      x <- gsub("_iphra(_v[0-9]+)?$", "", x)
+      x <- gsub("_v[0-9]+$", "", x)
+      x
     }
   )
 )
