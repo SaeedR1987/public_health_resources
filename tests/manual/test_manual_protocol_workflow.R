@@ -49,7 +49,9 @@ View(protocol$get_schema(type = "adjusted"))
 
 # Test 3: Define Strata and Sample Sizes ####
 
-protocol$sample_add_stratum(
+protocol$access_nested(
+  field = "sample_table",
+  member = "add_stratum",
   stratum_id              = "strata_A",
   stratum_name            = "Urban North",
   population_size         = 45000,
@@ -81,7 +83,9 @@ protocol$sample_add_stratum(
 
 
 
-protocol$sample_add_stratum(
+protocol$access_nested(
+  field = "sample_table",
+  member = "add_stratum",
   stratum_id              = "strata_B",
   stratum_name            = "Peri-Urban East",
   population_size         = 28000,
@@ -101,7 +105,9 @@ protocol$sample_add_stratum(
   n_sites                 = 30
 )
 
-protocol$sample_add_stratum(
+protocol$access_nested(
+  field = "sample_table",
+  member = "add_stratum",
   stratum_id              = "strata_C",
   stratum_name            = "Rural South",
   population_size         = 17000,
@@ -115,8 +121,8 @@ protocol$sample_add_stratum(
   n_sites                 = 10
 )
 
-protocol$sample_calculate_sample_sizes()
-protocol$sample_get_sample_table()
+protocol$access_nested(field = "sample_table", member = "calculate_sample_sizes")
+protocol$access_nested(field = "sample_table", member = "get_sample_table")
 
 # Test 4: Build and Validate a Sampling Frame ####
 

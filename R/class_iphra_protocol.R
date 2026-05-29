@@ -396,58 +396,6 @@ IPHRAProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Replace the current sample table and refresh IPHRA-specific
-    #'   sample metadata.
-    #' @param sample_table Data frame.
-    #' @return Invisibly returns \code{self}.
-    sample_set_sample_table = function(sample_table) {
-      super$sample_set_sample_table(sample_table)
-      private$sync_iphra_sample_metadata()
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Clear the current sample table and refresh IPHRA-specific
-    #'   sample metadata.
-    #' @return Invisibly returns \code{self}.
-    sample_clear_sample_table = function() {
-      super$sample_clear_sample_table()
-      private$sync_iphra_sample_metadata()
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Add a stratum row and refresh IPHRA-specific sample metadata.
-    #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
-    #' @return Invisibly returns \code{self}.
-    sample_add_stratum = function(...) {
-      super$sample_add_stratum(...)
-      private$sync_iphra_sample_metadata()
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Remove a stratum row and refresh IPHRA-specific sample
-    #'   metadata.
-    #' @param strata_name Character scalar naming the stratum to remove.
-    #' @return Invisibly returns \code{self}.
-    sample_remove_stratum = function(strata_name) {
-      super$sample_remove_stratum(strata_name = strata_name)
-      private$sync_iphra_sample_metadata()
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Calculate sample sizes and refresh IPHRA-specific sample
-    #'   metadata.
-    #' @return Invisibly returns \code{self}.
-    sample_calculate_sample_sizes = function() {
-      super$sample_calculate_sample_sizes()
-      private$sync_iphra_sample_metadata()
-      private$touch()
-      invisible(self)
-    },
-
     #' @description Override inherited \code{SurveyProtocol$calculate_sample_sizes()}
     #'   to keep sampling conditional metadata synchronized after sample table updates.
     #' @return Invisibly returns \code{self} for method chaining.
@@ -644,6 +592,21 @@ IPHRAProtocol <- R6::R6Class(
         if (isTRUE(open)) utils::browseURL(output_file)
       }, on_error = "abort", origin = "IPHRAProtocol$generate_reach_tor")
       invisible(self)
+    }
+  ),
+
+  active = list(
+    #' @description Internal sync hook used by inherited \code{access_nested()}.
+    #'
+    #' Any \code{self$access_nested(...)} call triggers \code{sync_*} hooks, so
+    #' this keeps IPHRA sample-derived metadata aligned with \code{sample_table}
+    #' after nested Sample mutations.
+    sync_iphra_sample_metadata_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_iphra_sample_metadata_fields is a read-only internal synchronization hook and cannot be assigned a value.")
+      }
+      private$sync_iphra_sample_metadata()
+      invisible(NULL)
     }
   ),
 

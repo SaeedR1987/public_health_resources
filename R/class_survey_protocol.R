@@ -225,7 +225,9 @@ SurveyProtocol <- R6::R6Class(
       precision              = NULL,
       confidence_level       = NULL
     ) {
-      super$sample_add_stratum(
+      self$access_nested(
+        field = "sample_table",
+        member = "add_stratum",
         stratum_id = stratum_id,
         stratum_name = stratum_name,
         population_size = population_size,
@@ -630,132 +632,6 @@ SurveyProtocol <- R6::R6Class(
       self$sample_table$get_sample_table()
     },
 
-    #' @description Replace the current sample table through the attached
-    #'   \code{\link{Sample}} object and keep survey metadata in sync.
-    #' @param sample_table Data frame.
-    #' @return Invisibly returns \code{self}.
-    sample_set_sample_table = function(sample_table) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_set_sample_table"
-      )
-      self$sample_table$set_sample_table(sample_table)
-      self$sync_sample_metadata_fields
-      private$touch()
-      private$add_target_stratum()
-      self$diagnose_coherence()
-      invisible(self)
-    },
-
-    #' @description Return the current sample table from the attached
-    #'   \code{\link{Sample}} object.
-    #' @return Data frame containing the sample table.
-    sample_get_sample_table = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_get_sample_table"
-      )
-      out <- self$sample_table$get_sample_table()
-      private$touch()
-      out
-    },
-
-    #' @description Clear the current sample table and keep survey metadata in sync.
-    #' @return Invisibly returns \code{self}.
-    sample_clear_sample_table = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_clear_sample_table"
-      )
-      self$sample_table$clear_sample_table()
-      self$sync_sample_metadata_fields
-      private$touch()
-      private$add_target_stratum()
-      self$diagnose_coherence()
-      invisible(self)
-    },
-
-    #' @description Add a stratum row and keep survey metadata in sync.
-    #' @param ... Arguments forwarded to \code{Sample$add_stratum()}.
-    #' @return Invisibly returns \code{self}.
-    sample_add_stratum = function(...) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_add_stratum"
-      )
-      do.call(self$sample_table$add_stratum, list(...))
-      self$sync_sample_metadata_fields
-      private$touch()
-      private$add_target_stratum()
-      self$diagnose_coherence()
-      invisible(self)
-    },
-
-    #' @description Remove a stratum row and keep survey metadata in sync.
-    #' @param strata_name Character scalar naming the stratum to remove.
-    #' @return Invisibly returns \code{self}.
-    sample_remove_stratum = function(strata_name) {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_remove_stratum"
-      )
-      self$sample_table$remove_stratum(strata_name = strata_name)
-      self$sync_sample_metadata_fields
-      private$touch()
-      private$add_target_stratum()
-      self$diagnose_coherence()
-      invisible(self)
-    },
-
-    #' @description Calculate sample sizes and keep survey metadata in sync.
-    #' @return Invisibly returns \code{self}.
-    sample_calculate_sample_sizes = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_calculate_sample_sizes"
-      )
-      self$sample_table$calculate_sample_sizes()
-      self$sync_sample_metadata_fields
-      private$touch()
-      private$add_target_stratum()
-      self$diagnose_coherence()
-      invisible(self)
-    },
-
-    #' @description Return sampling methods from the attached \code{\link{Sample}}
-    #'   object.
-    #' @return Character vector of sampling methods.
-    sample_get_sampling_methods = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_get_sampling_methods"
-      )
-      out <- self$sample_table$get_sampling_methods()
-      private$touch()
-      out
-    },
-
-    #' @description Return stratum names from the attached \code{\link{Sample}}
-    #'   object.
-    #' @return Character vector of stratum names.
-    sample_get_strata_names = function() {
-      phr_assert(
-        !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-        message = phr_txt("No Sample object is attached to this SurveyProtocol."),
-        origin  = "SurveyProtocol$sample_get_strata_names"
-      )
-      out <- self$sample_table$get_strata_names()
-      private$touch()
-      out
-    },
-
     # ── Sampling helpers ────────────────────────────────────────────────────
 
     #' @description Return the unique sampling methods used across all strata.
@@ -1031,6 +907,7 @@ SurveyProtocol <- R6::R6Class(
       super$synchronize_state()
       self$sync_sample_metadata_fields
       self$sync_sampling_frame_fields
+      self$sync_target_strata_fields
       invisible(self)
     },
 
@@ -1132,6 +1009,18 @@ SurveyProtocol <- R6::R6Class(
         vals <- as.character(sf$stratum)
         self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
       }
+      invisible(NULL)
+    },
+
+    #' @description Internal sync hook used by inherited \code{access_nested()}.
+    #'
+    #' Any \code{self$access_nested(...)} call triggers \code{sync_*} hooks, so
+    #' this rebuilds \code{metadata$target_strata} after nested Sample mutations.
+    sync_target_strata_fields = function(value) {
+      if (!missing(value)) {
+        stop("sync_target_strata_fields is a read-only internal synchronization hook and cannot be assigned a value.")
+      }
+      private$add_target_stratum()
       invisible(NULL)
     }
   ),

@@ -818,12 +818,14 @@ test_that("Sample$remove_stratum removes rows by stratum name", {
   expect_equal(st$stratum_name, "S2")
 })
 
-test_that("Protocol sample_* accessors delegate to Sample and update metadata", {
+test_that("Protocol accesses Sample through access_nested and updates metadata", {
   p <- make_protocol()
   t_before <- p$metadata$modified_datetime
 
   Sys.sleep(0.01)
-  p$sample_add_stratum(
+  p$access_nested(
+    field = "sample_table",
+    member = "add_stratum",
     stratum_id = "s1",
     stratum_name = "S1",
     sampling_method = "simple_random",
@@ -831,14 +833,23 @@ test_that("Protocol sample_* accessors delegate to Sample and update metadata", 
   )
 
   expect_true(p$metadata$modified_datetime > t_before)
-  expect_equal(p$sample_get_sampling_methods(), "simple_random")
-  expect_equal(p$sample_get_strata_names(), "S1")
+  expect_equal(
+    p$access_nested(field = "sample_table", member = "get_sampling_methods"),
+    "simple_random"
+  )
+  expect_equal(
+    p$access_nested(field = "sample_table", member = "get_strata_names"),
+    "S1"
+  )
 
-  st <- p$sample_get_sample_table()
+  st <- p$access_nested(field = "sample_table", member = "get_sample_table")
   expect_equal(nrow(st), 1L)
 
-  p$sample_remove_stratum("S1")
-  expect_equal(nrow(p$sample_get_sample_table()), 0L)
+  p$access_nested(field = "sample_table", member = "remove_stratum", "S1")
+  expect_equal(
+    nrow(p$access_nested(field = "sample_table", member = "get_sample_table")),
+    0L
+  )
 })
 
 test_that("Protocol$get_framework_svg delegates to Framework$render_framework_svg", {
