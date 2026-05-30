@@ -468,7 +468,7 @@ test_that("IPHRAProtocol syncs sampling conditional_metadata from sample_table",
   expect_true(isTRUE(p$conditional_metadata$purposive))
 })
 
-test_that("IPHRAProtocol conditional_replace uses conditional_metadata and skips empty condition", {
+test_that("IPHRAProtocol conditional handling uses metadata flags and runs empty conditions", {
   p <- IPHRAProtocol$new()
   p$conditional_metadata$srs_srs <- TRUE
   p$conditional_metadata$srs_systematic <- FALSE
@@ -493,5 +493,11 @@ test_that("IPHRAProtocol conditional_replace uses conditional_metadata and skips
 
   expect_true(grepl("YES", txt, fixed = TRUE))
   expect_true(grepl("@tag_false", txt, fixed = TRUE))
-  expect_true(grepl("@tag_empty", txt, fixed = TRUE))
+  expect_true(grepl("EMPTY", txt, fixed = TRUE))
+  expect_false(grepl("@tag_empty", txt, fixed = TRUE))
+})
+
+test_that("Protocol objects inherit cached document field from Document base class", {
+  p <- Protocol$new()
+  expect_true(inherits(p$document, "rdocx"))
 })

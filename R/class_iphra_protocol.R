@@ -517,89 +517,10 @@ IPHRAProtocol <- R6::R6Class(
                                   reference_docx = "reach_tor_iphra_template.docx",
                                   open           = FALSE) {
       phr_try({
-        phr_message("entered generater_reach_tor")
-        doc    <- private$create_base_doc(reference_docx)
-        phr_message("base doc created")
-
-        schema <- self$protocol_schema
-
-        if (!is.null(schema) && is.data.frame(schema) && nrow(schema) > 0L) {
-          handling <- as.character(schema$handling %||% "")
-
-
-          replace_rows <- schema[!is.na(handling) & handling == "replace", , drop = FALSE]
-          if (nrow(replace_rows) > 0L)
-            phr_message("starting handle replace")
-
-            doc <- private$handle_replace(doc, replace_rows)
-
-          phr_message("completed handle replace")
-
-          checkbox_rows <- schema[!is.na(handling) & handling == "checkbox_replace", , drop = FALSE]
-          if (nrow(checkbox_rows) > 0L)
-            phr_message("starting handle checbox replace")
-            doc <- private$handle_checkbox_replace(doc, checkbox_rows)
-            phr_message("completed handle checkbox replace")
-
-          calculate_rows <- schema[!is.na(handling) & handling == "calculate", , drop = FALSE]
-
-          phr_message("starting handle calculate")
-
-          doc <- private$handle_calculate(doc, calculate_rows)
-          phr_message("completed handle calculate")
-
-
-          row_delete_rows <- schema[!is.na(handling) & handling == "row_delete", , drop = FALSE]
-          if (nrow(row_delete_rows) > 0L)
-            phr_message("starting handle row delete")
-
-            doc <- private$handle_row_delete(doc, row_delete_rows)
-
-            phr_message("completed handle row delete")
-
-
-          input_rows <- schema[!is.na(handling) & handling == "input", , drop = FALSE]
-          if (nrow(input_rows) > 0L)
-
-            phr_message("starting handle input")
-
-            doc <- private$handle_input(doc, input_rows)
-
-            phr_message("completed handle input")
-
-
-          conditional_rows <- schema[!is.na(handling) & handling == "conditional_replace", , drop = FALSE]
-          if (nrow(conditional_rows) > 0L)
-
-            phr_message("starting handle conditional_replace")
-
-            doc <- private$handle_conditional_replace(doc, conditional_rows)
-
-            phr_message("completed handle conditional replace")
-
-
-          table_rows <- schema[!is.na(handling) & handling == "table", , drop = FALSE]
-          if (nrow(table_rows) > 0L)
-
-            phr_message("starting handle table")
-
-            doc <- private$handle_table(doc, table_rows)
-
-            phr_message("completed handle table")
-
-
-          image_rows <- schema[!is.na(handling) & handling == "image", , drop = FALSE]
-          if (nrow(image_rows) > 0L)
-
-            phr_message("starting handle image")
-
-            doc <- private$handle_image(doc, image_rows)
-
-            phr_message("completed handle image")
-
-        }
-
+        doc <- self$create_base_doc(reference_docx)
+        doc <- private$apply_protocol_schema_sections(doc)
         doc <- private$remove_remaining_tags(doc)
+        self$document <- doc
         print(doc, target = output_file)
         phr_message(
           phr_txt("IPHRA TOR saved to: {output_file}"),
@@ -689,118 +610,10 @@ IPHRAProtocol <- R6::R6Class(
       "purposive"
     ),
 
-    # ── Template helpers ────────────────────────────────────────────────────
-
-    # Replace tag with "X" if condition is TRUE, "□" if FALSE.
-    .checkbox = function(doc, tag, condition) {
-      if (private$.is_tag_missing_from_schema(tag)) {
-        return(private$.replace(doc, tag, ""))
-      }
-      private$.replace(doc, tag, if (isTRUE(condition)) "X" else "\u25a1")
-    },
-
-    .schema_row = function(tag) {
-      schema <- self$protocol_schema
-      if (!is.character(tag) || length(tag) != 1 || !nzchar(tag) ||
-          is.null(schema) || !is.data.frame(schema) ||
-          !"tag_name" %in% names(schema)) {
-        return(NULL)
-      }
-      idx <- which(as.character(schema$tag_name) == tag)
-      if (length(idx) == 0L) return(NULL)
-      schema[idx[1L], , drop = FALSE]
-    },
-
-    .is_tag_missing_from_schema = function(tag) {
-      startsWith(as.character(tag %||% ""), "@") && is.null(private$.schema_row(tag))
-    },
-
-    # Build a w:p XML node with plain text, optional bold run, optional
-    # space-before/after paragraph spacing (in points), and optional font size
-    # (in points, applied to the run).
-    .make_w_para = function(text, bold = FALSE, space_before_pt = 0L,
-                            space_after_pt = 0L, font_size_pt = NULL) {
-      W <- "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-      esc <- function(s) {
-        s <- gsub("&", "&amp;", s, fixed = TRUE)
-        s <- gsub("<", "&lt;",  s, fixed = TRUE)
-        s <- gsub(">", "&gt;",  s, fixed = TRUE)
-        s
-      }
-      sp_before <- as.integer(space_before_pt) * 20L
-      sp_after  <- as.integer(space_after_pt)  * 20L
-      # Always emit w:spacing so that both before/after values are explicitly set,
-      # overriding any paragraph-style defaults from the reference document.
-      ppr_xml <- sprintf('<w:pPr><w:spacing w:before="%d" w:after="%d"/></w:pPr>',
-                         sp_before, sp_after)
-      # Build w:rPr with bold and/or font size
-      rpr_parts <- character(0)
-      if (bold)                              rpr_parts <- c(rpr_parts, "<w:b/>")
-      if (!is.null(font_size_pt) && !is.na(font_size_pt)) {
-        sz <- as.integer(font_size_pt) * 2L  # w:sz is half-points
-        rpr_parts <- c(rpr_parts,
-                       sprintf('<w:sz w:val="%d"/>', sz),
-                       sprintf('<w:szCs w:val="%d"/>', sz))
-      }
-      rpr_xml <- if (length(rpr_parts) > 0L) {
-        paste0("<w:rPr>", paste(rpr_parts, collapse = ""), "</w:rPr>")
-      } else ""
-      xml2::read_xml(sprintf(
-        '<w:p xmlns:w="%s">%s<w:r>%s<w:t xml:space="preserve">%s</w:t></w:r></w:p>',
-        W, ppr_xml, rpr_xml, esc(text)
-      ))
-    },
-
-    # Find the paragraph inside a w:tc (table cell) that contains 'tag',
-    # insert 'items' (list of lists with $text, $bold, $space_before_pt) as
-    # sibling w:p nodes immediately before it inside the same cell, then
-    # remove the tag paragraph.  Returns TRUE on success, FALSE if not found.
-    .replace_tag_in_cell = function(doc, tag, items) {
-      body_xml <- officer::docx_body_xml(doc)
-      ns       <- xml2::xml_ns(body_xml)
-
-      tc_paras <- xml2::xml_find_all(body_xml, ".//w:tc/w:p", ns = ns)
-      target_para <- NULL
-      for (p in tc_paras) {
-        if (grepl(tag, xml2::xml_text(p), fixed = TRUE)) {
-          target_para <- p
-          break
-        }
-      }
-      if (is.null(target_para)) return(FALSE)
-
-      for (item in items) {
-        node <- private$.make_w_para(
-          text            = item$text,
-          bold            = isTRUE(item$bold),
-          space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt,
-          space_after_pt  = if (is.null(item$space_after_pt))  0L else item$space_after_pt,
-          font_size_pt    = item$font_size_pt
-        )
-        xml2::xml_add_sibling(target_para, node, .where = "before")
-      }
-      xml2::xml_remove(target_para)
-      TRUE
-    },
-
     # ── TOR generation private methods ─────────────────────────────────────
 
-    # Use the IPHRA-specific template rather than the generic REACH TOR.
-    create_base_doc = function(reference_docx = NULL) {
-      if (!is.null(reference_docx) && file.exists(reference_docx)) {
-        return(officer::read_docx(reference_docx))
-      }
-      iphra_path <- system.file("resources", "reach_tor_iphra_template.docx",
-                                package = "phr")
-      if (nzchar(iphra_path) && file.exists(iphra_path)) {
-        return(officer::read_docx(iphra_path))
-      }
-      # Fallback to generic template
-      reach_path <- system.file("resources", "reach_tor_template.docx", package = "phr")
-      if (nzchar(reach_path) && file.exists(reach_path)) {
-        return(officer::read_docx(reach_path))
-      }
-      officer::read_docx()
+    .default_template_filenames = function() {
+      c("reach_tor_iphra_template.docx", "reach_tor_template.docx", "protocol_report_template.docx")
     },
 
     .schema_metadata_key = function(tag) {
@@ -947,6 +760,7 @@ IPHRAProtocol <- R6::R6Class(
 
       rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
       for (i in seq_len(nrow(rows))) {
+        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
         tag <- as.character(rows$tag_name[i] %||% "")
         if (!nzchar(tag)) next
 
@@ -975,6 +789,7 @@ IPHRAProtocol <- R6::R6Class(
     handle_checkbox_replace = function(doc, rows) {
       rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
       for (i in seq_len(nrow(rows))) {
+        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
         tag <- as.character(rows$tag_name[i] %||% "")
         if (nzchar(tag))
           doc <- private$.checkbox(doc, tag, private$.schema_flag_from_tag(tag))
@@ -992,6 +807,7 @@ IPHRAProtocol <- R6::R6Class(
 
       # ── Schema-driven calculate tags ────────────────────────────────────
       for (i in seq_len(nrow(calculate_rows))) {
+        if (!private$.should_apply_schema_row(calculate_rows[i, , drop = FALSE])) next
         tag <- as.character(calculate_rows$tag_name[i] %||% "")
         doc <- switch(
           tag,
@@ -1314,6 +1130,7 @@ IPHRAProtocol <- R6::R6Class(
         "@obs_water_inc"      = "tool_obs_water_point_iphra_v2"
       )
       for (i in seq_len(nrow(rows))) {
+        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
         tag <- as.character(rows$tag_name[i] %||% "")
         if (!nzchar(tag)) next
         if (!tag %in% names(tag_tool_map)) {
@@ -1344,6 +1161,7 @@ IPHRAProtocol <- R6::R6Class(
     # For each tag, look up the corresponding metadata value and replace.
     handle_input = function(doc, rows) {
       for (i in seq_len(nrow(rows))) {
+        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
         tag <- as.character(rows$tag_name[i] %||% "")
         if (!nzchar(tag)) next
         v   <- private$.schema_metadata_value(tag)
@@ -1352,24 +1170,10 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Handle all schema 'conditional_replace' type rows.
-    # Rows with empty 'condition' are skipped. For non-empty conditions, the
-    # condition string is resolved against self$conditional_metadata; when the
-    # corresponding flag is TRUE the tag is replaced with 'default_value'.
+    # Backward-compatible alias: conditional_replace rows are handled through
+    # the same replace pathway, with row conditions enforced uniformly.
     handle_conditional_replace = function(doc, rows) {
-      for (i in seq_len(nrow(rows))) {
-        tag       <- as.character(rows$tag_name[i]     %||% "")
-        condition <- trimws(as.character(rows$condition[i] %||% ""))
-        def_val   <- as.character(rows$default_value[i] %||% "")
-        if (!nzchar(tag)) next
-        if (!nzchar(condition)) next
-
-        flag <- isTRUE(self$conditional_metadata[[condition]])
-        if (flag) {
-          doc <- private$.replace(doc, tag, def_val)
-        }
-      }
-      doc
+      private$handle_replace(doc, rows)
     },
 
     # Handle all schema 'table' type rows.
@@ -1379,6 +1183,7 @@ IPHRAProtocol <- R6::R6Class(
     # (e.g. '@sample_size_hh_mort_table' → '@sample_size_hh_mort_' + 't' + 'able').
     handle_table = function(doc, rows) {
       for (i in seq_len(nrow(rows))) {
+        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
         tag <- as.character(rows$tag_name[i] %||% "")
         if (!nzchar(tag)) next
         # Normalise any split runs so cursor_reach can find the full tag text
@@ -1861,64 +1666,6 @@ IPHRAProtocol <- R6::R6Class(
              col_fn = function(r) phr_fmt_n(r$Mort_HH_Sample_Size, "households"))
       )
       private$.build_sample_size_table(doc, "@sample_size_hh_mort_table", params)
-    },
-
-    # After all known tag replacements, remove any remaining @-prefixed tags
-    # so they do not appear in the exported document.
-    #
-    # Processes each paragraph as a whole to correctly handle cases where a tag
-    # is split across multiple w:t (text) nodes due to Word formatting.  For each
-    # paragraph, all text node contents are concatenated, the combined string is
-    # scanned for @-prefixed patterns, the characters that form those patterns are
-    # identified, and the corresponding characters are removed from the individual
-    # text nodes (preserving characters that belong to non-tag text).
-    remove_remaining_tags = function(doc) {
-      body_xml <- officer::docx_body_xml(doc)
-      ns       <- xml2::xml_ns(body_xml)
-
-      # Pattern matches all @-prefixed placeholder tags used in TOR templates.
-      # Underscores appear in tag names (e.g. @pop_idpcamp, @data_start_date).
-      # Hyphens are included to handle any hyphenated tag variants in custom templates.
-      tag_pattern <- "@[A-Za-z0-9_.\\-]+"
-
-      paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
-      for (para in paras) {
-        text_nodes <- xml2::xml_find_all(para, ".//w:t", ns = ns)
-        if (length(text_nodes) == 0L) next
-
-        texts    <- vapply(text_nodes, xml2::xml_text, character(1L))
-        combined <- paste(texts, collapse = "")
-        if (!grepl(tag_pattern, combined, perl = TRUE)) next
-
-        nc <- nchar(combined)
-        if (nc == 0L) next
-
-        # Build a mapping of character index → text-node index
-        node_idx <- rep(seq_along(texts), times = nchar(texts))
-
-        # Mark characters that are part of @-prefixed tags for removal
-        matches     <- gregexpr(tag_pattern, combined, perl = TRUE)[[1L]]
-        match_lens  <- attr(matches, "match.length")
-        remove_pos  <- logical(nc)
-        for (j in seq_along(matches)) {
-          if (matches[j] > 0L) {
-            start <- matches[j]
-            end   <- min(matches[j] + match_lens[j] - 1L, nc)
-            remove_pos[start:end] <- TRUE
-          }
-        }
-
-        # Redistribute cleaned characters back to the original text nodes
-        chars <- strsplit(combined, "", fixed = TRUE)[[1L]]
-        for (i in seq_along(text_nodes)) {
-          node_char_idx <- which(node_idx == i)
-          if (length(node_char_idx) == 0L) next
-          keep     <- !remove_pos[node_char_idx]
-          new_text <- paste(chars[node_char_idx[keep]], collapse = "")
-          xml2::xml_text(text_nodes[[i]]) <- new_text
-        }
-      }
-      doc
     },
 
     # Load survey/choices/settings from an xlsx path into an existing Tool object.

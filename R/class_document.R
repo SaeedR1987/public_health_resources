@@ -9,30 +9,51 @@ Document <- R6::R6Class(
   "Document",
   inherit = Orchestrator,
   public = list(
+    #' @field document Cached \code{officer::rdocx} object used for document
+    #'   generation workflows.
+    document = NULL,
+
     #' @description
     #' Creates a new Document object.
     #' @return A new Document object.
     initialize = function() {
       super$initialize()
+      self$document <- self$create_base_doc()
       invisible(self)
+    },
+
+    #' @description
+    #' Create and cache the base \code{.docx} template used for generation.
+    #' @param reference_docx Optional path to a custom \code{.docx} template.
+    #' @return An \code{officer::rdocx} object.
+    create_base_doc = function(reference_docx = NULL) {
+      if (!is.null(reference_docx) && file.exists(reference_docx)) {
+        self$document <- officer::read_docx(reference_docx)
+        return(self$document)
+      }
+
+      template_names <- private$.default_template_filenames()
+      for (template_name in template_names) {
+        packaged <- system.file("resources", template_name, package = "phr")
+        if (nzchar(packaged) && file.exists(packaged)) {
+          self$document <- officer::read_docx(packaged)
+          return(self$document)
+        }
+        local_path <- file.path("inst", "resources", template_name)
+        if (file.exists(local_path)) {
+          self$document <- officer::read_docx(local_path)
+          return(self$document)
+        }
+      }
+
+      self$document <- officer::read_docx()
+      self$document
     }
   ),
 
   private = list(
-    # Create an officer doc using the REACH TOR template when available, or blank.
-    create_base_doc = function(reference_docx = NULL) {
-      if (!is.null(reference_docx) && file.exists(reference_docx)) {
-        return(officer::read_docx(reference_docx))
-      }
-      reach_path <- system.file("resources", "reach_tor_template.docx", package = "phr")
-      if (nzchar(reach_path)) {
-        return(officer::read_docx(reach_path))
-      }
-      sys_path <- system.file("resources", "protocol_report_template.docx", package = "phr")
-      if (nzchar(sys_path)) {
-        return(officer::read_docx(sys_path))
-      }
-      officer::read_docx()
+    .default_template_filenames = function() {
+      c("reach_tor_template.docx", "protocol_report_template.docx")
     },
 
     # Apply protocol schema handling in a predictable order.
@@ -46,10 +67,7 @@ Document <- R6::R6Class(
         return(doc)
       }
 
-      handling_order <- c(
-        "row_delete", "replace", "input", "checkbox_replace",
-        "conditional_replace", "calculate", "table", "image"
-      )
+      handling_order <- c("row_delete", "replace", "input", "checkbox_replace", "calculate", "table", "image")
 
       for (handling in handling_order) {
         schema_handling <- if ("handling" %in% names(schema) && !is.null(schema$handling)) {
@@ -57,10 +75,12 @@ Document <- R6::R6Class(
         } else {
           rep("", nrow(schema))
         }
-        idx <- which(schema_handling == handling)
+        normalized_handling <- ifelse(schema_handling == "conditional_replace", "replace", schema_handling)
+        idx <- which(normalized_handling == handling)
         if (length(idx) == 0L) next
         for (i in idx) {
           row <- schema[i, required_cols, drop = FALSE]
+          if (!isTRUE(private$.should_apply_schema_row(row))) next
           doc <- switch(
             handling,
             replace             = private$handle_replace(doc, row),
@@ -70,7 +90,6 @@ Document <- R6::R6Class(
             row_delete          = private$handle_row_delete(doc, row),
             table               = private$handle_table(doc, row),
             image               = private$handle_image(doc, row),
-            conditional_replace = private$handle_conditional_replace(doc, row),
             doc
           )
         }
@@ -117,11 +136,7 @@ Document <- R6::R6Class(
     },
 
     handle_conditional_replace = function(doc, row) {
-      tag <- as.character(row$tag_name[[1L]] %||% "")
-      default_value <- as.character(row$default_value[[1L]] %||% "")
-      key <- sub("^@", "", tag)
-      value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
-      private$.replace(doc, tag, if (isTRUE(value)) default_value else "")
+      private$handle_replace(doc, row)
     },
 
     # Load protocol schema metadata with a blank fallback.
@@ -160,6 +175,156 @@ Document <- R6::R6Class(
         return(doc)
       }
       private$._replace_across_runs(doc, old, as.character(new_val %||% ""))
+    },
+
+    .schema_row = function(tag) {
+      schema <- self$protocol_schema
+      if (!is.character(tag) || length(tag) != 1 || !nzchar(tag) ||
+          is.null(schema) || !is.data.frame(schema) ||
+          !"tag_name" %in% names(schema)) {
+        return(NULL)
+      }
+      idx <- which(as.character(schema$tag_name) == tag)
+      if (length(idx) == 0L) return(NULL)
+      schema[idx[1L], , drop = FALSE]
+    },
+
+    .tag_is_missing_from_schema = function(tag) {
+      startsWith(as.character(tag %||% ""), "@") && is.null(private$.schema_row(tag))
+    },
+
+    .checkbox = function(doc, tag, condition) {
+      if (private$.tag_is_missing_from_schema(tag)) {
+        return(private$.replace(doc, tag, ""))
+      }
+      private$.replace(doc, tag, if (isTRUE(condition)) "X" else "\u25a1")
+    },
+
+    .make_w_para = function(text, bold = FALSE, space_before_pt = 0L,
+                            space_after_pt = 0L, font_size_pt = NULL) {
+      W <- "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+      esc <- function(s) {
+        s <- gsub("&", "&amp;", s, fixed = TRUE)
+        s <- gsub("<", "&lt;",  s, fixed = TRUE)
+        s <- gsub(">", "&gt;",  s, fixed = TRUE)
+        s
+      }
+      sp_before <- as.integer(space_before_pt) * 20L
+      sp_after  <- as.integer(space_after_pt)  * 20L
+      ppr_xml <- sprintf('<w:pPr><w:spacing w:before="%d" w:after="%d"/></w:pPr>',
+                         sp_before, sp_after)
+      rpr_parts <- character(0)
+      if (bold) rpr_parts <- c(rpr_parts, "<w:b/>")
+      if (!is.null(font_size_pt) && !is.na(font_size_pt)) {
+        sz <- as.integer(font_size_pt) * 2L
+        rpr_parts <- c(rpr_parts,
+                       sprintf('<w:sz w:val="%d"/>', sz),
+                       sprintf('<w:szCs w:val="%d"/>', sz))
+      }
+      rpr_xml <- if (length(rpr_parts) > 0L) {
+        paste0("<w:rPr>", paste(rpr_parts, collapse = ""), "</w:rPr>")
+      } else ""
+      xml2::read_xml(sprintf(
+        '<w:p xmlns:w="%s">%s<w:r>%s<w:t xml:space="preserve">%s</w:t></w:r></w:p>',
+        W, ppr_xml, rpr_xml, esc(text)
+      ))
+    },
+
+    .replace_tag_in_cell = function(doc, tag, items) {
+      body_xml <- officer::docx_body_xml(doc)
+      ns       <- xml2::xml_ns(body_xml)
+
+      tc_paras <- xml2::xml_find_all(body_xml, ".//w:tc/w:p", ns = ns)
+      target_para <- NULL
+      for (p in tc_paras) {
+        if (grepl(tag, xml2::xml_text(p), fixed = TRUE)) {
+          target_para <- p
+          break
+        }
+      }
+      if (is.null(target_para)) return(FALSE)
+
+      for (item in items) {
+        node <- private$.make_w_para(
+          text            = item$text,
+          bold            = isTRUE(item$bold),
+          space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt,
+          space_after_pt  = if (is.null(item$space_after_pt))  0L else item$space_after_pt,
+          font_size_pt    = item$font_size_pt
+        )
+        xml2::xml_add_sibling(target_para, node, .where = "before")
+      }
+      xml2::xml_remove(target_para)
+      TRUE
+    },
+
+    remove_remaining_tags = function(doc) {
+      body_xml <- officer::docx_body_xml(doc)
+      ns       <- xml2::xml_ns(body_xml)
+      tag_pattern <- "@[A-Za-z0-9_.\\-]+"
+
+      paras <- xml2::xml_find_all(body_xml, ".//w:p", ns = ns)
+      for (para in paras) {
+        text_nodes <- xml2::xml_find_all(para, ".//w:t", ns = ns)
+        if (length(text_nodes) == 0L) next
+
+        texts    <- vapply(text_nodes, xml2::xml_text, character(1L))
+        combined <- paste(texts, collapse = "")
+        if (!grepl(tag_pattern, combined, perl = TRUE)) next
+
+        nc <- nchar(combined)
+        if (nc == 0L) next
+
+        node_idx <- rep(seq_along(texts), times = nchar(texts))
+        matches    <- gregexpr(tag_pattern, combined, perl = TRUE)[[1L]]
+        match_lens <- attr(matches, "match.length")
+        remove_pos <- logical(nc)
+        for (j in seq_along(matches)) {
+          if (matches[j] > 0L) {
+            start <- matches[j]
+            end   <- min(matches[j] + match_lens[j] - 1L, nc)
+            remove_pos[start:end] <- TRUE
+          }
+        }
+
+        chars <- strsplit(combined, "", fixed = TRUE)[[1L]]
+        for (i in seq_along(text_nodes)) {
+          node_char_idx <- which(node_idx == i)
+          if (length(node_char_idx) == 0L) next
+          keep     <- !remove_pos[node_char_idx]
+          new_text <- paste(chars[node_char_idx[keep]], collapse = "")
+          xml2::xml_text(text_nodes[[i]]) <- new_text
+        }
+      }
+      doc
+    },
+
+    .resolve_condition_flag = function(condition) {
+      # Condition semantics:
+      # - empty string: apply row
+      # - literal true/false: apply according to literal
+      # - otherwise: treat as key in conditional_metadata, then metadata
+      condition <- trimws(as.character(condition %||% ""))
+      if (!nzchar(condition)) return(TRUE)
+
+      norm <- tolower(condition)
+      if (norm %in% c("true", "false")) return(identical(norm, "true"))
+
+      key <- sub("^@", "", condition)
+      if (is.list(self$conditional_metadata) && key %in% names(self$conditional_metadata)) {
+        return(isTRUE(self$conditional_metadata[[key]]))
+      }
+      if (is.list(self$metadata) && key %in% names(self$metadata)) {
+        return(isTRUE(self$metadata[[key]]))
+      }
+      FALSE
+    },
+
+    .should_apply_schema_row = function(row) {
+      if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
+        return(TRUE)
+      }
+      private$.resolve_condition_flag(row$condition[[1L]] %||% "")
     },
 
     ._replace_across_runs = function(doc, tag, new_val) {
