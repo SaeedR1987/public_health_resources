@@ -50,7 +50,7 @@ View(protocol$access_nested(field = "framework", member = "modified_objectives_s
 # Test 3: Define Strata and Sample Sizes ####
 
 protocol$access_nested(
-  field = "sample_table",
+  field = "sample_object",
   member = "add_stratum",
   stratum_id              = "strata_A",
   stratum_name            = "Urban North",
@@ -84,7 +84,7 @@ protocol$access_nested(
 
 
 protocol$access_nested(
-  field = "sample_table",
+  field = "sample_object",
   member = "add_stratum",
   stratum_id              = "strata_B",
   stratum_name            = "Peri-Urban East",
@@ -106,7 +106,7 @@ protocol$access_nested(
 )
 
 protocol$access_nested(
-  field = "sample_table",
+  field = "sample_object",
   member = "add_stratum",
   stratum_id              = "strata_C",
   stratum_name            = "Rural South",
@@ -121,8 +121,8 @@ protocol$access_nested(
   n_sites                 = 10
 )
 
-protocol$access_nested(field = "sample_table", member = "calculate_sample_sizes")
-protocol$access_nested(field = "sample_table", member = "get_sample_table")
+protocol$access_nested(field = "sample_object", member = "calculate_sample_sizes")
+protocol$access_nested(field = "sample_object", member = "get_sample_table")
 
 # Test 4: Build and Validate a Sampling Frame ####
 

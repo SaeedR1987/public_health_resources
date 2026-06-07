@@ -250,6 +250,21 @@ Document <- R6::R6Class(
       private$.replace(doc, tag, as.character(value %||% ""), schema_kind = schema_kind)
     },
 
+    .evaluate_calculate_row = function(row) {
+      if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
+        return(NULL)
+      }
+      binding_name <- trimws(as.character(row$condition[[1L]] %||% ""))
+      if (!nzchar(binding_name) || !binding_name %in% names(self)) {
+        return(NULL)
+      }
+      value <- tryCatch(self[[binding_name]], error = function(e) NULL)
+      if (is.function(value)) {
+        return(tryCatch(value(), error = function(e) NULL))
+      }
+      value
+    },
+
     .handle_calculate = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       value <- private$.evaluate_calculate_row(row)
@@ -286,7 +301,20 @@ Document <- R6::R6Class(
       if (nzchar(tag) && identical(schema_kind, "docx")) {
         doc <- private$._replace_across_runs(doc, tag, tag)
       }
-      private$.dispatch_schema_function(doc = doc, row = row, schema_kind = schema_kind)
+      tbl <- private$.dispatch_schema_function(row = row, schema_kind = schema_kind)
+      if (is.null(tbl) || !inherits(tbl, "flextable")) {
+        if (nzchar(tag)) return(private$.replace(doc, tag, "", schema_kind = schema_kind))
+        return(doc)
+      }
+      if (identical(schema_kind, "docx")) {
+        return(tryCatch({
+          doc <- officer::cursor_reach(doc, keyword = tag)
+          doc <- flextable::body_add_flextable(doc, tbl, pos = "before")
+          doc <- officer::cursor_forward(doc)
+          officer::body_remove(doc)
+        }, error = function(e) private$.replace(doc, tag, "", schema_kind = schema_kind)))
+      }
+      doc
     },
 
     #' @description Handle a schema row with \code{handling == "image"}.
@@ -301,7 +329,12 @@ Document <- R6::R6Class(
       if (nzchar(tag) && identical(schema_kind, "docx")) {
         doc <- private$._replace_across_runs(doc, tag, tag)
       }
-      private$.dispatch_schema_function(doc = doc, row = row, schema_kind = schema_kind)
+      out <- private$.dispatch_schema_function(row = row, schema_kind = schema_kind)
+      if (is.null(out)) {
+        if (nzchar(tag)) return(private$.replace(doc, tag, "", schema_kind = schema_kind))
+        return(doc)
+      }
+      out
     },
 
     # Load protocol schema metadata with a blank fallback.
@@ -390,14 +423,57 @@ Document <- R6::R6Class(
       c("tag_name", "handling", "condition", "default_value", "function_name")
     },
 
-    .dispatch_schema_function = function(doc, row, schema_kind = c("docx", "pptx")) {
+    .dispatch_schema_function = function(row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       fn_name <- trimws(as.character(row[["function_name"]][[1L]] %||% ""))
-      if (!nzchar(fn_name)) return(doc)
+      if (!nzchar(fn_name)) return(NULL)
       fn <- tryCatch(get(fn_name, mode = "function"), error = function(e) NULL)
-      if (!is.function(fn)) return(doc)
-      out <- tryCatch(fn(self = self, doc = doc, row = row, schema_kind = schema_kind), error = function(e) NULL)
-      if (is.null(out)) doc else out
+      if (!is.function(fn)) return(NULL)
+      args <- private$.schema_dispatch_args(fn_name = fn_name, row = row, schema_kind = schema_kind)
+      tryCatch(do.call(fn, args), error = function(e) NULL)
+    },
+
+    .schema_dispatch_args = function(fn_name, row, schema_kind = c("docx", "pptx")) {
+      schema_kind <- match.arg(schema_kind)
+      sample_table <- self$sample_table
+      if (is.null(sample_table) && !is.null(self$sample_object) && inherits(self$sample_object, "Sample")) {
+        sample_table <- tryCatch(self$access_nested(field = "sample_object", member = "get_sample_table"), error = function(e) NULL)
+      }
+      master_schema <- tryCatch(self$access_nested(field = "framework", member = "master_objectives_schema"), error = function(e) NULL)
+      tool_names <- names(self$tools %||% list())
+      tool_codes <- lapply(tool_names, function(tn) {
+        tool <- self$tools[[tn]]
+        if (!is.null(tool) && inherits(tool, "Tool")) {
+          return(as.character(tool$get_indicator_codes(prefer_revised = TRUE)))
+        }
+        character(0)
+      })
+      names(tool_codes) <- tool_names
+      all_tool_codes <- unique(unlist(tool_codes, use.names = FALSE))
+
+      switch(
+        fn_name,
+        table_primary_data_sources = list(
+          master_schema = master_schema,
+          tool_indicator_codes = tool_codes
+        ),
+        table_secondary_data_sources = list(
+          master_schema = master_schema,
+          secondary_data = self$secondary_data %||% list()
+        ),
+        table_sample_size_general = list(
+          sample_table = sample_table
+        ),
+        table_sample_size_individual = list(
+          sample_table = sample_table,
+          indicator_codes = all_tool_codes
+        ),
+        table_sample_size_mortality = list(
+          sample_table = sample_table,
+          indicator_codes = all_tool_codes
+        ),
+        list()
+      )
     },
 
     .schema_row = function(tag) {

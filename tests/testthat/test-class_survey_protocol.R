@@ -283,7 +283,7 @@ test_that("add_stratum for pps_rlc defaults cluster_size to 3", {
 
 test_that("SurveyProtocol initialises sampling_frame as a SamplingFrame object", {
   p <- make_protocol()
-  expect_true(inherits(p$sample_table, "Sample"))
+  expect_true(inherits(p$sample_object, "Sample"))
   expect_null(p$get_sample_table())
   expect_true(inherits(p$sampling_frame, "SamplingFrame"))
   expect_equal(nrow(p$sampling_frame$log_df), 0L)
@@ -618,7 +618,7 @@ test_that("apply_sampling_method errors for pps_rlc when n_sites is not supplied
   # Manually corrupt the strata table to remove n_sites, simulating a missing-param scenario
   st <- p$get_sample_table()
   st$n_sites <- NA_real_
-  p$sample_table$set_sample_table(st)
+  p$sample_object$set_sample_table(st)
 
   frame <- data.frame(
     stratum         = rep("s1", 20),
@@ -824,7 +824,7 @@ test_that("Protocol accesses Sample through access_nested and updates metadata",
 
   Sys.sleep(0.01)
   p$access_nested(
-    field = "sample_table",
+    field = "sample_object",
     member = "add_stratum",
     stratum_id = "s1",
     stratum_name = "S1",
@@ -834,20 +834,20 @@ test_that("Protocol accesses Sample through access_nested and updates metadata",
 
   expect_true(p$metadata$modified_datetime > t_before)
   expect_equal(
-    p$access_nested(field = "sample_table", member = "get_sampling_methods"),
+    p$access_nested(field = "sample_object", member = "get_sampling_methods"),
     "simple_random"
   )
   expect_equal(
-    p$access_nested(field = "sample_table", member = "get_strata_names"),
+    p$access_nested(field = "sample_object", member = "get_strata_names"),
     "S1"
   )
 
-  st <- p$access_nested(field = "sample_table", member = "get_sample_table")
+  st <- p$access_nested(field = "sample_object", member = "get_sample_table")
   expect_equal(nrow(st), 1L)
 
-  p$access_nested(field = "sample_table", member = "remove_stratum", "S1")
+  p$access_nested(field = "sample_object", member = "remove_stratum", "S1")
   expect_equal(
-    nrow(p$access_nested(field = "sample_table", member = "get_sample_table")),
+    nrow(p$access_nested(field = "sample_object", member = "get_sample_table")),
     0L
   )
 })

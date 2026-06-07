@@ -243,33 +243,6 @@ Orchestrator <- R6::R6Class(
       invisible(NULL)
     },
 
-    #' @description Evaluate a calculate-schema row against active bindings.
-    #' @param row Single-row schema data frame.
-    #' @return The calculated value, or \code{NULL} when unavailable.
-    .evaluate_calculate_row = function(row) {
-      if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
-        return(NULL)
-      }
-      # For calculate handlers, `condition` is treated as the active-binding
-      # name to evaluate (rather than a boolean gating expression).
-      binding_name <- trimws(as.character(row$condition[[1L]] %||% ""))
-      if (!nzchar(binding_name) || !binding_name %in% names(self)) {
-        return(NULL)
-      }
-      value <- tryCatch(self[[binding_name]], error = function(e) NULL)
-      if (is.function(value)) {
-        return(tryCatch(value(), error = function(e) NULL))
-      }
-      value
-    },
-
-    #' @description Backward-compatible calculate handler alias.
-    #' @param row Single-row schema data frame.
-    #' @return The calculated value, or \code{NULL} when unavailable.
-    .handle_calculate = function(row) {
-      private$.evaluate_calculate_row(row)
-    },
-
     #' @description Resolve a top-level or nested target object.
     #' @param field Top-level field name.
     #' @param name Optional exact list element name.

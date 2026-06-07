@@ -69,7 +69,7 @@ validate_protocol <- function(protocol) {
 #' mirrors the \code{Protocol$validate_strata_table()} method.
 #'
 #' @param sample_table A data frame to validate (typically
-#'   \code{protocol$sample_table}).
+#'   \code{protocol$sample_object} / \code{protocol$sample_table}).
 #' @return \code{TRUE} if the table is valid, \code{FALSE} otherwise.
 #' @export
 validate_strata_table <- function(sample_table) {
@@ -185,12 +185,12 @@ restore_protocol <- function(protocol_data) {
         month_year       = protocol_data$metadata$month_year
       )
       if (!is.null(protocol_data$sample_object) && inherits(protocol_data$sample_object, "Sample")) {
-        protocol$sample_table <- protocol_data$sample_object
+        protocol$sample_object <- protocol_data$sample_object
       } else if (!is.null(protocol_data$sample_table) && is.data.frame(protocol_data$sample_table)) {
-        if (is.null(protocol$sample_table) || !inherits(protocol$sample_table, "Sample")) {
-          protocol$sample_table <- Sample$new()
+        if (is.null(protocol$sample_object) || !inherits(protocol$sample_object, "Sample")) {
+          protocol$sample_object <- Sample$new()
         }
-        protocol$sample_table$set_sample_table(protocol_data$sample_table)
+        protocol$sample_object$set_sample_table(protocol_data$sample_table)
       }
       # sampling_frame is exported as a raw data frame; restore into SamplingFrame object.
       if (!is.null(protocol_data$sampling_frame) &&

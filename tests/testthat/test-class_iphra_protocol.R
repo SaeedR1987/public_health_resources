@@ -353,16 +353,16 @@ test_that("IPHRAProtocol add_stratum updates num_strata_units", {
 
 test_that("IPHRAProtocol access_nested remove_stratum updates num_strata_units", {
   p <- IPHRAProtocol$new()
-  p$access_nested(field = "sample_table", member = "add_stratum",
+  p$access_nested(field = "sample_object", member = "add_stratum",
                   stratum_id = "north", stratum_name = "Northern Region", sampling_method = "purposive")
-  p$access_nested(field = "sample_table", member = "add_stratum",
+  p$access_nested(field = "sample_object", member = "add_stratum",
                   stratum_id = "south", stratum_name = "Southern Region", sampling_method = "purposive")
 
-  p$access_nested(field = "sample_table", member = "remove_stratum", "Northern Region")
+  p$access_nested(field = "sample_object", member = "remove_stratum", "Northern Region")
 
   expect_equal(p$metadata$num_strata_units, 1L)
   expect_equal(
-    p$access_nested(field = "sample_table", member = "get_strata_names"),
+    p$access_nested(field = "sample_object", member = "get_strata_names"),
     "Southern Region"
   )
 })

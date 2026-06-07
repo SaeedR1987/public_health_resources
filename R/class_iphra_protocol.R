@@ -217,7 +217,6 @@ IPHRAProtocol <- R6::R6Class(
       # Load protocol schema (tags + defaults) from the bundled resource
       private$.load_protocol_schema()
       private$initialize_conditional_metadata()
-      private$.initialize_condition_active_bindings()
       private$sync_sampling_conditional_metadata()
 
       phr_message(phr_txt("IPHRAProtocol initialized."), origin = "IPHRAProtocol$initialize")
@@ -414,11 +413,7 @@ IPHRAProtocol <- R6::R6Class(
         field = field, member = member, target_field = target_field,
         name = name, role = role
       )
-      st <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
-        self$sample_table$get_sample_table()
-      } else {
-        NULL
-      }
+      st <- self$sample_table
       self$metadata$num_strata_units <- if (!is.null(st) && is.data.frame(st) && "stratum_id" %in% names(st)) {
         length(unique(st$stratum_id))
       } else {
@@ -429,18 +424,51 @@ IPHRAProtocol <- R6::R6Class(
     }
   ),
 
+  active = list(
+    `Special Situations` = function(value) FALSE,
+    cluster_site_selection = function(value) FALSE,
+    definition_complementary_feeding = function(value) FALSE,
+    definition_gam = function(value) FALSE,
+    definition_gam_women = function(value) FALSE,
+    definition_household = function(value) FALSE,
+    definition_muac = function(value) FALSE,
+    exhaustive_site_selection = function(value) FALSE,
+    general_survey = function(value) FALSE,
+    ind_ecfies = function(value) FALSE,
+    ind_iycfe = function(value) FALSE,
+    ind_measles_vaccination = function(value) FALSE,
+    ind_muac_children = function(value) FALSE,
+    ind_muac_plw = function(value) FALSE,
+    ind_vitamin_a_coverage = function(value) FALSE,
+    individual_survey = function(value) FALSE,
+    kii_community = function(value) FALSE,
+    kii_fsl_provider = function(value) FALSE,
+    kii_health_provider = function(value) FALSE,
+    kii_nutrition_provider = function(value) FALSE,
+    kii_service_providers = function(value) FALSE,
+    kii_wash_provider = function(value) FALSE,
+    mortality_survey = function(value) FALSE,
+    muac_survey = function(value) FALSE,
+    multiple_methods_no = function(value) FALSE,
+    multiple_methods_yes = function(value) FALSE,
+    multiple_strata = function(value) FALSE,
+    obs_community = function(value) FALSE,
+    obs_crops_livestock = function(value) FALSE,
+    obs_health_facility = function(value) FALSE,
+    obs_latrines = function(value) FALSE,
+    obs_service_providers = function(value) FALSE,
+    obs_water_point = function(value) FALSE,
+    purposive_site_selection = function(value) FALSE,
+    rate_individual_survey = function(value) FALSE,
+    rate_survey = function(value) FALSE,
+    rlc_household_selection = function(value) FALSE,
+    srs_household_selection = function(value) FALSE,
+    srs_site_selection = function(value) FALSE,
+    systematic_household_selection = function(value) FALSE,
+    systematic_site_selection = function(value) FALSE
+  ),
+
   private = list(
-
-    .condition_binding_values = list(),
-
-    # Row labels in the sample-size tables that represent total/summary values.
-    # These rows receive a light-grey background to visually distinguish them.
-    .sample_size_total_labels = c(
-      "Households to be Included",
-      "Individuals to be Included",
-      "Population to be Included",
-      "Person-Time to be Included"
-    ),
 
     # Named list: tool_name -> list(class = <class_name>, file = <xlsx_filename>)
     .iphra_tools = list(
@@ -538,46 +566,49 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     .condition_keys_from_schema = function() {
-      schema_conditions <- character(0)
-      if (!is.null(self$protocol_schema) &&
-          is.data.frame(self$protocol_schema) &&
-          "condition" %in% names(self$protocol_schema)) {
-        raw_values <- as.character(self$protocol_schema$condition %||% "")
-        raw_values <- raw_values[!is.na(raw_values) & nzchar(trimws(raw_values))]
-        schema_conditions <- unlist(strsplit(raw_values, ",", fixed = TRUE), use.names = FALSE)
-        schema_conditions <- trimws(schema_conditions)
-        schema_conditions <- schema_conditions[nzchar(schema_conditions)]
-      }
-      unique(schema_conditions)
-    },
-
-    .initialize_condition_active_bindings = function() {
-      keys <- private$.condition_keys_from_schema()
-      if (length(keys) == 0L) return(invisible(NULL))
-      if (is.null(private$.condition_binding_values) || !is.list(private$.condition_binding_values)) {
-        private$.condition_binding_values <- list()
-      }
-      for (key in keys) {
-        if (!key %in% names(private$.condition_binding_values)) {
-          private$.condition_binding_values[[key]] <- FALSE
-        }
-        if (!exists(key, envir = self, inherits = FALSE)) {
-          local({
-            nm <- key
-            makeActiveBinding(
-              nm,
-              function(value) {
-                if (!missing(value)) {
-                  private$.condition_binding_values[[nm]] <- value
-                }
-                private$.condition_binding_values[[nm]]
-              },
-              env = self
-            )
-          })
-        }
-      }
-      invisible(NULL)
+      c(
+        "Special Situations",
+        "cluster_site_selection",
+        "definition_complementary_feeding",
+        "definition_gam",
+        "definition_gam_women",
+        "definition_household",
+        "definition_muac",
+        "exhaustive_site_selection",
+        "general_survey",
+        "ind_ecfies",
+        "ind_iycfe",
+        "ind_measles_vaccination",
+        "ind_muac_children",
+        "ind_muac_plw",
+        "ind_vitamin_a_coverage",
+        "individual_survey",
+        "kii_community",
+        "kii_fsl_provider",
+        "kii_health_provider",
+        "kii_nutrition_provider",
+        "kii_service_providers",
+        "kii_wash_provider",
+        "mortality_survey",
+        "muac_survey",
+        "multiple_methods_no",
+        "multiple_methods_yes",
+        "multiple_strata",
+        "obs_community",
+        "obs_crops_livestock",
+        "obs_health_facility",
+        "obs_latrines",
+        "obs_service_providers",
+        "obs_water_point",
+        "purposive_site_selection",
+        "rate_individual_survey",
+        "rate_survey",
+        "rlc_household_selection",
+        "srs_household_selection",
+        "srs_site_selection",
+        "systematic_household_selection",
+        "systematic_site_selection"
+      )
     },
 
     sync_sampling_conditional_metadata = function() {
@@ -1140,465 +1171,6 @@ IPHRAProtocol <- R6::R6Class(
         doc <- private$.replace(doc, tag, as.character(v %||% ""))
       }
       doc
-    },
-
-    # Replace @primary_data_sources_table with an objective × tool matrix.
-    # Rows = distinct objectives included in at least one tool.
-    # Columns = tool short labels.
-    # Cell = "X" where a tool covers at least one indicator for that objective.
-    add_primary_data_sources_table = function(doc) {
-      tool_names <- self$get_tool_names()
-      if (length(tool_names) == 0) {
-        return(private$.replace(doc, "@primary_data_sources_table", ""))
-      }
-
-      master <- private$.get_master_schema()
-      if (!is.data.frame(master) || nrow(master) == 0 ||
-          !all(c("objective_code", "indicator_code", "text_objective") %in% names(master))) {
-        return(private$.replace(doc, "@primary_data_sources_table", ""))
-      }
-
-      # Gather all included indicator codes per tool
-      tool_codes <- lapply(tool_names, function(tn) {
-        private$.get_tool_indicator_codes(tool_names = tn)
-      })
-      names(tool_codes) <- tool_names
-
-      all_codes <- unique(unlist(tool_codes))
-      if (length(all_codes) == 0) {
-        return(private$.replace(doc, "@primary_data_sources_table", ""))
-      }
-
-      # Unique objectives covered by included indicators
-      obj_sub <- unique(master[as.character(master$indicator_code) %in% all_codes,
-                                c("objective_code", "text_objective"), drop = FALSE])
-      obj_sub <- obj_sub[!is.na(obj_sub$objective_code), , drop = FALSE]
-      if (nrow(obj_sub) == 0) {
-        return(private$.replace(doc, "@primary_data_sources_table", ""))
-      }
-      obj_sub <- obj_sub[order(obj_sub$objective_code), , drop = FALSE]
-
-      # Build matrix data frame
-      # Short tool labels (strip common prefix for readability)
-      tool_labels <- gsub("^tool_", "", tool_names)
-      tool_labels <- gsub("_iphra_v[0-9]+$", "", tool_labels)
-
-      mat <- as.data.frame(
-        matrix("", nrow = nrow(obj_sub), ncol = length(tool_names)),
-        stringsAsFactors = FALSE
-      )
-      names(mat) <- tool_labels
-
-      for (j in seq_along(tool_names)) {
-        tc <- tool_codes[[tool_names[j]]]
-        obj_covered <- unique(
-          as.character(master$objective_code[as.character(master$indicator_code) %in% tc])
-        )
-        mat[[j]] <- ifelse(obj_sub$objective_code %in% obj_covered, "X", "")
-      }
-
-      result_df <- cbind(
-        data.frame(Objective = obj_sub$text_objective, stringsAsFactors = FALSE),
-        mat
-      )
-
-      ft <- flextable::flextable(result_df)
-      ft <- flextable::theme_zebra(ft)
-
-      # Page layout: standard portrait page with 1-inch margins ≈ 6.5 in usable
-      page_width_in  <- 6.5
-      n_tool_cols    <- length(tool_names)
-      obj_col_width  <- page_width_in * 0.50
-      tool_col_width <- if (n_tool_cols > 0) (page_width_in * 0.50) / n_tool_cols else 0
-
-      ft <- flextable::width(ft, j = 1, width = obj_col_width)
-      if (n_tool_cols > 0) {
-        ft <- flextable::width(ft, j = seq(2, n_tool_cols + 1), width = tool_col_width)
-      }
-      ft <- flextable::fontsize(ft, size = 7, part = "all")
-      ft <- flextable::set_table_properties(ft, layout = "fixed")
-
-      # Navigate to the @primary_data_sources_table paragraph and replace it
-      tryCatch({
-        doc <- officer::cursor_reach(doc, keyword = "@primary_data_sources_table")
-        doc <- flextable::body_add_flextable(doc, ft, pos = "before")
-        doc <- officer::cursor_forward(doc)
-        doc <- officer::body_remove(doc)
-      }, error = function(e) {
-        phr_warning(phr_txt("Could not insert primary data sources table: {conditionMessage(e)}"),
-                    origin = "IPHRAProtocol$add_primary_data_sources_table")
-        doc <<- private$.replace(doc, "@primary_data_sources_table", "")
-      })
-      doc
-    },
-
-    # Replace @modified_framework_svg with the adjusted SVG rendered as a
-    # high-resolution image, and @secondary_data_sources_table with a flextable.
-    #
-    # Resolution strategy (tried in order, first success wins):
-    #   1. magick  — rasterises at 300 DPI (print quality) if available.
-    #   2. rsvg    — renders at 3 000 px wide (≈ 3× previous 900 px).
-    #   3. Fallback placeholder text.
-    #
-    # Display dimensions are fixed to the portrait page content width (6.5 in)
-    # so that Word never stretches a low-resolution image.
-    add_sdr_table = function(doc) {
-      # ── Framework SVG ──────────────────────────────────────────────────
-      svg_content <- tryCatch(
-        self$framework$adjusted_svg %||% self$framework$master_svg,
-        error = function(e) NULL
-      )
-
-      if (!is.null(svg_content) && nzchar(svg_content)) {
-        png_inserted <- FALSE
-
-        tmp_svg <- tempfile(fileext = ".svg")
-        tmp_png <- tempfile(fileext = ".png")
-        writeLines(svg_content, tmp_svg)
-
-        # Strategy 1: magick — 300 DPI rasterisation (best quality)
-        if (!png_inserted && requireNamespace("magick", quietly = TRUE)) {
-          tryCatch({
-            img <- magick::image_read_svg(tmp_svg, density = 300)
-            magick::image_write(img, tmp_png, format = "png")
-            tryCatch({
-              doc <- officer::cursor_reach(doc, keyword = "@modified_framework_svg")
-              doc <- officer::body_add_img(doc, src = tmp_png,
-                                           width = 6.5, height = 4.5,
-                                           pos = "before")
-              doc <- officer::cursor_forward(doc)
-              doc <- officer::body_remove(doc)
-              png_inserted <- TRUE
-            }, error = function(e2) {
-              phr_warning(phr_txt("Could not insert framework SVG image (magick): {conditionMessage(e2)}"),
-                          origin = "IPHRAProtocol$add_sdr_table")
-            })
-          }, error = function(e) {
-            phr_warning(phr_txt("magick SVG rasterisation failed: {conditionMessage(e)}"),
-                        origin = "IPHRAProtocol$add_sdr_table")
-          })
-        }
-
-        # Strategy 2: rsvg — render at 3 000 px wide (high resolution)
-        if (!png_inserted && requireNamespace("rsvg", quietly = TRUE)) {
-          tryCatch({
-            rsvg::rsvg_png(tmp_svg, tmp_png, width = 3000)
-            tryCatch({
-              doc <- officer::cursor_reach(doc, keyword = "@modified_framework_svg")
-              doc <- officer::body_add_img(doc, src = tmp_png,
-                                           width = 6.5, height = 4.5,
-                                           pos = "before")
-              doc <- officer::cursor_forward(doc)
-              doc <- officer::body_remove(doc)
-              png_inserted <- TRUE
-            }, error = function(e2) {
-              phr_warning(phr_txt("Could not insert framework SVG image (rsvg): {conditionMessage(e2)}"),
-                          origin = "IPHRAProtocol$add_sdr_table")
-            })
-          }, error = function(e) {
-            phr_warning(phr_txt("rsvg SVG-to-PNG conversion failed: {conditionMessage(e)}"),
-                        origin = "IPHRAProtocol$add_sdr_table")
-          })
-        }
-
-        if (!png_inserted) {
-          doc <- private$.replace(doc, "@modified_framework_svg",
-                                  "[Framework diagram — attach SVG manually]")
-        }
-      } else {
-        doc <- private$.replace(doc, "@modified_framework_svg", "")
-      }
-
-      # ── Secondary data sources table ───────────────────────────────────
-      sdr <- self$secondary_data
-
-      # Build the data frame (with data, or one blank row if no data provided)
-      if (!is.null(sdr) && length(sdr) > 0) {
-        master <- private$.get_master_schema()
-
-        obj_labels <- setNames(
-          if (!is.null(master) && is.data.frame(master) &&
-              all(c("objective_code", "text_objective") %in% names(master))) {
-            vapply(names(sdr), function(code) {
-              match_idx <- which(as.character(master$objective_code) == code)
-              if (length(match_idx) > 0) {
-                as.character(master$text_objective[match_idx[1]])
-              } else {
-                code
-              }
-            }, character(1))
-          } else {
-            names(sdr)
-          },
-          names(sdr)
-        )
-
-        sdr_df <- data.frame(
-          Objective = unname(obj_labels[names(sdr)]),
-          Source    = as.character(unname(sdr)),
-          Purpose   = "",
-          stringsAsFactors = FALSE
-        )
-      } else {
-        sdr_df <- data.frame(
-          Objective = "",
-          Source    = "",
-          Purpose   = "",
-          stringsAsFactors = FALSE
-        )
-      }
-
-      # Page layout: standard portrait with 1-inch margins ≈ 6.5 in usable
-      page_width_in <- 6.5
-      col1_width    <- page_width_in * 0.40
-      col2_width    <- page_width_in * 0.30
-      col3_width    <- page_width_in * 0.30
-
-      ft <- flextable::flextable(sdr_df)
-      if (!is.null(sdr) && length(sdr) > 0) {
-        ft <- flextable::merge_v(ft, j = "Objective")
-      }
-      ft <- flextable::theme_zebra(ft)
-      ft <- flextable::width(ft, j = 1, width = col1_width)
-      ft <- flextable::width(ft, j = 2, width = col2_width)
-      ft <- flextable::width(ft, j = 3, width = col3_width)
-      ft <- flextable::fontsize(ft, size = 7, part = "all")
-      ft <- flextable::set_table_properties(ft, layout = "fixed")
-
-      tryCatch({
-        doc <- officer::cursor_reach(doc, keyword = "@secondary_data_sources_table")
-        doc <- flextable::body_add_flextable(doc, ft, pos = "before")
-        doc <- officer::cursor_forward(doc)
-        doc <- officer::body_remove(doc)
-      }, error = function(e) {
-        phr_warning(phr_txt("Could not insert secondary data table: {conditionMessage(e)}"),
-                    origin = "IPHRAProtocol$add_sdr_table")
-        doc <<- private$.replace(doc, "@secondary_data_sources_table", "")
-      })
-
-      doc
-    },
-
-    # ── Sample-size table helpers ──────────────────────────────────────────
-
-    # Build and insert a sample-size flextable for a given tag.
-    # 'param_rows' is a list; each element has:
-    #   $label     : row label (character)
-    #   $col_fn    : function(st_row) → cell value string for one stratum
-    # 'n_blank'    : number of blank rows appended after the data rows.
-    .build_sample_size_table = function(doc, tag, param_rows) {
-      st <- self$get_sample_table()
-      if (is.null(st) || nrow(st) == 0L) {
-        doc <- private$.replace(doc, tag, "")
-        return(doc)
-      }
-
-      strata_names <- if ("stratum_name" %in% names(st)) as.character(st$stratum_name)
-                      else as.character(st$stratum_id)
-
-      n_strata <- length(strata_names)
-      page_width_in  <- 6.5
-      strata_col_w   <- page_width_in / (6L + n_strata)
-      param_col_w    <- strata_col_w * 3L
-      just_col_w     <- strata_col_w * 3L
-
-      # Build data frame: rows = parameters, cols = Parameter + strata + Justification
-      col_names <- c("Parameter", strata_names, "Justification")
-      rows_list <- lapply(param_rows, function(pr) {
-        vals <- vapply(seq_len(n_strata), function(j) {
-          tryCatch(pr$col_fn(st[j, , drop = FALSE]), error = function(e) "")
-        }, character(1L))
-        as.list(c(pr$label, vals, ""))
-      })
-
-      mat <- do.call(rbind, lapply(rows_list, function(r) {
-        as.data.frame(r, stringsAsFactors = FALSE, col.names = col_names)
-      }))
-      names(mat) <- col_names
-
-      # Rows whose Parameter label represents a summary/total value get a
-      # light-grey background to visually distinguish them from other rows.
-      total_row_idx <- which(mat[["Parameter"]] %in% private$.sample_size_total_labels)
-
-      # REACH1 header colour (first colour in the reach1 palette = #EE5859)
-      reach1_bg <- tryCatch(
-        get_color_palette("reach1")[[1L]],
-        error = function(e) {
-          phr_warning(phr_txt("Could not load reach1 palette, using fallback colour: {conditionMessage(e)}"),
-                      origin = "IPHRAProtocol$.build_sample_size_table")
-          "#EE5859"
-        }
-      )
-
-      fp_col   <- officer::fp_border(color = "black", width = 1)
-      fp_outer <- officer::fp_border(color = "black", width = 1.5)
-
-      ft <- flextable::flextable(mat)
-      ft <- flextable::fontsize(ft, size = 8, part = "all")
-      ft <- flextable::width(ft, j = 1L,                     width = param_col_w)
-      ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
-      ft <- flextable::width(ft, j = n_strata + 2L,          width = just_col_w)
-      ft <- flextable::set_table_properties(ft, layout = "fixed")
-
-      # Header: bold, REACH1 background, white text
-      ft <- flextable::bold(ft, part = "header")
-      ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
-      ft <- flextable::color(ft, color = "white", part = "header")
-
-      # Body: white background for all rows; light grey for total/summary rows
-      ft <- flextable::bg(ft, bg = "white", part = "body")
-      if (length(total_row_idx) > 0L) {
-        ft <- flextable::bg(ft, i = total_row_idx, bg = "#D3D3D3", part = "body")
-      }
-
-      # Borders: start from a clean slate
-      ft <- flextable::border_remove(ft)
-      # Vertical column separators at 1 pt (body and header)
-      ft <- flextable::vline(ft, border = fp_col, part = "body")
-      ft <- flextable::vline(ft, border = fp_col, part = "header")
-      # Outer border of the whole table at 1.5 pt
-      ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
-      # Header row bottom border at 1.5 pt (visually separates header from body)
-      ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
-
-      tryCatch({
-        doc <- officer::cursor_reach(doc, keyword = tag)
-        doc <- flextable::body_add_flextable(doc, ft, pos = "before")
-        doc <- officer::cursor_forward(doc)
-        doc <- officer::body_remove(doc)
-      }, error = function(e) {
-        phr_warning(phr_txt("Could not insert sample-size table for '{tag}': {conditionMessage(e)}"),
-                    origin = "IPHRAProtocol$.build_sample_size_table")
-        doc <<- private$.replace(doc, tag, "")
-      })
-      doc
-    },
-
-    # Replace @sample_size_hh_gen_table — general (household-level indicator) table.
-    add_sample_size_gen_table = function(doc) {
-      params <- list(
-        list(label = "Indicator Name",
-             col_fn = function(r) as.character(r$pop_indicator %||% "")),
-        list(label = "Sampling Design",
-             col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
-        list(label = "Estimated Prevalence (%)",
-             col_fn = function(r) phr_fmt_pct(r$pop_expected_prevalence)),
-        list(label = "Desired Precision",
-             col_fn = function(r) phr_fmt_pct(r$pop_precision)),
-        list(label = "Estimated population size",
-             col_fn = function(r) phr_fmt_n(r$total_population)),
-        list(label = "Design Effect",
-             col_fn = function(r) {
-               v <- r$pop_design_effect
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "Finite Population Correction (FPC) used?",
-             col_fn = function(r) phr_fmt_fpc(r$pop_fpc)),
-        list(label = "Non-Response Rate",
-             col_fn = function(r) phr_fmt_pct(r$pop_nonresponse)),
-        list(label = "Households to be Included",
-             col_fn = function(r) phr_fmt_n(r$General_HH_Sample_Size))
-      )
-      private$.build_sample_size_table(doc, "@sample_size_hh_gen_table", params)
-    },
-
-    # Replace @sample_size_hh_ind_table — individual-level indicator table.
-    # Only inserted when indicator_code 10701 (GAM/MUAC) or 10702 (GAM women)
-    # is present in the included tools.
-    add_sample_size_ind_table = function(doc) {
-      inc_codes <- private$.get_tool_indicator_codes()
-      if (!any(c("10701", "10702") %in% inc_codes)) {
-        doc <- private$.replace(doc, "@sample_size_hh_ind_table", "")
-        return(doc)
-      }
-      params <- list(
-        list(label = "Indicator Name",
-             col_fn = function(r) as.character(r$ind_indicator %||% "")),
-        list(label = "Sampling Design",
-             col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
-        list(label = "Estimated Prevalence (%)",
-             col_fn = function(r) phr_fmt_pct(r$ind_expected_prevalence)),
-        list(label = "Desired Precision",
-             col_fn = function(r) phr_fmt_pct(r$ind_precision)),
-        list(label = "Estimated population size",
-             col_fn = function(r) phr_fmt_n(r$total_population)),
-        list(label = "Design Effect",
-             col_fn = function(r) {
-               v <- r$ind_design_effect
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "Finite Population Correction (FPC) used?",
-             col_fn = function(r) phr_fmt_fpc(r$ind_fpc)),
-        list(label = "Individuals to be Included",
-             col_fn = function(r) phr_fmt_n(r$Ind_Sample_Size)),
-        list(label = "Average Household Size",
-             col_fn = function(r) {
-               v <- r$ind_avg_hh_size
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "% sub-population",
-             col_fn = function(r) phr_fmt_pct(r$ind_subpop_prop)),
-        list(label = "Non-Response Rate",
-             col_fn = function(r) phr_fmt_pct(r$ind_nonresponse)),
-        list(label = "Households to be Included",
-             col_fn = function(r) phr_fmt_n(r$Ind_HH_Sample_Size))
-      )
-      private$.build_sample_size_table(doc, "@sample_size_hh_ind_table", params)
-    },
-
-    # Replace @sample_size_hh_mort_table — mortality indicator table.
-    # Only inserted when indicator_code 10501 (CDR) or 10502 (U5DR)
-    # is present in the included tools.
-    add_sample_size_mort_table = function(doc) {
-      inc_codes <- private$.get_tool_indicator_codes()
-      if (!any(c("10501", "10502") %in% inc_codes)) {
-        doc <- private$.replace(doc, "@sample_size_hh_mort_table", "")
-        return(doc)
-      }
-      params <- list(
-        list(label = "Indicator Name",
-             col_fn = function(r) as.character(r$mort_indicator %||% "")),
-        list(label = "Sampling Design",
-             col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
-        list(label = "Estimated death rate per 10,000/day",
-             col_fn = function(r) {
-               v <- r$mort_expected_death_rate
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "Desired Precision",
-             col_fn = function(r) {
-               v <- r$mort_precision
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "Recall Period",
-             col_fn = function(r) {
-               v <- r$mort_recall_days
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "Population size (overall)",
-             col_fn = function(r) phr_fmt_n(r$total_population)),
-        list(label = "Design Effect",
-             col_fn = function(r) {
-               v <- r$mort_design_effect
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "Finite Population Correction (FPC) used?",
-             col_fn = function(r) phr_fmt_fpc(r$mort_fpc)),
-        list(label = "Population to be Included",
-             col_fn = function(r) phr_fmt_n(r$Mort_Ind_Sample_Size, "people")),
-        list(label = "Person-Time to be Included",
-             col_fn = function(r) phr_fmt_n(r$Mort_PT_Sample_Size, "person days")),
-        list(label = "Average Household Size",
-             col_fn = function(r) {
-               v <- r$mort_avg_hh_size
-               if (is.null(v) || is.na(v)) "" else as.character(v)
-             }),
-        list(label = "% Non-Respondents",
-             col_fn = function(r) phr_fmt_pct(r$mort_nonresponse)),
-        list(label = "Households to be Included",
-             col_fn = function(r) phr_fmt_n(r$Mort_HH_Sample_Size, "households"))
-      )
-      private$.build_sample_size_table(doc, "@sample_size_hh_mort_table", params)
     },
 
     # Load survey/choices/settings from an xlsx path into an existing Tool object.
