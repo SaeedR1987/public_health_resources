@@ -21,7 +21,7 @@
 #' Build primary data sources table.
 #' @param master_schema Framework master objectives schema.
 #' @param tool_indicator_codes Named list of tool indicator-code vectors.
-#' @return A flextable object, or \\code{NULL} when table cannot be built.
+#' @return A flextable object, or \code{NULL} when table cannot be built.
 table_primary_data_sources <- function(master_schema, tool_indicator_codes) {
   if (!is.data.frame(master_schema) || nrow(master_schema) == 0 ||
       !all(c("objective_code", "indicator_code", "text_objective") %in% names(master_schema))) {
@@ -128,7 +128,7 @@ table_secondary_data_sources <- function(master_schema, secondary_data) {
 
 #' Build general sample-size table.
 #' @param sample_table Sample table data frame.
-#' @return A flextable object, or \\code{NULL} when unavailable.
+#' @return A flextable object, or \code{NULL} when unavailable.
 table_sample_size_general <- function(sample_table) {
   params <- list(
     list(label = "Indicator Name", col_fn = function(r) as.character(r$pop_indicator %||% "")),
@@ -148,7 +148,7 @@ table_sample_size_general <- function(sample_table) {
 #' Build individual sample-size table.
 #' @param sample_table Sample table data frame.
 #' @param indicator_codes Included indicator codes from tools.
-#' @return A flextable object, or \\code{NULL} when unavailable.
+#' @return A flextable object, or \code{NULL} when unavailable.
 table_sample_size_individual <- function(sample_table, indicator_codes = character(0)) {
   if (!any(c("10701", "10702") %in% as.character(indicator_codes))) return(NULL)
   params <- list(
@@ -172,7 +172,7 @@ table_sample_size_individual <- function(sample_table, indicator_codes = charact
 #' Build mortality sample-size table.
 #' @param sample_table Sample table data frame.
 #' @param indicator_codes Included indicator codes from tools.
-#' @return A flextable object, or \\code{NULL} when unavailable.
+#' @return A flextable object, or \code{NULL} when unavailable.
 table_sample_size_mortality <- function(sample_table, indicator_codes = character(0)) {
   if (!any(c("10501", "10502") %in% as.character(indicator_codes))) return(NULL)
   params <- list(

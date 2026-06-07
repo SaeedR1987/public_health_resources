@@ -283,7 +283,7 @@ SurveyProtocol <- R6::R6Class(
   ),
 
   private = list(
-    post_sync_guard = FALSE,
+    .post_sync_guard = FALSE,
 
     .sync_sample_state = function() {
       private$.sync_sampling_state()

@@ -433,6 +433,11 @@ Document <- R6::R6Class(
       tryCatch(do.call(fn, args), error = function(e) NULL)
     },
 
+    #' @description Build argument lists for schema-dispatched helper functions.
+    #' @param fn_name Function name from the schema \code{function_name} column.
+    #' @param row Single-row schema data frame.
+    #' @param schema_kind Document kind (\code{"docx"} or \code{"pptx"}).
+    #' @return Named list of arguments for \code{do.call()}.
     .schema_dispatch_args = function(fn_name, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       sample_table <- self$sample_table
