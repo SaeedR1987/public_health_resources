@@ -275,8 +275,8 @@ SurveyProtocol <- R6::R6Class(
       if (isTRUE(private$.post_sync_guard)) return(invisible(NULL))
       private$.post_sync_guard <- TRUE
       on.exit({ private$.post_sync_guard <- FALSE }, add = TRUE)
-      private$.sync_sample_state()
-      private$.sync_sampling_frame_state()
+      private$.sync_sampling_state()
+      private$.sync_sample_frame_state()
       invisible(NULL)
     }
 
@@ -284,14 +284,6 @@ SurveyProtocol <- R6::R6Class(
 
   private = list(
     .post_sync_guard = FALSE,
-
-    .sync_sample_state = function() {
-      private$.sync_sampling_state()
-    },
-
-    .sync_sampling_frame_state = function() {
-      private$.sync_sample_frame_state()
-    },
 
     .sync_sampling_state = function() {
       st <- tryCatch(

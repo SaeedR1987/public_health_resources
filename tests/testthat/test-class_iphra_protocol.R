@@ -497,23 +497,61 @@ test_that("IPHRAProtocol conditional handling uses metadata flags and runs empty
     handling = rep("conditional_replace", 3),
     condition = c("srs_srs", "srs_systematic", ""),
     default_value = c("YES", "NO", "EMPTY"),
-    stringsAsFactors = FALSE
+   function_name = c("", "", ""),
+   stringsAsFactors = FALSE
   )
 
   doc <- officer::read_docx()
   doc <- officer::body_add_par(doc, "@tag_true", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_false", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_empty", style = "Normal")
-  doc <- p$.__enclos_env__$private$.handle_replace(doc, rows)
+  doc <- p$.__enclos_env__$private$apply_protocol_schema_sections(doc, rows)
 
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
-               collapse = "")
+              collapse = "")
 
   expect_true(grepl("YES", txt, fixed = TRUE))
   expect_true(grepl("@tag_false", txt, fixed = TRUE))
   expect_true(grepl("EMPTY", txt, fixed = TRUE))
   expect_false(grepl("@tag_empty", txt, fixed = TRUE))
+})
+
+test_that("IPHRAProtocol active bindings detect requested tool states", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$kii_community))
+  expect_false(isTRUE(p$kii_service_providers))
+
+  p$add_tools("tool_kii_community_iphra_v2")
+  p$add_tools("tool_kii_fsl_service_provider_iphra_v2")
+  expect_true(isTRUE(p$kii_community))
+  expect_true(isTRUE(p$kii_fsl_provider))
+  expect_true(isTRUE(p$kii_service_providers))
+})
+
+test_that("IPHRAProtocol ind_ecfies and rlc_household_selection bindings evaluate from nested state", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$ind_ecfies))
+  expect_false(isTRUE(p$rlc_household_selection))
+
+  p$add_tools("tool_household_iphra_v2")
+  p$set_nested(
+    field = "tools",
+    role = "household",
+    member = "revised_survey",
+    value = data.frame(indicator_code = c("10801"), stringsAsFactors = FALSE)
+  )
+  expect_true(isTRUE(p$ind_ecfies))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "pps_rlc",
+    n_sites = 1
+  )
+  expect_true(isTRUE(p$rlc_household_selection))
 })
 
 test_that("Protocol objects inherit cached document field from Document base class", {

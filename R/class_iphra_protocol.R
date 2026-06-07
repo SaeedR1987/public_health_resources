@@ -434,19 +434,52 @@ IPHRAProtocol <- R6::R6Class(
     definition_muac = function(value) FALSE,
     exhaustive_site_selection = function(value) FALSE,
     general_survey = function(value) FALSE,
-    ind_ecfies = function(value) FALSE,
+    ind_ecfies = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      hh_revised_survey <- tryCatch(
+        self$access_nested(field = "tools", role = "household", member = "revised_survey"),
+        error = function(e) NULL
+      )
+      if (is.null(hh_revised_survey) || !is.data.frame(hh_revised_survey) ||
+          !"indicator_code" %in% names(hh_revised_survey)) {
+        return(FALSE)
+      }
+      indicator_codes <- trimws(as.character(hh_revised_survey$indicator_code))
+      any(!is.na(indicator_codes) & indicator_codes == "10801")
+    },
     ind_iycfe = function(value) FALSE,
     ind_measles_vaccination = function(value) FALSE,
     ind_muac_children = function(value) FALSE,
     ind_muac_plw = function(value) FALSE,
     ind_vitamin_a_coverage = function(value) FALSE,
     individual_survey = function(value) FALSE,
-    kii_community = function(value) FALSE,
-    kii_fsl_provider = function(value) FALSE,
-    kii_health_provider = function(value) FALSE,
-    kii_nutrition_provider = function(value) FALSE,
-    kii_service_providers = function(value) FALSE,
-    kii_wash_provider = function(value) FALSE,
+    kii_community = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("kii_community")
+    },
+    kii_fsl_provider = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("kii_fsl_service_provider")
+    },
+    kii_health_provider = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("kii_health_service_provider")
+    },
+    kii_nutrition_provider = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("kii_nutrition_service_provider")
+    },
+    kii_service_providers = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      isTRUE(self$kii_fsl_provider) ||
+        isTRUE(self$kii_health_provider) ||
+        isTRUE(self$kii_nutrition_provider) ||
+        isTRUE(self$kii_wash_provider)
+    },
+    kii_wash_provider = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("kii_wash_service_provider")
+    },
     mortality_survey = function(value) FALSE,
     muac_survey = function(value) FALSE,
     multiple_methods_no = function(value) FALSE,
@@ -461,7 +494,20 @@ IPHRAProtocol <- R6::R6Class(
     purposive_site_selection = function(value) FALSE,
     rate_individual_survey = function(value) FALSE,
     rate_survey = function(value) FALSE,
-    rlc_household_selection = function(value) FALSE,
+    rlc_household_selection = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      st <- tryCatch(
+        self$access_nested(field = "sample_object", member = "get_sample_table"),
+        error = function(e) NULL
+      )
+      if (is.null(st) || !is.data.frame(st) || !"sampling_method" %in% names(st)) {
+        return(FALSE)
+      }
+      methods <- trimws(tolower(as.character(st$sampling_method)))
+      any(!is.na(methods) & methods %in% c(
+        "pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc"
+      ))
+    },
     srs_household_selection = function(value) FALSE,
     srs_site_selection = function(value) FALSE,
     systematic_household_selection = function(value) FALSE,
@@ -556,6 +602,14 @@ IPHRAProtocol <- R6::R6Class(
     .schema_metadata_value = function(tag) {
       key <- private$.schema_metadata_key(tag)
       if (key %in% names(self$metadata)) self$metadata[[key]] else NULL
+    },
+
+    .has_tool_role = function(role) {
+      out <- tryCatch(
+        self$access_nested(field = "tools", role = role, member = "get_name"),
+        error = function(e) NULL
+      )
+      is.character(out) && length(out) == 1L && nzchar(out)
     },
 
     initialize_conditional_metadata = function() {
@@ -734,443 +788,6 @@ IPHRAProtocol <- R6::R6Class(
         if (key == "sampling_stratified") return(length(self$get_strata_names()) > 1)
       }
       isTRUE(private$.schema_metadata_value(tag))
-    },
-
-    # ── Schema-type dispatch methods ───────────────────────────────────────
-
-    #' @description Handle schema rows with replace-style behavior.
-    #' @param doc officer::rdocx document object.
-    #' @param rows Data frame of schema rows to process.
-    #' @return Updated document object.
-    .handle_replace = function(doc, rows) {
-      # Definition tags require specific indicator codes to be present
-      def_tag_codes <- list(
-        "@definition_cdr"                    = c("10501", "10502"),
-        "@definition_u5dr"                   = c("10501", "10502"),
-        "@definition_gam"                    = c("10701"),
-        "@definition_muac"                   = c("10701"),
-        "@definition_gam_women"              = c("10702"),
-        "@definition_complementary_feeding"  = c("10802")
-      )
-      inc_codes <- private$.get_tool_indicator_codes()
-
-      rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
-      for (i in seq_len(nrow(rows))) {
-        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
-        tag <- as.character(rows$tag_name[i] %||% "")
-        if (!nzchar(tag)) next
-
-        # Definition tags: skip when required indicators are absent
-        if (tag %in% names(def_tag_codes)) {
-          if (!any(def_tag_codes[[tag]] %in% inc_codes)) next
-        }
-
-        # @version_number uses the metadata version field
-        val <- if (tag == "@version_number") {
-          paste0("v", self$metadata$version %||% 1L)
-        } else {
-          dv   <- as.character(rows$default_value[i] %||% "")
-          dv
-        }
-
-        doc <- private$.replace(doc, tag, val)
-      }
-      doc
-    },
-
-    #' @description Handle schema rows with checkbox replacement behavior.
-    #' @param doc officer::rdocx document object.
-    #' @param rows Data frame of schema rows to process.
-    #' @return Updated document object.
-    .handle_checkbox_replace = function(doc, rows) {
-      rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
-      for (i in seq_len(nrow(rows))) {
-        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
-        tag <- as.character(rows$tag_name[i] %||% "")
-        if (nzchar(tag))
-          doc <- private$.checkbox(doc, tag, private$.schema_flag_from_tag(tag))
-      }
-      doc
-    },
-
-    #' @description Handle schema rows with calculate behavior and derived targets.
-    #' @param doc officer::rdocx document object.
-    #' @param calculate_rows Data frame of schema rows to process.
-    #' @return Updated document object.
-    .handle_calculate = function(doc, calculate_rows) {
-      st <- self$get_sample_table()
-      m  <- self$metadata
-
-      # ── Schema-driven calculate tags ────────────────────────────────────
-      for (i in seq_len(nrow(calculate_rows))) {
-        if (!private$.should_apply_schema_row(calculate_rows[i, , drop = FALSE])) next
-        tag <- as.character(calculate_rows$tag_name[i] %||% "")
-        calculated_value <- private$.evaluate_calculate_row(calculate_rows[i, , drop = FALSE])
-        if (!is.null(calculated_value) && nzchar(tag)) {
-          doc <- private$.replace(doc, tag, as.character(calculated_value))
-          next
-        }
-        doc <- switch(
-          tag,
-          "@release_date" = private$.replace(doc, tag,
-                                             format(Sys.Date(), "%d/%m/%Y")),
-
-          "@num_geographic_units" = private$.replace(doc, tag, {
-            v <- m$num_geographic_units
-            if (!is.null(v) && !is.na(v)) as.character(v) else ""
-          }),
-
-          "@num_strata_units" = private$.replace(doc, tag,
-                                                 as.character(m$num_strata_units %||% 0L)),
-
-          "@num_other_units" = private$.replace(doc, tag, ""),
-
-          "@specific_objectives" = {
-            # Replace @specific_objectives with pillar-grouped text objectives
-            # drawn from tool_objective_catalog_revised, which reflects the
-            # actual indicators present in the revised tools.
-            tool_cat_so <- self$tool_objective_catalog_revised
-            if (length(tool_cat_so) == 0) {
-              private$.replace(doc, "@specific_objectives", "")
-            } else {
-              # Aggregate unique objectives across all tools
-              seen_codes_so <- character(0)
-              obj_df_so     <- data.frame(
-                pillar         = character(0),
-                text_objective = character(0),
-                stringsAsFactors = FALSE
-              )
-              for (tn_so in names(tool_cat_so)) {
-                for (code_so in names(tool_cat_so[[tn_so]])) {
-                  if (code_so %in% seen_codes_so) next
-                  obj_so <- tool_cat_so[[tn_so]][[code_so]]
-                  txt_so    <- obj_so$text_objective     %||% ""
-                  pillar_so <- obj_so$pillar             %||% ""
-                  if (nzchar(txt_so)) {
-                    seen_codes_so <- c(seen_codes_so, code_so)
-                    obj_df_so <- rbind(
-                      obj_df_so,
-                      data.frame(pillar = pillar_so, text_objective = txt_so,
-                                 stringsAsFactors = FALSE)
-                    )
-                  }
-                }
-              }
-              if (nrow(obj_df_so) == 0) {
-                private$.replace(doc, "@specific_objectives", "")
-              } else {
-                pillars_so <- unique(obj_df_so$pillar[nzchar(obj_df_so$pillar)])
-                items_so <- list()
-                first_pillar_so <- TRUE
-                for (p_so in pillars_so) {
-                  sub_objs_so <- unique(obj_df_so$text_objective[obj_df_so$pillar == p_so])
-                  sub_objs_so <- sub_objs_so[nzchar(sub_objs_so)]
-                  items_so <- c(items_so, list(list(text = p_so, bold = TRUE,
-                                                    space_before_pt = if (first_pillar_so) 0L else 6L,
-                                                    space_after_pt = 0L, font_size_pt = 10L)))
-                  for (obj_so in sub_objs_so) {
-                    items_so <- c(items_so, list(list(text = paste0("\u2022 ", obj_so), bold = FALSE,
-                                                      space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
-                  }
-                  first_pillar_so <- FALSE
-                }
-                # Also include objectives with no pillar grouping
-                no_pillar_objs <- unique(obj_df_so$text_objective[!nzchar(obj_df_so$pillar)])
-                for (obj_so in no_pillar_objs) {
-                  items_so <- c(items_so, list(list(text = paste0("\u2022 ", obj_so), bold = FALSE,
-                                                    space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
-                }
-                inserted_so <- tryCatch(
-                  private$.replace_tag_in_cell(doc, "@specific_objectives", items_so),
-                  error = function(e) {
-                    phr_warning(phr_txt("Could not insert formatted specific objectives: {conditionMessage(e)}"),
-                                origin = "IPHRAProtocol$handle_calculate")
-                    FALSE
-                  }
-                )
-                if (!inserted_so) {
-                  lines_so <- vapply(items_so, `[[`, character(1L), "text")
-                  doc <- private$.replace(doc, "@specific_objectives", paste(lines_so, collapse = "\n"))
-                }
-                doc
-              }
-            }
-          },
-
-          "@research_questions" = {
-            # Replace @research_questions using objective_research_question
-            # values from tool_objective_catalog_revised, grouped by pillar.
-            tool_cat_rq <- self$tool_objective_catalog_revised
-            if (length(tool_cat_rq) == 0) {
-              private$.replace(doc, "@research_questions", "")
-            } else {
-              # Aggregate unique objective_research_questions across all tools
-              seen_codes_rq <- character(0)
-              orq_df_rq <- data.frame(
-                pillar = character(0),
-                orq    = character(0),
-                stringsAsFactors = FALSE
-              )
-              for (tn_rq in names(tool_cat_rq)) {
-                for (code_rq in names(tool_cat_rq[[tn_rq]])) {
-                  if (code_rq %in% seen_codes_rq) next
-                  obj_rq <- tool_cat_rq[[tn_rq]][[code_rq]]
-                  orq_rq    <- obj_rq$objective_research_question %||% ""
-                  pillar_rq <- obj_rq$pillar                      %||% ""
-                  if (nzchar(orq_rq)) {
-                    seen_codes_rq <- c(seen_codes_rq, code_rq)
-                    orq_df_rq <- rbind(
-                      orq_df_rq,
-                      data.frame(pillar = pillar_rq, orq = orq_rq,
-                                 stringsAsFactors = FALSE)
-                    )
-                  }
-                }
-              }
-              if (nrow(orq_df_rq) == 0) {
-                private$.replace(doc, "@research_questions", "")
-              } else {
-                pillars_rq <- unique(orq_df_rq$pillar[nzchar(orq_df_rq$pillar)])
-                items_rq <- list()
-                first_pillar_rq <- TRUE
-                for (p_rq in pillars_rq) {
-                  sub_rqs <- unique(orq_df_rq$orq[orq_df_rq$pillar == p_rq])
-                  sub_rqs <- sub_rqs[nzchar(sub_rqs)]
-                  items_rq <- c(items_rq, list(list(text = p_rq, bold = TRUE,
-                                                    space_before_pt = if (first_pillar_rq) 0L else 6L,
-                                                    space_after_pt = 0L, font_size_pt = 10L)))
-                  for (rq_item in sub_rqs) {
-                    items_rq <- c(items_rq, list(list(text = paste0("\u2022 ", rq_item), bold = FALSE,
-                                                      space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
-                  }
-                  first_pillar_rq <- FALSE
-                }
-                # Also include research questions with no pillar grouping
-                no_pillar_rqs <- unique(orq_df_rq$orq[!nzchar(orq_df_rq$pillar)])
-                for (rq_item in no_pillar_rqs) {
-                  items_rq <- c(items_rq, list(list(text = paste0("\u2022 ", rq_item), bold = FALSE,
-                                                    space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)))
-                }
-                inserted_rq <- tryCatch(
-                  private$.replace_tag_in_cell(doc, "@research_questions", items_rq),
-                  error = function(e) {
-                    phr_warning(phr_txt("Could not insert formatted research questions: {conditionMessage(e)}"),
-                                origin = "IPHRAProtocol$handle_calculate")
-                    FALSE
-                  }
-                )
-                if (!inserted_rq) {
-                  lines_rq <- vapply(items_rq, `[[`, character(1L), "text")
-                  doc <- private$.replace(doc, "@research_questions", paste(lines_rq, collapse = "\n"))
-                }
-                doc
-              }
-            }
-          },
-
-          "@list_secondary_data" = {
-            # Replace @list_secondary_data with formatted secondary data sources
-            sdr_lsd <- self$secondary_data
-            if (is.null(sdr_lsd) || length(sdr_lsd) == 0) {
-              doc <- private$.replace(doc, "@list_secondary_data", "")
-              doc
-            } else {
-              master_lsd <- private$.get_master_schema()
-              get_obj_text_lsd <- function(code_lsd) {
-                if (!is.null(master_lsd) && is.data.frame(master_lsd) &&
-                    all(c("objective_code", "text_objective") %in% names(master_lsd))) {
-                  idx_lsd <- which(as.character(master_lsd$objective_code) == code_lsd)
-                  if (length(idx_lsd) > 0L) return(as.character(master_lsd$text_objective[idx_lsd[1L]]))
-                }
-                code_lsd
-              }
-              codes_lsd <- names(sdr_lsd)
-              unique_codes_lsd <- unique(codes_lsd)
-              items_lsd <- list()
-              first_obj_lsd <- TRUE
-              for (code_lsd in unique_codes_lsd) {
-                items_lsd <- c(items_lsd, list(list(text = get_obj_text_lsd(code_lsd), bold = TRUE,
-                                                    space_before_pt = if (first_obj_lsd) 0L else 6L,
-                                                    space_after_pt = 0L, font_size_pt = NULL)))
-                first_obj_lsd <- FALSE
-                src_indices_lsd <- which(codes_lsd == code_lsd)
-                for (i_lsd in src_indices_lsd) {
-                  items_lsd <- c(items_lsd, list(list(text = as.character(sdr_lsd[[i_lsd]]), bold = FALSE,
-                                                      space_before_pt = 0L, space_after_pt = 0L, font_size_pt = NULL)))
-                }
-              }
-              inserted_lsd <- tryCatch(
-                private$.replace_tag_in_cell(doc, "@list_secondary_data", items_lsd),
-                error = function(e) FALSE
-              )
-              if (!inserted_lsd) {
-                body_xml_lsd <- officer::docx_body_xml(doc)
-                ns_lsd <- xml2::xml_ns(body_xml_lsd)
-                all_paras_lsd <- xml2::xml_find_all(body_xml_lsd, ".//w:p", ns = ns_lsd)
-                target_para_lsd <- NULL
-                for (p_lsd in all_paras_lsd) {
-                  if (grepl("@list_secondary_data", xml2::xml_text(p_lsd), fixed = TRUE)) {
-                    target_para_lsd <- p_lsd
-                    break
-                  }
-                }
-                if (!is.null(target_para_lsd)) {
-                  for (item_lsd in items_lsd) {
-                    node_lsd <- private$.make_w_para(
-                      text = item_lsd$text, bold = isTRUE(item_lsd$bold),
-                      space_before_pt = if (is.null(item_lsd$space_before_pt)) 0L else item_lsd$space_before_pt,
-                      space_after_pt  = if (is.null(item_lsd$space_after_pt))  0L else item_lsd$space_after_pt,
-                      font_size_pt = item_lsd$font_size_pt
-                    )
-                    xml2::xml_add_sibling(target_para_lsd, node_lsd, .where = "before")
-                  }
-                  xml2::xml_remove(target_para_lsd)
-                } else {
-                  doc <- private$.replace(doc, "@list_secondary_data",
-                                          paste(vapply(items_lsd, `[[`, character(1L), "text"), collapse = "\n"))
-                }
-              }
-              doc
-            }
-          },
-
-          "@precision_gen_indicator" = private$.replace(doc, tag, {
-            if (!is.null(st) && all(c("pop_precision", "pop_indicator") %in% names(st))) {
-              prec <- suppressWarnings(as.numeric(st$pop_precision))
-              idx  <- which(!is.na(prec))
-              if (length(idx) > 0L) {
-                best   <- which.max(prec[idx]); row_j <- idx[best]
-                gen_nm <- as.character(st$pop_indicator[row_j])
-                if (!is.na(gen_nm) && nzchar(gen_nm))
-                  sprintf("+/- %s%% margin of error for %s", prec[row_j], gen_nm)
-                else ""
-              } else ""
-            } else ""
-          }),
-
-          "@precision_ind_indicator" = private$.replace(doc, tag, {
-            if (!is.null(st) && all(c("ind_precision", "ind_indicator") %in% names(st))) {
-              prec <- suppressWarnings(as.numeric(st$ind_precision))
-              idx  <- which(!is.na(prec))
-              if (length(idx) > 0L) {
-                best   <- which.max(prec[idx]); row_j <- idx[best]
-                ind_nm <- as.character(st$ind_indicator[row_j])
-                if (!is.na(ind_nm) && nzchar(ind_nm))
-                  sprintf("+/- %s%% margin of error for %s", prec[row_j], ind_nm)
-                else ""
-              } else ""
-            } else ""
-          }),
-
-          "@precision_mort_indicator" = private$.replace(doc, tag, {
-            if (!is.null(st) && all(c("mort_precision", "mort_indicator") %in% names(st))) {
-              prec <- suppressWarnings(as.numeric(st$mort_precision))
-              idx  <- which(!is.na(prec))
-              if (length(idx) > 0L) {
-                best    <- which.max(prec[idx]); row_j <- idx[best]
-                mort_nm <- as.character(st$mort_indicator[row_j])
-                if (!is.na(mort_nm) && nzchar(mort_nm))
-                  sprintf("+/- %s%% margin of error for %s", prec[row_j], mort_nm)
-                else ""
-              } else ""
-            } else ""
-          }),
-
-          doc  # default: leave any unrecognised calculate tag for cleanup
-        )
-      }
-
-      # ── Derived sampling targets (always computed) ───────────────────────
-      site_target <- if (!is.null(st) && "n_sites" %in% names(st)) {
-        s <- sum(suppressWarnings(as.numeric(st$n_sites)), na.rm = TRUE)
-        if (s > 0) as.character(round(s)) else "_"
-      } else "_"
-      hh_target <- if (!is.null(st) && "Final_HH_Sample_Size" %in% names(st)) {
-        s <- sum(suppressWarnings(as.numeric(st$Final_HH_Sample_Size)), na.rm = TRUE)
-        if (s > 0) as.character(round(s)) else "_"
-      } else "_"
-      doc <- private$.replace(doc, "@sample_site_target", site_target)
-      doc <- private$.replace(doc, "@sample_hh_target",   hh_target)
-
-      total_sites <- if (!is.null(st) && "n_sites" %in% names(st)) {
-        s <- sum(suppressWarnings(as.numeric(st$n_sites)), na.rm = TRUE)
-        if (s > 0) round(s) else 0L
-      } else 0L
-
-      kii_community_txt <- if (self$is_tool_included("tool_kii_community_iphra_v2") &&
-                                total_sites > 0L) {
-        as.character(total_sites * 3L)
-      } else ""
-      doc <- private$.replace(doc, "@num_kii_community_target", kii_community_txt)
-
-      obs_community_txt <- if (self$is_tool_included("tool_obs_community_iphra_v2") &&
-                                total_sites > 0L) {
-        as.character(total_sites)
-      } else ""
-      doc <- private$.replace(doc, "@num_obs_community_target", obs_community_txt)
-
-      doc
-    },
-
-    #' @description Handle schema rows that conditionally delete table rows.
-    #' @param doc officer::rdocx document object.
-    #' @param rows Data frame of schema rows to process.
-    #' @return Updated document object.
-    .handle_row_delete = function(doc, rows) {
-      tag_tool_map <- c(
-        "@household_tool_inc" = "tool_household_iphra_v2",
-        "@kii_community_inc"  = "tool_kii_community_iphra_v2",
-        "@kii_health_inc"     = "tool_kii_health_service_provider_iphra_v2",
-        "@kii_market_inc"     = "tool_kii_markets_iphra_v2",
-        "@kii_fsl_inc"        = "tool_kii_fsl_service_provider_iphra_v2",
-        "@kii_wash_inc"       = "tool_kii_wash_service_provider_iphra_v2",
-        "@kii_nut_inc"        = "tool_kii_nutrition_service_provider_iphra_v2",
-        "@obs_community_inc"  = "tool_obs_community_iphra_v2",
-        "@obs_health_inc"     = "tool_obs_health_facility_iphra_v2",
-        "@obs_latrine_inc"    = "tool_obs_latrine_iphra_v2",
-        "@obs_water_inc"      = "tool_obs_water_point_iphra_v2"
-      )
-      for (i in seq_len(nrow(rows))) {
-        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
-        tag <- as.character(rows$tag_name[i] %||% "")
-        if (!nzchar(tag)) next
-        if (!tag %in% names(tag_tool_map)) {
-          phr_warning(
-            paste0("Unrecognized row_delete tag in protocol schema: '", tag, "'."),
-            origin = "IPHRAProtocol$handle_row_delete"
-          )
-          doc <- private$.replace(doc, tag, "")
-          next
-        }
-        included <- self$is_tool_included(tag_tool_map[[tag]])
-        if (included) {
-          doc <- private$.replace(doc, tag, "")
-        } else {
-          body_xml <- officer::docx_body_xml(doc)
-          ns       <- xml2::xml_ns(body_xml)
-          tr_nodes <- xml2::xml_find_all(body_xml, ".//w:tr", ns = ns)
-          for (tr in tr_nodes) {
-            if (grepl(tag, xml2::xml_text(tr), fixed = TRUE))
-              xml2::xml_remove(tr)
-          }
-        }
-      }
-      doc
-    },
-
-    #' @description Handle schema rows that replace tags with metadata input.
-    #' @param doc officer::rdocx document object.
-    #' @param rows Data frame of schema rows to process.
-    #' @return Updated document object.
-    .handle_input = function(doc, rows) {
-      for (i in seq_len(nrow(rows))) {
-        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
-        tag <- as.character(rows$tag_name[i] %||% "")
-        if (!nzchar(tag)) next
-        v   <- private$.schema_metadata_value(tag)
-        doc <- private$.replace(doc, tag, as.character(v %||% ""))
-      }
-      doc
     },
 
     # Load survey/choices/settings from an xlsx path into an existing Tool object.
