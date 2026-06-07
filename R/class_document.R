@@ -57,14 +57,6 @@ Document <- R6::R6Class(
         if (isTRUE(open)) utils::browseURL(output_file)
       }, on_error = "abort", origin = "Document$generate_doc")
       invisible(self)
-    },
-
-    #' @description Backward-compatible alias for \code{generate_doc()}.
-    #' @param output_file Character output \code{.docx} path.
-    #' @param open Logical indicating whether to open the output path.
-    #' @return Invisibly returns \code{self}.
-    generate_reach_tor = function(output_file = "protocol_report.docx", open = FALSE) {
-      self$generate_doc(output_file = output_file, open = open)
     }
   ),
 
@@ -138,13 +130,13 @@ Document <- R6::R6Class(
           if (!isTRUE(private$.should_apply_schema_row(row))) next
           doc <- switch(
             handling,
-            replace             = private$handle_replace(doc, row),
-            input               = private$handle_input(doc, row),
-            calculate           = private$handle_calculate(doc, row),
-            checkbox_replace    = private$handle_checkbox_replace(doc, row),
-            row_delete          = private$handle_row_delete(doc, row),
-            table               = private$handle_table(doc, row),
-            image               = private$handle_image(doc, row),
+            replace             = private$.handle_replace(doc, row),
+            input               = private$.handle_input(doc, row),
+            calculate           = private$.handle_calculate(doc, row),
+            checkbox_replace    = private$.handle_checkbox_replace(doc, row),
+            row_delete          = private$.handle_row_delete(doc, row),
+            table               = private$.handle_table(doc, row),
+            image               = private$.handle_image(doc, row),
             doc
           )
         }
@@ -153,31 +145,31 @@ Document <- R6::R6Class(
       doc
     },
 
-    handle_replace = function(doc, row) {
+    .handle_replace = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       default_value <- as.character(row$default_value[[1L]] %||% "")
       private$.replace(doc, tag, default_value)
     },
 
-    handle_input = function(doc, row) {
+    .handle_input = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else ""
       private$.replace(doc, tag, as.character(value %||% ""))
     },
 
-    handle_calculate = function(doc, row) {
+    .handle_calculate = function(doc, row) {
       doc
     },
 
-    handle_checkbox_replace = function(doc, row) {
+    .handle_checkbox_replace = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
       private$.replace(doc, tag, if (isTRUE(value)) "X" else "\u25a1")
     },
 
-    handle_row_delete = function(doc, row) {
+    .handle_row_delete = function(doc, row) {
       tag <- as.character(row$tag_name[[1L]] %||% "")
       private$.replace(doc, tag, "")
     },
@@ -186,7 +178,7 @@ Document <- R6::R6Class(
     #' @param doc \code{officer::rdocx} document object.
     #' @param row Single-row schema data frame.
     #' @return Updated document object.
-    handle_table = function(doc, row) {
+    .handle_table = function(doc, row) {
       tag <- as.character(row[["tag_name"]][[1L]] %||% "")
       if (nzchar(tag)) {
         doc <- private$._replace_across_runs(doc, tag, tag)
@@ -198,16 +190,12 @@ Document <- R6::R6Class(
     #' @param doc \code{officer::rdocx} document object.
     #' @param row Single-row schema data frame.
     #' @return Updated document object.
-    handle_image = function(doc, row) {
+    .handle_image = function(doc, row) {
       tag <- as.character(row[["tag_name"]][[1L]] %||% "")
       if (nzchar(tag)) {
         doc <- private$._replace_across_runs(doc, tag, tag)
       }
       private$.dispatch_schema_function(doc = doc, row = row)
-    },
-
-    handle_conditional_replace = function(doc, row) {
-      private$handle_replace(doc, row)
     },
 
     # Load protocol schema metadata with a blank fallback.

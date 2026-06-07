@@ -852,11 +852,11 @@ test_that("Protocol accesses Sample through access_nested and updates metadata",
   )
 })
 
-test_that("Protocol$get_framework_svg delegates to Framework$render_framework_svg", {
+test_that("Protocol access_nested can render framework SVG", {
   p <- Protocol$new()
   p$framework$set_master_svg('<svg><rect id="H1"/></svg>')
 
-  out <- p$get_framework_svg(type = "master")
+  out <- p$access_nested("framework", member = "render_framework_svg", version = "master")
 
   if (requireNamespace("rsvg", quietly = TRUE) &&
       requireNamespace("grid", quietly = TRUE)) {

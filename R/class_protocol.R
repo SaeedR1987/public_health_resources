@@ -291,45 +291,6 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
-    # ── Schema / Framework helpers ─────────────────────────────────────────
-
-    #' @description Return all unique, non-NA indicator codes present in a
-    #'   schema.
-    #'
-    #' @param type Character. One of \code{"master"} (default) or
-    #'   \code{"adjusted"} indicating which framework schema to read.
-    #' @return Character vector of unique indicator codes.  Empty character
-    #'   vector when none are found.
-    get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
-      schema <- self$get_schema(type = match.arg(type))
-      private$.touch()
-      if (is.data.frame(schema) && "indicator_code" %in% names(schema)) {
-        codes <- as.character(schema$indicator_code)
-        return(unique(codes[!is.na(codes) & nzchar(codes)]))
-      }
-      character(0)
-    },
-
-    #' @description Return the subset of a schema whose \code{indicator_code}
-    #'   matches the supplied codes.
-    #'
-    #' @param indicator_codes Character vector of indicator codes to keep.
-    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
-    #' @return Filtered data frame (zero rows when none match).
-    get_schema_for_indicator_codes = function(indicator_codes,
-                                              type = c("master", "adjusted")) {
-      schema <- self$get_schema(type = match.arg(type))
-      if (!is.data.frame(schema) || nrow(schema) == 0 ||
-          !"indicator_code" %in% names(schema)) {
-        private$.touch()
-        return(data.frame())
-      }
-      ic <- as.character(indicator_codes)
-      out <- schema[as.character(schema$indicator_code) %in% ic, , drop = FALSE]
-      private$.touch()
-      out
-    },
-
     # ── Tool helpers ────────────────────────────────────────────────────────
 
     #' @description Return the names of all currently registered tools.
@@ -348,37 +309,6 @@ Protocol <- R6::R6Class(
     is_tool_included = function(tool_name) {
       if (is.null(self$tools) || length(self$tools) == 0) return(FALSE)
       isTRUE(tool_name %in% names(self$tools))
-    },
-
-    #' @description Return all unique indicator codes present across the
-    #'   survey data of the specified tools (or all tools when
-    #'   \code{tool_names} is \code{NULL}).
-    #'
-    #' Uses each tool's \code{get_indicator_codes()} helper, which correctly
-    #' handles comma-separated multi-code cells (e.g. \code{"10501, 10502"}).
-    #'
-    #' @param tool_names Optional character vector of tool names to restrict
-    #'   the search.  Defaults to \code{NULL} (all registered tools).
-    #' @param prefer_revised Logical. When \code{TRUE} (default), prefer
-    #'   \code{revised_survey} over \code{survey}.
-    #' @return Character vector of unique, non-NA indicator codes.
-    get_indicator_codes_from_tools = function(tool_names = NULL,
-                                               prefer_revised = TRUE) {
-      all_names <- self$get_tool_names()
-      if (length(all_names) == 0) return(character(0))
-      if (!is.null(tool_names)) {
-        all_names <- intersect(all_names, as.character(tool_names))
-      }
-      codes <- character(0)
-      for (tn in all_names) {
-        tool <- self$tools[[tn]]
-        if (!is.null(tool) && inherits(tool, "Tool")) {
-          # get_indicator_codes() splits comma-separated cells and returns integers
-          tool_codes <- as.character(tool$get_indicator_codes(prefer_revised = prefer_revised))
-          codes <- c(codes, tool_codes[nzchar(tool_codes)])
-        }
-      }
-      unique(codes)
     },
 
     #' @description Validate an objective schema data frame.
@@ -590,89 +520,6 @@ Protocol <- R6::R6Class(
         )
       }
       invisible(self)
-    },
-
-    # ── Framework convenience methods ──────────────────────────────────────
-
-    #' @description Set primary objectives on the attached Framework.
-    #' @param objective_codes Numeric vector of primary objective codes.
-    #' @return Invisibly returns \code{self} for method chaining.
-    set_primary_objectives = function(objective_codes) {
-      self$access_nested("framework", member = "set_primary_objectives", objective_codes)
-      invisible(self)
-    },
-
-    #' @description Set secondary objectives on the attached Framework.
-    #' @param objective_codes Numeric vector of secondary objective codes.
-    #' @return Invisibly returns \code{self} for method chaining.
-    set_secondary_objectives = function(objective_codes) {
-      self$access_nested("framework", member = "set_secondary_objectives", objective_codes)
-      invisible(self)
-    },
-
-    #' @description Set primary indicator codes on the attached Framework.
-    #' @param indicator_codes Character/numeric vector (or list) of indicator
-    #'   codes.
-    #' @return Invisibly returns \code{self}.
-    set_primary_indicators = function(indicator_codes) {
-      self$access_nested("framework", member = "set_primary_indicators", indicator_codes)
-      invisible(self)
-    },
-
-    #' @description Set secondary indicator codes on the attached Framework.
-    #' @param indicator_codes Character/numeric vector (or list) of indicator
-    #'   codes.
-    #' @return Invisibly returns \code{self}.
-    set_secondary_indicators = function(indicator_codes) {
-      self$access_nested("framework", member = "set_secondary_indicators", indicator_codes)
-      invisible(self)
-    },
-
-    #' @description Modify the adjusted schema on the attached Framework.
-    #' @param objective_codes Character or numeric vector of objective codes.
-    #' @return Invisibly returns \code{self}.
-    modify_schema = function(objective_codes = NULL) {
-      self$access_nested("framework", member = "modify_adjusted_schema", objective_codes)
-      invisible(self)
-    },
-
-    #' @description Modify the adjusted SVG on the attached Framework.
-    #' @param primary_objective_codes Numeric vector of primary objective codes.
-    #' @param secondary_objective_codes Numeric vector of secondary objective
-    #'   codes.
-    #' @return Invisibly returns \code{self}.
-    modify_svg = function(primary_objective_codes = NULL,
-                          secondary_objective_codes = NULL) {
-      self$access_nested(
-        "framework",
-        member = "modify_adjusted_svg",
-        primary_objective_codes = primary_objective_codes,
-        secondary_objective_codes = secondary_objective_codes
-      )
-      invisible(self)
-    },
-
-    #' @description Retrieve a schema data frame from the attached Framework.
-    #' @param type Character. \code{"master"} (default) or \code{"adjusted"}.
-    #' @return Data frame of the requested schema.
-    get_schema = function(type = c("master", "adjusted")) {
-      type <- match.arg(type)
-      schema <- self$access_nested(
-        "framework",
-        member = if (type == "adjusted") "modified_objectives_schema" else "master_objectives_schema"
-      )
-      if (!is.null(schema) && is.data.frame(schema)) {
-        return(as.data.frame(schema, stringsAsFactors = FALSE))
-      }
-      data.frame()
-    },
-
-    #' @description Render framework SVG.
-    #' @param type Character. \code{"master"} or \code{"adjusted"} (default).
-    #' @return Result of \code{Framework$render_framework_svg()}.
-    get_framework_svg = function(type = c("adjusted", "master")) {
-      type <- match.arg(type)
-      self$access_nested("framework", member = "render_framework_svg", version = type)
     },
 
     #' @description Generate a document report from the current schema/template.

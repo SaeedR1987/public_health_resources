@@ -34,18 +34,18 @@ protocol$metadata
 
 View(protocol$framework$master_schema)
 
-protocol$get_schema(type = "master")
+protocol$access_nested(field = "framework", member = "master_objectives_schema")
 
-protocol$get_framework_svg(type = "master")
+protocol$access_nested(field = "framework", member = "render_framework_svg", version = "master")
 
-protocol$set_primary_objectives(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
-protocol$set_secondary_objectives(objective_codes = c(105, 107, 112))
+protocol$access_nested("framework", member = "set_primary_objectives", c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$access_nested("framework", member = "set_secondary_objectives", c(105, 107, 112))
 
-protocol$modify_schema(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
-protocol$modify_svg()
+protocol$access_nested("framework", member = "modify_adjusted_schema", c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$access_nested("framework", member = "modify_adjusted_svg")
 
-protocol$get_framework_svg(type = "adjusted")
-View(protocol$get_schema(type = "adjusted"))
+protocol$access_nested(field = "framework", member = "render_framework_svg", version = "adjusted")
+View(protocol$access_nested(field = "framework", member = "modified_objectives_schema"))
 
 # Test 3: Define Strata and Sample Sizes ####
 
@@ -180,7 +180,7 @@ protocol$access_nested(
   field = "tools",
   name = "tool_household_iphra_v2",
   member = "filter_survey_by_indicator",
-  indicator_codes = protocol$get_indicator_codes_from_schema(type = "adjusted")
+  indicator_codes = unique(as.character(protocol$access_nested(field = "framework", member = "modified_objectives_schema")$indicator_code))
 )
 
 
@@ -204,7 +204,7 @@ protocol$access_nested(
   field = "tools",
   name = "tool_kii_community_iphra_v2",
   member = "filter_survey_by_indicator",
-  indicator_codes = protocol$get_indicator_codes_from_schema(type = "adjusted")
+  indicator_codes = unique(as.character(protocol$access_nested(field = "framework", member = "modified_objectives_schema")$indicator_code))
 )
 
 nrow(protocol$tools$tool_kii_community_iphra_v2$survey)
@@ -314,7 +314,7 @@ protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$get_validation_error
 
 # Test 3: Generate Word Report from IPHRAProtocol ####
 
-# generate_reach_tor() uses officer + flextable (bundled template used when present).
+# generate_doc() uses officer + flextable (bundled template used when present).
 # The standalone wrapper generate_protocol_report() dispatches to the method.
 
 # -- 3a: Generate report with no tools (tools section shows placeholder text) --
@@ -342,4 +342,4 @@ protocol$secondary_data <- list(
 # protocol$ <- "Internal"
 
 # report_no_tools <- tempfile(fileext = ".docx")
-protocol$generate_reach_tor(output_file = "report_no_tools.docx")
+protocol$generate_doc(output_file = "report_no_tools.docx")

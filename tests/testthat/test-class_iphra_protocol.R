@@ -174,7 +174,7 @@ test_that("Protocol touch updates modified_datetime via update_metadata", {
   expect_true(p$metadata$modified_datetime > t_before)
 })
 
-test_that("Protocol$get_schema returns data frame from framework", {
+test_that("Protocol can access framework schema via access_nested", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -183,12 +183,12 @@ test_that("Protocol$get_schema returns data frame from framework", {
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  schema <- p$get_schema("master")
+  schema <- p$access_nested(field = "framework", member = "master_objectives_schema")
   expect_true(is.data.frame(schema))
   expect_true(nrow(schema) > 0)
 })
 
-test_that("Protocol$get_indicator_codes_from_schema returns character vector", {
+test_that("Protocol can derive indicator codes from framework schema via access_nested", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -197,7 +197,9 @@ test_that("Protocol$get_indicator_codes_from_schema returns character vector", {
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  codes <- p$get_indicator_codes_from_schema("master")
+  schema <- p$access_nested(field = "framework", member = "master_objectives_schema")
+  codes <- unique(as.character(schema$indicator_code))
+  codes <- codes[!is.na(codes) & nzchar(codes)]
   expect_true(is.character(codes))
   expect_true(length(codes) > 0)
 })
@@ -224,14 +226,29 @@ test_that("Protocol$is_tool_included returns TRUE after add_tools", {
   expect_true(p$is_tool_included("tool_household_iphra_v2"))
 })
 
-test_that("Protocol$get_indicator_codes_from_tools returns character vector", {
+test_that("Protocol can derive indicator codes from tools via access_nested", {
   p <- IPHRAProtocol$new()
   p$add_tools("tool_kii_community_iphra_v2")
-  codes <- p$get_indicator_codes_from_tools()
+  tool_names <- p$get_tool_names()
+  codes <- character(0)
+  for (tn in tool_names) {
+    codes <- c(
+      codes,
+      as.character(
+        p$access_nested(
+          field = "tools",
+          name = tn,
+          member = "get_indicator_codes",
+          prefer_revised = TRUE
+        )
+      )
+    )
+  }
+  codes <- unique(codes[nzchar(codes)])
   expect_true(is.character(codes))
 })
 
-test_that("Protocol$get_schema_for_indicator_codes filters schema rows", {
+test_that("Protocol can filter framework schema rows without wrapper methods", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -240,10 +257,12 @@ test_that("Protocol$get_schema_for_indicator_codes filters schema rows", {
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  all_codes <- p$get_indicator_codes_from_schema("master")
+  master_schema <- p$access_nested(field = "framework", member = "master_objectives_schema")
+  all_codes <- unique(as.character(master_schema$indicator_code))
+  all_codes <- all_codes[!is.na(all_codes) & nzchar(all_codes)]
   if (length(all_codes) >= 2) {
     sub_codes <- all_codes[1:2]
-    filtered  <- p$get_schema_for_indicator_codes(sub_codes)
+    filtered  <- master_schema[as.character(master_schema$indicator_code) %in% sub_codes, , drop = FALSE]
     expect_true(is.data.frame(filtered))
     expect_true(nrow(filtered) > 0)
     expect_true(all(as.character(filtered$indicator_code) %in% sub_codes))
@@ -355,7 +374,7 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   schema <- p$protocol_schema
   row <- schema[schema$tag_name == "@tor_title", c("tag_name", "handling", "condition", "default_value"), drop = FALSE]
   expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
-  doc <- p$.__enclos_env__$private$handle_replace(doc, row[1, , drop = FALSE])
+  doc <- p$.__enclos_env__$private$.handle_replace(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(
     xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
@@ -485,7 +504,7 @@ test_that("IPHRAProtocol conditional handling uses metadata flags and runs empty
   doc <- officer::body_add_par(doc, "@tag_true", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_false", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_empty", style = "Normal")
-  doc <- p$.__enclos_env__$private$handle_conditional_replace(doc, rows)
+  doc <- p$.__enclos_env__$private$.handle_replace(doc, rows)
 
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
