@@ -655,13 +655,19 @@ IPHRAProtocol <- R6::R6Class(
       invisible(NULL)
     },
 
+    #' @description Retrieve the framework master objectives schema.
+    #' @return A data frame of master objectives; empty data frame when unavailable.
     .get_master_schema = function() {
       schema <- self$access_nested(field = "framework", member = "master_objectives_schema")
       if (is.null(schema) || !is.data.frame(schema)) return(data.frame())
       as.data.frame(schema, stringsAsFactors = FALSE)
     },
 
-    .collect_tool_indicator_codes = function(tool_names = NULL, prefer_revised = TRUE) {
+    #' @description Collect unique indicator codes from included tools.
+    #' @param tool_names Optional character vector of tool names to query.
+    #' @param prefer_revised Logical. When TRUE, prefer revised survey codes.
+    #' @return Character vector of unique indicator codes.
+    .get_tool_indicator_codes = function(tool_names = NULL, prefer_revised = TRUE) {
       selected <- self$get_tool_names()
       if (!is.null(tool_names)) {
         selected <- intersect(selected, as.character(tool_names))
@@ -742,14 +748,10 @@ IPHRAProtocol <- R6::R6Class(
 
     # ── Schema-type dispatch methods ───────────────────────────────────────
 
-    # Handle all schema 'replace' type rows.
-    # Rows are sorted by tag length (longest first) to prevent shorter tag names
-    # from matching as prefixes inside longer ones.  Static replacement text is
-    # taken from the 'condition' column when present, otherwise 'default_value'.
-    # @version_number uses the metadata version field.
-    # @definition_* tags are only replaced when the relevant indicator codes are
-    # present in the included tools (preserving the conditional behaviour from
-    # the previous add_definition_tags method).
+    #' @description Handle schema rows with replace-style behavior.
+    #' @param doc officer::rdocx document object.
+    #' @param rows Data frame of schema rows to process.
+    #' @return Updated document object.
     .handle_replace = function(doc, rows) {
       # Definition tags require specific indicator codes to be present
       def_tag_codes <- list(
@@ -760,7 +762,7 @@ IPHRAProtocol <- R6::R6Class(
         "@definition_gam_women"              = c("10702"),
         "@definition_complementary_feeding"  = c("10802")
       )
-      inc_codes <- private$.collect_tool_indicator_codes()
+      inc_codes <- private$.get_tool_indicator_codes()
 
       rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
       for (i in seq_len(nrow(rows))) {
@@ -786,10 +788,10 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Handle all schema 'checkbox_replace' type rows.
-    # Rows are sorted by tag length (longest first) so that longer tag names
-    # (e.g. @pop_refugeehost) are processed before shorter prefix matches
-    # (e.g. @pop_refugee), preventing partial replacements.
+    #' @description Handle schema rows with checkbox replacement behavior.
+    #' @param doc officer::rdocx document object.
+    #' @param rows Data frame of schema rows to process.
+    #' @return Updated document object.
     .handle_checkbox_replace = function(doc, rows) {
       rows <- rows[order(-nchar(as.character(rows$tag_name %||% ""))), , drop = FALSE]
       for (i in seq_len(nrow(rows))) {
@@ -801,10 +803,10 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Handle all schema 'calculate' type rows plus derived sampling targets.
-    # Schema rows are dispatched by tag name; derived targets (@sample_site_target,
-    # @sample_hh_target, @num_kii_community_target, @num_obs_community_target)
-    # are always computed from the sample table and tool inclusion flags.
+    #' @description Handle schema rows with calculate behavior and derived targets.
+    #' @param doc officer::rdocx document object.
+    #' @param calculate_rows Data frame of schema rows to process.
+    #' @return Updated document object.
     .handle_calculate = function(doc, calculate_rows) {
       st <- self$get_sample_table()
       m  <- self$metadata
@@ -1115,10 +1117,10 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Handle all schema 'row_delete' type rows.
-    # For each tag, look up the corresponding tool name.  If the tool is
-    # included, replace the tag with ""; if not, delete the entire table row
-    # (w:tr) that contains the tag.
+    #' @description Handle schema rows that conditionally delete table rows.
+    #' @param doc officer::rdocx document object.
+    #' @param rows Data frame of schema rows to process.
+    #' @return Updated document object.
     .handle_row_delete = function(doc, rows) {
       tag_tool_map <- c(
         "@household_tool_inc" = "tool_household_iphra_v2",
@@ -1161,8 +1163,10 @@ IPHRAProtocol <- R6::R6Class(
       doc
     },
 
-    # Handle all schema 'input' type rows.
-    # For each tag, look up the corresponding metadata value and replace.
+    #' @description Handle schema rows that replace tags with metadata input.
+    #' @param doc officer::rdocx document object.
+    #' @param rows Data frame of schema rows to process.
+    #' @return Updated document object.
     .handle_input = function(doc, rows) {
       for (i in seq_len(nrow(rows))) {
         if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
@@ -1192,7 +1196,7 @@ IPHRAProtocol <- R6::R6Class(
 
       # Gather all included indicator codes per tool
       tool_codes <- lapply(tool_names, function(tn) {
-        private$.collect_tool_indicator_codes(tool_names = tn)
+        private$.get_tool_indicator_codes(tool_names = tn)
       })
       names(tool_codes) <- tool_names
 
@@ -1538,7 +1542,7 @@ IPHRAProtocol <- R6::R6Class(
     # Only inserted when indicator_code 10701 (GAM/MUAC) or 10702 (GAM women)
     # is present in the included tools.
     add_sample_size_ind_table = function(doc) {
-      inc_codes <- private$.collect_tool_indicator_codes()
+      inc_codes <- private$.get_tool_indicator_codes()
       if (!any(c("10701", "10702") %in% inc_codes)) {
         doc <- private$.replace(doc, "@sample_size_hh_ind_table", "")
         return(doc)
@@ -1582,7 +1586,7 @@ IPHRAProtocol <- R6::R6Class(
     # Only inserted when indicator_code 10501 (CDR) or 10502 (U5DR)
     # is present in the included tools.
     add_sample_size_mort_table = function(doc) {
-      inc_codes <- private$.collect_tool_indicator_codes()
+      inc_codes <- private$.get_tool_indicator_codes()
       if (!any(c("10501", "10502") %in% inc_codes)) {
         doc <- private$.replace(doc, "@sample_size_hh_mort_table", "")
         return(doc)
