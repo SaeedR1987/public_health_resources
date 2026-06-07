@@ -49,241 +49,23 @@ SurveyProtocol <- R6::R6Class(
     #'   \code{\link{SamplingFrame}} with.  When \code{NULL} (default), an empty
     #'   \code{SamplingFrame} is created.
     #' @param reference_doc_filename Optional document template filename/path.
+    #' @param reference_ppt_filename Optional PowerPoint template filename/path.
     #' @return A new SurveyProtocol object
     initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
                           framework_type = "none", sampling_frame = NULL,
-                          reference_doc_filename = NULL) {
+                          reference_doc_filename = NULL,
+                          reference_ppt_filename = NULL) {
       super$initialize(
         assessment_title = assessment_title,
         country_name     = country_name,
         month_year       = month_year,
         framework_type   = framework_type,
-        reference_doc_filename = reference_doc_filename
+        reference_doc_filename = reference_doc_filename,
+        reference_ppt_filename = reference_ppt_filename
       )
       self$sample_table <- Sample$new()
       self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
       private$.sync_state()
-      invisible(self)
-    },
-
-    #' @description Add a stratum row to the master sample table
-    #'
-    #' Each call appends one row to \code{sample_table}.  Every column in the
-    #' master table is included; columns that are not supplied default to
-    #' \code{NA}.  Parameters that have clear equivalents in the master table
-    #' schema are mapped automatically (e.g. \code{population_size} maps to
-    #' \code{Total_Population}).
-    #'
-    #' @param stratum_id Character. Unique identifier for the stratum (used as
-    #'   the row key and for cross-referencing the sampling frame).
-    #' @param stratum_name Character. Human-readable name (stored as
-    #'   \code{Population_Name}).
-    #' @param population_size Numeric. Total population for this stratum
-    #'   (stored as \code{Total_Population}).
-    #' @param total_households Numeric. Total number of households (stored as
-    #'   \code{Total_Households}).  Defaults to \code{NA}.
-    #' @param sampling_method Character. Primary sampling method for the
-    #'   stratum (stored as \code{sampling_method}).  Also accepted via the
-    #'   legacy alias \code{allocation_method}.  Allowable values are
-    #'   \code{"simple_random"}, \code{"proportional"}, \code{"pps_cluster"},
-    #'   \code{"pps_rlc"}, \code{"systematic"}, \code{"simple_random_rlc"},
-    #'   \code{"systematic_rlc"}, \code{"proportional_rlc"}, and \code{"purposive"}.
-    #'   Defaults to \code{"simple_random"}.
-    #' @param allocation_method Deprecated alias for \code{sampling_method}.
-    #' @param pop_indicator Character. Indicator label for population-level
-    #'   sample size calculation (default \code{"General"}).
-    #' @param pop_expected_prevalence Numeric. Expected prevalence used for
-    #'   population-level sample size (\%).
-    #' @param pop_precision Numeric. Desired precision for population-level
-    #'   estimate (\%).
-    #' @param pop_nonresponse Numeric. Expected non-response rate for
-    #'   population-level calculation (\%).
-    #' @param pop_design_effect Numeric. Design effect for population-level
-    #'   calculation.  Also accepted via the legacy alias \code{design_effect}.
-    #' @param pop_fpc Logical. Apply finite population correction at population
-    #'   level?  Defaults to \code{FALSE}.
-    #' @param General_HH_Sample_Size Numeric. Calculated (or placeholder) general
-    #'   household-level sample size (from population-level calculation).
-    #' @param ind_indicator Character. Indicator label for individual-level
-    #'   sample size calculation.
-    #' @param ind_expected_prevalence Numeric. Expected prevalence for
-    #'   individual-level calculation (\%).
-    #' @param ind_precision Numeric. Desired precision for individual-level
-    #'   estimate (\%).
-    #' @param ind_nonresponse Numeric. Expected non-response rate for
-    #'   individual-level calculation (\%).
-    #' @param ind_design_effect Numeric. Design effect for individual-level
-    #'   calculation.
-    #' @param ind_avg_hh_size Numeric. Average household size (individual
-    #'   level).
-    #' @param ind_subpop_prop Numeric. Sub-population proportion (\%) for
-    #'   individual-level calculation.
-    #' @param ind_fpc Logical. Apply finite population correction at individual
-    #'   level?  Defaults to \code{FALSE}.
-    #' @param Ind_Sample_Size Numeric. Calculated individual-level sample size
-    #'   (number of individuals).
-    #' @param Ind_HH_Sample_Size Numeric. Calculated individual-level sample
-    #'   size expressed in households.
-    #' @param mort_indicator Character. Indicator label for mortality-level
-    #'   sample size calculation.
-    #' @param mort_expected_death_rate Numeric. Expected crude death rate used
-    #'   for mortality sample size calculation.
-    #' @param mort_precision Numeric. Desired precision for mortality estimate.
-    #' @param mort_nonresponse Numeric. Expected non-response rate for
-    #'   mortality calculation (\%).
-    #' @param mort_design_effect Numeric. Design effect for mortality
-    #'   calculation.
-    #' @param mort_recall_days Integer. Recall period in days for mortality
-    #'   estimate.
-    #' @param mort_avg_hh_size Numeric. Average household size (mortality
-    #'   level).
-    #' @param mort_fpc Logical. Apply finite population correction at mortality
-    #'   level?  Defaults to \code{FALSE}.
-    #' @param Mort_Ind_Sample_Size Numeric. Calculated mortality-level
-    #'   individual sample size.
-    #' @param Mort_PT_Sample_Size Numeric. Calculated mortality-level
-    #'   person-time sample size.
-    #' @param Mort_HH_Sample_Size Numeric. Calculated mortality-level
-    #'   household sample size.
-    #' @param teams Numeric. Number of field teams.
-    #' @param avg_interview_time Numeric. Average interview time in minutes.
-    #' @param clusters_per_day Numeric. Number of clusters visited per day per
-    #'   team.
-    #' @param enumerators_per_team Numeric. Number of enumerators per team.
-    #' @param avg_rest_time Numeric. Average rest/break time in minutes per
-    #'   day.
-    #' @param avg_travel_time Numeric. Average travel time to cluster in
-    #'   minutes.
-    #' @param start_time Character. Planned work start time (e.g.
-    #'   \code{"08:00"}).
-    #' @param end_time Character. Planned work end time (e.g.
-    #'   \code{"17:00"}).
-    #' @param design_effect Deprecated alias for \code{pop_design_effect}.
-    #' @param precision Deprecated alias for \code{pop_precision}.
-    #' @param confidence_level Deprecated / ignored in the new schema.
-    #' @param n_psu Integer.  Number of PSUs to select.  Required by
-    #'   \code{draw_sample()} when \code{sampling_method} is \code{"pps_cluster"};
-    #'   may be omitted at \code{add_stratum()} time and set later (e.g. by
-    #'   \code{calculate_sample_sizes()}).
-    #' @param cluster_size Integer.  Households per cluster.  Used by
-    #'   \code{draw_sample()} when \code{sampling_method} is \code{"pps_cluster"},
-    #'   \code{"pps_rlc"}, \code{"simple_random_rlc"}, \code{"systematic_rlc"}, or
-    #'   \code{"proportional_rlc"} (automatically set to \code{3} for RLC methods if
-    #'   not supplied).
-    #' @param n_sites Integer.  Number of sites / PSUs to select.  Required for
-    #'   \code{"simple_random"}, \code{"pps_rlc"}, \code{"systematic"},
-    #'   \code{"simple_random_rlc"}, and \code{"systematic_rlc"} sampling methods.
-    #'   Not used by \code{"proportional"}, \code{"proportional_rlc"}, or
-    #'   \code{"purposive"} (which apply to all eligible PSUs).
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_stratum = function(
-      stratum_id,
-      stratum_name,
-      population_size        = NA_real_,
-      total_households       = NA_real_,
-      sampling_method        = NULL,
-      allocation_method      = NULL,   # legacy alias for sampling_method
-      n_psu                  = NA_real_,
-      cluster_size           = NA_real_,
-      n_sites                = NA_real_,
-      pop_indicator          = "General",
-      pop_expected_prevalence = NA_real_,
-      pop_precision          = NA_real_,
-      pop_nonresponse        = NA_real_,
-      pop_design_effect      = NA_real_,
-      pop_fpc                = FALSE,
-      General_HH_Sample_Size = NA_real_,
-      ind_indicator          = NA_character_,
-      ind_expected_prevalence = NA_real_,
-      ind_precision          = NA_real_,
-      ind_nonresponse        = NA_real_,
-      ind_design_effect      = NA_real_,
-      ind_avg_hh_size        = NA_real_,
-      ind_subpop_prop        = NA_real_,
-      ind_fpc                = FALSE,
-      Ind_Sample_Size        = NA_real_,
-      Ind_HH_Sample_Size     = NA_real_,
-      mort_indicator         = NA_character_,
-      mort_expected_death_rate = NA_real_,
-      mort_precision         = NA_real_,
-      mort_nonresponse       = NA_real_,
-      mort_design_effect     = NA_real_,
-      mort_recall_days       = NA_real_,
-      mort_avg_hh_size       = NA_real_,
-      mort_fpc               = FALSE,
-      Mort_Ind_Sample_Size   = NA_real_,
-      Mort_PT_Sample_Size    = NA_real_,
-      Mort_HH_Sample_Size    = NA_real_,
-      teams                  = NA_real_,
-      avg_interview_time     = NA_real_,
-      clusters_per_day       = NA_real_,
-      enumerators_per_team   = NA_real_,
-      avg_rest_time          = NA_real_,
-      avg_travel_time        = NA_real_,
-      start_time             = NA_character_,
-      end_time               = NA_character_,
-      # Legacy / deprecated params kept for backward compatibility
-      design_effect          = NULL,
-      precision              = NULL,
-      confidence_level       = NULL
-    ) {
-      self$access_nested(
-        field = "sample_table",
-        member = "add_stratum",
-        stratum_id = stratum_id,
-        stratum_name = stratum_name,
-        population_size = population_size,
-        total_households = total_households,
-        sampling_method = sampling_method,
-        allocation_method = allocation_method,
-        n_psu = n_psu,
-        cluster_size = cluster_size,
-        n_sites = n_sites,
-        pop_indicator = pop_indicator,
-        pop_expected_prevalence = pop_expected_prevalence,
-        pop_precision = pop_precision,
-        pop_nonresponse = pop_nonresponse,
-        pop_design_effect = pop_design_effect,
-        pop_fpc = pop_fpc,
-        General_HH_Sample_Size = General_HH_Sample_Size,
-        ind_indicator = ind_indicator,
-        ind_expected_prevalence = ind_expected_prevalence,
-        ind_precision = ind_precision,
-        ind_nonresponse = ind_nonresponse,
-        ind_design_effect = ind_design_effect,
-        ind_avg_hh_size = ind_avg_hh_size,
-        ind_subpop_prop = ind_subpop_prop,
-        ind_fpc = ind_fpc,
-        Ind_Sample_Size = Ind_Sample_Size,
-        Ind_HH_Sample_Size = Ind_HH_Sample_Size,
-        mort_indicator = mort_indicator,
-        mort_expected_death_rate = mort_expected_death_rate,
-        mort_precision = mort_precision,
-        mort_nonresponse = mort_nonresponse,
-        mort_design_effect = mort_design_effect,
-        mort_recall_days = mort_recall_days,
-        mort_avg_hh_size = mort_avg_hh_size,
-        mort_fpc = mort_fpc,
-        Mort_Ind_Sample_Size = Mort_Ind_Sample_Size,
-        Mort_PT_Sample_Size = Mort_PT_Sample_Size,
-        Mort_HH_Sample_Size = Mort_HH_Sample_Size,
-        teams = teams,
-        avg_interview_time = avg_interview_time,
-        clusters_per_day = clusters_per_day,
-        enumerators_per_team = enumerators_per_team,
-        avg_rest_time = avg_rest_time,
-        avg_travel_time = avg_travel_time,
-        start_time = start_time,
-        end_time = end_time,
-        design_effect = design_effect,
-        precision = precision,
-        confidence_level = confidence_level
-      )
-
-      private$.sync_state()
-      private$.touch()
-      self$diagnose_coherence()
-      phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
       invisible(self)
     },
 
@@ -346,125 +128,6 @@ SurveyProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Draw sample from the sampling frame
-    #'
-    #' Applies PSU-level sampling methods to the eligible PSUs in the sampling
-    #' frame.  Results are stored in \code{drawn_sample_full} (the full frame
-    #' annotated with \code{sampled_psu} and \code{allocated_sample} columns)
-    #' and \code{drawn_sample} (only the selected rows).
-    #'
-    #' Sampling method and all method-specific parameters (\code{n_psu},
-    #' \code{cluster_size}, \code{n_sites}) are read from the strata table
-    #' row(s).  When the frame contains a \code{stratum} column and the strata
-    #' table has multiple rows, sampling is applied independently per stratum
-    #' using that stratum's own method and parameters.  If a stratum fails
-    #' (e.g. a required parameter is missing), a \code{phr_warning} is issued
-    #' and that stratum is skipped.
-    #'
-    #' Supported \code{sampling_method} values in the strata table:
-    #' \itemize{
-    #'   \item \code{"simple_random"} — simple random sampling; requires \code{n_sites}.
-    #'   \item \code{"proportional"} — proportional household allocation across
-    #'     \strong{all} eligible PSUs; requires \code{population_size} in the frame.
-    #'     \code{n_sites} does not apply.
-    #'   \item \code{"pps_cluster"} — PPS cluster sampling; requires
-    #'     \code{n_psu} and \code{cluster_size}.
-    #'   \item \code{"pps_rlc"} — random location cluster; sites pre-selected by
-    #'     PPS (\code{pps::ppswor}), clusters evenly distributed across sites.
-    #'     Requires \code{n_sites} and \code{population_size}; defaults
-    #'     \code{cluster_size} to \code{3}.
-    #'   \item \code{"simple_random_rlc"} — random location cluster with SRS
-    #'     site selection; clusters allocated proportional to population size
-    #'     when \code{population_size} is available, otherwise evenly.
-    #'     Requires \code{n_sites}; defaults \code{cluster_size} to \code{3}.
-    #'   \item \code{"systematic_rlc"} — random location cluster with systematic
-    #'     site selection; clusters allocated proportional to population size
-    #'     when \code{population_size} is available, otherwise evenly.
-    #'     Requires \code{n_sites}; defaults \code{cluster_size} to \code{3}.
-    #'   \item \code{"proportional_rlc"} — cluster allocation proportional to
-    #'     population size across \strong{all} eligible PSUs; requires
-    #'     \code{population_size} in the frame.  \code{n_sites} does not apply.
-    #'     Defaults \code{cluster_size} to \code{3}.
-    #'   \item \code{"systematic"} — systematic sampling; requires
-    #'     \code{n_sites}.
-    #'   \item \code{"purposive"} — purposive / convenience sampling; returns
-    #'     \code{NA} for \code{sampled_psu} and \code{allocated_sample} —
-    #'     the user manually designates selected PSUs.  \code{n_sites} does not apply.
-    #' }
-    #'
-    #' @param frame Data frame.  The sampling frame to draw from.  If
-    #'   \code{NULL} (default), uses \code{self$sampling_frame$log_df}.
-    #' @param strata_table Data frame.  The strata table supplying
-    #'   \code{sampling_method}, \code{Final_HH_Sample_Size}, and sampling
-    #'   parameters (\code{n_psu}, \code{cluster_size}, \code{n_sites}).  If
-    #'   \code{NULL} (default), uses \code{self$get_sample_table()}.
-    #' @param seed Integer. Random seed for reproducibility (default \code{42}).
-    #' @return Invisibly returns \code{self} for method chaining.
-    draw_sample = function(frame = NULL, strata_table = NULL, seed = 42) {
-      phr_try({
-        if (is.null(frame)) {
-          phr_assert(
-            !is.null(self$sampling_frame) && nrow(self$sampling_frame$log_df) > 0,
-            message = phr_txt("Must set sampling frame before drawing sample."),
-            origin  = "SurveyProtocol$draw_sample",
-            hint    = phr_txt("Call set_sampling_frame() first, or pass a frame argument.")
-          )
-          frame <- as.data.frame(self$sampling_frame$log_df)
-        }
-
-        if (is.null(strata_table)) {
-          st <- self$get_sample_table()
-          phr_assert(
-            !is.null(st) && nrow(st) > 0,
-            message = phr_txt("No strata table available. Call add_stratum() first or pass a strata_table argument."),
-            origin  = "SurveyProtocol$draw_sample"
-          )
-          strata_table <- st
-        }
-        self$sample_table$draw_sample(frame = frame, strata_table = strata_table, seed = seed)
-        self$drawn_sample <- self$sample_table$drawn_sample
-        self$drawn_sample_full <- self$sample_table$drawn_sample_full
-        self$sampling_frame$log_df <- tibble::as_tibble(self$drawn_sample_full)
-        private$.sync_state()
-        private$.touch()
-        self$diagnose_coherence()
-        phr_message(
-          phr_txt("Sample drawn: {nrow(self$drawn_sample)} PSU(s) selected."),
-          origin = "SurveyProtocol$draw_sample"
-        )
-
-      }, on_error = "abort", origin = "SurveyProtocol$draw_sample")
-      invisible(self)
-    },
-
-    #' @description Clear sample selection from the sampling frame
-    #'
-    #' Resets the \code{sampled_psu} and \code{allocated_sample} columns of the
-    #' \code{\link{SamplingFrame}} to \code{NA}, leaving all other columns
-    #' (e.g. \code{stratum}, \code{psu}, \code{population_size},
-    #' \code{inclusion}) intact.  Also clears the \code{drawn_sample} and
-    #' \code{drawn_sample_full} fields.
-    #'
-    #' This is useful when you want to re-draw the sample with different
-    #' parameters without discarding the sampling frame itself.
-    #'
-    #' @return Invisibly returns \code{self} for method chaining.
-    clear_sample = function() {
-      phr_try({
-        frame <- if (!is.null(self$sampling_frame)) self$sampling_frame$log_df else NULL
-        self$sampling_frame$log_df <- tibble::as_tibble(self$sample_table$clear_sample(frame))
-        self$drawn_sample <- self$sample_table$drawn_sample
-        self$drawn_sample_full <- self$sample_table$drawn_sample_full
-        private$.sync_state()
-        private$.touch()
-        self$diagnose_coherence()
-        phr_message(
-          phr_txt("Sample cleared from sampling frame."),
-          origin = "SurveyProtocol$clear_sample"
-        )
-      }, on_error = "abort", origin = "SurveyProtocol$clear_sample")
-      invisible(self)
-    },
 
     #' @description Validate the structure of the master sample table
     #'
@@ -534,150 +197,6 @@ SurveyProtocol <- R6::R6Class(
       df[[col_name]]
     },
 
-    #' @description Calculate sample sizes for all strata in the sample table
-    #'
-    #' Delegates to \code{\link{calculate_sample_size_strata_table}}, which
-    #' reads each stratum row from \code{sample_table}, calls the appropriate
-    #' \code{calculate_sample_size_*} function for each applicable calculation
-    #' type (general, individual, mortality), sets \code{Final_HH_Sample_Size}
-    #' to the maximum household sample size across the three types, and also
-    #' estimates the field plan for each stratum where the necessary logistics
-    #' parameters are present.
-    #'
-    #' @return Invisibly returns \code{self} for method chaining.
-    calculate_sample_sizes = function() {
-      phr_try({
-        phr_assert(
-          !is.null(self$sample_table) && inherits(self$sample_table, "Sample"),
-          message = phr_txt("sample_table must be a Sample object."),
-          origin  = "SurveyProtocol$calculate_sample_sizes"
-        )
-        self$sample_table$calculate_sample_sizes()
-        private$.sync_state()
-        private$.touch()
-        self$diagnose_coherence()
-
-        phr_message(
-          phr_txt("Sample sizes calculated for {nrow(self$get_sample_table())} stratum/strata."),
-          origin = "SurveyProtocol$calculate_sample_sizes"
-        )
-      }, on_error = "abort", origin = "SurveyProtocol$calculate_sample_sizes")
-      invisible(self)
-    },
-
-    #' @description Add strata names to a tool's choices list and insert a
-    #'   \emph{Please select strata} question into the survey form.
-    #'
-    #' Creates (or replaces) a \code{strata} choice list in the tool's
-    #' \code{revised_choices}, then inserts a \code{select_one strata} question
-    #' immediately after the last row whose \code{indicator_code} is
-    #' \code{10000} (the core header block) in \code{revised_survey}.  If
-    #' \code{strata_names} is \code{NULL} the names are taken from the
-    #' stratum names from \code{self$sample_table} (\code{Sample} object).
-    #'
-    #' @param strata_names Character vector of stratum names.  Defaults to
-    #'   \code{NULL}, in which case \code{self$get_strata_names()} is used.
-    #' @param tool_name Character. Name of the tool to modify (key in
-    #'   \code{self$tools}).  When \code{NULL} (default) and exactly one tool
-    #'   is registered, that tool is used.
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_strata_to_survey = function(strata_names = NULL, tool_name = NULL) {
-      phr_try({
-
-        # Resolve strata names
-        if (is.null(strata_names)) {
-          st <- self$get_sample_table()
-          phr_assert(
-            !is.null(st) && nrow(st) > 0,
-            message = phr_txt("strata_names is NULL and sample_table is empty. Either call add_stratum() first, or pass strata_names explicitly."),
-            origin  = "SurveyProtocol$add_strata_to_survey"
-          )
-          strata_names <- self$get_strata_names()
-        }
-
-        strata_names <- as.character(strata_names)
-        strata_names <- strata_names[!is.na(strata_names) & nzchar(strata_names)]
-        phr_assert(
-          length(strata_names) > 0,
-          message = phr_txt("strata_names must contain at least one non-empty name."),
-          origin  = "SurveyProtocol$add_strata_to_survey"
-        )
-
-        # Resolve tool
-        tool <- private$resolve_tool(tool_name, "SurveyProtocol$add_strata_to_survey")
-
-        # ----- Build new choices rows -----
-        # Match column structure of existing revised_choices
-        ch <- tool$revised_choices
-        if (is.null(ch)) ch <- tool$choices
-        if (is.null(ch)) ch <- data.frame(list_name = character(0), name = character(0),
-                                           label = character(0), stringsAsFactors = FALSE)
-
-        # Remove any existing 'strata' list
-        if ("list_name" %in% names(ch)) {
-          ch <- ch[ch$list_name != "strata", , drop = FALSE]
-        }
-
-        # Build new strata rows aligned to ch columns
-        strata_rows <- lapply(seq_along(strata_names), function(i) {
-          nm  <- gsub("[^A-Za-z0-9_]", "_", tolower(strata_names[i]))
-          row <- data.frame(list_name = "strata", name = nm, label = strata_names[i],
-                            stringsAsFactors = FALSE)
-          # Add extra columns present in ch but not in row
-          for (col in setdiff(names(ch), names(row))) row[[col]] <- NA
-          row[, union(names(row), names(ch)), drop = FALSE]
-        })
-        strata_df <- do.call(rbind, strata_rows)
-
-        # Align columns to ch
-        all_cols <- union(names(ch), names(strata_df))
-        for (col in setdiff(all_cols, names(ch)))     ch[[col]]        <- NA
-        for (col in setdiff(all_cols, names(strata_df))) strata_df[[col]] <- NA
-        tool$revised_choices <- rbind(ch[, all_cols, drop = FALSE],
-                                      strata_df[, all_cols, drop = FALSE])
-
-        # ----- Insert strata question into revised_survey -----
-        sv <- tool$revised_survey
-        if (is.null(sv)) sv <- tool$survey
-
-        if (!is.null(sv) && nrow(sv) > 0 && "indicator_code" %in% names(sv)) {
-          last_10000 <- max(which(sv$indicator_code == 10000), 0L)
-          insert_after <- if (last_10000 > 0L) last_10000 else 0L
-
-          # Build new survey row
-          new_row <- data.frame(
-            type  = "select_one strata",
-            name  = "strata",
-            label = "Please select strata",
-            stringsAsFactors = FALSE
-          )
-          # Add extra columns
-          for (col in setdiff(names(sv), names(new_row))) new_row[[col]] <- NA
-          new_row <- new_row[, names(sv), drop = FALSE]
-
-          if (insert_after >= 1L && insert_after < nrow(sv)) {
-            tool$revised_survey <- rbind(
-              sv[seq_len(insert_after), , drop = FALSE],
-              new_row,
-              sv[seq(insert_after + 1L, nrow(sv)), , drop = FALSE]
-            )
-          } else if (insert_after == 0L) {
-            tool$revised_survey <- rbind(new_row, sv)
-          } else {
-            tool$revised_survey <- rbind(sv, new_row)
-          }
-        }
-
-        self$sync_tool_indicator_catalog_fields
-        private$.touch()
-        phr_message(
-          phr_txt("Strata choices ({length(strata_names)}) added and strata question inserted."),
-          origin = "SurveyProtocol$add_strata_to_survey"
-        )
-      }, on_error = "abort", origin = "SurveyProtocol$add_strata_to_survey")
-      invisible(self)
-    },
-
     #' @description Override \code{diagnose_coherence} to additionally check
     #'   strata consistency between the sampling frame and the sample table.
     #'
@@ -715,21 +234,39 @@ SurveyProtocol <- R6::R6Class(
       }
 
       invisible(self)
+    },
+
+    #' @description Post-sync hook for sampling-related state.
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path.
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns \code{NULL}.
+    post_sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                               name = NULL, role = NULL) {
+      super$post_sync_state(
+        field = field, member = member, target_field = target_field,
+        name = name, role = role
+      )
+      private$.sync_sampling_state()
+      invisible(NULL)
     }
 
   ),
 
-  active = list(
-    sync_sampling_state = function(value) {
-      if (!missing(value)) {
-        stop("sync_sampling_state is a read-only active binding.")
+  private = list(
+    .sync_sampling_state = function() {
+      self$metadata$sampling_strata_names <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        as.character(self$sample_table$get_strata_names())
+      } else {
+        character(0)
       }
-      private$.sync_state(
-        field = "sample_table",
-        member = "get_strata_names",
-        target_field = "metadata$sampling_strata_names"
-      )
-      methods_used <- private$.sync_state(field = "sample_table", member = "get_sampling_methods")
+      methods_used <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        self$sample_table$get_sampling_methods()
+      } else {
+        character(0)
+      }
       if (is.null(methods_used)) methods_used <- character(0)
       methods_used <- unique(trimws(tolower(as.character(methods_used))))
       methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
@@ -739,14 +276,22 @@ SurveyProtocol <- R6::R6Class(
       self$metadata$sampling_strata_names <- as.character(self$metadata$sampling_strata_names %||% character(0))
       self$metadata$sampling_method_flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
 
-      sf <- private$.sync_state(field = "sampling_frame", member = "log_df")
+      sf <- if (!is.null(self$sampling_frame) && inherits(self$sampling_frame, "SamplingFrame")) {
+        self$sampling_frame$log_df
+      } else {
+        NULL
+      }
       if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
         self$sampling_frame_strata_names <- character(0)
       } else {
         vals <- as.character(sf$stratum)
         self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
       }
-      st <- private$.sync_state(field = "sample_table", member = "get_sample_table")
+      st <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        self$sample_table$get_sample_table()
+      } else {
+        NULL
+      }
       if (!is.null(st) && nrow(st) > 0) {
         strata_ids <- as.character(st$stratum_id)
         strata_names <- as.character(st$stratum_name)
@@ -754,35 +299,17 @@ SurveyProtocol <- R6::R6Class(
       } else {
         self$metadata$target_strata <- list()
       }
-      invisible(NULL)
-    }
-  ),
-
-  private = list(
-    # Resolve a tool from self$tools.  If tool_name is NULL and there is
-    # exactly one tool registered, return that tool.  Otherwise raise an error.
-    resolve_tool = function(tool_name, origin) {
-      if (is.null(tool_name)) {
-        phr_assert(
-          !is.null(self$tools) && length(self$tools) > 0,
-          message = phr_txt("No tools registered. Add a tool with add_tools() first."),
-          origin  = origin
-        )
-        if (length(self$tools) == 1L) {
-          return(self$tools[[1L]])
-        }
-        phr_assert(
-          FALSE,
-          message = phr_txt("Multiple tools registered; supply tool_name to specify which tool to update. Available: {paste(names(self$tools), collapse=', ')}."),
-          origin  = origin
-        )
+      self$drawn_sample <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        self$sample_table$drawn_sample
+      } else {
+        NULL
       }
-      phr_assert(
-        tool_name %in% names(self$tools),
-        message = phr_txt("Tool '{tool_name}' not found. Available: {paste(names(self$tools), collapse=', ')}."),
-        origin  = origin
-      )
-      self$tools[[tool_name]]
+      self$drawn_sample_full <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        self$sample_table$drawn_sample_full
+      } else {
+        NULL
+      }
+      invisible(NULL)
     }
   )
 )

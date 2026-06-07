@@ -23,6 +23,49 @@ Orchestrator <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Hook executed before \code{sync_state()} logic.
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path.
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns \code{NULL}.
+    pre_sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                              name = NULL, role = NULL) {
+      invisible(NULL)
+    },
+
+    #' @description Hook executed after \code{sync_state()} logic.
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path.
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns \code{NULL}.
+    post_sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                               name = NULL, role = NULL) {
+      invisible(NULL)
+    },
+
+    #' @description Synchronize orchestrator state.
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path.
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns \code{self}.
+    sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                          name = NULL, role = NULL) {
+      private$.sync_state(
+        field = field,
+        member = member,
+        target_field = target_field,
+        name = name,
+        role = role
+      )
+      invisible(self)
+    },
+
     #' @description
     #' Generalized accessor for nested objects stored on the class.
     #'
@@ -131,6 +174,10 @@ Orchestrator <- R6::R6Class(
     #' @return Invisibly returns resolved value (targeted mode) or \code{NULL}.
     .sync_state = function(field = NULL, member = NULL, target_field = NULL,
                           name = NULL, role = NULL) {
+      self$pre_sync_state(
+        field = field, member = member, target_field = target_field,
+        name = name, role = role
+      )
       if (!is.null(field) || !is.null(member) || !is.null(target_field) ||
           !is.null(name) || !is.null(role)) {
         phr_assert(
@@ -156,6 +203,10 @@ Orchestrator <- R6::R6Class(
         if (!is.null(target_field)) {
           private$.assign_sync_value(target_field = target_field, value = value)
         }
+        self$post_sync_state(
+          field = field, member = member, target_field = target_field,
+          name = name, role = role
+        )
         return(invisible(value))
       }
 
@@ -164,18 +215,57 @@ Orchestrator <- R6::R6Class(
       sync_runner <- tryCatch(self$synchronize_state, error = function(e) NULL)
       if (is.function(sync_runner)) {
         sync_runner()
+        self$post_sync_state(
+          field = field, member = member, target_field = target_field,
+          name = name, role = role
+        )
         return(invisible(NULL))
       }
 
-      sync_names <- grep("^sync_", names(self), value = TRUE)
-      if (length(sync_names) == 0L) return(invisible(NULL))
+      sync_names <- setdiff(grep("^sync_", names(self), value = TRUE), "sync_state")
+      if (length(sync_names) == 0L) {
+        self$post_sync_state(
+          field = field, member = member, target_field = target_field,
+          name = name, role = role
+        )
+        return(invisible(NULL))
+      }
       for (nm in sync_names) {
         val <- tryCatch(self[[nm]], error = function(e) NULL)
         if (is.function(val)) {
           tryCatch(val(), error = function(e) NULL)
         }
       }
+      self$post_sync_state(
+        field = field, member = member, target_field = target_field,
+        name = name, role = role
+      )
       invisible(NULL)
+    },
+
+    #' @description Evaluate a calculate-schema row against active bindings.
+    #' @param row Single-row schema data frame.
+    #' @return The calculated value, or \code{NULL} when unavailable.
+    .evaluate_calculate_row = function(row) {
+      if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
+        return(NULL)
+      }
+      binding_name <- trimws(as.character(row$condition[[1L]] %||% ""))
+      if (!nzchar(binding_name) || !binding_name %in% names(self)) {
+        return(NULL)
+      }
+      value <- tryCatch(self[[binding_name]], error = function(e) NULL)
+      if (is.function(value)) {
+        return(tryCatch(value(), error = function(e) NULL))
+      }
+      value
+    },
+
+    #' @description Backward-compatible calculate handler alias.
+    #' @param row Single-row schema data frame.
+    #' @return The calculated value, or \code{NULL} when unavailable.
+    .handle_calculate = function(row) {
+      private$.evaluate_calculate_row(row)
     },
 
     #' @description Resolve a top-level or nested target object.

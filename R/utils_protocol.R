@@ -240,8 +240,7 @@ restore_protocol <- function(protocol_data) {
     protocol$tool_objective_catalog_revised  <-
       protocol_data$tool_objective_catalog_revised  %||% protocol$tool_objective_catalog_revised
     protocol$issues              <- protocol_data$issues
-    if ("sync_framework_catalog_fields" %in% names(protocol)) protocol$sync_framework_catalog_fields
-    if ("sync_tool_indicator_catalog_fields" %in% names(protocol)) protocol$sync_tool_indicator_catalog_fields
+    if ("sync_state" %in% names(protocol)) protocol$sync_state()
 
     phr_message(phr_txt("Protocol restored successfully."), origin = origin)
     protocol

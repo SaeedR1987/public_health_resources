@@ -208,80 +208,16 @@ IPHRAProtocol <- R6::R6Class(
         framework_type   = "ana",
         reference_doc_filename = "reach_tor_iphra_template.docx"
       )
-      # Store version
-      self$metadata$version <- as.integer(version)
       self$valid_tool_types <- c("household", "key_informant", "observation", "generic")
-
-      # Store all optional IPHRA-specific metadata.
-      # String category fields default to NA_character_ (comparison with "==" safely
-      # yields NA which isTRUE() treats as FALSE — correct "no box checked" default).
-      # Free-text fields default to "" so that %||% "" in the rendering code works
-      # without extra NA guards.  Character-vector fields default to character(0).
-      self$metadata$type_of_emergency        <- type_of_emergency        %||% NA_character_
-      self$metadata$type_of_crisis           <- type_of_crisis           %||% NA_character_
-      self$metadata$mandating_body           <- mandating_body           %||% ""
-      self$metadata$project_code             <- project_code             %||% ""
-      self$metadata$overall_timeframe        <- overall_timeframe        %||% ""
-      # geographic_coverage supersedes the deprecated geographic_description parameter.
-      # Both are set to the same resolved value so that code that reads either field
-      # continues to work during the transition period.
-      self$metadata$geographic_coverage      <- (geographic_coverage %||% geographic_description) %||% ""
-      self$metadata$geographic_description   <- (geographic_coverage %||% geographic_description) %||% ""
-      self$metadata$general_objective        <- general_objective
-      self$metadata$pilot_date               <- phr_fmt_date_tor(pilot_date)
-      self$metadata$data_start_date          <- phr_fmt_date_tor(data_start_date)
-      self$metadata$data_end_date            <- phr_fmt_date_tor(data_end_date)
-      self$metadata$analysis_date            <- phr_fmt_date_tor(analysis_date)
-      self$metadata$data_validation_date     <- phr_fmt_date_tor(data_validation_date)
-      self$metadata$prelim_presentation_date <- phr_fmt_date_tor(prelim_presentation_date)
-      self$metadata$output_validation_date   <- phr_fmt_date_tor(output_validation_date)
-      self$metadata$output_published_date    <- phr_fmt_date_tor(output_published_date)
-      self$metadata$final_presentation_date  <- phr_fmt_date_tor(final_presentation_date)
-      self$metadata$humanitarian_milestones  <- humanitarian_milestones  %||% character(0)
-      # Audience type as four distinct boolean fields
-      self$metadata[["audience_type.strategic"]]    <- isTRUE(`audience_type.strategic`)
-      self$metadata[["audience_type.operational"]]  <- isTRUE(`audience_type.operational`)
-      self$metadata[["audience_type.programmatic"]] <- isTRUE(`audience_type.programmatic`)
-      self$metadata[["audience_type.other"]]        <- isTRUE(`audience_type.other`)
-      self$metadata$dissemination            <- dissemination            %||% character(0)
-      self$metadata$recall_period            <- recall_period            %||% ""
-      self$metadata$population               <- population               %||% character(0)
-      # Population boolean fields (underscore naming)
-      self$metadata[["pop_idpcamp"]]         <- isTRUE(pop_idpcamp)
-      self$metadata[["pop_idphost"]]         <- isTRUE(pop_idphost)
-      self$metadata[["pop_idpinformal"]]     <- isTRUE(pop_idpinformal)
-      self$metadata[["pop_idpother"]]        <- isTRUE(pop_idpother)
-      self$metadata[["pop_refugee"]]         <- isTRUE(pop_refugee)
-      self$metadata[["pop_refugeeinformal"]] <- isTRUE(pop_refugeeinformal)
-      self$metadata[["pop_refugeehost"]]     <- isTRUE(pop_refugeehost)
-      self$metadata[["pop_refugeeother"]]    <- isTRUE(pop_refugeeother)
-      self$metadata[["pop_host"]]            <- isTRUE(pop_host)
-      self$metadata[["pop_other"]]           <- isTRUE(pop_other)
-      # Stakeholder mapping
-      self$metadata$stakeholder_mapping      <- isTRUE(stakeholder_mapping)
-      # Geographic / strata numeric and boolean fields
-      self$metadata$num_geographic_units     <- as.numeric(num_geographic_units)
-      self$metadata$popsize_known_geographic_unit <- isTRUE(popsize_known_geographic_unit)
-      self$metadata$num_strata_units         <- 0L
-      self$metadata$popsize_known_strata_unit <- isTRUE(popsize_known_strata_unit)
-      # User-defined numeric KII / observation targets
-      self$metadata$num_kii_health_target     <- as.numeric(num_kii_health_target)
-      self$metadata$num_kii_market_target     <- as.numeric(num_kii_market_target)
-      self$metadata$num_kii_fsl_target        <- as.numeric(num_kii_fsl_target)
-      self$metadata$num_kii_wash_target       <- as.numeric(num_kii_wash_target)
-      self$metadata$num_kii_nutrition_target  <- as.numeric(num_kii_nutrition_target)
-      self$metadata$num_obs_health_target     <- as.numeric(num_obs_health_target)
-      self$metadata$num_obs_latrine_target    <- as.numeric(num_obs_latrine_target)
-      self$metadata$num_obs_waterpoint_target <- as.numeric(num_obs_waterpoint_target)
-      self$metadata$gender_disaggregation    <- isTRUE(gender_disaggregation)
-      self$metadata$sex_disaggregation       <- isTRUE(sex_disaggregation)
-      self$metadata$data_management_platform <- data_management_platform %||% character(0)
-      self$metadata$expected_output_type     <- expected_output_type     %||% character(0)
-      self$metadata$access                   <- access                   %||% NA_character_
+      self$metadata$assessment_title <- assessment_title
+      self$metadata$country_name <- country_name
+      self$metadata$month_year <- month_year
+      self$metadata$framework_type <- "ana"
 
       # Load protocol schema (tags + defaults) from the bundled resource
       private$.load_protocol_schema()
       private$initialize_conditional_metadata()
+      private$.initialize_condition_active_bindings()
       private$sync_sampling_conditional_metadata()
 
       phr_message(phr_txt("IPHRAProtocol initialized."), origin = "IPHRAProtocol$initialize")
@@ -381,33 +317,6 @@ IPHRAProtocol <- R6::R6Class(
       names(private$.iphra_tools)
     },
 
-    #' @description Override \code{add_stratum()} to keep \code{num_strata_units}
-    #'   in sync with the sample table.
-    #'
-    #' Delegates all arguments to \code{SurveyProtocol$add_stratum()} via
-    #' \code{super$add_stratum(...)}, then recounts the number of unique stratum
-    #' values in the updated sample table and stores the result in
-    #' \code{self$metadata$num_strata_units}.
-    #'
-    #' @param ... Arguments forwarded to \code{SurveyProtocol$add_stratum()}.
-    #' @return Invisibly returns \code{self} for method chaining.
-    add_stratum = function(...) {
-      super$add_stratum(...)
-      private$.sync_state()
-      private$.touch()
-      invisible(self)
-    },
-
-    #' @description Override inherited \code{SurveyProtocol$calculate_sample_sizes()}
-    #'   to keep sampling conditional metadata synchronized after sample table updates.
-    #' @return Invisibly returns \code{self} for method chaining.
-    calculate_sample_sizes = function() {
-      super$calculate_sample_sizes()
-      private$.sync_state()
-      private$.touch()
-      invisible(self)
-    },
-
     #' @description Update the recall date in the household tool's calculate rows.
     #'
     #' Updates the \code{calculation} column of the \code{recall_event},
@@ -490,15 +399,26 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     generate_doc = function(output_file = "protocol_report.docx", open = FALSE) {
       super$generate_doc(output_file = output_file, open = open)
-    }
-  ),
+    },
 
-  active = list(
-    sync_iphra_state = function(value) {
-      if (!missing(value)) {
-        stop("sync_iphra_state is a read-only active binding.")
+    #' @description Post-sync hook for IPHRA-specific synchronization.
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path.
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns \code{NULL}.
+    post_sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                               name = NULL, role = NULL) {
+      super$post_sync_state(
+        field = field, member = member, target_field = target_field,
+        name = name, role = role
+      )
+      st <- if (!is.null(self$sample_table) && inherits(self$sample_table, "Sample")) {
+        self$sample_table$get_sample_table()
+      } else {
+        NULL
       }
-      st <- private$.sync_state(field = "sample_table", member = "get_sample_table")
       self$metadata$num_strata_units <- if (!is.null(st) && is.data.frame(st) && "stratum_id" %in% names(st)) {
         length(unique(st$stratum_id))
       } else {
@@ -510,6 +430,8 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   private = list(
+
+    .condition_binding_values = list(),
 
     # Row labels in the sample-size tables that represent total/summary values.
     # These rows receive a light-grey background to visually distinguish them.
@@ -609,15 +531,52 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     initialize_conditional_metadata = function() {
+      schema_conditions <- private$.condition_keys_from_schema()
+      all_keys <- unique(c(private$.sampling_conditional_keys, schema_conditions))
+      self$conditional_metadata <- setNames(as.list(rep(FALSE, length(all_keys))), all_keys)
+      invisible(NULL)
+    },
+
+    .condition_keys_from_schema = function() {
       schema_conditions <- character(0)
       if (!is.null(self$protocol_schema) &&
           is.data.frame(self$protocol_schema) &&
           "condition" %in% names(self$protocol_schema)) {
-        schema_conditions <- trimws(as.character(self$protocol_schema$condition %||% ""))
+        raw_values <- as.character(self$protocol_schema$condition %||% "")
+        raw_values <- raw_values[!is.na(raw_values) & nzchar(trimws(raw_values))]
+        schema_conditions <- unlist(strsplit(raw_values, ",", fixed = TRUE), use.names = FALSE)
+        schema_conditions <- trimws(schema_conditions)
         schema_conditions <- schema_conditions[nzchar(schema_conditions)]
       }
-      all_keys <- unique(c(private$.sampling_conditional_keys, schema_conditions))
-      self$conditional_metadata <- setNames(as.list(rep(FALSE, length(all_keys))), all_keys)
+      unique(schema_conditions)
+    },
+
+    .initialize_condition_active_bindings = function() {
+      keys <- private$.condition_keys_from_schema()
+      if (length(keys) == 0L) return(invisible(NULL))
+      if (is.null(private$.condition_binding_values) || !is.list(private$.condition_binding_values)) {
+        private$.condition_binding_values <- list()
+      }
+      for (key in keys) {
+        if (!key %in% names(private$.condition_binding_values)) {
+          private$.condition_binding_values[[key]] <- FALSE
+        }
+        if (!exists(key, envir = self, inherits = FALSE)) {
+          local({
+            nm <- key
+            makeActiveBinding(
+              nm,
+              function(value) {
+                if (!missing(value)) {
+                  private$.condition_binding_values[[nm]] <- value
+                }
+                private$.condition_binding_values[[nm]]
+              },
+              env = self
+            )
+          })
+        }
+      }
       invisible(NULL)
     },
 
@@ -815,6 +774,11 @@ IPHRAProtocol <- R6::R6Class(
       for (i in seq_len(nrow(calculate_rows))) {
         if (!private$.should_apply_schema_row(calculate_rows[i, , drop = FALSE])) next
         tag <- as.character(calculate_rows$tag_name[i] %||% "")
+        calculated_value <- private$.evaluate_calculate_row(calculate_rows[i, , drop = FALSE])
+        if (!is.null(calculated_value) && nzchar(tag)) {
+          doc <- private$.replace(doc, tag, as.character(calculated_value))
+          next
+        }
         doc <- switch(
           tag,
           "@release_date" = private$.replace(doc, tag,

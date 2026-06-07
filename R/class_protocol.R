@@ -149,11 +149,17 @@ Protocol <- R6::R6Class(
     #'   \code{"ana"} (creates an \code{\link{ANAFramework}} object).
     #' @param reference_doc_filename Optional document template filename/path
     #'   passed to \code{Document$initialize()}.
+    #' @param reference_ppt_filename Optional PowerPoint template filename/path
+    #'   passed to \code{Document$initialize()}.
     #' @return A new Protocol object
     initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
-                          framework_type = "none", reference_doc_filename = NULL) {
+                          framework_type = "none", reference_doc_filename = NULL,
+                          reference_ppt_filename = NULL) {
       phr_try({
-        super$initialize(reference_doc_filename = reference_doc_filename)
+        super$initialize(
+          reference_doc_filename = reference_doc_filename,
+          reference_ppt_filename = reference_ppt_filename
+        )
         valid_fw_types <- c("none", "ana")
         phr_assert(
           is.character(framework_type) && length(framework_type) == 1 &&
@@ -188,8 +194,7 @@ Protocol <- R6::R6Class(
         } else {
           Framework$new()
         }
-        self$sync_framework_catalog_fields
-        self$sync_tool_indicator_catalog_fields
+        private$.sync_state()
 
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
@@ -237,7 +242,7 @@ Protocol <- R6::R6Class(
         }
 
         self$tools[[tool_name]] <- tool
-        self$sync_tool_indicator_catalog_fields
+        private$.sync_state()
         private$.touch()
         self$diagnose_coherence()
         phr_message(
@@ -252,43 +257,6 @@ Protocol <- R6::R6Class(
     #' @return List of validation issues
     get_issues = function() {
       return(self$issues)
-    },
-
-    #' @description Update one or more metadata fields by name.
-    #'
-    #' Assigns each named value to the corresponding key in
-    #' \code{self$metadata} and calls \code{touch()} to update the
-    #' \code{modified_datetime}.  Unknown keys are silently added as new fields;
-    #' existing keys are overwritten.
-    #'
-    #' @param ... Named arguments where each name is a metadata field key and
-    #'   each value is the new value for that field.  At least one named
-    #'   argument must be supplied.
-    #' @return Invisibly returns \code{self} for method chaining.
-    #'
-    #' @examples
-    #' \dontrun{
-    #' p$update_metadata(country_name = "Somalia", version = 2L)
-    #' p$update_metadata(recall_period = "Past 3 months")
-    #' }
-    update_metadata = function(...) {
-      phr_try({
-        args <- list(...)
-        phr_assert(
-          length(args) > 0 && !is.null(names(args)) && all(nzchar(names(args))),
-          message = phr_txt("update_metadata requires at least one named argument."),
-          origin  = "Protocol$update_metadata"
-        )
-        for (key in names(args)) {
-          self$metadata[[key]] <- args[[key]]
-        }
-        private$.touch()
-        phr_message(
-          phr_txt("Metadata updated: {paste(names(args), collapse=', ')}."),
-          origin = "Protocol$update_metadata"
-        )
-      }, on_error = "abort", origin = "Protocol$update_metadata")
-      invisible(self)
     },
 
     # ── Tool helpers ────────────────────────────────────────────────────────
@@ -528,14 +496,29 @@ Protocol <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     generate_doc = function(output_file = "protocol_report.docx", open = FALSE) {
       super$generate_doc(output_file = output_file, open = open)
+    },
+
+    #' @description Post-sync hook to refresh framework/tool catalogs.
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path.
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns \code{NULL}.
+    post_sync_state = function(field = NULL, member = NULL, target_field = NULL,
+                               name = NULL, role = NULL) {
+      super$post_sync_state(
+        field = field, member = member, target_field = target_field,
+        name = name, role = role
+      )
+      private$.sync_framework_catalog_fields()
+      private$.sync_tool_indicator_catalog_fields()
+      invisible(NULL)
     }
   ),
 
-  active = list(
-    sync_framework_catalog_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_framework_catalog_fields is a read-only active binding.")
-      }
+  private = list(
+    .sync_framework_catalog_fields = function() {
       master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
         self$framework$master_objectives_schema
       } else {
@@ -554,17 +537,13 @@ Protocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    sync_tool_indicator_catalog_fields = function(value) {
-      if (!missing(value)) {
-        stop("sync_tool_indicator_catalog_fields is a read-only active binding.")
-      }
+    .sync_tool_indicator_catalog_fields = function() {
       self$tool_indicator_catalog_master <- list()
       self$tool_indicator_catalog_revised <- list()
       self$tool_objective_catalog_master <- list()
       self$tool_objective_catalog_revised <- list()
       if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
 
-      # Get the Framework master objectives schema for objective lookups
       fw_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
         self$framework$master_objectives_schema
       } else {
@@ -578,19 +557,14 @@ Protocol <- R6::R6Class(
         revised_codes <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
         self$tool_indicator_catalog_master[[tn]] <- master_codes
         self$tool_indicator_catalog_revised[[tn]] <- revised_codes
-        # Build per-tool objective catalogs from Framework schema rows
-        # matching the tool's indicator codes
         self$tool_objective_catalog_master[[tn]] <-
           private$build_tool_objective_catalog(fw_schema, master_codes)
         self$tool_objective_catalog_revised[[tn]] <-
           private$build_tool_objective_catalog(fw_schema, revised_codes)
       }
       invisible(NULL)
-    }
+    },
 
-  ),
-
-  private = list(
     build_objective_catalog = function(schema) {
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) return(list())
       code_col <- if ("objective_code" %in% names(schema)) "objective_code" else

@@ -26,7 +26,7 @@
   unique(out[!is.na(out) & nzchar(out)])
 }
 
-phr_doc_add_primary_data_sources_table <- function(self, doc, row = NULL) {
+phr_doc_add_primary_data_sources_table <- function(self, doc, row = NULL, schema_kind = "docx", ...) {
   tool_names <- names(self$tools %||% list())
   tag <- "@primary_data_sources_table"
   if (length(tool_names) == 0) return(.phr_doc_replace_tag(doc, tag, ""))
@@ -75,7 +75,7 @@ phr_doc_add_primary_data_sources_table <- function(self, doc, row = NULL) {
   }, error = function(e) .phr_doc_replace_tag(doc, tag, ""))
 }
 
-phr_doc_add_framework_image <- function(self, doc, row = NULL) {
+phr_doc_add_framework_image <- function(self, doc, row = NULL, schema_kind = "docx", ...) {
   tag <- "@modified_framework_svg"
   svg_content <- tryCatch(self$access_nested("framework", member = "adjusted_svg"), error = function(e) NULL)
   if (is.null(svg_content) || !nzchar(svg_content)) {
@@ -111,7 +111,7 @@ phr_doc_add_framework_image <- function(self, doc, row = NULL) {
   doc
 }
 
-phr_doc_add_secondary_data_sources_table <- function(self, doc, row = NULL) {
+phr_doc_add_secondary_data_sources_table <- function(self, doc, row = NULL, schema_kind = "docx", ...) {
   tag <- "@secondary_data_sources_table"
   sdr <- self$secondary_data
   master <- self$access_nested("framework", member = "master_objectives_schema")
@@ -143,7 +143,7 @@ phr_doc_add_secondary_data_sources_table <- function(self, doc, row = NULL) {
   }, error = function(e) .phr_doc_replace_tag(doc, tag, ""))
 }
 
-phr_doc_build_sample_size_table <- function(self, doc, tag, param_rows) {
+phr_doc_build_sample_size_table <- function(self, doc, tag, param_rows, schema_kind = "docx", ...) {
   st <- self$access_nested(field = "sample_table", member = "get_sample_table")
   if (is.null(st) || nrow(st) == 0L) return(.phr_doc_replace_tag(doc, tag, ""))
   strata_names <- if ("stratum_name" %in% names(st)) as.character(st$stratum_name) else as.character(st$stratum_id)
@@ -185,7 +185,7 @@ phr_doc_build_sample_size_table <- function(self, doc, tag, param_rows) {
   }, error = function(e) .phr_doc_replace_tag(doc, tag, ""))
 }
 
-phr_doc_add_sample_size_gen_table <- function(self, doc, row = NULL) {
+phr_doc_add_sample_size_gen_table <- function(self, doc, row = NULL, schema_kind = "docx", ...) {
   params <- list(
     list(label = "Indicator Name", col_fn = function(r) as.character(r$pop_indicator %||% "")),
     list(label = "Sampling Design", col_fn = function(r) phr_fmt_sampling_method(r$sampling_method %||% "")),
@@ -197,10 +197,10 @@ phr_doc_add_sample_size_gen_table <- function(self, doc, row = NULL) {
     list(label = "Non-Response Rate", col_fn = function(r) phr_fmt_pct(r$pop_nonresponse)),
     list(label = "Households to be Included", col_fn = function(r) phr_fmt_n(r$General_HH_Sample_Size))
   )
-  phr_doc_build_sample_size_table(self, doc, "@sample_size_hh_gen_table", params)
+  phr_doc_build_sample_size_table(self, doc, "@sample_size_hh_gen_table", params, schema_kind = schema_kind)
 }
 
-phr_doc_add_sample_size_ind_table <- function(self, doc, row = NULL) {
+phr_doc_add_sample_size_ind_table <- function(self, doc, row = NULL, schema_kind = "docx", ...) {
   inc_codes <- as.character(.phr_doc_get_tool_indicator_codes(self))
   if (!any(c("10701", "10702") %in% inc_codes)) return(.phr_doc_replace_tag(doc, "@sample_size_hh_ind_table", ""))
   params <- list(
@@ -217,10 +217,10 @@ phr_doc_add_sample_size_ind_table <- function(self, doc, row = NULL) {
     list(label = "Non-Response Rate", col_fn = function(r) phr_fmt_pct(r$ind_nonresponse)),
     list(label = "Households to be Included", col_fn = function(r) phr_fmt_n(r$Ind_HH_Sample_Size))
   )
-  phr_doc_build_sample_size_table(self, doc, "@sample_size_hh_ind_table", params)
+  phr_doc_build_sample_size_table(self, doc, "@sample_size_hh_ind_table", params, schema_kind = schema_kind)
 }
 
-phr_doc_add_sample_size_mort_table <- function(self, doc, row = NULL) {
+phr_doc_add_sample_size_mort_table <- function(self, doc, row = NULL, schema_kind = "docx", ...) {
   inc_codes <- as.character(.phr_doc_get_tool_indicator_codes(self))
   if (!any(c("10501", "10502") %in% inc_codes)) return(.phr_doc_replace_tag(doc, "@sample_size_hh_mort_table", ""))
   params <- list(
@@ -238,5 +238,5 @@ phr_doc_add_sample_size_mort_table <- function(self, doc, row = NULL) {
     list(label = "% Non-Respondents", col_fn = function(r) phr_fmt_pct(r$mort_nonresponse)),
     list(label = "Households to be Included", col_fn = function(r) phr_fmt_n(r$Mort_HH_Sample_Size, "households"))
   )
-  phr_doc_build_sample_size_table(self, doc, "@sample_size_hh_mort_table", params)
+  phr_doc_build_sample_size_table(self, doc, "@sample_size_hh_mort_table", params, schema_kind = schema_kind)
 }
