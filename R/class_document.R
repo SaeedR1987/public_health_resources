@@ -281,6 +281,8 @@ Document <- R6::R6Class(
     .handle_table = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       tag <- as.character(row[["tag_name"]][[1L]] %||% "")
+      # DOCX workflow needs explicit tag-preserving replacement across runs
+      # before function dispatch; PPT uses placeholder labels via ph_with.
       if (nzchar(tag) && identical(schema_kind, "docx")) {
         doc <- private$._replace_across_runs(doc, tag, tag)
       }
@@ -294,6 +296,8 @@ Document <- R6::R6Class(
     .handle_image = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       tag <- as.character(row[["tag_name"]][[1L]] %||% "")
+      # DOCX workflow needs explicit tag-preserving replacement across runs
+      # before function dispatch; PPT uses placeholder labels via ph_with.
       if (nzchar(tag) && identical(schema_kind, "docx")) {
         doc <- private$._replace_across_runs(doc, tag, tag)
       }
@@ -363,13 +367,20 @@ Document <- R6::R6Class(
         return(doc)
       }
       if (identical(schema_kind, "pptx")) {
-        tryCatch({
+        doc <- tryCatch({
           officer::ph_with(
             x = doc,
             value = as.character(new_val %||% ""),
             location = officer::ph_location_label(ph_label = old)
           )
-        }, error = function(e) doc)
+        }, error = function(e) {
+          phr_warning(
+            phr_txt("PPTX placeholder '{old}' could not be replaced: {conditionMessage(e)}"),
+            origin = "Document$.replace"
+          )
+          doc
+        })
+        return(doc)
       } else {
         private$._replace_across_runs(doc, old, as.character(new_val %||% ""))
       }

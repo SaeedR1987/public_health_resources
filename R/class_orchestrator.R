@@ -250,6 +250,8 @@ Orchestrator <- R6::R6Class(
       if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
         return(NULL)
       }
+      # For calculate handlers, `condition` is treated as the active-binding
+      # name to evaluate (rather than a boolean gating expression).
       binding_name <- trimws(as.character(row$condition[[1L]] %||% ""))
       if (!nzchar(binding_name) || !binding_name %in% names(self)) {
         return(NULL)
