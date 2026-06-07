@@ -46,8 +46,8 @@ Orchestrator <- R6::R6Class(
         target <- private$.resolve_nested_target(field = field, name = name, role = role)
 
         if (is.null(member)) {
-          private$sync_state()
-          private$touch()
+          private$.sync_state()
+          private$.touch()
           return(target)
         }
 
@@ -69,8 +69,8 @@ Orchestrator <- R6::R6Class(
           value
         }
 
-        private$sync_state()
-        private$touch()
+        private$.sync_state()
+        private$.touch()
         out
       }, on_error = "abort", origin = "Orchestrator$access_nested")
     },
@@ -100,15 +100,17 @@ Orchestrator <- R6::R6Class(
         )
         target <- private$.resolve_nested_target(field = field, name = name, role = role)
         target[[member]] <- value
-        private$sync_state()
-        private$touch()
+        private$.sync_state()
+        private$.touch()
       }, on_error = "abort", origin = "Orchestrator$set_nested")
       invisible(self)
     }
   ),
 
   private = list(
-    touch = function() {
+    #' @description Update modified timestamp metadata.
+    #' @return Invisibly returns \code{NULL}.
+    .touch = function() {
       if (is.null(self$metadata) || !is.list(self$metadata)) {
         self$metadata <- list()
       }
@@ -116,7 +118,18 @@ Orchestrator <- R6::R6Class(
       invisible(NULL)
     },
 
-    sync_state = function(field = NULL, member = NULL, target_field = NULL,
+    #' @description Synchronize orchestrator state.
+    #'
+    #' When \code{field/member} are provided, returns the resolved nested value
+    #' and optionally assigns it to \code{target_field}. Without arguments, this
+    #' runs inherited synchronization hooks (\code{sync_*} members).
+    #' @param field Optional top-level field name.
+    #' @param member Optional nested member name.
+    #' @param target_field Optional destination field path (supports \code{$}).
+    #' @param name Optional named list entry inside \code{field}.
+    #' @param role Optional role-based list resolution key.
+    #' @return Invisibly returns resolved value (targeted mode) or \code{NULL}.
+    .sync_state = function(field = NULL, member = NULL, target_field = NULL,
                           name = NULL, role = NULL) {
       if (!is.null(field) || !is.null(member) || !is.null(target_field) ||
           !is.null(name) || !is.null(role)) {
@@ -146,6 +159,8 @@ Orchestrator <- R6::R6Class(
         return(invisible(value))
       }
 
+      # Backward compatibility: support older subclasses that still define
+      # synchronize_state(), then fall back to sync_* members.
       sync_runner <- tryCatch(self$synchronize_state, error = function(e) NULL)
       if (is.function(sync_runner)) {
         sync_runner()
@@ -163,6 +178,11 @@ Orchestrator <- R6::R6Class(
       invisible(NULL)
     },
 
+    #' @description Resolve a top-level or nested target object.
+    #' @param field Top-level field name.
+    #' @param name Optional exact list element name.
+    #' @param role Optional role-style key for list lookup.
+    #' @return Resolved object.
     .resolve_nested_target = function(field, name = NULL, role = NULL) {
       phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
@@ -237,6 +257,9 @@ Orchestrator <- R6::R6Class(
       container[[idx]]
     },
 
+    #' @description Normalize role names for fuzzy list matching.
+    #' @param x Character role/name input.
+    #' @return Normalized character key.
     .normalize_role_name = function(x) {
       x <- tolower(as.character(x %||% ""))
       x <- gsub("^tool_", "", x)
@@ -245,6 +268,10 @@ Orchestrator <- R6::R6Class(
       x
     },
 
+    #' @description Assign synchronized values to a target field path.
+    #' @param target_field Character path using \code{$} separators.
+    #' @param value Value to assign.
+    #' @return Invisibly returns \code{NULL}.
     .assign_sync_value = function(target_field, value) {
       phr_assert(
         is.character(target_field) && length(target_field) == 1L && nzchar(target_field),

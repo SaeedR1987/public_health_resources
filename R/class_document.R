@@ -13,26 +13,83 @@ Document <- R6::R6Class(
     #'   generation workflows.
     document = NULL,
 
+    #' @field reference_doc_filename Optional template filename/path used to
+    #'   initialize \code{document}.
+    reference_doc_filename = NULL,
+
     #' @description
     #' Creates a new Document object.
+    #' @param reference_doc_filename Optional template filename/path. If this is
+    #'   a file path that exists, it is used directly; otherwise it is treated as
+    #'   a candidate resource filename.
     #' @return A new Document object.
-    initialize = function() {
+    initialize = function(reference_doc_filename = NULL) {
       super$initialize()
-      self$document <- self$create_base_doc()
+      self$reference_doc_filename <- reference_doc_filename
+      self$document <- private$.create_base_doc(self$reference_doc_filename)
       invisible(self)
     },
 
     #' @description
-    #' Create and cache the base \code{.docx} template used for generation.
-    #' @param reference_docx Optional path to a custom \code{.docx} template.
+    #' Generate a document from \code{protocol_schema} and write it to disk.
+    #'
+    #' This method uses the cached \code{self$document} created at initialization,
+    #' applies schema sections, removes unreplaced tags, writes the output, and
+    #' updates \code{self$document} with the generated document object.
+    #'
+    #' @param output_file Character output path.
+    #' @param open Logical indicating whether to open the output in a browser.
+    #' @return Invisibly returns \code{self}.
+    generate_doc = function(output_file = "protocol_report.docx", open = FALSE) {
+      phr_try({
+        doc <- self$document
+        if (is.null(doc)) {
+          doc <- private$.create_base_doc(self$reference_doc_filename)
+        }
+        doc <- private$apply_protocol_schema_sections(doc)
+        doc <- private$.remove_remaining_tags(doc)
+        self$document <- doc
+        print(doc, target = output_file)
+        phr_message(
+          phr_txt("Document saved to: {output_file}"),
+          origin = "Document$generate_doc"
+        )
+        if (isTRUE(open)) utils::browseURL(output_file)
+      }, on_error = "abort", origin = "Document$generate_doc")
+      invisible(self)
+    },
+
+    #' @description Backward-compatible alias for \code{generate_doc()}.
+    #' @param output_file Character output \code{.docx} path.
+    #' @param open Logical indicating whether to open the output path.
+    #' @return Invisibly returns \code{self}.
+    generate_reach_tor = function(output_file = "protocol_report.docx", open = FALSE) {
+      self$generate_doc(output_file = output_file, open = open)
+    }
+  ),
+
+  private = list(
+    #' @description Return default template filename candidates.
+    #' @return Character vector of template filenames.
+    .default_template_filenames = function() {
+      c("reach_tor_template.docx", "protocol_report_template.docx")
+    },
+
+    #' @description Resolve and load the base reference document.
+    #' @param reference_doc_filename Optional template filename/path.
     #' @return An \code{officer::rdocx} object.
-    create_base_doc = function(reference_docx = NULL) {
-      if (!is.null(reference_docx) && file.exists(reference_docx)) {
-        self$document <- officer::read_docx(reference_docx)
+    .create_base_doc = function(reference_doc_filename = NULL) {
+      if (!is.null(reference_doc_filename) && file.exists(reference_doc_filename)) {
+        self$document <- officer::read_docx(reference_doc_filename)
         return(self$document)
       }
 
-      template_names <- private$.default_template_filenames()
+      template_names <- unique(c(
+        as.character(reference_doc_filename %||% character(0)),
+        private$.default_template_filenames()
+      ))
+      template_names <- template_names[nzchar(template_names)]
+
       for (template_name in template_names) {
         packaged <- system.file("resources", template_name, package = "phr")
         if (nzchar(packaged) && file.exists(packaged)) {
@@ -48,12 +105,6 @@ Document <- R6::R6Class(
 
       self$document <- officer::read_docx()
       self$document
-    }
-  ),
-
-  private = list(
-    .default_template_filenames = function() {
-      c("reach_tor_template.docx", "protocol_report_template.docx")
     },
 
     # Apply protocol schema handling in a predictable order.
@@ -62,8 +113,12 @@ Document <- R6::R6Class(
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
         return(doc)
       }
-      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      required_cols <- private$.schema_required_cols()
       if (!all(required_cols %in% names(schema))) {
+        phr_warning(
+          phr_txt("protocol_schema missing required columns: {paste(setdiff(required_cols, names(schema)), collapse=', ')}"),
+          origin = "Document$apply_protocol_schema_sections"
+        )
         return(doc)
       }
 
@@ -127,12 +182,28 @@ Document <- R6::R6Class(
       private$.replace(doc, tag, "")
     },
 
+    #' @description Handle a schema row with \code{handling == "table"}.
+    #' @param doc \code{officer::rdocx} document object.
+    #' @param row Single-row schema data frame.
+    #' @return Updated document object.
     handle_table = function(doc, row) {
-      doc
+      tag <- as.character(row[["tag_name"]][[1L]] %||% "")
+      if (nzchar(tag)) {
+        doc <- private$._replace_across_runs(doc, tag, tag)
+      }
+      private$.dispatch_schema_function(doc = doc, row = row)
     },
 
+    #' @description Handle a schema row with \code{handling == "image"}.
+    #' @param doc \code{officer::rdocx} document object.
+    #' @param row Single-row schema data frame.
+    #' @return Updated document object.
     handle_image = function(doc, row) {
-      doc
+      tag <- as.character(row[["tag_name"]][[1L]] %||% "")
+      if (nzchar(tag)) {
+        doc <- private$._replace_across_runs(doc, tag, tag)
+      }
+      private$.dispatch_schema_function(doc = doc, row = row)
     },
 
     handle_conditional_replace = function(doc, row) {
@@ -141,7 +212,7 @@ Document <- R6::R6Class(
 
     # Load protocol schema metadata with a blank fallback.
     .load_protocol_schema = function() {
-      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      required_cols <- private$.schema_required_cols()
       empty_schema <- as.data.frame(
         setNames(replicate(length(required_cols), character(0), simplify = FALSE),
                  required_cols),
@@ -175,6 +246,19 @@ Document <- R6::R6Class(
         return(doc)
       }
       private$._replace_across_runs(doc, old, as.character(new_val %||% ""))
+    },
+
+    .schema_required_cols = function() {
+      c("tag_name", "handling", "condition", "default_value", "function_name")
+    },
+
+    .dispatch_schema_function = function(doc, row) {
+      fn_name <- trimws(as.character(row[["function_name"]][[1L]] %||% ""))
+      if (!nzchar(fn_name)) return(doc)
+      fn <- tryCatch(get(fn_name, mode = "function"), error = function(e) NULL)
+      if (!is.function(fn)) return(doc)
+      out <- tryCatch(fn(self = self, doc = doc, row = row), error = function(e) NULL)
+      if (is.null(out)) doc else out
     },
 
     .schema_row = function(tag) {
@@ -258,7 +342,7 @@ Document <- R6::R6Class(
       TRUE
     },
 
-    remove_remaining_tags = function(doc) {
+    .remove_remaining_tags = function(doc) {
       body_xml <- officer::docx_body_xml(doc)
       ns       <- xml2::xml_ns(body_xml)
       tag_pattern <- "@[A-Za-z0-9_.\\-]+"

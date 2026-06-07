@@ -176,7 +176,7 @@ Framework <- R6::R6Class(
     set_primary_objectives = function(objective_codes) {
       phr_try({
         self$primary_objectives <- as.numeric(unlist(objective_codes))
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Primary objectives set ({length(self$primary_objectives)} code(s))."),
           origin = "Framework$set_primary_objectives"
@@ -196,7 +196,7 @@ Framework <- R6::R6Class(
     set_secondary_objectives = function(objective_codes) {
       phr_try({
         self$secondary_objectives <- as.numeric(unlist(objective_codes))
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Secondary objectives set ({length(self$secondary_objectives)} code(s))."),
           origin = "Framework$set_secondary_objectives"
@@ -218,7 +218,7 @@ Framework <- R6::R6Class(
       phr_try({
         self$primary_indicator_codes <- as.character(unlist(indicator_codes))
         private$.refresh_modified_indicator_codes()
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Primary indicators set ({length(self$primary_indicator_codes)} code(s))."),
           origin = "Framework$set_primary_indicators"
@@ -240,7 +240,7 @@ Framework <- R6::R6Class(
       phr_try({
         self$secondary_indicator_codes <- as.character(unlist(indicator_codes))
         private$.refresh_modified_indicator_codes()
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."),
           origin = "Framework$set_secondary_indicators"
@@ -422,7 +422,7 @@ Framework <- R6::R6Class(
         }
 
         self$adjusted_svg <- svg
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
           origin = "Framework$modify_adjusted_svg"
@@ -555,7 +555,7 @@ Framework <- R6::R6Class(
 
         # Update modified indicator code caches from the modified_objectives_schema
         private$.refresh_modified_indicator_codes()
-        private$touch()
+        private$.touch()
 
         phr_message(
           phr_txt(
@@ -620,7 +620,7 @@ Framework <- R6::R6Class(
           self$master_indicator_bank[["objective_code"]] %in% codes, ,
           drop = FALSE
         ]
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt(
             "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
@@ -634,7 +634,7 @@ Framework <- R6::R6Class(
 
   private = list(
     # Update modified_datetime timestamp.
-    touch = function() {
+    .touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
     },

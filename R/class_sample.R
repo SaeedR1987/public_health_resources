@@ -44,21 +44,21 @@ Sample <- R6::R6Class(
     set_sample_table = function(sample_table) {
       phr_validate_dataframe(sample_table, origin = "Sample$set_sample_table", soft = FALSE)
       self$sample_table <- as.data.frame(sample_table, stringsAsFactors = FALSE)
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
     #' @description Return the current sample table data frame.
     get_sample_table = function() {
       out <- self$sample_table
-      private$touch()
+      private$.touch()
       out
     },
 
     #' @description Clear sample table data.
     clear_sample_table = function() {
       self$sample_table <- NULL
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -226,7 +226,7 @@ Sample <- R6::R6Class(
         self$sample_table <- rbind(self$sample_table, new_row)
       }
 
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -241,7 +241,7 @@ Sample <- R6::R6Class(
 
       st <- self$sample_table
       if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        private$touch()
+        private$.touch()
         return(invisible(self))
       }
 
@@ -254,7 +254,7 @@ Sample <- R6::R6Class(
 
       keep_rows <- as.character(st[[stratum_col]]) != strata_name
       self$sample_table <- st[keep_rows, , drop = FALSE]
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -262,7 +262,7 @@ Sample <- R6::R6Class(
     #' @return Logical.
     validate_strata_table = function() {
       out <- validate_strata_table(self$sample_table)
-      private$touch()
+      private$.touch()
       out
     },
 
@@ -274,7 +274,7 @@ Sample <- R6::R6Class(
         origin  = "Sample$calculate_sample_sizes"
       )
       self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -409,7 +409,7 @@ Sample <- R6::R6Class(
 
       self$drawn_sample_full <- frame
       self$drawn_sample <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -424,7 +424,7 @@ Sample <- R6::R6Class(
       }
       self$drawn_sample <- NULL
       self$drawn_sample_full <- NULL
-      private$touch()
+      private$.touch()
       out
     },
 
@@ -432,12 +432,12 @@ Sample <- R6::R6Class(
     get_sampling_methods = function() {
       st <- self$sample_table
       if (is.null(st) || !"sampling_method" %in% names(st)) {
-        private$touch()
+        private$.touch()
         return(character(0))
       }
       m <- as.character(st$sampling_method)
       out <- unique(m[!is.na(m) & nzchar(m)])
-      private$touch()
+      private$.touch()
       out
     },
 
@@ -445,22 +445,22 @@ Sample <- R6::R6Class(
     get_strata_names = function() {
       st <- self$sample_table
       if (is.null(st) || nrow(st) == 0) {
-        private$touch()
+        private$.touch()
         return(character(0))
       }
       col <- private$resolve_stratum_name_col(st)
       if (is.null(col)) {
-        private$touch()
+        private$.touch()
         return(character(0))
       }
       n <- as.character(st[[col]])
       out <- n[!is.na(n) & nzchar(n)]
-      private$touch()
+      private$.touch()
       out
     }
   ),
   private = list(
-    touch = function() {
+    .touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
     },

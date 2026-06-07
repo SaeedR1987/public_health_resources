@@ -31,6 +31,10 @@ Protocol <- R6::R6Class(
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
 
+    #' @field valid_tool_types Character vector of allowed tool types for
+    #'   \code{add_tools()}.
+    valid_tool_types = c("household", "key_informant", "observation", "generic"),
+
     #' @field framework_objective_catalog_master Named list keyed by objective
     #'   code from \code{framework$master_objectives_schema}; each value stores
     #'   objective metadata including \code{short_objective},
@@ -143,11 +147,13 @@ Protocol <- R6::R6Class(
     #' @param framework_type Character. Type of framework to initialise.  Must be
     #'   one of \code{"none"} (creates a generic \code{\link{Framework}} object) or
     #'   \code{"ana"} (creates an \code{\link{ANAFramework}} object).
+    #' @param reference_doc_filename Optional document template filename/path
+    #'   passed to \code{Document$initialize()}.
     #' @return A new Protocol object
     initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
-                          framework_type = "none") {
+                          framework_type = "none", reference_doc_filename = NULL) {
       phr_try({
-        super$initialize()
+        super$initialize(reference_doc_filename = reference_doc_filename)
         valid_fw_types <- c("none", "ana")
         phr_assert(
           is.character(framework_type) && length(framework_type) == 1 &&
@@ -163,6 +169,7 @@ Protocol <- R6::R6Class(
         self$metadata$country_name <- country_name
         self$metadata$month_year <- month_year
         self$tools <- list()
+        self$valid_tool_types <- as.character(self$valid_tool_types %||% character(0))
         self$issues <- list()
         self$issues_coherence <- list()
         self$conditional_metadata <- list()
@@ -203,7 +210,7 @@ Protocol <- R6::R6Class(
     #' @return Invisibly returns self for method chaining.
     add_tools = function(tool_type = "household", tool_name = NULL) {
       phr_try({
-        valid_types <- c("household", "key_informant", "observation", "generic")
+        valid_types <- self$valid_tool_types %||% character(0)
         phr_assert(
           tool_type %in% valid_types,
           message = phr_txt("tool_type must be one of: {paste(valid_types, collapse=', ')}."),
@@ -231,21 +238,13 @@ Protocol <- R6::R6Class(
 
         self$tools[[tool_name]] <- tool
         self$sync_tool_indicator_catalog_fields
-        private$touch()
+        private$.touch()
         self$diagnose_coherence()
         phr_message(
           phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
           origin = "Protocol$add_tools"
         )
       }, on_error = "abort", origin = "Protocol$add_tools")
-      invisible(self)
-    },
-
-    #' @description Synchronize protocol-level derived catalogs.
-    #' @return Invisibly returns \code{self}.
-    synchronize_state = function() {
-      self$sync_framework_catalog_fields
-      self$sync_tool_indicator_catalog_fields
       invisible(self)
     },
 
@@ -283,7 +282,7 @@ Protocol <- R6::R6Class(
         for (key in names(args)) {
           self$metadata[[key]] <- args[[key]]
         }
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Metadata updated: {paste(names(args), collapse=', ')}."),
           origin = "Protocol$update_metadata"
@@ -303,7 +302,7 @@ Protocol <- R6::R6Class(
     #'   vector when none are found.
     get_indicator_codes_from_schema = function(type = c("master", "adjusted")) {
       schema <- self$get_schema(type = match.arg(type))
-      private$touch()
+      private$.touch()
       if (is.data.frame(schema) && "indicator_code" %in% names(schema)) {
         codes <- as.character(schema$indicator_code)
         return(unique(codes[!is.na(codes) & nzchar(codes)]))
@@ -322,12 +321,12 @@ Protocol <- R6::R6Class(
       schema <- self$get_schema(type = match.arg(type))
       if (!is.data.frame(schema) || nrow(schema) == 0 ||
           !"indicator_code" %in% names(schema)) {
-        private$touch()
+        private$.touch()
         return(data.frame())
       }
       ic <- as.character(indicator_codes)
       out <- schema[as.character(schema$indicator_code) %in% ic, , drop = FALSE]
-      private$touch()
+      private$.touch()
       out
     },
 
@@ -676,26 +675,12 @@ Protocol <- R6::R6Class(
       self$access_nested("framework", member = "render_framework_svg", version = type)
     },
 
-    #' @description Empty hook for generating a Word document report.
-    #'
-    #' This base implementation is a no-op stub.  Subclasses (\emph{e.g.}
-    #' \code{\link{IPHRAProtocol}}) override this method to produce a
-    #' protocol report document.
-    #'
-    #' @param output_file Character. Output \code{.docx} file path.
-    #'   Defaults to \code{"protocol_report.docx"}.
-    #' @param reference_docx Character or \code{NULL}. Path to a custom
-    #'   \code{.docx} template.
-    #' @param open Logical. Open the file after writing.  Defaults to \code{FALSE}.
-    #' @return Invisibly returns \code{self} for method chaining.
-    generate_reach_tor = function(output_file = "protocol_report.docx",
-                                  reference_docx = NULL,
-                                  open = FALSE) {
-      phr_message(
-        phr_txt("generate_reach_tor is not implemented for this protocol type. Override in a subclass."),
-        origin = "Protocol$generate_reach_tor"
-      )
-      invisible(self)
+    #' @description Generate a document report from the current schema/template.
+    #' @param output_file Character output \code{.docx} path.
+    #' @param open Logical indicating whether to open the output path.
+    #' @return Invisibly returns \code{self}.
+    generate_doc = function(output_file = "protocol_report.docx", open = FALSE) {
+      super$generate_doc(output_file = output_file, open = open)
     }
   ),
 

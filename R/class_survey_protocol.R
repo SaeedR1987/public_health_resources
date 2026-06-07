@@ -48,18 +48,21 @@ SurveyProtocol <- R6::R6Class(
     #' @param sampling_frame Optional data frame to initialise the
     #'   \code{\link{SamplingFrame}} with.  When \code{NULL} (default), an empty
     #'   \code{SamplingFrame} is created.
+    #' @param reference_doc_filename Optional document template filename/path.
     #' @return A new SurveyProtocol object
     initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
-                          framework_type = "none", sampling_frame = NULL) {
+                          framework_type = "none", sampling_frame = NULL,
+                          reference_doc_filename = NULL) {
       super$initialize(
         assessment_title = assessment_title,
         country_name     = country_name,
         month_year       = month_year,
-        framework_type   = framework_type
+        framework_type   = framework_type,
+        reference_doc_filename = reference_doc_filename
       )
       self$sample_table <- Sample$new()
       self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
-      self$synchronize_state()
+      private$.sync_state()
       invisible(self)
     },
 
@@ -277,8 +280,8 @@ SurveyProtocol <- R6::R6Class(
         confidence_level = confidence_level
       )
 
-      self$synchronize_state()
-      private$touch()
+      private$.sync_state()
+      private$.touch()
       self$diagnose_coherence()
       phr_message(phr_txt("Stratum '{stratum_id}' added."), origin = "SurveyProtocol$add_stratum")
       invisible(self)
@@ -331,8 +334,8 @@ SurveyProtocol <- R6::R6Class(
         }
 
         self$sampling_frame$log_df <- tibble::as_tibble(frame)
-        self$synchronize_state()
-        private$touch()
+        private$.sync_state()
+        private$.touch()
         self$diagnose_coherence()
         phr_message(
           phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
@@ -422,8 +425,8 @@ SurveyProtocol <- R6::R6Class(
         self$drawn_sample <- self$sample_table$drawn_sample
         self$drawn_sample_full <- self$sample_table$drawn_sample_full
         self$sampling_frame$log_df <- tibble::as_tibble(self$drawn_sample_full)
-        self$synchronize_state()
-        private$touch()
+        private$.sync_state()
+        private$.touch()
         self$diagnose_coherence()
         phr_message(
           phr_txt("Sample drawn: {nrow(self$drawn_sample)} PSU(s) selected."),
@@ -452,8 +455,8 @@ SurveyProtocol <- R6::R6Class(
         self$sampling_frame$log_df <- tibble::as_tibble(self$sample_table$clear_sample(frame))
         self$drawn_sample <- self$sample_table$drawn_sample
         self$drawn_sample_full <- self$sample_table$drawn_sample_full
-        self$synchronize_state()
-        private$touch()
+        private$.sync_state()
+        private$.touch()
         self$diagnose_coherence()
         phr_message(
           phr_txt("Sample cleared from sampling frame."),
@@ -550,8 +553,8 @@ SurveyProtocol <- R6::R6Class(
           origin  = "SurveyProtocol$calculate_sample_sizes"
         )
         self$sample_table$calculate_sample_sizes()
-        self$synchronize_state()
-        private$touch()
+        private$.sync_state()
+        private$.touch()
         self$diagnose_coherence()
 
         phr_message(
@@ -666,51 +669,12 @@ SurveyProtocol <- R6::R6Class(
         }
 
         self$sync_tool_indicator_catalog_fields
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Strata choices ({length(strata_names)}) added and strata question inserted."),
           origin = "SurveyProtocol$add_strata_to_survey"
         )
       }, on_error = "abort", origin = "SurveyProtocol$add_strata_to_survey")
-      invisible(self)
-    },
-
-    #' @description Override \code{synchronize_state} to also sync sampling
-    #'   metadata and sampling frame fields.
-    #' @return Invisibly returns \code{self}.
-    synchronize_state = function() {
-      super$synchronize_state()
-
-      private$sync_state(
-        field = "sample_table",
-        member = "get_strata_names",
-        target_field = "metadata$sampling_strata_names"
-      )
-      methods_used <- private$sync_state(
-        field = "sample_table",
-        member = "get_sampling_methods"
-      )
-      if (is.null(methods_used)) methods_used <- character(0)
-      methods_used <- unique(trimws(tolower(as.character(methods_used))))
-      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
-      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
-                         "systematic", "simple_random_rlc", "systematic_rlc",
-                         "proportional_rlc", "purposive")
-      self$metadata$sampling_strata_names <- as.character(self$metadata$sampling_strata_names %||% character(0))
-      self$metadata$sampling_method_flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
-
-      sf <- private$sync_state(
-        field = "sampling_frame",
-        member = "log_df"
-      )
-      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
-        self$sampling_frame_strata_names <- character(0)
-      } else {
-        vals <- as.character(sf$stratum)
-        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
-      }
-
-      private$add_target_stratum()
       invisible(self)
     },
 
@@ -755,24 +719,46 @@ SurveyProtocol <- R6::R6Class(
 
   ),
 
-  active = list(),
+  active = list(
+    sync_sampling_state = function(value) {
+      if (!missing(value)) {
+        stop("sync_sampling_state is a read-only active binding.")
+      }
+      private$.sync_state(
+        field = "sample_table",
+        member = "get_strata_names",
+        target_field = "metadata$sampling_strata_names"
+      )
+      methods_used <- private$.sync_state(field = "sample_table", member = "get_sampling_methods")
+      if (is.null(methods_used)) methods_used <- character(0)
+      methods_used <- unique(trimws(tolower(as.character(methods_used))))
+      methods_used <- methods_used[!is.na(methods_used) & nzchar(methods_used)]
+      known_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
+      self$metadata$sampling_strata_names <- as.character(self$metadata$sampling_strata_names %||% character(0))
+      self$metadata$sampling_method_flags <- setNames(as.list(known_methods %in% methods_used), known_methods)
 
-  private = list(
-    # Rebuild metadata$target_strata from the current sample_table.
-    # Called automatically after any method that creates or modifies sample_table
-    # so that metadata strata are always aligned with the sample_table.
-    add_target_stratum = function() {
-      st <- self$get_sample_table()
+      sf <- private$.sync_state(field = "sampling_frame", member = "log_df")
+      if (is.null(sf) || !is.data.frame(sf) || nrow(sf) == 0L || !"stratum" %in% names(sf)) {
+        self$sampling_frame_strata_names <- character(0)
+      } else {
+        vals <- as.character(sf$stratum)
+        self$sampling_frame_strata_names <- unique(vals[!is.na(vals) & nzchar(vals)])
+      }
+      st <- private$.sync_state(field = "sample_table", member = "get_sample_table")
       if (!is.null(st) && nrow(st) > 0) {
-        strata_ids   <- as.character(st$stratum_id)
+        strata_ids <- as.character(st$stratum_id)
         strata_names <- as.character(st$stratum_name)
         self$metadata$target_strata <- setNames(as.list(strata_names), strata_ids)
       } else {
         self$metadata$target_strata <- list()
       }
       invisible(NULL)
-    },
+    }
+  ),
 
+  private = list(
     # Resolve a tool from self$tools.  If tool_name is NULL and there is
     # exactly one tool registered, return that tool.  Otherwise raise an error.
     resolve_tool = function(tool_name, origin) {
@@ -797,20 +783,6 @@ SurveyProtocol <- R6::R6Class(
         origin  = origin
       )
       self$tools[[tool_name]]
-    },
-
-    # Generic hooks for TOR sample-size table tags.
-    # Subclasses can override with protocol-specific table builders.
-    add_sample_size_gen_table = function(doc) {
-      private$.replace(doc, "@sample_size_hh_gen_table", "")
-    },
-
-    add_sample_size_ind_table = function(doc) {
-      private$.replace(doc, "@sample_size_hh_ind_table", "")
-    },
-
-    add_sample_size_mort_table = function(doc) {
-      private$.replace(doc, "@sample_size_hh_mort_table", "")
     }
   )
 )

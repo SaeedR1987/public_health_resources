@@ -240,9 +240,8 @@ restore_protocol <- function(protocol_data) {
     protocol$tool_objective_catalog_revised  <-
       protocol_data$tool_objective_catalog_revised  %||% protocol$tool_objective_catalog_revised
     protocol$issues              <- protocol_data$issues
-    if ("synchronize_state" %in% names(protocol) && is.function(protocol$synchronize_state)) {
-      protocol$synchronize_state()
-    }
+    if ("sync_framework_catalog_fields" %in% names(protocol)) protocol$sync_framework_catalog_fields
+    if ("sync_tool_indicator_catalog_fields" %in% names(protocol)) protocol$sync_tool_indicator_catalog_fields
 
     phr_message(phr_txt("Protocol restored successfully."), origin = origin)
     protocol
@@ -251,23 +250,20 @@ restore_protocol <- function(protocol_data) {
 
 #' Generate a Word document report from a Protocol or SurveyProtocol object
 #'
-#' Convenience wrapper around \code{Protocol$generate_reach_tor()} and
-#' \code{SurveyProtocol$generate_reach_tor()}.  Dispatches to the correct method
+#' Convenience wrapper around \code{Protocol$generate_doc()} and
+#' \code{SurveyProtocol$generate_doc()}.  Dispatches to the correct method
 #' based on the class of \code{protocol}.
 #'
 #' @param protocol A \code{\link{Protocol}} or \code{\link{SurveyProtocol}}
 #'   object.
 #' @param output_file Character. Output \code{.docx} file path.  Defaults to
 #'   \code{"protocol_report.docx"} in the current working directory.
-#' @param reference_docx Character or \code{NULL}. Path to a Word style
-#'   reference document.  Uses the package-bundled template by default.
 #' @param open Logical. Whether to open the file after writing.  Defaults to
 #'   \code{FALSE}.
 #' @return Invisibly returns the protocol object.
 #' @export
 generate_protocol_report <- function(protocol,
                                      output_file   = "protocol_report.docx",
-                                     reference_docx = NULL,
                                      open           = FALSE) {
 
   origin <- "generate_protocol_report"
@@ -280,11 +276,7 @@ generate_protocol_report <- function(protocol,
       hint    = phr_txt("Use Protocol$new() or create_survey_protocol() to create a valid object.")
     )
 
-    protocol$generate_reach_tor(
-      output_file    = output_file,
-      reference_docx = reference_docx,
-      open           = open
-    )
+    protocol$generate_doc(output_file = output_file, open = open)
   }, on_error = "abort", origin = origin)
 
   invisible(protocol)

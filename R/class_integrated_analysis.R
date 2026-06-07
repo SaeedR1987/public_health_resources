@@ -38,7 +38,7 @@ IntegratedAnalysis <- R6::R6Class(
         origin = "IntegratedAnalysis$add_data_analytics"
       )
       self$data_analytics[[name]] <- analytics
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -72,7 +72,7 @@ IntegratedAnalysis <- R6::R6Class(
       if (length(parts) == 0L) return(data.frame())
       out <- do.call(rbind, parts)
       rownames(out) <- NULL
-      private$touch()
+      private$.touch()
       out
     }
   )

@@ -205,10 +205,12 @@ IPHRAProtocol <- R6::R6Class(
         assessment_title = assessment_title,
         country_name     = country_name,
         month_year       = month_year,
-        framework_type   = "ana"
+        framework_type   = "ana",
+        reference_doc_filename = "reach_tor_iphra_template.docx"
       )
       # Store version
       self$metadata$version <- as.integer(version)
+      self$valid_tool_types <- c("household", "key_informant", "observation", "generic")
 
       # Store all optional IPHRA-specific metadata.
       # String category fields default to NA_character_ (comparison with "==" safely
@@ -364,7 +366,7 @@ IPHRAProtocol <- R6::R6Class(
 
         if (is.null(self$tools)) self$tools <- list()
         self$tools[[tool_name]] <- tool
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("IPHRA tool '{tool_name}' added."),
           origin = "IPHRAProtocol$add_tools"
@@ -391,8 +393,8 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     add_stratum = function(...) {
       super$add_stratum(...)
-      self$synchronize_state()
-      private$touch()
+      private$.sync_state()
+      private$.touch()
       invisible(self)
     },
 
@@ -401,24 +403,8 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     calculate_sample_sizes = function() {
       super$calculate_sample_sizes()
-      self$synchronize_state()
-      private$touch()
-      invisible(self)
-    },
-
-    #' @description Synchronize IPHRA sample-derived metadata fields.
-    #' @return Invisibly returns \code{self}.
-    synchronize_state = function() {
-      super$synchronize_state()
-      st <- private$sync_state(field = "sample_table", member = "get_sample_table")
-      self$metadata$num_strata_units <- if (!is.null(st) &&
-                                             is.data.frame(st) &&
-                                             "stratum_id" %in% names(st)) {
-        length(unique(st$stratum_id))
-      } else {
-        0L
-      }
-      private$sync_sampling_conditional_metadata()
+      private$.sync_state()
+      private$.touch()
       invisible(self)
     },
 
@@ -489,7 +475,7 @@ IPHRAProtocol <- R6::R6Class(
         tool$survey         <- .update_recall_in_survey(tool$survey)
         tool$revised_survey <- .update_recall_in_survey(tool$revised_survey)
 
-        private$touch()
+        private$.touch()
         phr_message(
           phr_txt("Recall date updated to '{date_str}' in tool '{tool_name}'."),
           origin = "IPHRAProtocol$update_recall_date"
@@ -498,41 +484,30 @@ IPHRAProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Generate a Word document Terms of Reference based on the
-    #'   bundled IPHRA template.
-    #'
-    #' Produces a \code{.docx} file from the REACH IPHRA TOR template, filling
-    #' in all \code{@}-tagged placeholders with data drawn from this Protocol's
-    #' metadata, sampling design, and tool/framework content.
-    #'
-    #' @param output_file Character. Output \code{.docx} file path.
-    #'   Defaults to \code{"protocol_report.docx"}.
-    #' @param reference_docx Character or \code{NULL}. Path to a custom
-    #'   \code{.docx} template.  Uses the bundled REACH IPHRA TOR template by
-    #'   default.
-    #' @param open Logical. Open the file after writing.  Defaults to
-    #'   \code{FALSE}.
-    #' @return Invisibly returns \code{self} for method chaining.
-    generate_reach_tor = function(output_file    = "protocol_report.docx",
-                                  reference_docx = "reach_tor_iphra_template.docx",
-                                  open           = FALSE) {
-      phr_try({
-        doc <- self$create_base_doc(reference_docx)
-        doc <- private$apply_protocol_schema_sections(doc)
-        doc <- private$remove_remaining_tags(doc)
-        self$document <- doc
-        print(doc, target = output_file)
-        phr_message(
-          phr_txt("IPHRA TOR saved to: {output_file}"),
-          origin = "IPHRAProtocol$generate_reach_tor"
-        )
-        if (isTRUE(open)) utils::browseURL(output_file)
-      }, on_error = "abort", origin = "IPHRAProtocol$generate_reach_tor")
-      invisible(self)
+    #' @description Generate an IPHRA document report.
+    #' @param output_file Character output \code{.docx} path.
+    #' @param open Logical indicating whether to open the output path.
+    #' @return Invisibly returns \code{self}.
+    generate_doc = function(output_file = "protocol_report.docx", open = FALSE) {
+      super$generate_doc(output_file = output_file, open = open)
     }
   ),
 
-  active = list(),
+  active = list(
+    sync_iphra_state = function(value) {
+      if (!missing(value)) {
+        stop("sync_iphra_state is a read-only active binding.")
+      }
+      st <- private$.sync_state(field = "sample_table", member = "get_sample_table")
+      self$metadata$num_strata_units <- if (!is.null(st) && is.data.frame(st) && "stratum_id" %in% names(st)) {
+        length(unique(st$stratum_id))
+      } else {
+        0L
+      }
+      private$sync_sampling_conditional_metadata()
+      invisible(NULL)
+    }
+  ),
 
   private = list(
 
@@ -1176,39 +1151,6 @@ IPHRAProtocol <- R6::R6Class(
       private$handle_replace(doc, rows)
     },
 
-    # Handle all schema 'table' type rows.
-    # Before delegating to the table-builder, each tag is normalised via
-    # ._replace_across_runs so that cursor_reach can locate it even when
-    # Word has stored the tag split across several w:t runs
-    # (e.g. '@sample_size_hh_mort_table' → '@sample_size_hh_mort_' + 't' + 'able').
-    handle_table = function(doc, rows) {
-      for (i in seq_len(nrow(rows))) {
-        if (!private$.should_apply_schema_row(rows[i, , drop = FALSE])) next
-        tag <- as.character(rows$tag_name[i] %||% "")
-        if (!nzchar(tag)) next
-        # Normalise any split runs so cursor_reach can find the full tag text
-        doc <- private$._replace_across_runs(doc, tag, tag)
-        doc <- switch(
-          tag,
-          "@primary_data_sources_table"   = private$add_primary_data_sources_table(doc),
-          "@secondary_data_sources_table" = private$add_sdr_table(doc),
-          "@sample_size_hh_gen_table"     = private$add_sample_size_gen_table(doc),
-          "@sample_size_hh_ind_table"     = private$add_sample_size_ind_table(doc),
-          "@sample_size_hh_mort_table"    = private$add_sample_size_mort_table(doc),
-          doc
-        )
-      }
-      doc
-    },
-
-    # Handle all schema 'image' type rows.
-    # The IPHRA framework image (@modified_framework_svg) is inserted
-    # together with the SDR table inside add_sdr_table(), which is routed
-    # from the @secondary_data_sources_table tag in handle_table().
-    handle_image = function(doc, rows) {
-      doc
-    },
-
     # Replace @primary_data_sources_table with an objective × tool matrix.
     # Rows = distinct objectives included in at least one tool.
     # Columns = tool short labels.
@@ -1709,7 +1651,7 @@ IPHRAProtocol <- R6::R6Class(
     },
 
     # Load protocol_schema_iphra.xlsx into self$protocol_schema.
-    # Expected columns are tag_name, handling, condition, and default_value.
+    # Expected columns are tag_name, handling, condition, default_value, and function_name.
     .load_protocol_schema = function() {
       schema_path <- tryCatch(
         system.file("resources", "protocol_schema_iphra.xlsx", package = "phr"),
@@ -1731,7 +1673,7 @@ IPHRAProtocol <- R6::R6Class(
                                          col_types = "text")),
         error = function(e) NULL
       )
-      required_cols <- c("tag_name", "handling", "condition", "default_value")
+      required_cols <- c("tag_name", "handling", "condition", "default_value", "function_name")
       if (is.null(schema) || !all(required_cols %in% names(schema))) {
         return(invisible(NULL))
       }
