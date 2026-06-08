@@ -255,13 +255,16 @@ Document <- R6::R6Class(
       if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
         return(TRUE)
       }
-      binding_name <- trimws(as.character(row$condition[[1L]] %||% ""))
+      condition <- trimws(as.character(row$condition[[1L]] %||% ""))
+      if (!nzchar(condition)) {
+        return(TRUE)
+      }
+      binding_name <- sub("^@", "", condition)
       if (!nzchar(binding_name)) {
         return(TRUE)
       }
-      binding_name <- sub("^@", "", binding_name)
       if (!binding_name %in% names(self)) {
-        return(private$.resolve_condition_flag(row$condition[[1L]] %||% ""))
+        return(private$.resolve_condition_flag(condition))
       }
       value <- tryCatch(self[[binding_name]], error = function(e) NULL)
       if (is.function(value)) {
@@ -272,8 +275,8 @@ Document <- R6::R6Class(
 
     .handle_calculate = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      condition_value <- private$.evaluate_condition_row(row)
-      if (!isTRUE(condition_value)) {
+      condition_met <- private$.evaluate_condition_row(row)
+      if (!isTRUE(condition_met)) {
         return(doc)
       }
       tag <- as.character(row$tag_name[[1L]] %||% "")
@@ -285,8 +288,8 @@ Document <- R6::R6Class(
       if (is.function(value)) {
         value <- tryCatch(value(), error = function(e) NULL)
       }
-      # For calculate rows, booleans are treated as control signals (apply/skip)
-      # and are not inserted as document values.
+      # For calculate rows, booleans are control outputs only:
+      # TRUE/FALSE can indicate row logic but should not be rendered as tag text.
       if (is.null(value) || isTRUE(value) || identical(value, FALSE)) {
         return(doc)
       }
