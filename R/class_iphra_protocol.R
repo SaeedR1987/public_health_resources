@@ -426,8 +426,14 @@ IPHRAProtocol <- R6::R6Class(
 
   active = list(
     `Special Situations` = function(value) FALSE,
-    cluster_site_selection = function(value) FALSE,
-    exhaustive_site_selection = function(value) FALSE,
+    cluster_site_selection = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.sample_has_any_method(c("pps_cluster", "pps_rlc"))
+    },
+    exhaustive_site_selection = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.sample_has_any_method("proportional")
+    },
     general_survey = function(value) FALSE,
     ind_ecfies = function(value) {
       if (!missing(value)) return(invisible(FALSE))
@@ -475,18 +481,54 @@ IPHRAProtocol <- R6::R6Class(
       if (!missing(value)) return(invisible(FALSE))
       private$.has_tool_role("kii_wash_service_provider")
     },
-    mortality_survey = function(value) FALSE,
-    muac_survey = function(value) FALSE,
-    multiple_methods_no = function(value) FALSE,
-    multiple_methods_yes = function(value) FALSE,
-    multiple_strata = function(value) FALSE,
-    obs_community = function(value) FALSE,
-    obs_crops_livestock = function(value) FALSE,
-    obs_health_facility = function(value) FALSE,
-    obs_latrines = function(value) FALSE,
+    mortality_survey = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.household_has_any_indicator(c("10501", "10502"))
+    },
+    muac_survey = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.household_has_any_indicator(c("10701", "10702"))
+    },
+    multiple_methods_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      methods <- private$.sample_methods_used()
+      length(methods) == 1L
+    },
+    multiple_methods_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      methods <- private$.sample_methods_used()
+      length(methods) > 1L
+    },
+    multiple_strata = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      st <- private$.sample_table_from_nested()
+      is.data.frame(st) && nrow(st) > 1L
+    },
+    obs_community = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("obs_community")
+    },
+    obs_crops_livestock = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("obs_crop_livestock")
+    },
+    obs_health_facility = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("obs_health_facility")
+    },
+    obs_latrines = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("obs_latrine")
+    },
     obs_service_providers = function(value) FALSE,
-    obs_water_point = function(value) FALSE,
-    purposive_site_selection = function(value) FALSE,
+    obs_water_point = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.has_tool_role("obs_water_point")
+    },
+    purposive_site_selection = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$.sample_has_any_method("purposive")
+    },
     rate_individual_survey = function(value) FALSE,
     rate_survey = function(value) FALSE,
     rlc_household_selection = function(value) {
@@ -605,6 +647,39 @@ IPHRAProtocol <- R6::R6Class(
         error = function(e) NULL
       )
       is.character(out) && length(out) == 1L && nzchar(out)
+    },
+
+    .sample_table_from_nested = function() {
+      tryCatch(
+        self$access_nested(field = "sample_object", member = "get_sample_table"),
+        error = function(e) NULL
+      )
+    },
+
+    .sample_methods_used = function() {
+      st <- private$.sample_table_from_nested()
+      if (!is.data.frame(st) || !"sampling_method" %in% names(st)) {
+        return(character(0))
+      }
+      methods <- trimws(tolower(as.character(st$sampling_method)))
+      methods <- methods[!is.na(methods) & nzchar(methods)]
+      unique(methods)
+    },
+
+    .sample_has_any_method = function(methods) {
+      methods_used <- private$.sample_methods_used()
+      length(intersect(methods_used, tolower(as.character(methods)))) > 0L
+    },
+
+    .household_has_any_indicator = function(indicator_codes) {
+      if (!private$.has_tool_role("household")) return(FALSE)
+      hh_codes <- tryCatch(
+        self$access_nested(field = "tools", role = "household", member = "get_indicator_codes"),
+        error = function(e) character(0)
+      )
+      hh_codes <- trimws(as.character(hh_codes))
+      hh_codes <- hh_codes[!is.na(hh_codes) & nzchar(hh_codes)]
+      length(intersect(hh_codes, as.character(indicator_codes))) > 0L
     },
 
     initialize_conditional_metadata = function() {

@@ -554,6 +554,80 @@ test_that("IPHRAProtocol ind_ecfies and rlc_household_selection bindings evaluat
   expect_true(isTRUE(p$rlc_household_selection))
 })
 
+test_that("IPHRAProtocol sampling active bindings evaluate from nested sample object", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$cluster_site_selection))
+  expect_false(isTRUE(p$exhaustive_site_selection))
+  expect_false(isTRUE(p$purposive_site_selection))
+  expect_false(isTRUE(p$multiple_methods_yes))
+  expect_false(isTRUE(p$multiple_strata))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "proportional"
+  )
+  expect_true(isTRUE(p$exhaustive_site_selection))
+  expect_true(isTRUE(p$multiple_methods_no))
+  expect_false(isTRUE(p$multiple_methods_yes))
+  expect_false(isTRUE(p$multiple_strata))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s2",
+    stratum_name = "S2",
+    sampling_method = "pps_cluster"
+  )
+  expect_true(isTRUE(p$cluster_site_selection))
+  expect_true(isTRUE(p$multiple_methods_yes))
+  expect_false(isTRUE(p$multiple_methods_no))
+  expect_true(isTRUE(p$multiple_strata))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s3",
+    stratum_name = "S3",
+    sampling_method = "purposive"
+  )
+  expect_true(isTRUE(p$purposive_site_selection))
+})
+
+test_that("IPHRAProtocol indicator and observation active bindings evaluate from nested tools", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$mortality_survey))
+  expect_false(isTRUE(p$muac_survey))
+  expect_false(isTRUE(p$obs_community))
+  expect_false(isTRUE(p$obs_crops_livestock))
+  expect_false(isTRUE(p$obs_health_facility))
+  expect_false(isTRUE(p$obs_latrines))
+  expect_false(isTRUE(p$obs_water_point))
+
+  p$add_tools("tool_household_iphra_v2")
+  p$set_nested(
+    field = "tools",
+    role = "household",
+    member = "revised_survey",
+    value = data.frame(indicator_code = c("10501", "10702"), stringsAsFactors = FALSE)
+  )
+  expect_true(isTRUE(p$mortality_survey))
+  expect_true(isTRUE(p$muac_survey))
+
+  p$add_tools("tool_obs_community_iphra_v2")
+  p$add_tools("tool_obs_crop_livestock_iphra_v1")
+  p$add_tools("tool_obs_health_facility_iphra_v2")
+  p$add_tools("tool_obs_latrine_iphra_v2")
+  p$add_tools("tool_obs_water_point_iphra_v2")
+  expect_true(isTRUE(p$obs_community))
+  expect_true(isTRUE(p$obs_crops_livestock))
+  expect_true(isTRUE(p$obs_health_facility))
+  expect_true(isTRUE(p$obs_latrines))
+  expect_true(isTRUE(p$obs_water_point))
+})
+
 test_that("Protocol objects inherit cached document field from Document base class", {
   p <- Protocol$new()
   expect_true(inherits(p$document, "rdocx"))
