@@ -427,11 +427,6 @@ IPHRAProtocol <- R6::R6Class(
   active = list(
     `Special Situations` = function(value) FALSE,
     cluster_site_selection = function(value) FALSE,
-    definition_complementary_feeding = function(value) FALSE,
-    definition_gam = function(value) FALSE,
-    definition_gam_women = function(value) FALSE,
-    definition_household = function(value) FALSE,
-    definition_muac = function(value) FALSE,
     exhaustive_site_selection = function(value) FALSE,
     general_survey = function(value) FALSE,
     ind_ecfies = function(value) {
