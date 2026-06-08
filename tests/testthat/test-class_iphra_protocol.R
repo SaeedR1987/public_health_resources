@@ -487,10 +487,15 @@ test_that("IPHRAProtocol syncs sampling conditional_metadata from sample_table",
   expect_true(isTRUE(p$conditional_metadata$purposive))
 })
 
-test_that("IPHRAProtocol conditional handling uses metadata flags and runs empty conditions", {
+test_that("IPHRAProtocol conditional handling uses active bindings and runs empty conditions", {
   p <- IPHRAProtocol$new()
-  p$conditional_metadata$srs_srs <- TRUE
-  p$conditional_metadata$srs_systematic <- FALSE
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "simple_random"
+  )
 
   rows <- data.frame(
     tag_name = c("@tag_true", "@tag_false", "@tag_empty"),
