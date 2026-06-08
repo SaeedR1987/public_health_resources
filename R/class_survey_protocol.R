@@ -84,7 +84,7 @@ SurveyProtocol <- R6::R6Class(
       )
       self$sample_object <- Sample$new()
       self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
-      private$.sync_state()
+      private$..sync_state()
       invisible(self)
     },
 
@@ -139,8 +139,8 @@ SurveyProtocol <- R6::R6Class(
           member = "log_df",
           value = tibble::as_tibble(frame)
         )
-        private$.sync_state()
-        private$.touch()
+        private$..sync_state()
+        private$..touch()
         self$diagnose_coherence()
         phr_message(
           phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
@@ -272,20 +272,20 @@ SurveyProtocol <- R6::R6Class(
         field = field, member = member, target_field = target_field,
         name = name, role = role
       )
-      if (isTRUE(private$.post_sync_guard)) return(invisible(NULL))
-      private$.post_sync_guard <- TRUE
-      on.exit({ private$.post_sync_guard <- FALSE }, add = TRUE)
-      private$.sync_sampling_state()
-      private$.sync_sample_frame_state()
+      if (isTRUE(private$..post_sync_guard)) return(invisible(NULL))
+      private$..post_sync_guard <- TRUE
+      on.exit({ private$..post_sync_guard <- FALSE }, add = TRUE)
+      private$..sync_sampling_state()
+      private$..sync_sample_frame_state()
       invisible(NULL)
     }
 
   ),
 
   private = list(
-    .post_sync_guard = FALSE,
+    ..post_sync_guard = FALSE,
 
-    .sync_sampling_state = function() {
+    ..sync_sampling_state = function() {
       st <- tryCatch(
         self$access_nested(field = "sample_object", member = "get_sample_table"),
         error = function(e) NULL
@@ -338,7 +338,7 @@ SurveyProtocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    .sync_sample_frame_state = function() {
+    ..sync_sample_frame_state = function() {
       sf <- tryCatch(
         self$access_nested(field = "sampling_frame", member = "log_df"),
         error = function(e) NULL

@@ -40,9 +40,9 @@ Document <- R6::R6Class(
       super$initialize()
       self$reference_doc_filename <- reference_doc_filename
       self$reference_ppt_filename <- reference_ppt_filename
-      self$document <- private$.create_base_doc(self$reference_doc_filename)
-      self$powerpoint <- private$.create_base_ppt(self$reference_ppt_filename)
-      self$protocol_ppt_schema <- private$.load_protocol_ppt_schema()
+      self$document <- private$..create_base_doc(self$reference_doc_filename)
+      self$powerpoint <- private$..create_base_ppt(self$reference_ppt_filename)
+      self$protocol_ppt_schema <- private$..load_protocol_ppt_schema()
       invisible(self)
     },
 
@@ -60,14 +60,14 @@ Document <- R6::R6Class(
       phr_try({
         doc <- self$document
         if (is.null(doc)) {
-          doc <- private$.create_base_doc(self$reference_doc_filename)
+          doc <- private$..create_base_doc(self$reference_doc_filename)
         }
-        doc <- private$.generate_from_schema(
+        doc <- private$..generate_from_schema(
           obj = doc,
           schema = self$protocol_schema,
           schema_kind = "docx"
         )
-        doc <- private$.remove_remaining_tags(doc)
+        doc <- private$..remove_remaining_tags(doc)
         self$document <- doc
         print(doc, target = output_file)
         phr_message(
@@ -87,9 +87,9 @@ Document <- R6::R6Class(
       phr_try({
         ppt <- self$powerpoint
         if (is.null(ppt)) {
-          ppt <- private$.create_base_ppt(self$reference_ppt_filename)
+          ppt <- private$..create_base_ppt(self$reference_ppt_filename)
         }
-        ppt <- private$.generate_from_schema(
+        ppt <- private$..generate_from_schema(
           obj = ppt,
           schema = self$protocol_ppt_schema,
           schema_kind = "pptx"
@@ -109,14 +109,14 @@ Document <- R6::R6Class(
   private = list(
     #' @description Return default template filename candidates.
     #' @return Character vector of template filenames.
-    .default_template_filenames = function() {
+    ..default_template_filenames = function() {
       c("reach_tor_template.docx", "protocol_report_template.docx")
     },
 
     #' @description Resolve and load the base reference document.
     #' @param reference_doc_filename Optional template filename/path.
     #' @return An \code{officer::rdocx} object.
-    .create_base_doc = function(reference_doc_filename = NULL) {
+    ..create_base_doc = function(reference_doc_filename = NULL) {
       if (!is.null(reference_doc_filename) && file.exists(reference_doc_filename)) {
         self$document <- officer::read_docx(reference_doc_filename)
         return(self$document)
@@ -124,7 +124,7 @@ Document <- R6::R6Class(
 
       template_names <- unique(c(
         as.character(reference_doc_filename %||% character(0)),
-        private$.default_template_filenames()
+        private$..default_template_filenames()
       ))
       template_names <- template_names[nzchar(template_names)]
 
@@ -147,14 +147,14 @@ Document <- R6::R6Class(
 
     #' @description Return default PowerPoint template filename candidates.
     #' @return Character vector of template filenames.
-    .default_ppt_template_filenames = function() {
+    ..default_ppt_template_filenames = function() {
       c("protocol_report_template.pptx")
     },
 
     #' @description Resolve and load the base PowerPoint template.
     #' @param reference_ppt_filename Optional template filename/path.
     #' @return An \code{officer::rpptx} object.
-    .create_base_ppt = function(reference_ppt_filename = NULL) {
+    ..create_base_ppt = function(reference_ppt_filename = NULL) {
       if (!is.null(reference_ppt_filename) && file.exists(reference_ppt_filename)) {
         self$powerpoint <- officer::read_pptx(reference_ppt_filename)
         return(self$powerpoint)
@@ -162,7 +162,7 @@ Document <- R6::R6Class(
 
       template_names <- unique(c(
         as.character(reference_ppt_filename %||% character(0)),
-        private$.default_ppt_template_filenames()
+        private$..default_ppt_template_filenames()
       ))
       template_names <- template_names[nzchar(template_names)]
 
@@ -183,19 +183,19 @@ Document <- R6::R6Class(
       self$powerpoint
     },
 
-    .generate_from_schema = function(obj, schema, schema_kind = c("docx", "pptx")) {
+    ..generate_from_schema = function(obj, schema, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      private$.apply_protocol_schema_sections(doc = obj, schema = schema, schema_kind = schema_kind)
+      private$..apply_protocol_schema_sections(doc = obj, schema = schema, schema_kind = schema_kind)
     },
 
     # Apply protocol schema handling in a predictable order.
-    apply_protocol_schema_sections = function(doc, schema = self$protocol_schema,
-                                              schema_kind = c("docx", "pptx")) {
+    ..apply_protocol_schema_sections = function(doc, schema = self$protocol_schema,
+                                                schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
         return(doc)
       }
-      required_cols <- private$.schema_required_cols()
+      required_cols <- private$..schema_required_cols()
       if (!all(required_cols %in% names(schema))) {
         phr_warning(
           phr_txt("protocol_schema missing required columns: {paste(setdiff(required_cols, names(schema)), collapse=', ')}"),
@@ -219,13 +219,13 @@ Document <- R6::R6Class(
           row <- schema[i, required_cols, drop = FALSE]
           doc <- switch(
             handling,
-            replace             = private$.handle_replace(doc, row, schema_kind = schema_kind),
-            input               = private$.handle_input(doc, row, schema_kind = schema_kind),
-            calculate           = private$.handle_calculate(doc, row, schema_kind = schema_kind),
-            checkbox_replace    = private$.handle_checkbox_replace(doc, row, schema_kind = schema_kind),
-            row_delete          = private$.handle_row_delete(doc, row, schema_kind = schema_kind),
-            table               = private$.handle_table(doc, row, schema_kind = schema_kind),
-            image               = private$.handle_image(doc, row, schema_kind = schema_kind),
+            replace             = private$..handle_replace(doc, row, schema_kind = schema_kind),
+            input               = private$..handle_input(doc, row, schema_kind = schema_kind),
+            calculate           = private$..handle_calculate(doc, row, schema_kind = schema_kind),
+            checkbox_replace    = private$..handle_checkbox_replace(doc, row, schema_kind = schema_kind),
+            row_delete          = private$..handle_row_delete(doc, row, schema_kind = schema_kind),
+            table               = private$..handle_table(doc, row, schema_kind = schema_kind),
+            image               = private$..handle_image(doc, row, schema_kind = schema_kind),
             doc
           )
         }
@@ -234,24 +234,24 @@ Document <- R6::R6Class(
       doc
     },
 
-    .handle_replace = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_replace = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      if (!isTRUE(private$.should_apply_schema_row(row))) return(doc)
+      if (!isTRUE(private$..should_apply_schema_row(row))) return(doc)
       tag <- as.character(row$tag_name[[1L]] %||% "")
       default_value <- as.character(row$default_value[[1L]] %||% "")
-      private$.replace(doc, tag, default_value, schema_kind = schema_kind)
+      private$..replace(doc, tag, default_value, schema_kind = schema_kind)
     },
 
-    .handle_input = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_input = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      if (!isTRUE(private$.should_apply_schema_row(row))) return(doc)
+      if (!isTRUE(private$..should_apply_schema_row(row))) return(doc)
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else ""
-      private$.replace(doc, tag, as.character(value %||% ""), schema_kind = schema_kind)
+      private$..replace(doc, tag, as.character(value %||% ""), schema_kind = schema_kind)
     },
 
-    .evaluate_condition_row = function(row) {
+    ..evaluate_condition_row = function(row) {
       if (!is.data.frame(row) || nrow(row) == 0L || !"condition" %in% names(row)) {
         return(TRUE)
       }
@@ -259,75 +259,69 @@ Document <- R6::R6Class(
       if (!nzchar(condition)) {
         return(TRUE)
       }
-      binding_name <- sub("^@", "", condition)
-      if (!nzchar(binding_name)) {
-        return(TRUE)
+      binding_name <- private$..resolve_active_binding_name(sub("^@", "", condition))
+      if (is.null(binding_name)) {
+        return(private$..resolve_condition_flag(condition))
       }
-      if (!binding_name %in% names(self)) {
-        return(private$.resolve_condition_flag(condition))
-      }
-      value <- tryCatch(self[[binding_name]], error = function(e) NULL)
-      if (is.function(value)) {
-        return(tryCatch(value(), error = function(e) NULL))
+      value <- private$..read_active_binding(binding_name)
+      if (is.null(value)) {
+        return(private$..resolve_condition_flag(condition))
       }
       value
     },
 
-    .handle_calculate = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_calculate = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      condition_met <- private$.evaluate_condition_row(row)
+      condition_met <- private$..evaluate_condition_row(row)
       if (!isTRUE(condition_met)) {
         return(doc)
       }
       tag <- as.character(row$tag_name[[1L]] %||% "")
-      binding_name <- sub("^@", "", trimws(tag))
-      if (!nzchar(binding_name) || !binding_name %in% names(self)) {
+      binding_name <- private$..resolve_active_binding_name(sub("^@", "", trimws(tag)))
+      if (is.null(binding_name)) {
         return(doc)
       }
-      value <- tryCatch(self[[binding_name]], error = function(e) NULL)
-      if (is.function(value)) {
-        value <- tryCatch(value(), error = function(e) NULL)
-      }
+      value <- private$..read_active_binding(binding_name)
       # For calculate rows, booleans are control outputs only:
       # TRUE/FALSE can indicate row logic but should not be rendered as tag text.
       if (is.null(value) || isTRUE(value) || identical(value, FALSE)) {
         return(doc)
       }
-      private$.replace(doc, tag, as.character(value), schema_kind = schema_kind)
+      private$..replace(doc, tag, as.character(value), schema_kind = schema_kind)
     },
 
-    .handle_checkbox_replace = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_checkbox_replace = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      if (!isTRUE(private$.should_apply_schema_row(row))) return(doc)
+      if (!isTRUE(private$..should_apply_schema_row(row))) return(doc)
       tag <- as.character(row$tag_name[[1L]] %||% "")
       key <- sub("^@", "", tag)
       value <- if (nzchar(key) && key %in% names(self$metadata)) self$metadata[[key]] else FALSE
-      private$.replace(doc, tag, if (isTRUE(value)) "X" else "\u25a1", schema_kind = schema_kind)
+      private$..replace(doc, tag, if (isTRUE(value)) "X" else "\u25a1", schema_kind = schema_kind)
     },
 
-    .handle_row_delete = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_row_delete = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      if (!isTRUE(private$.should_apply_schema_row(row))) return(doc)
+      if (!isTRUE(private$..should_apply_schema_row(row))) return(doc)
       tag <- as.character(row$tag_name[[1L]] %||% "")
-      private$.replace(doc, tag, "", schema_kind = schema_kind)
+      private$..replace(doc, tag, "", schema_kind = schema_kind)
     },
 
     #' @description Handle a schema row with \code{handling == "table"}.
     #' @param doc \code{officer::rdocx} document object.
     #' @param row Single-row schema data frame.
     #' @return Updated document object.
-    .handle_table = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_table = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      if (!isTRUE(private$.should_apply_schema_row(row))) return(doc)
+      if (!isTRUE(private$..should_apply_schema_row(row))) return(doc)
       tag <- as.character(row[["tag_name"]][[1L]] %||% "")
       # DOCX workflow needs explicit tag-preserving replacement across runs
       # before function dispatch; PPT uses placeholder labels via ph_with.
       if (nzchar(tag) && identical(schema_kind, "docx")) {
-        doc <- private$._replace_across_runs(doc, tag, tag)
+        doc <- private$.._replace_across_runs(doc, tag, tag)
       }
-      tbl <- private$.dispatch_schema_function(row = row, schema_kind = schema_kind)
+      tbl <- private$..dispatch_schema_function(row = row, schema_kind = schema_kind)
       if (is.null(tbl) || !inherits(tbl, "flextable")) {
-        if (nzchar(tag)) return(private$.replace(doc, tag, "", schema_kind = schema_kind))
+        if (nzchar(tag)) return(private$..replace(doc, tag, "", schema_kind = schema_kind))
         return(doc)
       }
       if (identical(schema_kind, "docx")) {
@@ -336,7 +330,7 @@ Document <- R6::R6Class(
           doc <- flextable::body_add_flextable(doc, tbl, pos = "before")
           doc <- officer::cursor_forward(doc)
           officer::body_remove(doc)
-        }, error = function(e) private$.replace(doc, tag, "", schema_kind = schema_kind)))
+        }, error = function(e) private$..replace(doc, tag, "", schema_kind = schema_kind)))
       }
       doc
     },
@@ -345,26 +339,40 @@ Document <- R6::R6Class(
     #' @param doc \code{officer::rdocx} document object.
     #' @param row Single-row schema data frame.
     #' @return Updated document object.
-    .handle_image = function(doc, row, schema_kind = c("docx", "pptx")) {
+    ..handle_image = function(doc, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
-      if (!isTRUE(private$.should_apply_schema_row(row))) return(doc)
+      if (!isTRUE(private$..should_apply_schema_row(row))) return(doc)
       tag <- as.character(row[["tag_name"]][[1L]] %||% "")
+      tag_binding <- private$..resolve_active_binding_name(sub("^@", "", trimws(tag)))
+      if (!is.null(tag_binding)) {
+        img <- private$..read_active_binding(tag_binding)
+        if (!is.null(img)) {
+          return(private$..insert_image_at_tag(
+            doc = doc,
+            tag = tag,
+            image_value = img,
+            schema_kind = schema_kind
+          ))
+        }
+      }
+
       # DOCX workflow needs explicit tag-preserving replacement across runs
       # before function dispatch; PPT uses placeholder labels via ph_with.
       if (nzchar(tag) && identical(schema_kind, "docx")) {
-        doc <- private$._replace_across_runs(doc, tag, tag)
+        doc <- private$.._replace_across_runs(doc, tag, tag)
       }
-      out <- private$.dispatch_schema_function(row = row, schema_kind = schema_kind)
+
+      out <- private$..dispatch_schema_function(row = row, schema_kind = schema_kind)
       if (is.null(out)) {
-        if (nzchar(tag)) return(private$.replace(doc, tag, "", schema_kind = schema_kind))
+        if (nzchar(tag)) return(private$..replace(doc, tag, "", schema_kind = schema_kind))
         return(doc)
       }
       out
     },
 
     # Load protocol schema metadata with a blank fallback.
-    .load_protocol_schema = function() {
-      required_cols <- private$.schema_required_cols()
+    ..load_protocol_schema = function() {
+      required_cols <- private$..schema_required_cols()
       empty_schema <- as.data.frame(
         setNames(replicate(length(required_cols), character(0), simplify = FALSE),
                  required_cols),
@@ -393,8 +401,8 @@ Document <- R6::R6Class(
       schema[required_cols]
     },
 
-    .load_protocol_ppt_schema = function() {
-      required_cols <- private$.schema_required_cols()
+    ..load_protocol_ppt_schema = function() {
+      required_cols <- private$..schema_required_cols()
       empty_schema <- as.data.frame(
         setNames(replicate(length(required_cols), character(0), simplify = FALSE),
                  required_cols),
@@ -419,7 +427,7 @@ Document <- R6::R6Class(
       schema[required_cols]
     },
 
-    .replace = function(doc, old, new_val, schema_kind = c("docx", "pptx")) {
+    ..replace = function(doc, old, new_val, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       if (!is.character(old) || length(old) != 1L || !nzchar(old)) {
         return(doc)
@@ -440,21 +448,74 @@ Document <- R6::R6Class(
         })
         return(doc)
       } else {
-        private$._replace_across_runs(doc, old, as.character(new_val %||% ""))
+        private$.._replace_across_runs(doc, old, as.character(new_val %||% ""))
       }
     },
 
-    .schema_required_cols = function() {
+    ..schema_required_cols = function() {
       c("tag_name", "handling", "condition", "default_value", "function_name")
     },
 
-    .dispatch_schema_function = function(row, schema_kind = c("docx", "pptx")) {
+    ..resolve_active_binding_name = function(name) {
+      key <- trimws(as.character(name %||% ""))
+      if (!nzchar(key)) return(NULL)
+      bare <- sub("^\\.", "", key)
+      candidates <- unique(c(key, bare, paste0(".", bare)))
+      candidates <- candidates[candidates %in% names(self)]
+      if (length(candidates) == 0L) return(NULL)
+      candidates[[1L]]
+    },
+
+    ..read_active_binding = function(binding_name) {
+      if (!is.character(binding_name) || length(binding_name) != 1L || !nzchar(binding_name)) {
+        return(NULL)
+      }
+      value <- tryCatch(self[[binding_name]], error = function(e) NULL)
+      if (is.function(value)) {
+        return(tryCatch(value(), error = function(e) NULL))
+      }
+      value
+    },
+
+    ..insert_image_at_tag = function(doc, tag, image_value, schema_kind = c("docx", "pptx")) {
+      schema_kind <- match.arg(schema_kind)
+      if (!is.character(tag) || length(tag) != 1L || !nzchar(tag) || is.null(image_value)) {
+        return(doc)
+      }
+
+      if (identical(schema_kind, "pptx")) {
+        if (is.character(image_value) && length(image_value) == 1L && file.exists(image_value)) {
+          return(tryCatch({
+            officer::ph_with(
+              x = doc,
+              value = officer::external_img(src = image_value),
+              location = officer::ph_location_label(ph_label = tag)
+            )
+          }, error = function(e) doc))
+        }
+        return(doc)
+      }
+
+      if (!(is.character(image_value) && length(image_value) == 1L && file.exists(image_value))) {
+        return(private$..replace(doc, tag, "", schema_kind = schema_kind))
+      }
+
+      doc <- private$.._replace_across_runs(doc, tag, tag)
+      tryCatch({
+        doc <- officer::cursor_reach(doc, keyword = tag)
+        doc <- officer::body_add_img(doc, src = image_value, pos = "before")
+        doc <- officer::cursor_forward(doc)
+        officer::body_remove(doc)
+      }, error = function(e) private$..replace(doc, tag, "", schema_kind = schema_kind))
+    },
+
+    ..dispatch_schema_function = function(row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       fn_name <- trimws(as.character(row[["function_name"]][[1L]] %||% ""))
       if (!nzchar(fn_name)) return(NULL)
       fn <- tryCatch(get(fn_name, mode = "function"), error = function(e) NULL)
       if (!is.function(fn)) return(NULL)
-      args <- private$.schema_dispatch_args(fn_name = fn_name, row = row, schema_kind = schema_kind)
+      args <- private$..schema_dispatch_args(fn_name = fn_name, row = row, schema_kind = schema_kind)
       tryCatch(do.call(fn, args), error = function(e) NULL)
     },
 
@@ -463,7 +524,7 @@ Document <- R6::R6Class(
     #' @param row Single-row schema data frame.
     #' @param schema_kind Document kind (\code{"docx"} or \code{"pptx"}).
     #' @return Named list of arguments for \code{do.call()}.
-    .schema_dispatch_args = function(fn_name, row, schema_kind = c("docx", "pptx")) {
+    ..schema_dispatch_args = function(fn_name, row, schema_kind = c("docx", "pptx")) {
       schema_kind <- match.arg(schema_kind)
       sample_table <- self$sample_table
       if (is.null(sample_table) && !is.null(self$sample_object) && inherits(self$sample_object, "Sample")) {
@@ -506,7 +567,7 @@ Document <- R6::R6Class(
       )
     },
 
-    .schema_row = function(tag) {
+    ..schema_row = function(tag) {
       schema <- self$protocol_schema
       if (!is.character(tag) || length(tag) != 1 || !nzchar(tag) ||
           is.null(schema) || !is.data.frame(schema) ||
@@ -518,18 +579,18 @@ Document <- R6::R6Class(
       schema[idx[1L], , drop = FALSE]
     },
 
-    .tag_is_missing_from_schema = function(tag) {
-      startsWith(as.character(tag %||% ""), "@") && is.null(private$.schema_row(tag))
+    ..tag_is_missing_from_schema = function(tag) {
+      startsWith(as.character(tag %||% ""), "@") && is.null(private$..schema_row(tag))
     },
 
-    .checkbox = function(doc, tag, condition) {
-      if (private$.tag_is_missing_from_schema(tag)) {
-        return(private$.replace(doc, tag, ""))
+    ..checkbox = function(doc, tag, condition) {
+      if (private$..tag_is_missing_from_schema(tag)) {
+        return(private$..replace(doc, tag, ""))
       }
-      private$.replace(doc, tag, if (isTRUE(condition)) "X" else "\u25a1")
+      private$..replace(doc, tag, if (isTRUE(condition)) "X" else "\u25a1")
     },
 
-    .make_w_para = function(text, bold = FALSE, space_before_pt = 0L,
+    ..make_w_para = function(text, bold = FALSE, space_before_pt = 0L,
                             space_after_pt = 0L, font_size_pt = NULL) {
       W <- "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
       esc <- function(s) {
@@ -559,7 +620,7 @@ Document <- R6::R6Class(
       ))
     },
 
-    .replace_tag_in_cell = function(doc, tag, items) {
+    ..replace_tag_in_cell = function(doc, tag, items) {
       body_xml <- officer::docx_body_xml(doc)
       ns       <- xml2::xml_ns(body_xml)
 
@@ -574,7 +635,7 @@ Document <- R6::R6Class(
       if (is.null(target_para)) return(FALSE)
 
       for (item in items) {
-        node <- private$.make_w_para(
+        node <- private$..make_w_para(
           text            = item$text,
           bold            = isTRUE(item$bold),
           space_before_pt = if (is.null(item$space_before_pt)) 0L else item$space_before_pt,
@@ -587,7 +648,7 @@ Document <- R6::R6Class(
       TRUE
     },
 
-    .remove_remaining_tags = function(doc) {
+    ..remove_remaining_tags = function(doc) {
       body_xml <- officer::docx_body_xml(doc)
       ns       <- xml2::xml_ns(body_xml)
       tag_pattern <- "@[A-Za-z0-9_.\\-]+"
@@ -628,7 +689,7 @@ Document <- R6::R6Class(
       doc
     },
 
-    .resolve_condition_flag = function(condition) {
+    ..resolve_condition_flag = function(condition) {
       # Condition semantics:
       # - empty string: apply row
       # - literal true/false: apply according to literal
@@ -649,18 +710,18 @@ Document <- R6::R6Class(
       FALSE
     },
 
-    .should_apply_schema_row = function(row) {
+    ..should_apply_schema_row = function(row) {
       if (!is.data.frame(row) || nrow(row) == 0L) {
         return(TRUE)
       }
       if (!"condition" %in% names(row)) return(TRUE)
       condition <- trimws(as.character(row$condition[[1L]] %||% ""))
       if (!nzchar(condition)) return(TRUE)
-      value <- private$.evaluate_condition_row(row)
+      value <- private$..evaluate_condition_row(row)
       isTRUE(value)
     },
 
-    ._replace_across_runs = function(doc, tag, new_val) {
+    .._replace_across_runs = function(doc, tag, new_val) {
       if (!is.character(tag) || length(tag) != 1L || !nzchar(tag)) return(doc)
       new_val <- as.character(new_val %||% "")
       replacement_is_identity <- identical(tag, new_val)

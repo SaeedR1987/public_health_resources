@@ -56,7 +56,7 @@ Orchestrator <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     sync_state = function(field = NULL, member = NULL, target_field = NULL,
                           name = NULL, role = NULL) {
-      private$.sync_state(
+      private$..sync_state(
         field = field,
         member = member,
         target_field = target_field,
@@ -86,11 +86,11 @@ Orchestrator <- R6::R6Class(
     #' @return The requested nested value, or the nested method result.
     access_nested = function(field, name = NULL, member = NULL, role = NULL, ...) {
       phr_try({
-        target <- private$.resolve_nested_target(field = field, name = name, role = role)
+        target <- private$..resolve_nested_target(field = field, name = name, role = role)
 
         if (is.null(member)) {
-          private$.sync_state()
-          private$.touch()
+          private$..sync_state()
+          private$..touch()
           return(target)
         }
 
@@ -112,8 +112,8 @@ Orchestrator <- R6::R6Class(
           value
         }
 
-        private$.sync_state()
-        private$.touch()
+        private$..sync_state()
+        private$..touch()
         out
       }, on_error = "abort", origin = "Orchestrator$access_nested")
     },
@@ -141,10 +141,10 @@ Orchestrator <- R6::R6Class(
           message = phr_txt("member must be a non-empty character string."),
           origin = "Orchestrator$set_nested"
         )
-        target <- private$.resolve_nested_target(field = field, name = name, role = role)
+        target <- private$..resolve_nested_target(field = field, name = name, role = role)
         target[[member]] <- value
-        private$.sync_state()
-        private$.touch()
+        private$..sync_state()
+        private$..touch()
       }, on_error = "abort", origin = "Orchestrator$set_nested")
       invisible(self)
     }
@@ -153,7 +153,7 @@ Orchestrator <- R6::R6Class(
   private = list(
     #' @description Update modified timestamp metadata.
     #' @return Invisibly returns \code{NULL}.
-    .touch = function() {
+    ..touch = function() {
       if (is.null(self$metadata) || !is.list(self$metadata)) {
         self$metadata <- list()
       }
@@ -172,7 +172,7 @@ Orchestrator <- R6::R6Class(
     #' @param name Optional named list entry inside \code{field}.
     #' @param role Optional role-based list resolution key.
     #' @return Invisibly returns resolved value (targeted mode) or \code{NULL}.
-    .sync_state = function(field = NULL, member = NULL, target_field = NULL,
+    ..sync_state = function(field = NULL, member = NULL, target_field = NULL,
                           name = NULL, role = NULL) {
       self$pre_sync_state(
         field = field, member = member, target_field = target_field,
@@ -190,7 +190,7 @@ Orchestrator <- R6::R6Class(
           message = phr_txt("member must be a non-empty character string."),
           origin = "Orchestrator$sync_state"
         )
-        target <- private$.resolve_nested_target(field = field, name = name, role = role)
+        target <- private$..resolve_nested_target(field = field, name = name, role = role)
         phr_assert(
           !is.null(target[[member]]),
           message = phr_txt("Member '{member}' does not exist on the resolved target."),
@@ -201,7 +201,7 @@ Orchestrator <- R6::R6Class(
           value <- value()
         }
         if (!is.null(target_field)) {
-          private$.assign_sync_value(target_field = target_field, value = value)
+          private$..assign_sync_value(target_field = target_field, value = value)
         }
         self$post_sync_state(
           field = field, member = member, target_field = target_field,
@@ -248,7 +248,7 @@ Orchestrator <- R6::R6Class(
     #' @param name Optional exact list element name.
     #' @param role Optional role-style key for list lookup.
     #' @return Resolved object.
-    .resolve_nested_target = function(field, name = NULL, role = NULL) {
+    ..resolve_nested_target = function(field, name = NULL, role = NULL) {
       phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
         message = phr_txt("field must be a non-empty character string."),
@@ -302,8 +302,8 @@ Orchestrator <- R6::R6Class(
         origin = "Orchestrator$.resolve_nested_target"
       )
 
-      role_key <- private$.normalize_role_name(role)
-      normalized_names <- vapply(nms, private$.normalize_role_name, character(1L))
+      role_key <- private$..normalize_role_name(role)
+      normalized_names <- vapply(nms, private$..normalize_role_name, character(1L))
       idx <- which(normalized_names == role_key)
 
       if (length(idx) == 0L) {
@@ -325,7 +325,7 @@ Orchestrator <- R6::R6Class(
     #' @description Normalize role names for fuzzy list matching.
     #' @param x Character role/name input.
     #' @return Normalized character key.
-    .normalize_role_name = function(x) {
+    ..normalize_role_name = function(x) {
       x <- tolower(as.character(x %||% ""))
       x <- gsub("^tool_", "", x)
       x <- gsub("_iphra(_v[0-9]+)?$", "", x)
@@ -337,7 +337,7 @@ Orchestrator <- R6::R6Class(
     #' @param target_field Character path using \code{$} separators.
     #' @param value Value to assign.
     #' @return Invisibly returns \code{NULL}.
-    .assign_sync_value = function(target_field, value) {
+    ..assign_sync_value = function(target_field, value) {
       phr_assert(
         is.character(target_field) && length(target_field) == 1L && nzchar(target_field),
         message = phr_txt("target_field must be a non-empty character string."),

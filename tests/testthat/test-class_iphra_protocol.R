@@ -374,7 +374,7 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   schema <- p$protocol_schema
   row <- schema[schema$tag_name == "@tor_title", c("tag_name", "handling", "condition", "default_value"), drop = FALSE]
   expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
-  doc <- p$.__enclos_env__$private$.handle_replace(doc, row[1, , drop = FALSE])
+  doc <- p$.__enclos_env__$private$..handle_replace(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(
     xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
@@ -395,7 +395,7 @@ test_that("IPHRAProtocol .replace avoids replacing tag prefixes in longer placeh
   doc <- officer::body_add_par(doc, "@sample_size_hh_ind_table", style = "Normal")
   doc <- officer::body_add_par(doc, "@sample_size_hh_ind", style = "Normal")
 
-  doc <- p$.__enclos_env__$private$.replace(
+  doc <- p$.__enclos_env__$private$..replace(
     doc,
     "@sample_size_hh_ind",
     "placeholder ind sampling"
@@ -424,7 +424,7 @@ test_that("replace_tag_in_cell preserves item order for objective headers and bu
     list(text = "\u2022 Crowdedness", bold = FALSE, space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)
   )
 
-  ok <- p$.__enclos_env__$private$.replace_tag_in_cell(doc, "@specific_objectives", items)
+  ok <- p$.__enclos_env__$private$..replace_tag_in_cell(doc, "@specific_objectives", items)
   expect_true(ok)
 
   body_xml <- officer::docx_body_xml(doc)
@@ -510,7 +510,7 @@ test_that("IPHRAProtocol conditional handling uses active bindings and runs empt
   doc <- officer::body_add_par(doc, "@tag_true", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_false", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_empty", style = "Normal")
-  doc <- p$.__enclos_env__$private$apply_protocol_schema_sections(doc, rows)
+  doc <- p$.__enclos_env__$private$..apply_protocol_schema_sections(doc, rows)
 
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
@@ -524,20 +524,20 @@ test_that("IPHRAProtocol conditional handling uses active bindings and runs empt
 
 test_that("IPHRAProtocol active bindings detect requested tool states", {
   p <- IPHRAProtocol$new()
-  expect_false(isTRUE(p$kii_community))
-  expect_false(isTRUE(p$kii_service_providers))
+  expect_false(isTRUE(p$.kii_community))
+  expect_false(isTRUE(p$.kii_service_providers))
 
   p$add_tools("tool_kii_community_iphra_v2")
   p$add_tools("tool_kii_fsl_service_provider_iphra_v2")
-  expect_true(isTRUE(p$kii_community))
-  expect_true(isTRUE(p$kii_fsl_provider))
-  expect_true(isTRUE(p$kii_service_providers))
+  expect_true(isTRUE(p$.kii_community))
+  expect_true(isTRUE(p$.kii_fsl_provider))
+  expect_true(isTRUE(p$.kii_service_providers))
 })
 
 test_that("IPHRAProtocol ind_ecfies and rlc_household_selection bindings evaluate from nested state", {
   p <- IPHRAProtocol$new()
-  expect_false(isTRUE(p$ind_ecfies))
-  expect_false(isTRUE(p$rlc_household_selection))
+  expect_false(isTRUE(p$.ind_ecfies))
+  expect_false(isTRUE(p$.rlc_household_selection))
 
   p$add_tools("tool_household_iphra_v2")
   p$set_nested(
@@ -546,7 +546,7 @@ test_that("IPHRAProtocol ind_ecfies and rlc_household_selection bindings evaluat
     member = "revised_survey",
     value = data.frame(indicator_code = c("10801"), stringsAsFactors = FALSE)
   )
-  expect_true(isTRUE(p$ind_ecfies))
+  expect_true(isTRUE(p$.ind_ecfies))
 
   p$access_nested(
     field = "sample_object",
@@ -556,16 +556,16 @@ test_that("IPHRAProtocol ind_ecfies and rlc_household_selection bindings evaluat
     sampling_method = "pps_rlc",
     n_sites = 1
   )
-  expect_true(isTRUE(p$rlc_household_selection))
+  expect_true(isTRUE(p$.rlc_household_selection))
 })
 
 test_that("IPHRAProtocol sampling active bindings evaluate from nested sample object", {
   p <- IPHRAProtocol$new()
-  expect_false(isTRUE(p$cluster_site_selection))
-  expect_false(isTRUE(p$exhaustive_site_selection))
-  expect_false(isTRUE(p$purposive_site_selection))
-  expect_false(isTRUE(p$multiple_methods_yes))
-  expect_false(isTRUE(p$multiple_strata))
+  expect_false(isTRUE(p$.cluster_site_selection))
+  expect_false(isTRUE(p$.exhaustive_site_selection))
+  expect_false(isTRUE(p$.purposive_site_selection))
+  expect_false(isTRUE(p$.multiple_methods_yes))
+  expect_false(isTRUE(p$.multiple_strata))
 
   p$access_nested(
     field = "sample_object",
@@ -574,10 +574,10 @@ test_that("IPHRAProtocol sampling active bindings evaluate from nested sample ob
     stratum_name = "S1",
     sampling_method = "proportional"
   )
-  expect_true(isTRUE(p$exhaustive_site_selection))
-  expect_true(isTRUE(p$multiple_methods_no))
-  expect_false(isTRUE(p$multiple_methods_yes))
-  expect_false(isTRUE(p$multiple_strata))
+  expect_true(isTRUE(p$.exhaustive_site_selection))
+  expect_true(isTRUE(p$.multiple_methods_no))
+  expect_false(isTRUE(p$.multiple_methods_yes))
+  expect_false(isTRUE(p$.multiple_strata))
 
   p$access_nested(
     field = "sample_object",
@@ -586,10 +586,10 @@ test_that("IPHRAProtocol sampling active bindings evaluate from nested sample ob
     stratum_name = "S2",
     sampling_method = "pps_cluster"
   )
-  expect_true(isTRUE(p$cluster_site_selection))
-  expect_true(isTRUE(p$multiple_methods_yes))
-  expect_false(isTRUE(p$multiple_methods_no))
-  expect_true(isTRUE(p$multiple_strata))
+  expect_true(isTRUE(p$.cluster_site_selection))
+  expect_true(isTRUE(p$.multiple_methods_yes))
+  expect_false(isTRUE(p$.multiple_methods_no))
+  expect_true(isTRUE(p$.multiple_strata))
 
   p$access_nested(
     field = "sample_object",
@@ -598,18 +598,18 @@ test_that("IPHRAProtocol sampling active bindings evaluate from nested sample ob
     stratum_name = "S3",
     sampling_method = "purposive"
   )
-  expect_true(isTRUE(p$purposive_site_selection))
+  expect_true(isTRUE(p$.purposive_site_selection))
 })
 
 test_that("IPHRAProtocol indicator and observation active bindings evaluate from nested tools", {
   p <- IPHRAProtocol$new()
-  expect_false(isTRUE(p$mortality_survey))
-  expect_false(isTRUE(p$muac_survey))
-  expect_false(isTRUE(p$obs_community))
-  expect_false(isTRUE(p$obs_crops_livestock))
-  expect_false(isTRUE(p$obs_health_facility))
-  expect_false(isTRUE(p$obs_latrines))
-  expect_false(isTRUE(p$obs_water_point))
+  expect_false(isTRUE(p$.mortality_survey))
+  expect_false(isTRUE(p$.muac_survey))
+  expect_false(isTRUE(p$.obs_community))
+  expect_false(isTRUE(p$.obs_crops_livestock))
+  expect_false(isTRUE(p$.obs_health_facility))
+  expect_false(isTRUE(p$.obs_latrines))
+  expect_false(isTRUE(p$.obs_water_point))
 
   p$add_tools("tool_household_iphra_v2")
   p$set_nested(
@@ -618,19 +618,19 @@ test_that("IPHRAProtocol indicator and observation active bindings evaluate from
     member = "revised_survey",
     value = data.frame(indicator_code = c("10501", "10702"), stringsAsFactors = FALSE)
   )
-  expect_true(isTRUE(p$mortality_survey))
-  expect_true(isTRUE(p$muac_survey))
+  expect_true(isTRUE(p$.mortality_survey))
+  expect_true(isTRUE(p$.muac_survey))
 
   p$add_tools("tool_obs_community_iphra_v2")
   p$add_tools("tool_obs_crop_livestock_iphra_v1")
   p$add_tools("tool_obs_health_facility_iphra_v2")
   p$add_tools("tool_obs_latrine_iphra_v2")
   p$add_tools("tool_obs_water_point_iphra_v2")
-  expect_true(isTRUE(p$obs_community))
-  expect_true(isTRUE(p$obs_crops_livestock))
-  expect_true(isTRUE(p$obs_health_facility))
-  expect_true(isTRUE(p$obs_latrines))
-  expect_true(isTRUE(p$obs_water_point))
+  expect_true(isTRUE(p$.obs_community))
+  expect_true(isTRUE(p$.obs_crops_livestock))
+  expect_true(isTRUE(p$.obs_health_facility))
+  expect_true(isTRUE(p$.obs_latrines))
+  expect_true(isTRUE(p$.obs_water_point))
 })
 
 test_that("Protocol objects inherit cached document field from Document base class", {

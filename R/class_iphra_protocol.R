@@ -215,9 +215,9 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$framework_type <- "ana"
 
       # Load protocol schema (tags + defaults) from the bundled resource
-      private$.load_protocol_schema()
-      private$initialize_conditional_metadata()
-      private$sync_sampling_conditional_metadata()
+      private$..load_protocol_schema()
+      private$..initialize_conditional_metadata()
+      private$..sync_sampling_conditional_metadata()
 
       phr_message(phr_txt("IPHRAProtocol initialized."), origin = "IPHRAProtocol$initialize")
       invisible(self)
@@ -235,7 +235,7 @@ IPHRAProtocol <- R6::R6Class(
     #' @return Invisibly returns \code{self} for method chaining.
     add_tools = function(tool_name) {
       phr_try({
-        allowable <- private$.iphra_tools
+        allowable <- private$..iphra_tools
 
         phr_assert(
           is.character(tool_name) && length(tool_name) == 1 && nzchar(tool_name),
@@ -263,7 +263,7 @@ IPHRAProtocol <- R6::R6Class(
         tool <- if (identical(tool_class, "HouseholdTool")) {
           if (file.exists(tool_path)) {
             t <- HouseholdTool$new(name = tool_name, survey = NULL, choices = NULL)
-            private$.load_tool_from_path(t, tool_path)
+            private$..load_tool_from_path(t, tool_path)
             t
           } else {
             phr_warning(
@@ -275,7 +275,7 @@ IPHRAProtocol <- R6::R6Class(
         } else if (identical(tool_class, "KeyInformantTool")) {
           if (file.exists(tool_path)) {
             t <- KeyInformantTool$new(name = tool_name, survey = NULL, choices = NULL)
-            private$.load_tool_from_path(t, tool_path)
+            private$..load_tool_from_path(t, tool_path)
             t
           } else {
             phr_warning(
@@ -288,7 +288,7 @@ IPHRAProtocol <- R6::R6Class(
           # ObservationTool
           if (file.exists(tool_path)) {
             t <- ObservationTool$new(name = tool_name, survey = NULL, choices = NULL)
-            private$.load_tool_from_path(t, tool_path)
+            private$..load_tool_from_path(t, tool_path)
             t
           } else {
             phr_warning(
@@ -301,7 +301,7 @@ IPHRAProtocol <- R6::R6Class(
 
         if (is.null(self$tools)) self$tools <- list()
         self$tools[[tool_name]] <- tool
-        private$.touch()
+        private$..touch()
         phr_message(
           phr_txt("IPHRA tool '{tool_name}' added."),
           origin = "IPHRAProtocol$add_tools"
@@ -313,7 +313,7 @@ IPHRAProtocol <- R6::R6Class(
     #' @description Return the names of all allowable IPHRA tools.
     #' @return Character vector of tool names.
     get_allowable_tools = function() {
-      names(private$.iphra_tools)
+      names(private$..iphra_tools)
     },
 
     #' @description Update the recall date in the household tool's calculate rows.
@@ -383,7 +383,7 @@ IPHRAProtocol <- R6::R6Class(
         tool$survey         <- .update_recall_in_survey(tool$survey)
         tool$revised_survey <- .update_recall_in_survey(tool$revised_survey)
 
-        private$.touch()
+        private$..touch()
         phr_message(
           phr_txt("Recall date updated to '{date_str}' in tool '{tool_name}'."),
           origin = "IPHRAProtocol$update_recall_date"
@@ -419,23 +419,23 @@ IPHRAProtocol <- R6::R6Class(
       } else {
         0L
       }
-      private$sync_sampling_conditional_metadata()
+      private$..sync_sampling_conditional_metadata()
       invisible(NULL)
     }
   ),
 
   active = list(
-    `Special Situations` = function(value) FALSE,
-    cluster_site_selection = function(value) {
+    `.Special Situations` = function(value) FALSE,
+    .cluster_site_selection = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.sample_has_any_method(c("pps_cluster", "pps_rlc"))
+      private$..sample_has_any_method(c("pps_cluster", "pps_rlc"))
     },
-    exhaustive_site_selection = function(value) {
+    .exhaustive_site_selection = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.sample_has_any_method("proportional")
+      private$..sample_has_any_method("proportional")
     },
-    general_survey = function(value) FALSE,
-    ind_ecfies = function(value) {
+    .general_survey = function(value) FALSE,
+    .ind_ecfies = function(value) {
       if (!missing(value)) return(invisible(FALSE))
       hh_revised_survey <- tryCatch(
         self$access_nested(field = "tools", role = "household", member = "revised_survey"),
@@ -448,90 +448,90 @@ IPHRAProtocol <- R6::R6Class(
       indicator_codes <- trimws(as.character(hh_revised_survey$indicator_code))
       any(!is.na(indicator_codes) & indicator_codes == "10801")
     },
-    ind_iycfe = function(value) FALSE,
-    ind_measles_vaccination = function(value) FALSE,
-    ind_muac_children = function(value) FALSE,
-    ind_muac_plw = function(value) FALSE,
-    ind_vitamin_a_coverage = function(value) FALSE,
-    individual_survey = function(value) FALSE,
-    kii_community = function(value) {
+    .ind_iycfe = function(value) FALSE,
+    .ind_measles_vaccination = function(value) FALSE,
+    .ind_muac_children = function(value) FALSE,
+    .ind_muac_plw = function(value) FALSE,
+    .ind_vitamin_a_coverage = function(value) FALSE,
+    .individual_survey = function(value) FALSE,
+    .kii_community = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("kii_community")
+      private$..has_tool_role("kii_community")
     },
-    kii_fsl_provider = function(value) {
+    .kii_fsl_provider = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("kii_fsl_service_provider")
+      private$..has_tool_role("kii_fsl_service_provider")
     },
-    kii_health_provider = function(value) {
+    .kii_health_provider = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("kii_health_service_provider")
+      private$..has_tool_role("kii_health_service_provider")
     },
-    kii_nutrition_provider = function(value) {
+    .kii_nutrition_provider = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("kii_nutrition_service_provider")
+      private$..has_tool_role("kii_nutrition_service_provider")
     },
-    kii_service_providers = function(value) {
+    .kii_service_providers = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      isTRUE(self$kii_fsl_provider) ||
-        isTRUE(self$kii_health_provider) ||
-        isTRUE(self$kii_nutrition_provider) ||
-        isTRUE(self$kii_wash_provider)
+      isTRUE(self$.kii_fsl_provider) ||
+        isTRUE(self$.kii_health_provider) ||
+        isTRUE(self$.kii_nutrition_provider) ||
+        isTRUE(self$.kii_wash_provider)
     },
-    kii_wash_provider = function(value) {
+    .kii_wash_provider = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("kii_wash_service_provider")
+      private$..has_tool_role("kii_wash_service_provider")
     },
-    mortality_survey = function(value) {
+    .mortality_survey = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.household_has_any_indicator(c("10501", "10502"))
+      private$..household_has_any_indicator(c("10501", "10502"))
     },
-    muac_survey = function(value) {
+    .muac_survey = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.household_has_any_indicator(c("10701", "10702"))
+      private$..household_has_any_indicator(c("10701", "10702"))
     },
-    multiple_methods_no = function(value) {
+    .multiple_methods_no = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      methods <- private$.sample_methods_used()
+      methods <- private$..sample_methods_used()
       length(methods) == 1L
     },
-    multiple_methods_yes = function(value) {
+    .multiple_methods_yes = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      methods <- private$.sample_methods_used()
+      methods <- private$..sample_methods_used()
       length(methods) > 1L
     },
-    multiple_strata = function(value) {
+    .multiple_strata = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      st <- private$.sample_table_from_nested()
+      st <- private$..sample_table_from_nested()
       is.data.frame(st) && nrow(st) > 1L
     },
-    obs_community = function(value) {
+    .obs_community = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("obs_community")
+      private$..has_tool_role("obs_community")
     },
-    obs_crops_livestock = function(value) {
+    .obs_crops_livestock = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("obs_crop_livestock")
+      private$..has_tool_role("obs_crop_livestock")
     },
-    obs_health_facility = function(value) {
+    .obs_health_facility = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("obs_health_facility")
+      private$..has_tool_role("obs_health_facility")
     },
-    obs_latrines = function(value) {
+    .obs_latrines = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("obs_latrine")
+      private$..has_tool_role("obs_latrine")
     },
-    obs_service_providers = function(value) FALSE,
-    obs_water_point = function(value) {
+    .obs_service_providers = function(value) FALSE,
+    .obs_water_point = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.has_tool_role("obs_water_point")
+      private$..has_tool_role("obs_water_point")
     },
-    purposive_site_selection = function(value) {
+    .purposive_site_selection = function(value) {
       if (!missing(value)) return(invisible(FALSE))
-      private$.sample_has_any_method("purposive")
+      private$..sample_has_any_method("purposive")
     },
-    rate_individual_survey = function(value) FALSE,
-    rate_survey = function(value) FALSE,
-    rlc_household_selection = function(value) {
+    .rate_individual_survey = function(value) FALSE,
+    .rate_survey = function(value) FALSE,
+    .rlc_household_selection = function(value) {
       if (!missing(value)) return(invisible(FALSE))
       st <- tryCatch(
         self$access_nested(field = "sample_object", member = "get_sample_table"),
@@ -545,16 +545,16 @@ IPHRAProtocol <- R6::R6Class(
         "pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc"
       ))
     },
-    srs_household_selection = function(value) FALSE,
-    srs_site_selection = function(value) FALSE,
-    systematic_household_selection = function(value) FALSE,
-    systematic_site_selection = function(value) FALSE
+    .srs_household_selection = function(value) FALSE,
+    .srs_site_selection = function(value) FALSE,
+    .systematic_household_selection = function(value) FALSE,
+    .systematic_site_selection = function(value) FALSE
   ),
 
   private = list(
 
     # Named list: tool_name -> list(class = <class_name>, file = <xlsx_filename>)
-    .iphra_tools = list(
+    ..iphra_tools = list(
       tool_household_iphra_v2 = list(
         class = "HouseholdTool",
         file  = "tool_household_iphra_v2.xlsx"
@@ -605,7 +605,7 @@ IPHRAProtocol <- R6::R6Class(
       )
     ),
 
-    .sampling_conditional_keys = c(
+    ..sampling_conditional_keys = c(
       "srs_srs",
       "srs_systematic",
       "srs_rlc",
@@ -620,11 +620,11 @@ IPHRAProtocol <- R6::R6Class(
 
     # ── TOR generation private methods ─────────────────────────────────────
 
-    .default_template_filenames = function() {
+    ..default_template_filenames = function() {
       c("reach_tor_iphra_template.docx", "reach_tor_template.docx", "protocol_report_template.docx")
     },
 
-    .schema_metadata_key = function(tag) {
+    ..schema_metadata_key = function(tag) {
       key <- sub("^@", "", as.character(tag))
       aliases <- list(
         country = "country_name",
@@ -636,12 +636,12 @@ IPHRAProtocol <- R6::R6Class(
       aliases[[key]] %||% key
     },
 
-    .schema_metadata_value = function(tag) {
-      key <- private$.schema_metadata_key(tag)
+    ..schema_metadata_value = function(tag) {
+      key <- private$..schema_metadata_key(tag)
       if (key %in% names(self$metadata)) self$metadata[[key]] else NULL
     },
 
-    .has_tool_role = function(role) {
+    ..has_tool_role = function(role) {
       out <- tryCatch(
         self$access_nested(field = "tools", role = role, member = "get_name"),
         error = function(e) NULL
@@ -649,15 +649,15 @@ IPHRAProtocol <- R6::R6Class(
       is.character(out) && length(out) == 1L && nzchar(out)
     },
 
-    .sample_table_from_nested = function() {
+    ..sample_table_from_nested = function() {
       tryCatch(
         self$access_nested(field = "sample_object", member = "get_sample_table"),
         error = function(e) NULL
       )
     },
 
-    .sample_methods_used = function() {
-      st <- private$.sample_table_from_nested()
+    ..sample_methods_used = function() {
+      st <- private$..sample_table_from_nested()
       if (!is.data.frame(st) || !"sampling_method" %in% names(st)) {
         return(character(0))
       }
@@ -666,13 +666,13 @@ IPHRAProtocol <- R6::R6Class(
       unique(methods)
     },
 
-    .sample_has_any_method = function(methods) {
-      methods_used <- private$.sample_methods_used()
+    ..sample_has_any_method = function(methods) {
+      methods_used <- private$..sample_methods_used()
       length(intersect(methods_used, tolower(as.character(methods)))) > 0L
     },
 
-    .household_has_any_indicator = function(indicator_codes) {
-      if (!private$.has_tool_role("household")) return(FALSE)
+    ..household_has_any_indicator = function(indicator_codes) {
+      if (!private$..has_tool_role("household")) return(FALSE)
       hh_codes <- tryCatch(
         self$access_nested(field = "tools", role = "household", member = "get_indicator_codes"),
         error = function(e) character(0)
@@ -682,14 +682,14 @@ IPHRAProtocol <- R6::R6Class(
       length(intersect(hh_codes, as.character(indicator_codes))) > 0L
     },
 
-    initialize_conditional_metadata = function() {
-      schema_conditions <- private$.condition_keys_from_schema()
-      all_keys <- unique(c(private$.sampling_conditional_keys, schema_conditions))
+    ..initialize_conditional_metadata = function() {
+      schema_conditions <- private$..condition_keys_from_schema()
+      all_keys <- unique(c(private$..sampling_conditional_keys, schema_conditions))
       self$conditional_metadata <- setNames(as.list(rep(FALSE, length(all_keys))), all_keys)
       invisible(NULL)
     },
 
-    .condition_keys_from_schema = function() {
+    ..condition_keys_from_schema = function() {
       c(
         "Special Situations",
         "cluster_site_selection",
@@ -735,9 +735,9 @@ IPHRAProtocol <- R6::R6Class(
       )
     },
 
-    sync_sampling_conditional_metadata = function() {
+    ..sync_sampling_conditional_metadata = function() {
       if (!is.list(self$conditional_metadata) || length(self$conditional_metadata) == 0L) {
-        private$initialize_conditional_metadata()
+        private$..initialize_conditional_metadata()
       }
 
       methods_used <- character(0)
@@ -771,7 +771,7 @@ IPHRAProtocol <- R6::R6Class(
 
     #' @description Retrieve the framework master objectives schema.
     #' @return A data frame of master objectives; empty data frame when unavailable.
-    .get_master_schema = function() {
+    ..get_master_schema = function() {
       schema <- self$access_nested(field = "framework", member = "master_objectives_schema")
       if (is.null(schema) || !is.data.frame(schema)) return(data.frame())
       as.data.frame(schema, stringsAsFactors = FALSE)
@@ -781,7 +781,7 @@ IPHRAProtocol <- R6::R6Class(
     #' @param tool_names Optional character vector of tool names to query.
     #' @param prefer_revised Logical. When TRUE, prefer revised survey codes.
     #' @return Character vector of unique indicator codes.
-    .get_tool_indicator_codes = function(tool_names = NULL, prefer_revised = TRUE) {
+    ..get_tool_indicator_codes = function(tool_names = NULL, prefer_revised = TRUE) {
       selected <- self$get_tool_names()
       if (!is.null(tool_names)) {
         selected <- intersect(selected, as.character(tool_names))
@@ -804,7 +804,7 @@ IPHRAProtocol <- R6::R6Class(
       unique(out[nzchar(out)])
     },
 
-    .schema_flag_from_tag = function(tag) {
+    ..schema_flag_from_tag = function(tag) {
       key <- sub("^@", "", as.character(tag))
       if (grepl("^crisis_", key)) {
         if (key %in% c("crisis_natural_disaster", "crisis_conflict", "crisis_other")) {
@@ -857,11 +857,11 @@ IPHRAProtocol <- R6::R6Class(
         if (key == "sampling_hh_rlc") return(any(methods_used %in% c("pps_rlc", "simple_random_rlc", "systematic_rlc", "proportional_rlc")))
         if (key == "sampling_stratified") return(length(self$get_strata_names()) > 1)
       }
-      isTRUE(private$.schema_metadata_value(tag))
+      isTRUE(private$..schema_metadata_value(tag))
     },
 
     # Load survey/choices/settings from an xlsx path into an existing Tool object.
-    .load_tool_from_path = function(tool, path) {
+    ..load_tool_from_path = function(tool, path) {
       if (!file.exists(path)) return(invisible(NULL))
       available_sheets <- tryCatch(
         readxl::excel_sheets(path),
@@ -902,7 +902,7 @@ IPHRAProtocol <- R6::R6Class(
 
     # Load protocol_schema_iphra.xlsx into self$protocol_schema.
     # Expected columns are tag_name, handling, condition, default_value, and function_name.
-    .load_protocol_schema = function() {
+    ..load_protocol_schema = function() {
       schema_path <- tryCatch(
         system.file("resources", "protocol_schema_iphra.xlsx", package = "phr"),
         error = function(e) ""
@@ -927,13 +927,13 @@ IPHRAProtocol <- R6::R6Class(
       if (is.null(schema) || !all(required_cols %in% names(schema))) {
         return(invisible(NULL))
       }
-      schema <- private$.normalize_schema_tags(schema)
+      schema <- private$..normalize_schema_tags(schema)
       # Store schema for reference
       self$protocol_schema <- schema[required_cols]
       invisible(NULL)
     },
 
-    .normalize_schema_tags = function(schema) {
+    ..normalize_schema_tags = function(schema) {
       if (is.null(schema) || !is.data.frame(schema) || !"tag_name" %in% names(schema)) {
         return(schema)
       }

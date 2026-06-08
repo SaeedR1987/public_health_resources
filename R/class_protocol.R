@@ -187,14 +187,14 @@ Protocol <- R6::R6Class(
         self$tool_indicator_catalog_revised <- list()
         self$tool_objective_catalog_master <- list()
         self$tool_objective_catalog_revised <- list()
-        self$protocol_schema <- private$.load_protocol_schema()
+        self$protocol_schema <- private$..load_protocol_schema()
 
         self$framework <- if (framework_type == "ana") {
           ANAFramework$new()
         } else {
           Framework$new()
         }
-        private$.sync_state()
+        private$..sync_state()
 
         phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
       }, on_error = "abort", origin = "Protocol$initialize")
@@ -242,8 +242,8 @@ Protocol <- R6::R6Class(
         }
 
         self$tools[[tool_name]] <- tool
-        private$.sync_state()
-        private$.touch()
+        private$..sync_state()
+        private$..touch()
         self$diagnose_coherence()
         phr_message(
           phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
@@ -511,14 +511,36 @@ Protocol <- R6::R6Class(
         field = field, member = member, target_field = target_field,
         name = name, role = role
       )
-      private$.sync_framework_catalog_fields()
-      private$.sync_tool_indicator_catalog_fields()
+      private$..sync_framework_catalog_fields()
+      private$..sync_tool_indicator_catalog_fields()
       invisible(NULL)
     }
   ),
 
+  active = list(
+    .modified_framework_svg = function(value) {
+      if (!missing(value)) return(invisible(NULL))
+      svg_text <- tryCatch(
+        self$access_nested(field = "framework", member = "adjusted_svg"),
+        error = function(e) NULL
+      )
+      if (is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])) {
+        svg_text <- tryCatch(
+          self$access_nested(field = "framework", member = "master_svg"),
+          error = function(e) NULL
+        )
+      }
+      if (is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])) {
+        return(NULL)
+      }
+      tmp_svg <- tempfile(fileext = ".svg")
+      writeLines(svg_text[[1L]], con = tmp_svg)
+      tmp_svg
+    }
+  ),
+
   private = list(
-    .sync_framework_catalog_fields = function() {
+    ..sync_framework_catalog_fields = function() {
       master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
         self$framework$master_objectives_schema
       } else {
@@ -530,14 +552,14 @@ Protocol <- R6::R6Class(
         NULL
       }
 
-      self$framework_objective_catalog_master <- private$.build_objective_catalog(master_schema)
-      self$framework_objective_catalog_adjusted <- private$.build_objective_catalog(adjusted_schema)
-      self$framework_indicator_catalog_master <- private$.build_indicator_catalog(master_schema)
-      self$framework_indicator_catalog_adjusted <- private$.build_indicator_catalog(adjusted_schema)
+      self$framework_objective_catalog_master <- private$..build_objective_catalog(master_schema)
+      self$framework_objective_catalog_adjusted <- private$..build_objective_catalog(adjusted_schema)
+      self$framework_indicator_catalog_master <- private$..build_indicator_catalog(master_schema)
+      self$framework_indicator_catalog_adjusted <- private$..build_indicator_catalog(adjusted_schema)
       invisible(NULL)
     },
 
-    .sync_tool_indicator_catalog_fields = function() {
+    ..sync_tool_indicator_catalog_fields = function() {
       self$tool_indicator_catalog_master <- list()
       self$tool_indicator_catalog_revised <- list()
       self$tool_objective_catalog_master <- list()
@@ -558,14 +580,14 @@ Protocol <- R6::R6Class(
         self$tool_indicator_catalog_master[[tn]] <- master_codes
         self$tool_indicator_catalog_revised[[tn]] <- revised_codes
         self$tool_objective_catalog_master[[tn]] <-
-          private$.build_tool_objective_catalog(fw_schema, master_codes)
+          private$..build_tool_objective_catalog(fw_schema, master_codes)
         self$tool_objective_catalog_revised[[tn]] <-
-          private$.build_tool_objective_catalog(fw_schema, revised_codes)
+          private$..build_tool_objective_catalog(fw_schema, revised_codes)
       }
       invisible(NULL)
     },
 
-    .build_objective_catalog = function(schema) {
+    ..build_objective_catalog = function(schema) {
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) return(list())
       code_col <- if ("objective_code" %in% names(schema)) "objective_code" else
         if ("short_objective" %in% names(schema)) "short_objective" else NULL
@@ -599,7 +621,7 @@ Protocol <- R6::R6Class(
 
     # Build an objective catalog for a single tool by finding the objectives in
     # fw_schema whose indicator_code rows match the supplied indicator_codes.
-    .build_tool_objective_catalog = function(fw_schema, indicator_codes) {
+    ..build_tool_objective_catalog = function(fw_schema, indicator_codes) {
       if (is.null(fw_schema) || !is.data.frame(fw_schema) || nrow(fw_schema) == 0 ||
           length(indicator_codes) == 0L) {
         return(list())
@@ -611,10 +633,10 @@ Protocol <- R6::R6Class(
         , drop = FALSE
       ]
       if (nrow(matching_rows) == 0L) return(list())
-      private$.build_objective_catalog(matching_rows)
+      private$..build_objective_catalog(matching_rows)
     },
 
-    .build_indicator_catalog = function(schema) {
+    ..build_indicator_catalog = function(schema) {
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0 ||
           !"indicator_code" %in% names(schema)) return(list())
       codes <- as.character(schema$indicator_code)

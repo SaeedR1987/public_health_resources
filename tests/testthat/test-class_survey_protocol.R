@@ -873,7 +873,7 @@ test_that("Protocol-level .replace matches exact tag tokens only", {
   doc <- officer::body_add_par(doc, "@this_is_a_tag", style = "Normal")
   doc <- officer::body_add_par(doc, "@this_is_a", style = "Normal")
 
-  doc <- p$.__enclos_env__$private$.replace(
+  doc <- p$.__enclos_env__$private$..replace(
     doc,
     "@this_is_a",
     "REPLACED_SHORT"
