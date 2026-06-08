@@ -285,6 +285,8 @@ Document <- R6::R6Class(
       if (is.function(value)) {
         value <- tryCatch(value(), error = function(e) NULL)
       }
+      # For calculate rows, booleans are treated as control signals (apply/skip)
+      # and are not inserted as document values.
       if (is.null(value) || isTRUE(value) || identical(value, FALSE)) {
         return(doc)
       }
@@ -652,7 +654,6 @@ Document <- R6::R6Class(
       condition <- trimws(as.character(row$condition[[1L]] %||% ""))
       if (!nzchar(condition)) return(TRUE)
       value <- private$.evaluate_condition_row(row)
-      if (!isTRUE(value) && !identical(value, FALSE)) return(FALSE)
       isTRUE(value)
     },
 
