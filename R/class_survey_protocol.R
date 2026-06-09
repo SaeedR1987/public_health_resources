@@ -282,6 +282,27 @@ SurveyProtocol <- R6::R6Class(
 
   ),
 
+  active = list(
+    .num_geographic_units = function(value) {
+
+    },
+    .num_strata_units = function(value) {
+
+    },
+    .num_other_units = function(value) {
+
+    },
+    .precision_gen_indicator = function(value) {
+
+    },
+    .precision_ind_indicator = function(value) {
+
+    },
+    .precision_rate_indicator = function(value) {
+
+    },
+  ),
+
   private = list(
     ..post_sync_guard = FALSE,
 

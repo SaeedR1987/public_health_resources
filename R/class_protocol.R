@@ -107,26 +107,30 @@ Protocol <- R6::R6Class(
       mandating_body = NULL,
       project_code = NULL,
       overall_timeframe = NULL,
+      pilot_date = NULL,
+      data_start_date = NULL,
+      data_end_date = NULL,
+      analysis_date = NULL,
+      data_validation_date = NULL,
+      prelim_presentation_date = NULL,
+      output_validation_date = NULL,
+      output_published_date = NULL,
+      final_presentation_date = NULL,
+      date_milestone_donor = NULL,
+      date_milestone_intercluster = NULL,
+      date_milestone_cluster = NULL,
+      date_milestone_ngo_platform = NULL,
+      date_milestone_other = NULL,
       geographic_coverage = NULL,
-      general_objective = NULL,
-      sampling_strata_names = character(0),
-      sampling_method_flags = list(),
-      # Audience type boolean fields
-      `audience_type.strategic` = FALSE,
-      `audience_type.operational` = FALSE,
-      `audience_type.programmatic` = FALSE,
-      `audience_type.other` = FALSE,
-      # Population boolean fields
-      `pop_idpcamp` = FALSE,
-      `pop_idphost` = FALSE,
-      `pop_idpinformal` = FALSE,
-      `pop_idpother` = FALSE,
-      `pop_refugee` = FALSE,
-      `pop_refugeeinformal` = FALSE,
-      `pop_refugeehost` = FALSE,
-      `pop_refugeeother` = FALSE,
-      `pop_host` = FALSE,
-      `pop_other` = FALSE
+      num_report = NULL,
+      num_profile = NULL,
+      num_prelim_presentation = NULL,
+      num_final_presentation = NULL,
+      num_factsheet = NULL,
+      num_dashboard = NULL,
+      num_webmap = NULL,
+      num_map = NULL,
+      num_output_other = NULL
     ),
 
     #' @field conditional_metadata Named list of boolean flags used for
@@ -518,6 +522,20 @@ Protocol <- R6::R6Class(
   ),
 
   active = list(
+    .release_date = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      Sys.Date()
+    },
+    .specific_objectives = function(value) {
+
+    },
+    .research_questions =  function(value) {
+
+    },
+    .list_secondary_data = function(value) {
+
+    },
+
     .modified_framework_svg = function(value) {
       if (!missing(value)) return(invisible(NULL))
       svg_text <- tryCatch(

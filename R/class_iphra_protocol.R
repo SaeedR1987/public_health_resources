@@ -425,7 +425,187 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   active = list(
-    `.Special Situations` = function(value) FALSE,
+    .kii_community_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$..has_tool_role("kii_community")
+    },
+    .kii_fsl_provider_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$..has_tool_role("kii_fsl_service_provider")
+    },
+    .kii_health_provider_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$..has_tool_role("kii_health_service_provider")
+    },
+    .kii_nutrition_provider_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$..has_tool_role("kii_nutrition_service_provider")
+    },
+    .kii_service_providers_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      isTRUE(self$.kii_fsl_provider) ||
+        isTRUE(self$.kii_health_provider) ||
+        isTRUE(self$.kii_nutrition_provider) ||
+        isTRUE(self$.kii_wash_provider)
+    },
+    .kii_wash_provider_yes = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$..has_tool_role("kii_wash_service_provider")
+    },
+    .kii_community_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      private$..has_tool_role("kii_community")
+    },
+    .kii_fsl_provider_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      !private$..has_tool_role("kii_fsl_service_provider")
+    },
+    .kii_health_provider_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      !private$..has_tool_role("kii_health_service_provider")
+    },
+    .kii_nutrition_provider_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      !private$..has_tool_role("kii_nutrition_service_provider")
+    },
+    .kii_service_providers_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      !(isTRUE(self$.kii_fsl_provider) ||
+        isTRUE(self$.kii_health_provider) ||
+        isTRUE(self$.kii_nutrition_provider) ||
+        isTRUE(self$.kii_wash_provider))
+    },
+    .kii_wash_provider_no = function(value) {
+      if (!missing(value)) return(invisible(FALSE))
+      !private$..has_tool_role("kii_wash_service_provider")
+    },
+    .num_kii_community_target = function(value) {
+
+    },
+    .num_kii_health_target = function(value) {
+
+    },
+    .num_kii_market_target = function(value) {
+
+    },
+    .num_kii_fsl_target = function(value) {
+
+    },
+    .num_kii_wash_target = function(value) {
+
+    },
+    .num_kii_nutrition_target = function(value) {
+
+    },
+    .num_obs_community_target = function(value) {
+
+    },
+    .num_obs_health_target = function(value) {
+
+    },
+    .num_obs_latrine_target = function(value) {
+
+    },
+    .num_obs_water_target = function(value) {
+
+    },
+    .num_obs_crops_livestock_target = function(value) {
+
+    },
+    .stratified_strata_names_srs_srs = function(value) {
+
+    },
+    .stratified_strata_names_srs_systematic = function(value) {
+
+    },
+    .stratified_strata_names_srs_rlc = function(value) {
+
+    },
+    .stratified_strata_names_systematic_srs = function(value) {
+
+    },
+    .stratified_strata_names_systematic_systematic = function(value) {
+
+    },
+    .stratified_strata_names_systematic_rlc = function(value) {
+
+    },
+    .stratified_strata_names_proportional_srs = function(value) {
+
+    },
+    .stratified_strata_names_proportional_systematic = function(value) {
+
+    },
+    .stratified_strata_names_proportional_rlc = function(value) {
+
+    },
+    .stratified_strata_names_cluster_srs = function(value) {
+
+    },
+    .stratified_strata_names_cluster_systematic = function(value) {
+
+    },
+    .stratified_strata_names_cluster_rlc = function(value) {
+
+    },
+    .stratified_strata_names_purposive_srs = function(value) {
+
+    },
+    .stratified_strata_names_purposive_systematic = function(value) {
+
+    },
+    .stratified_strata_names_purposive_rlc = function(value) {
+
+    },
+    .total_population_size = function(value) {
+
+    },
+    .total_population_size_strata = function(value) {
+
+    },
+    .sample_size_gen = function(value) {
+
+    },
+    .sample_size_rate_persons = function(value) {
+
+    },
+    .sample_size_rate_persontime = function(value) {
+
+    },
+    .sample_size_rate_hh = function(value) {
+
+    },
+    .sample_size_ind_persons = function(value) {
+
+    },
+    .sample_size_ind_hh = function(value) {
+
+    },
+    .sample_size_hh_final = function(value) {
+
+    },
+    .ind_indicator = function(value) {
+
+    },
+    .rate_indicator = function(value) {
+
+    },
+    .r_version = function(value) {
+      version$version.string
+    },
+    .strata_names = function(value) {
+
+    },
+    .cluster_size = function(value) {
+
+    },
+    .num_enumerators_per_team = function(value) {
+
+    },
+    .num_days_data_collection = function(value) {
+
+    },
+
     .cluster_site_selection = function(value) {
       if (!missing(value)) return(invisible(FALSE))
       private$..sample_has_any_method(c("pps_cluster", "pps_rlc"))
@@ -454,33 +634,7 @@ IPHRAProtocol <- R6::R6Class(
     .ind_muac_plw = function(value) FALSE,
     .ind_vitamin_a_coverage = function(value) FALSE,
     .individual_survey = function(value) FALSE,
-    .kii_community = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
-      private$..has_tool_role("kii_community")
-    },
-    .kii_fsl_provider = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
-      private$..has_tool_role("kii_fsl_service_provider")
-    },
-    .kii_health_provider = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
-      private$..has_tool_role("kii_health_service_provider")
-    },
-    .kii_nutrition_provider = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
-      private$..has_tool_role("kii_nutrition_service_provider")
-    },
-    .kii_service_providers = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
-      isTRUE(self$.kii_fsl_provider) ||
-        isTRUE(self$.kii_health_provider) ||
-        isTRUE(self$.kii_nutrition_provider) ||
-        isTRUE(self$.kii_wash_provider)
-    },
-    .kii_wash_provider = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
-      private$..has_tool_role("kii_wash_service_provider")
-    },
+
     .mortality_survey = function(value) {
       if (!missing(value)) return(invisible(FALSE))
       private$..household_has_any_indicator(c("10501", "10502"))
