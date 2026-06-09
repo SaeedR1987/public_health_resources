@@ -531,58 +531,71 @@ test_that("Tool mutating methods update metadata$modified_datetime", {
   expect_true(t$metadata$modified_datetime >= before)
 })
 
-test_that("Protocol tool_* delegation methods target a specific tool", {
+test_that("Protocol generalized nested accessor targets a specific tool", {
   p <- Protocol$new()
   p$add_tools("generic", tool_name = "my_tool")
 
-  expect_equal(p$tool_get_name("my_tool"), "my_tool")
-  expect_equal(p$tool_get_type("my_tool"), "generic")
+  expect_equal(p$access_nested("tools", "my_tool", "get_name"), "my_tool")
+  expect_equal(p$access_nested("tools", "my_tool", "get_tool_type"), "generic")
 
-  p$tool_set_name("my_tool", "renamed_tool")
-  expect_equal(p$tool_get_name("my_tool"), "renamed_tool")
+  p$access_nested("tools", "my_tool", "set_name", "renamed_tool")
+  expect_equal(p$access_nested("tools", "my_tool", "get_name"), "renamed_tool")
 
-  expect_silent(p$tool_change_default_language("my_tool", "english"))
+  expect_silent(p$access_nested("tools", "my_tool", "change_default_language", "english"))
   expect_equal(
-    p$tool_get_survey("my_tool", survey_type = "master"),
+    p$access_nested("tools", "my_tool", "survey"),
     p$tools[["my_tool"]]$survey
   )
   expect_equal(
-    p$tool_get_choices("my_tool", choices_type = "master"),
+    p$access_nested("tools", "my_tool", "choices"),
     p$tools[["my_tool"]]$choices
   )
-  expect_true(is.integer(p$tool_get_indicator_codes("my_tool", survey_type = "master")))
-  expect_equal(p$tool_get_selected_indicators("my_tool"), character(0))
+  expect_true(is.integer(p$access_nested("tools", "my_tool", "get_indicator_codes", prefer_revised = FALSE)))
+  expect_equal(p$access_nested("tools", "my_tool", "get_selected_indicators"), character(0))
 
-  p$tool_set_selected_indicators("my_tool", c("a", "b"))
-  expect_equal(p$tool_get_selected_indicators("my_tool"), c("a", "b"))
+  p$access_nested("tools", "my_tool", "set_selected_indicators", c("a", "b"))
+  expect_equal(p$access_nested("tools", "my_tool", "get_selected_indicators"), c("a", "b"))
 
-  p$tool_update_settings("my_tool", "form_title", "Test Form")
+  p$access_nested("tools", "my_tool", "update_settings", key = "form_title", value = "Test Form")
   expect_equal(p$tools[["my_tool"]]$settings$form_title[1], "Test Form")
 
   new_choices <- data.frame(name = c("a", "b"), label = c("A", "B"),
                             stringsAsFactors = FALSE)
-  p$tool_update_choice_list("my_tool", "my_list", new_choices)
+  p$access_nested(
+    "tools", "my_tool", "update_choice_list",
+    list_name = "my_list", new_choices = new_choices
+  )
   expect_true(any(p$tools[["my_tool"]]$revised_choices$list_name == "my_list"))
 
-  expect_silent(p$tool_filter_survey_by_indicator("my_tool", "10000"))
-  expect_true(is.data.frame(p$tool_get_survey("my_tool", survey_type = "revised")))
+  expect_silent(p$access_nested("tools", "my_tool", "filter_survey_by_indicator", "10000"))
+  expect_true(is.data.frame(p$access_nested("tools", "my_tool", "revised_survey")))
 })
 
-test_that("Protocol tool_* methods touch protocol modified_datetime", {
+test_that("Protocol nested accessor touches protocol modified_datetime", {
   p <- Protocol$new()
   p$add_tools("generic", tool_name = "my_tool")
   before <- p$metadata$modified_datetime
   Sys.sleep(0.01)
-  p$tool_get_name("my_tool")
+  p$access_nested("tools", "my_tool", "get_name")
   expect_true(p$metadata$modified_datetime >= before)
 })
 
-test_that("Protocol tool validation delegation methods return logical/list outputs", {
+test_that("Protocol nested accessor tool validation calls return logical/list outputs", {
   p <- Protocol$new()
   p$add_tools("generic", tool_name = "my_tool")
-  expect_type(p$tool_validate("my_tool"), "logical")
-  expect_type(p$tool_get_is_valid("my_tool"), "logical")
-  expect_true(is.list(p$tool_get_validation_errors("my_tool")))
+  expect_type(p$access_nested("tools", "my_tool", "validate"), "logical")
+  expect_type(p$access_nested("tools", "my_tool", "is_valid"), "logical")
+  expect_true(is.list(p$access_nested("tools", "my_tool", "get_validation_errors")))
+})
+
+test_that("Protocol nested accessor supports role-based lookup for list fields", {
+  p <- Protocol$new()
+  p$add_tools("household", tool_name = "tool_household_iphra_v2")
+
+  expect_equal(
+    p$access_nested(field = "tools", role = "household", member = "get_name"),
+    "tool_household_iphra_v2"
+  )
 })
 
 test_that("Framework$render_framework_svg errors when no SVG is set", {
@@ -882,6 +895,37 @@ test_that("Framework$modify_adjusted_schema(NULL) falls back to all rows when no
   fw$set_master_schema(schema)
   fw$modify_adjusted_schema()
   expect_equal(nrow(fw$modified_objectives_schema), 2)
+})
+
+test_that("Framework set_primary_indicators and set_secondary_indicators accept vectors/lists", {
+  fw <- Framework$new()
+  fw$set_primary_indicators(c("1001", "1002"))
+  fw$set_secondary_indicators(list("2001", "2002"))
+
+  expect_equal(fw$primary_indicator_codes, c("1001", "1002"))
+  expect_equal(fw$secondary_indicator_codes, c("2001", "2002"))
+})
+
+test_that("Framework builds modified primary/secondary indicator caches from adjusted schema", {
+  fw <- Framework$new()
+  fw$set_master_schema(data.frame(
+    sector = "Health",
+    pillar = "P1",
+    sub_pillar = "SP1",
+    short_objective = c("H1", "H2"),
+    text_objective = c("Obj 1", "Obj 2"),
+    objective_code = c(101L, 102L),
+    indicator_code = c("1001", "2001"),
+    stringsAsFactors = FALSE
+  ))
+  fw$set_primary_objectives(101L)
+  fw$set_secondary_objectives(102L)
+  fw$modify_adjusted_schema(c(101L, 102L))
+
+  expect_true(is.data.frame(fw$modified_primary_indicator_codes))
+  expect_true(is.data.frame(fw$modified_secondary_indicator_codes))
+  expect_equal(fw$modified_primary_indicator_codes$indicator_code, "1001")
+  expect_equal(fw$modified_secondary_indicator_codes$indicator_code, "2001")
 })
 
 # ---- Protocol renamed catalog fields ----

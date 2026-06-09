@@ -174,7 +174,7 @@ test_that("Protocol touch updates modified_datetime via update_metadata", {
   expect_true(p$metadata$modified_datetime > t_before)
 })
 
-test_that("Protocol$framework_get_schema returns data frame from framework", {
+test_that("Protocol can access framework schema via access_nested", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -183,12 +183,12 @@ test_that("Protocol$framework_get_schema returns data frame from framework", {
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  schema <- p$framework_get_schema("master")
+  schema <- p$access_nested(field = "framework", member = "master_objectives_schema")
   expect_true(is.data.frame(schema))
   expect_true(nrow(schema) > 0)
 })
 
-test_that("Protocol$framework_get_indicator_codes_from_schema returns character vector", {
+test_that("Protocol can derive indicator codes from framework schema via access_nested", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -197,7 +197,9 @@ test_that("Protocol$framework_get_indicator_codes_from_schema returns character 
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  codes <- p$framework_get_indicator_codes_from_schema("master")
+  schema <- p$access_nested(field = "framework", member = "master_objectives_schema")
+  codes <- unique(as.character(schema$indicator_code))
+  codes <- codes[!is.na(codes) & nzchar(codes)]
   expect_true(is.character(codes))
   expect_true(length(codes) > 0)
 })
@@ -224,14 +226,29 @@ test_that("Protocol$is_tool_included returns TRUE after add_tools", {
   expect_true(p$is_tool_included("tool_household_iphra_v2"))
 })
 
-test_that("Protocol$get_indicator_codes_from_tools returns character vector", {
+test_that("Protocol can derive indicator codes from tools via access_nested", {
   p <- IPHRAProtocol$new()
   p$add_tools("tool_kii_community_iphra_v2")
-  codes <- p$get_indicator_codes_from_tools()
+  tool_names <- p$get_tool_names()
+  codes <- character(0)
+  for (tn in tool_names) {
+    codes <- c(
+      codes,
+      as.character(
+        p$access_nested(
+          field = "tools",
+          name = tn,
+          member = "get_indicator_codes",
+          prefer_revised = TRUE
+        )
+      )
+    )
+  }
+  codes <- unique(codes[nzchar(codes)])
   expect_true(is.character(codes))
 })
 
-test_that("Protocol$framework_get_schema_for_indicator_codes filters schema rows", {
+test_that("Protocol can filter framework schema rows without wrapper methods", {
   skip_if_not(
     (file.exists(system.file("resources", "reference_objectives.xlsx", package = "phr")) ||
        file.exists(file.path("resources", "reference_objectives.xlsx"))) &&
@@ -240,10 +257,12 @@ test_that("Protocol$framework_get_schema_for_indicator_codes filters schema rows
     "reference_objectives.xlsx or reference_indicator_bank.xlsx not available"
   )
   p <- IPHRAProtocol$new()
-  all_codes <- p$framework_get_indicator_codes_from_schema("master")
+  master_schema <- p$access_nested(field = "framework", member = "master_objectives_schema")
+  all_codes <- unique(as.character(master_schema$indicator_code))
+  all_codes <- all_codes[!is.na(all_codes) & nzchar(all_codes)]
   if (length(all_codes) >= 2) {
     sub_codes <- all_codes[1:2]
-    filtered  <- p$framework_get_schema_for_indicator_codes(sub_codes)
+    filtered  <- master_schema[as.character(master_schema$indicator_code) %in% sub_codes, , drop = FALSE]
     expect_true(is.data.frame(filtered))
     expect_true(nrow(filtered) > 0)
     expect_true(all(as.character(filtered$indicator_code) %in% sub_codes))
@@ -332,15 +351,20 @@ test_that("IPHRAProtocol add_stratum updates num_strata_units", {
   expect_equal(p$metadata$num_strata_units, 2L)
 })
 
-test_that("IPHRAProtocol sample_remove_stratum updates num_strata_units", {
+test_that("IPHRAProtocol access_nested remove_stratum updates num_strata_units", {
   p <- IPHRAProtocol$new()
-  p$sample_add_stratum(stratum_id = "north", stratum_name = "Northern Region", sampling_method = "purposive")
-  p$sample_add_stratum(stratum_id = "south", stratum_name = "Southern Region", sampling_method = "purposive")
+  p$access_nested(field = "sample_object", member = "add_stratum",
+                  stratum_id = "north", stratum_name = "Northern Region", sampling_method = "purposive")
+  p$access_nested(field = "sample_object", member = "add_stratum",
+                  stratum_id = "south", stratum_name = "Southern Region", sampling_method = "purposive")
 
-  p$sample_remove_stratum("Northern Region")
+  p$access_nested(field = "sample_object", member = "remove_stratum", "Northern Region")
 
   expect_equal(p$metadata$num_strata_units, 1L)
-  expect_equal(p$sample_get_strata_names(), "Southern Region")
+  expect_equal(
+    p$access_nested(field = "sample_object", member = "get_strata_names"),
+    "Southern Region"
+  )
 })
 
 test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_value", {
@@ -350,7 +374,7 @@ test_that("IPHRAProtocol schema 'replace' handling uses protocol_schema default_
   schema <- p$protocol_schema
   row <- schema[schema$tag_name == "@tor_title", c("tag_name", "handling", "condition", "default_value"), drop = FALSE]
   expect_gt(nrow(row), 0L, info = "Expected @tor_title in protocol_schema.")
-  doc <- p$.__enclos_env__$private$handle_replace(doc, row[1, , drop = FALSE])
+  doc <- p$.__enclos_env__$private$..handle_replace(doc, row[1, , drop = FALSE])
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(
     xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
@@ -371,7 +395,7 @@ test_that("IPHRAProtocol .replace avoids replacing tag prefixes in longer placeh
   doc <- officer::body_add_par(doc, "@sample_size_hh_ind_table", style = "Normal")
   doc <- officer::body_add_par(doc, "@sample_size_hh_ind", style = "Normal")
 
-  doc <- p$.__enclos_env__$private$.replace(
+  doc <- p$.__enclos_env__$private$..replace(
     doc,
     "@sample_size_hh_ind",
     "placeholder ind sampling"
@@ -400,7 +424,7 @@ test_that("replace_tag_in_cell preserves item order for objective headers and bu
     list(text = "\u2022 Crowdedness", bold = FALSE, space_before_pt = 0L, space_after_pt = 0L, font_size_pt = 10L)
   )
 
-  ok <- p$.__enclos_env__$private$.replace_tag_in_cell(doc, "@specific_objectives", items)
+  ok <- p$.__enclos_env__$private$..replace_tag_in_cell(doc, "@specific_objectives", items)
   expect_true(ok)
 
   body_xml <- officer::docx_body_xml(doc)
@@ -463,30 +487,153 @@ test_that("IPHRAProtocol syncs sampling conditional_metadata from sample_table",
   expect_true(isTRUE(p$conditional_metadata$purposive))
 })
 
-test_that("IPHRAProtocol conditional_replace uses conditional_metadata and skips empty condition", {
+test_that("IPHRAProtocol conditional handling uses active bindings and runs empty conditions", {
   p <- IPHRAProtocol$new()
-  p$conditional_metadata$srs_srs <- TRUE
-  p$conditional_metadata$srs_systematic <- FALSE
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "simple_random"
+  )
 
   rows <- data.frame(
     tag_name = c("@tag_true", "@tag_false", "@tag_empty"),
     handling = rep("conditional_replace", 3),
     condition = c("srs_srs", "srs_systematic", ""),
     default_value = c("YES", "NO", "EMPTY"),
-    stringsAsFactors = FALSE
+   function_name = c("", "", ""),
+   stringsAsFactors = FALSE
   )
 
   doc <- officer::read_docx()
   doc <- officer::body_add_par(doc, "@tag_true", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_false", style = "Normal")
   doc <- officer::body_add_par(doc, "@tag_empty", style = "Normal")
-  doc <- p$.__enclos_env__$private$handle_conditional_replace(doc, rows)
+  doc <- p$.__enclos_env__$private$..apply_protocol_schema_sections(doc, rows)
 
   body_xml <- officer::docx_body_xml(doc)
   txt <- paste(xml2::xml_text(xml2::xml_find_all(body_xml, ".//w:t", xml2::xml_ns(body_xml))),
-               collapse = "")
+              collapse = "")
 
   expect_true(grepl("YES", txt, fixed = TRUE))
   expect_true(grepl("@tag_false", txt, fixed = TRUE))
-  expect_true(grepl("@tag_empty", txt, fixed = TRUE))
+  expect_true(grepl("EMPTY", txt, fixed = TRUE))
+  expect_false(grepl("@tag_empty", txt, fixed = TRUE))
+})
+
+test_that("IPHRAProtocol active bindings detect requested tool states", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$.kii_community))
+  expect_false(isTRUE(p$.kii_service_providers))
+
+  p$add_tools("tool_kii_community_iphra_v2")
+  p$add_tools("tool_kii_fsl_service_provider_iphra_v2")
+  expect_true(isTRUE(p$.kii_community))
+  expect_true(isTRUE(p$.kii_fsl_provider))
+  expect_true(isTRUE(p$.kii_service_providers))
+})
+
+test_that("IPHRAProtocol ind_ecfies and rlc_household_selection bindings evaluate from nested state", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$.ind_ecfies))
+  expect_false(isTRUE(p$.rlc_household_selection))
+
+  p$add_tools("tool_household_iphra_v2")
+  p$set_nested(
+    field = "tools",
+    role = "household",
+    member = "revised_survey",
+    value = data.frame(indicator_code = c("10801"), stringsAsFactors = FALSE)
+  )
+  expect_true(isTRUE(p$.ind_ecfies))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "pps_rlc",
+    n_sites = 1
+  )
+  expect_true(isTRUE(p$.rlc_household_selection))
+})
+
+test_that("IPHRAProtocol sampling active bindings evaluate from nested sample object", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$.cluster_site_selection))
+  expect_false(isTRUE(p$.exhaustive_site_selection))
+  expect_false(isTRUE(p$.purposive_site_selection))
+  expect_false(isTRUE(p$.multiple_methods_yes))
+  expect_false(isTRUE(p$.multiple_strata))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s1",
+    stratum_name = "S1",
+    sampling_method = "proportional"
+  )
+  expect_true(isTRUE(p$.exhaustive_site_selection))
+  expect_true(isTRUE(p$.multiple_methods_no))
+  expect_false(isTRUE(p$.multiple_methods_yes))
+  expect_false(isTRUE(p$.multiple_strata))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s2",
+    stratum_name = "S2",
+    sampling_method = "pps_cluster"
+  )
+  expect_true(isTRUE(p$.cluster_site_selection))
+  expect_true(isTRUE(p$.multiple_methods_yes))
+  expect_false(isTRUE(p$.multiple_methods_no))
+  expect_true(isTRUE(p$.multiple_strata))
+
+  p$access_nested(
+    field = "sample_object",
+    member = "add_stratum",
+    stratum_id = "s3",
+    stratum_name = "S3",
+    sampling_method = "purposive"
+  )
+  expect_true(isTRUE(p$.purposive_site_selection))
+})
+
+test_that("IPHRAProtocol indicator and observation active bindings evaluate from nested tools", {
+  p <- IPHRAProtocol$new()
+  expect_false(isTRUE(p$.mortality_survey))
+  expect_false(isTRUE(p$.muac_survey))
+  expect_false(isTRUE(p$.obs_community))
+  expect_false(isTRUE(p$.obs_crops_livestock))
+  expect_false(isTRUE(p$.obs_health_facility))
+  expect_false(isTRUE(p$.obs_latrines))
+  expect_false(isTRUE(p$.obs_water_point))
+
+  p$add_tools("tool_household_iphra_v2")
+  p$set_nested(
+    field = "tools",
+    role = "household",
+    member = "revised_survey",
+    value = data.frame(indicator_code = c("10501", "10702"), stringsAsFactors = FALSE)
+  )
+  expect_true(isTRUE(p$.mortality_survey))
+  expect_true(isTRUE(p$.muac_survey))
+
+  p$add_tools("tool_obs_community_iphra_v2")
+  p$add_tools("tool_obs_crop_livestock_iphra_v1")
+  p$add_tools("tool_obs_health_facility_iphra_v2")
+  p$add_tools("tool_obs_latrine_iphra_v2")
+  p$add_tools("tool_obs_water_point_iphra_v2")
+  expect_true(isTRUE(p$.obs_community))
+  expect_true(isTRUE(p$.obs_crops_livestock))
+  expect_true(isTRUE(p$.obs_health_facility))
+  expect_true(isTRUE(p$.obs_latrines))
+  expect_true(isTRUE(p$.obs_water_point))
+})
+
+test_that("Protocol objects inherit cached document field from Document base class", {
+  p <- Protocol$new()
+  expect_true(inherits(p$document, "rdocx"))
 })

@@ -12,6 +12,12 @@ Sample <- R6::R6Class(
     #' @field sample_table Data frame with one row per stratum.
     sample_table = NULL,
 
+    #' @field drawn_sample Data frame with selected PSUs.
+    drawn_sample = NULL,
+
+    #' @field drawn_sample_full Full sampled frame with annotations.
+    drawn_sample_full = NULL,
+
     #' @field metadata List containing sample metadata.
     metadata = list(
       created_datetime = NULL,
@@ -38,21 +44,21 @@ Sample <- R6::R6Class(
     set_sample_table = function(sample_table) {
       phr_validate_dataframe(sample_table, origin = "Sample$set_sample_table", soft = FALSE)
       self$sample_table <- as.data.frame(sample_table, stringsAsFactors = FALSE)
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
     #' @description Return the current sample table data frame.
     get_sample_table = function() {
       out <- self$sample_table
-      private$touch()
+      private$.touch()
       out
     },
 
     #' @description Clear sample table data.
     clear_sample_table = function() {
       self$sample_table <- NULL
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -220,7 +226,7 @@ Sample <- R6::R6Class(
         self$sample_table <- rbind(self$sample_table, new_row)
       }
 
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -235,7 +241,7 @@ Sample <- R6::R6Class(
 
       st <- self$sample_table
       if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        private$touch()
+        private$.touch()
         return(invisible(self))
       }
 
@@ -248,7 +254,7 @@ Sample <- R6::R6Class(
 
       keep_rows <- as.character(st[[stratum_col]]) != strata_name
       self$sample_table <- st[keep_rows, , drop = FALSE]
-      private$touch()
+      private$.touch()
       invisible(self)
     },
 
@@ -256,7 +262,7 @@ Sample <- R6::R6Class(
     #' @return Logical.
     validate_strata_table = function() {
       out <- validate_strata_table(self$sample_table)
-      private$touch()
+      private$.touch()
       out
     },
 
@@ -268,20 +274,170 @@ Sample <- R6::R6Class(
         origin  = "Sample$calculate_sample_sizes"
       )
       self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
-      private$touch()
+      private$.touch()
       invisible(self)
+    },
+
+    #' @description Draw a sample from a sampling frame.
+    #' @param frame Data frame sampling frame.
+    #' @param strata_table Optional strata table. Defaults to \code{sample_table}.
+    #' @param seed Integer random seed.
+    #' @return Invisibly returns \code{self}.
+    draw_sample = function(frame, strata_table = NULL, seed = 42) {
+      phr_validate_dataframe(frame, origin = "Sample$draw_sample", soft = FALSE)
+
+      if (is.null(strata_table)) {
+        strata_table <- self$sample_table
+      }
+      phr_validate_dataframe(strata_table, origin = "Sample$draw_sample", soft = FALSE)
+      phr_assert(
+        "sampling_method" %in% names(strata_table),
+        message = phr_txt("strata_table must contain a 'sampling_method' column."),
+        origin  = "Sample$draw_sample"
+      )
+
+      for (col in c("n_psu", "cluster_size", "n_sites", "Final_HH_Sample_Size")) {
+        if (!col %in% names(strata_table)) strata_table[[col]] <- NA_real_
+      }
+
+      if ("inclusion" %in% names(frame)) {
+        eligible_rows <- which(!is.na(frame$inclusion) & frame$inclusion)
+      } else {
+        eligible_rows <- seq_len(nrow(frame))
+      }
+      eligible_frame <- frame[eligible_rows, , drop = FALSE]
+      frame$sampled_psu <- NA_character_
+      frame$allocated_sample <- NA_real_
+
+      is_stratified <- ("stratum" %in% names(eligible_frame)) &&
+        ("stratum_id" %in% names(strata_table)) &&
+        (nrow(strata_table) > 1L || !is.null(strata_table$stratum_id))
+
+      if (is_stratified) {
+        strata_ids <- unique(strata_table$stratum_id)
+        cluster_offset <- 0L
+
+        for (st_id in strata_ids) {
+          st_row <- strata_table[strata_table$stratum_id == st_id, , drop = FALSE]
+          if (nrow(st_row) == 0L) next
+
+          st_eligible_rows <- which(eligible_frame$stratum == st_id)
+          if (length(st_eligible_rows) == 0L) {
+            phr_warning(
+              message = phr_txt("Stratum '{st_id}' not found in sampling frame — skipping."),
+              origin  = "Sample$draw_sample"
+            )
+            next
+          }
+          st_frame <- eligible_frame[st_eligible_rows, , drop = FALSE]
+          st_params <- private$params_from_strata_row(st_row, nrow(st_frame), nrow(eligible_frame))
+          st_result <- tryCatch(
+            private$apply_sampling_method(
+              frame = st_frame,
+              method = st_params$method,
+              sample_size = st_params$sample_size,
+              n_psu = st_params$n_psu,
+              n_sites = st_params$n_sites,
+              cluster_size = st_params$cluster_size,
+              seed = seed
+            ),
+            error = function(e) {
+              phr_warning(
+                message = phr_txt("Sampling for stratum '{st_id}' failed and will be skipped: {conditionMessage(e)}"),
+                origin  = "Sample$draw_sample"
+              )
+              NULL
+            }
+          )
+          if (is.null(st_result)) next
+
+          sel_mask <- !is.na(st_result$sampled_psu)
+          if (any(sel_mask)) {
+            parse_cluster_labels <- function(s) {
+              parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
+              nums <- suppressWarnings(as.integer(parts))
+              nums[!is.na(nums)]
+            }
+            apply_cluster_offset <- function(s, offset) {
+              parts <- trimws(strsplit(as.character(s), ",\\s*")[[1]])
+              vapply(parts, function(p) {
+                n <- suppressWarnings(as.integer(p))
+                if (is.na(n)) p else as.character(n + offset)
+              }, character(1), USE.NAMES = FALSE)
+            }
+            st_result$sampled_psu[sel_mask] <- vapply(
+              st_result$sampled_psu[sel_mask],
+              function(s) paste(apply_cluster_offset(s, cluster_offset), collapse = ", "),
+              character(1)
+            )
+            all_nums <- unlist(lapply(st_result$sampled_psu[sel_mask], parse_cluster_labels))
+            if (length(all_nums) > 0L) {
+              cluster_offset <- cluster_offset + max(all_nums)
+            }
+          }
+
+          full_frame_rows <- eligible_rows[st_eligible_rows]
+          frame$sampled_psu[full_frame_rows] <- st_result$sampled_psu
+          frame$allocated_sample[full_frame_rows] <- st_result$allocated_sample
+        }
+      } else {
+        st_row <- strata_table[1L, , drop = FALSE]
+        st_params <- private$params_from_strata_row(st_row, nrow(eligible_frame), nrow(eligible_frame))
+        result <- tryCatch(
+          private$apply_sampling_method(
+            frame = eligible_frame,
+            method = st_params$method,
+            sample_size = st_params$sample_size,
+            n_psu = st_params$n_psu,
+            n_sites = st_params$n_sites,
+            cluster_size = st_params$cluster_size,
+            seed = seed
+          ),
+          error = function(e) {
+            phr_warning(
+              message = phr_txt("Sampling failed: {conditionMessage(e)}"),
+              origin  = "Sample$draw_sample"
+            )
+            NULL
+          }
+        )
+        if (!is.null(result)) {
+          frame$sampled_psu[eligible_rows] <- result$sampled_psu
+          frame$allocated_sample[eligible_rows] <- result$allocated_sample
+        }
+      }
+
+      self$drawn_sample_full <- frame
+      self$drawn_sample <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
+      private$.touch()
+      invisible(self)
+    },
+
+    #' @description Clear sampled columns from a frame.
+    #' @param frame Data frame sampling frame.
+    #' @return Cleared frame.
+    clear_sample = function(frame) {
+      out <- frame
+      if (!is.null(out) && is.data.frame(out) && nrow(out) > 0) {
+        if ("sampled_psu" %in% names(out)) out$sampled_psu <- NA_character_
+        if ("allocated_sample" %in% names(out)) out$allocated_sample <- NA_real_
+      }
+      self$drawn_sample <- NULL
+      self$drawn_sample_full <- NULL
+      private$.touch()
+      out
     },
 
     #' @description Return unique sampling methods in the sample table.
     get_sampling_methods = function() {
       st <- self$sample_table
       if (is.null(st) || !"sampling_method" %in% names(st)) {
-        private$touch()
+        private$.touch()
         return(character(0))
       }
       m <- as.character(st$sampling_method)
       out <- unique(m[!is.na(m) & nzchar(m)])
-      private$touch()
+      private$.touch()
       out
     },
 
@@ -289,22 +445,22 @@ Sample <- R6::R6Class(
     get_strata_names = function() {
       st <- self$sample_table
       if (is.null(st) || nrow(st) == 0) {
-        private$touch()
+        private$.touch()
         return(character(0))
       }
       col <- private$resolve_stratum_name_col(st)
       if (is.null(col)) {
-        private$touch()
+        private$.touch()
         return(character(0))
       }
       n <- as.character(st[[col]])
       out <- n[!is.na(n) & nzchar(n)]
-      private$touch()
+      private$.touch()
       out
     }
   ),
   private = list(
-    touch = function() {
+    .touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
     },
@@ -319,6 +475,86 @@ Sample <- R6::R6Class(
       } else {
         NULL
       }
+    },
+
+    apply_sampling_method = function(frame, method, sample_size, n_psu,
+                                     n_sites, cluster_size, seed) {
+      origin <- "Sample$apply_sampling_method"
+      valid_methods <- c("simple_random", "proportional", "pps_cluster", "pps_rlc",
+                         "systematic", "simple_random_rlc", "systematic_rlc",
+                         "proportional_rlc", "purposive")
+      phr_assert(
+        method %in% valid_methods,
+        message = phr_txt("Unknown sampling method '{method}' — must be one of: {paste(valid_methods, collapse=', ')}."),
+        origin  = origin
+      )
+
+      if (method == "simple_random") {
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'simple_random' method — set the 'n_sites' column in the strata table."),
+                   origin = origin)
+        draw_sample_psu_srs(frame, n_sites, sample_size, seed)
+      } else if (method == "proportional") {
+        draw_sample_psu_proportional(frame, sample_size, seed)
+      } else if (method == "pps_cluster") {
+        phr_assert(!is.null(n_psu) && !is.na(n_psu),
+                   message = phr_txt("n_psu is required for the 'pps_cluster' method — set the 'n_psu' column in the strata table."),
+                   origin = origin)
+        phr_assert(!is.null(cluster_size) && !is.na(cluster_size),
+                   message = phr_txt("cluster_size is required for the 'pps_cluster' method — set the 'cluster_size' column in the strata table."),
+                   origin = origin)
+        draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
+      } else if (method == "pps_rlc") {
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'pps_rlc' method — set the 'n_sites' column in the strata table."),
+                   origin = origin)
+        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
+        draw_sample_psu_rlc(frame, sample_size, n_sites, cs, seed)
+      } else if (method == "simple_random_rlc") {
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."),
+                   origin = origin)
+        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
+        draw_sample_psu_srs_rlc(frame, sample_size, n_sites, cs, seed)
+      } else if (method == "systematic_rlc") {
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."),
+                   origin = origin)
+        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
+        draw_sample_psu_systematic_rlc(frame, sample_size, n_sites, cs, seed)
+      } else if (method == "proportional_rlc") {
+        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) cluster_size else 3L
+        draw_sample_psu_proportional_rlc(frame, sample_size, cs, seed)
+      } else if (method == "systematic") {
+        phr_assert(!is.null(n_sites) && !is.na(n_sites),
+                   message = phr_txt("n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."),
+                   origin = origin)
+        draw_sample_psu_systematic(frame, n_sites, sample_size, seed)
+      } else {
+        draw_sample_psu_purposive(frame, seed)
+      }
+    },
+
+    params_from_strata_row = function(st_row, stratum_n_eligible, total_n_eligible) {
+      method <- as.character(st_row$sampling_method[1])
+      ss <- if ("Final_HH_Sample_Size" %in% names(st_row) &&
+                !is.na(st_row$Final_HH_Sample_Size[1])) {
+        as.integer(st_row$Final_HH_Sample_Size[1])
+      } else if ("General_HH_Sample_Size" %in% names(st_row) &&
+                 !is.na(st_row$General_HH_Sample_Size[1])) {
+        as.integer(st_row$General_HH_Sample_Size[1])
+      } else {
+        as.integer(round(100 * stratum_n_eligible / max(total_n_eligible, 1L)))
+      }
+
+      .na_as_null <- function(x) if (length(x) == 0L || is.na(x)) NULL else x
+      list(
+        method = method,
+        sample_size = ss,
+        n_psu = .na_as_null(if ("n_psu" %in% names(st_row)) st_row$n_psu[1] else NA),
+        cluster_size = .na_as_null(if ("cluster_size" %in% names(st_row)) st_row$cluster_size[1] else NA),
+        n_sites = .na_as_null(if ("n_sites" %in% names(st_row)) st_row$n_sites[1] else NA)
+      )
     }
   )
 )

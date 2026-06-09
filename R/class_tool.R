@@ -345,6 +345,82 @@ public = list(
     invisible(self)
   },
 
+  #' @description Add/replace a numbered choice list in revised choices.
+  #' @param list_name Character choice list name.
+  #' @param prefix_val Character value prefix.
+  #' @param prefix_lbl Character label prefix.
+  #' @param n Positive integer number of entries.
+  #' @return Invisibly returns \code{self}.
+  add_numbered_list = function(list_name, prefix_val, prefix_lbl, n) {
+    if (!is.character(list_name) || length(list_name) != 1L || !nzchar(list_name)) {
+      stop("list_name must be a non-empty character string")
+    }
+    if (!is.character(prefix_val) || length(prefix_val) != 1L) {
+      stop("prefix_val must be a single character string")
+    }
+    if (!is.character(prefix_lbl) || length(prefix_lbl) != 1L) {
+      stop("prefix_lbl must be a single character string")
+    }
+    if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1L) {
+      stop("n must be a single positive integer")
+    }
+    n <- as.integer(n)
+
+    choices <- if (!is.null(self$revised_choices) && nrow(self$revised_choices) > 0) {
+      self$revised_choices
+    } else {
+      self$choices
+    }
+    if (is.null(choices)) {
+      choices <- data.frame(list_name = character(0), name = character(0),
+                            label = character(0), stringsAsFactors = FALSE)
+    }
+    if ("list_name" %in% names(choices)) {
+      choices <- choices[choices$list_name != list_name, , drop = FALSE]
+    }
+    new_rows <- lapply(seq_len(n), function(i) {
+      row <- data.frame(
+        list_name = list_name,
+        name = paste0(prefix_val, i),
+        label = paste0(prefix_lbl, i),
+        stringsAsFactors = FALSE
+      )
+      for (col in setdiff(names(choices), names(row))) row[[col]] <- NA
+      row
+    })
+    new_df <- do.call(rbind, new_rows)
+    all_cols <- union(names(choices), names(new_df))
+    for (col in setdiff(all_cols, names(choices))) choices[[col]] <- NA
+    for (col in setdiff(all_cols, names(new_df))) new_df[[col]] <- NA
+    self$revised_choices <- rbind(choices[, all_cols, drop = FALSE], new_df[, all_cols, drop = FALSE])
+    self$touch()
+    invisible(self)
+  },
+
+  #' @description Add/replace a \code{teams} choice list.
+  #' @param n_teams Positive integer number of teams.
+  #' @return Invisibly returns \code{self}.
+  add_teams_to_choices = function(n_teams) {
+    self$add_numbered_list(
+      list_name = "teams",
+      prefix_val = "team_",
+      prefix_lbl = "Team ",
+      n = n_teams
+    )
+  },
+
+  #' @description Add/replace an \code{enumerators} choice list.
+  #' @param n_enumerators Positive integer number of enumerators.
+  #' @return Invisibly returns \code{self}.
+  add_enumerators_to_choices = function(n_enumerators) {
+    self$add_numbered_list(
+      list_name = "enumerators",
+      prefix_val = "enumerator_",
+      prefix_lbl = "Enumerator ",
+      n = n_enumerators
+    )
+  },
+
   #' @description
   #' Update a value in the settings data frame.
   #' @param key Character. Column name in the settings data frame to update.

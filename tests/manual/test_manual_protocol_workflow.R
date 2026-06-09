@@ -34,22 +34,24 @@ protocol$metadata
 
 View(protocol$framework$master_schema)
 
-protocol$framework_get_schema(type = "master")
+protocol$access_nested(field = "framework", member = "master_objectives_schema")
 
-protocol$framework_get_svg(type = "master")
+protocol$access_nested(field = "framework", member = "render_framework_svg", version = "master")
 
-protocol$framework_set_primary_objectives(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
-protocol$framework_set_secondary_objectives(objective_codes = c(105, 107, 112))
+protocol$access_nested("framework", member = "set_primary_objectives", c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$access_nested("framework", member = "set_secondary_objectives", c(105, 107, 112))
 
-protocol$framework_modify_schema(objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147))
-protocol$framework_modify_svg()
+protocol$access_nested("framework", member = "modify_adjusted_schema", c(105, 106, 108, 112, 113, 114, 115, 118, 147))
+protocol$access_nested("framework", member = "modify_adjusted_svg")
 
-protocol$framework_get_svg(type = "adjusted")
-View(protocol$framework_get_schema(type = "adjusted"))
+protocol$access_nested(field = "framework", member = "render_framework_svg", version = "adjusted")
+View(protocol$access_nested(field = "framework", member = "modified_objectives_schema"))
 
 # Test 3: Define Strata and Sample Sizes ####
 
-protocol$sample_add_stratum(
+protocol$access_nested(
+  field = "sample_object",
+  member = "add_stratum",
   stratum_id              = "strata_A",
   stratum_name            = "Urban North",
   population_size         = 45000,
@@ -81,7 +83,9 @@ protocol$sample_add_stratum(
 
 
 
-protocol$sample_add_stratum(
+protocol$access_nested(
+  field = "sample_object",
+  member = "add_stratum",
   stratum_id              = "strata_B",
   stratum_name            = "Peri-Urban East",
   population_size         = 28000,
@@ -101,7 +105,9 @@ protocol$sample_add_stratum(
   n_sites                 = 30
 )
 
-protocol$sample_add_stratum(
+protocol$access_nested(
+  field = "sample_object",
+  member = "add_stratum",
   stratum_id              = "strata_C",
   stratum_name            = "Rural South",
   population_size         = 17000,
@@ -115,8 +121,8 @@ protocol$sample_add_stratum(
   n_sites                 = 10
 )
 
-protocol$sample_calculate_sample_sizes()
-protocol$sample_get_sample_table()
+protocol$access_nested(field = "sample_object", member = "calculate_sample_sizes")
+protocol$access_nested(field = "sample_object", member = "get_sample_table")
 
 # Test 4: Build and Validate a Sampling Frame ####
 
@@ -170,11 +176,15 @@ head(protocol$tools$tool_household_iphra_v2$revised_settings)
 protocol$tools$tool_household_iphra_v2$change_default_language(language = "English")
 head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
-protocol$tool_filter_survey_by_indicator(tool_name = "tool_household_iphra_v2",
-                                         indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
+protocol$access_nested(
+  field = "tools",
+  name = "tool_household_iphra_v2",
+  member = "filter_survey_by_indicator",
+  indicator_codes = unique(as.character(protocol$access_nested(field = "framework", member = "modified_objectives_schema")$indicator_code))
+)
 
 
-View(protocol$tool_get_survey(tool_name = "tool_household_iphra_v2", survey_type = "revised"))
+View(protocol$access_nested(field = "tools", name = "tool_household_iphra_v2", member = "revised_survey"))
 
 View(protocol$tools$tool_household_iphra_v2$revised_survey)
 head(protocol$tools$tool_household_iphra_v2$revised_choices)
@@ -190,8 +200,12 @@ head(protocol$tools$tool_kii_community_iphra_v2$survey)
 head(protocol$tools$tool_kii_community_iphra_v2$choices)
 head(protocol$tools$tool_kii_community_iphra_v2$settings)
 
-protocol$tool_filter_survey_by_indicator(tool_name = "tool_kii_community_iphra_v2",
-                                         indicator_codes = protocol$framework_get_indicator_codes_from_schema(type = "adjusted"))
+protocol$access_nested(
+  field = "tools",
+  name = "tool_kii_community_iphra_v2",
+  member = "filter_survey_by_indicator",
+  indicator_codes = unique(as.character(protocol$access_nested(field = "framework", member = "modified_objectives_schema")$indicator_code))
+)
 
 nrow(protocol$tools$tool_kii_community_iphra_v2$survey)
 nrow(protocol$tools$tool_kii_community_iphra_v2$revised_survey)
@@ -300,7 +314,7 @@ protocol$tools$tool_kii_nutrition_service_provider_iphra_v2$get_validation_error
 
 # Test 3: Generate Word Report from IPHRAProtocol ####
 
-# generate_reach_tor() uses officer + flextable (bundled template used when present).
+# generate_doc() uses officer + flextable (bundled template used when present).
 # The standalone wrapper generate_protocol_report() dispatches to the method.
 
 # -- 3a: Generate report with no tools (tools section shows placeholder text) --
@@ -328,5 +342,4 @@ protocol$secondary_data <- list(
 # protocol$ <- "Internal"
 
 # report_no_tools <- tempfile(fileext = ".docx")
-protocol$generate_reach_tor(output_file = "report_no_tools.docx")
-
+protocol$generate_doc(output_file = "report_no_tools.docx")
