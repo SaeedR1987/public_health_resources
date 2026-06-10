@@ -337,9 +337,16 @@ Sample <- R6::R6Class(
         soft = FALSE
       )
       phr_assert(
-        "sampling_method" %in% names(strata_table),
+        "sampling_method_site" %in% names(strata_table),
         message = phr_txt(
-          "strata_table must contain a 'sampling_method' column."
+          "strata_table must contain a 'sampling_method_site' column."
+        ),
+        origin = "Sample$draw_sample"
+      )
+      phr_assert(
+        "sampling_method_hh" %in% names(strata_table),
+        message = phr_txt(
+          "strata_table must contain a 'sampling_method_hh' column."
         ),
         origin = "Sample$draw_sample"
       )
@@ -399,7 +406,8 @@ Sample <- R6::R6Class(
           st_result <- tryCatch(
             private$..apply_sampling_method(
               frame = st_frame,
-              method = st_params$method,
+              method_site = st_params$method_site,
+              method_hh = st_params$method_hh,
               sample_size = st_params$sample_size,
               n_psu = st_params$n_psu,
               n_sites = st_params$n_sites,
@@ -469,7 +477,8 @@ Sample <- R6::R6Class(
         result <- tryCatch(
           private$..apply_sampling_method(
             frame = eligible_frame,
-            method = st_params$method,
+            method_site = st_params$method_site,
+            method_hh = st_params$method_hh,
             sample_size = st_params$sample_size,
             n_psu = st_params$n_psu,
             n_sites = st_params$n_sites,
@@ -573,7 +582,8 @@ Sample <- R6::R6Class(
 
     #' @description Apply a sampling method to a frame.
     #' @param frame Data frame sampling frame.
-    #' @param method Character scalar sampling method name.
+    #' @param method_site Character scalar site sampling method name.
+    #' @param method_hh Character scalar household sampling method name.
     #' @param sample_size Integer sample size.
     #' @param n_psu Integer number of primary sampling units.
     #' @param n_sites Integer number of sites.
@@ -582,7 +592,8 @@ Sample <- R6::R6Class(
     #' @return Data frame with sampled PSUs and allocated sample columns.
     ..apply_sampling_method = function(
       frame,
-      method,
+      method_site,
+      method_hh,
       sample_size,
       n_psu,
       n_sites,
@@ -590,110 +601,114 @@ Sample <- R6::R6Class(
       seed
     ) {
       origin <- "Sample$..apply_sampling_method"
-      valid_methods <- c(
+      valid_methods_site <- c(
         "simple_random",
         "proportional",
-        "pps_cluster",
-        "pps_rlc",
+        "cluster",
         "systematic",
-        "simple_random_rlc",
-        "systematic_rlc",
-        "proportional_rlc",
         "purposive"
       )
       phr_assert(
-        method %in% valid_methods,
+        method_site %in% valid_methods_site,
         message = phr_txt(
-          "Unknown sampling method '{method}' — must be one of: {paste(valid_methods, collapse=', ')}."
+          "Unknown sampling method '{method_site}' — must be one of: {paste(valid_methods_site, collapse=', ')}."
         ),
         origin = origin
       )
 
-      if (method == "simple_random") {
-        phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt(
-            "n_sites is required for the 'simple_random' method — set the 'n_sites' column in the strata table."
-          ),
-          origin = origin
-        )
-        draw_sample_psu_srs(frame, n_sites, sample_size, seed)
-      } else if (method == "proportional") {
-        draw_sample_psu_proportional(frame, sample_size, seed)
-      } else if (method == "pps_cluster") {
-        phr_assert(
-          !is.null(n_psu) && !is.na(n_psu),
-          message = phr_txt(
-            "n_psu is required for the 'pps_cluster' method — set the 'n_psu' column in the strata table."
-          ),
-          origin = origin
-        )
-        phr_assert(
-          !is.null(cluster_size) && !is.na(cluster_size),
-          message = phr_txt(
-            "cluster_size is required for the 'pps_cluster' method — set the 'cluster_size' column in the strata table."
-          ),
-          origin = origin
-        )
-        draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
-      } else if (method == "pps_rlc") {
-        phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt(
-            "n_sites is required for the 'pps_rlc' method — set the 'n_sites' column in the strata table."
-          ),
-          origin = origin
-        )
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
-          cluster_size
+      if (method_site == "simple_random") {
+        if (method_hh == "rlc") {
+          phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
+            cluster_size
+          } else {
+            3L
+          }
+          draw_sample_psu_srs_rlc(frame, sample_size, n_sites, cs, seed)
         } else {
-          3L
+          phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'simple_random' method_site — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          draw_sample_psu_srs(frame, n_sites, sample_size, seed)
         }
-        draw_sample_psu_rlc(frame, sample_size, n_sites, cs, seed)
-      } else if (method == "simple_random_rlc") {
-        phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt(
-            "n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."
-          ),
-          origin = origin
-        )
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
-          cluster_size
+      } else if (method_site == "proportional") {
+        if (method_hh == "rlc") {
+          cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
+            cluster_size
+          } else {
+            3L
+          }
+          draw_sample_psu_proportional_rlc(frame, sample_size, cs, seed)
         } else {
-          3L
+          draw_sample_psu_proportional(frame, sample_size, seed)
         }
-        draw_sample_psu_srs_rlc(frame, sample_size, n_sites, cs, seed)
-      } else if (method == "systematic_rlc") {
-        phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt(
-            "n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."
-          ),
-          origin = origin
-        )
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
-          cluster_size
+      } else if (method_site == "cluster") {
+        if (method_hh == "rlc") {
+          phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'cluster' method with 'rlc' household sampling — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
+            cluster_size
+          } else {
+            3L
+          }
+          draw_sample_psu_cluster_rlc(frame, n_sites, sample_size, cs, seed)
         } else {
-          3L
+          phr_assert(
+            !is.null(n_psu) && !is.na(n_psu),
+            message = phr_txt(
+              "n_psu is required for the 'cluster' method_site — set the 'n_psu' column in the strata table."
+            ),
+            origin = origin
+          )
+          phr_assert(
+            !is.null(cluster_size) && !is.na(cluster_size),
+            message = phr_txt(
+              "cluster_size is required for the 'cluster' method_site — set the 'cluster_size' column in the strata table."
+            ),
+            origin = origin
+          )
+          draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
         }
-        draw_sample_psu_systematic_rlc(frame, sample_size, n_sites, cs, seed)
-      } else if (method == "proportional_rlc") {
-        cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
-          cluster_size
+      } else if (method_site == "systematic") {
+        if (method_hh == "systematic_rlc") {
+          phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
+            cluster_size
+          } else {
+            3L
+          }
+          draw_sample_psu_systematic_rlc(frame, sample_size, n_sites, cs, seed)
         } else {
-          3L
+          phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          draw_sample_psu_systematic(frame, n_sites, sample_size, seed)
         }
-        draw_sample_psu_proportional_rlc(frame, sample_size, cs, seed)
-      } else if (method == "systematic") {
-        phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt(
-            "n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."
-          ),
-          origin = origin
-        )
-        draw_sample_psu_systematic(frame, n_sites, sample_size, seed)
       } else {
         draw_sample_psu_purposive(frame, seed)
       }
@@ -703,13 +718,15 @@ Sample <- R6::R6Class(
     #' @param st_row Data frame single strata row.
     #' @param stratum_n_eligible Integer number of eligible units in stratum.
     #' @param total_n_eligible Integer total number of eligible units.
-    #' @return List with elements: method, sample_size, n_psu, cluster_size, n_sites.
+    #' @return List with elements: method_site, method_hh, sample_size, n_psu, cluster_size, n_sites.
     ..params_from_strata_row = function(
       st_row,
       stratum_n_eligible,
       total_n_eligible
     ) {
-      method <- as.character(st_row$sampling_method[1])
+      method_site <- as.character(st_row$sampling_method_site[1])
+      method_hh <- as.character(st_row$sampling_method_hh[1])
+
       ss <- if (
         "Final_HH_Sample_Size" %in%
           names(st_row) &&
@@ -728,7 +745,8 @@ Sample <- R6::R6Class(
 
       .na_as_null <- function(x) if (length(x) == 0L || is.na(x)) NULL else x
       list(
-        method = method,
+        method_site = method_site,
+        method_hh = method_hh,
         sample_size = ss,
         n_psu = .na_as_null(
           if ("n_psu" %in% names(st_row)) st_row$n_psu[1] else NA

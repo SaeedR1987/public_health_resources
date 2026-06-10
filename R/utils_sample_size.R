@@ -37,25 +37,26 @@
 #' @return A single positive integer giving the estimated sample size after
 #'   non-response adjustment.
 #' @export
-calculate_sample_size_general <- function(expected_proportion,
-                                         desired_precision,
-                                         non_response_rate = 5,
-                                         design = "simple_random",
-                                         design_effect = 1.5,
-                                         fpc = FALSE,
-                                         total_population = NULL,
-                                         number_clusters = NULL,
-                                         confidence_level = 0.95) {
-
+calculate_sample_size_general <- function(
+  expected_proportion,
+  desired_precision,
+  non_response_rate = 5,
+  design = "simple_random",
+  design_effect = 1.5,
+  fpc = FALSE,
+  total_population = NULL,
+  number_clusters = NULL,
+  confidence_level = 0.95
+) {
   origin <- "calculate_sample_size_general"
 
   # --- Type validation ---
   phr_validate_numeric(expected_proportion, origin = origin, soft = FALSE)
-  phr_validate_numeric(desired_precision,   origin = origin, soft = FALSE)
-  phr_validate_numeric(non_response_rate,   origin = origin, soft = FALSE)
-  phr_validate_numeric(confidence_level,    origin = origin, soft = FALSE)
-  phr_validate_logical(fpc,                 origin = origin, soft = FALSE)
-  phr_validate_character(design,            origin = origin, soft = FALSE)
+  phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
+  phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
+  phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phr_validate_logical(fpc, origin = origin, soft = FALSE)
+  phr_validate_character(design, origin = origin, soft = FALSE)
 
   # --- Range / logical checks ---
   phr_assert(
@@ -88,7 +89,9 @@ calculate_sample_size_general <- function(expected_proportion,
   }
   if (fpc) {
     phr_assert(
-      !is.null(total_population) && is.numeric(total_population) && total_population > 0,
+      !is.null(total_population) &&
+        is.numeric(total_population) &&
+        total_population > 0,
       message = "total_population must be provided and positive when fpc = TRUE.",
       origin = origin
     )
@@ -96,7 +99,6 @@ calculate_sample_size_general <- function(expected_proportion,
 
   # Determine t-statistic for cluster design
   if (design == "cluster") {
-
     if (is.null(number_clusters) || number_clusters <= 0) {
       # Per SMART survey guidance with higher number of clusters 25+
       const_t <- 2.045
@@ -114,7 +116,6 @@ calculate_sample_size_general <- function(expected_proportion,
 
   # Calculate base sample size
   if (design == "simple_random") {
-
     n0 <- (z^2 * p * (1 - p)) / d^2
 
     if (fpc) {
@@ -122,17 +123,14 @@ calculate_sample_size_general <- function(expected_proportion,
     } else {
       n <- n0
     }
-
   } else if (design == "cluster") {
-
-    n0 <- ((const_t^2 * p * (1 - p)) / d^2)*design_effect
+    n0 <- ((const_t^2 * p * (1 - p)) / d^2) * design_effect
 
     if (fpc) {
       n <- n0 / (1 + ((n0 - 1) / total_population))
     } else {
       n <- n0
     }
-
   } else {
     phr_error("Invalid design type. Must be 'simple_random' or 'cluster'.")
   }
@@ -186,18 +184,19 @@ calculate_sample_size_general <- function(expected_proportion,
 #'       \code{sub_population_percent}.}
 #'   }
 #' @export
-calculate_sample_size_individual <- function(expected_proportion,
-                                            desired_precision,
-                                            non_response_rate = 5,
-                                            design = "simple_random",
-                                            design_effect = 1.5,
-                                            fpc = FALSE,
-                                            total_population = NULL,
-                                            num_clusters = NULL,
-                                            average_household_size,
-                                            sub_population_percent = 100,
-                                            confidence_level = 0.95) {
-
+calculate_sample_size_individual <- function(
+  expected_proportion,
+  desired_precision,
+  non_response_rate = 5,
+  design = "simple_random",
+  design_effect = 1.5,
+  fpc = FALSE,
+  total_population = NULL,
+  num_clusters = NULL,
+  average_household_size,
+  sub_population_percent = 100,
+  confidence_level = 0.95
+) {
   origin <- "calculate_sample_size_individual"
 
   # --- Type validation ---
@@ -205,7 +204,10 @@ calculate_sample_size_individual <- function(expected_proportion,
 
   # --- Range checks ---
   if (missing(average_household_size)) {
-    phr_error("average_household_size must be provided and positive.", origin = origin)
+    phr_error(
+      "average_household_size must be provided and positive.",
+      origin = origin
+    )
   }
   phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
   phr_assert(
@@ -239,8 +241,8 @@ calculate_sample_size_individual <- function(expected_proportion,
   n_households <- ceiling(n_individuals / average_household_size)
 
   return(list(
-    sample_size_individuals  = n_individuals,
-    sample_size_households   = n_households
+    sample_size_individuals = n_individuals,
+    sample_size_households = n_households
   ))
 }
 
@@ -291,28 +293,29 @@ calculate_sample_size_individual <- function(expected_proportion,
 #'       sampling.}
 #'   }
 #' @export
-calculate_sample_size_mortality <- function(expected_death_rate,
-                                           desired_precision,
-                                           non_response_rate = 5,
-                                           design = "cluster",
-                                           design_effect = 1.5,
-                                           number_clusters = NULL,
-                                           recall_days = 90,
-                                           average_household_size,
-                                           fpc = FALSE,
-                                           total_population = NULL,
-                                           confidence_level = 0.95) {
-
+calculate_sample_size_mortality <- function(
+  expected_death_rate,
+  desired_precision,
+  non_response_rate = 5,
+  design = "simple_random",
+  design_effect = 1.5,
+  number_clusters = NULL,
+  recall_days = 90,
+  average_household_size,
+  fpc = FALSE,
+  total_population = NULL,
+  confidence_level = 0.95
+) {
   origin <- "calculate_sample_size_mortality"
 
   # --- Type validation ---
-  phr_validate_numeric(expected_death_rate,  origin = origin, soft = FALSE)
-  phr_validate_numeric(desired_precision,    origin = origin, soft = FALSE)
-  phr_validate_numeric(non_response_rate,    origin = origin, soft = FALSE)
-  phr_validate_numeric(recall_days,          origin = origin, soft = FALSE)
-  phr_validate_numeric(confidence_level,     origin = origin, soft = FALSE)
-  phr_validate_logical(fpc,                  origin = origin, soft = FALSE)
-  phr_validate_character(design,             origin = origin, soft = FALSE)
+  phr_validate_numeric(expected_death_rate, origin = origin, soft = FALSE)
+  phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
+  phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
+  phr_validate_numeric(recall_days, origin = origin, soft = FALSE)
+  phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phr_validate_logical(fpc, origin = origin, soft = FALSE)
+  phr_validate_character(design, origin = origin, soft = FALSE)
 
   # --- Range / logical checks ---
   phr_assert(
@@ -326,7 +329,10 @@ calculate_sample_size_mortality <- function(expected_death_rate,
     origin = origin
   )
   if (missing(average_household_size)) {
-    phr_error("average_household_size must be provided and positive.", origin = origin)
+    phr_error(
+      "average_household_size must be provided and positive.",
+      origin = origin
+    )
   }
   phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
   phr_assert(
@@ -354,7 +360,9 @@ calculate_sample_size_mortality <- function(expected_death_rate,
   }
   if (fpc) {
     phr_assert(
-      !is.null(total_population) && is.numeric(total_population) && total_population > 0,
+      !is.null(total_population) &&
+        is.numeric(total_population) &&
+        total_population > 0,
       message = "total_population must be provided and positive when fpc = TRUE.",
       origin = origin
     )
@@ -365,9 +373,9 @@ calculate_sample_size_mortality <- function(expected_death_rate,
   if (design == "cluster") {
     if (is.null(number_clusters) || number_clusters <= 0) {
       # Per SMART survey guidance with higher number of clusters 25+
-      const_t <- 2.045  # nolint
+      const_t <- 2.045 # nolint
     } else {
-      const_t <- stats::qt((1 + confidence_level) / 2, df = number_clusters - 1)  # nolint
+      const_t <- stats::qt((1 + confidence_level) / 2, df = number_clusters - 1) # nolint
     }
   }
 
@@ -376,11 +384,8 @@ calculate_sample_size_mortality <- function(expected_death_rate,
   r <- expected_death_rate / 10000
   d <- desired_precision / 10000
 
-
-
   if (design == "simple_random") {
-
-    numerator   <- z^2 * r # * (1 - r)
+    numerator <- z^2 * r # * (1 - r)
     denominator <- d^2 * recall_days
 
     n_individuals <- numerator / denominator
@@ -393,10 +398,8 @@ calculate_sample_size_mortality <- function(expected_death_rate,
     }
 
     effective_design_effect <- 1
-
   } else if (design == "cluster") {
-
-    numerator   <- const_t^2 * r # * (1 - r)
+    numerator <- const_t^2 * r # * (1 - r)
     denominator <- d^2 * recall_days
 
     n_individuals <- (numerator / denominator) * design_effect
@@ -409,7 +412,6 @@ calculate_sample_size_mortality <- function(expected_death_rate,
     }
 
     effective_design_effect <- design_effect
-
   } else {
     phr_error("Invalid design type. Must be 'simple_random' or 'cluster'.")
   }
@@ -429,7 +431,7 @@ calculate_sample_size_mortality <- function(expected_death_rate,
   )
 
   return(list(
-    sample_size_households  = n_households,
+    sample_size_households = n_households,
     sample_size_individuals = n_adj_individuals,
     sample_size_person_time = n_pt
   ))
@@ -483,26 +485,27 @@ calculate_sample_size_mortality <- function(expected_death_rate,
 #'       size for cluster designs.}
 #'   }
 #' @export
-estimate_field_plan <- function(sample_design,
-                                number_of_teams,
-                                enumerators_per_team,
-                                number_of_psu_per_team_per_day = NULL,
-                                start_time,
-                                end_time,
-                                average_interview_time,
-                                average_travel_time,
-                                average_rest_time,
-                                total_sample_size = NULL) {
-
+estimate_field_plan <- function(
+  sample_design,
+  number_of_teams,
+  enumerators_per_team,
+  number_of_psu_per_team_per_day = NULL,
+  start_time,
+  end_time,
+  average_interview_time,
+  average_travel_time,
+  average_rest_time,
+  total_sample_size = NULL
+) {
   origin <- "estimate_field_plan"
 
   # --- Type validation ---
   phr_validate_character(sample_design, origin = origin, soft = FALSE)
-  phr_validate_numeric(number_of_teams,       origin = origin, soft = FALSE)
-  phr_validate_numeric(enumerators_per_team,  origin = origin, soft = FALSE)
+  phr_validate_numeric(number_of_teams, origin = origin, soft = FALSE)
+  phr_validate_numeric(enumerators_per_team, origin = origin, soft = FALSE)
   phr_validate_numeric(average_interview_time, origin = origin, soft = FALSE)
-  phr_validate_numeric(average_travel_time,   origin = origin, soft = FALSE)
-  phr_validate_numeric(average_rest_time,     origin = origin, soft = FALSE)
+  phr_validate_numeric(average_travel_time, origin = origin, soft = FALSE)
+  phr_validate_numeric(average_rest_time, origin = origin, soft = FALSE)
 
   # --- Range / logic checks ---
   phr_assert(
@@ -556,12 +559,20 @@ estimate_field_plan <- function(sample_design,
 
   if (.is_hhmm(start_time) || .is_hhmm(end_time) || is.numeric(start_time)) {
     start_min <- phr_parse_hhmm(start_time, origin = origin)
-    end_min   <- phr_parse_hhmm(end_time,   origin = origin)
+    end_min <- phr_parse_hhmm(end_time, origin = origin)
     total_working_minutes <- end_min - start_min
   } else {
-    if (is.character(start_time)) start_time <- as.Date(start_time)
-    if (is.character(end_time))   end_time   <- as.Date(end_time)
-    total_working_minutes <- as.numeric(difftime(end_time, start_time, units = "mins"))
+    if (is.character(start_time)) {
+      start_time <- as.Date(start_time)
+    }
+    if (is.character(end_time)) {
+      end_time <- as.Date(end_time)
+    }
+    total_working_minutes <- as.numeric(difftime(
+      end_time,
+      start_time,
+      units = "mins"
+    ))
   }
 
   phr_assert(
@@ -570,37 +581,40 @@ estimate_field_plan <- function(sample_design,
     origin = origin
   )
 
-  effective_working_time <- total_working_minutes - average_rest_time - average_travel_time
-  interviews_per_enumerator_per_day <- floor(effective_working_time / average_interview_time)
+  effective_working_time <- total_working_minutes -
+    average_rest_time -
+    average_travel_time
+  interviews_per_enumerator_per_day <- floor(
+    effective_working_time / average_interview_time
+  )
 
   if (sample_design == "simple_random") {
-
     number_days_needed <- ceiling(
       (total_sample_size * average_interview_time) /
-      (effective_working_time * number_of_teams * enumerators_per_team)
+        (effective_working_time * number_of_teams * enumerators_per_team)
     )
 
     return(list(
       num_interview_per_enum_per_day = interviews_per_enumerator_per_day,
-      num_days    = number_days_needed,
+      num_days = number_days_needed,
       num_psu_needed = NA,
-      psu_size       = NA
+      psu_size = NA
     ))
-
   } else {
-
-    psu_size <- floor((interviews_per_enumerator_per_day * enumerators_per_team) /
-      number_of_psu_per_team_per_day)
-    number_psu_needed  <- ceiling(total_sample_size / psu_size)
+    psu_size <- floor(
+      (interviews_per_enumerator_per_day * enumerators_per_team) /
+        number_of_psu_per_team_per_day
+    )
+    number_psu_needed <- ceiling(total_sample_size / psu_size)
     number_days_needed <- ceiling(
       number_psu_needed / (number_of_psu_per_team_per_day * number_of_teams)
     )
 
     return(list(
       num_interview_per_enum_per_day = interviews_per_enumerator_per_day,
-      num_days       = number_days_needed,
+      num_days = number_days_needed,
       num_psu_needed = number_psu_needed,
-      psu_size       = psu_size
+      psu_size = psu_size
     ))
   }
 }
@@ -653,184 +667,306 @@ estimate_field_plan <- function(sample_design,
 #'   and field plan columns.
 #' @export
 calculate_sample_size_strata_table <- function(sample_table) {
-
   origin <- "calculate_sample_size_strata_table"
 
   # Default design effect used as fallback when no value is stored.
   .default_design_effect <- 1.5
 
-  phr_try({
-
-    phr_assert(
-      isTRUE(validate_strata_table(sample_table)),
-      message = phr_txt("sample_table is invalid. Ensure it was built via add_stratum() or conforms to the required schema."),
-      origin  = origin,
-      hint    = phr_txt("Ensure the strata table was built via add_stratum() or conforms to the required schema.")
-    )
-
-    # Ensure field-plan output columns exist (may be absent in tables not built via add_stratum())
-    for (col in c("n_psu", "cluster_size", "num_interview_per_enum_per_day", "num_days")) {
-      if (!col %in% names(sample_table)) sample_table[[col]] <- NA_real_
-    }
-
-    for (i in seq_len(nrow(sample_table))) {
-      row <- sample_table[i, ]
-
-      # Read calc_method directly — it is "simple_random" or "cluster" and
-      # maps directly to the design parameter accepted by calculate_sample_size_*
-      # functions.  Fall back to "simple_random" for robustness if absent.
-      design_type <- if ("calc_method" %in% names(row) && !is.na(row$calc_method) &&
-                         identical(row$calc_method, "cluster")) {
-        "cluster"
-      } else {
-        "simple_random"
-      }
-
-      # ---- General (population-level) sample size -------------------------
-      if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
-        design_effect <- if (!is.na(row$pop_design_effect) && row$pop_design_effect > 1) row$pop_design_effect else .default_design_effect
-        nonresponse   <- if (!is.na(row$pop_nonresponse)) row$pop_nonresponse else 5
-        fpc           <- if (!is.na(row$pop_fpc)) as.logical(row$pop_fpc) else FALSE
-        total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
-
-        pop_ss <- phr_try(
-          calculate_sample_size_general(
-            expected_proportion = row$pop_expected_prevalence,
-            desired_precision   = row$pop_precision,
-            non_response_rate   = nonresponse,
-            design              = design_type,
-            design_effect       = design_effect,
-            fpc                 = fpc,
-            total_population    = total_pop
-          ),
-          on_error = "return",
-          origin   = origin,
-          step     = phr_txt("General sample size — stratum {row$stratum_id}")
+  phr_try(
+    {
+      phr_assert(
+        isTRUE(validate_strata_table(sample_table)),
+        message = phr_txt(
+          "sample_table is invalid. Ensure it was built via add_stratum() or conforms to the required schema."
+        ),
+        origin = origin,
+        hint = phr_txt(
+          "Ensure the strata table was built via add_stratum() or conforms to the required schema."
         )
-        if (!phr_failed(pop_ss)) {
-          sample_table$General_HH_Sample_Size[i] <- pop_ss
-        }
-      }
-
-      # ---- Individual-level sample size -----------------------------------
-      if (!is.na(row$ind_expected_prevalence) && !is.na(row$ind_precision) &&
-          !is.na(row$ind_avg_hh_size) && row$ind_avg_hh_size > 0) {
-        design_effect <- if (!is.na(row$ind_design_effect) && row$ind_design_effect > 1) row$ind_design_effect else .default_design_effect
-        nonresponse   <- if (!is.na(row$ind_nonresponse)) row$ind_nonresponse else 5
-        fpc           <- if (!is.na(row$ind_fpc)) as.logical(row$ind_fpc) else FALSE
-        total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
-        subpop        <- if (!is.na(row$ind_subpop_prop)) row$ind_subpop_prop else 100
-
-        ind_res <- phr_try(
-          calculate_sample_size_individual(
-            expected_proportion    = row$ind_expected_prevalence,
-            desired_precision      = row$ind_precision,
-            non_response_rate      = nonresponse,
-            design                 = design_type,
-            design_effect          = design_effect,
-            fpc                    = fpc,
-            total_population       = total_pop,
-            average_household_size = row$ind_avg_hh_size,
-            sub_population_percent = subpop
-          ),
-          on_error = "return",
-          origin   = origin,
-          step     = phr_txt("Individual sample size — stratum {row$stratum_id}")
-        )
-        if (!phr_failed(ind_res) && !is.null(ind_res)) {
-          sample_table$Ind_Sample_Size[i]    <- ind_res$sample_size_individuals
-          sample_table$Ind_HH_Sample_Size[i] <- ind_res$sample_size_households
-        }
-      }
-
-      # ---- Mortality-rate sample size -------------------------------------
-      if (!is.na(row$mort_expected_death_rate) && !is.na(row$mort_precision) &&
-          !is.na(row$mort_avg_hh_size) && row$mort_avg_hh_size > 0) {
-        design_effect <- if (!is.na(row$mort_design_effect) && row$mort_design_effect > 1) row$mort_design_effect else .default_design_effect
-        nonresponse   <- if (!is.na(row$mort_nonresponse)) row$mort_nonresponse else 5
-        fpc           <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE
-        total_pop     <- if (!is.na(row$total_population) && row$total_population > 0) row$total_population else NULL
-        recall_days   <- if (!is.na(row$mort_recall_days) && row$mort_recall_days > 0) row$mort_recall_days else 90
-
-        mort_res <- phr_try(
-          calculate_sample_size_mortality(
-            expected_death_rate    = row$mort_expected_death_rate,
-            desired_precision      = row$mort_precision,
-            non_response_rate      = nonresponse,
-            design                 = design_type,
-            design_effect          = design_effect,
-            recall_days            = recall_days,
-            average_household_size = row$mort_avg_hh_size,
-            fpc                    = fpc,
-            total_population       = total_pop
-          ),
-          on_error = "return",
-          origin   = origin,
-          step     = phr_txt("Mortality sample size — stratum {row$stratum_id}")
-        )
-        if (!phr_failed(mort_res) && !is.null(mort_res)) {
-          sample_table$Mort_Ind_Sample_Size[i] <- mort_res$sample_size_individuals
-          sample_table$Mort_PT_Sample_Size[i]  <- mort_res$sample_size_person_time
-          sample_table$Mort_HH_Sample_Size[i]  <- mort_res$sample_size_households
-        }
-      }
-
-      # ---- Final household sample size: max across all three HH types -----
-      hh_sizes <- c(
-        pop_hh  = if (!is.na(sample_table$General_HH_Sample_Size[i])) sample_table$General_HH_Sample_Size[i] else NA_real_,
-        ind_hh  = if (!is.na(sample_table$Ind_HH_Sample_Size[i]))     sample_table$Ind_HH_Sample_Size[i]     else NA_real_,
-        mort_hh = if (!is.na(sample_table$Mort_HH_Sample_Size[i]))    sample_table$Mort_HH_Sample_Size[i]    else NA_real_
       )
 
-      valid_hh <- hh_sizes[!is.na(hh_sizes)]
-      if (length(valid_hh) > 0 && "Final_HH_Sample_Size" %in% names(sample_table)) {
-        sample_table$Final_HH_Sample_Size[i] <- max(valid_hh)
+      # Ensure field-plan output columns exist (may be absent in tables not built via add_stratum())
+      for (col in c(
+        "n_psu",
+        "cluster_size",
+        "num_interview_per_enum_per_day",
+        "num_days"
+      )) {
+        if (!col %in% names(sample_table)) sample_table[[col]] <- NA_real_
       }
 
-      # ---- Field plan estimate --------------------------------------------
-      # Re-read the row after sample size updates so Final_HH_Sample_Size is current.
-      row <- sample_table[i, ]
+      for (i in seq_len(nrow(sample_table))) {
+        row <- sample_table[i, ]
 
-      base_fields <- c("teams", "enumerators_per_team", "start_time",
-                       "end_time", "avg_interview_time", "avg_travel_time",
-                       "avg_rest_time", "Final_HH_Sample_Size")
-      has_base <- all(vapply(base_fields, function(f) {
-        f %in% names(row) && !is.na(row[[f]]) && nzchar(as.character(row[[f]]))
-      }, logical(1L)))
+        # Read sampling_method_site directly — it is "cluster" or other method and
+        # maps directly to the design parameter accepted by calculate_sample_size_*
+        # functions.  Fall back to "simple_random" for robustness if absent.
+        design_type <- if (
+          "sampling_method_site" %in%
+            names(row) &&
+            !is.na(row$sampling_method_site) &&
+            identical(row$sampling_method_site, "cluster")
+        ) {
+          "cluster"
+        } else {
+          "simple_random"
+        }
 
-      has_cluster_param <- design_type != "cluster" ||
-        ("clusters_per_day" %in% names(row) &&
-         !is.na(row$clusters_per_day) &&
-         row$clusters_per_day > 0)
+        # ---- General (population-level) sample size -------------------------
+        if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
+          design_effect <- if (
+            !is.na(row$pop_design_effect) && row$pop_design_effect > 1
+          ) {
+            row$pop_design_effect
+          } else {
+            .default_design_effect
+          }
+          nonresponse <- if (!is.na(row$pop_nonresponse)) {
+            row$pop_nonresponse
+          } else {
+            5
+          }
+          fpc <- if (!is.na(row$pop_fpc)) as.logical(row$pop_fpc) else FALSE
+          total_pop <- if (
+            !is.na(row$total_population) && row$total_population > 0
+          ) {
+            row$total_population
+          } else {
+            NULL
+          }
 
-      if (has_base && has_cluster_param) {
-        fp <- phr_try(
-          estimate_field_plan(
-            sample_design                  = design_type,
-            number_of_teams                = row$teams,
-            enumerators_per_team           = row$enumerators_per_team,
-            number_of_psu_per_team_per_day = if (design_type == "cluster") row$clusters_per_day else NULL,
-            start_time                     = row$start_time,
-            end_time                       = row$end_time,
-            average_interview_time         = row$avg_interview_time,
-            average_travel_time            = row$avg_travel_time,
-            average_rest_time              = row$avg_rest_time,
-            total_sample_size              = row$Final_HH_Sample_Size
-          ),
-          on_error = "return",
-          origin   = origin,
-          step     = phr_txt("Field plan — stratum {row$stratum_id}")
+          pop_ss <- phr_try(
+            calculate_sample_size_general(
+              expected_proportion = row$pop_expected_prevalence,
+              desired_precision = row$pop_precision,
+              non_response_rate = nonresponse,
+              design = design_type,
+              design_effect = design_effect,
+              fpc = fpc,
+              total_population = total_pop
+            ),
+            on_error = "return",
+            origin = origin,
+            step = phr_txt("General sample size — stratum {row$stratum_id}")
+          )
+          if (!phr_failed(pop_ss)) {
+            sample_table$General_HH_Sample_Size[i] <- pop_ss
+          }
+        }
+
+        # ---- Individual-level sample size -----------------------------------
+        if (
+          !is.na(row$ind_expected_prevalence) &&
+            !is.na(row$ind_precision) &&
+            !is.na(row$ind_avg_hh_size) &&
+            row$ind_avg_hh_size > 0
+        ) {
+          design_effect <- if (
+            !is.na(row$ind_design_effect) && row$ind_design_effect > 1
+          ) {
+            row$ind_design_effect
+          } else {
+            .default_design_effect
+          }
+          nonresponse <- if (!is.na(row$ind_nonresponse)) {
+            row$ind_nonresponse
+          } else {
+            5
+          }
+          fpc <- if (!is.na(row$ind_fpc)) as.logical(row$ind_fpc) else FALSE
+          total_pop <- if (
+            !is.na(row$total_population) && row$total_population > 0
+          ) {
+            row$total_population
+          } else {
+            NULL
+          }
+          subpop <- if (!is.na(row$ind_subpop_prop)) {
+            row$ind_subpop_prop
+          } else {
+            100
+          }
+
+          ind_res <- phr_try(
+            calculate_sample_size_individual(
+              expected_proportion = row$ind_expected_prevalence,
+              desired_precision = row$ind_precision,
+              non_response_rate = nonresponse,
+              design = design_type,
+              design_effect = design_effect,
+              fpc = fpc,
+              total_population = total_pop,
+              average_household_size = row$ind_avg_hh_size,
+              sub_population_percent = subpop
+            ),
+            on_error = "return",
+            origin = origin,
+            step = phr_txt("Individual sample size — stratum {row$stratum_id}")
+          )
+          if (!phr_failed(ind_res) && !is.null(ind_res)) {
+            sample_table$Ind_Sample_Size[i] <- ind_res$sample_size_individuals
+            sample_table$Ind_HH_Sample_Size[i] <- ind_res$sample_size_households
+          }
+        }
+
+        # ---- Mortality-rate sample size -------------------------------------
+        if (
+          !is.na(row$mort_expected_death_rate) &&
+            !is.na(row$mort_precision) &&
+            !is.na(row$mort_avg_hh_size) &&
+            row$mort_avg_hh_size > 0
+        ) {
+          design_effect <- if (
+            !is.na(row$mort_design_effect) && row$mort_design_effect > 1
+          ) {
+            row$mort_design_effect
+          } else {
+            .default_design_effect
+          }
+          nonresponse <- if (!is.na(row$mort_nonresponse)) {
+            row$mort_nonresponse
+          } else {
+            5
+          }
+          fpc <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE
+          total_pop <- if (
+            !is.na(row$total_population) && row$total_population > 0
+          ) {
+            row$total_population
+          } else {
+            NULL
+          }
+          recall_days <- if (
+            !is.na(row$mort_recall_days) && row$mort_recall_days > 0
+          ) {
+            row$mort_recall_days
+          } else {
+            90
+          }
+
+          mort_res <- phr_try(
+            calculate_sample_size_mortality(
+              expected_death_rate = row$mort_expected_death_rate,
+              desired_precision = row$mort_precision,
+              non_response_rate = nonresponse,
+              design = design_type,
+              design_effect = design_effect,
+              recall_days = recall_days,
+              average_household_size = row$mort_avg_hh_size,
+              fpc = fpc,
+              total_population = total_pop
+            ),
+            on_error = "return",
+            origin = origin,
+            step = phr_txt("Mortality sample size — stratum {row$stratum_id}")
+          )
+          if (!phr_failed(mort_res) && !is.null(mort_res)) {
+            sample_table$Mort_Ind_Sample_Size[
+              i
+            ] <- mort_res$sample_size_individuals
+            sample_table$Mort_PT_Sample_Size[
+              i
+            ] <- mort_res$sample_size_person_time
+            sample_table$Mort_HH_Sample_Size[
+              i
+            ] <- mort_res$sample_size_households
+          }
+        }
+
+        # ---- Final household sample size: max across all three HH types -----
+        hh_sizes <- c(
+          pop_hh = if (!is.na(sample_table$General_HH_Sample_Size[i])) {
+            sample_table$General_HH_Sample_Size[i]
+          } else {
+            NA_real_
+          },
+          ind_hh = if (!is.na(sample_table$Ind_HH_Sample_Size[i])) {
+            sample_table$Ind_HH_Sample_Size[i]
+          } else {
+            NA_real_
+          },
+          mort_hh = if (!is.na(sample_table$Mort_HH_Sample_Size[i])) {
+            sample_table$Mort_HH_Sample_Size[i]
+          } else {
+            NA_real_
+          }
         )
-        if (!phr_failed(fp)) {
-          sample_table$num_interview_per_enum_per_day[i] <- fp$num_interview_per_enum_per_day
-          sample_table$num_days[i]                       <- fp$num_days
-          sample_table$n_psu[i]                          <- fp$num_psu_needed
-          sample_table$cluster_size[i]                   <- fp$psu_size
+
+        valid_hh <- hh_sizes[!is.na(hh_sizes)]
+        if (
+          length(valid_hh) > 0 &&
+            "Final_HH_Sample_Size" %in% names(sample_table)
+        ) {
+          sample_table$Final_HH_Sample_Size[i] <- max(valid_hh)
+        }
+
+        # ---- Field plan estimate --------------------------------------------
+        # Re-read the row after sample size updates so Final_HH_Sample_Size is current.
+        row <- sample_table[i, ]
+
+        base_fields <- c(
+          "teams",
+          "enumerators_per_team",
+          "start_time",
+          "end_time",
+          "avg_interview_time",
+          "avg_travel_time",
+          "avg_rest_time",
+          "Final_HH_Sample_Size"
+        )
+        has_base <- all(vapply(
+          base_fields,
+          function(f) {
+            f %in%
+              names(row) &&
+              !is.na(row[[f]]) &&
+              nzchar(as.character(row[[f]]))
+          },
+          logical(1L)
+        ))
+
+        has_cluster_param <- design_type != "cluster" ||
+          ("clusters_per_day" %in%
+            names(row) &&
+            !is.na(row$clusters_per_day) &&
+            row$clusters_per_day > 0)
+
+        if (has_base && has_cluster_param) {
+          fp <- phr_try(
+            estimate_field_plan(
+              sample_design = design_type,
+              number_of_teams = row$teams,
+              enumerators_per_team = row$enumerators_per_team,
+              number_of_psu_per_team_per_day = if (design_type == "cluster") {
+                row$clusters_per_day
+              } else {
+                NULL
+              },
+              start_time = row$start_time,
+              end_time = row$end_time,
+              average_interview_time = row$avg_interview_time,
+              average_travel_time = row$avg_travel_time,
+              average_rest_time = row$avg_rest_time,
+              total_sample_size = row$Final_HH_Sample_Size
+            ),
+            on_error = "return",
+            origin = origin,
+            step = phr_txt("Field plan — stratum {row$stratum_id}")
+          )
+          if (!phr_failed(fp)) {
+            sample_table$num_interview_per_enum_per_day[
+              i
+            ] <- fp$num_interview_per_enum_per_day
+            sample_table$num_days[i] <- fp$num_days
+            sample_table$n_psu[i] <- fp$num_psu_needed
+            sample_table$cluster_size[i] <- fp$psu_size
+          }
         }
       }
-    }
 
-    sample_table
-
-  }, on_error = "abort", origin = origin)
+      sample_table
+    },
+    on_error = "abort",
+    origin = origin
+  )
 }
