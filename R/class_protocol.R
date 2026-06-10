@@ -1,17 +1,3 @@
-#' Protocol R6 Class
-#'
-#' @description
-#' Base class for managing protocol pipeline workflows.
-#' Handles core components shared across all protocol types:
-#' 1. Objective Selection (managed through the associated \code{\link{Framework}} object)
-#' 2. Tool and Indicator Selection
-#'
-#' For survey protocols that require strata definition, sample size
-#' calculations, sampling frame management, and sample drawing, use
-#' the \code{\link{SurveyProtocol}} subclass instead.
-#'
-#' @importFrom R6 R6Class
-#' @export
 Protocol <- R6::R6Class(
   "Protocol",
   inherit = Document,
@@ -33,7 +19,12 @@ Protocol <- R6::R6Class(
 
     #' @field valid_tool_types Character vector of allowed tool types for
     #'   \code{add_tools()}.
-    valid_tool_types = c("household", "key_informant", "observation", "generic"),
+    valid_tool_types = c(
+      "household",
+      "key_informant",
+      "observation",
+      "generic"
+    ),
 
     #' @field framework_objective_catalog_master Named list keyed by objective
     #'   code from \code{framework$master_objectives_schema}; each value stores
@@ -48,6 +39,28 @@ Protocol <- R6::R6Class(
     #'   \code{text_objective}, \code{objective_research_question}, and
     #'   \code{pillar}.
     framework_objective_catalog_adjusted = list(),
+
+    #' @field framework_indicator_catalog_master Named list keyed by indicator
+    #'   code from \code{framework$master_objectives_schema}; each value stores
+    #'   indicator metadata.
+    framework_indicator_catalog_master = list(),
+
+    #' @field framework_primary_objective_catalog Named list of objectives whose
+    #'   codes appear in \code{framework$primary_objectives}; filtered from the
+    #'   adjusted schema.  Each entry has \code{short_objective},
+    #'   \code{text_objective}, \code{objective_research_question}, \code{pillar}.
+    framework_primary_objective_catalog = list(),
+
+    #' @field framework_secondary_objective_catalog Named list of objectives whose
+    #'   codes appear in \code{framework$secondary_objectives}; filtered from the
+    #'   adjusted schema.  Each entry has \code{short_objective},
+    #'   \code{text_objective}, \code{objective_research_question}, \code{pillar}.
+    framework_secondary_objective_catalog = list(),
+
+    #' @field secondary_data_sources Named list of secondary data sources keyed
+    #'   by objective code.  Each element is a character vector of source names.
+    #'   Codes must match \code{framework_primary_objective_catalog} keys.
+    secondary_data_sources = list(),
 
     #' @field framework_indicator_catalog_master Named list keyed by indicator
     #'   code from \code{framework$master_objectives_schema}; each value stores
@@ -156,52 +169,69 @@ Protocol <- R6::R6Class(
     #' @param reference_ppt_filename Optional PowerPoint template filename/path
     #'   passed to \code{Document$initialize()}.
     #' @return A new Protocol object
-    initialize = function(assessment_title = NULL, country_name = NULL, month_year = NULL,
-                          framework_type = "none", reference_doc_filename = NULL,
-                          reference_ppt_filename = NULL) {
-      phr_try({
-        super$initialize(
-          reference_doc_filename = reference_doc_filename,
-          reference_ppt_filename = reference_ppt_filename
-        )
-        valid_fw_types <- c("none", "ana")
-        phr_assert(
-          is.character(framework_type) && length(framework_type) == 1 &&
-            framework_type %in% valid_fw_types,
-          message = phr_txt(
-            "framework_type must be one of: {paste(valid_fw_types, collapse=', ')}."
-          ),
-          origin = "Protocol$initialize"
-        )
-        self$metadata$created_date <- Sys.time()
-        self$metadata$modified_datetime <- Sys.time()
-        self$metadata$assessment_title <- assessment_title
-        self$metadata$country_name <- country_name
-        self$metadata$month_year <- month_year
-        self$tools <- list()
-        self$valid_tool_types <- as.character(self$valid_tool_types %||% character(0))
-        self$issues <- list()
-        self$issues_coherence <- list()
-        self$conditional_metadata <- list()
-        self$framework_objective_catalog_master <- list()
-        self$framework_objective_catalog_adjusted <- list()
-        self$framework_indicator_catalog_master <- list()
-        self$framework_indicator_catalog_adjusted <- list()
-        self$tool_indicator_catalog_master <- list()
-        self$tool_indicator_catalog_revised <- list()
-        self$tool_objective_catalog_master <- list()
-        self$tool_objective_catalog_revised <- list()
-        self$protocol_schema <- private$..load_protocol_schema()
+    initialize = function(
+      assessment_title = NULL,
+      country_name = NULL,
+      month_year = NULL,
+      framework_type = "none",
+      reference_doc_filename = NULL,
+      reference_ppt_filename = NULL
+    ) {
+      phr_try(
+        {
+          super$initialize(
+            reference_doc_filename = reference_doc_filename,
+            reference_ppt_filename = reference_ppt_filename
+          )
+          valid_fw_types <- c("none", "ana")
+          phr_assert(
+            is.character(framework_type) &&
+              length(framework_type) == 1 &&
+              framework_type %in% valid_fw_types,
+            message = phr_txt(
+              "framework_type must be one of: {paste(valid_fw_types, collapse=', ')}."
+            ),
+            origin = "Protocol$initialize"
+          )
+          self$metadata$created_date <- Sys.time()
+          self$metadata$modified_datetime <- Sys.time()
+          self$metadata$assessment_title <- assessment_title
+          self$metadata$country_name <- country_name
+          self$metadata$month_year <- month_year
+          self$tools <- list()
+          self$valid_tool_types <- as.character(
+            self$valid_tool_types %||% character(0)
+          )
+          self$issues <- list()
+          self$issues_coherence <- list()
+          self$conditional_metadata <- list()
+          self$framework_objective_catalog_master <- list()
+          self$framework_objective_catalog_adjusted <- list()
+          self$framework_primary_objective_catalog <- list()
+          self$framework_secondary_objective_catalog <- list()
+          self$framework_indicator_catalog_master <- list()
+          self$framework_indicator_catalog_adjusted <- list()
+          self$tool_indicator_catalog_master <- list()
+          self$tool_indicator_catalog_revised <- list()
+          self$tool_objective_catalog_master <- list()
+          self$tool_objective_catalog_revised <- list()
+          self$protocol_schema <- private$..load_protocol_schema()
 
-        self$framework <- if (framework_type == "ana") {
-          ANAFramework$new()
-        } else {
-          Framework$new()
-        }
-        private$..sync_state()
+          self$framework <- if (framework_type == "ana") {
+            ANAFramework$new()
+          } else {
+            Framework$new()
+          }
+          private$..sync_state()
 
-        phr_message(phr_txt("Protocol initialized."), origin = "Protocol$initialize")
-      }, on_error = "abort", origin = "Protocol$initialize")
+          phr_message(
+            phr_txt("Protocol initialized."),
+            origin = "Protocol$initialize"
+          )
+        },
+        on_error = "abort",
+        origin = "Protocol$initialize"
+      )
       invisible(self)
     },
 
@@ -218,42 +248,55 @@ Protocol <- R6::R6Class(
     #'   from \code{tool_type} and the current count (e.g. \code{"household_1"}).
     #' @return Invisibly returns self for method chaining.
     add_tools = function(tool_type = "household", tool_name = NULL) {
-      phr_try({
-        valid_types <- self$valid_tool_types %||% character(0)
-        phr_assert(
-          tool_type %in% valid_types,
-          message = phr_txt("tool_type must be one of: {paste(valid_types, collapse=', ')}."),
-          origin  = "Protocol$add_tools"
-        )
+      phr_try(
+        {
+          valid_types <- self$valid_tool_types %||% character(0)
+          phr_assert(
+            tool_type %in% valid_types,
+            message = phr_txt(
+              "tool_type must be one of: {paste(valid_types, collapse=', ')}."
+            ),
+            origin = "Protocol$add_tools"
+          )
 
-        # Determine the key to use in the named tools list.
-        if (is.null(tool_name) || !nzchar(tool_name)) {
-          existing_keys <- names(self$tools)
-          n_same_type   <- sum(grepl(paste0("^", tool_type, "(_[0-9]+)?$"), existing_keys))
-          tool_name     <- if (n_same_type == 0) tool_type else paste0(tool_type, "_", n_same_type + 1L)
-        }
+          # Determine the key to use in the named tools list.
+          if (is.null(tool_name) || !nzchar(tool_name)) {
+            existing_keys <- names(self$tools)
+            n_same_type <- sum(grepl(
+              paste0("^", tool_type, "(_[0-9]+)?$"),
+              existing_keys
+            ))
+            tool_name <- if (n_same_type == 0) {
+              tool_type
+            } else {
+              paste0(tool_type, "_", n_same_type + 1L)
+            }
+          }
 
-        tool <- switch(
-          tool_type,
-          "household"     = HouseholdTool$new(name = tool_name),
-          "key_informant" = KeyInformantTool$new(name = tool_name),
-          "observation"   = ObservationTool$new(name = tool_name),
-          Tool$new(name = tool_name)
-        )
+          tool <- switch(
+            tool_type,
+            "household" = HouseholdTool$new(name = tool_name),
+            "key_informant" = KeyInformantTool$new(name = tool_name),
+            "observation" = ObservationTool$new(name = tool_name),
+            Tool$new(name = tool_name)
+          )
 
-        if (is.null(self$tools)) {
-          self$tools <- list()
-        }
+          if (is.null(self$tools)) {
+            self$tools <- list()
+          }
 
-        self$tools[[tool_name]] <- tool
-        private$..sync_state()
-        private$..touch()
-        self$diagnose_coherence()
-        phr_message(
-          phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
-          origin = "Protocol$add_tools"
-        )
-      }, on_error = "abort", origin = "Protocol$add_tools")
+          self$tools[[tool_name]] <- tool
+          private$..sync_state()
+          private$..touch()
+          self$diagnose_coherence()
+          phr_message(
+            phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
+            origin = "Protocol$add_tools"
+          )
+        },
+        on_error = "abort",
+        origin = "Protocol$add_tools"
+      )
       invisible(self)
     },
 
@@ -269,7 +312,9 @@ Protocol <- R6::R6Class(
     #' @return Character vector of tool names (keys of \code{self$tools}).
     #'   Empty character vector when no tools are registered.
     get_tool_names = function() {
-      if (is.null(self$tools) || length(self$tools) == 0) return(character(0))
+      if (is.null(self$tools) || length(self$tools) == 0) {
+        return(character(0))
+      }
       names(self$tools)
     },
 
@@ -279,7 +324,9 @@ Protocol <- R6::R6Class(
     #' @return \code{TRUE} if the tool is present in \code{self$tools},
     #'   \code{FALSE} otherwise.
     is_tool_included = function(tool_name) {
-      if (is.null(self$tools) || length(self$tools) == 0) return(FALSE)
+      if (is.null(self$tools) || length(self$tools) == 0) {
+        return(FALSE)
+      }
       isTRUE(tool_name %in% names(self$tools))
     },
 
@@ -294,79 +341,94 @@ Protocol <- R6::R6Class(
     #'   for recoverable problems.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{TRUE} if valid.
     validate_objective_schema = function(schema, soft = FALSE) {
-      phr_try({
-        origin <- "Protocol$validate_objective_schema"
+      phr_try(
+        {
+          origin <- "Protocol$validate_objective_schema"
 
-        if (is.null(schema) || !is.data.frame(schema)) {
-          phr_error(
-            origin  = origin,
-            message = phr_txt("Objective schema must be a data frame."),
-            hint    = phr_txt("Use load_objective_schema() to obtain the default schema.")
-          )
-        }
-
-        if (nrow(schema) == 0) {
-          msg <- phr_txt("Objective schema is empty (zero rows).")
-          if (soft) {
-            phr_warning(origin = origin, message = msg)
-            return(invisible(FALSE))
-          }
-          phr_error(origin = origin, message = msg)
-        }
-
-        missing_cols <- setdiff(.objective_schema_required_cols, names(schema))
-        if (length(missing_cols) > 0) {
-          phr_error(
-            origin  = origin,
-            message = phr_txt(
-              glue::glue(
-                "Objective schema is missing required column(s): {paste(missing_cols, collapse = ', ')}"
-              )
-            ),
-            hint = phr_txt(
-              glue::glue(
-                "Required columns are: {paste(.objective_schema_required_cols, collapse = ', ')}"
+          if (is.null(schema) || !is.data.frame(schema)) {
+            phr_error(
+              origin = origin,
+              message = phr_txt("Objective schema must be a data frame."),
+              hint = phr_txt(
+                "Use load_objective_schema() to obtain the default schema."
               )
             )
-          )
-        }
+          }
 
-        if (all(is.na(schema$sector))) {
-          phr_error(
-            origin  = origin,
-            message = phr_txt("All 'sector' values in the objective schema are NA.")
-          )
-        }
-
-        if (all(is.na(schema$short_objective))) {
-          msg <- phr_txt("All 'short_objective' values in the objective schema are NA.")
-          if (soft) {
-            phr_warning(origin = origin, message = msg)
-          } else {
+          if (nrow(schema) == 0) {
+            msg <- phr_txt("Objective schema is empty (zero rows).")
+            if (soft) {
+              phr_warning(origin = origin, message = msg)
+              return(invisible(FALSE))
+            }
             phr_error(origin = origin, message = msg)
           }
-        }
 
-        char_cols <- c("sector", "pillar", "sub_pillar", "text_objective")
-        bad_types <- char_cols[sapply(char_cols, function(col) {
-          col %in% names(schema) && !is.character(schema[[col]]) &&
-            !is.factor(schema[[col]])
-        })]
-        if (length(bad_types) > 0) {
-          msg <- phr_txt(
-            glue::glue(
-              "The following column(s) should be character (or factor): {paste(bad_types, collapse = ', ')}"
+          missing_cols <- setdiff(
+            .objective_schema_required_cols,
+            names(schema)
+          )
+          if (length(missing_cols) > 0) {
+            phr_error(
+              origin = origin,
+              message = phr_txt(
+                glue::glue(
+                  "Objective schema is missing required column(s): {paste(missing_cols, collapse = ', ')}"
+                )
+              ),
+              hint = phr_txt(
+                glue::glue(
+                  "Required columns are: {paste(.objective_schema_required_cols, collapse = ', ')}"
+                )
+              )
             )
-          )
-          if (soft) {
-            phr_warning(origin = origin, message = msg)
-          } else {
-            phr_error(origin = origin, message = msg)
           }
-        }
 
-        invisible(TRUE)
-      }, on_error = "abort", origin = "Protocol$validate_objective_schema")
+          if (all(is.na(schema$sector))) {
+            phr_error(
+              origin = origin,
+              message = phr_txt(
+                "All 'sector' values in the objective schema are NA."
+              )
+            )
+          }
+
+          if (all(is.na(schema$short_objective))) {
+            msg <- phr_txt(
+              "All 'short_objective' values in the objective schema are NA."
+            )
+            if (soft) {
+              phr_warning(origin = origin, message = msg)
+            } else {
+              phr_error(origin = origin, message = msg)
+            }
+          }
+
+          char_cols <- c("sector", "pillar", "sub_pillar", "text_objective")
+          bad_types <- char_cols[sapply(char_cols, function(col) {
+            col %in%
+              names(schema) &&
+              !is.character(schema[[col]]) &&
+              !is.factor(schema[[col]])
+          })]
+          if (length(bad_types) > 0) {
+            msg <- phr_txt(
+              glue::glue(
+                "The following column(s) should be character (or factor): {paste(bad_types, collapse = ', ')}"
+              )
+            )
+            if (soft) {
+              phr_warning(origin = origin, message = msg)
+            } else {
+              phr_error(origin = origin, message = msg)
+            }
+          }
+
+          invisible(TRUE)
+        },
+        on_error = "abort",
+        origin = "Protocol$validate_objective_schema"
+      )
     },
 
     #' @description Diagnose coherence between the \code{modified_objectives_schema}
@@ -404,21 +466,24 @@ Protocol <- R6::R6Class(
       }
 
       has_obj_col <- "objective_code" %in% names(schema)
-      has_ind_col <- "indicator_code"  %in% names(schema)
+      has_ind_col <- "indicator_code" %in% names(schema)
 
       if (!has_obj_col || !has_ind_col) {
         self$issues_coherence$schema_columns <- paste0(
           "modified_objectives_schema must contain 'objective_code' and 'indicator_code' columns. ",
-          "Found: ", paste(names(schema), collapse = ", ")
+          "Found: ",
+          paste(names(schema), collapse = ", ")
         )
         return(invisible(self))
       }
 
       schema_ind_codes <- as.character(schema$indicator_code)
-      schema_ind_codes <- schema_ind_codes[!is.na(schema_ind_codes) & nzchar(schema_ind_codes)]
+      schema_ind_codes <- schema_ind_codes[
+        !is.na(schema_ind_codes) & nzchar(schema_ind_codes)
+      ]
 
       # Unique objective rows (objective_code + label for reporting)
-      obj_col  <- as.character(schema$objective_code)
+      obj_col <- as.character(schema$objective_code)
       name_col <- if ("text_objective" %in% names(schema)) {
         as.character(schema$text_objective)
       } else {
@@ -435,14 +500,21 @@ Protocol <- R6::R6Class(
       tool_ind_codes <- character(0)
       if (!is.null(self$tools) && length(self$tools) > 0) {
         for (tool in self$tools) {
-          sv <- tryCatch({
-            if (!is.null(tool$revised_survey) && nrow(tool$revised_survey) > 0) {
-              tool$revised_survey
-            } else {
-              tool$survey
-            }
-          }, error = function(e) NULL)
-          if (!is.null(sv) && is.data.frame(sv) && "indicator_code" %in% names(sv)) {
+          sv <- tryCatch(
+            {
+              if (
+                !is.null(tool$revised_survey) && nrow(tool$revised_survey) > 0
+              ) {
+                tool$revised_survey
+              } else {
+                tool$survey
+              }
+            },
+            error = function(e) NULL
+          )
+          if (
+            !is.null(sv) && is.data.frame(sv) && "indicator_code" %in% names(sv)
+          ) {
             codes <- as.character(sv$indicator_code)
             codes <- codes[!is.na(codes) & nzchar(codes)]
             tool_ind_codes <- c(tool_ind_codes, codes)
@@ -460,7 +532,11 @@ Protocol <- R6::R6Class(
         obj_inds <- obj_inds[!is.na(obj_inds) & nzchar(obj_inds)]
         if (length(obj_inds) == 0 || !any(obj_inds %in% tool_ind_codes)) {
           obj_no_coverage[[obj_code]] <- paste0(
-            "Objective '", obj_code, "' (", obj_name, ") has no indicators ",
+            "Objective '",
+            obj_code,
+            "' (",
+            obj_name,
+            ") has no indicators ",
             "in any tool's revised_survey."
           )
         }
@@ -475,19 +551,24 @@ Protocol <- R6::R6Class(
         if (length(unmatched) > 0) {
           self$issues_coherence$tool_indicators_without_objectives <- paste0(
             "The following indicator_code(s) in tools have no match in ",
-            "modified_objectives_schema: ", paste(unmatched, collapse = ", ")
+            "modified_objectives_schema: ",
+            paste(unmatched, collapse = ", ")
           )
         }
       }
 
       if (length(self$issues_coherence) == 0) {
         phr_message(
-          phr_txt("Coherence validation passed: all objectives have tool coverage and all tool indicators match the schema."),
+          phr_txt(
+            "Coherence validation passed: all objectives have tool coverage and all tool indicators match the schema."
+          ),
           origin = "Protocol$diagnose_coherence"
         )
       } else {
         phr_message(
-          phr_txt("Coherence validation found {length(self$issues_coherence)} issue(s). Check self$issues_coherence for details."),
+          phr_txt(
+            "Coherence validation found {length(self$issues_coherence)} issue(s). Check self$issues_coherence for details."
+          ),
           origin = "Protocol$diagnose_coherence"
         )
       }
@@ -498,7 +579,10 @@ Protocol <- R6::R6Class(
     #' @param output_file Character output \code{.docx} path.
     #' @param open Logical indicating whether to open the output path.
     #' @return Invisibly returns \code{self}.
-    generate_doc = function(output_file = "protocol_report.docx", open = FALSE) {
+    generate_doc = function(
+      output_file = "protocol_report.docx",
+      open = FALSE
+    ) {
       super$generate_doc(output_file = output_file, open = open)
     },
 
@@ -509,11 +593,19 @@ Protocol <- R6::R6Class(
     #' @param name Optional named list entry inside \code{field}.
     #' @param role Optional role-based list resolution key.
     #' @return Invisibly returns \code{NULL}.
-    post_sync_state = function(field = NULL, member = NULL, target_field = NULL,
-                               name = NULL, role = NULL) {
+    post_sync_state = function(
+      field = NULL,
+      member = NULL,
+      target_field = NULL,
+      name = NULL,
+      role = NULL
+    ) {
       super$post_sync_state(
-        field = field, member = member, target_field = target_field,
-        name = name, role = role
+        field = field,
+        member = member,
+        target_field = target_field,
+        name = name,
+        role = role
       )
       private$..sync_framework_catalog_fields()
       private$..sync_tool_indicator_catalog_fields()
@@ -522,33 +614,159 @@ Protocol <- R6::R6Class(
   ),
 
   active = list(
+    #' @field .release_date Active binding returning the current system date.
+    #'   This binding is read-only; attempts to assign return \code{invisible(FALSE)}.
     .release_date = function(value) {
-      if (!missing(value)) return(invisible(FALSE))
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
       Sys.Date()
     },
+
+    #' @field .specific_objectives Active binding that renders primary objectives
+    #'   as markdown bullet points, grouped by pillar when available.
+    #'   Returns \code{NULL} when no primary objective catalog is available.
+    #'   This binding is read-only.
     .specific_objectives = function(value) {
-
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      catalog <- self$framework_primary_objective_catalog
+      if (is.null(catalog) || length(catalog) == 0L) {
+        return(NULL)
+      }
+      pillars <- vapply(
+        catalog,
+        function(x) as.character(x$pillar %||% ""),
+        character(1)
+      )
+      unique_pillars <- unique(pillars[nzchar(pillars)])
+      if (length(unique_pillars) == 0L) {
+        lines <- vapply(
+          catalog,
+          function(x) paste0("- ", x$text_objective),
+          character(1)
+        )
+        return(paste(lines, collapse = "\n"))
+      }
+      parts <- vapply(
+        unique_pillars,
+        function(pillar) {
+          codes_in_pillar <- names(catalog)[pillars == pillar]
+          bullets <- vapply(
+            codes_in_pillar,
+            function(code) {
+              paste0("- ", catalog[[code]]$text_objective)
+            },
+            character(1)
+          )
+          paste0("**", pillar, "**\n", paste(bullets, collapse = "\n"))
+        },
+        character(1)
+      )
+      paste(parts, collapse = "\n\n")
     },
-    .research_questions =  function(value) {
 
+    #' @field .research_questions Active binding that renders research questions
+    #'   from primary objectives as markdown bullet points, grouped by pillar when
+    #'   available. Returns \code{NULL} when no primary objective catalog exists.
+    #'   This binding is read-only.
+    .research_questions = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      catalog <- self$framework_primary_objective_catalog
+      if (is.null(catalog) || length(catalog) == 0L) {
+        return(NULL)
+      }
+      pillars <- vapply(
+        catalog,
+        function(x) as.character(x$pillar %||% ""),
+        character(1)
+      )
+      unique_pillars <- unique(pillars[nzchar(pillars)])
+      if (length(unique_pillars) == 0L) {
+        lines <- vapply(
+          catalog,
+          function(x) paste0("- ", x$objective_research_question),
+          character(1)
+        )
+        return(paste(lines, collapse = "\n"))
+      }
+      parts <- vapply(
+        unique_pillars,
+        function(pillar) {
+          codes_in_pillar <- names(catalog)[pillars == pillar]
+          bullets <- vapply(
+            codes_in_pillar,
+            function(code) {
+              paste0("- ", catalog[[code]]$objective_research_question)
+            },
+            character(1)
+          )
+          paste0("**", pillar, "**\n", paste(bullets, collapse = "\n"))
+        },
+        character(1)
+      )
+      paste(parts, collapse = "\n\n")
     },
+
+    #' @field .list_secondary_data Active binding that renders secondary data
+    #'   sources as markdown bullet points keyed by objective text when available.
+    #'   Returns \code{NULL} when no secondary data sources are set.
+    #'   This binding is read-only.
     .list_secondary_data = function(value) {
-
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      sources <- self$secondary_data_sources
+      if (is.null(sources) || length(sources) == 0L) {
+        return(NULL)
+      }
+      catalog <- self$framework_primary_objective_catalog
+      if (is.null(catalog)) {
+        catalog <- list()
+      }
+      parts <- vapply(
+        names(sources),
+        function(code) {
+          header <- if (code %in% names(catalog)) {
+            catalog[[code]]$text_objective
+          } else {
+            code
+          }
+          src_vec <- as.character(sources[[code]])
+          bullets <- paste0("- ", src_vec, collapse = "\n")
+          paste0("**", header, "**\n", bullets)
+        },
+        character(1)
+      )
+      paste(parts, collapse = "\n\n")
     },
 
+    #' @field .modified_framework_svg Active binding returning a temporary SVG
+    #'   file path created from \code{framework$adjusted_svg}; falls back to
+    #'   \code{framework$master_svg} when adjusted SVG is unavailable.
+    #'   Returns \code{NULL} if no SVG text is available. This binding is read-only.
     .modified_framework_svg = function(value) {
-      if (!missing(value)) return(invisible(NULL))
+      if (!missing(value)) {
+        return(invisible(NULL))
+      }
       svg_text <- tryCatch(
         self$access_nested(field = "framework", member = "adjusted_svg"),
         error = function(e) NULL
       )
-      if (is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])) {
+      if (
+        is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])
+      ) {
         svg_text <- tryCatch(
           self$access_nested(field = "framework", member = "master_svg"),
           error = function(e) NULL
         )
       }
-      if (is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])) {
+      if (
+        is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])
+      ) {
         return(NULL)
       }
       tmp_svg <- tempfile(fileext = ".svg")
@@ -558,33 +776,108 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
+    #' @description Synchronize framework-level objective and indicator catalogs
+    #'   from the current framework schemas, and refresh primary/secondary
+    #'   objective catalogs using framework objective code filters.
+    #' @return Invisibly returns \code{NULL}.
     ..sync_framework_catalog_fields = function() {
-      master_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+      master_schema <- if (
+        !is.null(self$framework) && inherits(self$framework, "Framework")
+      ) {
         self$framework$master_objectives_schema
       } else {
         NULL
       }
-      adjusted_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+      adjusted_schema <- if (
+        !is.null(self$framework) && inherits(self$framework, "Framework")
+      ) {
         self$framework$modified_objectives_schema
       } else {
         NULL
       }
 
-      self$framework_objective_catalog_master <- private$..build_objective_catalog(master_schema)
-      self$framework_objective_catalog_adjusted <- private$..build_objective_catalog(adjusted_schema)
-      self$framework_indicator_catalog_master <- private$..build_indicator_catalog(master_schema)
-      self$framework_indicator_catalog_adjusted <- private$..build_indicator_catalog(adjusted_schema)
+      self$framework_objective_catalog_master <- private$..build_objective_catalog(
+        master_schema
+      )
+      self$framework_objective_catalog_adjusted <- private$..build_objective_catalog(
+        adjusted_schema
+      )
+      self$framework_indicator_catalog_master <- private$..build_indicator_catalog(
+        master_schema
+      )
+      self$framework_indicator_catalog_adjusted <- private$..build_indicator_catalog(
+        adjusted_schema
+      )
+
+      # Build primary and secondary catalogs filtered by framework objective codes
+      primary_codes <- if (
+        !is.null(self$framework) && inherits(self$framework, "Framework")
+      ) {
+        as.character(self$framework$primary_objectives %||% integer(0))
+      } else {
+        character(0)
+      }
+      secondary_codes <- if (
+        !is.null(self$framework) && inherits(self$framework, "Framework")
+      ) {
+        as.character(self$framework$secondary_objectives %||% integer(0))
+      } else {
+        character(0)
+      }
+
+      primary_schema <- if (
+        !is.null(adjusted_schema) &&
+          is.data.frame(adjusted_schema) &&
+          "objective_code" %in% names(adjusted_schema) &&
+          length(primary_codes) > 0L
+      ) {
+        adjusted_schema[
+          as.character(adjusted_schema$objective_code) %in% primary_codes,
+          ,
+          drop = FALSE
+        ]
+      } else {
+        NULL
+      }
+      secondary_schema <- if (
+        !is.null(adjusted_schema) &&
+          is.data.frame(adjusted_schema) &&
+          "objective_code" %in% names(adjusted_schema) &&
+          length(secondary_codes) > 0L
+      ) {
+        adjusted_schema[
+          as.character(adjusted_schema$objective_code) %in% secondary_codes,
+          ,
+          drop = FALSE
+        ]
+      } else {
+        NULL
+      }
+
+      self$framework_primary_objective_catalog <- private$..build_objective_catalog(
+        primary_schema
+      )
+      self$framework_secondary_objective_catalog <- private$..build_objective_catalog(
+        secondary_schema
+      )
       invisible(NULL)
     },
 
+    #' @description Synchronize tool-level indicator and objective catalogs for
+    #'   both master and revised surveys across all registered tools.
+    #' @return Invisibly returns \code{NULL}.
     ..sync_tool_indicator_catalog_fields = function() {
       self$tool_indicator_catalog_master <- list()
       self$tool_indicator_catalog_revised <- list()
       self$tool_objective_catalog_master <- list()
       self$tool_objective_catalog_revised <- list()
-      if (is.null(self$tools) || length(self$tools) == 0L) return(invisible(NULL))
+      if (is.null(self$tools) || length(self$tools) == 0L) {
+        return(invisible(NULL))
+      }
 
-      fw_schema <- if (!is.null(self$framework) && inherits(self$framework, "Framework")) {
+      fw_schema <- if (
+        !is.null(self$framework) && inherits(self$framework, "Framework")
+      ) {
         self$framework$master_objectives_schema
       } else {
         NULL
@@ -592,9 +885,15 @@ Protocol <- R6::R6Class(
 
       for (tn in names(self$tools)) {
         tool <- self$tools[[tn]]
-        if (is.null(tool) || !inherits(tool, "Tool")) next
-        master_codes  <- as.character(tool$get_indicator_codes(prefer_revised = FALSE))
-        revised_codes <- as.character(tool$get_indicator_codes(prefer_revised = TRUE))
+        if (is.null(tool) || !inherits(tool, "Tool")) {
+          next
+        }
+        master_codes <- as.character(tool$get_indicator_codes(
+          prefer_revised = FALSE
+        ))
+        revised_codes <- as.character(tool$get_indicator_codes(
+          prefer_revised = TRUE
+        ))
         self$tool_indicator_catalog_master[[tn]] <- master_codes
         self$tool_indicator_catalog_revised[[tn]] <- revised_codes
         self$tool_objective_catalog_master[[tn]] <-
@@ -605,24 +904,43 @@ Protocol <- R6::R6Class(
       invisible(NULL)
     },
 
+    #' @description Build an objective catalog keyed by objective code (or
+    #'   \code{short_objective} fallback) from a framework-like schema.
+    #' @param schema Data frame containing objective metadata.
+    #' @return Named list of objective metadata entries.
     ..build_objective_catalog = function(schema) {
-      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) return(list())
-      code_col <- if ("objective_code" %in% names(schema)) "objective_code" else
-        if ("short_objective" %in% names(schema)) "short_objective" else NULL
-      if (is.null(code_col)) return(list())
+      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
+        return(list())
+      }
+      code_col <- if ("objective_code" %in% names(schema)) {
+        "objective_code"
+      } else if ("short_objective" %in% names(schema)) {
+        "short_objective"
+      } else {
+        NULL
+      }
+      if (is.null(code_col)) {
+        return(list())
+      }
 
       codes <- as.character(schema[[code_col]])
       codes <- codes[!is.na(codes) & nzchar(codes)]
-      if (length(codes) == 0L) return(list())
+      if (length(codes) == 0L) {
+        return(list())
+      }
 
       out <- list()
       uniq_codes <- unique(codes)
       for (code in uniq_codes) {
         idx <- which(as.character(schema[[code_col]]) == code)
-        if (length(idx) == 0L) next
+        if (length(idx) == 0L) {
+          next
+        }
         s <- schema[idx, , drop = FALSE]
         first_non_empty <- function(col, default = "") {
-          if (!col %in% names(s)) return(default)
+          if (!col %in% names(s)) {
+            return(default)
+          }
           vals <- as.character(s[[col]])
           vals <- vals[!is.na(vals) & nzchar(vals)]
           if (length(vals) == 0L) default else vals[[1L]]
@@ -630,46 +948,79 @@ Protocol <- R6::R6Class(
         out[[code]] <- list(
           short_objective = first_non_empty("short_objective"),
           text_objective = first_non_empty("text_objective"),
-          objective_research_question = first_non_empty("objective_research_question"),
+          objective_research_question = first_non_empty(
+            "objective_research_question"
+          ),
           pillar = first_non_empty("pillar")
         )
       }
       out
     },
 
-    # Build an objective catalog for a single tool by finding the objectives in
-    # fw_schema whose indicator_code rows match the supplied indicator_codes.
+    #' @description Build a tool-specific objective catalog by filtering
+    #'   \code{fw_schema} rows whose \code{indicator_code} values match the
+    #'   supplied \code{indicator_codes}.
+    #' @param fw_schema Data frame schema containing at least
+    #'   \code{indicator_code}.
+    #' @param indicator_codes Character vector of indicator codes for one tool.
+    #' @return Named list objective catalog for the tool.
     ..build_tool_objective_catalog = function(fw_schema, indicator_codes) {
-      if (is.null(fw_schema) || !is.data.frame(fw_schema) || nrow(fw_schema) == 0 ||
-          length(indicator_codes) == 0L) {
+      if (
+        is.null(fw_schema) ||
+          !is.data.frame(fw_schema) ||
+          nrow(fw_schema) == 0 ||
+          length(indicator_codes) == 0L
+      ) {
         return(list())
       }
-      if (!"indicator_code" %in% names(fw_schema)) return(list())
+      if (!"indicator_code" %in% names(fw_schema)) {
+        return(list())
+      }
       # Filter schema rows to those matching the tool's indicator codes
       matching_rows <- fw_schema[
-        as.character(fw_schema$indicator_code) %in% as.character(indicator_codes),
-        , drop = FALSE
+        as.character(fw_schema$indicator_code) %in%
+          as.character(indicator_codes),
+        ,
+        drop = FALSE
       ]
-      if (nrow(matching_rows) == 0L) return(list())
+      if (nrow(matching_rows) == 0L) {
+        return(list())
+      }
       private$..build_objective_catalog(matching_rows)
     },
 
+    #' @description Build an indicator catalog keyed by \code{indicator_code}
+    #'   with normalized definition and research question fields.
+    #' @param schema Data frame containing indicator metadata.
+    #' @return Named list of indicator metadata entries.
     ..build_indicator_catalog = function(schema) {
-      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0 ||
-          !"indicator_code" %in% names(schema)) return(list())
+      if (
+        is.null(schema) ||
+          !is.data.frame(schema) ||
+          nrow(schema) == 0 ||
+          !"indicator_code" %in% names(schema)
+      ) {
+        return(list())
+      }
       codes <- as.character(schema$indicator_code)
       codes <- codes[!is.na(codes) & nzchar(codes)]
-      if (length(codes) == 0L) return(list())
+      if (length(codes) == 0L) {
+        return(list())
+      }
 
       out <- list()
       uniq_codes <- unique(codes)
       for (code in uniq_codes) {
         idx <- which(as.character(schema$indicator_code) == code)
-        if (length(idx) == 0L) next
+        if (length(idx) == 0L) {
+          next
+        }
         s <- schema[idx, , drop = FALSE]
         first_non_empty <- function(cols, default = "") {
           for (col in cols) {
-            if (!col %in% names(s)) next
+            if (!col %in% names(s)) {
+              next
+            }
             vals <- as.character(s[[col]])
             vals <- vals[!is.na(vals) & nzchar(vals)]
             if (length(vals) > 0L) return(vals[[1L]])
@@ -677,8 +1028,15 @@ Protocol <- R6::R6Class(
           default
         }
         out[[code]] <- list(
-          indicator_definition = first_non_empty(c("indicator_definition", "text_indicator", "indicator_name")),
-          research_question = first_non_empty(c("research_question", "objective_research_question"))
+          indicator_definition = first_non_empty(c(
+            "indicator_definition",
+            "text_indicator",
+            "indicator_name"
+          )),
+          research_question = first_non_empty(c(
+            "research_question",
+            "objective_research_question"
+          ))
         )
       }
       out

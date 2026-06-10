@@ -22,3 +22,6 @@ tests/testthat/Rplots.pdf
 report_no_tools.docx
 inst/resources/~$protocol_schema_iphra.xlsx
 inst/resources/~$ach_tor_iphra_template.docx
+plan.md
+.positai/settings.json
+ROXYGEN2_DOCUMENTATION_ADDITIONS.md
