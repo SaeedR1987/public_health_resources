@@ -776,6 +776,19 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
+    #' @description Check whether a tool with a specific role exists.
+    #'   Uses \code{access_nested()} to query tools by role and verify that
+    #'   a tool with that role exists and has a valid name.
+    #' @param role Character. Role identifier to check for tool availability.
+    #' @return Logical. \code{TRUE} if a tool with the specified role exists
+    #'   and has a valid name, \code{FALSE} otherwise.
+    ..has_tool_role = function(role) {
+      out <- tryCatch(
+        self$access_nested(field = "tools", role = role, member = "get_name"),
+        error = function(e) NULL
+      )
+      is.character(out) && length(out) == 1L && nzchar(out)
+    },
     #' @description Synchronize framework-level objective and indicator catalogs
     #'   from the current framework schemas, and refresh primary/secondary
     #'   objective catalogs using framework objective code filters.
@@ -860,6 +873,91 @@ Protocol <- R6::R6Class(
       self$framework_secondary_objective_catalog <- private$..build_objective_catalog(
         secondary_schema
       )
+      invisible(NULL)
+    },
+    #' @description Retrieve the framework master objectives schema.
+    #' @return A data frame of master objectives; empty data frame when unavailable.
+    ..get_master_schema = function() {
+      schema <- self$access_nested(
+        field = "framework",
+        member = "master_objectives_schema"
+      )
+      if (is.null(schema) || !is.data.frame(schema)) {
+        return(data.frame())
+      }
+      as.data.frame(schema, stringsAsFactors = FALSE)
+    },
+
+    #' @description Collect unique indicator codes from included tools.
+    #' @param tool_names Optional character vector of tool names to query.
+    #' @param prefer_revised Logical. When TRUE, prefer revised survey codes.
+    #' @return Character vector of unique indicator codes.
+    ..get_tool_indicator_codes = function(
+      tool_names = NULL,
+      prefer_revised = TRUE
+    ) {
+      selected <- self$get_tool_names()
+      if (!is.null(tool_names)) {
+        selected <- intersect(selected, as.character(tool_names))
+      }
+      if (length(selected) == 0L) {
+        return(character(0))
+      }
+
+      out <- character(0)
+      for (tn in selected) {
+        tool_codes <- tryCatch(
+          self$access_nested(
+            field = "tools",
+            name = tn,
+            member = "get_indicator_codes",
+            prefer_revised = prefer_revised
+          ),
+          error = function(e) character(0)
+        )
+        out <- c(out, as.character(tool_codes %||% character(0)))
+      }
+      unique(out[nzchar(out)])
+    },
+    # Load survey/choices/settings from an xlsx path into an existing Tool object.
+    ..load_tool_from_path = function(tool, path) {
+      if (!file.exists(path)) {
+        return(invisible(NULL))
+      }
+      available_sheets <- tryCatch(
+        readxl::excel_sheets(path),
+        error = function(e) character(0)
+      )
+      if ("survey" %in% available_sheets) {
+        sv <- tryCatch(
+          as.data.frame(readxl::read_excel(path, sheet = "survey")),
+          error = function(e) NULL
+        )
+        if (!is.null(sv)) {
+          tool$survey <- sv
+          tool$revised_survey <- sv
+        }
+      }
+      if ("choices" %in% available_sheets) {
+        ch <- tryCatch(
+          as.data.frame(readxl::read_excel(path, sheet = "choices")),
+          error = function(e) NULL
+        )
+        if (!is.null(ch)) {
+          tool$choices <- ch
+          tool$revised_choices <- ch
+        }
+      }
+      if ("settings" %in% available_sheets) {
+        st <- tryCatch(
+          as.data.frame(readxl::read_excel(path, sheet = "settings")),
+          error = function(e) NULL
+        )
+        if (!is.null(st)) {
+          tool$settings <- st
+          tool$revised_settings <- st
+        }
+      }
       invisible(NULL)
     },
 

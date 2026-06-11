@@ -411,11 +411,543 @@ SurveyProtocol <- R6::R6Class(
       }
       min(vals)
     },
+    # ── Stratified strata names active bindings ─────────────────────────────
+    # Helper: return TRUE if any strata row has site_method AND hh_method
+    # The sample table's sampling_method encodes the combined site+hh method.
+    # IPHRA mapping:
+    #   simple_random         -> site=srs,  hh=srs
+    #   systematic            -> site=systematic, hh=systematic
+    #   simple_random_rlc     -> site=srs,  hh=rlc
+    #   systematic_rlc        -> site=systematic, hh=rlc
+    #   proportional          -> site=proportional, hh=srs
+    #   proportional_rlc      -> site=proportional, hh=rlc
+    #   pps_cluster           -> site=cluster, hh=srs
+    #   pps_rlc               -> site=cluster, hh=rlc
+    #   purposive             -> site=purposive, hh=srs (default)
+    .stratified_strata_names_srs_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("simple_random")
+    },
+    .stratified_strata_names_srs_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      # No single method encodes srs-site + systematic-hh in IPHRA; return FALSE
+      FALSE
+    },
+    .stratified_strata_names_srs_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("simple_random_rlc")
+    },
+    .stratified_strata_names_systematic_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("systematic")
+    },
+    .stratified_strata_names_systematic_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      FALSE
+    },
+    .stratified_strata_names_systematic_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("systematic_rlc")
+    },
+    .stratified_strata_names_proportional_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("proportional")
+    },
+    .stratified_strata_names_proportional_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      FALSE
+    },
+    .stratified_strata_names_proportional_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("proportional_rlc")
+    },
+    .stratified_strata_names_cluster_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("pps_cluster")
+    },
+    .stratified_strata_names_cluster_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      FALSE
+    },
+    .stratified_strata_names_cluster_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("pps_rlc")
+    },
+    .stratified_strata_names_purposive_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method("purposive")
+    },
+    .stratified_strata_names_purposive_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      FALSE
+    },
+    .stratified_strata_names_purposive_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      FALSE
+    },
+    .total_population_size = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      sf_pop <- self$sampling_frame_strata_population
+      if (
+        !is.null(sf_pop) &&
+          is.data.frame(sf_pop) &&
+          "total_population" %in% names(sf_pop)
+      ) {
+        return(sum(as.numeric(sf_pop$total_population), na.rm = TRUE))
+      }
+      sf_log <- tryCatch(
+        self$access_nested(field = "sampling_frame", member = "log_df"),
+        error = function(e) NULL
+      )
+      if (
+        !is.null(sf_log) &&
+          is.data.frame(sf_log) &&
+          "population_size" %in% names(sf_log)
+      ) {
+        return(sum(as.numeric(sf_log$population_size), na.rm = TRUE))
+      }
+      NULL
+    },
+    .total_population_size_strata = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      sf_pop <- self$sampling_frame_strata_population
+      if (
+        is.null(sf_pop) ||
+          !is.data.frame(sf_pop) ||
+          !all(c("stratum", "total_population") %in% names(sf_pop))
+      ) {
+        return(NULL)
+      }
+      parts <- paste0(sf_pop$stratum, " (", sf_pop$total_population, ")")
+      paste(parts, collapse = ", ")
+    },
+    .sample_size_gen = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"General_HH_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$General_HH_Sample_Size), na.rm = TRUE)
+    },
+    .sample_size_rate_persons = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"Mort_Ind_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$Mort_Ind_Sample_Size), na.rm = TRUE)
+    },
+    .sample_size_rate_persontime = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"Mort_PT_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$Mort_PT_Sample_Size), na.rm = TRUE)
+    },
+    .sample_size_rate_hh = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"Mort_HH_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$Mort_HH_Sample_Size), na.rm = TRUE)
+    },
+    .sample_size_ind_persons = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"Ind_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$Ind_Sample_Size), na.rm = TRUE)
+    },
+    .sample_size_ind_hh = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"Ind_HH_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$Ind_HH_Sample_Size), na.rm = TRUE)
+    },
+    .sample_size_hh_final = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"Final_HH_Sample_Size" %in% names(st)) {
+        return(NULL)
+      }
+      sum(as.numeric(st$Final_HH_Sample_Size), na.rm = TRUE)
+    },
+    .ind_indicator = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"ind_indicator" %in% names(st)) {
+        return(NULL)
+      }
+      vals <- as.character(st$ind_indicator)
+      vals <- vals[!is.na(vals) & nzchar(vals)]
+      if (length(vals) == 0L) {
+        return(NULL)
+      }
+      paste(unique(vals), collapse = " ")
+    },
+    .rate_indicator = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"mort_indicator" %in% names(st)) {
+        return(NULL)
+      }
+      vals <- as.character(st$mort_indicator)
+      vals <- vals[!is.na(vals) & nzchar(vals)]
+      if (length(vals) == 0L) {
+        return(NULL)
+      }
+      paste(unique(vals), collapse = " ")
+    },
+    .strata_names = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st)) {
+        return(NULL)
+      }
+      col <- if ("stratum_name" %in% names(st)) {
+        "stratum_name"
+      } else if ("stratum_id" %in% names(st)) {
+        "stratum_id"
+      } else {
+        NULL
+      }
+      if (is.null(col)) {
+        return(NULL)
+      }
+      vals <- as.character(st[[col]])
+      vals <- vals[!is.na(vals) & nzchar(vals)]
+      if (length(vals) == 0L) {
+        return(NULL)
+      }
+      paste(vals, collapse = ", ")
+    },
+    .cluster_size = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"cluster_size" %in% names(st)) {
+        return(NULL)
+      }
+      vals <- as.numeric(st$cluster_size)
+      vals <- vals[!is.na(vals)]
+      if (length(vals) == 0L) {
+        return(NULL)
+      }
+      max(vals)
+    },
+    .num_enumerators_per_team = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"enumerators_per_team" %in% names(st)) {
+        return(NULL)
+      }
+      vals <- as.numeric(st$enumerators_per_team)
+      vals <- vals[!is.na(vals)]
+      if (length(vals) == 0L) {
+        return(NULL)
+      }
+      max(vals)
+    },
+    .num_days_data_collection = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"num_days" %in% names(st)) {
+        return(NULL)
+      }
+      vals <- as.numeric(st$num_days)
+      vals <- vals[!is.na(vals)]
+      if (length(vals) == 0L) {
+        return(NULL)
+      }
+      max(vals)
+    },
+    .cluster_site_selection_yes = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..sample_has_any_method(c("cluster"))
+    },
+    .cluster_site_selection_no = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      !private$..sample_has_any_method(c("cluster"))
+    },
+    .exhaustive_site_selection = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..sample_has_any_method("proportional")
+    },
+    .general_survey = function(value) FALSE,
+    .individual_survey = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("10701", "10702"))
+    },
+    .multiple_methods_no = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      methods <- private$..sample_methods_used()
+      length(methods) == 1L
+    },
+    .multiple_methods_yes = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      methods <- private$..sample_methods_used()
+      length(methods) > 1L
+    },
+    .multiple_strata = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      is.data.frame(st) && nrow(st) > 1L
+    },
+    .purposive_site_selection = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..sample_has_any_method("purposive")
+    },
+    .rate_individual_survey = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      all(
+        self$.rate_survey,
+        self$.individual_survey
+      )
+    },
+    .rate_survey = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("10501", "10502"))
+    },
+    .rlc_household_selection = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- tryCatch(
+        self$access_nested(
+          field = "sample_object",
+          member = "get_sample_table"
+        ),
+        error = function(e) NULL
+      )
+      if (
+        is.null(st) || !is.data.frame(st) || !"sampling_method" %in% names(st)
+      ) {
+        return(FALSE)
+      }
+      methods <- trimws(tolower(as.character(st$sampling_method)))
+      any(
+        !is.na(methods) &
+          methods %in%
+            c(
+              "pps_rlc",
+              "simple_random_rlc",
+              "systematic_rlc",
+              "proportional_rlc"
+            )
+      )
+    },
+    .srs_household_selection = function(value) FALSE,
+    .srs_site_selection = function(value) FALSE,
+    .systematic_household_selection = function(value) FALSE,
+    .systematic_site_selection = function(value) FALSE
   ),
 
   private = list(
+    #' @description Extract the sample table from the nested Sample object.
+    #'
+    #' Safely accesses the sample table via \code{access_nested()}, returning
+    #' \code{NULL} on error.
+    #'
+    #' @return Data frame containing the sample table, or \code{NULL} if
+    #'   unavailable or on error.
+    #' @keywords internal
+    ..sample_table_from_nested = function() {
+      tryCatch(
+        self$access_nested(
+          field = "sample_object",
+          member = "get_sample_table"
+        ),
+        error = function(e) NULL
+      )
+    },
+
+    #' @description Get unique sampling methods used across all strata.
+    #'
+    #' Extracts the \code{sampling_method} column from the sample table,
+    #' trims whitespace, converts to lowercase, and returns unique non-empty
+    #' values.
+    #'
+    #' @return Character vector of unique sampling methods in lowercase.
+    #'   Empty character vector if no sample table exists or no methods found.
+    #' @keywords internal
+    ..sample_methods_used = function() {
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"sampling_method" %in% names(st)) {
+        return(character(0))
+      }
+      methods <- trimws(tolower(as.character(st$sampling_method)))
+      methods <- methods[!is.na(methods) & nzchar(methods)]
+      unique(methods)
+    },
+
+    #' @description Check if any of the specified sampling methods are used.
+    #'
+    #' Compares the provided methods against those currently in use across
+    #' all strata.
+    #'
+    #' @param methods Character vector of sampling method names to check.
+    #' @return \code{TRUE} if any provided method matches a method in use,
+    #'   \code{FALSE} otherwise.
+    #' @keywords internal
+    ..sample_has_any_method = function(methods) {
+      methods_used <- private$..sample_methods_used()
+      length(intersect(methods_used, tolower(as.character(methods)))) > 0L
+    },
+
+    #' @description Return strata names for a given sampling method.
+    #'
+    #' Checks if any strata row in the sample table uses the specified
+    #' sampling method.
+    #'
+    #' @param method_site Character. Site-level sampling method (currently unused).
+    #' @param method_hh Character. Household-level sampling method (currently unused).
+    #' @return \code{TRUE} if matching method found, \code{FALSE} otherwise.
+    #'
+    #' @details
+    #' Note: Parameters \code{method_site} and \code{method_hh} are defined
+    #' but not used in the current implementation. The function checks against
+    #' an undefined \code{method} variable.
+    #'
+    #' @keywords internal
+    ..strata_names_for_method = function(method_site, method_hh) {
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"sampling_method" %in% names(st)) {
+        return(FALSE)
+      }
+      methods <- trimws(tolower(as.character(st$sampling_method)))
+      any(!is.na(methods) & methods == tolower(method))
+    },
+
+    #' @description Check if any household indicators are present.
+    #'
+    #' Verifies that a household tool role exists and contains at least one
+    #' of the specified indicator codes.
+    #'
+    #' @param indicator_codes Character vector of indicator codes to check.
+    #' @return \code{TRUE} if the household tool role exists and any indicator
+    #'   codes match, \code{FALSE} otherwise.
+    #' @keywords internal
+    ..household_has_any_indicator = function(indicator_codes) {
+      if (!private$..has_tool_role("household")) {
+        return(FALSE)
+      }
+      hh_codes <- tryCatch(
+        self$access_nested(
+          field = "tools",
+          role = "household",
+          member = "get_indicator_codes"
+        ),
+        error = function(e) character(0)
+      )
+      hh_codes <- trimws(as.character(hh_codes))
+      hh_codes <- hh_codes[!is.na(hh_codes) & nzchar(hh_codes)]
+      length(intersect(hh_codes, as.character(indicator_codes))) > 0L
+    },
+
+    #' @description Guard to prevent recursive calls during state synchronization.
+    #' @keywords internal
     ..post_sync_guard = FALSE,
 
+    #' @description Synchronize sampling-related state fields.
+    #'
+    #' Extracts sampling metadata from the nested \code{Sample} object and
+    #' updates public fields including \code{sample_table}, \code{strata_names},
+    #' \code{sampling_methods}, \code{drawn_sample}, and related metadata.
+    #'
+    #' Populates the \code{metadata} list with:
+    #' \itemize{
+    #'   \item \code{sampling_strata_names}: Character vector of strata names
+    #'   \item \code{sampling_method_flags}: Named logical list indicating
+    #'     presence of known sampling methods
+    #'   \item \code{target_strata}: Named list mapping stratum IDs to names
+    #' }
+    #'
+    #' @return Invisibly returns \code{NULL}.
+    #' @keywords internal
     ..sync_sampling_state = function() {
       st <- tryCatch(
         self$access_nested(
@@ -499,6 +1031,15 @@ SurveyProtocol <- R6::R6Class(
       invisible(NULL)
     },
 
+    #' @description Synchronize sampling frame state fields.
+    #'
+    #' Extracts strata information from the \code{SamplingFrame} object and
+    #' updates \code{sampling_frame_strata_names} and
+    #' \code{sampling_frame_strata_population}. Aggregates population sizes
+    #' by stratum when available.
+    #'
+    #' @return Invisibly returns \code{NULL}.
+    #' @keywords internal
     ..sync_sample_frame_state = function() {
       sf <- tryCatch(
         self$access_nested(field = "sampling_frame", member = "log_df"),

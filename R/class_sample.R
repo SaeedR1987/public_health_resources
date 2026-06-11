@@ -526,13 +526,19 @@ Sample <- R6::R6Class(
 
     #' @description Return unique sampling methods in the sample table.
     #' @return Character vector of unique sampling methods.
-    get_sampling_methods = function() {
+    get_sampling_methods = function(type = c("site", "household")) {
+      type <- match.arg(type)
+      col_name <- switch(
+        type,
+        site = "sampling_method_site",
+        household = "sampling_method_hh"
+      )
       st <- self$sample_table
-      if (is.null(st) || !"sampling_method" %in% names(st)) {
+      if (is.null(st) || !(col_name %in% names(st))) {
         private$..touch()
         return(character(0))
       }
-      m <- as.character(st$sampling_method)
+      m <- as.character(st[[col_name]])
       out <- unique(m[!is.na(m) & nzchar(m)])
       private$..touch()
       out
