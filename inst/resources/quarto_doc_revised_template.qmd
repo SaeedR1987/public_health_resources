@@ -11,6 +11,10 @@ format:
     number-sections: true
 ---
 
+# TOR DIAGNOSTICS SUMMARY
+
+\newpage
+
 ```{r}
 library(flextable)
 
