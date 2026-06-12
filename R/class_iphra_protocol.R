@@ -438,6 +438,165 @@ IPHRAProtocol <- R6::R6Class(
       super$generate_doc(output_file = output_file, open = open)
     },
 
+    #' @description
+    #' Generate an IPHRA Word document using Quarto with IPHRA-specific template.
+    #'
+    #' This method overrides the base Document class to use IPHRA-specific
+    #' templates and automatically populate parameters from metadata.
+    #'
+    #' @param output_file Character output path for the rendered document.
+    #' @param template_file Character path to the Quarto template file. If NULL,
+    #'   uses "quarto_doc_iphra_template.qmd" from package resources.
+    #' @param params Named list of parameters to substitute in the template.
+    #'   Defaults are populated from \code{self$metadata}.
+    #' @param content Character string containing additional document content
+    #'   (Markdown formatted).
+    #' @param open Logical indicating whether to open the output in a browser.
+    #' @return Invisibly returns \code{self}.
+    generate_quarto_doc = function(
+      output_file = "iphra_protocol_report.docx",
+      template_file = NULL,
+      params = list(),
+      content = "",
+      open = FALSE
+    ) {
+      phr_try(
+        {
+          # Use IPHRA-specific template by default
+          if (is.null(template_file)) {
+            template_file <- system.file(
+              "resources",
+              "quarto_doc_iphra_template.qmd",
+              package = "phr"
+            )
+            if (!nzchar(template_file) || !file.exists(template_file)) {
+              template_file <- file.path(
+                "inst",
+                "resources",
+                "quarto_doc_iphra_template.qmd"
+              )
+            }
+          }
+
+          # Populate default parameters from metadata
+          default_params <- list(
+            assessment_title = self$metadata$assessment_title %||% "Untitled Assessment",
+            country_name = self$metadata$country_name %||% "",
+            month_year = self$metadata$month_year %||% format(Sys.Date(), "%B %Y"),
+            type_of_emergency = self$metadata$type_of_emergency %||% "",
+            type_of_crisis = self$metadata$type_of_crisis %||% "",
+            mandating_body = self$metadata$mandating_body %||% "",
+            project_code = self$metadata$project_code %||% "",
+            geographic_coverage = self$metadata$geographic_coverage %||% "",
+            general_objective = self$metadata$general_objective %||% "",
+            pilot_date = as.character(self$metadata$pilot_date %||% ""),
+            data_start_date = as.character(self$metadata$data_start_date %||% ""),
+            data_end_date = as.character(self$metadata$data_end_date %||% ""),
+            analysis_date = as.character(self$metadata$analysis_date %||% ""),
+            data_validation_date = as.character(self$metadata$data_validation_date %||% ""),
+            prelim_presentation_date = as.character(self$metadata$prelim_presentation_date %||% ""),
+            output_validation_date = as.character(self$metadata$output_validation_date %||% ""),
+            output_published_date = as.character(self$metadata$output_published_date %||% ""),
+            final_presentation_date = as.character(self$metadata$final_presentation_date %||% ""),
+            reference_doc = if (!is.null(self$reference_doc_filename)) {
+              paste0('"', self$reference_doc_filename, '"')
+            } else {
+              "null"
+            }
+          )
+
+          # Merge with user-provided params
+          all_params <- modifyList(default_params, params)
+
+          # Call parent method with IPHRA-specific configuration
+          super$generate_quarto_doc(
+            output_file = output_file,
+            template_file = template_file,
+            params = all_params,
+            content = content,
+            open = open
+          )
+        },
+        on_error = "abort",
+        origin = "IPHRAProtocol$generate_quarto_doc"
+      )
+      invisible(self)
+    },
+
+    #' @description
+    #' Generate an IPHRA PowerPoint using Quarto with IPHRA-specific template.
+    #'
+    #' This method overrides the base Document class to use IPHRA-specific
+    #' templates and automatically populate parameters from metadata.
+    #'
+    #' @param output_file Character output path for the rendered presentation.
+    #' @param template_file Character path to the Quarto template file. If NULL,
+    #'   uses "quarto_ppt_iphra_template.qmd" from package resources.
+    #' @param params Named list of parameters to substitute in the template.
+    #'   Defaults are populated from \code{self$metadata}.
+    #' @param content Character string containing additional presentation content
+    #'   (Markdown formatted).
+    #' @param open Logical indicating whether to open the output in a browser.
+    #' @return Invisibly returns \code{self}.
+    generate_quarto_ppt = function(
+      output_file = "iphra_protocol_presentation.pptx",
+      template_file = NULL,
+      params = list(),
+      content = "",
+      open = FALSE
+    ) {
+      phr_try(
+        {
+          # Use IPHRA-specific template by default
+          if (is.null(template_file)) {
+            template_file <- system.file(
+              "resources",
+              "quarto_ppt_iphra_template.qmd",
+              package = "phr"
+            )
+            if (!nzchar(template_file) || !file.exists(template_file)) {
+              template_file <- file.path(
+                "inst",
+                "resources",
+                "quarto_ppt_iphra_template.qmd"
+              )
+            }
+          }
+
+          # Populate default parameters from metadata
+          default_params <- list(
+            assessment_title = self$metadata$assessment_title %||% "Untitled Assessment",
+            country_name = self$metadata$country_name %||% "",
+            month_year = self$metadata$month_year %||% format(Sys.Date(), "%B %Y"),
+            type_of_emergency = self$metadata$type_of_emergency %||% "",
+            type_of_crisis = self$metadata$type_of_crisis %||% "",
+            mandating_body = self$metadata$mandating_body %||% "",
+            general_objective = self$metadata$general_objective %||% "",
+            reference_doc = if (!is.null(self$reference_ppt_filename)) {
+              paste0('"', self$reference_ppt_filename, '"')
+            } else {
+              "null"
+            }
+          )
+
+          # Merge with user-provided params
+          all_params <- modifyList(default_params, params)
+
+          # Call parent method with IPHRA-specific configuration
+          super$generate_quarto_ppt(
+            output_file = output_file,
+            template_file = template_file,
+            params = all_params,
+            content = content,
+            open = open
+          )
+        },
+        on_error = "abort",
+        origin = "IPHRAProtocol$generate_quarto_ppt"
+      )
+      invisible(self)
+    },
+
     #' @description Post-sync hook for IPHRA-specific synchronization.
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
