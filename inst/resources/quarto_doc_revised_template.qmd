@@ -5,7 +5,7 @@ execute:
   message: false
 format:
   docx:
-    reference-doc: reach_tor_template.docx
+    reference-doc: reach_tor_iphra_template.docx
     toc: false
     toc-depth: 3
     number-sections: true
@@ -74,7 +74,7 @@ ft
 
 \newpage
 
-#### Assessment Summary
+## Assessment Summary
 
 ```{r}
 library(flextable)
@@ -160,30 +160,12 @@ ft <- border_inner_v(ft, part = "body")
 ft
 ```
 
-#### Tools and Methods
 
 ```{r}
 library(flextable)
 
 tbl <- data.frame(
-  tool = c(
-    "Tool",
-    "Household Tool",
-    "Community KII",
-    "Community Observation",
-    "Health Facility KII",
-    "Health Facility Observation",
-    "Nutrition Facility KII",
-    "FSL Provider KII",
-    "Market KII",
-    "Crops/Livestock Observation",
-    "WASH Provider KII",
-    "Water Point Observation",
-    "Latrine Observation"
-  ),
-  dimensions = c("Dimensions", rep("", 12)),
-  sampling_method = c("Sampling Method", rep("", 12)),
-  sample_size = c("Sample Size", rep("", 12)),
+  rationale = c("Rationale", "[Specify rationale for this research]"),
   stringsAsFactors = FALSE
 )
 
@@ -191,8 +173,8 @@ ft <- flextable(tbl)
 
 ft <- delete_part(ft, part = "header")
 
-# Page-width five-column table
-ft <- width(ft, j = 1:4, width = 1.3)
+# Page-width three-column table
+ft <- width(ft, j = 1:1, width = 6.51)
 
 # Font
 ft <- font(ft, fontname = "Arial Narrow", part = "body")
@@ -218,14 +200,72 @@ ft <- border_inner_v(ft, part = "body")
 ft
 ```
 
-#### Research Timeline
+
+## Tools and Methods
+
+```{r}
+library(flextable)
+
+tbl <- data.frame(
+  tool = c(
+    "Tool",
+    "Household Tool",
+    "Community KII",
+    "Community Observation",
+    "Health Facility KII",
+    "Health Facility Observation",
+    "Nutrition Facility KII",
+    "FSL Provider KII",
+    "Market KII",
+    "Crops/Livestock Observation",
+    "WASH Provider KII",
+    "Water Point Observation",
+    "Latrine Observation"
+  ),
+  sampling_method = c("Sampling Method", rep("", 12)),
+  sample_size = c("Sample Size", rep("", 12)),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable(tbl)
+
+ft <- delete_part(ft, part = "header")
+
+# Page-width five-column table
+ft <- width(ft, j = 1:3, width = 2.17)
+
+# Font
+ft <- font(ft, fontname = "Arial Narrow", part = "body")
+ft <- fontsize(ft, size = 9, part = "body")
+
+# Header row formatting
+ft <- bold(ft, i = 1, bold = TRUE, part = "body")
+ft <- bg(ft, i = 1, bg = "#DDDDDE", part = "body")
+
+# Alignment
+ft <- align(ft, align = "left", part = "body")
+ft <- valign(ft, valign = "top", part = "body")
+
+# Padding and spacing
+ft <- padding(ft, padding = 4, part = "body")
+ft <- line_spacing(ft, space = 0.9, part = "body")
+
+# Borders
+ft <- border_outer(ft, part = "all")
+ft <- border_inner_h(ft, part = "body")
+ft <- border_inner_v(ft, part = "body")
+
+ft
+```
+
+## Research Timeline
 
 ```{r}
 #| echo: false
 #| warning: false
 #| message: false
 #| fig-width: 7
-#| fig-height: 2
+#| fig-height: 1.5
 
 library(ggplot2)
 
@@ -352,7 +392,7 @@ geom_text(
 timeline_plot
 ```
 
-#### Dissemination
+## Dissemination
 
 ```{r}
 library(flextable)
@@ -423,57 +463,472 @@ ft
 
 ## Background
 
+* Briefly describe the context, i.e. the crisis within which the IPHRA is planned. 
+* Information gap and needs i.e. what is known so far about the topic of concern/ what remains to be known and why. 
+* Links with in-country strategy i.e. how does this specific research complement/ advance our other ongoing activities in this specific context.
+
 ## Intended Impact
+
+* Briefly describe the context, i.e. the crisis within which the IPHRA is planned. 
+* Information gap and needs i.e. what is known so far about the topic of concern/ what remains to be known and why. 
 
 \newpage
 
 # Goals and Objectives
 
-## Overall Goal and Research Questions
+Goal: To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality.
 
-## Specific Goals and Research Questions
+## Specific Objectives and Research Questions
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
+
+library(flextable)
+
+# Dummy TRUE/FALSE values for now.
+# Later, replace this object with values calculated elsewhere.
+pillar_flags <- data.frame(
+  pillar = c(
+    "Population Mortality",
+    "Nutritional Status",
+    "Health Needs",
+    "Food Consumption",
+    "Water Consumption",
+    "Exposure to Disease",
+    "Household Food Security",
+    "Household Water Security",
+    "HH Income and Coping",
+    "Living Conditions",
+    "Livelihoods",
+    "Markets",
+    "WASH Services",
+    "Nutrition Services",
+    "Health Services",
+    "Natural and built environment"
+  ),
+  include_pillar = c(
+    TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
+    TRUE, TRUE, TRUE, TRUE, TRUE, FALSE,
+    TRUE, TRUE, TRUE, TRUE
+  ),
+  pillar_order = 1:16,
+  include_pillar = TRUE,
+  stringsAsFactors = FALSE
+)
+
+subpillar_flags <- data.frame(
+  pillar = c(
+    "Population Mortality",
+    "Nutritional Status",
+    "Health Needs",
+    "Food Consumption", "Food Consumption",
+    "Water Consumption", "Water Consumption",
+    "Exposure to Disease", "Exposure to Disease",
+    "Household Food Security", "Household Food Security", "Household Food Security", "Household Food Security", "Household Food Security",
+    "Household Water Security", "Household Water Security", "Household Water Security", "Household Water Security", "Household Water Security",
+    "HH Income and Coping", "HH Income and Coping", "HH Income and Coping",
+    "Living Conditions", "Living Conditions", "Living Conditions",
+    "Livelihoods", "Livelihoods",
+    "Markets", "Markets", "Markets",
+    "WASH Services", "WASH Services", "WASH Services", "WASH Services",
+    "Nutrition Services", "Nutrition Services", "Nutrition Services", "Nutrition Services", "Nutrition Services",
+    "Health Services", "Health Services", "Health Services", "Health Services", "Health Services",
+    "Natural and built environment", "Natural and built environment", "Natural and built environment"
+  ),
+  sub_pillar = c(
+    "Not applicable", "Not applicable", "Not applicable",
+    "Quantity", "Quality",
+    "Quantity", "Quality",
+    "Reproductive Numbers", "Hygiene",
+    "HH Food Consumption", "Availability", "Accessibility", "Utilization", "Stability",
+    "HH Water Consumption", "Availability", "Accessibility", "Utilization", "Stability",
+    "Income", "Coping Capacity", "Assets",
+    "Protection from Elements", "Protection from Vectors", "Crowdedness",
+    "Availability", "Accessibility",
+    "Availability", "Accessibility", "Functionality",
+    "Availability", "Accessibility", "Quality", "Utilization",
+    "Coverage", "Availability", "Accessibility", "Quality", "Utilization",
+    "Coverage", "Availability", "Accessibility", "Quality", "Utilization",
+    "Sanitation Coverage", "Sanitation Functionality", "Sanitation Accessibility"
+  ),
+  include_subpillar = c(TRUE,TRUE,TRUE,TRUE,TRUE,
+  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
+  TRUE,TRUE),
+  stringsAsFactors = FALSE
+)
+
+subpillar_flags$order <- seq_len(nrow(subpillar_flags))
+
+tbl <- merge(
+  subpillar_flags,
+  pillar_flags,
+  by = "pillar",
+  all.x = TRUE
+)
+
+tbl <- tbl[tbl$include_pillar & tbl$include_subpillar, ]
+tbl <- tbl[order(tbl$order), ]
+tbl <- data.frame(
+  Pillar = tbl$pillar,
+  `Sub-Pillar` = ifelse(is.na(tbl$sub_pillar), "", tbl$sub_pillar),
+  Objective = "",
+  `Research Question` = "",
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable::flextable(tbl)
+
+ft <- flextable::merge_v(ft, j = "Pillar")
+ft <- flextable::valign(ft, valign = "top", part = "body")
+
+ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+ft <- flextable::fontsize(ft, size = 9, part = "all")
+
+ft <- flextable::bold(ft, part = "header")
+ft <- flextable::bg(ft, part = "header", bg = "#DDDDDE")
+
+ft <- flextable::width(ft, j = "Pillar", width = 1.5)
+ft <- flextable::width(ft, j = "Sub-Pillar", width = 1.5)
+ft <- flextable::width(ft, j = "Objective", width = 1.7)
+ft <- flextable::width(ft, j = "Research Question", width = 1.8)
+
+ft <- flextable::align(ft, align = "left", part = "all")
+ft <- flextable::padding(ft, padding = 4, part = "all")
+ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+
+ft <- flextable::border_outer(ft, part = "all")
+ft <- flextable::border_inner_h(ft, part = "all")
+ft <- flextable::border_inner_v(ft, part = "all")
+ft <- line_spacing(ft, space = 1, part = "all")
+ft <- padding(
+  ft,
+  padding.top = 0,
+  padding.bottom = 0,
+  part = "all"
+)
+ft
+```
 
 \newpage
 
 # Methodology
 
-#### Methodology Overview
+The general research design for the Integrated Public Health Rapid Assessment (IPHRA) will consist of a mixed-methods approach constituting three main methods: household surveys; Key Informant Interviews (KIIs); and observation checklists, each of these methods having core and supplemental specialized tools and information that can be collected.
 
-#### Population of Interest
+## Methodology Overview
 
-#### Secondary Data Review
+```{r}
+#| results: asis
 
-#### Key Definitions
+site_selection <- "srs"
 
-#### Primary Data Collection
+hh_selection <- "srs"
 
-##### Household Surveys
+multiple_methods <- TRUE
 
-###### Sample Size Calculations
+if (site_selection == "srs" & hh_selection == "srs") {
+  
+cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using simple random sampling from a list of accessible sites and households selected in the second stage using appropriate sampling techniques such as simple random sampling from community listing or maps of households. Sites will have equal probability of selection due to a lack of reliable population data. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of six sites will be either randomly or purposefully selected for assessment. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
 
-###### Site Selection Methods
+if (multiple_methods == TRUE) {
+  cat("This methodology applies for the following strata: @stratified_strata_names_srs_srs .\n")
+}
 
-###### Household Selection Methods
+} else if (site_selection == "srs" & hh_selection == "systematic") {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using simple random sampling from a list of accessible sites and households selected in the second stage using systematic random sampling of households. Sites will have equal probability of selection due to a lack of reliable population data. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of six sites will be either randomly or purposefully selected for assessment. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
 
-##### Key Informant Interviews
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_srs_srs .\n")
+  }
 
-###### Key Informant Interview Overview
+} else if (site_selection == "srs" & hh_selection == "rlc") {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using simple random sampling from a list of accessible sites and households selected in the second stage using random location cluster (RLC) method. In RLC sampling, GPS points will be randomly generated over a bounded area of selected sites and an equal number of GPS points will be generated per site. Data collection teams will collect household interviews at the closest three households at each GPS point. Sites will have equal probability of selection due to a lack of reliable population data. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of six sites will be either randomly or purposefully selected for assessment. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
 
-###### Key Informant Selection
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_srs_rlc .\n")
+  }
 
-##### Observation Tools
+} else if (site_selection == "systematic" & hh_selection == "srs") {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using systematic random sampling from a list of accessible sites, and households selected in the second stage using appropriate sampling techniques such as simple random sampling from community listing or maps of households. Sites will have equal probability of selection due to a lack of reliable population data. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of six sites will be either randomly or purposefully selected for assessment. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
 
-###### Observation Tools Overview
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_systematic_srs .\n")
+  }
 
-#### Data Processing and Analysis
+} else if (site_selection == "systematic" & hh_selection == "systematic") {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using systematic random sampling from a list of accessible sites, and households selected in the second stage using systematic random sampling of households. Sites will have equal probability of selection due to a lack of reliable population data. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of six sites will be either randomly or purposefully selected for assessment. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
 
-###### Household Survey Data
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_systematic_systematic .\n")
+  }
 
-###### Key Informant and Observation Data
+} else if (site_selection == "systematic" & hh_selection == "rlc" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using systematic random sampling from a list of accessible sites, and households selected in the second stage using random location cluster (RLC) method. In RLC sampling, GPS points will be randomly generated over a bounded area of selected sites and an equal number of GPS points will be generated per site. Data collection teams will collect household interviews at the closest three households at each GPS point. Sites will have equal probability of selection due to a lack of reliable population data. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of six sites will be either randomly or purposefully selected for assessment. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
 
-#### Integrated Analysis
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_systematic_rlc .\n")
+  }
 
-#### Limitations
+} else if (site_selection == "exhaustive" & hh_selection == "srs" & !multiple_methods) {
+  cat("The household survey component will consist of a one-stage approach sampling strategy with all eligible sites being included and the target sample being allocated across sites proportional to their population size. Household will be done using appropriate sampling techniques such as simple random sampling from community listing or maps of households. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_exhaustive_srs .\n")
+  }
+
+} else if (site_selection == "exhaustive" & hh_selection == "systematic" & !multiple_methods) {
+  cat("The household survey component will consist of a one-stage approach sampling strategy with all eligible sites being included and the target sample being allocated across sites proportional to their population size. Household will be done using systematic random sampling of households. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_exhaustive_systematic .\n")
+  }
+
+} else if (site_selection == "exhaustive" & hh_selection == "rlc" & !multiple_methods) {
+  cat("The household survey component will consist of a one-stage approach sampling strategy with all eligible sites being included and the target sample being allocated across sites proportional to their population size. Household will be done using random location cluster (RLC) method. In RLC sampling, GPS points will be randomly generated over a bounded area of selected sites and an equal number of GPS points will be generated per site. Data collection teams will collect household interviews at the closest three households at each GPS point. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Results are intended to provide localized results which are not generalizable beyond the assessed population.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_exhaustive_rlc .\n")
+  }
+
+} else if (site_selection == "cluster" & hh_selection == "srs" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using probability proportional to size (PPS) sampling from a list of accessible sites, and households selected in the second stage using appropriate sampling techniques such as simple random sampling from community listing or maps of households. Primary sampling units (PSU) will be defined as the village, neighbourhood, or camp and the probability of their selection is proportional to their population size. Sampling with replacement will be implemented so more than one cluster may fall within the same site by random chance. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of 25 clusters with similar cluster sizes will be conducted. Results are intended to be generalizable to the population.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_cluster_srs .\n")
+  }
+
+} else if (site_selection == "cluster" & hh_selection == "systematic" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using probability proportional to size (PPS) sampling from a list of accessible sites, and households selected in the second stage us using systematic random sampling of households. Primary sampling units (PSU) will be defined as the village, neighbourhood, or camp and the probability of their selection is proportional to their population size. Sampling with replacement will be implemented so more than one cluster may fall within the same site by random chance. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of 25 clusters with similar cluster sizes will be conducted. Results are intended to be generalizable to the population.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_cluster_systematic .\n")
+  }
+
+} else if (site_selection == "cluster" & hh_selection == "rlc" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected in the first stage using probability proportional to size (PPS) sampling from a list of accessible sites, and households selected in the second stage us using random location cluster (RLC) method. Primary sampling units (PSU) will be defined as the village, neighbourhood, or camp and the probability of their selection is proportional to their population size. In RLC sampling, GPS points will be randomly generated over a bounded area of the selected PSUs and an equal number of GPS points will be generated per PSU. Data collection teams will collect household interviews at the closest three households at each GPS point. Sampling with replacement will be implemented so more than one cluster may fall within the same site by random chance. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Within each stratum, a minimum of 25 clusters with similar cluster sizes will be conducted. Results are intended to be generalizable to the population.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_cluster_rlc .\n")
+  }
+
+} else if (site_selection == "purposive" & hh_selection == "srs" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected purposively in the first stage based on criteria such as need, accessibility, logistics, or other defined criteria. Households selected in the second stage using appropriate sampling techniques such as simple random sampling from community listing or maps of households. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Results are intended to provide localized results which are not generalizable beyond the assessed population and may not be comparable to other sites in the population depending on the purposive selection criteria.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_purposive_srs .\n")
+  }
+
+} else if (site_selection == "purposive" & hh_selection == "systematic" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected purposively in the first stage based on criteria such as need, accessibility, logistics, or other defined criteria. Households selected in the second stage using systematic random sampling of households. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Results are intended to provide localized results which are not generalizable beyond the assessed population and may not be comparable to other sites in the population depending on the purposive selection criteria.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_purposive_systematic .\n")
+  }
+
+} else if (site_selection == "purposive" & hh_selection == "rlc" & !multiple_methods) {
+  cat("The household survey component will consist of a two-stage approach sampling strategy with sites selected purposively in the first stage based on criteria such as need, accessibility, logistics, or other defined criteria. Households selected in the second stage using random location cluster (RLC) method. In RLC sampling, GPS points will be randomly generated over a bounded area of selected sites and an equal number of GPS points will be generated per site. Data collection teams will collect household interviews at the closest three households at each GPS point. Either a single stratum will be identified representing the target population, or if comparison between multiple groups is necessary than multiple strata will be selected. Results are intended to provide localized results which are not generalizable beyond the assessed population and may not be comparable to other sites in the population depending on the purposive selection criteria.\n")
+
+  if (multiple_methods == TRUE) {
+    cat("This methodology applies for the following strata: @stratified_strata_names_purposive_rlc .\n")
+  }
+
+} else {
+  cat("PLEASE SPECIFY METHODOLOGY HERE.\n")
+} 
+
+```
+
+## Population of Interest
+
+```{r}
+#| results: asis
+
+multiple_strata <- TRUE
+
+total_population_size <- "[Specify total population size]"
+total_population_size_included <- "[Specify total population size included in the survey if different from total population size]"
+total_population_size_excluded <- "[Specify total population size excluded from the survey if different from total population size]"
+total_population_per_strata_included <- "[Specify population size per strata if applicable]"
+geographic_coverage <- "[Specify geographic coverage]"
+
+cat("The geographic coverage of the assessment includes: {{geographic_coverage}}. The total population consists of {{total_population_size}} people with approximately {{total_population_size_included}} people included in the survey and approximately {{total_population_size_excluded}} people excluded from the survey.")
+
+if(multiple_strata) {
+  cat("The population will be stratified into the following strata with the following total population per stratum: {{total_population_per_strata_included}}.")
+}
+
+```
+
+## Secondary Data Review
+
+## Key Definitions
+
+```{r}
+#| results: asis
+
+ind_muac_children <- ""
+ind_muac_women <- ""
+ind_measles_coverage <- ""
+ind_vitamin_a_coverage <- ""
+
+
+cat("Within this population, specific indicators will target sub-populations. All eligible sub-populations within sampled households will be included in the survey. Sub-populations for indicators include: \n")
+
+if (!is.null(total_population_size_included)) {
+  cat("\n")
+} 
+
+```
+
+
+## Primary Data Collection
+
+### Household Surveys
+
+#### Sample Size Calculations
+
+#### Site Selection Methods
+
+#### Household Selection Methods
+
+## Key Informant Interviews
+
+### Key Informant Interview Overview
+
+### Key Informant Selection
+
+## Observation Tools
+
+### Observation Tools Overview
+
+## Data Processing and Analysis
+
+### Household Survey Data
+
+Data will be collected using a contextualized IPHRA ODK tool. Cleaning, indicator calculations, and analysis will be done using a pre-prepared IPHRA application using `r R.version.string`.
+
+```{r}
+#| results: asis
+
+site_selection <- "srs"
+
+hh_selection <- "srs"
+
+multiple_methods <- TRUE
+
+multiple_strata <- TRUE
+
+fpc <- TRUE
+
+if ((site_selection == "srs" | site_selection == "systematic") & (hh_selection == "srs" | hh_selection == "systematic")) {
+  
+cat("The household analysis will be treated as a simple random sampling design across sites without applying survey weights.\n")
+
+  if(multiple_strata == TRUE) {
+    cat(" An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis.\n")
+
+    if(fpc == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.\n")
+    }
+  }
+
+  if(fpc == TRUE & !multiple_strata) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.\n")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_srs}} .\n")
+  }
+
+}  else if ((site_selection == "srs" | site_selection == "systematic") & hh_selection == "rlc") {
+  
+  cat("The household analysis will be treated as a weighted cluster design across sites with groupings of households at each GPS point treated as the clusters in the analysis. Survey weights will be generated between sites to correct for under- or over-sampling between sites based on the best available population estimated the field teams were able to recover. If no adequate population data was available during the assessment, the final analysis will be unweighted. If population density is assessed to be very different within or across assessment sites, survey weights will be used for each random location cluster equivalent to the inverse of the population density of each cluster. This is intended to correct for any bias due to an uneven population density across the assessment area to make sure households have a more equal representation in the dataset. Population density is estimated based on the number of people in households within a random location cluster divided by the area of the circle formed by the locations of the three households and the GPS point of that random location cluster. ")
+
+  if(multiple_strata == TRUE) {
+    cat(" An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis. ")
+
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_systematic}} .\n")
+  }
+
+} else if (site_selection == "cluster" & (hh_selection == "srs" | hh_selection == "systematic")) {
+  
+  cat("The household analysis will be treated as a cluster design and sites/PSUs will be treated as clusters in the analysis. ")
+
+  if(multiple_strata == TRUE) {
+    cat("Survey weights will be generated for aggregation of results between strata. ")
+
+  } else {
+    cat("The sampling was self-weighted, therefore no survey weights will be applied.")
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_systematic}} .\n")
+  }
+
+} else if (site_selection == "cluster" & hh_selection == "rlc") {
+  
+  cat("The household analysis will be treated as a cluster design with sites/PSU being the primary clusters assigned in the analysis. Within these PSUs, additional clustering effects may be taking place as three households are sampled per random location cluster (GPS point) however this clustering effect will not be explicitly accounted for in the analysis. If population density is assessed to be very different within assessment sites/PSUs, survey weights will be used for each random location cluster equivalent to the inverse of the population density of each random location cluster. This is intended to correct for any bias due to an uneven population density across the assessment area to make sure households have a more equal representation in the dataset. Population density is estimated based on the number of people in households within a random location cluster divided by the area of the circle formed by the locations of the three households and the GPS point of that random location cluster. ")
+
+  if(multiple_strata == TRUE) {
+    cat("An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights for strata and random location clusters will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis. ")
+
+  } else {
+    cat("While the sampling was self-weighted, the random location cluster weights will still be applied to account for population density variations. ")
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_systematic}} .\n")
+  }
+
+} else {
+  cat("PLEASE SPECIFY METHODOLOGY HERE.\n")
+} 
+```
+
+#### Mid-Upper Arm Circumference (MUAC) Analysis
+
+#### Mortality Rate Analysis
+
+### Key Informant and Observation Data
+
+### Integrated Analysis
+
+
+
+## Limitations
 
 \newpage
 
@@ -485,25 +940,32 @@ ft
 
 # Data Analysis Plan (DAP)
 
-#### Household Tool DAP
+## Household Tool DAP
 
-#### Community Key Informant DAP
+## Community Key Informant DAP
 
-#### Community Observation DAP
+## Community Observation DAP
 
-#### Health Facility KII DAP
+## Health Facility KII DAP
 
-#### Health Facility Observation DAP
+## Health Facility Observation DAP
 
-#### Nutrition Facility DAP
+## Nutrition Facility DAP
 
-#### FSL Provider KII DAP
+## FSL Provider KII DAP
 
-#### Market KII DAP
+## Market KII DAP
 
-#### WASH Provider KII DAP
+## WASH Provider KII DAP
 
-#### Water Point Observation DAP
+## Water Point Observation DAP
 
-#### Latrine Observation DAP
+## Latrine Observation DAP
 
+\newpage
+
+# Annex 1
+
+\newpage
+
+# Annex 2
