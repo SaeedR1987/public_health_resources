@@ -612,6 +612,10 @@ ft <- padding(
   padding.bottom = 0,
   part = "all"
 )
+ft <- flextable::set_caption(
+  ft,
+  caption = "Table 1. Assessment Objectives and Research Questions"
+)
 ft
 ```
 
@@ -746,7 +750,7 @@ if (multiple_methods == TRUE) {
 
 ## Population of Interest
 
-```{r}
+```{r 'population_of_interest'}
 #| results: asis
 
 multiple_strata <- TRUE
@@ -765,27 +769,186 @@ if(multiple_strata) {
 
 ```
 
+\newpage
+
 ## Secondary Data Review
 
-## Key Definitions
-
-```{r}
-#| results: asis
-
-ind_muac_children <- ""
-ind_muac_women <- ""
-ind_measles_coverage <- ""
-ind_vitamin_a_coverage <- ""
+The main assessment design is based off guidance documents and tools for Integrated Public Health Rapid Assessment (IPHRA), available on the IMPACT Intranet (soon, link to intranet).  Secondly, the IPHRA toolkit is designed to align with the Acute Needs Framework (ANF) utilized by IMPACT Initiatives in their Acute Needs Analysis workstreams. The intention of the Secondary Data Review step is to identify existing data sources for various ANF Pillars and Sub-Pillars, and to identify data gaps which will inform the design of the primary data collection component of the IPHRA.
 
 
-cat("Within this population, specific indicators will target sub-populations. All eligible sub-populations within sampled households will be included in the survey. Sub-populations for indicators include: \n")
+```{r 'secondary_data_review'}
 
-if (!is.null(total_population_size_included)) {
-  cat("\n")
-} 
+library(flextable)
+
+objectives <- c(
+  "Estimate crude mortality rate",
+  "Estimate prevalence of acute malnutrition",
+  "Assess access to essential health services"
+)
+
+tbl <- data.frame(
+  objective = c("Objective", objectives),
+  source = c("Source", rep("", length(objectives))),
+  purpose = c("Purpose", rep("", length(objectives))),
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable::flextable(tbl)
+
+ft <- flextable::delete_part(ft, part = "header")
+
+# Page-width three-column table
+ft <- flextable::width(ft, j = 1, width = 2.4)
+ft <- flextable::width(ft, j = 2, width = 1.8)
+ft <- flextable::width(ft, j = 3, width = 2.4)
+
+# Font
+ft <- flextable::font(ft, fontname = "Arial Narrow", part = "body")
+ft <- flextable::fontsize(ft, size = 9, part = "body")
+
+# Header row formatting
+ft <- flextable::bold(ft, i = 1, bold = TRUE, part = "body")
+ft <- flextable::bg(ft, i = 1, bg = "#DDDDDE", part = "body")
+
+# Alignment
+ft <- flextable::align(ft, align = "left", part = "body")
+ft <- flextable::valign(ft, valign = "top", part = "body")
+
+# Padding and spacing
+ft <- flextable::padding(ft, padding = 4, part = "body")
+ft <- flextable::line_spacing(ft, space = 0.9, part = "body")
+
+# Borders
+ft <- flextable::border_outer(ft, part = "all")
+ft <- flextable::border_inner_h(ft, part = "body")
+ft <- flextable::border_inner_v(ft, part = "body")
+ft <- flextable::set_caption(
+  ft,
+  caption = "Table 2. Secondary Data Sources for Assessment Objectives"
+)
+ft
 
 ```
 
+ 
+See below for how the ANF framework maps against the planned primary data collection, as well as secondary data sources planned to be utilized for this assessment.  
+
+```{r revised_svg}
+#| out.width: "100%"
+
+library(rsvg)
+library(magick)
+
+svg_path <- normalizePath(
+  "ana_framework.svg",
+  winslash = "/",
+  mustWork = TRUE
+)
+
+
+img <- magick::image_read_svg(svg_path)
+
+img
+
+```
+
+## Key Definitions
+
+Within this population, specific indicators will target sub-populations. All eligible sub-populations within sampled households will be included in the survey. Sub-populations for indicators include:
+
+```{r 'key_definitions'}
+#| results: asis
+
+ind_muac_children <- TRUE
+ind_muac_women <- TRUE
+ind_mortality <- TRUE
+ind_measles_coverage <- TRUE
+ind_vitamin_a_coverage <- FALSE
+ind_ecfies <- TRUE
+ind_fcs <- TRUE
+ind_rcsi <- TRUE
+ind_hhs <- TRUE
+ind_hdds <- TRUE
+ind_lcsi <- TRUE
+ind_fewsnet_fc <- TRUE
+ind_hwise <- TRUE
+ind_lppd <- TRUE
+
+if (ind_muac_children) {
+  text_muac_indicator <- "**Global Acute Malnutrition (GAM) by MUAC:** is the prevalence of acute malnutrition, or wasting, among children 6-59 months of age, measured through oedema, or by measuring the middle-upper arm circumference (MUAC). For this assessment, all children 6-59 months in sampled households will be eligible. "
+} else {text_muac_indicator <- ""}
+
+if (ind_muac_women) {
+  text_muac_women_indicator <- "**GAM among women of reproductive age (15-49 years):** is acute malnutrition among women of reproductive age, measured through the middle-upper arm circumference (MUAC). Acute malnutrition is diagnosed if the MUAC is below 230 millimetres. For this assessment, all women between the ages of 15-49 in sampled households will be eligible for inclusion. "
+} else {text_muac_women_indicator <- ""}
+
+if (ind_mortality) {
+  text_mortality_indicator <- "**Mortality Rate:** An incidence rate of deaths, that includes all deaths regardless of cause, age, or sex. It is measured for a given population for a specified recall period. This should include deaths both in the community and facility-based deaths. During humanitarian emergencies it is usually reported as deaths per 10,000 per day but can also be reported as deaths per 1000 per month or per person-time. Crude Mortality Rade (CMR) and Crude Death Rate (CDR) are interchangeable. All persons in sampled households will be eligible for inclusion. For children under-5 years of age, the under-5 mortality rate (U5MR) will also be calculated. The U5MR is the incidence rate of deaths among children under 5 years of age per 10,000 per day. For this assessment, all children under 5 years of age in sampled households will be eligible for inclusion. "
+} else {text_mortality_indicator <- ""}
+
+if (ind_measles_coverage) {
+  text_measles_coverage <- "**Measles vaccination coverage:** is the proportion of children aged 9-59 months who have received at least one dose of measles-containing vaccine reported by the caregiver or confirmed by vaccination card. For this assessment, all children 9-59 months in sampled households will be eligible for inclusion. "
+} else {text_measles_coverage <- ""}
+
+if (ind_vitamin_a_coverage) {
+  text_vitamin_a_coverage <- "**Vitamin A supplementation coverage:** is the proportion of children aged 6-59 months who have received at least one dose of vitamin A supplementation in the past six months reported by the caregiver or confirmed by card. For this assessment, all children 6-59 months in sampled households will be eligible for inclusion. "
+} else {text_vitamin_a_coverage <- ""}
+
+if (ind_ecfies) {
+  text_ecfies <- "**Early Childhood Food Insecurity Experience Scale (ECFIES):** is a measure of the prevalence of food insecurity among children under 5 years of age based on the Food Insecurity Experience Scale (FIES) adapted for early childhood. It is measured through a set of questions asked to the caregiver about their child’s experience with food insecurity in the past 30 days. For this assessment, all children 6-59 months in sampled households will be eligible for inclusion. "
+} else {text_ecfies <- ""}
+
+if (ind_fcs) {
+  text_fcs <- "**Food Consumption Score (FCS):** is a composite score based on dietary diversity, food frequency, and relative nutritional importance of different food groups consumed by the household in the past 7 days. It is calculated based on the frequency of consumption of different food groups and their assigned weights. For this assessment, all households will be eligible for inclusion. "
+} else {text_fcs <- ""}
+
+if(ind_rcsi) {
+  text_rcsi <- "**Reduced Coping Strategy Index (RCSI):** is a measure of the frequency and severity of coping strategies employed by households in response to food insecurity. It is calculated based on the frequency of use of different coping strategies and their assigned weights. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_rcsi <- ""}
+
+if (ind_hhs) {
+  text_hhs <- "**Household Hunger Scale (HHS):** is a measure of the level of hunger among households based on a set of questions about the household's experience with hunger in the past 30 days. It categorizes households into three levels of hunger: None, Little, Moderate, Severe, and Very Severe per IPC thresholds. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_hhs <- ""}
+
+if (ind_hdds) {
+  text_hdds <- "**Household Dietary Diversity Score (HDDS):** is a measure of the diversity of the household's diet based on the number of different food groups consumed by the household in the past 24 hours. It is calculated based on the number of different food groups consumed by the household. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_hdds <- ""}
+
+if (ind_lcsi) {
+  text_lcsi <- "**Livelihood Coping Strategy Index (LCSI):** is a measure of the frequency and severity of coping strategies employed by households in response to livelihood stress. It is calculated based on the frequency of use of different coping strategies and their assigned weights. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_lcsi <- ""}
+
+if (ind_fewsnet_fc) {
+  text_fewsnet_fc <- "**FEWSNET Food Consumption (FC) Indicator:** is a measure of the prevalence of food insecurity among households based on the FEWSNET Food Consumption (FC) indicator. It is calculated based on the severity of at least one available food consumption proxy indicator for quality (FCS, HDDS) and one for quantity (rCSI, HHS). indicators (FCS, HHS, rCSI, HDDS) their assigned weights. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_fewsnet_fc <- ""}
+
+if (ind_hwise) {
+  text_hwise <- "**Household Water Insecurity Experience Scale (HWISE):** is a measure of the prevalence of water insecurity among households based on the Household Water Insecurity Experience Scale (HWISE). It is measured through a set of questions asked to the household about their experience with water insecurity in the past 30 days. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_hwise <- ""}
+
+if (ind_lppd) {
+  text_lppd <- "**Liters per person per day:** is a measure of the quantity of water available to each household member per day. It is calculated based on the total amount of water consumed by the household in the past 24 hours divided by the number of household members. For this assessment, all sampled households will be eligible for inclusion. "
+} else {text_lppd <- ""}
+
+```
+
+* **Household Definition:** A group of people who ate from the same cooking and slept under the same roof the previous night
+* `r text_muac_indicator`
+* `r text_muac_women_indicator`
+* `r text_mortality_indicator`
+* `r text_measles_coverage`
+* `r text_vitamin_a_coverage`
+* `r text_ecfies`
+* `r text_fcs`
+* `r text_rcsi`
+* `r text_hhs`
+* `r text_hdds`
+* `r text_lcsi`
+* `r text_fewsnet_fc`
+* `r text_hwise`
+* `r text_lppd`
+
+\newpage
 
 ## Primary Data Collection
 
@@ -793,19 +956,486 @@ if (!is.null(total_population_size_included)) {
 
 #### Sample Size Calculations
 
+```{r 'sample_size_intro'}
+#| results: asis
+
+r_version <- R.version.string
+general_survey <- TRUE
+individual_survey <- TRUE
+rate_survey <- TRUE
+ind_indicator <- "GAM by MUAC"
+rate_indicator <- "Mortality Rate"
+sample_size_gen <- 500
+sample_size_ind_persons <- 1500
+sample_size_ind_hh <- 250
+sample_size_rate_persons <- 1000
+sample_size_rate_persontime <- 2000
+sample_size_rate_hh <- 300
+sample_size_hh_final <- 350
+
+if (general_survey & !individual_survey & !rate_survey) {
+  cat(
+    glue::glue(
+      "Household sample size calculations were done in {r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below, resulting in a final target sample size of {sample_size_gen} households.\n\n"
+    )
+  )
+}
+
+if (individual_survey & !rate_survey) {
+  cat(
+    glue::glue(
+      "Individual and household sample size calculations were done in {r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below for the indicator {ind_indicator}, resulting in a final sample size of {sample_size_ind_persons} individuals and {sample_size_ind_hh} households. \n\n"
+    )
+  )
+}
+
+if (rate_survey & !individual_survey) {
+  cat(
+    glue::glue(
+      "Individual, person-time, and household sample size calculations were done in {r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below for the indicator {rate_indicator}, resulting in a final sample size of {sample_size_rate_persons} individuals, {sample_size_rate_persontime} person-time units, and {sample_size_rate_hh} households. \n\n"
+    )
+  )
+}
+
+if (individual_survey & rate_survey) {
+  cat(
+    glue::glue(
+      "Sample sizes were calculated at a 95% confidence level in {r_version} for both {ind_indicator} and {rate_indicator} with the highest sample size between the two indicators being selected per strata. The sampling parameters for each parameter are summarized in the tables below. The resulting final household sample size across strata is {sample_size_hh_final}. \n\n"
+    )
+  )
+}
+
+```
+
+```{r 'sample_size_gen_text'}
+#| results: asis
+general_survey <- TRUE
+
+if (general_survey) {
+  cat(
+    glue::glue(
+      "\n\nThe sample size for the general household survey was calculated using the parameters in the table below: \n"
+    )
+  )
+}
+
+```
+
+```{r 'sample_size_gen_table'}
+
+tbl <- data.frame(
+  Parameter = c(
+    "Indicator Name",
+    "Sampling Design",
+    "Estimated Prevalence (%)",
+    "Desired Precision",
+    "Estimated population size",
+    "Design Effect",
+    "Finite Population Correction (FPC) used?",
+    "Non-Response Rate",
+    "Households to be Included"
+  ),
+  `Urban North` = c(
+    "General", "Systematic", "50%", "10%", "45,000",
+    "1.5", "No", "10%", "107"
+  ),
+  `Peri-Urban East` = c(
+    "General", "Proportional", "50%", "5%", "28,000",
+    "1.8", "No", "10%", "427"
+  ),
+  `Rural South` = c(
+    "General", "Simple Random (RLC)", "50%", "7%", "17,000",
+    "2", "No", "10%", "475"
+  ),
+  Justification = rep("", 9),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable::flextable(tbl)
+
+ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+ft <- flextable::fontsize(ft, size = 9, part = "all")
+
+ft <- flextable::bold(ft, part = "header")
+ft <- flextable::bg(ft, bg = "#DDDDDE", part = "header")
+
+ft <- flextable::align(ft, align = "left", part = "all")
+ft <- flextable::valign(ft, valign = "top", part = "all")
+
+ft <- flextable::padding(ft, padding = 4, part = "all")
+ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+
+ft <- flextable::border_outer(ft, part = "all")
+ft <- flextable::border_inner_h(ft, part = "body")
+ft <- flextable::border_inner_v(ft, part = "all")
+
+ft <- flextable::width(ft, j = 1, width = 2.3)
+ft <- flextable::width(ft, j = 2:4, width = 1.3)
+ft <- flextable::width(ft, j = 5, width = 1.7)
+
+ft <- flextable::bold(ft, part = "header")
+
+# Header formatting
+ft <- flextable::bg(
+  ft,
+  bg = "#EE5859",
+  part = "header"
+)
+
+ft <- flextable::color(
+  ft,
+  color = "white",
+  part = "header"
+)
+
+# Shade final row
+ft <- flextable::bg(
+  ft,
+  i = nrow(tbl),
+  bg = "#F2F2F2",
+  part = "body"
+)
+ft <- flextable::fit_to_width(
+  ft,
+  max_width = 6.5
+)
+ft <- flextable::set_caption(
+  ft,
+  caption = "Table 3. General sample size calculation parameters"
+)
+ft
+
+```
+
+```{r 'sample_size_ind_text'}
+#| results: asis
+individual_survey <- TRUE
+ind_indicator <- "GAM by MUAC"
+
+if (individual_survey) {
+  cat(
+    glue::glue(
+      "\n\nThe sample size for the survey for {ind_indicator} was calculated using the parameters in the table below: \n"
+    )
+  )
+}
+
+```
+
+
+```{r 'sample_size_ind_table'}
+
+ind_indicator <- "GAM by MUAC"
+
+tbl <- data.frame(
+  Parameter = c(
+    "Indicator Name",
+    "Sampling Design",
+    "Estimated Prevalence (%)",
+    "Desired Precision",
+    "Estimated population size",
+    "Design Effect",
+    "Finite Population Correction (FPC) used?",
+    "Individuals to be Included",
+    "Average Household Size",
+    "% sub-population",
+    "Non-Response Rate",
+    "Households to be Included"
+  ),
+  `Urban North` = c(
+    "wasting_prevalence",
+    "Systematic",
+    "15%",
+    "5%",
+    "45,000",
+    "1.5",
+    "No",
+    "1,090",
+    "5.2",
+    "20%",
+    "10%",
+    "210"
+  ),
+  `Peri-Urban East` = c(
+    "wasting_prevalence",
+    "Proportional",
+    "",
+    "",
+    "28,000",
+    "",
+    "No",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ),
+  `Rural South` = c(
+    "wasting_prevalence",
+    "Simple Random (RLC)",
+    "",
+    "",
+    "17,000",
+    "",
+    "No",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ),
+  Justification = rep("", 12),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable::flextable(tbl)
+
+ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+ft <- flextable::fontsize(ft, size = 9, part = "all")
+
+# Header formatting
+ft <- flextable::bold(ft, part = "header")
+ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
+ft <- flextable::color(ft, color = "white", part = "header")
+
+# Grey result rows
+ft <- flextable::bg(
+  ft,
+  i = tbl$Parameter %in% c(
+    "Individuals to be Included",
+    "Households to be Included"
+  ),
+  bg = "#F2F2F2",
+  part = "body"
+)
+
+ft <- flextable::align(ft, align = "left", part = "all")
+ft <- flextable::valign(ft, valign = "top", part = "all")
+
+ft <- flextable::padding(ft, padding = 4, part = "all")
+ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+
+ft <- flextable::border_outer(ft, part = "all")
+ft <- flextable::border_inner_h(ft, part = "body")
+ft <- flextable::border_inner_v(ft, part = "all")
+
+ft <- flextable::width(ft, j = 1, width = 2.3)
+ft <- flextable::width(ft, j = 2:4, width = 1.3)
+ft <- flextable::width(ft, j = 5, width = 1.7)
+ft <- flextable::fit_to_width(
+  ft,
+  max_width = 6.5
+)
+ft <- flextable::set_caption(
+  ft,
+  caption = glue::glue("Table 4. Sample size calculation parameters for {ind_indicator}")
+)
+ft
+ft
+
+```
+
+
+```{r 'sample_size_rate_text'}
+#| results: asis
+rate_survey <- TRUE
+rate_indicator <- "GAM by MUAC"
+
+if (rate_survey) {
+  cat(
+    glue::glue(
+      "\n\n The sample size for the rate survey for {rate_indicator} was calculated using the parameters in the table below: \n"
+    )
+  )
+}
+
+```
+
+
+```{r 'sample_size_rate_table'}
+
+rate_indicator <- "Mortality Rate"
+
+tbl <- data.frame(
+  Parameter = c(
+    "Indicator Name",
+    "Sampling Design",
+    "Estimated death rate per 10,000/day",
+    "Desired Precision",
+    "Recall Period",
+    "Population size (overall)",
+    "Design Effect",
+    "Finite Population Correction (FPC) used?",
+    "Population to be Included",
+    "Person-Time to be Included",
+    "Average Household Size",
+    "% Non-Respondents",
+    "Households to be Included"
+  ),
+  `Urban North` = c(
+    "crude_death_rate", "Systematic", "0.5", "0.5", "",
+    "45,000", "2", "No", "854 people", "76,860 person days",
+    "5.2", "10%", "183 households"
+  ),
+  `Peri-Urban East` = c(
+    "crude_death_rate", "Proportional", "0.2", "0.5", "",
+    "28,000", "2", "No", "342 people", "30,780 person days",
+    "5.2", "10%", "74 households"
+  ),
+  `Rural South` = c(
+    "crude_death_rate", "Simple Random (RLC)", "", "", "",
+    "17,000", "", "No", "", "", "", "", ""
+  ),
+  Justification = rep("", 13),
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+ft <- flextable::flextable(tbl)
+
+ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+ft <- flextable::fontsize(ft, size = 9, part = "all")
+
+ft <- flextable::bold(ft, part = "header")
+ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
+ft <- flextable::color(ft, color = "white", part = "header")
+
+ft <- flextable::bg(
+  ft,
+  i = tbl$Parameter %in% c(
+    "Population to be Included",
+    "Person-Time to be Included",
+    "Households to be Included"
+  ),
+  bg = "#F2F2F2",
+  part = "body"
+)
+
+ft <- flextable::align(ft, align = "left", part = "all")
+ft <- flextable::valign(ft, valign = "top", part = "all")
+
+ft <- flextable::padding(ft, padding = 4, part = "all")
+ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+
+ft <- flextable::border_outer(ft, part = "all")
+ft <- flextable::border_inner_h(ft, part = "body")
+ft <- flextable::border_inner_v(ft, part = "all")
+
+ft <- flextable::width(ft, j = 1, width = 2.4)
+ft <- flextable::width(ft, j = 2:4, width = 1.3)
+ft <- flextable::width(ft, j = 5, width = 1.7)
+ft <- flextable::fit_to_width(
+  ft,
+  max_width = 6.5
+)
+ft <- flextable::set_caption(
+  ft,
+  caption = glue::glue("Table 5. Sample size calculation parameters for {rate_indicator}")
+)
+ft
+
+```
+
+
+
 #### Site Selection Methods
+
+```{r 'site_selection_methods'}
+#| results: asis
+
+srs_site_selection <- TRUE
+systematic_site_selection <- TRUE
+exhaustive_site_selection <- TRUE
+cluster_site_selection <- TRUE
+purposive_site_selection <- TRUE
+n_sites <- 10
+cluster_size <- 15
+
+stratified_strata_names_site_srs <- "stratum 1, stratum 2, stratum 3"
+stratified_strata_names_site_systematic <- "stratum 1, stratum 2, stratum 3"
+
+if (srs_site_selection) {
+  
+  if (multiple_strata == FALSE) {
+
+    cat(glue::glue("A total of {n_sites} sites will be selected for the assessment covering {stratified_strata_names_site_srs}. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {cluster_size} households planned per site. \n"))
+
+  } else if (multiple_strata == TRUE) {
+
+    cat(glue::glue("A total of {n_sites} sites will be selected for the assessment covering {stratified_strata_names_site_srs}. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be allocated across selected sites with {cluster_size} households planned per site and additional weighting applied during analysis to account for under- or over-sampling of population groups between sites. \n"))
+  }
+   
+} else if (systematic_site_selection) {
+  cat(glue::glue("A total of {n_sites} sites will be selected for the assessment covering {stratified_strata_names_site_systematic}. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {cluster_size} households planned per site. Data collection teams will utlize the following steps:     
+  •	Ordering the Sampling Frame – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representative. 
+  •	Determining the sampling interval – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites. 
+    o	E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7. 
+  •	Select the first sampling unit – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.
+    o	E.g. randomly select the number 4 between 1 and 7… the 4th site will be the first one selected. 
+  •	Select the following sampling units – From the 1st site selected, keep counting down the sampling frame  counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you’ve selected all sites.
+    o	E.g. First sites selected is #4, the 2nd selected is #11 (4+7), the 3rd household is #18 (11+7). 
+    o	If the sampling interval has a decimal, you may need to adjust how you count to ensure you don’t run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:
+  •	Decimal between 0 – 0.2, then round sampling interval down. E.g. with a sampling interval of 3.2; 1st site is 5, 2nd site is 5+3=8, 3rd site is 8+3=11.  
+  •	Decimal between 0.3 – 0.7, alternate between rounding sampling interval down and up. E.g. with a sampling interval of 3.5; 1st site is 5, 2nd site is 5+3=8, 3rd site is 8+4=12.  
+  •	Decimal between 0.8 – 0.9, then round sampling interval up. E.g. with a sampling interval of 3.9; 1st site is 5, 2nd site is 5+4=9, 3rd site is 9+4=13.   \n"))
+} 
+
+
+
+```
+
+
 
 #### Household Selection Methods
 
-## Key Informant Interviews
+#### Team Composition, Training and Planning
 
-### Key Informant Interview Overview
+```{r}
+num_enumerators_per_team <- 3
+```
 
-### Key Informant Selection
+The exact composition of teams will depend on the number of tools being implemented. For household surveys, teams will consist of one field supervisor and `r num_enumerators_per_team` enumerators. Where possible, teams should incorporate a mix of male and female enumerators. For key informant and observational tools, dedicated enumerators separate from the household survey enumerators will be selected and trained to implement them. One enumerator should not implement more than one or two specific tools to ensure adequate time for use in the field and data quality.
 
-## Observation Tools
+Teams will receive a base three-day training prior to data collection covering purpose of the survey, good interview practices and ethical conduct during public health assessment, field sampling procedures, and review of the survey, key informant and observational tools, and a one-day for pilot and planning activities. It is recommended to divide the team for separate tool review sessions to efficiently make use of training time.
 
-### Observation Tools Overview
+```{r}
+#| results: asis
+
+include_muac_children <- TRUE
+
+include_muac_women <- TRUE
+
+include_mortality <- TRUE
+
+if(include_muac_children | include_muac_women) {
+  cat("An additional session will be included for training on MUAC measurements as well as a half day of training for a MUAC standardization test.")
+}
+
+if(include_mortality) {
+  cat("An additional session will be included for training on mortality data collection and basic psychosocial first aid skills for enumerators to recognize and appropriately respond to distress during the survey. ")
+}
+
+```
+
+Field supervisors will have a key role in ensuring research quality during data collection. Key responsibilities will include:
+
+*	Providing daily feedback sessions to the data collection team
+*	Monitoring completion of assessment against planned targets
+*	Completing cluster control forms
+*	Ensuring proper household sampling techniques are applied
+*	Providing supportive supervision to enumerators
+
+### Key Informant Interviews
+
+#### Key Informant Interview Overview
+
+#### Key Informant Selection
+
+### Observation Tools
+
+#### Observation Tools Overview
 
 ## Data Processing and Analysis
 
@@ -813,12 +1443,12 @@ if (!is.null(total_population_size_included)) {
 
 Data will be collected using a contextualized IPHRA ODK tool. Cleaning, indicator calculations, and analysis will be done using a pre-prepared IPHRA application using `r R.version.string`.
 
-```{r}
+```{r 'hh_analysis_plan'}
 #| results: asis
 
-site_selection <- "srs"
+site_selection <- "cluster"
 
-hh_selection <- "srs"
+hh_selection <- "rlc"
 
 multiple_methods <- TRUE
 
@@ -828,27 +1458,27 @@ fpc <- TRUE
 
 if ((site_selection == "srs" | site_selection == "systematic") & (hh_selection == "srs" | hh_selection == "systematic")) {
   
-cat("The household analysis will be treated as a simple random sampling design across sites without applying survey weights.\n")
+cat("The household analysis will be treated as a simple random sampling design across sites without applying survey weights. ")
 
   if(multiple_strata == TRUE) {
-    cat(" An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis.\n")
+    cat(" An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis. ")
 
     if(fpc == TRUE) {
-    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.\n")
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied. ")
     }
   }
 
   if(fpc == TRUE & !multiple_strata) {
-    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.\n")
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals. ")
   }
 
   if (multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_srs}} .\n")
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_srs}} {{stratified_strata_names_srs_systematic}} {{stratified_strata_names_systematic_srs}} {{stratified_strata_names_systematic_systematic}} .\n")
   }
 
 }  else if ((site_selection == "srs" | site_selection == "systematic") & hh_selection == "rlc") {
   
-  cat("The household analysis will be treated as a weighted cluster design across sites with groupings of households at each GPS point treated as the clusters in the analysis. Survey weights will be generated between sites to correct for under- or over-sampling between sites based on the best available population estimated the field teams were able to recover. If no adequate population data was available during the assessment, the final analysis will be unweighted. If population density is assessed to be very different within or across assessment sites, survey weights will be used for each random location cluster equivalent to the inverse of the population density of each cluster. This is intended to correct for any bias due to an uneven population density across the assessment area to make sure households have a more equal representation in the dataset. Population density is estimated based on the number of people in households within a random location cluster divided by the area of the circle formed by the locations of the three households and the GPS point of that random location cluster. ")
+  cat("The household analysis will be treated as a weighted cluster design across sites with groupings of households at each GPS point treated as the clusters in the analysis. Survey weights will be generated between sites to correct for under- or over-sampling between sites based on the best available population estimated the field teams were able to recover. If no adequate population data was available during the assessment, the final analysis will be unweighted. If population density is assessed to be very different within or across assessment sites, survey weights will be used for each random location cluster equivalent to the inverse of the population density of each cluster. This is intended to correct for any bias due to an uneven population density across the assessment area to make sure households have a more equal representation in the dataset. Population density is estimated based on the number of people in households within a random location cluster divided by the area of the circle formed by the locations of the three households and the GPS point of that random location cluster. \n\n")
 
   if(multiple_strata == TRUE) {
     cat(" An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis. ")
@@ -864,7 +1494,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_systematic}} .\n")
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_rlc}} {{stratified_strata_names_systematic_rlc}} .\n")
   }
 
 } else if (site_selection == "cluster" & (hh_selection == "srs" | hh_selection == "systematic")) {
@@ -887,7 +1517,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_systematic}} .\n")
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_cluster_srs}} {{stratified_strata_names_cluster_systematic}} .\n")
   }
 
 } else if (site_selection == "cluster" & hh_selection == "rlc") {
@@ -910,17 +1540,149 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_systematic}} .\n")
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_cluster_rlc}} .\n")
+  }
+
+} else if (site_selection == "proportional" & (hh_selection == "srs" | hh_selection == "systematic") ) {
+  
+  cat("The household analysis will be treated as a simple random sampling design across sites. ")
+
+  if(multiple_strata == TRUE) {
+    cat("Survey weights will be generated for aggregation of results between strata. ")
+
+  } else {
+    cat("The sample is self weighted so no survey weights will be applied. ")
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied. ")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_proportional_srs}} {{stratified_strata_names_proportional_systematic}} .\n")
+  }
+
+} else if (site_selection == "proportional" & hh_selection == "rlc") {
+  
+  cat("The household analysis will be treated as a cluster design across sites with groupings of households at each GPS point treated as the clusters in the analysis. If population density is assessed to be very different within or across assessment sites, survey weights will be used for each random location cluster equivalent to the inverse of the population density of each cluster. This is intended to correct for any bias due to an uneven population density across the assessment area to make sure households have a more equal representation in the dataset. Population density is estimated based on the number of people in households within a random location cluster divided by the area of the circle formed by the locations of the three households and the GPS point of that random location cluster. ")
+
+  if(multiple_strata == TRUE) {
+    cat("An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis.")
+
+  } else {
+    cat("While the sampling was self-weighted, the random location cluster weights will still be applied to account for population density variations. ")
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_proportional_rlc}} .\n")
+  }
+
+} else if (site_selection == "purposive" & (hh_selection == "srs" | hh_selection == "systematic") ) {
+  
+  cat("The household analysis will be treated as a simple random sampling design across purposively selected sites. ")
+
+  if(multiple_strata == TRUE) {
+    cat("Survey weights will be generated for aggregation of results between strata within these sites. ")
+
+  } else {
+    cat("As assessments sites were purposively sampled and not representative of the wider population, unweighted results will be reported. ")
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied. ")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_purposive_srs}} {{stratified_strata_names_purposive_systematic}} .\n")
+  }
+
+}  else if (site_selection == "purposive" & hh_selection == "rlc") {
+  
+  cat("The household analysis will be treated as a cluster design across selected sites with groupings of households at each GPS point treated as the clusters in the analysis. If population density is assessed to be very different within or across these assessment sites, survey weights will be used for each random location cluster equivalent to the inverse of the population density of each cluster. This is intended to correct for any bias due to an uneven population density across the assessment area to make sure households have a more equal representation in the dataset. Population density is estimated based on the number of people in households within a random location cluster divided by the area of the circle formed by the locations of the three households and the GPS point of that random location cluster. ")
+
+  if(multiple_strata == TRUE) {
+    cat("An additional set of weights will be generated between strata to account for under- or over-sampling of population groups. Each set of weights will be multiplied together at the household level to generate a single set of composite weights for aggregated analysis. Results cannot be extrapolated to other populations due to the non-probabilistic method of site selection, however the use of survey weights can help to make sure the results are more representative of the population within the selected sites. ")
+
+  } else {
+    cat("While the sampling was self-weighted, the random location cluster weights will still be applied to account for population density variations. Results cannot be extrapolated to other populations due to the non-probabilistic method of site selection, however the use of survey weights can help to make sure the results are more representative of the population within the selected sites. ")
+  }
+
+  if(fpc == TRUE & multiple_strata == TRUE) {
+    cat("For specific stratum where the population is less than 10,000 individuals, the finite population correction factor will be applied.")
+    }
+
+  if(fpc == TRUE & multiple_strata == FALSE) {
+    cat("The finite population correction factor will be applied since the target population is less than 10,000 individuals.")
+  }
+
+  if (multiple_methods == TRUE) {
+    cat("This analysis method applies for the following strata: {{stratified_strata_names_purposive_rlc}} .\n")
   }
 
 } else {
-  cat("PLEASE SPECIFY METHODOLOGY HERE.\n")
+  cat("PLEASE SPECIFY ANALYSIS METHODS HERE.\n")
 } 
 ```
 
-#### Mid-Upper Arm Circumference (MUAC) Analysis
+```{r}
+#| results: asis
 
-#### Mortality Rate Analysis
+include_muac_children <- TRUE
+
+include_muac_children_women <- TRUE
+
+if (include_muac_children) {
+  cat("#### Mid-Upper Arm Circumference (MUAC) Analysis\n\n")
+
+  cat("Global acute malnutrition by MUAC will be calculated by classifying all children with MUAC <125mm and/or presence of bilateral pitting edema as acutely malnourished. Severe acute malnutrition by MUAC will be calculated by classifying all children with MUAC <115mm and/or presence of bilateral pitting edema as severely acutely malnourished. The analysis of these indicators will be disaggregated by sex and age group (6-11 months, 12-23 months, 24-35 months, 36-47 months, and 48-59 months). Children with extreme MUAC measurements less than 80mm or greater than 200mm will be excluded from the analysis due to likelihood of measurement error. \n\n")
+
+  cat("Global acute malnutrition by MUAC-for-Age z-scores (MFAZ) will be calculated by classifying all children with MUAC-for-Age z-score <-2 and/or presence of bilateral pitting edema as acutely malnourished. Severe acute malnutrition by MUAC-for-Age z-scores will be calculated by classifying all children with MUAC-for-Age z-score <-3 and/or presence of bilateral pitting edema as severely acutely malnourished. The analysis of these indicators will be disaggregated by age group (6-11 months, 12-23 months, 24-35 months, 36-47 months, and 48-59 months). Children with extreme MFAZ less than -4 SD from the mean MFAZ of the sample or greater than 4 standard deviations from the mean MFAZ of the sample will be excluded from the analysis due to likelihood of measurement error. \n\n") 
+
+  cat("The ratio of children 0-23 months of age to children 24-59 months of age in the sample will be evaluated to determine if additional age weighting is needed for analysis of the indicator Global or Severe Acute Malnutrition by MUAC. If strong differences are observed against an expected proportion of two-thirds children 24-59 months out of all under-5 year old children, then a set of weights will be applied if the child is 0-23 months or 24-59 months for this specific indicator. The age weights will be multiplied with any household level weights to generate a single set of composite weight for analysis. \n\n")
+
+  cat("The quality of MUAC results will be evaluated by reviewing several key paramaters including standard deviation of MUAC, standard deviation of MFAZ, digit preference scores, sex and age ratios, and other indicators of measurement quality. Enumerators identified to be strongly influencing the results with poor quality MUAC measurements may be excluded from analysis. Quality of enumerator work will be assessed continuously throughout the survey period.\n\n")
+
+}
+
+if (include_muac_children_women) {
+
+  cat("Global acute malnutrition by MUAC for women of reproductive age (15-49 years) will be calculated by classifying all women with MUAC <210mm as acutely malnourished and all women with MUAC <190mm as severely acutely malnourished. Results will be disaggregated by pregnancy status (pregnant, breastfeeding a child 0-5 months of age, breastfeeding a child 6-23 months of age, non-pregnant/non-breastfeeding). Extreme MUAC measurements of less than 100mm or greater than 300mm will be excluded from the analysis due to likelihood of measurement error. \n")
+
+}
+
+```
+
+```{r}
+#| results: asis
+
+include_mortality <- TRUE
+
+if (include_mortality) {
+  cat("#### Mortality Rate Analysis\n\n")
+
+  cat("Crude mortality rate (CMR) will be calculated by dividing the number of deaths in the recall period by the total person-time at risk during the recall period and multiplying by 10,000 to get a rate per 10,000 population per day. Under-5 mortality rate (U5MR) will be calculated by dividing the number of deaths among children under 5 years of age in the recall period by the total person-time at risk among children under 5 years of age during the recall period and multiplying by 10,000 to get a rate per 10,000 under-5 population per day. Person-time at risk will be calculated for each household based on the number of people living in the household at the time of the survey times the number of days from the start of the recall period to the interview date of the household. Person-time will be subtracted from each household equal to the number of reported births and in-migrants to the household times half the number of recall days, and person-time will be added to each household equivalent to the number of deaths and out-migrants from the household times half the number of recall days. Crude and under-5 mortality rates will be disaggregated by sex, respondent reported broad cause of death (non-trauma, trauma, other), location of death (current place of residence, during migration, and last place of residence). \n\n")
+
+  cat("The quality of mortality results will be evaluated by reviewing several key parameters including the sex and age ratios of the sample, the internal consistency of reported deaths to the household, distribution of deaths across teams and clusters, and other indicators of data quality. Enumerators identified to be strongly influencing the results with poor quality mortality data may be excluded from analysis. Quality of enumerator work will be assessed continuously throughout the survey period. \n")
+
+}
+
+```
 
 ### Key Informant and Observation Data
 
