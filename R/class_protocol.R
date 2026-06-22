@@ -9,11 +9,6 @@ Protocol <- R6::R6Class(
     #'   with the protocol.
     framework = NULL,
 
-    #' @field protocol_schema Data frame describing TOR placeholder handling
-    #'   rules.  Expected columns are \code{tag_name}, \code{handling},
-    #'   \code{condition}, and \code{default_value}.
-    protocol_schema = NULL,
-
     #' @field tools List of Tool objects (placeholder for Tool class instances)
     tools = NULL,
 
@@ -26,78 +21,6 @@ Protocol <- R6::R6Class(
       "generic"
     ),
 
-    #' @field framework_objective_catalog_master Named list keyed by objective
-    #'   code from \code{framework$master_objectives_schema}; each value stores
-    #'   objective metadata including \code{short_objective},
-    #'   \code{text_objective}, \code{objective_research_question}, and
-    #'   \code{pillar}.
-    framework_objective_catalog_master = list(),
-
-    #' @field framework_objective_catalog_adjusted Named list keyed by objective
-    #'   code from \code{framework$modified_objectives_schema}; each value stores
-    #'   objective metadata including \code{short_objective},
-    #'   \code{text_objective}, \code{objective_research_question}, and
-    #'   \code{pillar}.
-    framework_objective_catalog_adjusted = list(),
-
-    #' @field framework_indicator_catalog_master Named list keyed by indicator
-    #'   code from \code{framework$master_objectives_schema}; each value stores
-    #'   indicator metadata.
-    framework_indicator_catalog_master = list(),
-
-    #' @field framework_primary_objective_catalog Named list of objectives whose
-    #'   codes appear in \code{framework$primary_objectives}; filtered from the
-    #'   adjusted schema.  Each entry has \code{short_objective},
-    #'   \code{text_objective}, \code{objective_research_question}, \code{pillar}.
-    framework_primary_objective_catalog = list(),
-
-    #' @field framework_secondary_objective_catalog Named list of objectives whose
-    #'   codes appear in \code{framework$secondary_objectives}; filtered from the
-    #'   adjusted schema.  Each entry has \code{short_objective},
-    #'   \code{text_objective}, \code{objective_research_question}, \code{pillar}.
-    framework_secondary_objective_catalog = list(),
-
-    #' @field secondary_data_sources Named list of secondary data sources keyed
-    #'   by objective code.  Each element is a character vector of source names.
-    #'   Codes must match \code{framework_primary_objective_catalog} keys.
-    secondary_data_sources = list(),
-
-    #' @field framework_indicator_catalog_master Named list keyed by indicator
-    #'   code from \code{framework$master_objectives_schema}; each value stores
-    #'   indicator metadata.
-    framework_indicator_catalog_master = list(),
-
-    #' @field framework_indicator_catalog_adjusted Named list keyed by indicator
-    #'   code from \code{framework$modified_objectives_schema}; each value stores
-    #'   indicator metadata.
-    framework_indicator_catalog_adjusted = list(),
-
-    #' @field tool_indicator_catalog_master Named list keyed by tool name with
-    #'   vectors of indicator codes available in master tool surveys.
-    tool_indicator_catalog_master = list(),
-
-    #' @field tool_indicator_catalog_revised Named list keyed by tool name with
-    #'   vectors of indicator codes available in revised tool surveys.
-    tool_indicator_catalog_revised = list(),
-
-    #' @field tool_objective_catalog_master Nested list keyed first by tool name
-    #'   and then by objective code.  Each objective entry contains the same
-    #'   metadata fields as \code{framework_objective_catalog_master}
-    #'   (\code{short_objective}, \code{text_objective},
-    #'   \code{objective_research_question}, \code{pillar}).  Objectives are
-    #'   those whose indicator codes appear in the tool's master survey.
-    #'   Updated automatically by \code{sync_tool_indicator_catalog_fields}.
-    tool_objective_catalog_master = list(),
-
-    #' @field tool_objective_catalog_revised Nested list keyed first by tool
-    #'   name and then by objective code.  Each objective entry contains the
-    #'   same metadata fields as \code{framework_objective_catalog_master}
-    #'   (\code{short_objective}, \code{text_objective},
-    #'   \code{objective_research_question}, \code{pillar}).  Objectives are
-    #'   those whose indicator codes appear in the tool's revised survey.
-    #'   Updated automatically by \code{sync_tool_indicator_catalog_fields}.
-    tool_objective_catalog_revised = list(),
-
     #' @field issues List of validation issues and discrepancies
     issues = list(),
 
@@ -108,6 +31,44 @@ Protocol <- R6::R6Class(
 
     #' @field metadata List containing protocol metadata
     metadata = list(
+      research_cycle_id = NULL,
+      country = NULL,
+      release_date = NULL,
+      version_number = NULL,
+      type_emergency = NULL,
+      type_crisis = NULL,
+      mandating_agency = NULL,
+      project_code = NULL,
+      geographic_coverage = NULL,
+      population = NULL,
+      rationale = NULL,
+      date_pilot_training = NULL,
+      date_data_collection_start = NULL,
+      date_data_collection_end = NULL,
+      date_data_analysis = NULL,
+      date_data_validation = NULL,
+      date_preliminary_presentation = NULL,
+      date_outputs_validation = NULL,
+      date_outputs_publication = NULL,
+      date_final_presentation = NULL,
+      audience_type_cluster = NULL,
+      expected_output_cluster = NULL,
+      expected_output_donor = NULL,
+      expected_output_operational_actor = NULL,
+      expected_output_other = NULL,
+      dissemination_strategy_cluster = NULL,
+      dissemination_strategy_donor = NULL,
+      dissemination_strategy_operational_actor = NULL,
+      dissemination_strategy_other = NULL,
+      access_cluster = NULL,
+      access_donor = NULL,
+      access_operational_actor = NULL,
+      access_other = NULL,
+      visibility_cluster = NULL,
+      visibility_donor = NULL,
+      visibility_operational_actor = NULL,
+      visibility_other = NULL,
+
       created_date = NULL,
       modified_datetime = NULL,
       month_year = NULL,
@@ -180,8 +141,8 @@ Protocol <- R6::R6Class(
       phr_try(
         {
           super$initialize(
-            reference_doc_filename = reference_doc_filename,
-            reference_ppt_filename = reference_ppt_filename
+            reference_doc_filename = private$..default_template_filenames(),
+            reference_ppt_filename = private$..default_ppt_template_filenames()
           )
           valid_fw_types <- c("none", "ana")
           phr_assert(
@@ -575,43 +536,35 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Generate a document report from the current schema/template.
-    #' @param output_file Character output \code{.docx} path.
-    #' @param open Logical indicating whether to open the output path.
-    #' @return Invisibly returns \code{self}.
-    generate_doc = function(
-      output_file = "protocol_report.docx",
-      open = FALSE
-    ) {
-      super$generate_doc(output_file = output_file, open = open)
-    },
+    #' @description Build a data analysis plan (DAP) table from framework primary
+    #'   objectives and tool survey data.
+    #'
+    #' @param tool_name Character. Name of the tool to use for survey questions
+    #'   and responses. Must match a key in \code{self$tools}.
+    #' @return Data frame with columns: Research Question, Indicator Code,
+    #'   Indicator / Variable, Disaggregation, Questionnaire Question,
+    #'   Questionnaire Responses, Data Collection Level. Returns \code{NULL} when
+    #'   framework is not configured, no primary objectives are set, or the
+    #'   specified tool is not found.
+    get_dap_table = function(tool_name) {
+      phr_try(
+        {
+          # Validate tool_name parameter
+          phr_assert(
+            is.character(tool_name) &&
+              length(tool_name) == 1 &&
+              nzchar(tool_name),
+            message = phr_txt("tool_name must be a non-empty character string"),
+            origin = "Protocol$get_dap_table"
+          )
 
-    #' @description Post-sync hook to refresh framework/tool catalogs.
-    #' @param field Optional top-level field name.
-    #' @param member Optional nested member name.
-    #' @param target_field Optional destination field path.
-    #' @param name Optional named list entry inside \code{field}.
-    #' @param role Optional role-based list resolution key.
-    #' @return Invisibly returns \code{NULL}.
-    post_sync_state = function(
-      field = NULL,
-      member = NULL,
-      target_field = NULL,
-      name = NULL,
-      role = NULL
-    ) {
-      super$post_sync_state(
-        field = field,
-        member = member,
-        target_field = target_field,
-        name = name,
-        role = role
+          # Build and return the DAP table
+          private$..build_dap_table(tool_name)
+        },
+        on_error = "abort",
+        origin = "Protocol$get_dap_table"
       )
-      private$..sync_framework_catalog_fields()
-      private$..sync_tool_indicator_catalog_fields()
-      invisible(NULL)
-    }
-  ),
+    },
 
   active = list(
     #' @field .release_date Active binding returning the current system date.
@@ -622,6 +575,12 @@ Protocol <- R6::R6Class(
       }
       Sys.Date()
     },
+
+    .tools_table_df = function(value) {},
+
+    .objectives_research_questions_df = function(value) {},
+
+    .secondary_data_sources_df = function(value) {},
 
     #' @field .specific_objectives Active binding that renders primary objectives
     #'   as markdown bullet points, grouped by pillar when available.
@@ -789,105 +748,7 @@ Protocol <- R6::R6Class(
       )
       is.character(out) && length(out) == 1L && nzchar(out)
     },
-    #' @description Synchronize framework-level objective and indicator catalogs
-    #'   from the current framework schemas, and refresh primary/secondary
-    #'   objective catalogs using framework objective code filters.
-    #' @return Invisibly returns \code{NULL}.
-    ..sync_framework_catalog_fields = function() {
-      master_schema <- if (
-        !is.null(self$framework) && inherits(self$framework, "Framework")
-      ) {
-        self$framework$master_objectives_schema
-      } else {
-        NULL
-      }
-      adjusted_schema <- if (
-        !is.null(self$framework) && inherits(self$framework, "Framework")
-      ) {
-        self$framework$modified_objectives_schema
-      } else {
-        NULL
-      }
-
-      self$framework_objective_catalog_master <- private$..build_objective_catalog(
-        master_schema
-      )
-      self$framework_objective_catalog_adjusted <- private$..build_objective_catalog(
-        adjusted_schema
-      )
-      self$framework_indicator_catalog_master <- private$..build_indicator_catalog(
-        master_schema
-      )
-      self$framework_indicator_catalog_adjusted <- private$..build_indicator_catalog(
-        adjusted_schema
-      )
-
-      # Build primary and secondary catalogs filtered by framework objective codes
-      primary_codes <- if (
-        !is.null(self$framework) && inherits(self$framework, "Framework")
-      ) {
-        as.character(self$framework$primary_objectives %||% integer(0))
-      } else {
-        character(0)
-      }
-      secondary_codes <- if (
-        !is.null(self$framework) && inherits(self$framework, "Framework")
-      ) {
-        as.character(self$framework$secondary_objectives %||% integer(0))
-      } else {
-        character(0)
-      }
-
-      primary_schema <- if (
-        !is.null(adjusted_schema) &&
-          is.data.frame(adjusted_schema) &&
-          "objective_code" %in% names(adjusted_schema) &&
-          length(primary_codes) > 0L
-      ) {
-        adjusted_schema[
-          as.character(adjusted_schema$objective_code) %in% primary_codes,
-          ,
-          drop = FALSE
-        ]
-      } else {
-        NULL
-      }
-      secondary_schema <- if (
-        !is.null(adjusted_schema) &&
-          is.data.frame(adjusted_schema) &&
-          "objective_code" %in% names(adjusted_schema) &&
-          length(secondary_codes) > 0L
-      ) {
-        adjusted_schema[
-          as.character(adjusted_schema$objective_code) %in% secondary_codes,
-          ,
-          drop = FALSE
-        ]
-      } else {
-        NULL
-      }
-
-      self$framework_primary_objective_catalog <- private$..build_objective_catalog(
-        primary_schema
-      )
-      self$framework_secondary_objective_catalog <- private$..build_objective_catalog(
-        secondary_schema
-      )
-      invisible(NULL)
-    },
-    #' @description Retrieve the framework master objectives schema.
-    #' @return A data frame of master objectives; empty data frame when unavailable.
-    ..get_master_schema = function() {
-      schema <- self$access_nested(
-        field = "framework",
-        member = "master_objectives_schema"
-      )
-      if (is.null(schema) || !is.data.frame(schema)) {
-        return(data.frame())
-      }
-      as.data.frame(schema, stringsAsFactors = FALSE)
-    },
-
+    
     #' @description Collect unique indicator codes from included tools.
     #' @param tool_names Optional character vector of tool names to query.
     #' @param prefer_revised Logical. When TRUE, prefer revised survey codes.
@@ -961,183 +822,282 @@ Protocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    #' @description Synchronize tool-level indicator and objective catalogs for
-    #'   both master and revised surveys across all registered tools.
-    #' @return Invisibly returns \code{NULL}.
-    ..sync_tool_indicator_catalog_fields = function() {
-      self$tool_indicator_catalog_master <- list()
-      self$tool_indicator_catalog_revised <- list()
-      self$tool_objective_catalog_master <- list()
-      self$tool_objective_catalog_revised <- list()
-      if (is.null(self$tools) || length(self$tools) == 0L) {
-        return(invisible(NULL))
+    #' @description Build a data analysis plan table from framework primary
+    #'   objectives and specified tool survey data.
+    #' @param tool_name Character. Tool name for survey/choices lookup.
+    #' @return Data frame with DAP columns or NULL when missing dependencies.
+    ..build_dap_table = function(tool_name) {
+      # 1. Check framework availability
+      if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
+        return(NULL)
       }
 
-      fw_schema <- if (
-        !is.null(self$framework) && inherits(self$framework, "Framework")
-      ) {
-        self$framework$master_objectives_schema
-      } else {
-        NULL
-      }
-
-      for (tn in names(self$tools)) {
-        tool <- self$tools[[tn]]
-        if (is.null(tool) || !inherits(tool, "Tool")) {
-          next
-        }
-        master_codes <- as.character(tool$get_indicator_codes(
-          prefer_revised = FALSE
-        ))
-        revised_codes <- as.character(tool$get_indicator_codes(
-          prefer_revised = TRUE
-        ))
-        self$tool_indicator_catalog_master[[tn]] <- master_codes
-        self$tool_indicator_catalog_revised[[tn]] <- revised_codes
-        self$tool_objective_catalog_master[[tn]] <-
-          private$..build_tool_objective_catalog(fw_schema, master_codes)
-        self$tool_objective_catalog_revised[[tn]] <-
-          private$..build_tool_objective_catalog(fw_schema, revised_codes)
-      }
-      invisible(NULL)
-    },
-
-    #' @description Build an objective catalog keyed by objective code (or
-    #'   \code{short_objective} fallback) from a framework-like schema.
-    #' @param schema Data frame containing objective metadata.
-    #' @return Named list of objective metadata entries.
-    ..build_objective_catalog = function(schema) {
-      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0) {
-        return(list())
-      }
-      code_col <- if ("objective_code" %in% names(schema)) {
-        "objective_code"
-      } else if ("short_objective" %in% names(schema)) {
-        "short_objective"
-      } else {
-        NULL
-      }
-      if (is.null(code_col)) {
-        return(list())
-      }
-
-      codes <- as.character(schema[[code_col]])
-      codes <- codes[!is.na(codes) & nzchar(codes)]
-      if (length(codes) == 0L) {
-        return(list())
-      }
-
-      out <- list()
-      uniq_codes <- unique(codes)
-      for (code in uniq_codes) {
-        idx <- which(as.character(schema[[code_col]]) == code)
-        if (length(idx) == 0L) {
-          next
-        }
-        s <- schema[idx, , drop = FALSE]
-        first_non_empty <- function(col, default = "") {
-          if (!col %in% names(s)) {
-            return(default)
-          }
-          vals <- as.character(s[[col]])
-          vals <- vals[!is.na(vals) & nzchar(vals)]
-          if (length(vals) == 0L) default else vals[[1L]]
-        }
-        out[[code]] <- list(
-          short_objective = first_non_empty("short_objective"),
-          text_objective = first_non_empty("text_objective"),
-          objective_research_question = first_non_empty(
-            "objective_research_question"
-          ),
-          pillar = first_non_empty("pillar")
+      # 2. Get primary objectives
+      primary_codes <- as.character(
+        tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "primary_objectives",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
         )
-      }
-      out
-    },
+      )
 
-    #' @description Build a tool-specific objective catalog by filtering
-    #'   \code{fw_schema} rows whose \code{indicator_code} values match the
-    #'   supplied \code{indicator_codes}.
-    #' @param fw_schema Data frame schema containing at least
-    #'   \code{indicator_code}.
-    #' @param indicator_codes Character vector of indicator codes for one tool.
-    #' @return Named list objective catalog for the tool.
-    ..build_tool_objective_catalog = function(fw_schema, indicator_codes) {
+      if (length(primary_codes) == 0L) {
+        return(NULL)
+      }
+
+      # 3. Get modified objectives schema
+      schema <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "modified_objectives_schema",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
+        )
+             
+        if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0L) {
+        return(NULL)
+      }
       if (
-        is.null(fw_schema) ||
-          !is.data.frame(fw_schema) ||
-          nrow(fw_schema) == 0 ||
-          length(indicator_codes) == 0L
+        !"objective_code" %in% names(schema) ||
+          !"indicator_code" %in% names(schema)
       ) {
-        return(list())
+        return(NULL)
       }
-      if (!"indicator_code" %in% names(fw_schema)) {
-        return(list())
-      }
-      # Filter schema rows to those matching the tool's indicator codes
-      matching_rows <- fw_schema[
-        as.character(fw_schema$indicator_code) %in%
-          as.character(indicator_codes),
+
+      # 4. Filter to primary objectives
+      primary_schema <- schema[
+        as.character(schema$objective_code) %in% primary_codes,
         ,
         drop = FALSE
       ]
-      if (nrow(matching_rows) == 0L) {
-        return(list())
+      if (nrow(primary_schema) == 0L) {
+        return(NULL)
       }
-      private$..build_objective_catalog(matching_rows)
+
+      # 5. Get indicator codes from primary objectives
+      indicator_codes <- unique(as.character(primary_schema$indicator_code))
+      indicator_codes <- indicator_codes[
+        !is.na(indicator_codes) & nzchar(indicator_codes)
+      ]
+      if (length(indicator_codes) == 0L) {
+        return(NULL)
+      }
+
+      # 6. Get specified tool's revised survey
+      revised_survey <- tryCatch(
+        self$access_nested(
+          field = "tools",
+          name = tool_name,
+          member = "revised_survey"
+        ),
+        error = function(e) NULL
+      )
+      if (
+        is.null(revised_survey) ||
+          !is.data.frame(revised_survey) ||
+          nrow(revised_survey) == 0L
+      ) {
+        phr_warning(
+          phr_txt("Tool '{tool_name}' has no revised_survey data."),
+          origin = "Protocol$get_dap_table"
+        )
+        return(NULL)
+      }
+
+      # 7. Get specified tool's revised choices
+      revised_choices <- tryCatch(
+        self$access_nested(
+          field = "tools",
+          name = tool_name,
+          member = "revised_choices"
+        ),
+        error = function(e) NULL
+      )
+
+      # 8. Filter survey to rows matching indicator codes
+      if (!"indicator_code" %in% names(revised_survey)) {
+        phr_warning(
+          phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
+          origin = "Protocol$get_dap_table"
+        )
+        return(NULL)
+      }
+
+      # Build pattern for grepl (handles comma-separated multi-indicator cells)
+      pattern <- paste(indicator_codes, collapse = "|")
+      survey_codes <- as.character(revised_survey$indicator_code)
+      keep <- !is.na(survey_codes) & grepl(pattern, survey_codes)
+      survey_filtered <- revised_survey[keep, , drop = FALSE]
+
+      if (nrow(survey_filtered) == 0L) {
+        phr_message(
+          phr_txt(
+            "No survey questions found for primary objective indicators in tool '{tool_name}'."
+          ),
+          origin = "Protocol$get_dap_table"
+        )
+        return(NULL)
+      }
+
+      # 9. Build the DAP table
+      private$..construct_dap_rows(
+        survey_df = survey_filtered,
+        choices_df = revised_choices,
+        schema_df = primary_schema,
+        indicator_codes = indicator_codes
+      )
     },
 
-    #' @description Build an indicator catalog keyed by \code{indicator_code}
-    #'   with normalized definition and research question fields.
-    #' @param schema Data frame containing indicator metadata.
-    #' @return Named list of indicator metadata entries.
-    ..build_indicator_catalog = function(schema) {
-      if (
-        is.null(schema) ||
-          !is.data.frame(schema) ||
-          nrow(schema) == 0 ||
-          !"indicator_code" %in% names(schema)
-      ) {
-        return(list())
-      }
-      codes <- as.character(schema$indicator_code)
-      codes <- codes[!is.na(codes) & nzchar(codes)]
-      if (length(codes) == 0L) {
-        return(list())
-      }
+    #' @description Construct DAP table rows from survey and framework data.
+    #' @param survey_df Filtered survey data frame
+    #' @param choices_df Choices data frame (may be NULL)
+    #' @param schema_df Primary objectives schema
+    #' @param indicator_codes Character vector of indicator codes
+    #' @return Data frame with DAP structure
+    ..construct_dap_rows = function(
+      survey_df,
+      choices_df,
+      schema_df,
+      indicator_codes
+    ) {
+      # Initialize collectors
+      rows <- list()
 
-      out <- list()
-      uniq_codes <- unique(codes)
-      for (code in uniq_codes) {
-        idx <- which(as.character(schema$indicator_code) == code)
-        if (length(idx) == 0L) {
+      # Get catalog for research question lookup
+      obj_catalog <- schema_df
+
+      # Process each survey row
+      for (i in seq_len(nrow(survey_df))) {
+        row <- survey_df[i, , drop = FALSE]
+
+        # Get indicator code(s) for this question
+        row_ind_codes <- as.character(row$indicator_code)
+        if (is.na(row_ind_codes) || !nzchar(row_ind_codes)) {
           next
         }
-        s <- schema[idx, , drop = FALSE]
-        first_non_empty <- function(cols, default = "") {
-          for (col in cols) {
-            if (!col %in% names(s)) {
-              next
-            }
-            vals <- as.character(s[[col]])
-            vals <- vals[!is.na(vals) & nzchar(vals)]
-            if (length(vals) > 0L) return(vals[[1L]])
-          }
-          default
+
+        # Split comma-separated codes
+        row_ind_codes <- trimws(unlist(strsplit(row_ind_codes, ",")))
+        row_ind_codes <- row_ind_codes[row_ind_codes %in% indicator_codes]
+        if (length(row_ind_codes) == 0L) {
+          next
         }
-        out[[code]] <- list(
-          indicator_definition = first_non_empty(c(
-            "indicator_definition",
-            "text_indicator",
-            "indicator_name"
-          )),
-          research_question = first_non_empty(c(
-            "research_question",
-            "objective_research_question"
-          ))
+
+        # Use first matching indicator code
+        ind_code <- row_ind_codes[1L]
+
+        # Find objective code for this indicator
+        obj_code <- schema_df$objective_code[
+          as.character(schema_df$indicator_code) == ind_code
+        ][1L]
+
+        # Get research question from framework catalog
+        research_q <- if (!is.null(obj_catalog[[as.character(obj_code)]])) {
+          obj_catalog[[as.character(obj_code)]]$objective_research_question %||%
+            ""
+        } else {
+          ""
+        }
+
+        # Get question label (try label::English first, then label)
+        question_label <- if ("label::English" %in% names(row)) {
+          as.character(row[["label::English"]])
+        } else if ("label" %in% names(row)) {
+          as.character(row$label)
+        } else {
+          ""
+        }
+
+        # Get responses from choices (newline-separated)
+        responses <- private$..extract_question_responses(row, choices_df)
+
+        # Append row (with blank fields as instructed)
+        rows[[length(rows) + 1L]] <- data.frame(
+          `Research Question` = research_q,
+          `Indicator Code` = ind_code,
+          `Indicator / Variable` = "", # leave blank per user instruction
+          Disaggregation = "", # leave blank per user instruction
+          `Questionnaire Question` = question_label,
+          `Questionnaire Responses` = responses,
+          `Data Collection Level` = "", # leave blank per user instruction
+          check.names = FALSE,
+          stringsAsFactors = FALSE
         )
       }
-      out
+
+      if (length(rows) == 0L) {
+        return(NULL)
+      }
+
+      # Combine all rows
+      do.call(rbind, rows)
+    },
+
+    #' @description Extract formatted response options for a survey question.
+    #' @param question_row Single-row survey data frame
+    #' @param choices_df Choices data frame (may be NULL)
+    #' @return Character string with responses (newline-separated for select types)
+    ..extract_question_responses = function(question_row, choices_df) {
+      qtype <- if ("type" %in% names(question_row)) {
+        tolower(trimws(as.character(question_row$type)))
+      } else {
+        ""
+      }
+
+      # For select questions, extract from choices
+      if (grepl("^select_one ", qtype) || grepl("^select_multiple ", qtype)) {
+        list_name <- sub("^select_(one|multiple)\\s+", "", qtype)
+        list_name <- gsub("\\s+.*$", "", list_name) # Remove anything after list name
+
+        if (!is.null(choices_df) && "list_name" %in% names(choices_df)) {
+          list_choices <- choices_df[
+            choices_df$list_name == list_name,
+            ,
+            drop = FALSE
+          ]
+          if (nrow(list_choices) > 0L) {
+            # Try label::English first, then label
+            label_col <- if ("label::English" %in% names(list_choices)) {
+              "label::English"
+            } else if ("label" %in% names(list_choices)) {
+              "label"
+            } else {
+              NULL
+            }
+
+            if (!is.null(label_col)) {
+              labels <- as.character(list_choices[[label_col]])
+              labels <- labels[!is.na(labels) & nzchar(labels)]
+              if (length(labels) > 0L) {
+                return(paste(labels, collapse = "\n")) # Join with newline per user instruction
+              }
+            }
+          }
+        }
+        return("See choices")
+      }
+
+      # For integer/decimal, return "Enter number"
+      if (qtype %in% c("integer", "decimal")) {
+        return("Enter number")
+      }
+
+      # For date types
+      if (grepl("date", qtype)) {
+        return("Date (DD/MM/YYYY)")
+      }
+
+      # For text types
+      if (qtype %in% c("text", "note")) {
+        return("Text response")
+      }
+
+      # Default blank
+      return("")
     }
   )
 )

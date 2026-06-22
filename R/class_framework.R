@@ -14,13 +14,18 @@
 # chunk contains at most one <g id="..."> opening tag. It never reads
 # It never reads the reference files and never uses the sub_pillar column.
 .build_code_svg_map <- function(svg) {
-  code_map <- list()   # named list: code_str -> character vector of group ids
+  code_map <- list() # named list: code_str -> character vector of group ids
 
   chunks <- strsplit(svg, "</g>", fixed = TRUE)[[1]]
 
   for (chunk in chunks) {
-    id_match <- regmatches(chunk, regexpr('<g id="([^"]+)"', chunk, perl = TRUE))
-    if (length(id_match) == 0L || !nzchar(id_match)) next
+    id_match <- regmatches(
+      chunk,
+      regexpr('<g id="([^"]+)"', chunk, perl = TRUE)
+    )
+    if (length(id_match) == 0L || !nzchar(id_match)) {
+      next
+    }
     id_val <- sub('<g id="([^"]+)"', "\\1", id_match, perl = TRUE)
 
     # Pattern 1: leaf node – text contains "(CODE)"
@@ -32,10 +37,23 @@
     }
 
     # Pattern 2: range "OC: N-M"
-    range_match <- regmatches(chunk, regexpr("OC:\\s*(\\d+)-(\\d+)", chunk, perl = TRUE))
+    range_match <- regmatches(
+      chunk,
+      regexpr("OC:\\s*(\\d+)-(\\d+)", chunk, perl = TRUE)
+    )
     if (length(range_match) > 0L && nzchar(range_match)) {
-      from_c <- as.integer(sub("OC:\\s*(\\d+)-(\\d+)", "\\1", range_match, perl = TRUE))
-      to_c   <- as.integer(sub("OC:\\s*(\\d+)-(\\d+)", "\\2", range_match, perl = TRUE))
+      from_c <- as.integer(sub(
+        "OC:\\s*(\\d+)-(\\d+)",
+        "\\1",
+        range_match,
+        perl = TRUE
+      ))
+      to_c <- as.integer(sub(
+        "OC:\\s*(\\d+)-(\\d+)",
+        "\\2",
+        range_match,
+        perl = TRUE
+      ))
       for (c in seq(from_c, to_c)) {
         code_str <- as.character(c)
         code_map[[code_str]] <- c(code_map[[code_str]], id_val)
@@ -117,6 +135,11 @@ Framework <- R6::R6Class(
     #'   SVG.
     secondary_objectives = NULL,
 
+    #' @field secondary_data_sources Named list of secondary data sources keyed
+    #'   by objective code.  Each element is a character vector of source names.
+    #'   Codes must match \code{framework_primary_objective_catalog} keys.
+    secondary_data_sources = list(),
+
     #' @field primary_indicator_codes Character vector of primary indicator codes
     #'   selected by the user.
     primary_indicator_codes = NULL,
@@ -137,7 +160,7 @@ Framework <- R6::R6Class(
     #'   \code{created_datetime} and \code{modified_datetime}, both initialised
     #'   to \code{Sys.time()} on construction.
     metadata = list(
-      created_datetime  = NULL,
+      created_datetime = NULL,
       modified_datetime = NULL
     ),
 
@@ -145,23 +168,30 @@ Framework <- R6::R6Class(
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
-      phr_try({
-        self$master_objectives_schema  <- NULL
-        self$master_indicator_bank     <- NULL
-        self$modified_objectives_schema <- NULL
-        self$modified_indicator_bank   <- NULL
-        self$master_svg                <- NULL
-        self$adjusted_svg              <- NULL
-        self$primary_objectives        <- NULL
-        self$secondary_objectives      <- NULL
-        self$primary_indicator_codes   <- NULL
-        self$secondary_indicator_codes <- NULL
-        self$modified_primary_indicator_codes   <- NULL
-        self$modified_secondary_indicator_codes <- NULL
-        self$metadata$created_datetime  <- Sys.time()
-        self$metadata$modified_datetime <- Sys.time()
-        phr_message(phr_txt("Framework initialized."), origin = "Framework$initialize")
-      }, on_error = "abort", origin = "Framework$initialize")
+      phr_try(
+        {
+          self$master_objectives_schema <- NULL
+          self$master_indicator_bank <- NULL
+          self$modified_objectives_schema <- NULL
+          self$modified_indicator_bank <- NULL
+          self$master_svg <- NULL
+          self$adjusted_svg <- NULL
+          self$primary_objectives <- NULL
+          self$secondary_objectives <- NULL
+          self$primary_indicator_codes <- NULL
+          self$secondary_indicator_codes <- NULL
+          self$modified_primary_indicator_codes <- NULL
+          self$modified_secondary_indicator_codes <- NULL
+          self$metadata$created_datetime <- Sys.time()
+          self$metadata$modified_datetime <- Sys.time()
+          phr_message(
+            phr_txt("Framework initialized."),
+            origin = "Framework$initialize"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$initialize"
+      )
       invisible(self)
     },
 
@@ -174,14 +204,20 @@ Framework <- R6::R6Class(
     #' @param objective_codes Numeric vector of primary objective codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_primary_objectives = function(objective_codes) {
-      phr_try({
-        self$primary_objectives <- as.numeric(unlist(objective_codes))
-        private$.touch()
-        phr_message(
-          phr_txt("Primary objectives set ({length(self$primary_objectives)} code(s))."),
-          origin = "Framework$set_primary_objectives"
-        )
-      }, on_error = "abort", origin = "Framework$set_primary_objectives")
+      phr_try(
+        {
+          self$primary_objectives <- as.numeric(unlist(objective_codes))
+          private$.touch()
+          phr_message(
+            phr_txt(
+              "Primary objectives set ({length(self$primary_objectives)} code(s))."
+            ),
+            origin = "Framework$set_primary_objectives"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_primary_objectives"
+      )
       invisible(self)
     },
 
@@ -194,14 +230,20 @@ Framework <- R6::R6Class(
     #' @param objective_codes Numeric vector of secondary objective codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_secondary_objectives = function(objective_codes) {
-      phr_try({
-        self$secondary_objectives <- as.numeric(unlist(objective_codes))
-        private$.touch()
-        phr_message(
-          phr_txt("Secondary objectives set ({length(self$secondary_objectives)} code(s))."),
-          origin = "Framework$set_secondary_objectives"
-        )
-      }, on_error = "abort", origin = "Framework$set_secondary_objectives")
+      phr_try(
+        {
+          self$secondary_objectives <- as.numeric(unlist(objective_codes))
+          private$.touch()
+          phr_message(
+            phr_txt(
+              "Secondary objectives set ({length(self$secondary_objectives)} code(s))."
+            ),
+            origin = "Framework$set_secondary_objectives"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_secondary_objectives"
+      )
       invisible(self)
     },
 
@@ -215,15 +257,21 @@ Framework <- R6::R6Class(
     #'   codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_primary_indicators = function(indicator_codes) {
-      phr_try({
-        self$primary_indicator_codes <- as.character(unlist(indicator_codes))
-        private$.refresh_modified_indicator_codes()
-        private$.touch()
-        phr_message(
-          phr_txt("Primary indicators set ({length(self$primary_indicator_codes)} code(s))."),
-          origin = "Framework$set_primary_indicators"
-        )
-      }, on_error = "abort", origin = "Framework$set_primary_indicators")
+      phr_try(
+        {
+          self$primary_indicator_codes <- as.character(unlist(indicator_codes))
+          private$.refresh_modified_indicator_codes()
+          private$.touch()
+          phr_message(
+            phr_txt(
+              "Primary indicators set ({length(self$primary_indicator_codes)} code(s))."
+            ),
+            origin = "Framework$set_primary_indicators"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_primary_indicators"
+      )
       invisible(self)
     },
 
@@ -237,15 +285,23 @@ Framework <- R6::R6Class(
     #'   codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_secondary_indicators = function(indicator_codes) {
-      phr_try({
-        self$secondary_indicator_codes <- as.character(unlist(indicator_codes))
-        private$.refresh_modified_indicator_codes()
-        private$.touch()
-        phr_message(
-          phr_txt("Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."),
-          origin = "Framework$set_secondary_indicators"
-        )
-      }, on_error = "abort", origin = "Framework$set_secondary_indicators")
+      phr_try(
+        {
+          self$secondary_indicator_codes <- as.character(unlist(
+            indicator_codes
+          ))
+          private$.refresh_modified_indicator_codes()
+          private$.touch()
+          phr_message(
+            phr_txt(
+              "Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."
+            ),
+            origin = "Framework$set_secondary_indicators"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_secondary_indicators"
+      )
       invisible(self)
     },
 
@@ -260,14 +316,23 @@ Framework <- R6::R6Class(
     #' @param schema Data frame. The master reference schema.
     #' @return Invisibly returns \code{self} for method chaining.
     set_master_schema = function(schema) {
-      phr_try({
-        validate_objective_schema(schema, soft = FALSE)
-        self$master_objectives_schema <- as.data.frame(schema, stringsAsFactors = FALSE)
-        phr_message(
-          phr_txt("Master objectives schema set ({nrow(self$master_objectives_schema)} rows)."),
-          origin = "Framework$set_master_schema"
-        )
-      }, on_error = "abort", origin = "Framework$set_master_schema")
+      phr_try(
+        {
+          validate_objective_schema(schema, soft = FALSE)
+          self$master_objectives_schema <- as.data.frame(
+            schema,
+            stringsAsFactors = FALSE
+          )
+          phr_message(
+            phr_txt(
+              "Master objectives schema set ({nrow(self$master_objectives_schema)} rows)."
+            ),
+            origin = "Framework$set_master_schema"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_master_schema"
+      )
       invisible(self)
     },
 
@@ -279,15 +344,24 @@ Framework <- R6::R6Class(
     #' @param svg_content Character. SVG content as a single string.
     #' @return Invisibly returns \code{self} for method chaining.
     set_master_svg = function(svg_content) {
-      phr_try({
-        phr_assert(
-          is.character(svg_content) && length(svg_content) >= 1,
-          message = phr_txt("svg_content must be a non-empty character string."),
-          origin  = "Framework$set_master_svg"
-        )
-        self$master_svg <- svg_content
-        phr_message(phr_txt("Master SVG set."), origin = "Framework$set_master_svg")
-      }, on_error = "abort", origin = "Framework$set_master_svg")
+      phr_try(
+        {
+          phr_assert(
+            is.character(svg_content) && length(svg_content) >= 1,
+            message = phr_txt(
+              "svg_content must be a non-empty character string."
+            ),
+            origin = "Framework$set_master_svg"
+          )
+          self$master_svg <- svg_content
+          phr_message(
+            phr_txt("Master SVG set."),
+            origin = "Framework$set_master_svg"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_master_svg"
+      )
       invisible(self)
     },
 
@@ -324,110 +398,133 @@ Framework <- R6::R6Class(
     #'   codes to highlight in light blue.  When \code{NULL} (the default) the
     #'   \code{secondary_objectives} field is used as a fallback.
     #' @return Invisibly returns \code{self} for method chaining.
-    modify_adjusted_svg = function(primary_objective_codes = NULL,
-                                   secondary_objective_codes = NULL) {
-      phr_try({
-        if (is.null(self$master_svg)) {
-          phr_warning(
-            message = phr_txt("master_svg is not set; skipping modify_adjusted_svg()."),
-            origin  = "Framework$modify_adjusted_svg"
+    modify_adjusted_svg = function(
+      primary_objective_codes = NULL,
+      secondary_objective_codes = NULL
+    ) {
+      phr_try(
+        {
+          if (is.null(self$master_svg)) {
+            phr_warning(
+              message = phr_txt(
+                "master_svg is not set; skipping modify_adjusted_svg()."
+              ),
+              origin = "Framework$modify_adjusted_svg"
+            )
+            return(invisible(self))
+          }
+
+          if (
+            is.null(self$master_objectives_schema) ||
+              !is.data.frame(self$master_objectives_schema) ||
+              nrow(self$master_objectives_schema) == 0
+          ) {
+            phr_warning(
+              message = phr_txt(
+                "master_objectives_schema is not set; skipping modify_adjusted_svg()."
+              ),
+              origin = "Framework$modify_adjusted_svg"
+            )
+            return(invisible(self))
+          }
+
+          phr_assert(
+            "objective_code" %in% names(self$master_objectives_schema),
+            message = phr_txt(
+              "master_objectives_schema must contain an 'objective_code' column for modify_adjusted_svg()."
+            ),
+            origin = "Framework$modify_adjusted_svg"
           )
-          return(invisible(self))
-        }
 
-        if (is.null(self$master_objectives_schema) || !is.data.frame(self$master_objectives_schema) ||
-            nrow(self$master_objectives_schema) == 0) {
-          phr_warning(
-            message = phr_txt("master_objectives_schema is not set; skipping modify_adjusted_svg()."),
-            origin  = "Framework$modify_adjusted_svg"
+          primary <- as.numeric(
+            if (!is.null(primary_objective_codes)) {
+              primary_objective_codes
+            } else {
+              self$primary_objectives
+            }
           )
-          return(invisible(self))
-        }
+          secondary <- as.numeric(
+            if (!is.null(secondary_objective_codes)) {
+              secondary_objective_codes
+            } else {
+              self$secondary_objectives
+            }
+          )
 
-        phr_assert(
-          "objective_code" %in% names(self$master_objectives_schema),
-          message = phr_txt(
-            "master_objectives_schema must contain an 'objective_code' column for modify_adjusted_svg()."
-          ),
-          origin = "Framework$modify_adjusted_svg"
-        )
+          svg <- self$master_svg
 
-        primary   <- as.numeric(
-          if (!is.null(primary_objective_codes)) primary_objective_codes
-          else self$primary_objectives
-        )
-        secondary <- as.numeric(
-          if (!is.null(secondary_objective_codes)) secondary_objective_codes
-          else self$secondary_objectives
-        )
+          # Primary lookup: build objective_code -> [svg_group_id, ...] by parsing
+          # the numeric codes embedded in the SVG diagram text labels.  This is the
+          # authoritative source and does not rely on sub_pillar column values.
+          svg_code_map <- .build_code_svg_map(svg)
 
-        svg <- self$master_svg
-
-        # Primary lookup: build objective_code -> [svg_group_id, ...] by parsing
-        # the numeric codes embedded in the SVG diagram text labels.  This is the
-        # authoritative source and does not rely on sub_pillar column values.
-        svg_code_map <- .build_code_svg_map(svg)
-
-        # Fallback lookup: derive objective_code -> sub_pillar from master_objectives_schema.
-        # Used only for codes whose SVG groups do not carry embedded code labels
-        # (e.g. minimal test-fixture SVGs where group ids equal sub_pillar values).
-        schema_code_map <- list()
-        if ("sub_pillar" %in% names(self$master_objectives_schema)) {
-          for (i in seq_len(nrow(self$master_objectives_schema))) {
-            code <- self$master_objectives_schema$objective_code[[i]]
-            sp   <- self$master_objectives_schema$sub_pillar[[i]]
-            if (!is.na(code) && !is.na(sp) && nzchar(as.character(sp))) {
-              code_str <- as.character(as.integer(code))
-              if (is.null(schema_code_map[[code_str]])) {
-                schema_code_map[[code_str]] <- as.character(sp)
+          # Fallback lookup: derive objective_code -> sub_pillar from master_objectives_schema.
+          # Used only for codes whose SVG groups do not carry embedded code labels
+          # (e.g. minimal test-fixture SVGs where group ids equal sub_pillar values).
+          schema_code_map <- list()
+          if ("sub_pillar" %in% names(self$master_objectives_schema)) {
+            for (i in seq_len(nrow(self$master_objectives_schema))) {
+              code <- self$master_objectives_schema$objective_code[[i]]
+              sp <- self$master_objectives_schema$sub_pillar[[i]]
+              if (!is.na(code) && !is.na(sp) && nzchar(as.character(sp))) {
+                code_str <- as.character(as.integer(code))
+                if (is.null(schema_code_map[[code_str]])) {
+                  schema_code_map[[code_str]] <- as.character(sp)
+                }
               }
             }
           }
-        }
 
-        # Merge: SVG-parsed entries take priority over schema-derived fallbacks.
-        code_map <- schema_code_map
-        for (code_str in names(svg_code_map)) {
-          code_map[[code_str]] <- svg_code_map[[code_str]]
-        }
-
-        # Retain only entries whose key is a valid integer code string.
-        valid_keys <- names(code_map)[grepl("^\\d+$", names(code_map))]
-
-        # Colour each SVG group whose objective_code appears in the selected sets.
-        for (code_str in valid_keys) {
-          code    <- as.numeric(code_str)
-          svg_ids <- code_map[[code_str]]
-
-          in_primary   <- length(primary)   > 0L && code %in% primary
-          in_secondary <- length(secondary) > 0L && code %in% secondary
-
-          if (!in_primary && !in_secondary) next
-
-          colour <- if (in_primary && in_secondary) {
-            "#DDA0DD"
-          } else if (in_primary) {
-            "#90EE90"
-          } else {
-            "#ADD8E6"
+          # Merge: SVG-parsed entries take priority over schema-derived fallbacks.
+          code_map <- schema_code_map
+          for (code_str in names(svg_code_map)) {
+            code_map[[code_str]] <- svg_code_map[[code_str]]
           }
 
-          for (svg_id in svg_ids) {
-            pattern     <- paste0(
-              '(<g id="', svg_id, '">[^<]*<rect(?:[^>]*?) )fill="[^"]*"([^>]*>)'
-            )
-            replacement <- paste0('\\1fill="', colour, '"\\2')
-            svg         <- gsub(pattern, replacement, svg, perl = TRUE)
-          }
-        }
+          # Retain only entries whose key is a valid integer code string.
+          valid_keys <- names(code_map)[grepl("^\\d+$", names(code_map))]
 
-        self$adjusted_svg <- svg
-        private$.touch()
-        phr_message(
-          phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
-          origin = "Framework$modify_adjusted_svg"
-        )
-      }, on_error = "abort", origin = "Framework$modify_adjusted_svg")
+          # Colour each SVG group whose objective_code appears in the selected sets.
+          for (code_str in valid_keys) {
+            code <- as.numeric(code_str)
+            svg_ids <- code_map[[code_str]]
+
+            in_primary <- length(primary) > 0L && code %in% primary
+            in_secondary <- length(secondary) > 0L && code %in% secondary
+
+            if (!in_primary && !in_secondary) {
+              next
+            }
+
+            colour <- if (in_primary && in_secondary) {
+              "#DDA0DD"
+            } else if (in_primary) {
+              "#90EE90"
+            } else {
+              "#ADD8E6"
+            }
+
+            for (svg_id in svg_ids) {
+              pattern <- paste0(
+                '(<g id="',
+                svg_id,
+                '">[^<]*<rect(?:[^>]*?) )fill="[^"]*"([^>]*>)'
+              )
+              replacement <- paste0('\\1fill="', colour, '"\\2')
+              svg <- gsub(pattern, replacement, svg, perl = TRUE)
+            }
+          }
+
+          self$adjusted_svg <- svg
+          private$.touch()
+          phr_message(
+            phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
+            origin = "Framework$modify_adjusted_svg"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$modify_adjusted_svg"
+      )
       invisible(self)
     },
 
@@ -450,48 +547,55 @@ Framework <- R6::R6Class(
     #'   \pkg{rsvg}/\pkg{grid} are unavailable the path to the written SVG
     #'   file is returned visibly instead.
     render_framework_svg = function(version = "adjusted") {
-      phr_try({
-        phr_assert(
-          is.character(version) && length(version) == 1 &&
-            version %in% c("adjusted", "master"),
-          message = phr_txt("version must be 'adjusted' or 'master'."),
-          origin  = "Framework$render_framework_svg"
-        )
-        svg_content <- if (version == "master") {
-          self$master_svg
-        } else {
-          self$adjusted_svg %||% self$master_svg
-        }
-        phr_assert(
-          !is.null(svg_content) && nzchar(svg_content),
-          message = phr_txt(
-            "No SVG content available. Call modify_adjusted_schema() or set_master_svg() first."
-          ),
-          origin = "Framework$render_framework_svg"
-        )
-
-        tmp_svg <- tempfile(fileext = ".svg")
-        writeLines(svg_content, con = tmp_svg)
-
-        if (requireNamespace("rsvg", quietly = TRUE) &&
-            requireNamespace("grid", quietly = TRUE)) {
-          native_raster <- rsvg::rsvg_nativeraster(tmp_svg)
-          grid::grid.newpage()
-          grid::grid.raster(native_raster)
-          phr_message(
-            phr_txt("Framework SVG rendered to the active graphics device."),
+      phr_try(
+        {
+          phr_assert(
+            is.character(version) &&
+              length(version) == 1 &&
+              version %in% c("adjusted", "master"),
+            message = phr_txt("version must be 'adjusted' or 'master'."),
             origin = "Framework$render_framework_svg"
           )
-        } else {
-          phr_warning(
+          svg_content <- if (version == "master") {
+            self$master_svg
+          } else {
+            self$adjusted_svg %||% self$master_svg
+          }
+          phr_assert(
+            !is.null(svg_content) && nzchar(svg_content),
             message = phr_txt(
-              "Packages 'rsvg' and 'grid' are required to display the SVG in the plots window. SVG written to: {tmp_svg}"
+              "No SVG content available. Call modify_adjusted_schema() or set_master_svg() first."
             ),
             origin = "Framework$render_framework_svg"
           )
-          return(tmp_svg)
-        }
-      }, on_error = "abort", origin = "Framework$render_framework_svg")
+
+          tmp_svg <- tempfile(fileext = ".svg")
+          writeLines(svg_content, con = tmp_svg)
+
+          if (
+            requireNamespace("rsvg", quietly = TRUE) &&
+              requireNamespace("grid", quietly = TRUE)
+          ) {
+            native_raster <- rsvg::rsvg_nativeraster(tmp_svg)
+            grid::grid.newpage()
+            grid::grid.raster(native_raster)
+            phr_message(
+              phr_txt("Framework SVG rendered to the active graphics device."),
+              origin = "Framework$render_framework_svg"
+            )
+          } else {
+            phr_warning(
+              message = phr_txt(
+                "Packages 'rsvg' and 'grid' are required to display the SVG in the plots window. SVG written to: {tmp_svg}"
+              ),
+              origin = "Framework$render_framework_svg"
+            )
+            return(tmp_svg)
+          }
+        },
+        on_error = "abort",
+        origin = "Framework$render_framework_svg"
+      )
       invisible(self)
     },
 
@@ -520,50 +624,62 @@ Framework <- R6::R6Class(
     #'   \code{secondary_objectives}, or all rows as a final fallback.
     #' @return Invisibly returns \code{self} for method chaining.
     modify_adjusted_schema = function(objective_codes = NULL) {
-      phr_try({
-        phr_assert(
-          !is.null(self$master_objectives_schema) && is.data.frame(self$master_objectives_schema) &&
-            nrow(self$master_objectives_schema) > 0,
-          message = phr_txt("master_objectives_schema must be set before calling modify_adjusted_schema()."),
-          origin  = "Framework$modify_adjusted_schema"
-        )
+      phr_try(
+        {
+          phr_assert(
+            !is.null(self$master_objectives_schema) &&
+              is.data.frame(self$master_objectives_schema) &&
+              nrow(self$master_objectives_schema) > 0,
+            message = phr_txt(
+              "master_objectives_schema must be set before calling modify_adjusted_schema()."
+            ),
+            origin = "Framework$modify_adjusted_schema"
+          )
 
-        # Determine which column to filter on
-        filter_col <- if ("objective_code" %in% names(self$master_objectives_schema)) {
-          "objective_code"
-        } else {
-          "short_objective"
-        }
-
-        if (is.null(objective_codes) || length(objective_codes) == 0) {
-          # Use primary_objectives and secondary_objectives if either is set;
-          # fall back to all rows only when both are NULL.
-          combined <- c(self$primary_objectives, self$secondary_objectives)
-          if (!is.null(combined) && length(combined) > 0) {
-            objective_codes <- unique(combined)
+          # Determine which column to filter on
+          filter_col <- if (
+            "objective_code" %in% names(self$master_objectives_schema)
+          ) {
+            "objective_code"
           } else {
-            objective_codes <- unique(self$master_objectives_schema[[filter_col]])
+            "short_objective"
           }
-        } else {
-          objective_codes <- unlist(objective_codes)
-        }
 
-        self$modified_objectives_schema <- self$master_objectives_schema[
-          self$master_objectives_schema[[filter_col]] %in% objective_codes, ,
-          drop = FALSE
-        ]
+          if (is.null(objective_codes) || length(objective_codes) == 0) {
+            # Use primary_objectives and secondary_objectives if either is set;
+            # fall back to all rows only when both are NULL.
+            combined <- c(self$primary_objectives, self$secondary_objectives)
+            if (!is.null(combined) && length(combined) > 0) {
+              objective_codes <- unique(combined)
+            } else {
+              objective_codes <- unique(self$master_objectives_schema[[
+                filter_col
+              ]])
+            }
+          } else {
+            objective_codes <- unlist(objective_codes)
+          }
 
-        # Update modified indicator code caches from the modified_objectives_schema
-        private$.refresh_modified_indicator_codes()
-        private$.touch()
+          self$modified_objectives_schema <- self$master_objectives_schema[
+            self$master_objectives_schema[[filter_col]] %in% objective_codes,
+            ,
+            drop = FALSE
+          ]
 
-        phr_message(
-          phr_txt(
-            "Modified objectives schema updated: {nrow(self$modified_objectives_schema)} of {nrow(self$master_objectives_schema)} rows selected."
-          ),
-          origin = "Framework$modify_adjusted_schema"
-        )
-      }, on_error = "abort", origin = "Framework$modify_adjusted_schema")
+          # Update modified indicator code caches from the modified_objectives_schema
+          private$.refresh_modified_indicator_codes()
+          private$.touch()
+
+          phr_message(
+            phr_txt(
+              "Modified objectives schema updated: {nrow(self$modified_objectives_schema)} of {nrow(self$master_objectives_schema)} rows selected."
+            ),
+            origin = "Framework$modify_adjusted_schema"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$modify_adjusted_schema"
+      )
       invisible(self)
     },
 
@@ -584,50 +700,59 @@ Framework <- R6::R6Class(
     #'   \code{modified_indicator_bank} to the full master.
     #' @return Invisibly returns \code{self} for method chaining.
     modify_indicator_bank = function(objective_codes = NULL) {
-      phr_try({
-        if (is.null(self$master_indicator_bank) ||
-            !is.data.frame(self$master_indicator_bank)) {
-          phr_warning(
-            message = phr_txt("master_indicator_bank is not set; skipping modify_indicator_bank()."),
-            origin  = "Framework$modify_indicator_bank"
-          )
-          return(invisible(self))
-        }
+      phr_try(
+        {
+          if (
+            is.null(self$master_indicator_bank) ||
+              !is.data.frame(self$master_indicator_bank)
+          ) {
+            phr_warning(
+              message = phr_txt(
+                "master_indicator_bank is not set; skipping modify_indicator_bank()."
+              ),
+              origin = "Framework$modify_indicator_bank"
+            )
+            return(invisible(self))
+          }
 
-        if (is.null(objective_codes) || length(objective_codes) == 0) {
-          self$modified_indicator_bank <- self$master_indicator_bank
+          if (is.null(objective_codes) || length(objective_codes) == 0) {
+            self$modified_indicator_bank <- self$master_indicator_bank
+            phr_message(
+              phr_txt(
+                "Modified indicator bank reset to full master ({nrow(self$master_indicator_bank)} rows)."
+              ),
+              origin = "Framework$modify_indicator_bank"
+            )
+            return(invisible(self))
+          }
+
+          if (!"objective_code" %in% names(self$master_indicator_bank)) {
+            phr_warning(
+              message = phr_txt(
+                "master_indicator_bank does not contain an 'objective_code' column; skipping modify_indicator_bank()."
+              ),
+              origin = "Framework$modify_indicator_bank"
+            )
+            return(invisible(self))
+          }
+
+          codes <- unlist(objective_codes)
+          self$modified_indicator_bank <- self$master_indicator_bank[
+            self$master_indicator_bank[["objective_code"]] %in% codes,
+            ,
+            drop = FALSE
+          ]
+          private$.touch()
           phr_message(
             phr_txt(
-              "Modified indicator bank reset to full master ({nrow(self$master_indicator_bank)} rows)."
+              "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
             ),
             origin = "Framework$modify_indicator_bank"
           )
-          return(invisible(self))
-        }
-
-        if (!"objective_code" %in% names(self$master_indicator_bank)) {
-          phr_warning(
-            message = phr_txt(
-              "master_indicator_bank does not contain an 'objective_code' column; skipping modify_indicator_bank()."
-            ),
-            origin = "Framework$modify_indicator_bank"
-          )
-          return(invisible(self))
-        }
-
-        codes <- unlist(objective_codes)
-        self$modified_indicator_bank <- self$master_indicator_bank[
-          self$master_indicator_bank[["objective_code"]] %in% codes, ,
-          drop = FALSE
-        ]
-        private$.touch()
-        phr_message(
-          phr_txt(
-            "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
-          ),
-          origin = "Framework$modify_indicator_bank"
-        )
-      }, on_error = "abort", origin = "Framework$modify_indicator_bank")
+        },
+        on_error = "abort",
+        origin = "Framework$modify_indicator_bank"
+      )
       invisible(self)
     }
   ),
@@ -642,23 +767,36 @@ Framework <- R6::R6Class(
     # Rebuild modified indicator code fields from the current
     # modified_objectives_schema.
     .refresh_modified_indicator_codes = function() {
-      if (!is.null(self$modified_objectives_schema) &&
+      if (
+        !is.null(self$modified_objectives_schema) &&
           is.data.frame(self$modified_objectives_schema) &&
-          "indicator_code" %in% names(self$modified_objectives_schema)) {
+          "indicator_code" %in% names(self$modified_objectives_schema)
+      ) {
         schema <- self$modified_objectives_schema
-        code_col <- if ("objective_code" %in% names(schema)) "objective_code" else
-          if ("short_objective" %in% names(schema)) "short_objective" else NULL
+        code_col <- if ("objective_code" %in% names(schema)) {
+          "objective_code"
+        } else if ("short_objective" %in% names(schema)) {
+          "short_objective"
+        } else {
+          NULL
+        }
         ind_codes <- as.character(schema[["indicator_code"]])
         valid_ind <- !is.na(ind_codes) & nzchar(ind_codes)
 
         build_indicator_df <- function(objective_codes) {
-          if (is.null(code_col) || is.null(objective_codes) || length(objective_codes) == 0L) {
+          if (
+            is.null(code_col) ||
+              is.null(objective_codes) ||
+              length(objective_codes) == 0L
+          ) {
             return(NULL)
           }
           objective_codes <- as.character(unique(unlist(objective_codes)))
           obj_vals <- as.character(schema[[code_col]])
           keep <- valid_ind & obj_vals %in% objective_codes
-          if (!any(keep)) return(NULL)
+          if (!any(keep)) {
+            return(NULL)
+          }
           out <- data.frame(
             indicator_code = ind_codes[keep],
             stringsAsFactors = FALSE

@@ -187,7 +187,7 @@ params:
   ind_fewsnet_fc: TRUE
   ind_hwise: TRUE
   ind_lppd: TRUE
-  household_pillars_table: data.frame(
+  household_pillars_table_df: data.frame(
     Pillar = c(
       "Health", "Health",
       "Nutrition", "Nutrition", "Nutrition",
@@ -753,7 +753,7 @@ params:
     check.names = FALSE,
     stringsAsFactors = FALSE
    )
-  crop_livestock_kii_dap_df: data.frame(
+  crop_livestock_observation_dap_df: data.frame(
     `Research Question` = c(
       rep("(Core) What is the observed condition of crops, livestock, and agricultural livelihoods in assessed locations?", 4),
       rep("(Core) What observable factors may affect agricultural production and livestock health?", 3)
@@ -2031,7 +2031,7 @@ There are several core and supplemental indicators within the household tool of 
 
 ```{r household_pillar_subpillar_indicator_table}
 
-household_inputs <- params$household_pillar_subpillar_indicator_df
+household_inputs <- params$household_pillars_table_df
 
 ft <- flextable::flextable(household_inputs)
 

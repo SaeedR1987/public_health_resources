@@ -26,3 +26,6 @@ plan.md
 .positai/settings.json
 ROXYGEN2_DOCUMENTATION_ADDITIONS.md
 tempfile.R
+inst/resources/~$reference_indicator_bank.xlsx
+.posit/assistant/plans/2026-06-18-2151-plan.md
+.gitignore

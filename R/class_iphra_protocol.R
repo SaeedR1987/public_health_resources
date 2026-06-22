@@ -480,9 +480,11 @@ IPHRAProtocol <- R6::R6Class(
 
           # Populate default parameters from metadata
           default_params <- list(
-            assessment_title = self$metadata$assessment_title %||% "Untitled Assessment",
+            assessment_title = self$metadata$assessment_title %||%
+              "Untitled Assessment",
             country_name = self$metadata$country_name %||% "",
-            month_year = self$metadata$month_year %||% format(Sys.Date(), "%B %Y"),
+            month_year = self$metadata$month_year %||%
+              format(Sys.Date(), "%B %Y"),
             type_of_emergency = self$metadata$type_of_emergency %||% "",
             type_of_crisis = self$metadata$type_of_crisis %||% "",
             mandating_body = self$metadata$mandating_body %||% "",
@@ -490,14 +492,26 @@ IPHRAProtocol <- R6::R6Class(
             geographic_coverage = self$metadata$geographic_coverage %||% "",
             general_objective = self$metadata$general_objective %||% "",
             pilot_date = as.character(self$metadata$pilot_date %||% ""),
-            data_start_date = as.character(self$metadata$data_start_date %||% ""),
+            data_start_date = as.character(
+              self$metadata$data_start_date %||% ""
+            ),
             data_end_date = as.character(self$metadata$data_end_date %||% ""),
             analysis_date = as.character(self$metadata$analysis_date %||% ""),
-            data_validation_date = as.character(self$metadata$data_validation_date %||% ""),
-            prelim_presentation_date = as.character(self$metadata$prelim_presentation_date %||% ""),
-            output_validation_date = as.character(self$metadata$output_validation_date %||% ""),
-            output_published_date = as.character(self$metadata$output_published_date %||% ""),
-            final_presentation_date = as.character(self$metadata$final_presentation_date %||% ""),
+            data_validation_date = as.character(
+              self$metadata$data_validation_date %||% ""
+            ),
+            prelim_presentation_date = as.character(
+              self$metadata$prelim_presentation_date %||% ""
+            ),
+            output_validation_date = as.character(
+              self$metadata$output_validation_date %||% ""
+            ),
+            output_published_date = as.character(
+              self$metadata$output_published_date %||% ""
+            ),
+            final_presentation_date = as.character(
+              self$metadata$final_presentation_date %||% ""
+            ),
             reference_doc = if (!is.null(self$reference_doc_filename)) {
               paste0('"', self$reference_doc_filename, '"')
             } else {
@@ -565,9 +579,11 @@ IPHRAProtocol <- R6::R6Class(
 
           # Populate default parameters from metadata
           default_params <- list(
-            assessment_title = self$metadata$assessment_title %||% "Untitled Assessment",
+            assessment_title = self$metadata$assessment_title %||%
+              "Untitled Assessment",
             country_name = self$metadata$country_name %||% "",
-            month_year = self$metadata$month_year %||% format(Sys.Date(), "%B %Y"),
+            month_year = self$metadata$month_year %||%
+              format(Sys.Date(), "%B %Y"),
             type_of_emergency = self$metadata$type_of_emergency %||% "",
             type_of_crisis = self$metadata$type_of_crisis %||% "",
             mandating_body = self$metadata$mandating_body %||% "",
@@ -632,203 +648,35 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   active = list(
-    .kii_community_yes = function(value) {
+    .tool_community_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("kii_community")
     },
-    .kii_fsl_provider_yes = function(value) {
+    .tool_fsl_provider_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("kii_fsl_service_provider")
     },
-    .kii_health_provider_yes = function(value) {
+    .tool_health_facility_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("kii_health_service_provider")
     },
-    .kii_nutrition_provider_yes = function(value) {
+    .tool_nutrition_facility_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("kii_nutrition_service_provider")
     },
-    .kii_service_providers_yes = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      isTRUE(self$.kii_fsl_provider) ||
-        isTRUE(self$.kii_health_provider) ||
-        isTRUE(self$.kii_nutrition_provider) ||
-        isTRUE(self$.kii_wash_provider)
-    },
-    .kii_wash_provider_yes = function(value) {
+    .tool_wash_provider_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("kii_wash_service_provider")
-    },
-    .kii_community_no = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      private$..has_tool_role("kii_community")
-    },
-    .kii_fsl_provider_no = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      !private$..has_tool_role("kii_fsl_service_provider")
-    },
-    .kii_health_provider_no = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      !private$..has_tool_role("kii_health_service_provider")
-    },
-    .kii_nutrition_provider_no = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      !private$..has_tool_role("kii_nutrition_service_provider")
-    },
-    .kii_service_providers_no = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      !(isTRUE(self$.kii_fsl_provider) ||
-        isTRUE(self$.kii_health_provider) ||
-        isTRUE(self$.kii_nutrition_provider) ||
-        isTRUE(self$.kii_wash_provider))
-    },
-    .kii_wash_provider_no = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      !private$..has_tool_role("kii_wash_service_provider")
-    },
-    .any_health_facility_data = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      private$..has_tool_role("obs_health_facility") ||
-        private$..has_tool_role("kii_health_service_provider") ||
-        private$..has_tool_role("kii_nutrition_service_provider")
-    },
-
-    # ── KII / Observation target active bindings ────────────────────────────
-    .num_kii_community_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"n_sites" %in% names(st)) {
-        return(NULL)
-      }
-      sum(as.numeric(st$n_sites), na.rm = TRUE) * 1L
-    },
-    .num_kii_health_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st)) {
-        return(NULL)
-      }
-      nrow(st) * 1L
-    },
-    .num_kii_market_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st)) {
-        return(NULL)
-      }
-      nrow(st) * 1L
-    },
-    .num_kii_fsl_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st)) {
-        return(NULL)
-      }
-      nrow(st) * 1L
-    },
-    .num_kii_wash_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st)) {
-        return(NULL)
-      }
-      nrow(st) * 1L
-    },
-    .num_kii_nutrition_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st)) {
-        return(NULL)
-      }
-      nrow(st) * 1L
-    },
-    .num_obs_community_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"n_sites" %in% names(st)) {
-        return(NULL)
-      }
-      sum(as.numeric(st$n_sites), na.rm = TRUE) * 1L
-    },
-    .num_obs_health_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st)) {
-        return(NULL)
-      }
-      nrow(st) * 1L
-    },
-    .num_obs_latrine_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"n_sites" %in% names(st)) {
-        return(NULL)
-      }
-      sum(as.numeric(st$n_sites), na.rm = TRUE) * 1L
-    },
-    .num_obs_water_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"n_sites" %in% names(st)) {
-        return(NULL)
-      }
-      sum(as.numeric(st$n_sites), na.rm = TRUE) * 1L
-    },
-    .num_obs_crops_livestock_target = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"n_sites" %in% names(st)) {
-        return(NULL)
-      }
-      sum(as.numeric(st$n_sites), na.rm = TRUE) * 1L
     },
     .ind_ecfies = function(value) {
       if (!missing(value)) {
@@ -854,7 +702,7 @@ IPHRAProtocol <- R6::R6Class(
       }
       private$..household_has_any_indicator(c("10701"))
     },
-    .ind_muac_plw = function(value) {
+    .ind_muac_women = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -866,60 +714,58 @@ IPHRAProtocol <- R6::R6Class(
       }
       private$..household_has_any_indicator(c("14305"))
     },
-    .mortality_survey = function(value) {
+    .ind_mortality = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..household_has_any_indicator(c("10501", "10502"))
     },
-    .muac_survey = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      private$..household_has_any_indicator(c("10701", "10702"))
-    },
 
-    .obs_community = function(value) {
+    .tool_community_observation = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("obs_community")
     },
-    .obs_crops_livestock = function(value) {
+    .tool_crops_livestock_observation = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("obs_crop_livestock")
     },
-    .obs_health_facility = function(value) {
+    .tool_health_facility_observation = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("obs_health_facility")
     },
-    .obs_latrines = function(value) {
+    .tool_latrine_observation = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("obs_latrine")
     },
-    .obs_service_providers = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      any(
-        self$.obs_water_point,
-        self$.obs_latrines,
-        self$.obs_health_facility,
-        self$.obs_crops_livestock
-      )
-    },
-    .obs_water_point = function(value) {
+    .tool_water_point_observation = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..has_tool_role("obs_water_point")
     },
+    .household_pillars_table_df = function(value) {},
+    .kii_pillars_table_df = function(value) {},
+    .observation_pillars_table_df = function(value) {},
+    .household_dap_df = function(value) {},
+    .community_kii_dap_df = function(value) {},
+    .community_observation_dap_df = function(value) {},
+    .health_facility_kii_dap_df = function(value) {},
+    .health_facility_observation_dap_df = function(value) {},
+    .nutrition_facility_kii_dap_df = function(value) {},
+    .fsl_provider_kii_dap_df = function(value) {},
+    .market_kii_dap_df = function(value) {},
+    .crop_livstock_observation_dap_df = function(value) {},
+    .wash_provider_kii_dap_df = function(value) {},
+    .water_point_observation_dap_df = function(value) {},
+    .latrine_observation_dap_df = function(value) {},
   ),
 
   private = list(
