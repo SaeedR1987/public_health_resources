@@ -1,3 +1,60 @@
+#' IPHRAProtocol R6 Class
+#'
+#' @description
+#' Protocol subclass for Integrated Public Health Rapid Assessment (IPHRA)
+#' workflows. `IPHRAProtocol` extends `SurveyProtocol` with IPHRA-specific
+#' tools, ANA framework initialization, household/KII/observation reporting
+#' tables, data analysis plan outputs, and Quarto parameters for IPHRA Terms of
+#' Reference generation.
+#'
+#' @details
+#' `IPHRAProtocol` automatically initializes an ANA framework and uses the
+#' IPHRA Terms of Reference reference document template. It provides helpers for
+#' adding bundled IPHRA XLSForm tools, detecting which IPHRA tools and
+#' household indicators are present, updating household mortality recall dates,
+#' and preparing protocol tables for Quarto rendering.
+#'
+#' @section Inheritance:
+#' Inherits from [`SurveyProtocol`], which extends [`Protocol`] with sampling
+#' and sampling-frame functionality.
+#'
+#' @section Key methods:
+#' \describe{
+#'   \item{`initialize()`}{Create a new IPHRA protocol with an ANA framework.}
+#'   \item{`add_tools()`}{Add a recognised IPHRA household, KII, or observation tool.}
+#'   \item{`get_allowable_tools()`}{Return all recognised IPHRA tool names.}
+#'   \item{`update_recall_date()`}{Update recall-date calculate rows in the household tool.}
+#'   \item{`get_quarto_params()`}{Return IPHRA-specific parameters for Quarto rendering.}
+#' }
+#'
+#' @section Active bindings:
+#' The class provides read-only active bindings for tool-presence flags,
+#' household indicator flags, tools/sample summary tables, pillar/sub-pillar
+#' tables, DAP tables, and the modified framework SVG path used in report
+#' generation.
+#'
+#' @section Supported IPHRA tools:
+#' The class supports the bundled household tool, community KII, FSL provider
+#' KII, WASH provider KII, market KII, nutrition provider KII, health provider
+#' KII, community observation, crop/livestock observation, health facility
+#' observation, latrine observation, and water point observation tools.
+#'
+#' @examples
+#' \dontrun{
+#' protocol <- IPHRAProtocol$new(
+#'   assessment_title = "Example IPHRA",
+#'   country_name = "Example Country",
+#'   month_year = "January 2027"
+#' )
+#'
+#' protocol$get_allowable_tools()
+#' protocol$add_tools("tool_household_iphra_v2")
+#' protocol$update_recall_date("2027-01-01")
+#' protocol$.tools_table_df
+#' }
+#'
+#' @importFrom R6 R6Class
+#' @export
 IPHRAProtocol <- R6::R6Class(
   "IPHRAProtocol",
   inherit = SurveyProtocol,
@@ -9,169 +66,11 @@ IPHRAProtocol <- R6::R6Class(
     #' An \code{\link{ANAFramework}} is automatically created and stored in
     #' \code{self$framework}.
     #'
-    #' @param assessment_title Character. Title of the assessment.
-    #' @param country_name Character. Country where the assessment takes place.
-    #' @param month_year Character. Month and year of data collection
-    #'   (e.g. \code{"January 2024"}).
-    #' @param version Integer or character. Version number for the TOR document.
-    #'   Defaults to \code{1}.
-    #' @param type_of_emergency Character. One of \code{"natural_disaster"},
-    #'   \code{"conflict"}, or \code{"other"}.
-    #' @param type_of_crisis Character. One of \code{"sudden_onset"},
-    #'   \code{"slow_onset"}, or \code{"protracted"}.
-    #' @param mandating_body Character. Name(s) of the mandating body/agency.
-    #' @param project_code Character. IMPACT project code.
-    #' @param overall_timeframe Character. Overall research timeframe description.
-    #' @param geographic_coverage Character. Description of the geographic area
-    #'   covered.
-    #' @param general_objective Character. The overall/general objective text.
-    #'   Defaults to the standard IPHRA general objective.
-    #' @param pilot_date Character or Date. Pilot/training date.
-    #' @param data_start_date Character or Date. Data collection start date.
-    #' @param data_end_date Character or Date. Data collection end date.
-    #' @param analysis_date Character or Date. Data analysis date.
-    #' @param data_validation_date Character or Date. Data validation (sent for
-    #'   validation) date.
-    #' @param prelim_presentation_date Character or Date. Preliminary
-    #'   presentation date.
-    #' @param output_validation_date Character or Date. Outputs sent for
-    #'   validation date.
-    #' @param output_published_date Character or Date. Outputs published date.
-    #' @param final_presentation_date Character or Date. Final presentation date.
-    #' @param humanitarian_milestones Character vector. Any subset of
-    #'   \code{"donor"}, \code{"inter_cluster"}, \code{"cluster"},
-    #'   \code{"ngo_platform"}, \code{"other"}.
-    #' @param audience_type.strategic Logical. Whether the strategic audience
-    #'   type applies.  Defaults to \code{FALSE}.
-    #' @param audience_type.operational Logical. Whether the operational audience
-    #'   type applies.  Defaults to \code{TRUE}.
-    #' @param audience_type.programmatic Logical. Whether the programmatic
-    #'   audience type applies.  Defaults to \code{TRUE}.
-    #' @param audience_type.other Logical. Whether another audience type applies.
-    #'   Defaults to \code{FALSE}.
-    #' @param dissemination Character vector. Any subset of
-    #'   \code{"general_mailing"}, \code{"cluster_mailing"},
-    #'   \code{"presentation"}, \code{"website"}, \code{"other"}.
-    #' @param recall_period Character. Recall period description (e.g.
-    #'   \code{"Past 6 months"}).
-    #' @param geographic_description Character. Deprecated alias for
-    #'   \code{geographic_coverage}; retained for backwards compatibility.
-    #' @param population Character vector. Population groups assessed (legacy).
-    #'   Any subset of \code{"idp_camp"}, \code{"idp_informal"},
-    #'   \code{"idp_host"}, \code{"idp_other"}, \code{"refugee_camp"},
-    #'   \code{"refugee_informal"}, \code{"refugee_host"},
-    #'   \code{"refugee_other"}, \code{"host_community"}, \code{"other"}.
-    #' @param pop_idpcamp Logical. IDP camp population included.
-    #' @param pop_idphost Logical. IDP host community population included.
-    #' @param pop_idpinformal Logical. IDP informal settlement population
-    #'   included.
-    #' @param pop_idpother Logical. Other IDP population included.
-    #' @param pop_refugee Logical. Refugee (camp) population included.
-    #' @param pop_refugeeinformal Logical. Refugee informal settlement population
-    #'   included.
-    #' @param pop_refugeehost Logical. Refugee host community population
-    #'   included.
-    #' @param pop_refugeeother Logical. Other refugee population included.
-    #' @param pop_host Logical. Host community population included.
-    #' @param pop_other Logical. Other population group included.
-    #' @param stakeholder_mapping Logical. Whether stakeholder mapping is
-    #'   included.  Defaults to \code{FALSE}.
-    #' @param num_geographic_units Numeric. Number of geographic units.
-    #'   Defaults to \code{NA}.
-    #' @param popsize_known_geographic_unit Logical. Whether population size
-    #'   per geographic unit is known.  Defaults to \code{FALSE}.
-    #' @param popsize_known_strata_unit Logical. Whether population size per
-    #'   strata unit is known.  Defaults to \code{FALSE}.
-    #' @param num_kii_health_target Numeric. Target number of health facility
-    #'   KII interviews.  Defaults to \code{NA}.
-    #' @param num_kii_market_target Numeric. Target number of market KII
-    #'   interviews.  Defaults to \code{NA}.
-    #' @param num_kii_fsl_target Numeric. Target number of FSL KII interviews.
-    #'   Defaults to \code{NA}.
-    #' @param num_kii_wash_target Numeric. Target number of WASH KII interviews.
-    #'   Defaults to \code{NA}.
-    #' @param num_kii_nutrition_target Numeric. Target number of nutrition KII
-    #'   interviews.  Defaults to \code{NA}.
-    #' @param num_obs_health_target Numeric. Target number of health facility
-    #'   observations.  Defaults to \code{NA}.
-    #' @param num_obs_latrine_target Numeric. Target number of latrine
-    #'   observations.  Defaults to \code{NA}.
-    #' @param num_obs_waterpoint_target Numeric. Target number of water-point
-    #'   observations.  Defaults to \code{NA}.
-    #' @param gender_disaggregation Logical. Whether gender disaggregation is
-    #'   planned.  Defaults to \code{TRUE}.
-    #' @param sex_disaggregation Logical. Whether sex/age disaggregation is
-    #'   planned.  Defaults to \code{TRUE}.
-    #' @param data_management_platform Character vector. Any subset of
-    #'   \code{"IMPACT"}, \code{"UNHCR"}, \code{"other"}.
-    #'   Defaults to \code{"IMPACT"}.
-    #' @param expected_output_type Character vector. Any subset of
-    #'   \code{"situation_overview"}, \code{"report"}, \code{"profile"},
-    #'   \code{"prelim_presentation"}, \code{"final_presentation"},
-    #'   \code{"factsheet"}, \code{"dashboard"}, \code{"webmap"},
-    #'   \code{"map"}, \code{"other"}.
-    #' @param access Character. One of \code{"public"} or
-    #'   \code{"restricted"}.
     #' @return A new IPHRAProtocol object.
     initialize = function(
       assessment_title = NULL,
       country_name = NULL,
-      month_year = NULL,
-      version = 1L,
-      type_of_emergency = NULL,
-      type_of_crisis = NULL,
-      mandating_body = NULL,
-      project_code = NULL,
-      overall_timeframe = NULL,
-      geographic_coverage = NULL,
-      general_objective = phr_txt(
-        "To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality."
-      ),
-      pilot_date = NULL,
-      data_start_date = NULL,
-      data_end_date = NULL,
-      analysis_date = NULL,
-      data_validation_date = NULL,
-      prelim_presentation_date = NULL,
-      output_validation_date = NULL,
-      output_published_date = NULL,
-      final_presentation_date = NULL,
-      humanitarian_milestones = NULL,
-      `audience_type.strategic` = FALSE,
-      `audience_type.operational` = TRUE,
-      `audience_type.programmatic` = TRUE,
-      `audience_type.other` = FALSE,
-      dissemination = NULL,
-      recall_period = NULL,
-      geographic_description = NULL,
-      population = NULL,
-      pop_idpcamp = FALSE,
-      pop_idphost = FALSE,
-      pop_idpinformal = FALSE,
-      pop_idpother = FALSE,
-      pop_refugee = FALSE,
-      pop_refugeeinformal = FALSE,
-      pop_refugeehost = FALSE,
-      pop_refugeeother = FALSE,
-      pop_host = FALSE,
-      pop_other = FALSE,
-      stakeholder_mapping = FALSE,
-      num_geographic_units = NA_real_,
-      popsize_known_geographic_unit = FALSE,
-      popsize_known_strata_unit = FALSE,
-      num_kii_health_target = NA_real_,
-      num_kii_market_target = NA_real_,
-      num_kii_fsl_target = NA_real_,
-      num_kii_wash_target = NA_real_,
-      num_kii_nutrition_target = NA_real_,
-      num_obs_health_target = NA_real_,
-      num_obs_latrine_target = NA_real_,
-      num_obs_waterpoint_target = NA_real_,
-      gender_disaggregation = TRUE,
-      sex_disaggregation = TRUE,
-      data_management_platform = "IMPACT",
-      expected_output_type = NULL,
-      access = NULL
+      month_year = NULL
     ) {
       super$initialize(
         assessment_title = assessment_title,
@@ -190,10 +89,6 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$country_name <- country_name
       self$metadata$month_year <- month_year
       self$metadata$framework_type <- "ana"
-
-      # Load protocol schema (tags + defaults) from the bundled resource
-      private$..load_protocol_schema()
-      private$..initialize_conditional_metadata()
 
       phr_message(
         phr_txt("IPHRAProtocol initialized."),
@@ -427,227 +322,60 @@ IPHRAProtocol <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Generate an IPHRA document report.
-    #' @param output_file Character output \code{.docx} path.
-    #' @param open Logical indicating whether to open the output path.
-    #' @return Invisibly returns \code{self}.
-    generate_doc = function(
-      output_file = "protocol_report.docx",
-      open = FALSE
-    ) {
-      super$generate_doc(output_file = output_file, open = open)
-    },
+    get_quarto_params = function() {
+      params <- super$get_quarto_params()
 
-    #' @description
-    #' Generate an IPHRA Word document using Quarto with IPHRA-specific template.
-    #'
-    #' This method overrides the base Document class to use IPHRA-specific
-    #' templates and automatically populate parameters from metadata.
-    #'
-    #' @param output_file Character output path for the rendered document.
-    #' @param template_file Character path to the Quarto template file. If NULL,
-    #'   uses "quarto_doc_iphra_template.qmd" from package resources.
-    #' @param params Named list of parameters to substitute in the template.
-    #'   Defaults are populated from \code{self$metadata}.
-    #' @param content Character string containing additional document content
-    #'   (Markdown formatted).
-    #' @param open Logical indicating whether to open the output in a browser.
-    #' @return Invisibly returns \code{self}.
-    generate_quarto_doc = function(
-      output_file = "iphra_protocol_report.docx",
-      template_file = NULL,
-      params = list(),
-      content = "",
-      open = FALSE
-    ) {
-      phr_try(
-        {
-          # Use IPHRA-specific template by default
-          if (is.null(template_file)) {
-            template_file <- system.file(
-              "resources",
-              "quarto_doc_iphra_template.qmd",
-              package = "phr"
-            )
-            if (!nzchar(template_file) || !file.exists(template_file)) {
-              template_file <- file.path(
-                "inst",
-                "resources",
-                "quarto_doc_iphra_template.qmd"
-              )
-            }
-          }
-
-          # Populate default parameters from metadata
-          default_params <- list(
-            assessment_title = self$metadata$assessment_title %||%
-              "Untitled Assessment",
-            country_name = self$metadata$country_name %||% "",
-            month_year = self$metadata$month_year %||%
-              format(Sys.Date(), "%B %Y"),
-            type_of_emergency = self$metadata$type_of_emergency %||% "",
-            type_of_crisis = self$metadata$type_of_crisis %||% "",
-            mandating_body = self$metadata$mandating_body %||% "",
-            project_code = self$metadata$project_code %||% "",
-            geographic_coverage = self$metadata$geographic_coverage %||% "",
-            general_objective = self$metadata$general_objective %||% "",
-            pilot_date = as.character(self$metadata$pilot_date %||% ""),
-            data_start_date = as.character(
-              self$metadata$data_start_date %||% ""
-            ),
-            data_end_date = as.character(self$metadata$data_end_date %||% ""),
-            analysis_date = as.character(self$metadata$analysis_date %||% ""),
-            data_validation_date = as.character(
-              self$metadata$data_validation_date %||% ""
-            ),
-            prelim_presentation_date = as.character(
-              self$metadata$prelim_presentation_date %||% ""
-            ),
-            output_validation_date = as.character(
-              self$metadata$output_validation_date %||% ""
-            ),
-            output_published_date = as.character(
-              self$metadata$output_published_date %||% ""
-            ),
-            final_presentation_date = as.character(
-              self$metadata$final_presentation_date %||% ""
-            ),
-            reference_doc = if (!is.null(self$reference_doc_filename)) {
-              paste0('"', self$reference_doc_filename, '"')
-            } else {
-              "null"
-            }
-          )
-
-          # Merge with user-provided params
-          all_params <- modifyList(default_params, params)
-
-          # Call parent method with IPHRA-specific configuration
-          super$generate_quarto_doc(
-            output_file = output_file,
-            template_file = template_file,
-            params = all_params,
-            content = content,
-            open = open
-          )
-        },
-        on_error = "abort",
-        origin = "IPHRAProtocol$generate_quarto_doc"
+      c(
+        params,
+        list(
+          anf_framework_path = self$.modified_framework_svg,
+          tool_household_iphra = self$.tool_household_iphra,
+          tool_community_kii = self$.tool_community_kii,
+          tool_fsl_provider_kii = self$.tool_fsl_provider_kii,
+          tool_health_facility_kii = self$.tool_health_facility_kii,
+          tool_nutrition_facility_kii = self$.tool_nutrition_facility_kii,
+          tool_wash_provider_kii = self$.tool_wash_provider_kii,
+          ind_ecfies = self$.ind_ecfies,
+          ind_iycfe = self$.ind_iycfe,
+          ind_measles_vaccination = self$.ind_measles_vaccination,
+          ind_muac_children = self$.ind_muac_children,
+          ind_muac_women = self$.ind_muac_women,
+          ind_vitamin_a_coverage = self$.ind_vitamin_a_coverage,
+          ind_mortality = self$.ind_mortality,
+          tool_community_observation = self$.tool_community_observation,
+          tool_crops_livestock_observation = self$.tool_crops_livestock_observation,
+          tool_health_facility_observation = self$.tool_health_facility_observation,
+          tool_latrine_observation = self$.tool_latrine_observation,
+          tool_water_point_observation = self$.tool_water_point_observation,
+          tools_table_df = self$.tools_table_df,
+          household_pillars_table_df = self$.household_pillars_table_df,
+          kii_pillars_table_df = self$.kii_pillars_table_df,
+          observation_pillars_table_df = self$.observation_pillars_table_df,
+          household_dap_df = self$.household_dap_df,
+          community_kii_dap_df = self$.community_kii_dap_df,
+          community_observation_dap_df = self$.community_observation_dap_df,
+          health_facility_kii_dap_df = self$.health_facility_kii_dap_df,
+          health_facility_observation_dap_df = self$.health_facility_observation_dap_df,
+          nutrition_facility_kii_dap_df = self$.nutrition_facility_kii_dap_df,
+          fsl_provider_kii_dap_df = self$.fsl_provider_kii_dap_df,
+          market_kii_dap_df = self$.market_kii_dap_df,
+          crop_livestock_observation_dap_df = self$.crop_livestock_observation_dap_df,
+          wash_provider_kii_dap_df = self$.wash_provider_kii_dap_df,
+          water_point_observation_dap_df = self$.water_point_observation_dap_df,
+          latrine_observation_dap_df = self$.latrine_observation_dap_df
+        )
       )
-      invisible(self)
-    },
-
-    #' @description
-    #' Generate an IPHRA PowerPoint using Quarto with IPHRA-specific template.
-    #'
-    #' This method overrides the base Document class to use IPHRA-specific
-    #' templates and automatically populate parameters from metadata.
-    #'
-    #' @param output_file Character output path for the rendered presentation.
-    #' @param template_file Character path to the Quarto template file. If NULL,
-    #'   uses "quarto_ppt_iphra_template.qmd" from package resources.
-    #' @param params Named list of parameters to substitute in the template.
-    #'   Defaults are populated from \code{self$metadata}.
-    #' @param content Character string containing additional presentation content
-    #'   (Markdown formatted).
-    #' @param open Logical indicating whether to open the output in a browser.
-    #' @return Invisibly returns \code{self}.
-    generate_quarto_ppt = function(
-      output_file = "iphra_protocol_presentation.pptx",
-      template_file = NULL,
-      params = list(),
-      content = "",
-      open = FALSE
-    ) {
-      phr_try(
-        {
-          # Use IPHRA-specific template by default
-          if (is.null(template_file)) {
-            template_file <- system.file(
-              "resources",
-              "quarto_ppt_iphra_template.qmd",
-              package = "phr"
-            )
-            if (!nzchar(template_file) || !file.exists(template_file)) {
-              template_file <- file.path(
-                "inst",
-                "resources",
-                "quarto_ppt_iphra_template.qmd"
-              )
-            }
-          }
-
-          # Populate default parameters from metadata
-          default_params <- list(
-            assessment_title = self$metadata$assessment_title %||%
-              "Untitled Assessment",
-            country_name = self$metadata$country_name %||% "",
-            month_year = self$metadata$month_year %||%
-              format(Sys.Date(), "%B %Y"),
-            type_of_emergency = self$metadata$type_of_emergency %||% "",
-            type_of_crisis = self$metadata$type_of_crisis %||% "",
-            mandating_body = self$metadata$mandating_body %||% "",
-            general_objective = self$metadata$general_objective %||% "",
-            reference_doc = if (!is.null(self$reference_ppt_filename)) {
-              paste0('"', self$reference_ppt_filename, '"')
-            } else {
-              "null"
-            }
-          )
-
-          # Merge with user-provided params
-          all_params <- modifyList(default_params, params)
-
-          # Call parent method with IPHRA-specific configuration
-          super$generate_quarto_ppt(
-            output_file = output_file,
-            template_file = template_file,
-            params = all_params,
-            content = content,
-            open = open
-          )
-        },
-        on_error = "abort",
-        origin = "IPHRAProtocol$generate_quarto_ppt"
-      )
-      invisible(self)
-    },
-
-    #' @description Post-sync hook for IPHRA-specific synchronization.
-    #' @param field Optional top-level field name.
-    #' @param member Optional nested member name.
-    #' @param target_field Optional destination field path.
-    #' @param name Optional named list entry inside \code{field}.
-    #' @param role Optional role-based list resolution key.
-    #' @return Invisibly returns \code{NULL}.
-    post_sync_state = function(
-      field = NULL,
-      member = NULL,
-      target_field = NULL,
-      name = NULL,
-      role = NULL
-    ) {
-      super$post_sync_state(
-        field = field,
-        member = member,
-        target_field = target_field,
-        name = name,
-        role = role
-      )
-      st <- self$sample_table
-      self$metadata$num_strata_units <- if (
-        !is.null(st) && is.data.frame(st) && "stratum_id" %in% names(st)
-      ) {
-        length(unique(st$stratum_id))
-      } else {
-        0L
-      }
-      private$..sync_sampling_conditional_metadata()
-      invisible(NULL)
     }
   ),
 
   active = list(
+    .tool_household_iphra = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..has_tool_role("household")
+    },
+
     .tool_community_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
@@ -751,21 +479,726 @@ IPHRAProtocol <- R6::R6Class(
       }
       private$..has_tool_role("obs_water_point")
     },
-    .household_pillars_table_df = function(value) {},
-    .kii_pillars_table_df = function(value) {},
-    .observation_pillars_table_df = function(value) {},
-    .household_dap_df = function(value) {},
-    .community_kii_dap_df = function(value) {},
-    .community_observation_dap_df = function(value) {},
-    .health_facility_kii_dap_df = function(value) {},
-    .health_facility_observation_dap_df = function(value) {},
-    .nutrition_facility_kii_dap_df = function(value) {},
-    .fsl_provider_kii_dap_df = function(value) {},
-    .market_kii_dap_df = function(value) {},
-    .crop_livstock_observation_dap_df = function(value) {},
-    .wash_provider_kii_dap_df = function(value) {},
-    .water_point_observation_dap_df = function(value) {},
-    .latrine_observation_dap_df = function(value) {},
+
+    .tools_table_df = function(value) {
+      st <- private$..sample_table_from_nested()
+
+      tool_names <- self$get_tool_names()
+
+      if ("tool_household_iphra_v2" %in% tool_names) {
+        row <- data.frame(
+          Tool = "tool_household_iphra_v2",
+
+          `Sampling Method` = if (
+            !is.null(st) &&
+              all(
+                c("sampling_method_site", "sampling_method_hh") %in% names(st)
+              )
+          ) {
+            sampling_methods <- paste(
+              st$sampling_method_site,
+              st$sampling_method_hh,
+              sep = " - "
+            )
+
+            sampling_methods <- unique(stats::na.omit(sampling_methods))
+
+            if (length(sampling_methods) > 0) {
+              paste(sampling_methods, collapse = ", ")
+            } else {
+              NA_character_
+            }
+          } else {
+            NA_character_
+          },
+
+          `Sample Size` = if (
+            !is.null(st) &&
+              "Final_HH_Sample_Size" %in% names(st)
+          ) {
+            sum(st$Final_HH_Sample_Size, na.rm = TRUE)
+          } else {
+            NA_real_
+          },
+
+          check.names = FALSE
+        )
+      }
+
+      if ("tool_kii_community_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_kii_community_iphra_v2",
+            `Sampling Method` = "Purposive / Random Walk",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              3 * sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_kii_fsl_service_provider_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_kii_fsl_service_provider_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_kii_health_service_provider_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_kii_health_service_provider_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_kii_nutrition_service_provider_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_kii_nutrition_service_provider_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_kii_wash_service_provider_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_kii_wash_service_provider_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_obs_community_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_obs_community_iphra_v2",
+            `Sampling Method` = "Transect Walk",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_obs_crop_livestock_iphra_v1" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_obs_crop_livestock_iphra_v1",
+            `Sampling Method` = "Transect Walk",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_obs_health_facility_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_obs_health_facility_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_obs_latrine_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_obs_latrine_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if ("tool_obs_water_point_iphra_v2" %in% tool_names) {
+        row <- rbind(
+          row,
+          data.frame(
+            Tool = "tool_obs_water_point_iphra_v2",
+            `Sampling Method` = "Purposive",
+            `Sample Size` = if (
+              !is.null(st) &&
+                "n_sites" %in% names(st)
+            ) {
+              sum(st$n_sites, na.rm = TRUE)
+            } else {
+              NA_real_
+            },
+            check.names = FALSE
+          )
+        )
+      }
+
+      if (!exists("row")) {
+        table <- data.frame(
+          Tool = character(0),
+          `Sampling Method` = character(0),
+          `Sample Size` = numeric(0),
+          check.names = FALSE
+        )
+      } else {
+        table <- row
+      }
+
+      return(table)
+    },
+
+    .household_pillars_table_df = function(value) {
+      if (!private$..has_tool_role("household")) {
+        table <- data.frame(
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          Indicator = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+        return(table)
+      }
+
+      hh_codes <- tryCatch(
+        self$access_nested(
+          field = "tools",
+          role = "household",
+          member = "get_indicator_codes"
+        ),
+        error = function(e) character(0)
+      )
+      hh_codes <- trimws(as.character(hh_codes))
+      hh_codes <- hh_codes[!is.na(hh_codes) & nzchar(hh_codes)]
+
+      ob <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_objectives_schema"
+        ),
+        error = function(e) NULL
+      )
+
+      ib <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_indicator_bank"
+        ),
+        error = function(e) NULL
+      )
+
+      if (is.null(ob) || is.null(ib)) {
+        table <- data.frame(
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          Indicator = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+        return(table)
+      }
+
+      # Filter indicator bank to indicators used in household survey
+      ib_sub <- ib[ib$indicator_code %in% hh_codes, , drop = FALSE]
+
+      # Get objective codes linked to those indicators
+      objective_codes <- unique(ib_sub$objective_code)
+      objective_codes <- objective_codes[
+        !is.na(objective_codes) & nzchar(objective_codes)
+      ]
+
+      # Filter objectives schema to relevant objectives
+      ob_sub <- ob[ob$objective_code %in% objective_codes, , drop = FALSE]
+
+      # Join pillar / sub-pillar info onto indicator bank
+      table <- merge(
+        ib_sub,
+        ob_sub[, c("objective_code", "pillar", "sub_pillar"), drop = FALSE],
+        by = "objective_code",
+        all.x = TRUE
+      )
+
+      # Keep final output columns
+      table <- table[,
+        c("pillar", "sub_pillar", "indicator_name"),
+        drop = FALSE
+      ]
+
+      names(table) <- c("Pillar", "Sub-Pillar", "Indicator")
+
+      table
+    },
+    .kii_pillars_table_df = function(value) {
+      if (
+        !private$..has_tool_role("kii_community") &&
+          !private$..has_tool_role("kii_fsl_service_provider") &&
+          !private$..has_tool_role("kii_health_service_provider") &&
+          !private$..has_tool_role("kii_nutrition_service_provider") &&
+          !private$..has_tool_role("kii_wash_service_provider") &&
+          !private$..has_tool_role("kii_markets")
+      ) {
+        table <- data.frame(
+          Tool = character(0),
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+        return(table)
+      }
+
+      ob <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_objectives_schema"
+        ),
+        error = function(e) NULL
+      )
+
+      ib <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_indicator_bank"
+        ),
+        error = function(e) NULL
+      )
+
+      if (is.null(ob) || is.null(ib)) {
+        table <- data.frame(
+          Tool = character(0),
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+        return(table)
+      }
+
+      table <- data.frame(
+        Tool = character(0),
+        Pillar = character(0),
+        `Sub-Pillar` = character(0),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+      )
+
+      if (private$..has_tool_role("kii_community")) {
+        table <- private$..build_kii_obs_tool_table(
+          role = "kii_community",
+          tool_label = "Community Leader and Community Member KII",
+          ib = ib,
+          ob = ob
+        )
+      }
+
+      if (private$..has_tool_role("kii_health_service_provider")) {
+        health_kii_table <- private$..build_kii_obs_tool_table(
+          role = "kii_health_service_provider",
+          tool_label = "Health Facility KII",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          health_kii_table
+        )
+      }
+
+      if (private$..has_tool_role("kii_nutrition_service_provider")) {
+        nutrition_kii_table <- private$..build_kii_obs_tool_table(
+          role = "kii_nutrition_service_provider",
+          tool_label = "Nutrition Facility KII",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          nutrition_kii_table
+        )
+      }
+
+      if (private$..has_tool_role("kii_markets")) {
+        market_kii_table <- private$..build_kii_obs_tool_table(
+          role = "kii_markets",
+          tool_label = "Market Vendor KII",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          market_kii_table
+        )
+      }
+
+      if (private$..has_tool_role("kii_wash_service_provider")) {
+        wash_kii_table <- private$..build_kii_obs_tool_table(
+          role = "kii_wash_service_provider",
+          tool_label = "WASH Provider KII",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          wash_kii_table
+        )
+      }
+
+      if (private$..has_tool_role("kii_wash_service_provider")) {
+        wash_kii_table <- private$..build_kii_obs_tool_table(
+          role = "kii_wash_service_provider",
+          tool_label = "WASH Provider KII",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          wash_kii_table
+        )
+      }
+
+      if (private$..has_tool_role("kii_fsl_service_provider")) {
+        fsl_kii_table <- private$..build_kii_obs_tool_table(
+          role = "kii_fsl_service_provider",
+          tool_label = "FSL Assistance Provider KII",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          fsl_kii_table
+        )
+      }
+
+      names(table) <- c("Tool", "Pillar", "Sub-Pillar")
+
+      table
+    },
+    .observation_pillars_table_df = function(value) {
+      if (
+        !private$..has_tool_role("obs_community") &&
+          !private$..has_tool_role("obs_health_facility") &&
+          !private$..has_tool_role("obs_crop_livestock") &&
+          !private$..has_tool_role("obs_latrine") &&
+          !private$..has_tool_role("obs_water_point")
+      ) {
+        table <- data.frame(
+          Tool = character(0),
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+        return(table)
+      }
+
+      ob <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_objectives_schema"
+        ),
+        error = function(e) NULL
+      )
+
+      ib <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_indicator_bank"
+        ),
+        error = function(e) NULL
+      )
+
+      if (is.null(ob) || is.null(ib)) {
+        table <- data.frame(
+          Tool = character(0),
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+        return(table)
+      }
+
+      table <- data.frame(
+        Tool = character(0),
+        Pillar = character(0),
+        `Sub-Pillar` = character(0),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+      )
+
+      if (private$..has_tool_role("obs_community")) {
+        table <- private$..build_kii_obs_tool_table(
+          role = "obs_community",
+          tool_label = "Community Observation Tool",
+          ib = ib,
+          ob = ob
+        )
+      }
+
+      if (
+        private$..has_tool_role(
+          "kii_health_sobs_health_facilityervice_provider"
+        )
+      ) {
+        health_obs_table <- private$..build_kii_obs_tool_table(
+          role = "obs_health_facility",
+          tool_label = "Health Facility Observation Tool",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          health_obs_table
+        )
+      }
+
+      if (private$..has_tool_role("obs_crop_livestock")) {
+        crop_livestock_obs_table <- private$..build_kii_obs_tool_table(
+          role = "obs_crop_livestock",
+          tool_label = "Crops and Livestock Observation Tool",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          crop_livestock_obs_table
+        )
+      }
+
+      if (private$..has_tool_role("obs_latrine")) {
+        latrine_obs_table <- private$..build_kii_obs_tool_table(
+          role = "obs_latrine",
+          tool_label = "Latrine Observation Tool",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          latrine_obs_table
+        )
+      }
+
+      if (private$..has_tool_role("obs_water_point")) {
+        wash_obs_table <- private$..build_kii_obs_tool_table(
+          role = "obs_water_point",
+          tool_label = "Water Point Observation Tool",
+          ib = ib,
+          ob = ob
+        )
+
+        table <- rbind(
+          table,
+          wash_obs_table
+        )
+      }
+
+      names(table) <- c("Tool", "Pillar", "Sub-Pillar")
+
+      table
+    },
+    .household_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("hh_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$hh_dap_table"
+        )
+      }
+
+      self$get_dap_table("tool_household_iphra_v2")
+    },
+    .community_kii_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("community_kii_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$community_kii_dap_table"
+        )
+      }
+      self$get_dap_table("tool_kii_community_iphra_v2")
+    },
+    .community_observation_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("community_obs_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$community_obs_dap_table"
+        )
+      }
+      self$get_dap_table("tool_obs_community_iphra_v2")
+    },
+    .health_facility_kii_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("health_facility_kii_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$health_facility_kii_dap_table"
+        )
+      }
+      self$get_dap_table("tool_kii_health_service_provider_iphra_v2")
+    },
+    .health_facility_observation_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt(
+            "health_facility_observation_dap_table is read-only"
+          ),
+          origin = "IPHRAProtocol$active$health_facility_observation_dap_table"
+        )
+      }
+      self$get_dap_table("tool_obs_health_facility_iphra_v2")
+    },
+    .nutrition_facility_kii_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("nutrition_facility_kii_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$nutrition_facility_kii_dap_table"
+        )
+      }
+      self$get_dap_table("tool_kii_nutrition_service_provider_iphra_v2")
+    },
+    .fsl_provider_kii_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("fsl_provider_kii_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$fsl_provider_kii_dap_table"
+        )
+      }
+      self$get_dap_table("tool_kii_fsl_service_provider_iphra_v2")
+    },
+    .market_kii_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("market_kii_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$market_kii_dap_table"
+        )
+      }
+      self$get_dap_table("tool_kii_markets_iphra_v2")
+    },
+    .crop_livstock_observation_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt(
+            "crop_livestock_observation_dap_table is read-only"
+          ),
+          origin = "IPHRAProtocol$active$crop_livestock_observation_dap_table"
+        )
+      }
+      self$get_dap_table("tool_obs_crop_livestock_iphra_v1")
+    },
+    .wash_provider_kii_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("wash_provider_kii_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$wash_provider_kii_dap_table"
+        )
+      }
+      self$get_dap_table("tool_kii_wash_service_provider_iphra_v2")
+    },
+    .water_point_observation_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("water_point_observation_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$water_point_observation_dap_table"
+        )
+      }
+      self$get_dap_table("tool_obs_water_point_iphra_v2")
+    },
+    .latrine_observation_dap_df = function(value) {
+      if (!missing(value)) {
+        phr_abort(
+          message = phr_txt("latrine_observation_dap_table is read-only"),
+          origin = "IPHRAProtocol$active$latrine_observation_dap_table"
+        )
+      }
+      self$get_dap_table("tool_obs_latrine_iphra_v2")
+    }
   ),
 
   private = list(
@@ -821,6 +1254,48 @@ IPHRAProtocol <- R6::R6Class(
       )
     ),
 
+    ..build_kii_obs_tool_table = function(role, tool_label, ib, ob) {
+      indicator_codes <- tryCatch(
+        self$access_nested(
+          field = "tools",
+          role = role,
+          member = "get_indicator_codes"
+        ),
+        error = function(e) character(0)
+      )
+
+      indicator_codes <- trimws(as.character(indicator_codes))
+      indicator_codes <- indicator_codes[
+        !is.na(indicator_codes) & nzchar(indicator_codes)
+      ]
+
+      ib_sub <- ib[ib$indicator_code %in% indicator_codes, , drop = FALSE]
+
+      objective_codes <- unique(ib_sub$objective_code)
+      objective_codes <- objective_codes[
+        !is.na(objective_codes) & nzchar(objective_codes)
+      ]
+
+      ob_sub <- ob[ob$objective_code %in% objective_codes, , drop = FALSE]
+
+      table <- merge(
+        ib_sub,
+        ob_sub[, c("objective_code", "pillar", "sub_pillar"), drop = FALSE],
+        by = "objective_code",
+        all.x = TRUE
+      )
+
+      unique(
+        data.frame(
+          Tool = tool_label,
+          Pillar = table$pillar,
+          `Sub-Pillar` = table$sub_pillar,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+      )
+    },
+
     # ── TOR generation private methods ─────────────────────────────────────
 
     ..default_template_filenames = function() {
@@ -830,53 +1305,24 @@ IPHRAProtocol <- R6::R6Class(
         "protocol_report_template.docx"
       )
     },
+    ..default_word_template_path = function() {
+      template_file <- "quarto_doc_revised_template.qmd"
 
-    # Load protocol_schema_iphra.xlsx into self$protocol_schema.
-    # Expected columns are tag_name, handling, condition, default_value, and function_name.
-    ..load_protocol_schema = function() {
-      schema_path <- tryCatch(
-        system.file("resources", "protocol_schema_iphra.xlsx", package = "phr"),
-        error = function(e) ""
+      template_path <- system.file(
+        "resources",
+        template_file,
+        package = "phr"
       )
-      if (!nzchar(schema_path) || !file.exists(schema_path)) {
-        # Try relative path (development / test context)
-        schema_path <- file.path(
+
+      if (!nzchar(template_path) || !file.exists(template_path)) {
+        template_path <- file.path(
           "inst",
           "resources",
-          "protocol_schema_iphra.xlsx"
+          template_file
         )
       }
-      if (!file.exists(schema_path)) {
-        phr_warning(
-          phr_txt(
-            "protocol_schema_iphra.xlsx not found; skipping schema load."
-          ),
-          origin = "IPHRAProtocol$.load_protocol_schema"
-        )
-        return(invisible(NULL))
-      }
-      schema <- tryCatch(
-        as.data.frame(readxl::read_excel(
-          schema_path,
-          sheet = "schema",
-          col_types = "text"
-        )),
-        error = function(e) NULL
-      )
-      required_cols <- c(
-        "tag_name",
-        "handling",
-        "condition",
-        "default_value",
-        "function_name"
-      )
-      if (is.null(schema) || !all(required_cols %in% names(schema))) {
-        return(invisible(NULL))
-      }
-      schema <- private$..normalize_schema_tags(schema)
-      # Store schema for reference
-      self$protocol_schema <- schema[required_cols]
-      invisible(NULL)
-    },
+
+      template_path
+    }
   )
 )

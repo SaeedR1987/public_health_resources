@@ -1,3 +1,70 @@
+#' Protocol R6 Class
+#'
+#' @description
+#' Base protocol class for planning, managing, validating, and reporting an
+#' assessment protocol. A `Protocol` stores assessment metadata, manages a
+#' collection of data collection tools, links the protocol to a conceptual
+#' framework, checks coherence between framework objectives and tool indicators,
+#' and prepares parameters for Quarto-based report generation.
+#'
+#' @details
+#' `Protocol` inherits from `Document` and therefore also supports document
+#' generation workflows defined by the parent class. The protocol maintains a
+#' `Framework` object, a named list of `Tool` objects, metadata fields used in
+#' Terms of Reference and reporting templates, and helper methods for producing
+#' data analysis planning outputs.
+#'
+#' The class is intended to be subclassed for specific protocol types, such as
+#' IPHRA protocols, where additional active bindings, Quarto parameters, tool
+#' types, or reporting tables may be defined.
+#'
+#' @section Public fields:
+#' \describe{
+#'   \item{framework}{A `Framework` or subclass instance associated with the protocol.}
+#'   \item{tools}{Named list of registered tool objects.}
+#'   \item{valid_tool_types}{Character vector of allowed tool types.}
+#'   \item{issues}{List of validation or protocol issues.}
+#'   \item{issues_coherence}{List of coherence issues between framework and tools.}
+#'   \item{metadata}{Named list of protocol metadata used for reporting and documentation.}
+#'   \item{secondary_data}{Optional secondary data sources keyed by objective code.}
+#' }
+#'
+#' @section Key methods:
+#' \describe{
+#'   \item{`initialize()`}{Create a new protocol object.}
+#'   \item{`add_tools()`}{Add a tool object to the protocol.}
+#'   \item{`get_tool_names()`}{Return registered tool names.}
+#'   \item{`is_tool_included()`}{Check whether a tool is registered.}
+#'   \item{`validate_objective_schema()`}{Validate an objective schema.}
+#'   \item{`diagnose_coherence()`}{Check alignment between framework indicators and tool indicators.}
+#'   \item{`get_dap_table()`}{Build a data analysis plan table for a selected tool.}
+#'   \item{`get_quarto_params()`}{Return protocol parameters for Quarto rendering.}
+#' }
+#'
+#' @section Active bindings:
+#' \describe{
+#'   \item{`.release_date`}{Read-only binding returning the current system date.}
+#'   \item{`.objectives_research_questions_df`}{Returns a table of pillars, sub-pillars, objectives, and research questions linked to indicators used across tools.}
+#'   \item{`.secondary_data_sources_df`}{Returns the framework secondary data sources table.}
+#'   \item{`.modified_framework_svg`}{Returns a temporary SVG file path for the adjusted or master framework diagram.}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' protocol <- Protocol$new(
+#'   assessment_title = "Example Assessment",
+#'   country_name = "Example Country",
+#'   month_year = "January 2027",
+#'   framework_type = "ana"
+#' )
+#'
+#' protocol$add_tools(tool_type = "household", tool_name = "household")
+#' protocol$get_tool_names()
+#' protocol$diagnose_coherence()
+#' }
+#'
+#' @importFrom R6 R6Class
+#' @export
 Protocol <- R6::R6Class(
   "Protocol",
   inherit = Document,
@@ -37,9 +104,6 @@ Protocol <- R6::R6Class(
       version_number = NULL,
       type_emergency = NULL,
       type_crisis = NULL,
-      mandating_agency = NULL,
-      project_code = NULL,
-      geographic_coverage = NULL,
       population = NULL,
       rationale = NULL,
       date_pilot_training = NULL,
@@ -96,6 +160,7 @@ Protocol <- R6::R6Class(
       date_milestone_ngo_platform = NULL,
       date_milestone_other = NULL,
       geographic_coverage = NULL,
+      stratification = NULL,
       num_report = NULL,
       num_profile = NULL,
       num_prelim_presentation = NULL,
@@ -106,10 +171,6 @@ Protocol <- R6::R6Class(
       num_map = NULL,
       num_output_other = NULL
     ),
-
-    #' @field conditional_metadata Named list of boolean flags used for
-    #'   conditional schema replacements.
-    conditional_metadata = list(),
 
     #' @field secondary_data Named list of secondary data sources keyed by
     #'   objective code.  Each element is a character string naming the source
@@ -165,18 +226,6 @@ Protocol <- R6::R6Class(
           )
           self$issues <- list()
           self$issues_coherence <- list()
-          self$conditional_metadata <- list()
-          self$framework_objective_catalog_master <- list()
-          self$framework_objective_catalog_adjusted <- list()
-          self$framework_primary_objective_catalog <- list()
-          self$framework_secondary_objective_catalog <- list()
-          self$framework_indicator_catalog_master <- list()
-          self$framework_indicator_catalog_adjusted <- list()
-          self$tool_indicator_catalog_master <- list()
-          self$tool_indicator_catalog_revised <- list()
-          self$tool_objective_catalog_master <- list()
-          self$tool_objective_catalog_revised <- list()
-          self$protocol_schema <- private$..load_protocol_schema()
 
           self$framework <- if (framework_type == "ana") {
             ANAFramework$new()
@@ -565,7 +614,119 @@ Protocol <- R6::R6Class(
         origin = "Protocol$get_dap_table"
       )
     },
+    get_quarto_params = function() {
+      params <- super$get_quarto_params()
 
+      c(
+        params,
+        list(
+          assessment_title = self$metadata$assessment_title %||% "",
+          country_name = self$metadata$country_name %||% "",
+          month_year = self$metadata$month_year %||% "",
+          release_date = self$.release_date %||% Sys.Date(),
+
+          research_cycle_id = self$metadata$research_cycle_id %||% "",
+          country = self$metadata$country %||% "",
+          release_date = self$metadata$release_date %||% Sys.Date(),
+          version_number = self$metadata$version_number %||% "",
+          type_emergency = self$metadata$type_emergency %||% "",
+          type_crisis = self$metadata$type_crisis %||% "",
+          mandating_agency = self$metadata$mandating_agency %||% "",
+          project_code = self$metadata$project_code %||% "",
+          geographic_coverage = self$metadata$geographic_coverage %||% "",
+          population = self$metadata$population %||% "",
+          rationale = self$metadata$rationale %||% "",
+          date_pilot_training = self$metadata$date_pilot_training %||% "",
+          date_data_collection_start = self$metadata$date_data_collection_start %||%
+            "",
+          date_data_collection_end = self$metadata$date_data_collection_end %||%
+            "",
+          date_data_analysis = self$metadata$date_data_analysis %||% "",
+          date_data_validation = self$metadata$date_data_validation %||% "",
+          date_preliminary_presentation = self$metadata$date_preliminary_presentation %||%
+            "",
+          date_outputs_validation = self$metadata$date_outputs_validation %||%
+            "",
+          date_outputs_publication = self$metadata$date_outputs_publication %||%
+            "",
+          date_final_presentation = self$metadata$date_final_presentation %||%
+            "",
+          audience_type_cluster = self$metadata$audience_type_cluster %||% "",
+          expected_output_cluster = self$metadata$expected_output_cluster %||%
+            "",
+          expected_output_donor = self$metadata$expected_output_donor %||% "",
+          expected_output_operational_actor = self$metadata$expected_output_operational_actor %||%
+            "",
+          expected_output_other = self$metadata$expected_output_other %||% "",
+          dissemination_strategy_cluster = self$metadata$dissemination_strategy_cluster %||%
+            "",
+          dissemination_strategy_donor = self$metadata$dissemination_strategy_donor %||%
+            "",
+          dissemination_strategy_operational_actor = self$metadata$dissemination_strategy_operational_actor %||%
+            "",
+          dissemination_strategy_other = self$metadata$dissemination_strategy_other %||%
+            "",
+          access_cluster = self$metadata$access_cluster %||% "",
+          access_donor = self$metadata$access_donor %||% "",
+          access_operational_actor = self$metadata$access_operational_actor %||%
+            "",
+          access_other = self$metadata$access_other %||% "",
+          visibility_cluster = self$metadata$visibility_cluster %||% "",
+          visibility_donor = self$metadata$visibility_donor %||% "",
+          visibility_operational_actor = self$metadata$visibility_operational_actor %||%
+            "",
+          visibility_other = self$metadata$visibility_other %||% "",
+          created_date = self$metadata$created_date %||% NULL,
+          modified_datetime = self$metadata$modified_datetime %||% NULL,
+          month_year = self$metadata$month_year %||% NULL,
+          country_name = self$metadata$country_name %||% NULL,
+          assessment_title = self$metadata$assessment_title %||% NULL,
+          target_strata = self$metadata$target_strata %||% list(),
+          protocol_version = self$metadata$protocol_version %||% "1.0",
+          version = self$metadata$version %||% 1L,
+          mandating_body = self$metadata$mandating_body %||% NULL,
+          project_code = self$metadata$project_code %||% NULL,
+          overall_timeframe = self$metadata$overall_timeframe %||% NULL,
+          pilot_date = self$metadata$pilot_date %||% NULL,
+          data_start_date = self$metadata$data_start_date %||% NULL,
+          data_end_date = self$metadata$data_end_date %||% NULL,
+          analysis_date = self$metadata$analysis_date %||% NULL,
+          data_validation_date = self$metadata$data_validation_date %||% NULL,
+          prelim_presentation_date = self$metadata$prelim_presentation_date %||%
+            NULL,
+          output_validation_date = self$metadata$output_validation_date %||%
+            NULL,
+          output_published_date = self$metadata$output_published_date %||% NULL,
+          final_presentation_date = self$metadata$final_presentation_date %||%
+            NULL,
+          date_milestone_donor = self$metadata$date_milestone_donor %||% NULL,
+          date_milestone_intercluster = self$metadata$date_milestone_intercluster %||%
+            NULL,
+          date_milestone_cluster = self$metadata$date_milestone_cluster %||%
+            NULL,
+          date_milestone_ngo_platform = self$metadata$date_milestone_ngo_platform %||%
+            NULL,
+          date_milestone_other = self$metadata$date_milestone_other %||% NULL,
+          geographic_coverage = self$metadata$geographic_coverage %||% NULL,
+          stratification = self$metadata$stratification %||% NULL,
+          num_report = self$metadata$num_report %||% NULL,
+          num_profile = self$metadata$num_profile %||% NULL,
+          num_prelim_presentation = self$metadata$num_prelim_presentation %||%
+            NULL,
+          num_final_presentation = self$metadata$num_final_presentation %||%
+            NULL,
+          num_factsheet = self$metadata$num_factsheet %||% NULL,
+          num_dashboard = self$metadata$num_dashboard %||% NULL,
+          num_webmap = self$metadata$num_webmap %||% NULL,
+          num_map = self$metadata$num_map %||% NULL,
+          num_output_other = self$metadata$num_output_other %||% NULL,
+          objectives_research_questions_df = self$.objectives_research_questions_df,
+          secondary_data_sources_df = self$.secondary_data_sources_df,
+          modified_framework_svg = self$.modified_framework_svg
+        )
+      )
+    }
+  ),
   active = list(
     #' @field .release_date Active binding returning the current system date.
     #'   This binding is read-only; attempts to assign return \code{invisible(FALSE)}.
@@ -576,133 +737,99 @@ Protocol <- R6::R6Class(
       Sys.Date()
     },
 
-    .tools_table_df = function(value) {},
+    .objectives_research_questions_df = function(value) {
+      all_codes <- character(0)
 
-    .objectives_research_questions_df = function(value) {},
+      tool_roles <- names(self$tools)
 
-    .secondary_data_sources_df = function(value) {},
-
-    #' @field .specific_objectives Active binding that renders primary objectives
-    #'   as markdown bullet points, grouped by pillar when available.
-    #'   Returns \code{NULL} when no primary objective catalog is available.
-    #'   This binding is read-only.
-    .specific_objectives = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      catalog <- self$framework_primary_objective_catalog
-      if (is.null(catalog) || length(catalog) == 0L) {
-        return(NULL)
-      }
-      pillars <- vapply(
-        catalog,
-        function(x) as.character(x$pillar %||% ""),
-        character(1)
-      )
-      unique_pillars <- unique(pillars[nzchar(pillars)])
-      if (length(unique_pillars) == 0L) {
-        lines <- vapply(
-          catalog,
-          function(x) paste0("- ", x$text_objective),
-          character(1)
+      for (role in tool_roles) {
+        codes <- tryCatch(
+          self$access_nested(
+            field = "tools",
+            role = role,
+            member = "get_indicator_codes",
+            update_modified = FALSE
+          ),
+          error = function(e) character(0)
         )
-        return(paste(lines, collapse = "\n"))
-      }
-      parts <- vapply(
-        unique_pillars,
-        function(pillar) {
-          codes_in_pillar <- names(catalog)[pillars == pillar]
-          bullets <- vapply(
-            codes_in_pillar,
-            function(code) {
-              paste0("- ", catalog[[code]]$text_objective)
-            },
-            character(1)
-          )
-          paste0("**", pillar, "**\n", paste(bullets, collapse = "\n"))
-        },
-        character(1)
-      )
-      paste(parts, collapse = "\n\n")
-    },
 
-    #' @field .research_questions Active binding that renders research questions
-    #'   from primary objectives as markdown bullet points, grouped by pillar when
-    #'   available. Returns \code{NULL} when no primary objective catalog exists.
-    #'   This binding is read-only.
-    .research_questions = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
+        codes <- trimws(as.character(codes))
+        codes <- codes[!is.na(codes) & nzchar(codes)]
+
+        all_codes <- c(all_codes, codes)
       }
-      catalog <- self$framework_primary_objective_catalog
-      if (is.null(catalog) || length(catalog) == 0L) {
-        return(NULL)
-      }
-      pillars <- vapply(
-        catalog,
-        function(x) as.character(x$pillar %||% ""),
-        character(1)
+
+      all_codes <- unique(all_codes)
+
+      ob <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_objectives_schema",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
       )
-      unique_pillars <- unique(pillars[nzchar(pillars)])
-      if (length(unique_pillars) == 0L) {
-        lines <- vapply(
-          catalog,
-          function(x) paste0("- ", x$objective_research_question),
-          character(1)
+
+      ib <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_indicator_bank",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
+      )
+
+      if (is.null(ob) || is.null(ib) || length(all_codes) == 0) {
+        table <- data.frame(
+          Pillar = character(0),
+          `Sub-Pillar` = character(0),
+          Objective = character(0),
+          `Research Question` = character(0),
+          check.names = FALSE,
+          stringsAsFactors = FALSE
         )
-        return(paste(lines, collapse = "\n"))
+        return(table)
       }
-      parts <- vapply(
-        unique_pillars,
-        function(pillar) {
-          codes_in_pillar <- names(catalog)[pillars == pillar]
-          bullets <- vapply(
-            codes_in_pillar,
-            function(code) {
-              paste0("- ", catalog[[code]]$objective_research_question)
-            },
-            character(1)
-          )
-          paste0("**", pillar, "**\n", paste(bullets, collapse = "\n"))
-        },
-        character(1)
+
+      ib_sub <- ib[ib$indicator_code %in% all_codes, , drop = FALSE]
+
+      objective_codes <- unique(ib_sub$objective_code)
+      objective_codes <- objective_codes[
+        !is.na(objective_codes) & nzchar(objective_codes)
+      ]
+
+      ob_sub <- ob[ob$objective_code %in% objective_codes, , drop = FALSE]
+
+      table <- unique(
+        data.frame(
+          Pillar = ob_sub$pillar,
+          `Sub-Pillar` = ob_sub$sub_pillar,
+          Objective = ob_sub$text_objective,
+          `Research Question` = ob_sub$objective_research_question,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
       )
-      paste(parts, collapse = "\n\n")
+
+      table
     },
 
-    #' @field .list_secondary_data Active binding that renders secondary data
-    #'   sources as markdown bullet points keyed by objective text when available.
-    #'   Returns \code{NULL} when no secondary data sources are set.
-    #'   This binding is read-only.
-    .list_secondary_data = function(value) {
+    .secondary_data_sources_df = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      sources <- self$secondary_data_sources
-      if (is.null(sources) || length(sources) == 0L) {
-        return(NULL)
-      }
-      catalog <- self$framework_primary_objective_catalog
-      if (is.null(catalog)) {
-        catalog <- list()
-      }
-      parts <- vapply(
-        names(sources),
-        function(code) {
-          header <- if (code %in% names(catalog)) {
-            catalog[[code]]$text_objective
-          } else {
-            code
-          }
-          src_vec <- as.character(sources[[code]])
-          bullets <- paste0("- ", src_vec, collapse = "\n")
-          paste0("**", header, "**\n", bullets)
-        },
-        character(1)
-      )
-      paste(parts, collapse = "\n\n")
-    },
 
+      table <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "secondary_data_sources",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
+      )
+
+      return(table)
+    },
     #' @field .modified_framework_svg Active binding returning a temporary SVG
     #'   file path created from \code{framework$adjusted_svg}; falls back to
     #'   \code{framework$master_svg} when adjusted SVG is unavailable.
@@ -711,26 +838,39 @@ Protocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(NULL))
       }
+
       svg_text <- tryCatch(
-        self$access_nested(field = "framework", member = "adjusted_svg"),
+        self$access_nested(
+          field = "framework",
+          member = "adjusted_svg",
+          update_modified = FALSE
+        ),
         error = function(e) NULL
       )
+
       if (
         is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])
       ) {
         svg_text <- tryCatch(
-          self$access_nested(field = "framework", member = "master_svg"),
+          self$access_nested(
+            field = "framework",
+            member = "master_svg",
+            update_modified = FALSE
+          ),
           error = function(e) NULL
         )
       }
+
       if (
         is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])
       ) {
         return(NULL)
       }
+
       tmp_svg <- tempfile(fileext = ".svg")
       writeLines(svg_text[[1L]], con = tmp_svg)
-      tmp_svg
+
+      normalizePath(tmp_svg, winslash = "/", mustWork = TRUE)
     }
   ),
 
@@ -743,19 +883,22 @@ Protocol <- R6::R6Class(
     #'   and has a valid name, \code{FALSE} otherwise.
     ..has_tool_role = function(role) {
       out <- tryCatch(
-        self$access_nested(field = "tools", role = role, member = "get_name"),
+        self$access_nested(
+          field = "tools",
+          role = role,
+          member = "get_name",
+          update_modified = FALSE
+        ),
         error = function(e) NULL
       )
       is.character(out) && length(out) == 1L && nzchar(out)
     },
-    
-    #' @description Collect unique indicator codes from included tools.
+
+    #' @description Collect unique indicator codes from included revised tools.
     #' @param tool_names Optional character vector of tool names to query.
-    #' @param prefer_revised Logical. When TRUE, prefer revised survey codes.
     #' @return Character vector of unique indicator codes.
     ..get_tool_indicator_codes = function(
-      tool_names = NULL,
-      prefer_revised = TRUE
+      tool_names = NULL
     ) {
       selected <- self$get_tool_names()
       if (!is.null(tool_names)) {
@@ -772,7 +915,7 @@ Protocol <- R6::R6Class(
             field = "tools",
             name = tn,
             member = "get_indicator_codes",
-            prefer_revised = prefer_revised
+            update_modified = FALSE
           ),
           error = function(e) character(0)
         )
@@ -835,12 +978,12 @@ Protocol <- R6::R6Class(
       # 2. Get primary objectives
       primary_codes <- as.character(
         tryCatch(
-        self$access_nested(
-          field = "framework",
-          member = "primary_objectives",
-          update_modified = FALSE
-        ),
-        error = function(e) NULL
+          self$access_nested(
+            field = "framework",
+            member = "primary_objectives",
+            update_modified = FALSE
+          ),
+          error = function(e) NULL
         )
       )
 
@@ -856,9 +999,9 @@ Protocol <- R6::R6Class(
           update_modified = FALSE
         ),
         error = function(e) NULL
-        )
-             
-        if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0L) {
+      )
+
+      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0L) {
         return(NULL)
       }
       if (

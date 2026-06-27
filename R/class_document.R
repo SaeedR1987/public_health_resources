@@ -9,7 +9,6 @@ Document <- R6::R6Class(
   "Document",
   inherit = Orchestrator,
   public = list(
-
     #' @field reference_doc_filename Optional template filename/path used to
     #'   initialize \code{document}.
     reference_doc_filename = NULL,
@@ -47,26 +46,15 @@ Document <- R6::R6Class(
       output_file = "document_report.docx",
       template_file = NULL,
       params = list(),
-      content = "",
       open = FALSE
     ) {
       phr_try(
         {
           # Resolve template path
           if (is.null(template_file)) {
-            template_file <- system.file(
-              "resources",
-              "quarto_doc_template.qmd",
-              package = "phr"
-            )
+            template_file <- private$..default_word_template_path()
           }
-          if (!nzchar(template_file) || !file.exists(template_file)) {
-            template_file <- file.path(
-              "inst",
-              "resources",
-              "quarto_doc_template.qmd"
-            )
-          }
+
           if (!file.exists(template_file)) {
             phr_error(
               phr_txt("Quarto template file not found: {template_file}"),
@@ -74,55 +62,40 @@ Document <- R6::R6Class(
             )
           }
 
-          # Read template
-          template_text <- paste(readLines(template_file), collapse = "\n")
-
           # Default parameters
           default_params <- list(
             title = "Document Report",
             author = "Author",
-            date = format(Sys.Date(), "%Y-%m-%d"),
-            reference_doc = "null",
-            toc = "false",
-            toc_depth = "2",
-            number_sections = "false",
-            content = ""
+            date = format(Sys.Date(), "%Y-%m-%d")
           )
 
           # Merge with provided params
-          all_params <- modifyList(default_params, params)
-          all_params$content <- content
+          all_params <- modifyList(default_params, self$get_quarto_params())
+          all_params <- modifyList(all_params, params)
 
-          # Substitute parameters in template
-          for (param_name in names(all_params)) {
-            pattern <- paste0("\\{\\{", param_name, "\\}\\}")
-            replacement <- as.character(all_params[[param_name]])
-            template_text <- gsub(
-              pattern,
-              replacement,
-              template_text,
-              fixed = FALSE
-            )
-          }
-
-          # Write temporary qmd file
-          temp_qmd <- tempfile(fileext = ".qmd")
-          writeLines(template_text, temp_qmd)
+          # Keep only params declared in YAML
+          declared_params <- names(
+            rmarkdown::yaml_front_matter(template_file)$params
+          )
+          all_params <- all_params[names(all_params) %in% declared_params]
 
           # Render with quarto
           quarto::quarto_render(
-            input = temp_qmd,
+            input = template_file,
             output_file = basename(output_file),
-            output_format = "docx"
+            output_format = "docx",
+            execute_params = all_params
           )
 
           # Move to desired location if needed
           rendered_file <- file.path(
-            dirname(temp_qmd),
+            dirname(template_file),
             basename(output_file)
           )
-          if (normalizePath(rendered_file, mustWork = FALSE) !=
-            normalizePath(output_file, mustWork = FALSE)) {
+          if (
+            normalizePath(rendered_file, mustWork = FALSE) !=
+              normalizePath(output_file, mustWork = FALSE)
+          ) {
             file.copy(rendered_file, output_file, overwrite = TRUE)
           }
 
@@ -228,8 +201,10 @@ Document <- R6::R6Class(
             dirname(temp_qmd),
             basename(output_file)
           )
-          if (normalizePath(rendered_file, mustWork = FALSE) !=
-            normalizePath(output_file, mustWork = FALSE)) {
+          if (
+            normalizePath(rendered_file, mustWork = FALSE) !=
+              normalizePath(output_file, mustWork = FALSE)
+          ) {
             file.copy(rendered_file, output_file, overwrite = TRUE)
           }
 
@@ -244,20 +219,47 @@ Document <- R6::R6Class(
         origin = "Document$generate_quarto_ppt"
       )
       invisible(self)
+    },
+    get_quarto_params = function() {
+      list()
     }
-  )
   ),
-
   active = list(
     #' @description
     #' Active binding that returns the R version string.
     #' @return Character string of the R version.
     .r_version = function(value) {
       version$version.string
-    },
+    }
   ),
 
   private = list(
+    #' @description
+    #' Resolve the default Quarto Word template path.
+    #'
+    #' @return Character scalar giving the resolved path to the default Word
+    #'   Quarto template.
+    #'
+    #' @keywords internal
+    ..default_word_template_path = function() {
+      template_file <- "quarto_doc_revised_template.qmd"
+
+      template_path <- system.file(
+        "resources",
+        template_file,
+        package = "phr"
+      )
+
+      if (!nzchar(template_path) || !file.exists(template_path)) {
+        template_path <- file.path(
+          "inst",
+          "resources",
+          template_file
+        )
+      }
+
+      template_path
+    },
     #' @description Return default template filename candidates.
     #' @return Character vector of template filenames.
     ..default_template_filenames = function() {
@@ -268,6 +270,6 @@ Document <- R6::R6Class(
     #' @return Character vector of template filenames.
     ..default_ppt_template_filenames = function() {
       c("protocol_report_template.pptx")
-    }    
+    }
   )
 )

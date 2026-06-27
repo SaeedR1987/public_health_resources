@@ -14,11 +14,11 @@
   "General_HH_Sample_Size",
   "ind_indicator",
   "Ind_HH_Sample_Size",
-  "mort_indicator",
-  "Mort_HH_Sample_Size",
+  "rate_indicator",
+  "Rate_HH_Sample_Size",
   "Ind_Sample_Size",
-  "Mort_Ind_Sample_Size",
-  "Mort_PT_Sample_Size",
+  "Rate_Ind_Sample_Size",
+  "Rate_PT_Sample_Size",
   "Final_HH_Sample_Size"
 )
 

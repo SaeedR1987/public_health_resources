@@ -1,3 +1,78 @@
+#' SurveyProtocol R6 Class
+#'
+#' @description
+#' Protocol subclass for survey-based assessments. `SurveyProtocol` extends
+#' `Protocol` with sampling-frame management, sample-table synchronization,
+#' survey sampling metadata, sample-size summaries, and Quarto parameters used
+#' in survey Terms of Reference and reporting workflows.
+#'
+#' @details
+#' `SurveyProtocol` maintains a nested `Sample` object and a nested
+#' `SamplingFrame` object. It synchronizes key sampling outputs into public
+#' fields, including strata names, sampling methods, sampling-frame population
+#' summaries, and drawn samples. It also extends coherence checks to compare
+#' strata defined in the sample table against strata available in the sampling
+#' frame.
+#'
+#' The class is intended as a reusable base for survey protocol subclasses,
+#' including IPHRA-style survey protocols with additional report tables,
+#' active bindings, and tool-specific outputs.
+#'
+#' @section Inheritance:
+#' Inherits from [`Protocol`], which itself inherits document generation,
+#' framework, tool, metadata, and Quarto parameter functionality.
+#'
+#' @section Public fields:
+#' \describe{
+#'   \item{sample_object}{A `Sample` object storing sample table and sample-size workflows.}
+#'   \item{sample_table}{Data frame mirror of `sample_object$sample_table`.}
+#'   \item{strata_names}{Character vector of strata names synced from the sample object.}
+#'   \item{sampling_methods}{Character vector of unique sampling methods.}
+#'   \item{sampling_frame}{A `SamplingFrame` object storing and validating frame data.}
+#'   \item{sampling_frame_strata_names}{Character vector of strata in the sampling frame.}
+#'   \item{sampling_frame_strata_population}{Data frame of stratum-level population totals.}
+#'   \item{drawn_sample}{Data frame of selected PSUs.}
+#'   \item{drawn_sample_full}{Full sampling frame with sampling outputs.}
+#'   \item{drawn_sample_from_frame}{Data-table-style sampled rows from the nested sample object.}
+#' }
+#'
+#' @section Key methods:
+#' \describe{
+#'   \item{`initialize()`}{Create a new survey protocol.}
+#'   \item{`set_sampling_frame()`}{Validate and store a sampling frame.}
+#'   \item{`validate_strata_table()`}{Validate the nested sample table.}
+#'   \item{`get_sample_table()`}{Return the sample table from the nested `Sample` object.}
+#'   \item{`get_sampling_methods()`}{Return unique sampling methods.}
+#'   \item{`get_strata_names()`}{Return stratum names from the sample table.}
+#'   \item{`get_frame_column()`}{Extract a column from the sampling frame.}
+#'   \item{`diagnose_coherence()`}{Run protocol coherence checks plus strata consistency checks.}
+#'   \item{`post_sync_state()`}{Synchronize sampling and sampling-frame state after nested updates.}
+#'   \item{`get_quarto_params()`}{Return survey-specific parameters for Quarto rendering.}
+#' }
+#'
+#' @section Active bindings:
+#' The class provides read-only active bindings for survey-type flags,
+#' sampling-method flags, population summaries, sample-size summaries,
+#' sample-size tables, fieldwork planning values, and formatted strata names.
+#' These bindings are primarily used to populate Quarto parameters.
+#'
+#' @examples
+#' \dontrun{
+#' protocol <- SurveyProtocol$new(
+#'   assessment_title = "Example Survey",
+#'   country_name = "Example Country",
+#'   month_year = "January 2027",
+#'   framework_type = "ana"
+#' )
+#'
+#' protocol$set_sampling_frame(frame_df)
+#' protocol$get_strata_names()
+#' protocol$get_sampling_methods()
+#' protocol$diagnose_coherence()
+#' }
+#'
+#' @importFrom R6 R6Class
+#' @export
 SurveyProtocol <- R6::R6Class(
   "SurveyProtocol",
   inherit = Protocol,
@@ -320,13 +395,112 @@ SurveyProtocol <- R6::R6Class(
       private$..sync_sampling_state()
       private$..sync_sample_frame_state()
       invisible(NULL)
+    },
+    get_quarto_params = function() {
+      params <- super$get_quarto_params()
+
+      c(
+        params,
+        list(
+          rate_survey = self$.rate_survey,
+          individual_survey = self$.individual_survey,
+          general_survey = self$.general_survey,
+          ind_indicator = self$.ind_indicator,
+          rate_indicator = self$.rate_indicator,
+          site_selection_srs = self$.site_selection_srs,
+          site_selection_systematic = self$.site_selection_systematic,
+          site_selection_exhaustive = self$.site_selection_exhaustive,
+          site_selection_cluster = self$.site_selection_cluster,
+          site_selection_purposive = self$.site_selection_purposive,
+          hh_selection_srs = self$.hh_selection_srs,
+          hh_selection_systematic = self$.hh_selection_systematic,
+          hh_selection_rlc = self$.hh_selection_rlc,
+          multiple_methods = self$.multiple_methods,
+          multiple_strata = self$.multiple_strata,
+          fpc = self$.fpc,
+          total_population_size = self$.total_population_size,
+          total_population_size_included = self$.total_population_size_included,
+          total_population_size_excluded = self$.total_population_size_excluded,
+          total_population_per_strata_included = self$.total_population_per_strata_included,
+          num_geographic_units = self$.num_geographic_units,
+          num_strata_units = self$.num_strata_units,
+          num_other_units = self$.num_other_units,
+          stratified_strata_names_srs_srs = self$.stratified_strata_names_srs_srs,
+          stratified_strata_names_srs_systematic = self$.stratified_strata_names_srs_systematic,
+          stratified_strata_names_srs_rlc = self$.stratified_strata_names_srs_rlc,
+          stratified_strata_names_systematic_srs = self$.stratified_strata_names_systematic_srs,
+          stratified_strata_names_systematic_systematic = self$.stratified_strata_names_systematic_systematic,
+          stratified_strata_names_systematic_rlc = self$.stratified_strata_names_systematic_rlc,
+          stratified_strata_names_proportional_srs = self$.stratified_strata_names_proportional_srs,
+          stratified_strata_names_proportional_systematic = self$.stratified_strata_names_proportional_systematic,
+          stratified_strata_names_proportional_rlc = self$.stratified_strata_names_proportional_rlc,
+          stratified_strata_names_cluster_srs = self$.stratified_strata_names_cluster_srs,
+          stratified_strata_names_cluster_systematic = self$.stratified_strata_names_cluster_systematic,
+          stratified_strata_names_cluster_rlc = self$.stratified_strata_names_cluster_rlc,
+          stratified_strata_names_purposive_srs = self$.stratified_strata_names_purposive_srs,
+          stratified_strata_names_purposive_systematic = self$.stratified_strata_names_purposive_systematic,
+          stratified_strata_names_purposive_rlc = self$.stratified_strata_names_purposive_rlc,
+          sample_size_general_households = self$.sample_size_general_households,
+          sample_size_ind_persons = self$.sample_size_ind_persons,
+          sample_size_ind_hh = self$.sample_size_ind_hh,
+          sample_size_rate_persons = self$.sample_size_rate_persons,
+          sample_size_rate_persontime = self$.sample_size_rate_persontime,
+          sample_size_rate_hh = self$.sample_size_rate_hh,
+          sample_size_hh_final = self$.sample_size_hh_final,
+          sample_size_general_table_df = self$.sample_size_general_table_df,
+          sample_size_ind_table_df = self$.sample_size_ind_table_df,
+          sample_size_rate_table_df = self$.sample_size_rate_table_df,
+          n_sites = self$.n_sites,
+          cluster_size = self$.cluster_size,
+          num_enumerators_per_team = self$.num_enumerators_per_team,
+          num_days_data_collection = self$.num_days_data_collection,
+          strata_names = self$.strata_names
+        )
+      )
     }
   ),
 
   active = list(
-    .rate_survey = function(value) {},
-    .individual_survey = function(value) {},
-    .general_survey = function(value) {},
+    .rate_survey = function(value) {
+      st <- private$..sample_table_from_nested()
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      if (
+        !is.null(st) &&
+          "rate_indicator" %in% names(st) &&
+          any(!is.na(st$rate_indicator))
+      ) {
+        return(TRUE)
+      }
+      return(FALSE)
+    },
+    .individual_survey = function(value) {
+      st <- private$..sample_table_from_nested()
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      if (
+        !is.null(st) &&
+          "ind_indicator" %in% names(st) &&
+          any(!is.na(st$ind_indicator))
+      ) {
+        return(TRUE)
+      }
+      return(FALSE)
+    },
+    .general_survey = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      return(
+        !self$.rate_survey &&
+          !self$.individual_survey
+      )
+    },
     .ind_indicator = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
@@ -347,10 +521,10 @@ SurveyProtocol <- R6::R6Class(
         return(invisible(FALSE))
       }
       st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"mort_indicator" %in% names(st)) {
+      if (!is.data.frame(st) || !"rate_indicator" %in% names(st)) {
         return(NULL)
       }
-      vals <- as.character(st$mort_indicator)
+      vals <- as.character(st$rate_indicator)
       vals <- vals[!is.na(vals) & nzchar(vals)]
       if (length(vals) == 0L) {
         return(NULL)
@@ -573,7 +747,6 @@ SurveyProtocol <- R6::R6Class(
     #   pps_cluster           -> site=cluster, hh=srs
     #   pps_rlc               -> site=cluster, hh=rlc
     #   purposive             -> site=purposive, hh=srs (default)
-    .stratification = function(value) {},
 
     .stratified_strata_names_srs_srs = function(value) {
       if (!missing(value)) {
@@ -701,30 +874,30 @@ SurveyProtocol <- R6::R6Class(
         return(invisible(FALSE))
       }
       st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"Mort_Ind_Sample_Size" %in% names(st)) {
+      if (!is.data.frame(st) || !"Rate_Ind_Sample_Size" %in% names(st)) {
         return(NULL)
       }
-      sum(as.numeric(st$Mort_Ind_Sample_Size), na.rm = TRUE)
+      sum(as.numeric(st$Rate_Ind_Sample_Size), na.rm = TRUE)
     },
     .sample_size_rate_persontime = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"Mort_PT_Sample_Size" %in% names(st)) {
+      if (!is.data.frame(st) || !"Rate_PT_Sample_Size" %in% names(st)) {
         return(NULL)
       }
-      sum(as.numeric(st$Mort_PT_Sample_Size), na.rm = TRUE)
+      sum(as.numeric(st$Rate_PT_Sample_Size), na.rm = TRUE)
     },
     .sample_size_rate_hh = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"Mort_HH_Sample_Size" %in% names(st)) {
+      if (!is.data.frame(st) || !"Rate_HH_Sample_Size" %in% names(st)) {
         return(NULL)
       }
-      sum(as.numeric(st$Mort_HH_Sample_Size), na.rm = TRUE)
+      sum(as.numeric(st$Rate_HH_Sample_Size), na.rm = TRUE)
     },
     .sample_size_hh_final = function(value) {
       if (!missing(value)) {
@@ -736,9 +909,30 @@ SurveyProtocol <- R6::R6Class(
       }
       sum(as.numeric(st$Final_HH_Sample_Size), na.rm = TRUE)
     },
-    .sample_size_general_table_df = function(value) {},
-    .sample_size_ind_table_df = function(value) {},
-    .sample_size_rate_table_df = function(value) {},
+    .sample_size_general_table_df = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      table <- table_sample_size_general(st)
+      return(table)
+    },
+    .sample_size_ind_table_df = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      table <- table_sample_size_individual(st)
+      return(table)
+    },
+    .sample_size_rate_table_df = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      table <- table_sample_size_rate(st)
+      return(table)
+    },
     .n_sites = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
@@ -823,7 +1017,7 @@ SurveyProtocol <- R6::R6Class(
         return(NULL)
       }
       paste(vals, collapse = ", ")
-    },
+    }
   ),
 
   private = list(

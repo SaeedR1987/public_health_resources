@@ -27,25 +27,8 @@ params:
   population: "[Specify population(s) here]"
   stratification: "[Specify stratification, e.g. by geographic area, population group, etc.]"
   rationale: "[Specify rationale for this research]"
-  tools_table: data.frame(
-    tool = c(
-      "Household Tool",
-      "Community KII",
-      "Community Observation",
-      "Health Facility KII",
-      "Health Facility Observation",
-      "Nutrition Facility KII",
-      "FSL Provider KII",
-      "Market KII",
-      "Crops/Livestock Observation",
-      "WASH Provider KII",
-      "Water Point Observation",
-      "Latrine Observation"
-    ),
-    sampling_method = c(rep("", 12)),
-    sample_size = c(rep("", 12)),
-    stringsAsFactors = FALSE
-  )
+  tools_table_df: 
+    value: []
   date_pilot_training: "2027-04-15"
   date_data_collection_start: "2027-04-20"
   date_data_collection_end: "2027-05-10"
@@ -55,7 +38,7 @@ params:
   date_outputs_validation: "2027-05-30"
   date_outputs_publication: "2027-06-01"
   date_final_presentation: "2027-06-05"
-  audience_type_cluster: "Cluster(s)
+  audience_type_cluster: "Cluster(s)"
   expected_output_cluster: "Preliminary Presentation, Brief, Technical Report"
   expected_output_donor: "Bilateral Presentation, Brief"
   expected_output_operational_actor: "Factsheet, Technical Report"
@@ -72,66 +55,8 @@ params:
   visibility_donor: "Public"
   visibility_operational_actor: "Public"
   visibility_other: "Not applicable"
-  objectives_research_questions_df: data.frame(
-    pillar = c(
-      "Population Mortality",
-      "Nutritional Status",
-      "Health Needs",
-      "Food Consumption", "Food Consumption",
-      "Water Consumption", "Water Consumption",
-      "Exposure to Disease", "Exposure to Disease",
-      "Household Food Security", "Household Food Security", "Household Food Security", "Household Food Security", "Household Food Security",
-      "Household Water Security", "Household Water Security", "Household Water Security", "Household Water Security", "Household Water Security",
-      "HH Income and Coping", "HH Income and Coping", "HH Income and Coping",
-      "Living Conditions", "Living Conditions", "Living Conditions",
-      "Livelihoods", "Livelihoods",
-      "Markets", "Markets", "Markets",
-      "WASH Services", "WASH Services", "WASH Services", "WASH Services",
-      "Nutrition Services", "Nutrition Services", "Nutrition Services", "Nutrition Services", "Nutrition Services",
-      "Health Services", "Health Services", "Health Services", "Health Services", "Health Services",
-      "Natural and built environment", "Natural and built environment", "Natural and built environment"
-    ),
-    sub_pillar = c(
-      "Not applicable", "Not applicable", "Not applicable",
-      "Quantity", "Quality",
-      "Quantity", "Quality",
-      "Reproductive Numbers", "Hygiene",
-      "HH Food Consumption", "Availability", "Accessibility", "Utilization", "Stability",
-      "HH Water Consumption", "Availability", "Accessibility", "Utilization", "Stability",
-      "Income", "Coping Capacity", "Assets",
-      "Protection from Elements", "Protection from Vectors", "Crowdedness",
-      "Availability", "Accessibility",
-      "Availability", "Accessibility", "Functionality",
-      "Availability", "Accessibility", "Quality", "Utilization",
-      "Coverage", "Availability", "Accessibility", "Quality", "Utilization",
-      "Coverage", "Availability", "Accessibility", "Quality", "Utilization",
-      "Sanitation Coverage", "Sanitation Functionality", "Sanitation Accessibility"
-    ),
-    include_subpillar = TRUE,
-    subpillar_order = 1:47,
-    include_pillar = c(
-      rep(TRUE, 27),
-      rep(FALSE, 3),
-      rep(TRUE, 17)
-    ),
-    pillar_order = c(
-      1, 2, 3,
-      rep(4, 2),
-      rep(5, 2),
-      rep(6, 2),
-      rep(7, 5),
-      rep(8, 5),
-      rep(9, 3),
-      rep(10, 3),
-      rep(11, 2),
-      rep(12, 3),
-      rep(13, 4),
-      rep(14, 5),
-      rep(15, 5),
-      rep(16, 3)
-    ),
-    stringsAsFactors = FALSE
-    )
+  objectives_research_questions_df: 
+    value: []
   site_selection_srs: TRUE
   site_selection_systematic: FALSE
   site_selection_purposive: FALSE
@@ -162,16 +87,8 @@ params:
   total_population_size_included: 8000
   total_population_size_excluded: 2000
   total_population_per_strata_included: "stratum 1: 4000, stratum 2: 4000"
-  secondary_data_sources_df: data.frame(
-    objective = c("Objective", c(
-      "Estimate crude mortality rate",
-      "Estimate prevalence of acute malnutrition",
-      "Assess access to essential health services"
-    )),
-    source = c("Source", rep("", 3)),
-    purpose = c("Purpose", rep("", 3)),
-    stringsAsFactors = FALSE
-    )
+  secondary_data_sources_df: 
+    value: []
   anf_framework_path: "ana_framework.svg"
   ind_muac_children: TRUE
   ind_muac_women: TRUE
@@ -187,33 +104,8 @@ params:
   ind_fewsnet_fc: TRUE
   ind_hwise: TRUE
   ind_lppd: TRUE
-  household_pillars_table_df: data.frame(
-    Pillar = c(
-      "Health", "Health",
-      "Nutrition", "Nutrition", "Nutrition",
-      "WASH", "WASH",
-      "Food Security and Livelihoods", "Food Security and Livelihoods"
-    ),
-    `Sub-Pillar` = c(
-      "Health service access", "Morbidity",
-      "Child nutrition", "Child nutrition", "Food insecurity",
-      "Water access", "Sanitation",
-      "Food consumption", "Livelihoods"
-    ),
-    Indicator = c(
-      "Household access to functional health services",
-      "Reported illness among household members",
-      "Global Acute Malnutrition (GAM) by MUAC among children 6-59 months",
-      "Measles vaccination coverage among children 9-59 months",
-      "Early Childhood Food Insecurity Experience Scale (ECFIES)",
-      "Main source of drinking water",
-      "Household access to improved sanitation facilities",
-      "Household Food Consumption Score",
-      "Primary household income source"
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
+  household_pillars_table_df: 
+    value: []
   general_survey: TRUE
   individual_survey: TRUE
   rate_survey: TRUE
@@ -226,160 +118,17 @@ params:
   sample_size_rate_persontime: 400
   sample_size_rate_hh: 400
   sample_size_final_households: 400
-  sample_size_general_table_df: data.frame(
-    Parameter = c(
-      "Indicator Name",
-      "Sampling Design",
-      "Estimated Prevalence (%)",
-      "Desired Precision",
-      "Estimated population size",
-      "Design Effect",
-      "Finite Population Correction (FPC) used?",
-      "Non-Response Rate",
-      "Households to be Included"
-    ),
-    `Urban North` = c(
-      "General", "Systematic", "50%", "10%", "45,000",
-      "1.5", "No", "10%", "107"
-    ),
-    `Peri-Urban East` = c(
-      "General", "Proportional", "50%", "5%", "28,000",
-      "1.8", "No", "10%", "427"
-    ),
-    `Rural South` = c(
-      "General", "Simple Random (RLC)", "50%", "7%", "17,000",
-      "2", "No", "10%", "475"
-    ),
-    Justification = rep("", 9),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
-  sample_size_ind_table_df: data.frame(
-    Parameter = c(
-      "Indicator Name",
-      "Sampling Design",
-      "Estimated Prevalence (%)",
-      "Desired Precision",
-      "Estimated population size",
-      "Design Effect",
-      "Finite Population Correction (FPC) used?",
-      "Individuals to be Included",
-      "Average Household Size",
-      "% sub-population",
-      "Non-Response Rate",
-      "Households to be Included"
-    ),
-    `Urban North` = c(
-      "wasting_prevalence",
-      "Systematic",
-      "15%",
-      "5%",
-      "45,000",
-      "1.5",
-      "No",
-      "1,090",
-      "5.2",
-      "20%",
-      "10%",
-      "210"
-    ),
-    `Peri-Urban East` = c(
-      "wasting_prevalence",
-      "Proportional",
-      "",
-      "",
-      "28,000",
-      "",
-      "No",
-      "",
-      "",
-      "",
-      "",
-      ""
-    ),
-    `Rural South` = c(
-      "wasting_prevalence",
-      "Simple Random (RLC)",
-      "",
-      "",
-      "17,000",
-      "",
-      "No",
-      "",
-      "",
-      "",
-      "",
-      ""
-    ),
-    Justification = rep("", 12),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
-  sample_size_rate_table_df: data.frame(
-    Parameter = c(
-      "Indicator Name",
-      "Sampling Design",
-      "Estimated death rate per 10,000/day",
-      "Desired Precision",
-      "Recall Period",
-      "Population size (overall)",
-      "Design Effect",
-      "Finite Population Correction (FPC) used?",
-      "Population to be Included",
-      "Person-Time to be Included",
-      "Average Household Size",
-      "% Non-Respondents",
-      "Households to be Included"
-    ),
-    `Urban North` = c(
-      "crude_death_rate", "Systematic", "0.5", "0.5", "",
-      "45,000", "2", "No", "854 people", "76,860 person days",
-      "5.2", "10%", "183 households"
-    ),
-    `Peri-Urban East` = c(
-      "crude_death_rate", "Proportional", "0.2", "0.5", "",
-      "28,000", "2", "No", "342 people", "30,780 person days",
-      "5.2", "10%", "74 households"
-    ),
-    `Rural South` = c(
-      "crude_death_rate", "Simple Random (RLC)", "", "", "",
-      "17,000", "", "No", "", "", "", "", ""
-    ),
-    Justification = rep("", 13),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
+  sample_size_general_table_df:
+    value: []
+  sample_size_ind_table_df: 
+    value: []
+  sample_size_rate_table_df:
+    value: []
   n_sites: 6
   cluster_size: 8
   num_enumerators_per_team: 3
-  kii_pillars_table_df: data.frame(
-    Tool = c(
-      "Community Leader and Community Member KII",
-      "Health Facility KII",
-      "Nutrition Facility KII",
-      "Market Vendor KII",
-      "WASH Provider KII",
-      "FSL Assistance Provider KII"
-    ),
-    Pillar = c(
-      "Community Priorities",
-      "Health",
-      "Nutrition",
-      "Food Security and Livelihoods",
-      "WASH",
-      "Food Security and Livelihoods"
-    ),
-    `Sub-Pillar` = c(
-      "Community needs and priorities",
-      "Health service availability",
-      "Nutrition service availability",
-      "Market functionality",
-      "Water and sanitation services",
-      "Assistance availability"
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
+  kii_pillars_table_df: 
+    value: []
   tool_household: TRUE
   tool_community_kii: TRUE
   tool_community_observation: TRUE
@@ -392,537 +141,32 @@ params:
   tool_wash_provider_kii: TRUE
   tool_water_point_observation: TRUE
   tool_latrine_observation: TRUE
-  observation_pillars_table_df: data.frame(
-    Tool = c(
-      "Community Observation Tool",
-      "Water Point Observation Tool",
-      "Latrine Observation Tool",
-      "Health Facility Observation Tool",
-      "Crops and Livestock Tool"
-    ),
-    Pillar = c(
-      "Multi-Sector",
-      "WASH",
-      "WASH",
-      "Health",
-      "Food Security and Livelihoods"
-    ),
-    `Sub-Pillar` = c(
-      "Community conditions and infrastructure",
-      "Water access and functionality",
-      "Sanitation facilities and hygiene",
-      "Health service availability and functionality",
-      "Agricultural production and livestock conditions"
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
-  household_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the sex and age distribution of the assessed population?", 7)
-    ),
-    `Indicator Code` = c(
-      rep("A.1.1", 3),
-      rep("A.1.2", 4)
-    ),
-    `Indicator / Variable` = c(
-      rep("Demographics", 3),
-      rep("Ages", 4)
-    ),
-    Disaggregation = c(
-      rep("Sex, Age", 3),
-      rep("Sex, Disability", 4)
-    ),
-    `Questionnaire Question` = c(
-      "How many people are in your household?",
-      "What is the sex of the individual?",
-      "What is the age of the individual?",
-      "Do you know the day, month, and year **date of birth** of the individual?",
-      "What is the **date of birth** for the individual?",
-      "If not exact date, can you estimate the **month-year of birth** for the individual?",
-      "What is the approximate height of the child?"
-    ),
-    `Questionnaire Responses` = c(
-      "Enter number",
-      "Male\nFemale",
-      "Enter number",
-      "Yes\nNo\nDon’t know",
-      "Date (DD/MM/YYYY)",
-      "Date (MM/YYYY)",
-      "< 65cm\n65 - less than 87cm\n87 - 110cm\n> 110cm"
-    ),
-    `Data Collection Level` = c(
-      "HH",
-      "Individual",
-      "Individual",
-      "Individual",
-      "Individual",
-      "Individual",
-      "Individual"
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
-  community_kii_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What are the priority humanitarian needs and concerns identified by community members and leaders?", 4),
-      rep("(Core) What factors are affecting access to basic services and assistance?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("B.1.1", 4),
-      rep("B.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Priority Needs", 4),
-      rep("Access Constraints", 3)
-    ),
-    Disaggregation = c(
-      rep("Sex, Age, Disability", 4),
-      rep("Sex, Age, Disability", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What are the three most important problems currently facing community members?",
-      "Which population groups are most affected by these problems?",
-      "Have priority needs changed during the last six months?",
-      "What are the reasons for these changes?",
-      "What are the main barriers preventing people from accessing services?",
-      "Which groups face the greatest barriers to accessing services?",
-      "What actions could improve access to services and assistance?"
-    ),
-    `Questionnaire Responses` = c(
-      "Open-ended",
-      "Open-ended",
-      "Yes\nNo\nDon't know",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended"
-    ),
-    `Data Collection Level` = c(
-      rep("Community", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-    )
-  community_observation_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What are the observable community-level conditions, infrastructure constraints, and environmental risks in assessed locations?", 4),
-      rep("(Core) What visible factors may affect access to basic services and assistance?", 3)
-    ),
-    `Data Collection Method` = c(
-      rep("Community Observation Tool", 7)
-    ),
-    `Indicator Code` = c(
-      rep("C.1.1", 4),
-      rep("C.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Community Conditions", 4),
-      rep("Service Access Constraints", 3)
-    ),
-    Disaggregation = c(
-      rep("Site type, Location", 4),
-      rep("Site type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What is the general condition of community infrastructure observed during the transect walk?",
-      "Are there visible signs of overcrowding or settlement expansion?",
-      "Are there visible environmental or public health risks in the community?",
-      "Are roads, paths, or access routes visibly usable by the population?",
-      "Are key services visibly accessible from the community?",
-      "Are there visible barriers affecting access to services or assistance points?",
-      "Are there visible signs that some areas or groups may be underserved?"
-    ),
-    `Questionnaire Responses` = c(
-      "Good\nFair\nPoor\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed"
-    ),
-    `Data Collection Level` = c(
-      rep("Community/Site", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  health_facility_kii_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the availability and functionality of health services in assessed locations?", 4),
-      rep("(Core) What barriers affect community access to health services?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("D.1.1", 4),
-      rep("D.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Health Service Availability", 4),
-      rep("Health Service Access Barriers", 3)
-    ),
-    Disaggregation = c(
-      rep("Facility type, Location", 4),
-      rep("Facility type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What types of health services are currently available at this facility?",
-      "Is the facility currently functioning and providing services on a regular schedule?",
-      "Are essential medicines, supplies, or equipment currently available?",
-      "Has the facility experienced service interruptions in the past 30 days?",
-      "What are the main barriers preventing people from accessing health services?",
-      "Which population groups face the greatest barriers to accessing health services?",
-      "What support is needed to improve access to or quality of health services?"
-    ),
-    `Questionnaire Responses` = c(
-      "Open-ended",
-      "Yes\nPartially\nNo\nDon't know",
-      "Yes\nPartially\nNo\nDon't know",
-      "Yes\nNo\nDon't know",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended"
-    ),
-    `Data Collection Level` = c(
-      rep("Health Facility", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  health_facility_observation_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the observed functionality and condition of health facilities in assessed locations?", 4),
-      rep("(Core) What observable factors may affect safe and equitable access to health services?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("D.2.1", 4),
-      rep("D.2.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Observed Facility Functionality", 4),
-      rep("Observed Access and Safety Conditions", 3)
-    ),
-    Disaggregation = c(
-      rep("Facility type, Location", 4),
-      rep("Facility type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "Is the health facility visibly open and functioning at the time of observation?",
-      "Is there visible evidence that outpatient consultation services are available?",
-      "Are waiting areas, consultation spaces, or patient flow areas visibly functional and usable?",
-      "Are essential infection prevention and control measures visibly present?",
-      "Are access routes to the facility visibly usable by the population?",
-      "Are there visible barriers for persons with disabilities, older persons, or persons with limited mobility?",
-      "Are there visible safety, crowding, or environmental concerns around the facility?"
-    ),
-    `Questionnaire Responses` = c(
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed"
-    ),
-    `Data Collection Level` = c(
-      rep("Health Facility", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  nutrition_facility_kii_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the availability and functionality of nutrition services in assessed locations?", 4),
-      rep("(Core) What barriers affect access to nutrition screening, referral, and treatment services?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("E.1.1", 4),
-      rep("E.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Nutrition Service Availability", 4),
-      rep("Nutrition Service Access Barriers", 3)
-    ),
-    Disaggregation = c(
-      rep("Facility type, Location", 4),
-      rep("Facility type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What nutrition services are currently available at this facility?",
-      "Is the facility currently providing nutrition screening services on a regular schedule?",
-      "Are treatment or referral services available for children identified with acute malnutrition?",
-      "Has the facility experienced interruptions in nutrition services during the past 30 days?",
-      "What are the main barriers preventing caregivers or children from accessing nutrition services?",
-      "Which population groups face the greatest barriers to accessing nutrition services?",
-      "What support is needed to improve access to or quality of nutrition services?"
-    ),
-    `Questionnaire Responses` = c(
-      "Open-ended",
-      "Yes\nPartially\nNo\nDon't know",
-      "Yes\nPartially\nNo\nDon't know",
-      "Yes\nNo\nDon't know",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended"
-    ),
-    `Data Collection Level` = c(
-      rep("Nutrition Facility", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  fsl_provider_kii_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What food security and livelihoods assistance is available in assessed locations?", 4),
-      rep("(Core) What barriers affect access to food security and livelihoods assistance?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("F.1.1", 4),
-      rep("F.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("FSL Assistance Availability", 4),
-      rep("FSL Assistance Access Barriers", 3)
-    ),
-    Disaggregation = c(
-      rep("Provider type, Location", 4),
-      rep("Provider type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What food security or livelihoods assistance is currently being provided in this area?",
-      "Which population groups are eligible to receive this assistance?",
-      "How frequently is assistance provided to targeted households or individuals?",
-      "Has assistance delivery been interrupted during the past 30 days?",
-      "What are the main barriers preventing households from accessing FSL assistance?",
-      "Which population groups face the greatest barriers to accessing FSL assistance?",
-      "What support is needed to improve access to or coverage of FSL assistance?"
-    ),
-    `Questionnaire Responses` = c(
-      "Open-ended",
-      "Open-ended",
-      "Daily\nWeekly\nMonthly\nIrregularly\nOther\nDon't know",
-      "Yes\nNo\nDon't know",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended"
-    ),
-    `Data Collection Level` = c(
-      rep("Community/Site", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  market_kii_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the availability and functionality of markets in assessed locations?", 4),
-      rep("(Core) What barriers affect household access to markets and essential goods?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("G.1.1", 4),
-      rep("G.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Market Availability and Functionality", 4),
-      rep("Market Access Barriers", 3)
-    ),
-    Disaggregation = c(
-      rep("Market type, Location", 4),
-      rep("Market type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What essential food and non-food items are currently available in the market?",
-      "Have there been shortages of essential items during the past 30 days?",
-      "Have prices of essential food or non-food items changed during the past 30 days?",
-      "Are traders currently able to restock essential goods regularly?",
-      "What are the main barriers preventing households from accessing markets?",
-      "Which population groups face the greatest barriers to accessing markets?",
-      "What support is needed to improve market access or market functionality?"
-    ),
-    `Questionnaire Responses` = c(
-      "Open-ended",
-      "Yes\nNo\nDon't know",
-      "Increased\nDecreased\nNo change\nDon't know",
-      "Yes\nPartially\nNo\nDon't know",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended"
-    ),
-    `Data Collection Level` = c(
-      rep("Market", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  crop_livestock_observation_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the observed condition of crops, livestock, and agricultural livelihoods in assessed locations?", 4),
-      rep("(Core) What observable factors may affect agricultural production and livestock health?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("F.2.1", 4),
-      rep("F.2.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Observed Agricultural and Livestock Conditions", 4),
-      rep("Observed Agricultural Constraints", 3)
-    ),
-    Disaggregation = c(
-      rep("Location, Livelihood zone", 4),
-      rep("Location, Livelihood zone", 3)
-    ),
-    `Questionnaire Question` = c(
-      "Are cultivated fields, gardens, or crop production areas visibly present in or around the assessed location?",
-      "What is the observed condition of crops or cultivated areas?",
-      "Are livestock visibly present in or around the assessed location?",
-      "What is the observed condition of livestock?",
-      "Are there visible signs of crop damage, failed harvest, pests, disease, flooding, or drought?",
-      "Are there visible signs of livestock disease, poor body condition, lack of pasture, or lack of water access?",
-      "Are there visible constraints affecting agricultural or livestock production?"
-    ),
-    `Questionnaire Responses` = c(
-      "Yes\nNo\nNot observed",
-      "Good\nFair\nPoor\nSeverely damaged\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Good\nFair\nPoor\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed"
-    ),
-    `Data Collection Level` = c(
-      rep("Community/Site", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  wash_provider_kii_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What WASH services are available and functional in assessed locations?", 4),
-      rep("(Core) What barriers affect household access to safe water, sanitation, and hygiene services?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("H.1.1", 4),
-      rep("H.1.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("WASH Service Availability and Functionality", 4),
-      rep("WASH Service Access Barriers", 3)
-    ),
-    Disaggregation = c(
-      rep("Provider type, Location", 4),
-      rep("Provider type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "What water, sanitation, or hygiene services are currently provided in this area?",
-      "Are water supply services currently functional and available on a regular basis?",
-      "Are sanitation or desludging services currently available in the area?",
-      "Have WASH services experienced interruptions during the past 30 days?",
-      "What are the main barriers preventing households from accessing safe water, sanitation, or hygiene services?",
-      "Which population groups face the greatest barriers to accessing WASH services?",
-      "What support is needed to improve access to or quality of WASH services?"
-    ),
-    `Questionnaire Responses` = c(
-      "Open-ended",
-      "Yes\nPartially\nNo\nDon't know",
-      "Yes\nPartially\nNo\nDon't know",
-      "Yes\nNo\nDon't know",
-      "Open-ended",
-      "Open-ended",
-      "Open-ended"
-    ),
-    `Data Collection Level` = c(
-      rep("Community/Site", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  water_point_observation_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the observed availability, functionality, and condition of water points in assessed locations?", 4),
-      rep("(Core) What observable factors may affect safe and equitable access to water?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("H.2.1", 4),
-      rep("H.2.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Observed Water Point Functionality", 4),
-      rep("Observed Water Access and Safety Conditions", 3)
-    ),
-    Disaggregation = c(
-      rep("Water point type, Location", 4),
-      rep("Water point type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "Is the water point visibly functional at the time of observation?",
-      "What type of water point is observed?",
-      "Is water visibly available at the water point at the time of observation?",
-      "Is there visible evidence of damage, leakage, contamination, or poor drainage around the water point?",
-      "Is the water point visibly accessible to community members?",
-      "Are there visible barriers for persons with disabilities, older persons, or persons with limited mobility?",
-      "Are there visible safety, crowding, or protection concerns around the water point?"
-    ),
-    `Questionnaire Responses` = c(
-      "Yes\nPartially\nNo\nNot observed",
-      "Piped tap\nHandpump\nProtected well\nUnprotected well\nWater truck/tank\nSurface water\nOther\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed"
-    ),
-    `Data Collection Level` = c(
-      rep("Water Point", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  latrine_observation_dap_df: data.frame(
-    `Research Question` = c(
-      rep("(Core) What is the observed availability, functionality, and condition of latrines in assessed locations?", 4),
-      rep("(Core) What observable factors may affect safe, dignified, and equitable access to sanitation facilities?", 3)
-    ),
-    `Indicator Code` = c(
-      rep("H.3.1", 4),
-      rep("H.3.2", 3)
-    ),
-    `Indicator / Variable` = c(
-      rep("Observed Latrine Functionality", 4),
-      rep("Observed Sanitation Access and Safety Conditions", 3)
-    ),
-    Disaggregation = c(
-      rep("Latrine type, Location", 4),
-      rep("Latrine type, Location", 3)
-    ),
-    `Questionnaire Question` = c(
-      "Is the latrine visibly functional at the time of observation?",
-      "What type of latrine is observed?",
-      "Is the latrine visibly clean and usable?",
-      "Is there visible evidence of damage, blockage, overflow, or poor drainage around the latrine?",
-      "Is the latrine visibly accessible to community members?",
-      "Are there visible barriers for persons with disabilities, older persons, or persons with limited mobility?",
-      "Are there visible safety, privacy, lighting, or protection concerns around the latrine?"
-    ),
-    `Questionnaire Responses` = c(
-      "Yes\nPartially\nNo\nNot observed",
-      "Flush/pour-flush latrine\nPit latrine with slab\nPit latrine without slab\nComposting latrine\nOpen defecation area\nOther\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nPartially\nNo\nNot observed",
-      "Yes\nNo\nNot observed",
-      "Yes\nNo\nNot observed"
-    ),
-    `Data Collection Level` = c(
-      rep("Latrine/Sanitation Facility", 7)
-    ),
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-   )
-  
-  
-  
-
-
-
+  observation_pillars_table_df:
+    value: []
+  household_dap_df:
+    value: []
+  community_kii_dap_df:
+    value: []
+  community_observation_dap_df:
+    value: []
+  health_facility_kii_dap_df: 
+    value: []
+  health_facility_observation_dap_df: 
+    value: []
+  nutrition_facility_kii_dap_df: 
+    value: []
+  fsl_provider_kii_dap_df: 
+    value: []
+  market_kii_dap_df: 
+    value: []
+  crop_livestock_observation_dap_df: 
+    value: []
+  wash_provider_kii_dap_df: 
+    value: []
+  water_point_observation_dap_df: 
+    value: []
+  latrine_observation_dap_df: 
+    value: []
 
 ---
 
@@ -1927,14 +1171,7 @@ See below for how the ANF framework maps against the planned primary data collec
 
 cat(figure_caption("Acute Needs Framework (ANF) and Data Collection Mapping"))
 
-svg_path <- normalizePath(
-  params$anf_framework_path,
-  winslash = "/",
-  mustWork = TRUE
-)
-
-
-img <- magick::image_read_svg(svg_path)
+img <- magick::image_read_svg(params$anf_framework_path)
 
 img
 
@@ -2120,54 +1357,83 @@ cat(table_caption("General sample size calculation parameters"))
 
 tbl <- params$sample_size_general_table_df
 
-ft <- flextable::flextable(tbl)
+total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
+  reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) {
+    "#EE5859"
+  })
+  fp_col <- officer::fp_border(color = "black", width = 1)
+  fp_outer <- officer::fp_border(color = "black", width = 1.5)
+  strata_col_w <- 6.5 / (6 + n_strata)
+  param_col_w <- strata_col_w * 3
+  just_col_w <- strata_col_w * 3
 
-ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-ft <- flextable::fontsize(ft, size = 9, part = "all")
+  ft <- flextable::flextable(tbl)
+  ft <- flextable::fontsize(ft, size = 8, part = "all")
+  ft <- flextable::width(ft, j = 1L, width = param_col_w)
+  ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
+  ft <- flextable::width(ft, j = n_strata + 2L, width = just_col_w)
+  ft <- flextable::set_table_properties(ft, layout = "fixed")
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
+  ft <- flextable::color(ft, color = "white", part = "header")
+  ft <- flextable::bg(ft, bg = "white", part = "body")
+  if (length(total_row_idx) > 0L) {
+    ft <- flextable::bg(ft, i = total_row_idx, bg = "#D3D3D3", part = "body")
+  }
+  ft <- flextable::border_remove(ft)
+  ft <- flextable::vline(ft, border = fp_col, part = "body")
+  ft <- flextable::vline(ft, border = fp_col, part = "header")
+  ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
+  ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
-ft <- flextable::bold(ft, part = "header")
-ft <- flextable::bg(ft, bg = "#DDDDDE", part = "header")
+# ft <- flextable::flextable(tbl)
 
-ft <- flextable::align(ft, align = "left", part = "all")
-ft <- flextable::valign(ft, valign = "top", part = "all")
+# ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+# ft <- flextable::fontsize(ft, size = 9, part = "all")
 
-ft <- flextable::padding(ft, padding = 4, part = "all")
-ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+# ft <- flextable::bold(ft, part = "header")
+# ft <- flextable::bg(ft, bg = "#DDDDDE", part = "header")
 
-ft <- flextable::border_outer(ft, part = "all")
-ft <- flextable::border_inner_h(ft, part = "body")
-ft <- flextable::border_inner_v(ft, part = "all")
+# ft <- flextable::align(ft, align = "left", part = "all")
+# ft <- flextable::valign(ft, valign = "top", part = "all")
 
-ft <- flextable::width(ft, j = 1, width = 2.3)
-ft <- flextable::width(ft, j = 2:4, width = 1.3)
-ft <- flextable::width(ft, j = 5, width = 1.7)
+# ft <- flextable::padding(ft, padding = 4, part = "all")
+# ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
 
-ft <- flextable::bold(ft, part = "header")
+# ft <- flextable::border_outer(ft, part = "all")
+# ft <- flextable::border_inner_h(ft, part = "body")
+# ft <- flextable::border_inner_v(ft, part = "all")
 
-# Header formatting
-ft <- flextable::bg(
-  ft,
-  bg = "#EE5859",
-  part = "header"
-)
+# ft <- flextable::width(ft, j = 1, width = 2.3)
+# ft <- flextable::width(ft, j = 2:4, width = 1.3)
+# ft <- flextable::width(ft, j = 5, width = 1.7)
 
-ft <- flextable::color(
-  ft,
-  color = "white",
-  part = "header"
-)
+# ft <- flextable::bold(ft, part = "header")
 
-# Shade final row
-ft <- flextable::bg(
-  ft,
-  i = nrow(tbl),
-  bg = "#F2F2F2",
-  part = "body"
-)
-ft <- flextable::fit_to_width(
-  ft,
-  max_width = 6.5
-)
+# # Header formatting
+# ft <- flextable::bg(
+#   ft,
+#   bg = "#EE5859",
+#   part = "header"
+# )
+
+# ft <- flextable::color(
+#   ft,
+#   color = "white",
+#   part = "header"
+# )
+
+# # Shade final row
+# ft <- flextable::bg(
+#   ft,
+#   i = nrow(tbl),
+#   bg = "#F2F2F2",
+#   part = "body"
+# )
+# ft <- flextable::fit_to_width(
+#   ft,
+#   max_width = 6.5
+# )
 
 ft
 
@@ -2194,44 +1460,73 @@ cat(table_caption("Sample size calculation parameters for {params$ind_indicator}
 
 tbl <- params$sample_size_ind_table_df
 
-ft <- flextable::flextable(tbl)
+total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
+  reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) {
+    "#EE5859"
+  })
+  fp_col <- officer::fp_border(color = "black", width = 1)
+  fp_outer <- officer::fp_border(color = "black", width = 1.5)
+  strata_col_w <- 6.5 / (6 + n_strata)
+  param_col_w <- strata_col_w * 3
+  just_col_w <- strata_col_w * 3
 
-ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-ft <- flextable::fontsize(ft, size = 9, part = "all")
+  ft <- flextable::flextable(tbl)
+  ft <- flextable::fontsize(ft, size = 8, part = "all")
+  ft <- flextable::width(ft, j = 1L, width = param_col_w)
+  ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
+  ft <- flextable::width(ft, j = n_strata + 2L, width = just_col_w)
+  ft <- flextable::set_table_properties(ft, layout = "fixed")
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
+  ft <- flextable::color(ft, color = "white", part = "header")
+  ft <- flextable::bg(ft, bg = "white", part = "body")
+  if (length(total_row_idx) > 0L) {
+    ft <- flextable::bg(ft, i = total_row_idx, bg = "#D3D3D3", part = "body")
+  }
+  ft <- flextable::border_remove(ft)
+  ft <- flextable::vline(ft, border = fp_col, part = "body")
+  ft <- flextable::vline(ft, border = fp_col, part = "header")
+  ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
+  ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
-# Header formatting
-ft <- flextable::bold(ft, part = "header")
-ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
-ft <- flextable::color(ft, color = "white", part = "header")
+# ft <- flextable::flextable(tbl)
 
-# Grey result rows
-ft <- flextable::bg(
-  ft,
-  i = tbl$Parameter %in% c(
-    "Individuals to be Included",
-    "Households to be Included"
-  ),
-  bg = "#F2F2F2",
-  part = "body"
-)
+# ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+# ft <- flextable::fontsize(ft, size = 9, part = "all")
 
-ft <- flextable::align(ft, align = "left", part = "all")
-ft <- flextable::valign(ft, valign = "top", part = "all")
+# # Header formatting
+# ft <- flextable::bold(ft, part = "header")
+# ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
+# ft <- flextable::color(ft, color = "white", part = "header")
 
-ft <- flextable::padding(ft, padding = 4, part = "all")
-ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+# # Grey result rows
+# ft <- flextable::bg(
+#   ft,
+#   i = tbl$Parameter %in% c(
+#     "Individuals to be Included",
+#     "Households to be Included"
+#   ),
+#   bg = "#F2F2F2",
+#   part = "body"
+# )
 
-ft <- flextable::border_outer(ft, part = "all")
-ft <- flextable::border_inner_h(ft, part = "body")
-ft <- flextable::border_inner_v(ft, part = "all")
+# ft <- flextable::align(ft, align = "left", part = "all")
+# ft <- flextable::valign(ft, valign = "top", part = "all")
 
-ft <- flextable::width(ft, j = 1, width = 2.3)
-ft <- flextable::width(ft, j = 2:4, width = 1.3)
-ft <- flextable::width(ft, j = 5, width = 1.7)
-ft <- flextable::fit_to_width(
-  ft,
-  max_width = 6.5
-)
+# ft <- flextable::padding(ft, padding = 4, part = "all")
+# ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+
+# ft <- flextable::border_outer(ft, part = "all")
+# ft <- flextable::border_inner_h(ft, part = "body")
+# ft <- flextable::border_inner_v(ft, part = "all")
+
+# ft <- flextable::width(ft, j = 1, width = 2.3)
+# ft <- flextable::width(ft, j = 2:4, width = 1.3)
+# ft <- flextable::width(ft, j = 5, width = 1.7)
+# ft <- flextable::fit_to_width(
+#   ft,
+#   max_width = 6.5
+# )
 ft
 
 ```
@@ -2258,43 +1553,72 @@ cat(table_caption("Sample size calculation parameters for {params$rate_indicator
 
 tbl <- params$sample_size_rate_table_df
 
-ft <- flextable::flextable(tbl)
+total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
+  reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) {
+    "#EE5859"
+  })
+  fp_col <- officer::fp_border(color = "black", width = 1)
+  fp_outer <- officer::fp_border(color = "black", width = 1.5)
+  strata_col_w <- 6.5 / (6 + n_strata)
+  param_col_w <- strata_col_w * 3
+  just_col_w <- strata_col_w * 3
 
-ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-ft <- flextable::fontsize(ft, size = 9, part = "all")
+  ft <- flextable::flextable(tbl)
+  ft <- flextable::fontsize(ft, size = 8, part = "all")
+  ft <- flextable::width(ft, j = 1L, width = param_col_w)
+  ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
+  ft <- flextable::width(ft, j = n_strata + 2L, width = just_col_w)
+  ft <- flextable::set_table_properties(ft, layout = "fixed")
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
+  ft <- flextable::color(ft, color = "white", part = "header")
+  ft <- flextable::bg(ft, bg = "white", part = "body")
+  if (length(total_row_idx) > 0L) {
+    ft <- flextable::bg(ft, i = total_row_idx, bg = "#D3D3D3", part = "body")
+  }
+  ft <- flextable::border_remove(ft)
+  ft <- flextable::vline(ft, border = fp_col, part = "body")
+  ft <- flextable::vline(ft, border = fp_col, part = "header")
+  ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
+  ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
-ft <- flextable::bold(ft, part = "header")
-ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
-ft <- flextable::color(ft, color = "white", part = "header")
+# ft <- flextable::flextable(tbl)
 
-ft <- flextable::bg(
-  ft,
-  i = tbl$Parameter %in% c(
-    "Population to be Included",
-    "Person-Time to be Included",
-    "Households to be Included"
-  ),
-  bg = "#F2F2F2",
-  part = "body"
-)
+# ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+# ft <- flextable::fontsize(ft, size = 9, part = "all")
 
-ft <- flextable::align(ft, align = "left", part = "all")
-ft <- flextable::valign(ft, valign = "top", part = "all")
+# ft <- flextable::bold(ft, part = "header")
+# ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
+# ft <- flextable::color(ft, color = "white", part = "header")
 
-ft <- flextable::padding(ft, padding = 4, part = "all")
-ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+# ft <- flextable::bg(
+#   ft,
+#   i = tbl$Parameter %in% c(
+#     "Population to be Included",
+#     "Person-Time to be Included",
+#     "Households to be Included"
+#   ),
+#   bg = "#F2F2F2",
+#   part = "body"
+# )
 
-ft <- flextable::border_outer(ft, part = "all")
-ft <- flextable::border_inner_h(ft, part = "body")
-ft <- flextable::border_inner_v(ft, part = "all")
+# ft <- flextable::align(ft, align = "left", part = "all")
+# ft <- flextable::valign(ft, valign = "top", part = "all")
 
-ft <- flextable::width(ft, j = 1, width = 2.4)
-ft <- flextable::width(ft, j = 2:4, width = 1.3)
-ft <- flextable::width(ft, j = 5, width = 1.7)
-ft <- flextable::fit_to_width(
-  ft,
-  max_width = 6.5
-)
+# ft <- flextable::padding(ft, padding = 4, part = "all")
+# ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
+
+# ft <- flextable::border_outer(ft, part = "all")
+# ft <- flextable::border_inner_h(ft, part = "body")
+# ft <- flextable::border_inner_v(ft, part = "all")
+
+# ft <- flextable::width(ft, j = 1, width = 2.4)
+# ft <- flextable::width(ft, j = 2:4, width = 1.3)
+# ft <- flextable::width(ft, j = 5, width = 1.7)
+# ft <- flextable::fit_to_width(
+#   ft,
+#   max_width = 6.5
+# )
 
 ft
 

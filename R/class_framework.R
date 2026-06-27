@@ -135,11 +135,6 @@ Framework <- R6::R6Class(
     #'   SVG.
     secondary_objectives = NULL,
 
-    #' @field secondary_data_sources Named list of secondary data sources keyed
-    #'   by objective code.  Each element is a character vector of source names.
-    #'   Codes must match \code{framework_primary_objective_catalog} keys.
-    secondary_data_sources = list(),
-
     #' @field primary_indicator_codes Character vector of primary indicator codes
     #'   selected by the user.
     primary_indicator_codes = NULL,
@@ -155,6 +150,10 @@ Framework <- R6::R6Class(
     #' @field modified_secondary_indicator_codes Data frame of secondary
     #'   indicator codes derived from \code{modified_objectives_schema}.
     modified_secondary_indicator_codes = NULL,
+
+    #' @field secondary_data_sources Data frame of secondary
+    #'   objectives, data sources, and purposes.
+    secondary_data_sources = NULL,
 
     #' @field metadata List containing framework metadata including
     #'   \code{created_datetime} and \code{modified_datetime}, both initialised
@@ -301,6 +300,68 @@ Framework <- R6::R6Class(
         },
         on_error = "abort",
         origin = "Framework$set_secondary_indicators"
+      )
+      invisible(self)
+    },
+
+    #' @description Add a source to the secondary data sources table.
+    #' @param source Character. The name of the secondary data source.
+    #' @param purpose Character. The purpose of the secondary data source.
+    #' @return Invisibly returns \code{self} for method chaining.
+    add_secondary_data_source = function(objective, source, purpose) {
+      phr_try(
+        {
+          self$secondary_data_sources <- rbind(
+            self$secondary_data_sources,
+            data.frame(
+              objective = objective,
+              source = source,
+              purpose = purpose,
+              stringsAsFactors = FALSE
+            )
+          )
+          private$.touch()
+          phr_message(
+            phr_txt("Secondary data source added."),
+            origin = "Framework$set_secondary_data_source"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$set_secondary_data_source"
+      )
+      invisible(self)
+    },
+
+    #' @description Remove a source from the secondary data sources table.
+    #' @param source Character. The name of the secondary data source to remove.
+    #' @return Invisibly returns \code{self} for method chaining.
+    #' @details
+    #' Removes a secondary data source from the \code{secondary_data_sources} data frame
+    #' by matching both the objective code and source name. If the specified source is not found, a warning is issued.
+    remove_secondary_data_source = function(objective, source) {
+      phr_try(
+        {
+          if (is.null(self$secondary_data_sources)) {
+            phr_warning(
+              message = phr_txt(
+                "No secondary data sources to remove."
+              ),
+              origin = "Framework$remove_secondary_data_source"
+            )
+            return(invisible(self))
+          }
+          self$secondary_data_sources <- subset(
+            self$secondary_data_sources,
+            !(objective == objective & source == source)
+          )
+          private$.touch()
+          phr_message(
+            phr_txt("Secondary data source removed."),
+            origin = "Framework$remove_secondary_data_source"
+          )
+        },
+        on_error = "abort",
+        origin = "Framework$remove_secondary_data_source"
       )
       invisible(self)
     },

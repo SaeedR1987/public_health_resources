@@ -293,8 +293,8 @@ calculate_sample_size_individual <- function(
 #'       sampling.}
 #'   }
 #' @export
-calculate_sample_size_mortality <- function(
-  expected_death_rate,
+calculate_sample_size_rate <- function(
+  expected_rate,
   desired_precision,
   non_response_rate = 5,
   design = "simple_random",
@@ -304,23 +304,25 @@ calculate_sample_size_mortality <- function(
   average_household_size,
   fpc = FALSE,
   total_population = NULL,
-  confidence_level = 0.95
+  confidence_level = 0.95,
+  multiplier = 10000
 ) {
   origin <- "calculate_sample_size_mortality"
 
   # --- Type validation ---
-  phr_validate_numeric(expected_death_rate, origin = origin, soft = FALSE)
+  phr_validate_numeric(expected_rate, origin = origin, soft = FALSE)
   phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
   phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
   phr_validate_numeric(recall_days, origin = origin, soft = FALSE)
   phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phr_validate_numeric(multiplier, origin = origin, soft = FALSE)
   phr_validate_logical(fpc, origin = origin, soft = FALSE)
   phr_validate_character(design, origin = origin, soft = FALSE)
 
   # --- Range / logical checks ---
   phr_assert(
-    expected_death_rate > 0,
-    message = "expected_death_rate must be positive.",
+    expected_rate > 0,
+    message = "expected_rate must be positive.",
     origin = origin
   )
   phr_assert(
@@ -381,8 +383,8 @@ calculate_sample_size_mortality <- function(
 
   # Calculate z-score
   z <- stats::qnorm((1 + confidence_level) / 2)
-  r <- expected_death_rate / 10000
-  d <- desired_precision / 10000
+  r <- expected_rate / multiplier
+  d <- desired_precision / multiplier
 
   if (design == "simple_random") {
     numerator <- z^2 * r # * (1 - r)
@@ -695,8 +697,12 @@ calculate_sample_size_strata_table <- function(sample_table) {
         if (!col %in% names(sample_table)) sample_table[[col]] <- NA_real_
       }
 
+      print("I am here 0")
+
       for (i in seq_len(nrow(sample_table))) {
         row <- sample_table[i, ]
+
+        print(paste0("I am here 1 -", i))
 
         # Read sampling_method_site directly — it is "cluster" or other method and
         # maps directly to the design parameter accepted by calculate_sample_size_*
@@ -711,7 +717,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
         } else {
           "simple_random"
         }
-
+        print(paste0("I am here 2 -", i))
         # ---- General (population-level) sample size -------------------------
         if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
           design_effect <- if (
@@ -734,6 +740,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
           } else {
             NULL
           }
+          print(paste0("I am here 3 -", i))
 
           pop_ss <- phr_try(
             calculate_sample_size_general(
@@ -753,6 +760,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             sample_table$General_HH_Sample_Size[i] <- pop_ss
           }
         }
+        print(paste0("I am here 4 -", i))
 
         # ---- Individual-level sample size -----------------------------------
         if (
@@ -786,6 +794,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
           } else {
             100
           }
+          print(paste0("I am here 5 -", i))
 
           ind_res <- phr_try(
             calculate_sample_size_individual(
@@ -808,27 +817,28 @@ calculate_sample_size_strata_table <- function(sample_table) {
             sample_table$Ind_HH_Sample_Size[i] <- ind_res$sample_size_households
           }
         }
+        print(paste0("I am here 6 -", i))
 
-        # ---- Mortality-rate sample size -------------------------------------
+        # ---- Rate sample size -------------------------------------
         if (
-          !is.na(row$mort_expected_death_rate) &&
-            !is.na(row$mort_precision) &&
-            !is.na(row$mort_avg_hh_size) &&
-            row$mort_avg_hh_size > 0
+          !is.na(row$rate_expected_rate) &&
+            !is.na(row$rate_precision) &&
+            !is.na(row$rate_avg_hh_size) &&
+            row$rate_avg_hh_size > 0
         ) {
           design_effect <- if (
-            !is.na(row$mort_design_effect) && row$mort_design_effect > 1
+            !is.na(row$rate_design_effect) && row$rate_design_effect > 1
           ) {
-            row$mort_design_effect
+            row$rate_design_effect
           } else {
             .default_design_effect
           }
-          nonresponse <- if (!is.na(row$mort_nonresponse)) {
-            row$mort_nonresponse
+          nonresponse <- if (!is.na(row$rate_nonresponse)) {
+            row$rate_nonresponse
           } else {
             5
           }
-          fpc <- if (!is.na(row$mort_fpc)) as.logical(row$mort_fpc) else FALSE
+          fpc <- if (!is.na(row$rate_fpc)) as.logical(row$rate_fpc) else FALSE
           total_pop <- if (
             !is.na(row$total_population) && row$total_population > 0
           ) {
@@ -837,41 +847,43 @@ calculate_sample_size_strata_table <- function(sample_table) {
             NULL
           }
           recall_days <- if (
-            !is.na(row$mort_recall_days) && row$mort_recall_days > 0
+            !is.na(row$rate_recall_days) && row$rate_recall_days > 0
           ) {
-            row$mort_recall_days
+            row$rate_recall_days
           } else {
             90
           }
+          print(paste0("I am here 7 -", i))
 
-          mort_res <- phr_try(
-            calculate_sample_size_mortality(
-              expected_death_rate = row$mort_expected_death_rate,
-              desired_precision = row$mort_precision,
+          rate_res <- phr_try(
+            calculate_sample_size_rate(
+              expected_rate = row$rate_expected_rate,
+              desired_precision = row$rate_precision,
               non_response_rate = nonresponse,
               design = design_type,
               design_effect = design_effect,
               recall_days = recall_days,
-              average_household_size = row$mort_avg_hh_size,
+              average_household_size = row$rate_avg_hh_size,
               fpc = fpc,
               total_population = total_pop
             ),
             on_error = "return",
             origin = origin,
-            step = phr_txt("Mortality sample size — stratum {row$stratum_id}")
+            step = phr_txt("Rate sample size — stratum {row$stratum_id}")
           )
-          if (!phr_failed(mort_res) && !is.null(mort_res)) {
-            sample_table$Mort_Ind_Sample_Size[
+          if (!phr_failed(rate_res) && !is.null(rate_res)) {
+            sample_table$Rate_Ind_Sample_Size[
               i
-            ] <- mort_res$sample_size_individuals
-            sample_table$Mort_PT_Sample_Size[
+            ] <- rate_res$sample_size_individuals
+            sample_table$Rate_PT_Sample_Size[
               i
-            ] <- mort_res$sample_size_person_time
-            sample_table$Mort_HH_Sample_Size[
+            ] <- rate_res$sample_size_person_time
+            sample_table$Rate_HH_Sample_Size[
               i
-            ] <- mort_res$sample_size_households
+            ] <- rate_res$sample_size_households
           }
         }
+        print(paste0("I am here 8 -", i))
 
         # ---- Final household sample size: max across all three HH types -----
         hh_sizes <- c(
@@ -885,12 +897,14 @@ calculate_sample_size_strata_table <- function(sample_table) {
           } else {
             NA_real_
           },
-          mort_hh = if (!is.na(sample_table$Mort_HH_Sample_Size[i])) {
-            sample_table$Mort_HH_Sample_Size[i]
+          rate_hh = if (!is.na(sample_table$Rate_HH_Sample_Size[i])) {
+            sample_table$Rate_HH_Sample_Size[i]
           } else {
             NA_real_
           }
         )
+
+        print(paste0("I am here 9 -", i))
 
         valid_hh <- hh_sizes[!is.na(hh_sizes)]
         if (
@@ -899,6 +913,8 @@ calculate_sample_size_strata_table <- function(sample_table) {
         ) {
           sample_table$Final_HH_Sample_Size[i] <- max(valid_hh)
         }
+
+        print(paste0("I am here 10 -", i))
 
         # ---- Field plan estimate --------------------------------------------
         # Re-read the row after sample size updates so Final_HH_Sample_Size is current.
@@ -925,11 +941,15 @@ calculate_sample_size_strata_table <- function(sample_table) {
           logical(1L)
         ))
 
+        print(paste0("I am here 11 -", i))
+
         has_cluster_param <- design_type != "cluster" ||
           ("clusters_per_day" %in%
             names(row) &&
             !is.na(row$clusters_per_day) &&
             row$clusters_per_day > 0)
+
+        print(paste0("I am here 12 -", i))
 
         if (has_base && has_cluster_param) {
           fp <- phr_try(
