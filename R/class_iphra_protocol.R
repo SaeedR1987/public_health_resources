@@ -388,6 +388,12 @@ IPHRAProtocol <- R6::R6Class(
       }
       private$..has_tool_role("kii_fsl_service_provider")
     },
+    .tool_market_kii = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..has_tool_role("kii_markets")
+    },
     .tool_health_facility_kii = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
@@ -1094,7 +1100,11 @@ IPHRAProtocol <- R6::R6Class(
         )
       }
 
-      self$get_dap_table("tool_household_iphra_v2")
+      if (self$.tool_household_iphra) {
+        self$get_dap_table("tool_household_iphra_v2")
+      } else {
+        data.frame()
+      }
     },
     .community_kii_dap_df = function(value) {
       if (!missing(value)) {
@@ -1103,7 +1113,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$community_kii_dap_table"
         )
       }
-      self$get_dap_table("tool_kii_community_iphra_v2")
+      if (self$.tool_community_kii) {
+        self$get_dap_table("tool_kii_community_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .community_observation_dap_df = function(value) {
       if (!missing(value)) {
@@ -1112,7 +1126,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$community_obs_dap_table"
         )
       }
-      self$get_dap_table("tool_obs_community_iphra_v2")
+      if (self$.tool_community_observation) {
+        self$get_dap_table("tool_obs_community_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .health_facility_kii_dap_df = function(value) {
       if (!missing(value)) {
@@ -1121,7 +1139,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$health_facility_kii_dap_table"
         )
       }
-      self$get_dap_table("tool_kii_health_service_provider_iphra_v2")
+      if (self$.tool_health_facility_kii) {
+        self$get_dap_table("tool_kii_health_service_provider_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .health_facility_observation_dap_df = function(value) {
       if (!missing(value)) {
@@ -1132,7 +1154,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$health_facility_observation_dap_table"
         )
       }
-      self$get_dap_table("tool_obs_health_facility_iphra_v2")
+      if (self$.tool_health_facility_observation) {
+        self$get_dap_table("tool_obs_health_facility_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .nutrition_facility_kii_dap_df = function(value) {
       if (!missing(value)) {
@@ -1141,7 +1167,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$nutrition_facility_kii_dap_table"
         )
       }
-      self$get_dap_table("tool_kii_nutrition_service_provider_iphra_v2")
+      if (self$.tool_nutrition_facility_kii) {
+        self$get_dap_table("tool_kii_nutrition_service_provider_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .fsl_provider_kii_dap_df = function(value) {
       if (!missing(value)) {
@@ -1150,7 +1180,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$fsl_provider_kii_dap_table"
         )
       }
-      self$get_dap_table("tool_kii_fsl_service_provider_iphra_v2")
+      if (self$.tool_fsl_provider_kii) {
+        self$get_dap_table("tool_kii_fsl_service_provider_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .market_kii_dap_df = function(value) {
       if (!missing(value)) {
@@ -1159,7 +1193,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$market_kii_dap_table"
         )
       }
-      self$get_dap_table("tool_kii_markets_iphra_v2")
+      if (self$.tool_market_kii) {
+        self$get_dap_table("tool_kii_markets_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .crop_livstock_observation_dap_df = function(value) {
       if (!missing(value)) {
@@ -1170,7 +1208,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$crop_livestock_observation_dap_table"
         )
       }
-      self$get_dap_table("tool_obs_crop_livestock_iphra_v1")
+      if (self$.tool_crops_livestock_observation) {
+        self$get_dap_table("tool_obs_crop_livestock_iphra_v1")
+      } else {
+        return(data.frame())
+      }
     },
     .wash_provider_kii_dap_df = function(value) {
       if (!missing(value)) {
@@ -1179,7 +1221,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$wash_provider_kii_dap_table"
         )
       }
-      self$get_dap_table("tool_kii_wash_service_provider_iphra_v2")
+      if (self$.tool_wash_provider_kii) {
+        self$get_dap_table("tool_kii_wash_service_provider_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .water_point_observation_dap_df = function(value) {
       if (!missing(value)) {
@@ -1188,7 +1234,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$water_point_observation_dap_table"
         )
       }
-      self$get_dap_table("tool_obs_water_point_iphra_v2")
+      if (self$.tool_water_point_observation) {
+        self$get_dap_table("tool_obs_water_point_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     },
     .latrine_observation_dap_df = function(value) {
       if (!missing(value)) {
@@ -1197,7 +1247,11 @@ IPHRAProtocol <- R6::R6Class(
           origin = "IPHRAProtocol$active$latrine_observation_dap_table"
         )
       }
-      self$get_dap_table("tool_obs_latrine_iphra_v2")
+      if (self$.tool_latrine_observation) {
+        self$get_dap_table("tool_obs_latrine_iphra_v2")
+      } else {
+        return(data.frame())
+      }
     }
   ),
 

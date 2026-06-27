@@ -975,6 +975,8 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
+      print(paste("Building DAP table for tool:", tool_name))
+
       # 2. Get primary objectives
       primary_codes <- as.character(
         tryCatch(
@@ -986,6 +988,11 @@ Protocol <- R6::R6Class(
           error = function(e) NULL
         )
       )
+
+      print(paste(
+        "Primary objective codes:",
+        paste(primary_codes, collapse = ", ")
+      ))
 
       if (length(primary_codes) == 0L) {
         return(NULL)
@@ -1004,12 +1011,16 @@ Protocol <- R6::R6Class(
       if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0L) {
         return(NULL)
       }
-      if (
-        !"objective_code" %in% names(schema) ||
-          !"indicator_code" %in% names(schema)
-      ) {
+      if (!"objective_code" %in% names(schema)) {
         return(NULL)
       }
+
+      print(paste(
+        "Schema has",
+        nrow(schema),
+        "rows and columns:",
+        paste(names(schema), collapse = ", ")
+      ))
 
       # 4. Filter to primary objectives
       primary_schema <- schema[
@@ -1021,14 +1032,42 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
+      print(paste("Filtered primary schema has", nrow(primary_schema), "rows."))
+
       # 5. Get indicator codes from primary objectives
-      indicator_codes <- unique(as.character(primary_schema$indicator_code))
+
+      indicator_bank <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "modified_indicator_bank",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
+      )
+
+      if (
+        is.null(indicator_bank) ||
+          !is.data.frame(indicator_bank) ||
+          nrow(indicator_bank) == 0L
+      ) {
+        return(NULL)
+      }
+      if (!"indicator_code" %in% names(indicator_bank)) {
+        return(NULL)
+      }
+
+      indicator_codes <- unique(as.character(indicator_bank$indicator_code))
       indicator_codes <- indicator_codes[
         !is.na(indicator_codes) & nzchar(indicator_codes)
       ]
       if (length(indicator_codes) == 0L) {
         return(NULL)
       }
+
+      print(paste(
+        "Indicator codes for primary objectives:",
+        paste(indicator_codes, collapse = ", ")
+      ))
 
       # 6. Get specified tool's revised survey
       revised_survey <- tryCatch(
@@ -1051,6 +1090,14 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
+      print(paste(
+        "Revised survey for tool",
+        tool_name,
+        "has",
+        nrow(revised_survey),
+        "rows."
+      ))
+
       # 7. Get specified tool's revised choices
       revised_choices <- tryCatch(
         self$access_nested(
@@ -1061,6 +1108,14 @@ Protocol <- R6::R6Class(
         error = function(e) NULL
       )
 
+      print(paste(
+        "Revised choices for tool",
+        tool_name,
+        "has",
+        ifelse(is.null(revised_choices), 0, nrow(revised_choices)),
+        "rows."
+      ))
+
       # 8. Filter survey to rows matching indicator codes
       if (!"indicator_code" %in% names(revised_survey)) {
         phr_warning(
@@ -1069,6 +1124,11 @@ Protocol <- R6::R6Class(
         )
         return(NULL)
       }
+
+      print(paste(
+        "Filtering survey rows for indicator codes:",
+        paste(indicator_codes, collapse = ", ")
+      ))
 
       # Build pattern for grepl (handles comma-separated multi-indicator cells)
       pattern <- paste(indicator_codes, collapse = "|")
@@ -1085,6 +1145,12 @@ Protocol <- R6::R6Class(
         )
         return(NULL)
       }
+
+      print(paste(
+        "Filtered survey has",
+        nrow(survey_filtered),
+        "rows matching primary objective indicators."
+      ))
 
       # 9. Build the DAP table
       private$..construct_dap_rows(
@@ -1116,6 +1182,13 @@ Protocol <- R6::R6Class(
       # Process each survey row
       for (i in seq_len(nrow(survey_df))) {
         row <- survey_df[i, , drop = FALSE]
+
+        print(paste(
+          "Processing survey row",
+          i,
+          "with indicator_code:",
+          as.character(row$indicator_code)
+        ))
 
         # Get indicator code(s) for this question
         row_ind_codes <- as.character(row$indicator_code)
@@ -1170,6 +1243,13 @@ Protocol <- R6::R6Class(
           check.names = FALSE,
           stringsAsFactors = FALSE
         )
+
+        print(paste(
+          "Added DAP row for indicator_code:",
+          ind_code,
+          "with research question:",
+          research_q
+        ))
       }
 
       if (length(rows) == 0L) {

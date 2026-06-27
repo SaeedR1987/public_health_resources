@@ -27,8 +27,7 @@ params:
   population: "[Specify population(s) here]"
   stratification: "[Specify stratification, e.g. by geographic area, population group, etc.]"
   rationale: "[Specify rationale for this research]"
-  tools_table_df: 
-    value: []
+  tools_table_df: null
   date_pilot_training: "2027-04-15"
   date_data_collection_start: "2027-04-20"
   date_data_collection_end: "2027-05-10"
@@ -125,6 +124,7 @@ params:
   sample_size_rate_table_df:
     value: []
   n_sites: 6
+  num_strata_units: 1
   cluster_size: 8
   num_enumerators_per_team: 3
   kii_pillars_table_df: 
@@ -439,7 +439,7 @@ ft
 
 # Executive Summary
 
-```{r}
+```{r exec_overview}
 library(flextable)
 
 tbl <- data.frame(
@@ -482,7 +482,7 @@ ft
 ```
 
 
-```{r}
+```{r exec_strata}
 library(flextable)
 
 tbl <- data.frame(
@@ -569,7 +569,11 @@ ft
 ```{r table_tools}
 library(flextable)
 
-tbl <- params$tools_table
+tbl <- params$tools_table_df
+
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
 ft <- flextable(tbl)
 
@@ -610,8 +614,8 @@ ft
 
 library(ggplot2)
 
-timeline_df <- params$timeline_df
 timeline_df <- data.frame(
+  date = c(
     params$date_pilot_training,
     params$date_data_collection_start,
     params$date_data_collection_end,
@@ -621,7 +625,7 @@ timeline_df <- data.frame(
     params$date_outputs_validation,
     params$date_outputs_publication,
     params$date_final_presentation
-  )),
+  ),
   milestone = c(
     "1. Pilot / training",
     "2. Start collect data",
@@ -635,20 +639,23 @@ timeline_df <- data.frame(
   ),
   y_line_end = c(
     0.125, -0.125,
-  0.125, -0.125,
-  0.125, -0.125,
-  0.125, -0.125,
-  0.125
+    0.125, -0.125,
+    0.125, -0.125,
+    0.125, -0.125,
+    0.125
   ),
   y_text = c(
     0.18, -0.18,
-  0.18, -0.18,
-  0.18, -0.18,
-  0.18, -0.18,
-  0.18
+    0.18, -0.18,
+    0.18, -0.18,
+    0.18, -0.18,
+    0.18
   ),
   stringsAsFactors = FALSE
 )
+
+timeline_df$date <- as.Date(timeline_df$date)
+
 
 timeline_df$label <- paste0(
   timeline_df$milestone,
@@ -735,7 +742,7 @@ timeline_plot
 
 ## Dissemination
 
-```{r}
+```{r exec_dissemination}
 library(flextable)
 
 tbl <- data.frame(
@@ -830,88 +837,17 @@ Goal: To assess the severity of the public health outcomes and identify initial 
 
 ## Specific Objectives and Research Questions
 
-```{r}
+```{r objectives_research_questions}
 #| results: asis
 cat(table_caption("Specific objectives and research questions"))
 
 library(flextable)
 
-# Dummy TRUE/FALSE values for now.
-# Later, replace this object with values calculated elsewhere.
-pillar_flags <- data.frame(
-  pillar = c(
-    "Population Mortality",
-    "Nutritional Status",
-    "Health Needs",
-    "Food Consumption",
-    "Water Consumption",
-    "Exposure to Disease",
-    "Household Food Security",
-    "Household Water Security",
-    "HH Income and Coping",
-    "Living Conditions",
-    "Livelihoods",
-    "Markets",
-    "WASH Services",
-    "Nutrition Services",
-    "Health Services",
-    "Natural and built environment"
-  ),
-  include_pillar = c(
-    TRUE, TRUE, TRUE, TRUE, TRUE, TRUE,
-    TRUE, TRUE, TRUE, TRUE, TRUE, FALSE,
-    TRUE, TRUE, TRUE, TRUE
-  ),
-  pillar_order = 1:16,
-  include_pillar = TRUE,
-  stringsAsFactors = FALSE
-)
-
-subpillar_flags <- data.frame(
-  pillar = c(
-    "Population Mortality",
-    "Nutritional Status",
-    "Health Needs",
-    "Food Consumption", "Food Consumption",
-    "Water Consumption", "Water Consumption",
-    "Exposure to Disease", "Exposure to Disease",
-    "Household Food Security", "Household Food Security", "Household Food Security", "Household Food Security", "Household Food Security",
-    "Household Water Security", "Household Water Security", "Household Water Security", "Household Water Security", "Household Water Security",
-    "HH Income and Coping", "HH Income and Coping", "HH Income and Coping",
-    "Living Conditions", "Living Conditions", "Living Conditions",
-    "Livelihoods", "Livelihoods",
-    "Markets", "Markets", "Markets",
-    "WASH Services", "WASH Services", "WASH Services", "WASH Services",
-    "Nutrition Services", "Nutrition Services", "Nutrition Services", "Nutrition Services", "Nutrition Services",
-    "Health Services", "Health Services", "Health Services", "Health Services", "Health Services",
-    "Natural and built environment", "Natural and built environment", "Natural and built environment"
-  ),
-  sub_pillar = c(
-    "Not applicable", "Not applicable", "Not applicable",
-    "Quantity", "Quality",
-    "Quantity", "Quality",
-    "Reproductive Numbers", "Hygiene",
-    "HH Food Consumption", "Availability", "Accessibility", "Utilization", "Stability",
-    "HH Water Consumption", "Availability", "Accessibility", "Utilization", "Stability",
-    "Income", "Coping Capacity", "Assets",
-    "Protection from Elements", "Protection from Vectors", "Crowdedness",
-    "Availability", "Accessibility",
-    "Availability", "Accessibility", "Functionality",
-    "Availability", "Accessibility", "Quality", "Utilization",
-    "Coverage", "Availability", "Accessibility", "Quality", "Utilization",
-    "Coverage", "Availability", "Accessibility", "Quality", "Utilization",
-    "Sanitation Coverage", "Sanitation Functionality", "Sanitation Accessibility"
-  ),
-  include_subpillar = c(TRUE,TRUE,TRUE,TRUE,TRUE,
-  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
-  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
-  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
-  TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,
-  TRUE,TRUE),
-  stringsAsFactors = FALSE
-)
-
 tbl <- params$objectives_research_questions_df
+
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
 # subpillar_flags$order <- seq_len(nrow(subpillar_flags))
 
@@ -944,10 +880,10 @@ ft <- flextable::fontsize(ft, size = 9, part = "all")
 ft <- flextable::bold(ft, part = "header")
 ft <- flextable::bg(ft, part = "header", bg = "#DDDDDE")
 
-ft <- flextable::width(ft, j = "Pillar", width = 1.5)
-ft <- flextable::width(ft, j = "Sub-Pillar", width = 1.5)
-ft <- flextable::width(ft, j = "Objective", width = 1.7)
-ft <- flextable::width(ft, j = "Research Question", width = 1.8)
+ft <- flextable::width(ft, j = 1, width = 1.5)
+ft <- flextable::width(ft, j = 2, width = 1.5)
+ft <- flextable::width(ft, j = 3, width = 1.7)
+ft <- flextable::width(ft, j = 4, width = 1.8)
 
 ft <- flextable::align(ft, align = "left", part = "all")
 ft <- flextable::padding(ft, padding = 4, part = "all")
@@ -975,7 +911,7 @@ The general research design for the Integrated Public Health Rapid Assessment (I
 
 ## Methodology Overview
 
-```{r}
+```{r methodology_overview}
 #| results: asis
 
 if (params$site_selection_srs & params$hh_selection_srs) {
@@ -1124,6 +1060,10 @@ cat(table_caption("Secondary Data Sources"))
 
 tbl <- params$secondary_data_sources_df
 
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
+
 ft <- flextable::flextable(tbl)
 
 ft <- flextable::delete_part(ft, part = "header")
@@ -1270,6 +1210,10 @@ There are several core and supplemental indicators within the household tool of 
 
 household_inputs <- params$household_pillars_table_df
 
+if (is.list(household_inputs) && !is.data.frame(household_inputs)) {
+  household_inputs <- as.data.frame(household_inputs, stringsAsFactors = FALSE)
+}
+
 ft <- flextable::flextable(household_inputs)
 
 ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
@@ -1357,21 +1301,32 @@ cat(table_caption("General sample size calculation parameters"))
 
 tbl <- params$sample_size_general_table_df
 
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
+
+total_labels = c(
+      "Households to be Included",
+      "Individuals to be Included",
+      "Population to be Included",
+      "Person-Time to be Included"
+    )
+
 total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
   reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) {
     "#EE5859"
   })
   fp_col <- officer::fp_border(color = "black", width = 1)
   fp_outer <- officer::fp_border(color = "black", width = 1.5)
-  strata_col_w <- 6.5 / (6 + n_strata)
+  strata_col_w <- 6.5 / (6 + params$num_strata_units)
   param_col_w <- strata_col_w * 3
   just_col_w <- strata_col_w * 3
 
   ft <- flextable::flextable(tbl)
   ft <- flextable::fontsize(ft, size = 8, part = "all")
   ft <- flextable::width(ft, j = 1L, width = param_col_w)
-  ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
-  ft <- flextable::width(ft, j = n_strata + 2L, width = just_col_w)
+  ft <- flextable::width(ft, j = seq(2L, params$num_strata_units + 1L), width = strata_col_w)
+  ft <- flextable::width(ft, j = params$num_strata_units + 2L, width = just_col_w)
   ft <- flextable::set_table_properties(ft, layout = "fixed")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
@@ -1460,21 +1415,32 @@ cat(table_caption("Sample size calculation parameters for {params$ind_indicator}
 
 tbl <- params$sample_size_ind_table_df
 
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
+
+total_labels = c(
+      "Households to be Included",
+      "Individuals to be Included",
+      "Population to be Included",
+      "Person-Time to be Included"
+    )
+
 total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
   reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) {
     "#EE5859"
   })
   fp_col <- officer::fp_border(color = "black", width = 1)
   fp_outer <- officer::fp_border(color = "black", width = 1.5)
-  strata_col_w <- 6.5 / (6 + n_strata)
+  strata_col_w <- 6.5 / (6 + params$num_strata_units)
   param_col_w <- strata_col_w * 3
   just_col_w <- strata_col_w * 3
 
   ft <- flextable::flextable(tbl)
   ft <- flextable::fontsize(ft, size = 8, part = "all")
   ft <- flextable::width(ft, j = 1L, width = param_col_w)
-  ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
-  ft <- flextable::width(ft, j = n_strata + 2L, width = just_col_w)
+  ft <- flextable::width(ft, j = seq(2L, params$num_strata_units + 1L), width = strata_col_w)
+  ft <- flextable::width(ft, j = params$num_strata_units + 2L, width = just_col_w)
   ft <- flextable::set_table_properties(ft, layout = "fixed")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
@@ -1553,21 +1519,32 @@ cat(table_caption("Sample size calculation parameters for {params$rate_indicator
 
 tbl <- params$sample_size_rate_table_df
 
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
+
+total_labels = c(
+      "Households to be Included",
+      "Individuals to be Included",
+      "Population to be Included",
+      "Person-Time to be Included"
+    )
+
 total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
   reach1_bg <- tryCatch(get_color_palette("reach1")[[1L]], error = function(e) {
     "#EE5859"
   })
   fp_col <- officer::fp_border(color = "black", width = 1)
   fp_outer <- officer::fp_border(color = "black", width = 1.5)
-  strata_col_w <- 6.5 / (6 + n_strata)
+  strata_col_w <- 6.5 / (6 + params$num_strata_units)
   param_col_w <- strata_col_w * 3
   just_col_w <- strata_col_w * 3
 
   ft <- flextable::flextable(tbl)
   ft <- flextable::fontsize(ft, size = 8, part = "all")
   ft <- flextable::width(ft, j = 1L, width = param_col_w)
-  ft <- flextable::width(ft, j = seq(2L, n_strata + 1L), width = strata_col_w)
-  ft <- flextable::width(ft, j = n_strata + 2L, width = just_col_w)
+  ft <- flextable::width(ft, j = seq(2L, params$num_strata_units + 1L), width = strata_col_w)
+  ft <- flextable::width(ft, j = params$num_strata_units + 2L, width = just_col_w)
   ft <- flextable::set_table_properties(ft, layout = "fixed")
   ft <- flextable::bold(ft, part = "header")
   ft <- flextable::bg(ft, bg = reach1_bg, part = "header")
@@ -1680,11 +1657,11 @@ rlc_household_selection <- TRUE
 stratified_strata_names_hh_srs <- "stratum 1, stratum 2, stratum 3"
 cluster_size <- 15
 
-if(params$household_selection_srs) {
+if(params$hh_selection_srs) {
   cat(glue::glue("Within selected sites, households will be selected using simple random sampling methods. Acceptable options for field teams to implement simple random sampling will include (a) sampling from a pre-existing list or map at the community level, (b) creating a rapid listing of households with the support of community leaders, (c) creating a rapid map of households with the support of community leaders walking through the site. If a pre-existing list or map is used at the community level, supervisors should probe and ensure with community leaders that it is up to date with households that may have joined or left the community. \n
   If the site has greater than 100 households, the team should segment the site into smaller manageable areas of 100 households or less. Supervisors should discuss with community leaders on how best to practically split up the community along roads, rivers, or other meaningful landmarks and estimating to the best of their ability the number of households per segment. The supervisor should utilize PPS sampling between these segments to select the number of PSUs needed for that site. \n
   The final list or map of households for the site, or within selected segments, should be numbered sequentially from 1-n. The teams should utilize a random number generator on a phone to randomly select {cluster_size} households from the list or map. "))
-} else if (params$household_selection_systematic) {
+} else if (params$hh_selection_systematic) {
   cat(glue::glue(
 "Within selected sites, {params$cluster_size} households will be selected for each site/PSU/cluster using systematic random sampling. Systematic random sampling is used when households are arranged in an ordered fashion such as rows in camps or streets and the total number of units is known.
 
@@ -1705,7 +1682,7 @@ If the site has greater than 100 households, the team should segment the site in
 
 "
 ))
-} else if (params$household_selection_rlc) {
+} else if (params$hh_selection_rlc) {
   cat(glue::glue("Within selected sites, households will be selected using Random Location Cluster (RLC) sampling. In RLC sampling, random GPS points are generated within the boundary of selected sites. The boundaries and GPS points can be either set beforehand using GIS software, or while in the field with tools like REACH GeoRand. At each generated GPS points, enumerators are to start exactly, or as close as possible, to that point and then select the three physically closest households for interview. The enumerators should interview the selected household and then either (a) take the GPS point of that household or (b) estimate the approximate meters from the initial GPS point to the household. \n"))
 }
 
@@ -1746,7 +1723,11 @@ There are several core and supplemental key informant tools within the IPHRA too
 #| warning: false
 #| message: false
 
-tool_inputs <- kii_pillars_table_df
+tool_inputs <- params$kii_pillars_table_df
+
+if (is.list(tool_inputs) && !is.data.frame(tool_inputs)) {
+  tool_inputs <- as.data.frame(tool_inputs, stringsAsFactors = FALSE)
+}
 
 ft <- flextable::flextable(tool_inputs)
 
@@ -1827,6 +1808,10 @@ There are several core and supplemental observation checklist tools within the I
 #| message: false
 
 tool_inputs <- params$observation_pillars_table_df
+
+if (is.list(tool_inputs) && !is.data.frame(tool_inputs)) {
+  tool_inputs <- as.data.frame(tool_inputs, stringsAsFactors = FALSE)
+}
 
 ft <- flextable::flextable(tool_inputs)
 
@@ -2052,7 +2037,7 @@ cat("The household analysis will be treated as a simple random sampling design a
 } 
 ```
 
-```{r}
+```{r muac_analysis_plan}
 #| results: asis
 
 if (params$ind_muac_children) {
@@ -2076,7 +2061,7 @@ if (params$ind_muac_women) {
 
 ```
 
-```{r}
+```{r mortality_analysis_plan}
 #| results: asis
 
 if (params$ind_mortality) {
@@ -2621,6 +2606,10 @@ cat(table_caption("Household Tool DAP"))
 
 tbl <- params$household_dap_df
 
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
+
 ft <- iphra_dap_flextable(
   tbl,
   merge_cols = c(
@@ -2646,6 +2635,10 @@ ft
 if (params$tool_community_kii) {
 cat(table_caption("Community Key Informant DAP"))
   tbl <- params$community_kii_dap_df
+
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
 ft <- iphra_dap_flextable(
   tbl,
@@ -2673,6 +2666,10 @@ if (params$tool_community_observation) {
 cat(table_caption("Community Observation DAP"))
   tbl <- params$community_observation_dap_df
 
+if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
+
   ft <- iphra_dap_flextable(
   tbl,
   merge_cols = c(
@@ -2698,6 +2695,10 @@ ft
 if (params$tool_health_facility_kii) {
 cat(table_caption("Health Facility KII DAP"))
   tbl <- params$health_facility_kii_dap_df
+
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
   tbl,
@@ -2726,6 +2727,9 @@ if (params$tool_health_facility_observation) {
   cat(table_caption("Health Facility Observation DAP"))
 
   tbl <- params$health_facility_observation_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
   tbl,
@@ -2754,6 +2758,9 @@ if (params$tool_nutrition_facility_kii) {
   cat(table_caption("Nutrition Facility KII DAP"))
 
   tbl <- params$nutrition_facility_kii_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,
@@ -2782,6 +2789,9 @@ if (params$tool_fsl_provider_kii) {
   cat(table_caption("FSL Assistance Provider KII DAP"))
 
   tbl <- params$fsl_provider_kii_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,
@@ -2810,6 +2820,9 @@ if (params$tool_market_kii) {
   cat(table_caption("Market Vendor KII DAP"))
 
   tbl <- market_kii_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,
@@ -2838,6 +2851,9 @@ if (params$tool_crops_livestock_observation) {
   cat(table_caption("Crops and Livestock Observation DAP"))
 
   tbl <- params$crop_livestock_observation_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,
@@ -2866,6 +2882,9 @@ if (params$tool_wash_provider_kii) {
   cat(table_caption("WASH Provider KII DAP"))
 
   tbl <- params$wash_provider_kii_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,
@@ -2894,6 +2913,9 @@ if (params$tool_water_point_observation) {
   cat(table_caption("Water Point Observation DAP"))
 
   tbl <- params$water_point_observation_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,
@@ -2922,6 +2944,9 @@ if (params$tool_latrine_observation) {
   cat(table_caption("Latrine Observation DAP"))
 
   tbl <- params$latrine_observation_dap_df
+  if (is.list(tbl) && !is.data.frame(tbl)) {
+  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+}
 
   ft <- iphra_dap_flextable(
     tbl,

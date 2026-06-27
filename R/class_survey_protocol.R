@@ -549,7 +549,7 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..sample_has_any_method_site("exhaustive")
+      private$..sample_has_any_method_site("proportional")
     },
 
     .site_selection_cluster = function(value) {
@@ -570,7 +570,7 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..sample_has_any_method_household("srs")
+      private$..sample_has_any_method_household("simple_random")
     },
 
     .hh_selection_systematic = function(value) {
@@ -1060,7 +1060,7 @@ SurveyProtocol <- R6::R6Class(
 
     #' @description Get unique sampling methods used across all strata.
     #'
-    #' Extracts the \code{sampling_method_site} column from the sample table,
+    #' Extracts the \code{sampling_method_hh} column from the sample table,
     #' trims whitespace, converts to lowercase, and returns unique non-empty
     #' values.
     #'
@@ -1069,10 +1069,10 @@ SurveyProtocol <- R6::R6Class(
     #' @keywords internal
     ..sample_methods_household_used = function() {
       st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"sampling_method_household" %in% names(st)) {
+      if (!is.data.frame(st) || !"sampling_method_hh" %in% names(st)) {
         return(character(0))
       }
-      methods <- trimws(tolower(as.character(st$sampling_method_household)))
+      methods <- trimws(tolower(as.character(st$sampling_method_hh)))
       methods <- methods[!is.na(methods) & nzchar(methods)]
       unique(methods)
     },

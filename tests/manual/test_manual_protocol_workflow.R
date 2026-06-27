@@ -63,7 +63,7 @@ protocol$access_nested(
   objective_codes = c(105, 106, 108, 112, 113, 114, 115, 118, 147)
 )
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "framework",
   member = "modified_indicator_bank"
 ))
@@ -167,7 +167,7 @@ protocol$access_nested(
   field = "sample_object",
   member = "calculate_sample_sizes"
 )
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "sample_object",
   member = "get_sample_table"
 ))
@@ -206,12 +206,12 @@ protocol$access_nested(
   seed = 788
 )
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "sampling_frame",
   member = "drawn_sample"
 ))
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "sampling_frame",
   member = "drawn_sample_full"
 ))
@@ -221,7 +221,7 @@ View(protocol$access_nested(
 #   seed = 788
 # )
 
-View(protocol$drawn_sample_full)
+(protocol$drawn_sample_full)
 
 # Test 6: Testing Tools ####
 
@@ -230,23 +230,22 @@ print(protocol$get_allowable_tools())
 # Household Tool ####
 protocol$add_tools(tool_name = "tool_household_iphra_v2")
 
-protocol$tools$tool_household_iphra_v2$change_default_language(
-  language = "Arabic"
-)
-head(protocol$tools$tool_household_iphra_v2$revised_settings)
-protocol$tools$tool_household_iphra_v2$change_default_language(
-  language = "Spanish"
-)
-head(protocol$tools$tool_household_iphra_v2$revised_settings)
-protocol$tools$tool_household_iphra_v2$change_default_language(
-  language = "French"
-)
-head(protocol$tools$tool_household_iphra_v2$revised_settings)
-protocol$tools$tool_household_iphra_v2$change_default_language(
-  language = "English"
-)
-head(protocol$tools$tool_household_iphra_v2$revised_settings)
-
+# protocol$tools$tool_household_iphra_v2$change_default_language(
+#   language = "Arabic"
+# )
+# head(protocol$tools$tool_household_iphra_v2$revised_settings)
+# protocol$tools$tool_household_iphra_v2$change_default_language(
+#   language = "Spanish"
+# )
+# head(protocol$tools$tool_household_iphra_v2$revised_settings)
+# protocol$tools$tool_household_iphra_v2$change_default_language(
+#   language = "French"
+# )
+# head(protocol$tools$tool_household_iphra_v2$revised_settings)
+# protocol$tools$tool_household_iphra_v2$change_default_language(
+#   language = "English"
+# )
+# head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
 protocol$access_nested(
   field = "tools",
@@ -260,20 +259,20 @@ protocol$access_nested(
   )))
 )
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "tools",
   name = "tool_household_iphra_v2",
   member = "revised_survey"
 ))
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "tools",
   name = "tool_household_iphra_v2",
   member = "revised_choices"
 ))
 
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "tools",
   name = "tool_household_iphra_v2",
   member = "revised_survey"
@@ -297,7 +296,7 @@ protocol$access_nested(
   ))
 )
 
-View(protocol$access_nested(
+(protocol$access_nested(
   field = "tools",
   name = "tool_kii_community_iphra_v2",
   member = "revised_survey",
@@ -411,6 +410,14 @@ protocol$metadata$version <- 1L
 protocol$metadata$mandating_body <- "IMPACT Initiatives"
 protocol$metadata$project_code <- "98BSY"
 
+# Secondary data sources
+protocol$access_nested(
+  field = "framework",
+  member = "add_secondary_data_source",
+  objective = 105,
+  source = "UNHCR Population Statistics",
+  purpose = "To provide context on population movements and displacement trends."
+)
 
 # Generate ToR ####
 
