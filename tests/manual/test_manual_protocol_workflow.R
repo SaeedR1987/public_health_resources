@@ -278,8 +278,8 @@ protocol$access_nested(
   member = "revised_survey"
 ))
 
-protocol$tools$tool_household_iphra_v2$validate() # this part still needs heavy development
-protocol$tools$tool_household_iphra_v2$get_validation_errors() # this part still needs heavy development
+# protocol$tools$tool_household_iphra_v2$validate() # this part still needs heavy development
+# protocol$tools$tool_household_iphra_v2$get_validation_errors() # this part still needs heavy development
 
 # Community KII Tool ####
 protocol$add_tools("tool_kii_community_iphra_v2")
@@ -302,8 +302,8 @@ protocol$access_nested(
   member = "revised_survey",
 ))
 
-protocol$tools$tool_kii_community_iphra_v2$validate() # this part still needs heavy development
-protocol$tools$tool_kii_community_iphra_v2$get_validation_errors() # this part still needs heavy development
+# protocol$tools$tool_kii_community_iphra_v2$validate() # this part still needs heavy development
+# protocol$tools$tool_kii_community_iphra_v2$get_validation_errors() # this part still needs heavy development
 
 # Community Obseration Tool ####
 
@@ -321,8 +321,8 @@ protocol$access_nested(
   ))
 )
 
-protocol$tools$tool_obs_community_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
-protocol$tools$tool_obs_community_iphra_v2$get_validation_errors() # this part still needs heavy development
+# protocol$tools$tool_obs_community_iphra_v2$validate() # this part still needs heavy development, breaking in one of the checks right now
+# protocol$tools$tool_obs_community_iphra_v2$get_validation_errors() # this part still needs heavy development
 
 # FSL Service Provider KII Tool ####
 

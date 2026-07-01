@@ -270,6 +270,24 @@ Document <- R6::R6Class(
     #' @return Character vector of template filenames.
     ..default_ppt_template_filenames = function() {
       c("protocol_report_template.pptx")
+    },
+    ..sanitize_quarto_df = function(df) {
+      if (!is.data.frame(df)) {
+        return(df)
+      }
+
+      df[] <- lapply(df, function(x) {
+        if (is.character(x)) {
+          x[is.na(x)] <- ""
+        } else if (is.numeric(x) || is.integer(x)) {
+          x[is.na(x)] <- 0
+        } else if (is.logical(x)) {
+          x[is.na(x)] <- FALSE
+        }
+        x
+      })
+
+      df
     }
   )
 )

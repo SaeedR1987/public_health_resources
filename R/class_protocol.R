@@ -595,7 +595,7 @@ Protocol <- R6::R6Class(
     #'   Questionnaire Responses, Data Collection Level. Returns \code{NULL} when
     #'   framework is not configured, no primary objectives are set, or the
     #'   specified tool is not found.
-    get_dap_table = function(tool_name) {
+    get_dap_table = function(tool_name, lang = "en") {
       phr_try(
         {
           # Validate tool_name parameter
@@ -608,7 +608,7 @@ Protocol <- R6::R6Class(
           )
 
           # Build and return the DAP table
-          private$..build_dap_table(tool_name)
+          private$..build_dap_table(tool_name, lang = lang)
         },
         on_error = "abort",
         origin = "Protocol$get_dap_table"
@@ -969,77 +969,18 @@ Protocol <- R6::R6Class(
     #'   objectives and specified tool survey data.
     #' @param tool_name Character. Tool name for survey/choices lookup.
     #' @return Data frame with DAP columns or NULL when missing dependencies.
-    ..build_dap_table = function(tool_name) {
+    ..build_dap_table = function(tool_name, lang = "en") {
       # 1. Check framework availability
       if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
         return(NULL)
       }
 
-      print(paste("Building DAP table for tool:", tool_name))
-
-      # 2. Get primary objectives
-      primary_codes <- as.character(
-        tryCatch(
-          self$access_nested(
-            field = "framework",
-            member = "primary_objectives",
-            update_modified = FALSE
-          ),
-          error = function(e) NULL
-        )
-      )
-
-      print(paste(
-        "Primary objective codes:",
-        paste(primary_codes, collapse = ", ")
-      ))
-
-      if (length(primary_codes) == 0L) {
-        return(NULL)
-      }
-
-      # 3. Get modified objectives schema
-      schema <- tryCatch(
-        self$access_nested(
-          field = "framework",
-          member = "modified_objectives_schema",
-          update_modified = FALSE
-        ),
-        error = function(e) NULL
-      )
-
-      if (is.null(schema) || !is.data.frame(schema) || nrow(schema) == 0L) {
-        return(NULL)
-      }
-      if (!"objective_code" %in% names(schema)) {
-        return(NULL)
-      }
-
-      print(paste(
-        "Schema has",
-        nrow(schema),
-        "rows and columns:",
-        paste(names(schema), collapse = ", ")
-      ))
-
-      # 4. Filter to primary objectives
-      primary_schema <- schema[
-        as.character(schema$objective_code) %in% primary_codes,
-        ,
-        drop = FALSE
-      ]
-      if (nrow(primary_schema) == 0L) {
-        return(NULL)
-      }
-
-      print(paste("Filtered primary schema has", nrow(primary_schema), "rows."))
-
-      # 5. Get indicator codes from primary objectives
+      # 1. Get master indicator bank
 
       indicator_bank <- tryCatch(
         self$access_nested(
           field = "framework",
-          member = "modified_indicator_bank",
+          member = "master_indicator_bank",
           update_modified = FALSE
         ),
         error = function(e) NULL
@@ -1064,12 +1005,22 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
-      print(paste(
-        "Indicator codes for primary objectives:",
-        paste(indicator_codes, collapse = ", ")
-      ))
+      # Drop threshold-specific columns if present
+      drop_cols <- c(
+        "threshold_name",
+        "threshold_value",
+        "citation_threshold"
+      )
 
-      # 6. Get specified tool's revised survey
+      indicator_bank <- indicator_bank[,
+        setdiff(names(indicator_bank), drop_cols),
+        drop = FALSE
+      ]
+
+      # Remove duplicated rows created by threshold variants
+      indicator_bank <- unique(indicator_bank)
+
+      # 2. Get specified tool's revised survey
       revised_survey <- tryCatch(
         self$access_nested(
           field = "tools",
@@ -1090,14 +1041,6 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
-      print(paste(
-        "Revised survey for tool",
-        tool_name,
-        "has",
-        nrow(revised_survey),
-        "rows."
-      ))
-
       # 7. Get specified tool's revised choices
       revised_choices <- tryCatch(
         self$access_nested(
@@ -1108,15 +1051,6 @@ Protocol <- R6::R6Class(
         error = function(e) NULL
       )
 
-      print(paste(
-        "Revised choices for tool",
-        tool_name,
-        "has",
-        ifelse(is.null(revised_choices), 0, nrow(revised_choices)),
-        "rows."
-      ))
-
-      # 8. Filter survey to rows matching indicator codes
       if (!"indicator_code" %in% names(revised_survey)) {
         phr_warning(
           phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
@@ -1125,39 +1059,50 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
-      print(paste(
-        "Filtering survey rows for indicator codes:",
-        paste(indicator_codes, collapse = ", ")
-      ))
-
-      # Build pattern for grepl (handles comma-separated multi-indicator cells)
-      pattern <- paste(indicator_codes, collapse = "|")
-      survey_codes <- as.character(revised_survey$indicator_code)
-      keep <- !is.na(survey_codes) & grepl(pattern, survey_codes)
-      survey_filtered <- revised_survey[keep, , drop = FALSE]
-
-      if (nrow(survey_filtered) == 0L) {
-        phr_message(
-          phr_txt(
-            "No survey questions found for primary objective indicators in tool '{tool_name}'."
-          ),
-          origin = "Protocol$get_dap_table"
+      # Extract unique indicator codes from survey
+      survey_indicator_codes <- unique(trimws(unlist(
+        strsplit(
+          as.character(revised_survey$indicator_code[
+            !is.na(revised_survey$indicator_code)
+          ]),
+          ","
         )
+      )))
+
+      survey_indicator_codes <- survey_indicator_codes[
+        nzchar(survey_indicator_codes)
+      ]
+
+      if (length(survey_indicator_codes) == 0L) {
         return(NULL)
       }
 
-      print(paste(
-        "Filtered survey has",
-        nrow(survey_filtered),
-        "rows matching primary objective indicators."
-      ))
+      # Filter indicator bank to indicators actually used in survey
+      indicator_bank_filtered <- indicator_bank[
+        indicator_bank$indicator_code %in% survey_indicator_codes,
+        ,
+        drop = FALSE
+      ]
+
+      if (nrow(indicator_bank_filtered) == 0L) {
+        return(NULL)
+      }
+
+      lang <- tolower(trimws(as.character(lang)))
+      if (!lang %in% c("en", "fr", "es", "ar")) {
+        phr_warning(
+          phr_txt("Invalid lang '{lang}' specified; defaulting to 'en'."),
+          origin = "Protocol$get_dap_table"
+        )
+        lang <- "en"
+      }
 
       # 9. Build the DAP table
       private$..construct_dap_rows(
-        survey_df = survey_filtered,
+        survey_df = revised_survey,
         choices_df = revised_choices,
-        schema_df = primary_schema,
-        indicator_codes = indicator_codes
+        indicator_bank = indicator_bank_filtered,
+        lang = lang
       )
     },
 
@@ -1170,14 +1115,11 @@ Protocol <- R6::R6Class(
     ..construct_dap_rows = function(
       survey_df,
       choices_df,
-      schema_df,
-      indicator_codes
+      indicator_bank,
+      lang
     ) {
       # Initialize collectors
       rows <- list()
-
-      # Get catalog for research question lookup
-      obj_catalog <- schema_df
 
       # Process each survey row
       for (i in seq_len(nrow(survey_df))) {
@@ -1198,7 +1140,6 @@ Protocol <- R6::R6Class(
 
         # Split comma-separated codes
         row_ind_codes <- trimws(unlist(strsplit(row_ind_codes, ",")))
-        row_ind_codes <- row_ind_codes[row_ind_codes %in% indicator_codes]
         if (length(row_ind_codes) == 0L) {
           next
         }
@@ -1206,22 +1147,50 @@ Protocol <- R6::R6Class(
         # Use first matching indicator code
         ind_code <- row_ind_codes[1L]
 
-        # Find objective code for this indicator
-        obj_code <- schema_df$objective_code[
-          as.character(schema_df$indicator_code) == ind_code
-        ][1L]
+        # Get research question from framework catalog for this indicator code
+        research_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
+          indicator_bank[[as.character(ind_code)]]$research_question %||%
+            ""
+        } else {
+          ""
+        }
 
-        # Get research question from framework catalog
-        research_q <- if (!is.null(obj_catalog[[as.character(obj_code)]])) {
-          obj_catalog[[as.character(obj_code)]]$objective_research_question %||%
+        # Get research question from framework catalog for this indicator code
+        disagg_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
+          indicator_bank[[as.character(ind_code)]]$disaggregation %||%
+            ""
+        } else {
+          ""
+        }
+
+        # Get research question from framework catalog for this indicator code
+        ind_name_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
+          indicator_bank[[as.character(ind_code)]]$indicator_name %||%
+            ""
+        } else {
+          ""
+        }
+
+        # Get research question from framework catalog for this indicator code
+        dc_level_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
+          indicator_bank[[as.character(ind_code)]]$data_collection_level %||%
             ""
         } else {
           ""
         }
 
         # Get question label (try label::English first, then label)
-        question_label <- if ("label::English" %in% names(row)) {
+
+        question_label <- if (
+          lang == "en" && "label::English" %in% names(row)
+        ) {
           as.character(row[["label::English"]])
+        } else if (lang == "fr" && "label::French" %in% names(row)) {
+          as.character(row[["label::French"]])
+        } else if (lang == "es" && "label::Spanish" %in% names(row)) {
+          as.character(row[["label::Spanish"]])
+        } else if (lang == "ar" && "label::Arabic" %in% names(row)) {
+          as.character(row[["label::Arabic"]])
         } else if ("label" %in% names(row)) {
           as.character(row$label)
         } else {
@@ -1229,27 +1198,24 @@ Protocol <- R6::R6Class(
         }
 
         # Get responses from choices (newline-separated)
-        responses <- private$..extract_question_responses(row, choices_df)
+        responses <- private$..extract_question_responses(
+          row,
+          choices_df,
+          lang = lang
+        )
 
         # Append row (with blank fields as instructed)
         rows[[length(rows) + 1L]] <- data.frame(
           `Research Question` = research_q,
           `Indicator Code` = ind_code,
-          `Indicator / Variable` = "", # leave blank per user instruction
-          Disaggregation = "", # leave blank per user instruction
+          `Indicator / Variable` = ind_name_q,
+          Disaggregation = disagg_q, # leave blank per user instruction
           `Questionnaire Question` = question_label,
           `Questionnaire Responses` = responses,
-          `Data Collection Level` = "", # leave blank per user instruction
+          `Data Collection Level` = dc_level_q,
           check.names = FALSE,
           stringsAsFactors = FALSE
         )
-
-        print(paste(
-          "Added DAP row for indicator_code:",
-          ind_code,
-          "with research question:",
-          research_q
-        ))
       }
 
       if (length(rows) == 0L) {
@@ -1263,8 +1229,13 @@ Protocol <- R6::R6Class(
     #' @description Extract formatted response options for a survey question.
     #' @param question_row Single-row survey data frame
     #' @param choices_df Choices data frame (may be NULL)
+    #' @param lang Language code (default: "en")
     #' @return Character string with responses (newline-separated for select types)
-    ..extract_question_responses = function(question_row, choices_df) {
+    ..extract_question_responses = function(
+      question_row,
+      choices_df,
+      lang = "en"
+    ) {
       qtype <- if ("type" %in% names(question_row)) {
         tolower(trimws(as.character(question_row$type)))
       } else {
@@ -1284,8 +1255,22 @@ Protocol <- R6::R6Class(
           ]
           if (nrow(list_choices) > 0L) {
             # Try label::English first, then label
-            label_col <- if ("label::English" %in% names(list_choices)) {
+            label_col <- if (
+              lang == "en" && "label::English" %in% names(list_choices)
+            ) {
               "label::English"
+            } else if (
+              lang == "fr" && "label::French" %in% names(list_choices)
+            ) {
+              "label::French"
+            } else if (
+              lang == "es" && "label::Spanish" %in% names(list_choices)
+            ) {
+              "label::Spanish"
+            } else if (
+              lang == "ar" && "label::Arabic" %in% names(list_choices)
+            ) {
+              "label::Arabic"
             } else if ("label" %in% names(list_choices)) {
               "label"
             } else {

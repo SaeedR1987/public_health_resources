@@ -837,37 +837,18 @@ Goal: To assess the severity of the public health outcomes and identify initial 
 
 ## Specific Objectives and Research Questions
 
-```{r objectives_research_questions}
+```{r tbl-objectives_research_questions}
 #| results: asis
-cat(table_caption("Specific objectives and research questions"))
+#| echo: false
 
 library(flextable)
+library(officer)
 
 tbl <- params$objectives_research_questions_df
 
 if (is.list(tbl) && !is.data.frame(tbl)) {
   tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
 }
-
-# subpillar_flags$order <- seq_len(nrow(subpillar_flags))
-
-# tbl <- merge(
-#   subpillar_flags,
-#   pillar_flags,
-#   by = "pillar",
-#   all.x = TRUE
-# )
-
-# tbl <- tbl[tbl$include_pillar & tbl$include_subpillar, ]
-# tbl <- tbl[order(tbl$order), ]
-# tbl <- data.frame(
-#   Pillar = tbl$pillar,
-#   `Sub-Pillar` = ifelse(is.na(tbl$sub_pillar), "", tbl$sub_pillar),
-#   Objective = "",
-#   `Research Question` = "",
-#   check.names = FALSE,
-#   stringsAsFactors = FALSE
-# )
 
 ft <- flextable::flextable(tbl)
 
@@ -892,12 +873,20 @@ ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
 ft <- flextable::border_outer(ft, part = "all")
 ft <- flextable::border_inner_h(ft, part = "all")
 ft <- flextable::border_inner_v(ft, part = "all")
-ft <- line_spacing(ft, space = 1, part = "all")
-ft <- padding(
+
+ft <- flextable::line_spacing(ft, space = 1, part = "all")
+ft <- flextable::padding(
   ft,
   padding.top = 0,
   padding.bottom = 0,
   part = "all"
+)
+
+ft <- flextable::set_caption(
+  ft,
+  caption = "Specific objectives and research questions",
+  autonum = officer::run_autonum(seq_id = "Table"),
+  style = "Table Caption"
 )
 
 ft
@@ -2819,10 +2808,11 @@ if (params$tool_market_kii) {
 
   cat(table_caption("Market Vendor KII DAP"))
 
-  tbl <- market_kii_dap_df
+  tbl <- params$market_kii_dap_df
+
   if (is.list(tbl) && !is.data.frame(tbl)) {
-  tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
-}
+    tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
+  }
 
   ft <- iphra_dap_flextable(
     tbl,

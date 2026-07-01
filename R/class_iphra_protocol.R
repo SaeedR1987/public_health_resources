@@ -332,6 +332,7 @@ IPHRAProtocol <- R6::R6Class(
           tool_household_iphra = self$.tool_household_iphra,
           tool_community_kii = self$.tool_community_kii,
           tool_fsl_provider_kii = self$.tool_fsl_provider_kii,
+          tool_market_kii = self$.tool_market_kii,
           tool_health_facility_kii = self$.tool_health_facility_kii,
           tool_nutrition_facility_kii = self$.tool_nutrition_facility_kii,
           tool_wash_provider_kii = self$.tool_wash_provider_kii,
@@ -351,18 +352,42 @@ IPHRAProtocol <- R6::R6Class(
           household_pillars_table_df = self$.household_pillars_table_df,
           kii_pillars_table_df = self$.kii_pillars_table_df,
           observation_pillars_table_df = self$.observation_pillars_table_df,
-          household_dap_df = self$.household_dap_df,
-          community_kii_dap_df = self$.community_kii_dap_df,
-          community_observation_dap_df = self$.community_observation_dap_df,
-          health_facility_kii_dap_df = self$.health_facility_kii_dap_df,
-          health_facility_observation_dap_df = self$.health_facility_observation_dap_df,
-          nutrition_facility_kii_dap_df = self$.nutrition_facility_kii_dap_df,
-          fsl_provider_kii_dap_df = self$.fsl_provider_kii_dap_df,
-          market_kii_dap_df = self$.market_kii_dap_df,
-          crop_livestock_observation_dap_df = self$.crop_livestock_observation_dap_df,
-          wash_provider_kii_dap_df = self$.wash_provider_kii_dap_df,
-          water_point_observation_dap_df = self$.water_point_observation_dap_df,
-          latrine_observation_dap_df = self$.latrine_observation_dap_df
+          household_dap_df = private$..sanitize_quarto_df(
+            self$.household_dap_df
+          ),
+          community_kii_dap_df = private$..sanitize_quarto_df(
+            self$.community_kii_dap_df
+          ),
+          community_observation_dap_df = private$..sanitize_quarto_df(
+            self$.community_observation_dap_df
+          ),
+          health_facility_kii_dap_df = private$..sanitize_quarto_df(
+            self$.health_facility_kii_dap_df
+          ),
+          health_facility_observation_dap_df = private$..sanitize_quarto_df(
+            self$.health_facility_observation_dap_df
+          ),
+          nutrition_facility_kii_dap_df = private$..sanitize_quarto_df(
+            self$.nutrition_facility_kii_dap_df
+          ),
+          fsl_provider_kii_dap_df = private$..sanitize_quarto_df(
+            self$.fsl_provider_kii_dap_df
+          ),
+          market_kii_dap_df = private$..sanitize_quarto_df(
+            self$.market_kii_dap_df
+          ),
+          crop_livestock_observation_dap_df = private$..sanitize_quarto_df(
+            self$.crop_livestock_observation_dap_df
+          ),
+          wash_provider_kii_dap_df = private$..sanitize_quarto_df(
+            self$.wash_provider_kii_dap_df
+          ),
+          water_point_observation_dap_df = private$..sanitize_quarto_df(
+            self$.water_point_observation_dap_df
+          ),
+          latrine_observation_dap_df = private$..sanitize_quarto_df(
+            self$.latrine_observation_dap_df
+          )
         )
       )
     }
