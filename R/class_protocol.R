@@ -1125,13 +1125,6 @@ Protocol <- R6::R6Class(
       for (i in seq_len(nrow(survey_df))) {
         row <- survey_df[i, , drop = FALSE]
 
-        print(paste(
-          "Processing survey row",
-          i,
-          "with indicator_code:",
-          as.character(row$indicator_code)
-        ))
-
         # Get indicator code(s) for this question
         row_ind_codes <- as.character(row$indicator_code)
         if (is.na(row_ind_codes) || !nzchar(row_ind_codes)) {

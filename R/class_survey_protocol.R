@@ -535,7 +535,7 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..sample_has_any_method_site("srs")
+      private$..sample_has_any_method_site("simple_random")
     },
 
     .site_selection_systematic = function(value) {

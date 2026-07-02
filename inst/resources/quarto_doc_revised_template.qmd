@@ -577,9 +577,9 @@ if (is.list(tbl) && !is.data.frame(tbl)) {
 
 ft <- flextable(tbl)
 
-ft <- delete_part(ft, part = "header")
+# ft <- delete_part(ft, part = "header")
 
-# Page-width five-column table
+# Page-width three-column table
 ft <- width(ft, j = 1:3, width = 2.17)
 
 # Font
@@ -587,8 +587,12 @@ ft <- font(ft, fontname = "Arial Narrow", part = "body")
 ft <- fontsize(ft, size = 9, part = "body")
 
 # Header row formatting
-ft <- bold(ft, i = 1, bold = TRUE, part = "body")
-ft <- bg(ft, i = 1, bg = "#DDDDDE", part = "body")
+ft <- bold(ft, i = 1, bold = TRUE, part = "header")
+ft <- bg(ft, i = 1, bg = "#DDDDDE", part = "header")
+ft <- font(ft, fontname = "Arial Narrow", part = "header")
+ft <- fontsize(ft, size = 9, part = "header")
+ft <- align(ft, align = "left", part = "header")
+ft <- valign(ft, valign = "top", part = "header")
 
 # Alignment
 ft <- align(ft, align = "left", part = "body")
@@ -610,7 +614,7 @@ ft
 
 ```{r timeline}
 #| fig-width: 7
-#| fig-height: 1.5
+#| fig-height: 2
 
 library(ggplot2)
 
@@ -638,27 +642,32 @@ timeline_df <- data.frame(
     "9. Final presentation"
   ),
   y_line_end = c(
-    0.125, -0.125,
-    0.125, -0.125,
-    0.125, -0.125,
-    0.125, -0.125,
-    0.125
+    0.16, -0.16,
+    0.16, -0.16,
+    0.16, -0.16,
+    0.16, -0.16,
+    0.16
   ),
   y_text = c(
-    0.18, -0.18,
-    0.18, -0.18,
-    0.18, -0.18,
-    0.18, -0.18,
-    0.18
+    0.30, -0.30,
+    0.30, -0.30,
+    0.30, -0.30,
+    0.30, -0.30,
+    0.30
   ),
   stringsAsFactors = FALSE
 )
 
 timeline_df$date <- as.Date(timeline_df$date)
 
+timeline_df$milestone_wrapped <- vapply(
+  timeline_df$milestone,
+  function(x) paste(strwrap(x, width = 25), collapse = "\n"),
+  character(1)
+)
 
 timeline_df$label <- paste0(
-  timeline_df$milestone,
+  timeline_df$milestone_wrapped,
   "\n",
   format(timeline_df$date, "%d %b %Y")
 )
@@ -683,33 +692,33 @@ timeline_plot <- ggplot(timeline_df, aes(x = date, y = 0)) +
     linewidth = 0.4
   ) +
   geom_text(
-  data = subset(timeline_df, y_text > 0),
-  aes(
-    x = date,
-    y = y_text,
-    label = label
-  ),
-  angle = 30,
-  hjust = 0,
-  vjust = 0.5,
-  family = "Arial Narrow",
-  size = 2.8,
-  lineheight = 0.9
-) +
-geom_text(
-  data = subset(timeline_df, y_text < 0),
-  aes(
-    x = date,
-    y = y_text,
-    label = label
-  ),
-  angle = -30,
-  hjust = 0,
-  vjust = 0.5,
-  family = "Arial Narrow",
-  size = 2.8,
-  lineheight = 0.9
-) +
+    data = subset(timeline_df, y_text > 0),
+    aes(
+      x = date,
+      y = y_text,
+      label = label
+    ),
+    angle = 90,
+    hjust = 0,
+    vjust = 0.5,
+    family = "Arial Narrow",
+    size = 2.5,
+    lineheight = 0.9
+  ) +
+  geom_text(
+    data = subset(timeline_df, y_text < 0),
+    aes(
+      x = date,
+      y = y_text,
+      label = label
+    ),
+    angle = -90,
+    hjust = 0,
+    vjust = 0.5,
+    family = "Arial Narrow",
+    size = 2.5,
+    lineheight = 0.9
+  ) +
   scale_x_date(
     date_breaks = "1 month",
     date_labels = "%b\n%Y"
@@ -730,7 +739,7 @@ geom_text(
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
     plot.margin = margin(
-      t = 25,
+      t = 25, 
       r = 30,
       b = 25,
       l = 20
@@ -856,15 +865,16 @@ ft <- flextable::merge_v(ft, j = "Pillar")
 ft <- flextable::valign(ft, valign = "top", part = "body")
 
 ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-ft <- flextable::fontsize(ft, size = 9, part = "all")
+ft <- flextable::fontsize(ft, size = 9, part = "header")
+ft <- flextable::fontsize(ft, size = 8, part = "body")
 
 ft <- flextable::bold(ft, part = "header")
 ft <- flextable::bg(ft, part = "header", bg = "#DDDDDE")
 
-ft <- flextable::width(ft, j = 1, width = 1.5)
-ft <- flextable::width(ft, j = 2, width = 1.5)
-ft <- flextable::width(ft, j = 3, width = 1.7)
-ft <- flextable::width(ft, j = 4, width = 1.8)
+ft <- flextable::width(ft, j = 1, width = 0.75)
+ft <- flextable::width(ft, j = 2, width = 0.75)
+ft <- flextable::width(ft, j = 3, width = 2.44)
+ft <- flextable::width(ft, j = 4, width = 2.44)
 
 ft <- flextable::align(ft, align = "left", part = "all")
 ft <- flextable::padding(ft, padding = 4, part = "all")
@@ -1606,33 +1616,33 @@ if (params$site_selection_srs) {
     cat(glue::glue("A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_srs}. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be allocated across selected sites with {params$cluster_size} households planned per site and additional weighting applied during analysis to account for under- or over-sampling of population groups between sites. \n"))
   }
    
-} else if (params$site_selection_systematic) {
-  cat(glue::glue(
-"A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_systematic}. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.
+  } else if (params$site_selection_systematic) {
+    cat(glue::glue(
+  "A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_systematic}. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.
 
-Data collection teams will utilize the following steps:
+  Data collection teams will utilize the following steps:
 
-* **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.
-* **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.
-  * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.
-* **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.
-  * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.
-* **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.
-  * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).
-  * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:
-    * Decimal between 0–0.2: round sampling interval down.
-    * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.
-    * Decimal between 0.8–0.9: round sampling interval up.
+  * **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.
+  * **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.
+    * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.
+  * **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.
+    * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.
+  * **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.
+    * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).
+    * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:
+      * Decimal between 0–0.2: round sampling interval down.
+      * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.
+      * Decimal between 0.8–0.9: round sampling interval up.
 
-"
-))
-} else if (params$site_selection_exhaustive) {
-  cat(glue::glue("All eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment covering {params$stratified_strata_names_site_exhaustive}. The household sample will be allocated across these sites proportional to the population size of these sites. \n"))
-} else if (params$site_selection_cluster) {
-  cat(glue::glue("A total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU, covering {params$stratified_strata_names_site_cluster}. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households. \n"))
-} else if (params$site_selection_purposive) {
-  cat(glue::glue("A total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment, covering {params$stratified_strata_names_site_purposive}. The sample will be equally distributed across sites with {params$cluster_size} households per site. [PLEASE UPDATE FOR SELECTION CRITERIA]. \n"))
-}
+  "
+  ))
+  } else if (params$site_selection_exhaustive) {
+    cat(glue::glue("All eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment covering {params$stratified_strata_names_site_exhaustive}. The household sample will be allocated across these sites proportional to the population size of these sites. \n"))
+  } else if (params$site_selection_cluster) {
+    cat(glue::glue("A total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU, covering {params$stratified_strata_names_site_cluster}. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households. \n"))
+  } else if (params$site_selection_purposive) {
+    cat(glue::glue("A total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment, covering {params$stratified_strata_names_site_purposive}. The sample will be equally distributed across sites with {params$cluster_size} households per site. [PLEASE UPDATE FOR SELECTION CRITERIA]. \n"))
+  }
 
 ```
 
@@ -1683,7 +1693,7 @@ The exact composition of teams will depend on the number of tools being implemen
 
 Teams will receive a base three-day training prior to data collection covering purpose of the survey, good interview practices and ethical conduct during public health assessment, field sampling procedures, and review of the survey, key informant and observational tools, and a one-day for pilot and planning activities. It is recommended to divide the team for separate tool review sessions to efficiently make use of training time.
 
-```{r}
+```{r team_composition_muac}
 #| results: asis
 
 if(params$ind_muac_children | params$ind_muac_women) {
@@ -1704,13 +1714,29 @@ Field supervisors will have a key role in ensuring research quality during data 
 *	Ensuring proper household sampling techniques are applied
 *	Providing supportive supervision to enumerators
 
-### Key Informant Interviews
-There are several core and supplemental key informant tools within the IPHRA toolkit, however for the purposes of this assessment the following key informant interviews are planned to assess these dimensions: 
+
+```{r kii_intro_text}
+#| results: asis
+
+if(params$tool_community_kii | params$tool_health_facility_kii | params$tool_nutrition_facility_kii | params$tool_market_kii | params$tool_fsl_provider_kii) {
+
+cat(glue::glue(
+  
+  "### Key Informant Interviews
+  
+  There are several core and supplemental key informant tools within the IPHRA toolkit, however for the purposes of this assessment the following key informant interviews are planned to assess these dimensions: " 
+    
+))
+
+}
+
+```
+
 
 ```{r tool_pillar_subpillar_table}
-#| echo: false
-#| warning: false
-#| message: false
+#| results: asis
+
+if (params$tool_community_kii) {
 
 tool_inputs <- params$kii_pillars_table_df
 
@@ -1740,13 +1766,23 @@ ft <- flextable::autofit(ft)
 ft <- flextable::fit_to_width(ft, max_width = 6.5)
 
 ft
+
+} 
+
+
 ```
 
-At least one community leaders and at least two community members (not formal leaders) should be selected from each sampled community or site for the Community Key Informant Tool. Community members can act as informants and are included to balance out perspectives that may be missed if only community leaders are interviewed. It is recommended that a mix of purposive and random selection is used for identifying respondents:
 
-* Purposive Selection: Community leaders should be purposefully selected based on those who have formal or informal leadership roles in the community and can speak on behalf of community members, such as village chiefs, deputy cheifs, etc. 
+```{r community_kii_selection}
+#| results: asis
 
-* Random Selection: Community members should be randomly selected from the community to ensure a diversity of perspectives are included. Community leaders SHOULD NOT select these individuals for the assessment team. The aim of this random selection isn't to ensure any statistical representativeness, but to ensure we are accessing unbiased perspectives in the community. Assessment teams should use a simple random walk following the below procedure:
+if (params$tool_community_kii) {
+
+  cat(glue::glue("At least one community leaders and at least two community members (not formal leaders) should be selected from each sampled community or site for the Community Key Informant Tool. Community members can act as informants and are included to balance out perspectives that may be missed if only community leaders are interviewed. It is recommended that a mix of purposive and random selection is used for identifying respondents:
+
+  * Purposive Selection: Community leaders should be purposefully selected based on those who have formal or informal leadership roles in the community and can speak on behalf of community members, such as village chiefs, deputy cheifs, etc. 
+
+  * Random Selection: Community members should be randomly selected from the community to ensure a diversity of perspectives are included. Community leaders SHOULD NOT select these individuals for the assessment team. The aim of this random selection isn't to ensure any statistical representativeness, but to ensure we are accessing unbiased perspectives in the community. Assessment teams should use a simple random walk following the below procedure:
 
   * First, go to the approximate center of the assessment site.
   * Second, spin and toss a pen into the air to determine a direction.  
@@ -1754,16 +1790,15 @@ At least one community leaders and at least two community members (not formal le
   * Fourth, return to the center of town, walk approximately 45 seconds in the opposite direction and select the household on the immediate right for a second community member interview.  
   * Adapt as needed based on the size and shape of the location. 
 
-In the event of specific at-risk or difficult to identify groups within the population, it may be necessary to identify key informants through snowball sampling by asking local service providers for referrals. Consider this if there are specific groups that you want their views represented in the community key informant tools.
+In the event of specific at-risk or difficult to identify groups within the population, it may be necessary to identify key informants through snowball sampling by asking local service providers for referrals. Consider this if there are specific groups that you want their views represented in the community key informant tools."))
+
+}
+
+```
+
 
 ```{r 'kii_specialized_selection'}
 #| results: asis
-
-kii_health_facility <- TRUE
-kii_nutrition_facility <- TRUE
-kii_market_vendor <- TRUE
-kii_fsl_provider <- TRUE
-kii_wash_provider <- TRUE
 
 if(params$tool_health_facility_kii) {
   cat("Health facility staff should be selected by purposive selection methods based on their leadership positions in health facilities serving the community. Wherever possible, health authorities and/or health coordinators of operational health partners will be informed and consulted before interviews are conducted with their staff. \n")
@@ -1787,14 +1822,28 @@ if(params$tool_wash_provider_kii) {
 
 ```
 
-### Observation Tools
+```{r observation_intro_text}
+#| results: asis
+
+if( params$tool_community_observation | params$tool_health_facility_observation | params$tool_crops_livestock_observation | params$tool_water_point_observation | params$tool_latrine_observation) {
+
+cat(glue::glue("### Observation Tools
 
 There are several core and supplemental observation checklist tools within the IPHRA toolkit, however for the purposes of this assessment the following observation tools will be applied:
+
+"))
+
+}
+
+```
+
 
 ```{r observation_tool_pillar_subpillar_table}
 #| echo: false
 #| warning: false
 #| message: false
+
+if (params$tool_community_observation) {
 
 tool_inputs <- params$observation_pillars_table_df
 
@@ -1825,23 +1874,50 @@ ft <- flextable::autofit(ft)
 ft <- flextable::fit_to_width(ft, max_width = 6.5)
 
 ft
+
+}
+
 ```
 
-A community observation tool should be completed in each sampled community or site through a structured transect walk conducted by the assessment team. The purpose of the transect walk is to systematically observe community conditions, infrastructure, services, environmental risks, and other contextual factors that may influence humanitarian needs while validating information collected through household surveys and key informant interviews. One observation tool should be completed per site. 
+
+```{r community_observation_method_text}
+#| results: asis
+
+if (params$tool_community_observation) {
+cat(glue::glue("A community observation tool should be completed in each sampled community or site through a structured transect walk conducted by the assessment team. The purpose of the transect walk is to systematically observe community conditions, infrastructure, services, environmental risks, and other contextual factors that may influence humanitarian needs while validating information collected through household surveys and key informant interviews. One observation tool should be completed per site. 
 
 Assessment teams should walk through the community following a route that captures different sections of the site, observing and documenting conditions using the observation checklist. Where possible, the transect walk should be conducted with the support of a knowledgeable community representative who can provide clarification on observed features, while ensuring that observations remain based on direct observation rather than respondent perceptions.
+
+"))
+}
+
+```
 
 ## Data Processing and Analysis
 
 Template data collection tools with Kobo have been adapted for this assessment. Both quantitative and qualitative data will be collected using KoboCollect on Android devices and uploaded to a Kobo server. 
 
+
+```{r 'hh_survey_analysis_intro'}
+#| results: asis
+
+if(params$tool_household) {
+  cat(glue::glue("
+
 ### Household Survey Data
 
 Household data will be collected using a contextualized IPHRA KoboCollect tool. Cleaning, indicator calculations, and analysis will be done using a pre-prepared IPHRA application using `r R.version.string`.
 
+"))
+}
+
+```
+
 ```{r 'hh_analysis_plan'}
 #| results: asis
 
+if (params$tool_household) {
+ 
 if ((params$site_selection_srs == TRUE | params$site_selection_systematic == TRUE) & (params$hh_selection_srs == TRUE | params$hh_selection_systematic == TRUE)) {
   
 cat("The household analysis will be treated as a simple random sampling design across sites without applying survey weights. ")
@@ -2024,10 +2100,15 @@ cat("The household analysis will be treated as a simple random sampling design a
 } else {
   cat("PLEASE SPECIFY ANALYSIS METHODS HERE.\n")
 } 
+
+}
+
 ```
 
 ```{r muac_analysis_plan}
 #| results: asis
+
+if (params$tool_household) {
 
 if (params$ind_muac_children) {
   cat("#### Mid-Upper Arm Circumference (MUAC) Analysis\n\n")
@@ -2048,6 +2129,8 @@ if (params$ind_muac_women) {
 
 }
 
+}
+
 ```
 
 ```{r mortality_analysis_plan}
@@ -2064,11 +2147,26 @@ if (params$ind_mortality) {
 
 ```
 
-### Key Informant and Observation Data
 
-Community key informant interviews and community observation checklists will be qualitatively analysed using a data saturation grid, with the objectives of (a) triangulating the self-perceived needs of the population against quantitative data, and (b) attaining a better qualitative understanding of the nature of needs and barriers. The qualitative analysis uses a two-step process: Firstly, qualitative responses or observations are categorized as pertaining to one or more pillars or sub-pillars of the Acute Needs Framework to facilitate comparison of results across tools; and secondly a rapid coding is conducted to identify common themes and issues within pillars and sub-pillars. Responses will be compared across assessed sites. A standardized data saturation grid is used to facilitate this analysis. 
+```{r kii_obs_analysis_plan}
+#| results: asis
 
-### Integrated Analysis
+if (params$tool_community_kii |  params$tool_community_observation ) {
+
+cat(glue::glue("### Key Informant and Observation Data
+
+Community key informant interviews and community observation checklists will be qualitatively analysed using a data saturation grid, with the objectives of (a) triangulating the self-perceived needs of the population against quantitative data, and (b) attaining a better qualitative understanding of the nature of needs and barriers. The qualitative analysis uses a two-step process: Firstly, qualitative responses or observations are categorized as pertaining to one or more pillars or sub-pillars of the Acute Needs Framework to facilitate comparison of results across tools; and secondly a rapid coding is conducted to identify common themes and issues within pillars and sub-pillars. Responses will be compared across assessed sites. A standardized data saturation grid is used to facilitate this analysis. \n\n"))
+
+}
+
+```
+
+```{r kii_obs_analysis_plan}
+#| results: asis
+
+if (params$tool_household & (params$tool_community_kii | params$tool_health_facility_kii | params$tool_nutrition_facility_kii | params$tool_market_kii | params$tool_fsl_provider_kii | params$tool_wash_provider_kii | params$tool_community_observation | params$tool_health_facility_observation | params$tool_crops_livestock_observation | params$tool_water_point_observation | params$tool_latrine_observation) ) {
+
+cat(glue::glue("### Integrated Analysis
 
 The IPHRA is a mixed methods approach that uses both quantitative and qualitative approaches to triangulate the severity of population needs and service gaps. In order to facilitate this, an integrated analysis is conducted to compare the responses across tools and assign an overall severity per ANA dimension. The objective of this exercise is to provide a holistic understanding and prioritization of different dimensions that may be threatening public health.  
 
@@ -2079,6 +2177,12 @@ The integrated analysis is conducted in three steps.
 3. Assign an Overall Severity
 
 In order to have a holistic understanding of the severity of public health needs and service gaps, it is suggested to include an integrated analysis table. This table will assign severity to one of the RoEM domains based on the evidence captured within the IPHRA assessment. The analyst can use the recommended thresholds in the standards tables located in the IPHRA Guidance document to help assign severity, however these are recommendations based on standards and if needed these thresholds may be contextualized at the country level. 
+
+"))
+
+}
+
+```
 
 ```{r anf_group_mapping_table}
 #| results: asis
@@ -2583,7 +2687,12 @@ ft
 
 # Data Analysis Plan (DAP)
 
-## Household Tool DAP
+```{r household_tool_analysis_plan_header}
+
+if(params$tool_household) {cat(glue::glue("## Household Tool DAP"))}
+
+```
+
 
 ```{r household_tool_analysis_plan}
 #| out.width: "100%"
@@ -2615,10 +2724,16 @@ ft
 
 ```
 
-## Community Key Informant DAP
+
+```{r analysis_plan_community_kii_header}
+#| results: asis
+
+if(params$tool_community_kii) {cat(glue::glue("## Community Key Informant DAP"))}
+
+```
 
 ```{r analysis_plan_community_kii_table}
-#| out.width: "100%q"
+#| out.width: "100%"
 #| results: asis
 
 if (params$tool_community_kii) {
