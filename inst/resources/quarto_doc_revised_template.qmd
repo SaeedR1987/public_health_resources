@@ -1616,33 +1616,33 @@ if (params$site_selection_srs) {
     cat(glue::glue("A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_srs}. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be allocated across selected sites with {params$cluster_size} households planned per site and additional weighting applied during analysis to account for under- or over-sampling of population groups between sites. \n"))
   }
    
-} else if (params$site_selection_systematic) {
-  cat(glue::glue(
-"A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_systematic}. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.
+  } else if (params$site_selection_systematic) {
+    cat(glue::glue(
+  "A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_systematic}. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.
 
-Data collection teams will utilize the following steps:
+  Data collection teams will utilize the following steps:
 
-* **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.
-* **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.
-  * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.
-* **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.
-  * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.
-* **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.
-  * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).
-  * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:
-    * Decimal between 0–0.2: round sampling interval down.
-    * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.
-    * Decimal between 0.8–0.9: round sampling interval up.
+  * **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.
+  * **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.
+    * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.
+  * **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.
+    * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.
+  * **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.
+    * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).
+    * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:
+      * Decimal between 0–0.2: round sampling interval down.
+      * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.
+      * Decimal between 0.8–0.9: round sampling interval up.
 
-"
-))
-} else if (params$site_selection_exhaustive) {
-  cat(glue::glue("All eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment covering {params$stratified_strata_names_site_exhaustive}. The household sample will be allocated across these sites proportional to the population size of these sites. \n"))
-} else if (params$site_selection_cluster) {
-  cat(glue::glue("A total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU, covering {params$stratified_strata_names_site_cluster}. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households. \n"))
-} else if (params$site_selection_purposive) {
-  cat(glue::glue("A total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment, covering {params$stratified_strata_names_site_purposive}. The sample will be equally distributed across sites with {params$cluster_size} households per site. [PLEASE UPDATE FOR SELECTION CRITERIA]. \n"))
-}
+  "
+  ))
+  } else if (params$site_selection_exhaustive) {
+    cat(glue::glue("All eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment covering {params$stratified_strata_names_site_exhaustive}. The household sample will be allocated across these sites proportional to the population size of these sites. \n"))
+  } else if (params$site_selection_cluster) {
+    cat(glue::glue("A total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU, covering {params$stratified_strata_names_site_cluster}. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households. \n"))
+  } else if (params$site_selection_purposive) {
+    cat(glue::glue("A total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment, covering {params$stratified_strata_names_site_purposive}. The sample will be equally distributed across sites with {params$cluster_size} households per site. [PLEASE UPDATE FOR SELECTION CRITERIA]. \n"))
+  }
 
 ```
 
@@ -1714,13 +1714,29 @@ Field supervisors will have a key role in ensuring research quality during data 
 *	Ensuring proper household sampling techniques are applied
 *	Providing supportive supervision to enumerators
 
-### Key Informant Interviews
-There are several core and supplemental key informant tools within the IPHRA toolkit, however for the purposes of this assessment the following key informant interviews are planned to assess these dimensions: 
+
+```{r kii_intro_text}
+#| results: asis
+
+if(params$tool_community_kii | params$tool_health_facility_kii | params$tool_nutrition_facility_kii | params$tool_market_kii | params$tool_fsl_provider_kii) {
+
+cat(glue::glue(
+  
+  "### Key Informant Interviews
+  
+  There are several core and supplemental key informant tools within the IPHRA toolkit, however for the purposes of this assessment the following key informant interviews are planned to assess these dimensions: " 
+    
+))
+
+}
+
+```
+
 
 ```{r tool_pillar_subpillar_table}
 #| results: asis
 
-if (!params$tool_community_kii) {
+if (params$tool_community_kii) {
 
 tool_inputs <- params$kii_pillars_table_df
 
@@ -1806,14 +1822,28 @@ if(params$tool_wash_provider_kii) {
 
 ```
 
-### Observation Tools
+```{r observation_intro_text}
+#| results: asis
+
+if( params$tool_community_observation | params$tool_health_facility_observation | params$tool_crops_livestock_observation | params$tool_water_point_observation | params$tool_latrine_observation) {
+
+cat(glue::glue("### Observation Tools
 
 There are several core and supplemental observation checklist tools within the IPHRA toolkit, however for the purposes of this assessment the following observation tools will be applied:
+
+"))
+
+}
+
+```
+
 
 ```{r observation_tool_pillar_subpillar_table}
 #| echo: false
 #| warning: false
 #| message: false
+
+if (params$tool_community_observation) {
 
 tool_inputs <- params$observation_pillars_table_df
 
@@ -1844,23 +1874,50 @@ ft <- flextable::autofit(ft)
 ft <- flextable::fit_to_width(ft, max_width = 6.5)
 
 ft
+
+}
+
 ```
 
-A community observation tool should be completed in each sampled community or site through a structured transect walk conducted by the assessment team. The purpose of the transect walk is to systematically observe community conditions, infrastructure, services, environmental risks, and other contextual factors that may influence humanitarian needs while validating information collected through household surveys and key informant interviews. One observation tool should be completed per site. 
+
+```{r community_observation_method_text}
+#| results: asis
+
+if (params$tool_community_observation) {
+cat(glue::glue("A community observation tool should be completed in each sampled community or site through a structured transect walk conducted by the assessment team. The purpose of the transect walk is to systematically observe community conditions, infrastructure, services, environmental risks, and other contextual factors that may influence humanitarian needs while validating information collected through household surveys and key informant interviews. One observation tool should be completed per site. 
 
 Assessment teams should walk through the community following a route that captures different sections of the site, observing and documenting conditions using the observation checklist. Where possible, the transect walk should be conducted with the support of a knowledgeable community representative who can provide clarification on observed features, while ensuring that observations remain based on direct observation rather than respondent perceptions.
+
+"))
+}
+
+```
 
 ## Data Processing and Analysis
 
 Template data collection tools with Kobo have been adapted for this assessment. Both quantitative and qualitative data will be collected using KoboCollect on Android devices and uploaded to a Kobo server. 
 
+
+```{r 'hh_survey_analysis_intro'}
+#| results: asis
+
+if(params$tool_household) {
+  cat(glue::glue("
+
 ### Household Survey Data
 
 Household data will be collected using a contextualized IPHRA KoboCollect tool. Cleaning, indicator calculations, and analysis will be done using a pre-prepared IPHRA application using `r R.version.string`.
 
+"))
+}
+
+```
+
 ```{r 'hh_analysis_plan'}
 #| results: asis
 
+if (params$tool_household) {
+ 
 if ((params$site_selection_srs == TRUE | params$site_selection_systematic == TRUE) & (params$hh_selection_srs == TRUE | params$hh_selection_systematic == TRUE)) {
   
 cat("The household analysis will be treated as a simple random sampling design across sites without applying survey weights. ")
@@ -2043,10 +2100,15 @@ cat("The household analysis will be treated as a simple random sampling design a
 } else {
   cat("PLEASE SPECIFY ANALYSIS METHODS HERE.\n")
 } 
+
+}
+
 ```
 
 ```{r muac_analysis_plan}
 #| results: asis
+
+if (params$tool_household) {
 
 if (params$ind_muac_children) {
   cat("#### Mid-Upper Arm Circumference (MUAC) Analysis\n\n")
@@ -2067,6 +2129,8 @@ if (params$ind_muac_women) {
 
 }
 
+}
+
 ```
 
 ```{r mortality_analysis_plan}
@@ -2083,11 +2147,26 @@ if (params$ind_mortality) {
 
 ```
 
-### Key Informant and Observation Data
 
-Community key informant interviews and community observation checklists will be qualitatively analysed using a data saturation grid, with the objectives of (a) triangulating the self-perceived needs of the population against quantitative data, and (b) attaining a better qualitative understanding of the nature of needs and barriers. The qualitative analysis uses a two-step process: Firstly, qualitative responses or observations are categorized as pertaining to one or more pillars or sub-pillars of the Acute Needs Framework to facilitate comparison of results across tools; and secondly a rapid coding is conducted to identify common themes and issues within pillars and sub-pillars. Responses will be compared across assessed sites. A standardized data saturation grid is used to facilitate this analysis. 
+```{r kii_obs_analysis_plan}
+#| results: asis
 
-### Integrated Analysis
+if (params$tool_community_kii |  params$tool_community_observation ) {
+
+cat(glue::glue("### Key Informant and Observation Data
+
+Community key informant interviews and community observation checklists will be qualitatively analysed using a data saturation grid, with the objectives of (a) triangulating the self-perceived needs of the population against quantitative data, and (b) attaining a better qualitative understanding of the nature of needs and barriers. The qualitative analysis uses a two-step process: Firstly, qualitative responses or observations are categorized as pertaining to one or more pillars or sub-pillars of the Acute Needs Framework to facilitate comparison of results across tools; and secondly a rapid coding is conducted to identify common themes and issues within pillars and sub-pillars. Responses will be compared across assessed sites. A standardized data saturation grid is used to facilitate this analysis. \n\n"))
+
+}
+
+```
+
+```{r kii_obs_analysis_plan}
+#| results: asis
+
+if (params$tool_household & (params$tool_community_kii | params$tool_health_facility_kii | params$tool_nutrition_facility_kii | params$tool_market_kii | params$tool_fsl_provider_kii | params$tool_wash_provider_kii | params$tool_community_observation | params$tool_health_facility_observation | params$tool_crops_livestock_observation | params$tool_water_point_observation | params$tool_latrine_observation) ) {
+
+cat(glue::glue("### Integrated Analysis
 
 The IPHRA is a mixed methods approach that uses both quantitative and qualitative approaches to triangulate the severity of population needs and service gaps. In order to facilitate this, an integrated analysis is conducted to compare the responses across tools and assign an overall severity per ANA dimension. The objective of this exercise is to provide a holistic understanding and prioritization of different dimensions that may be threatening public health.  
 
@@ -2098,6 +2177,12 @@ The integrated analysis is conducted in three steps.
 3. Assign an Overall Severity
 
 In order to have a holistic understanding of the severity of public health needs and service gaps, it is suggested to include an integrated analysis table. This table will assign severity to one of the RoEM domains based on the evidence captured within the IPHRA assessment. The analyst can use the recommended thresholds in the standards tables located in the IPHRA Guidance document to help assign severity, however these are recommendations based on standards and if needed these thresholds may be contextualized at the country level. 
+
+"))
+
+}
+
+```
 
 ```{r anf_group_mapping_table}
 #| results: asis
@@ -2602,7 +2687,12 @@ ft
 
 # Data Analysis Plan (DAP)
 
-## Household Tool DAP
+```{r household_tool_analysis_plan_header}
+
+if(params$tool_household) {cat(glue::glue("## Household Tool DAP"))}
+
+```
+
 
 ```{r household_tool_analysis_plan}
 #| out.width: "100%"
@@ -2634,10 +2724,16 @@ ft
 
 ```
 
-## Community Key Informant DAP
+
+```{r analysis_plan_community_kii_header}
+#| results: asis
+
+if(params$tool_community_kii) {cat(glue::glue("## Community Key Informant DAP"))}
+
+```
 
 ```{r analysis_plan_community_kii_table}
-#| out.width: "100%q"
+#| out.width: "100%"
 #| results: asis
 
 if (params$tool_community_kii) {

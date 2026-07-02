@@ -403,7 +403,7 @@ protocol$metadata$visibility_other <- "Not applicable"
 
 protocol$metadata$month_year <- "June 2025"
 protocol$metadata$country_name <- "Switzerland"
-protocol$metadata$assessment_title <- "Integrated Multi-Sector Humanitarian Needs Assessment - Switzerland"
+protocol$metadata$assessment_title <- "Integrated Public Health Rapid Assessment - Switzerland"
 protocol$metadata$protocol_version <- "1.0"
 protocol$metadata$version <- 1L
 # Text metadata fields
