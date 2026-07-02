@@ -702,8 +702,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
       for (i in seq_len(nrow(sample_table))) {
         row <- sample_table[i, ]
 
-        print(paste0("I am here 1 -", i))
-
         # Read sampling_method_site directly — it is "cluster" or other method and
         # maps directly to the design parameter accepted by calculate_sample_size_*
         # functions.  Fall back to "simple_random" for robustness if absent.
@@ -717,7 +715,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
         } else {
           "simple_random"
         }
-        print(paste0("I am here 2 -", i))
         # ---- General (population-level) sample size -------------------------
         if (!is.na(row$pop_expected_prevalence) && !is.na(row$pop_precision)) {
           design_effect <- if (
@@ -740,7 +737,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
           } else {
             NULL
           }
-          print(paste0("I am here 3 -", i))
 
           pop_ss <- phr_try(
             calculate_sample_size_general(
@@ -760,7 +756,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
             sample_table$General_HH_Sample_Size[i] <- pop_ss
           }
         }
-        print(paste0("I am here 4 -", i))
 
         # ---- Individual-level sample size -----------------------------------
         if (
@@ -794,7 +789,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
           } else {
             100
           }
-          print(paste0("I am here 5 -", i))
 
           ind_res <- phr_try(
             calculate_sample_size_individual(
@@ -817,7 +811,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
             sample_table$Ind_HH_Sample_Size[i] <- ind_res$sample_size_households
           }
         }
-        print(paste0("I am here 6 -", i))
 
         # ---- Rate sample size -------------------------------------
         if (
@@ -853,7 +846,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
           } else {
             90
           }
-          print(paste0("I am here 7 -", i))
 
           rate_res <- phr_try(
             calculate_sample_size_rate(
@@ -883,7 +875,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
             ] <- rate_res$sample_size_households
           }
         }
-        print(paste0("I am here 8 -", i))
 
         # ---- Final household sample size: max across all three HH types -----
         hh_sizes <- c(
@@ -904,8 +895,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
           }
         )
 
-        print(paste0("I am here 9 -", i))
-
         valid_hh <- hh_sizes[!is.na(hh_sizes)]
         if (
           length(valid_hh) > 0 &&
@@ -913,8 +902,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
         ) {
           sample_table$Final_HH_Sample_Size[i] <- max(valid_hh)
         }
-
-        print(paste0("I am here 10 -", i))
 
         # ---- Field plan estimate --------------------------------------------
         # Re-read the row after sample size updates so Final_HH_Sample_Size is current.
