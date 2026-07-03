@@ -1065,7 +1065,7 @@ if (is.list(tbl) && !is.data.frame(tbl)) {
 
 ft <- flextable::flextable(tbl)
 
-ft <- flextable::delete_part(ft, part = "header")
+# ft <- flextable::delete_part(ft, part = "header")
 
 # Page-width three-column table
 ft <- flextable::width(ft, j = 1, width = 2.4)
@@ -1077,12 +1077,16 @@ ft <- flextable::font(ft, fontname = "Arial Narrow", part = "body")
 ft <- flextable::fontsize(ft, size = 9, part = "body")
 
 # Header row formatting
-ft <- flextable::bold(ft, i = 1, bold = TRUE, part = "body")
-ft <- flextable::bg(ft, i = 1, bg = "#DDDDDE", part = "body")
+ft <- flextable::bold(ft, i = 1, bold = TRUE, part = "header")
+ft <- flextable::bg(ft, i = 1, bg = "#DDDDDE", part = "header")
+ft <- flextable::font(ft, fontname = "Arial Narrow", part = "header")
+ft <- flextable::fontsize(ft, size = 8, part = "header")
 
 # Alignment
 ft <- flextable::align(ft, align = "left", part = "body")
 ft <- flextable::valign(ft, valign = "top", part = "body")
+ft <- flextable::align(ft, align = "left", part = "header")
+ft <- flextable::valign(ft, valign = "top", part = "header")
 
 # Padding and spacing
 ft <- flextable::padding(ft, padding = 4, part = "body")
@@ -2161,7 +2165,7 @@ Community key informant interviews and community observation checklists will be 
 
 ```
 
-```{r kii_obs_analysis_plan}
+```{r integrated_analysis_plan}
 #| results: asis
 
 if (params$tool_household & (params$tool_community_kii | params$tool_health_facility_kii | params$tool_nutrition_facility_kii | params$tool_market_kii | params$tool_fsl_provider_kii | params$tool_wash_provider_kii | params$tool_community_observation | params$tool_health_facility_observation | params$tool_crops_livestock_observation | params$tool_water_point_observation | params$tool_latrine_observation) ) {

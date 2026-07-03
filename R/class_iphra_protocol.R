@@ -791,6 +791,13 @@ IPHRAProtocol <- R6::R6Class(
         error = function(e) NULL
       )
 
+      if (!is.null(ob)) {
+        ob <- unique(ob[,
+          c("objective_code", "pillar", "sub_pillar"),
+          drop = FALSE
+        ])
+      }
+
       ib <- tryCatch(
         self$access_nested(
           field = "framework",
@@ -798,6 +805,13 @@ IPHRAProtocol <- R6::R6Class(
         ),
         error = function(e) NULL
       )
+
+      if (!is.null(ib)) {
+        ib <- unique(ib[,
+          c("objective_code", "indicator_code", "indicator_name"),
+          drop = FALSE
+        ])
+      }
 
       if (is.null(ob) || is.null(ib)) {
         table <- data.frame(
