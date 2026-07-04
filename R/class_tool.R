@@ -271,6 +271,14 @@ public = list(
       indicator_codes <- c(indicator_codes, "10000")
     }
 
+    # Create a vector of unique indicator codes ending in 00 (special lines)
+    # These are based on the first three digits of passed indicator codes
+    # e.g., from "14631" -> "14600"
+    special_codes <- unique(paste0(substr(indicator_codes, 1, 3), "00"))
+
+    # Combine all codes: original, special codes ending in 00, and 10000
+    all_filter_codes <- unique(c(indicator_codes, special_codes, "10000"))
+
     sv <- self$survey
 
     if (nrow(sv) == 0 || !"indicator_code" %in% names(sv)) {
@@ -282,13 +290,13 @@ public = list(
 
     # Build a regex pattern that matches any of the indicator codes as
     # whole values in a possibly comma-separated cell.
-    pattern <- paste(indicator_codes, collapse = "|")
+    pattern <- paste(all_filter_codes, collapse = "|")
 
     col_vals    <- as.character(sv[["indicator_code"]])
     is_selected <- !is.na(col_vals) & grepl(pattern, col_vals)
 
     self$revised_survey  <- sv[is_selected, , drop = FALSE]
-    self$revised_choices <- private$.filter_choices_from_survey(indicator_codes)
+    self$revised_choices <- private$.filter_choices_from_survey(all_filter_codes)
 
     self$touch()
     invisible(self)
