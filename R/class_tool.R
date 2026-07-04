@@ -493,7 +493,10 @@ public = list(
     codes_split <- trimws(codes_split)
     codes_split <- codes_split[nzchar(codes_split)]
     codes_int   <- suppressWarnings(as.integer(codes_split))
-    unique(codes_int[!is.na(codes_int)])
+    codes_int   <- codes_int[!is.na(codes_int)]
+    # Filter out codes ending in 00
+    codes_int   <- codes_int[codes_int %% 100 != 0]
+    unique(codes_int)
   },
 
   #' @description

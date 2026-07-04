@@ -39,6 +39,7 @@ NULL
   "objective_code",
   "data_source",
   "indicator_code",
+  "dep_indicator_code",
   "tool",
   "indicator_name",
   "indicator_definition",
