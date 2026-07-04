@@ -494,7 +494,8 @@ public = list(
     codes_split <- codes_split[nzchar(codes_split)]
     codes_int   <- suppressWarnings(as.integer(codes_split))
     codes_int   <- codes_int[!is.na(codes_int)]
-    # Filter out codes ending in 00
+    # Filter out codes ending in 00 (special "line" codes in the tool that represent
+    # summary/aggregate indicators rather than actual indicators to measure)
     codes_int   <- codes_int[codes_int %% 100 != 0]
     unique(codes_int)
   },
