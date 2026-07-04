@@ -997,10 +997,21 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
+      # Extract indicator codes from both indicator_code and dep_indicator_code columns
       indicator_codes <- unique(as.character(indicator_bank$indicator_code))
       indicator_codes <- indicator_codes[
         !is.na(indicator_codes) & nzchar(indicator_codes)
       ]
+      
+      # Also include dep_indicator_code if the column exists
+      if ("dep_indicator_code" %in% names(indicator_bank)) {
+        dep_indicator_codes <- unique(as.character(indicator_bank$dep_indicator_code))
+        dep_indicator_codes <- dep_indicator_codes[
+          !is.na(dep_indicator_codes) & nzchar(dep_indicator_codes)
+        ]
+        indicator_codes <- unique(c(indicator_codes, dep_indicator_codes))
+      }
+      
       if (length(indicator_codes) == 0L) {
         return(NULL)
       }
@@ -1078,11 +1089,13 @@ Protocol <- R6::R6Class(
       }
 
       # Filter indicator bank to indicators actually used in survey
-      indicator_bank_filtered <- indicator_bank[
-        indicator_bank$indicator_code %in% survey_indicator_codes,
-        ,
-        drop = FALSE
-      ]
+      # Check both indicator_code and dep_indicator_code columns
+      keep_rows <- indicator_bank$indicator_code %in% survey_indicator_codes
+      if ("dep_indicator_code" %in% names(indicator_bank)) {
+        keep_rows <- keep_rows | indicator_bank$dep_indicator_code %in% survey_indicator_codes
+      }
+      
+      indicator_bank_filtered <- indicator_bank[keep_rows, , drop = FALSE]
 
       if (nrow(indicator_bank_filtered) == 0L) {
         return(NULL)
