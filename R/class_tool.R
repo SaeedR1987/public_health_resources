@@ -274,10 +274,12 @@ public = list(
     # Create a vector of unique indicator codes ending in 00 (special lines)
     # These are based on the first three digits of passed indicator codes
     # e.g., from "14631" -> "14600"
-    special_codes <- unique(paste0(substr(indicator_codes, 1, 3), "00"))
+    # Expected format: indicator codes are at least 3 characters long (e.g., "14631")
+    special_codes <- paste0(substr(indicator_codes, 1, 3), "00")
 
-    # Combine all codes: original, special codes ending in 00, and 10000
-    all_filter_codes <- unique(c(indicator_codes, special_codes, "10000"))
+    # Combine all codes: original and special codes ending in 00
+    # (10000 is already included via indicator_codes at this point)
+    all_filter_codes <- unique(c(indicator_codes, special_codes))
 
     sv <- self$survey
 
