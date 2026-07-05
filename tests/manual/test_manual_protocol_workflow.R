@@ -236,19 +236,6 @@ protocol$add_tools(tool_name = "tool_household_iphra_v2")
 # protocol$tools$tool_household_iphra_v2$change_default_language(
 #   language = "Arabic"
 # )
-# head(protocol$tools$tool_household_iphra_v2$revised_settings)
-# protocol$tools$tool_household_iphra_v2$change_default_language(
-#   language = "Spanish"
-# )
-# head(protocol$tools$tool_household_iphra_v2$revised_settings)
-# protocol$tools$tool_household_iphra_v2$change_default_language(
-#   language = "French"
-# )
-# head(protocol$tools$tool_household_iphra_v2$revised_settings)
-# protocol$tools$tool_household_iphra_v2$change_default_language(
-#   language = "English"
-# )
-# head(protocol$tools$tool_household_iphra_v2$revised_settings)
 
 protocol$access_nested(
   field = "tools",
@@ -262,24 +249,6 @@ protocol$access_nested(
   )))
 )
 
-(protocol$access_nested(
-  field = "tools",
-  name = "tool_household_iphra_v2",
-  member = "revised_survey"
-))
-
-(protocol$access_nested(
-  field = "tools",
-  name = "tool_household_iphra_v2",
-  member = "revised_choices"
-))
-
-
-(protocol$access_nested(
-  field = "tools",
-  name = "tool_household_iphra_v2",
-  member = "revised_survey"
-))
 
 # protocol$tools$tool_household_iphra_v2$validate() # this part still needs heavy development
 # protocol$tools$tool_household_iphra_v2$get_validation_errors() # this part still needs heavy development
@@ -420,6 +389,14 @@ protocol$access_nested(
   objective = 105,
   source = "UNHCR Population Statistics",
   purpose = "To provide context on population movements and displacement trends."
+)
+
+protocol$access_nested(
+  field = "framework",
+  member = "add_secondary_data_source",
+  objective = "To understand nutritional status of population",
+  source = "SMART Survey",
+  purpose = "Ascertain severity of nutrition in population"
 )
 
 # Generate ToR ####

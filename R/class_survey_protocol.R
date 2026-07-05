@@ -440,6 +440,15 @@ SurveyProtocol <- R6::R6Class(
           stratified_strata_names_purposive_srs = self$.stratified_strata_names_purposive_srs,
           stratified_strata_names_purposive_systematic = self$.stratified_strata_names_purposive_systematic,
           stratified_strata_names_purposive_rlc = self$.stratified_strata_names_purposive_rlc,
+          stratified_strata_names_site_srs = self$.stratified_strata_names_site_srs,
+          stratified_strata_names_site_systematic = self$.stratified_strata_names_site_systematic,
+          stratified_strata_names_site_proportional = self$.stratified_strata_names_site_proportional,
+          stratified_strata_names_site_exhaustive = self$.stratified_strata_names_site_exhaustive,
+          stratified_strata_names_site_cluster = self$.stratified_strata_names_site_cluster,
+          stratified_strata_names_site_purposive = self$.stratified_strata_names_site_purposive,
+          stratified_strata_names_hh_srs = self$.stratified_strata_names_hh_srs,
+          stratified_strata_names_hh_systematic = self$.stratified_strata_names_hh_systematic,
+          stratified_strata_names_hh_rlc = self$.stratified_strata_names_hh_rlc,
           sample_size_general_households = self$.sample_size_general_households,
           sample_size_ind_persons = self$.sample_size_ind_persons,
           sample_size_ind_hh = self$.sample_size_ind_hh,
@@ -752,92 +761,184 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("simple_random")
+      private$..strata_names_for_method(
+        method_site = "simple_random",
+        method_hh = "simple_random"
+      )
     },
     .stratified_strata_names_srs_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      # No single method encodes srs-site + systematic-hh in IPHRA; return FALSE
-      FALSE
+      private$..strata_names_for_method(
+        method_site = "simple_random",
+        method_hh = "systematic"
+      )
     },
     .stratified_strata_names_srs_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("simple_random_rlc")
+      private$..strata_names_for_method(
+        method_site = "simple_random",
+        method_hh = "rlc"
+      )
     },
     .stratified_strata_names_systematic_srs = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("systematic")
+      private$..strata_names_for_method(
+        method_site = "systematic",
+        method_hh = "simple_random"
+      )
     },
     .stratified_strata_names_systematic_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      FALSE
+      private$..strata_names_for_method(
+        method_site = "systematic",
+        method_hh = "systematic"
+      )
     },
     .stratified_strata_names_systematic_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("systematic_rlc")
+      private$..strata_names_for_method(
+        method_site = "systematic",
+        method_hh = "rlc"
+      )
     },
     .stratified_strata_names_proportional_srs = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("proportional")
+      private$..strata_names_for_method(
+        method_site = "proportional",
+        method_hh = "simple_random"
+      )
     },
     .stratified_strata_names_proportional_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      FALSE
+      private$..strata_names_for_method(
+        method_site = "proportional",
+        method_hh = "systematic"
+      )
     },
     .stratified_strata_names_proportional_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("proportional_rlc")
+      private$..strata_names_for_method(
+        method_site = "proportional",
+        method_hh = "rlc"
+      )
     },
     .stratified_strata_names_cluster_srs = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("pps_cluster")
+      private$..strata_names_for_method(
+        method_site = "cluster",
+        method_hh = "simple_random"
+      )
     },
     .stratified_strata_names_cluster_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      FALSE
+      private$..strata_names_for_method(
+        method_site = "cluster",
+        method_hh = "systematic"
+      )
     },
     .stratified_strata_names_cluster_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("pps_rlc")
+      private$..strata_names_for_method(
+        method_site = "cluster",
+        method_hh = "rlc"
+      )
     },
     .stratified_strata_names_purposive_srs = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method("purposive")
+      private$..strata_names_for_method(
+        method_site = "purposive",
+        method_hh = "simple_random"
+      )
     },
     .stratified_strata_names_purposive_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      FALSE
+      private$..strata_names_for_method(
+        method_site = "purposive",
+        method_hh = "systematic"
+      )
     },
     .stratified_strata_names_purposive_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      FALSE
+      private$..strata_names_for_method(
+        method_site = "purposive",
+        method_hh = "rlc"
+      )
+    },
+    .stratified_strata_names_site_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "simple_random")
+    },
+    .stratified_strata_names_site_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "systematic")
+    },
+    .stratified_strata_names_site_exhaustive = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "proportional")
+    },
+    .stratified_strata_names_site_cluster = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "cluster")
+    },
+    .stratified_strata_names_site_purposive = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "purposive")
+    },
+    .stratified_strata_names_hh_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_hh = "simple_random")
+    },
+    .stratified_strata_names_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_hh = "systematic")
+    },
+    .stratified_strata_names_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_hh = "rlc")
     },
     .sample_size_general_households = function(value) {
       if (!missing(value)) {
@@ -1107,26 +1208,62 @@ SurveyProtocol <- R6::R6Class(
 
     #' @description Return strata names for a given sampling method.
     #'
-    #' Checks if any strata row in the sample table uses the specified
-    #' sampling method.
+    #' Checks if any strata rows in the sample table match the specified
+    #' site-level and/or household-level sampling methods.
     #'
-    #' @param method_site Character. Site-level sampling method (currently unused).
-    #' @param method_hh Character. Household-level sampling method (currently unused).
-    #' @return \code{TRUE} if matching method found, \code{FALSE} otherwise.
+    #' @param method_site Character. Site-level sampling method to filter on.
+    #'   When \code{NULL} (default), no site-level filtering is applied.
+    #' @param method_hh Character. Household-level sampling method to filter on.
+    #'   When \code{NULL} (default), no household-level filtering is applied.
+    #' @return Character vector of strata names matching the specified method(s).
+    #'   Returns an empty character vector if no matches found or sample table
+    #'   unavailable.
     #'
     #' @details
-    #' Note: Parameters \code{method_site} and \code{method_hh} are defined
-    #' but not used in the current implementation. The function checks against
-    #' an undefined \code{method} variable.
+    #' If both \code{method_site} and \code{method_hh} are provided, returns
+    #' strata names where both conditions are met. If only one is provided,
+    #' filters by that criterion alone.
     #'
     #' @keywords internal
-    ..strata_names_for_method = function(method_site, method_hh) {
+    ..strata_names_for_method = function(method_site = NULL, method_hh = NULL) {
       st <- private$..sample_table_from_nested()
-      if (!is.data.frame(st) || !"sampling_method" %in% names(st)) {
-        return(FALSE)
+      if (!is.data.frame(st) || nrow(st) == 0L) {
+        return(character(0))
       }
-      methods <- trimws(tolower(as.character(st$sampling_method)))
-      any(!is.na(methods) & methods == tolower(method))
+
+      mask <- rep(TRUE, nrow(st))
+
+      if (!is.null(method_site) && "sampling_method_site" %in% names(st)) {
+        site_methods <- trimws(tolower(as.character(st$sampling_method_site)))
+        mask <- mask &
+          !is.na(site_methods) &
+          site_methods == tolower(method_site)
+      }
+
+      if (!is.null(method_hh) && "sampling_method_hh" %in% names(st)) {
+        hh_methods <- trimws(tolower(as.character(st$sampling_method_hh)))
+        mask <- mask & !is.na(hh_methods) & hh_methods == tolower(method_hh)
+      }
+
+      if (!any(mask)) {
+        return(character(0))
+      }
+
+      col <- if ("stratum_name" %in% names(st)) {
+        "stratum_name"
+      } else if ("stratum_id" %in% names(st)) {
+        "stratum_id"
+      } else {
+        NULL
+      }
+
+      if (is.null(col)) {
+        return(character(0))
+      }
+
+      strata <- as.character(st[[col]][mask])
+      strata <- strata[!is.na(strata) & nzchar(strata)]
+      strata
     },
 
     #' @description Check if any household indicators are present.

@@ -221,7 +221,9 @@ Document <- R6::R6Class(
       invisible(self)
     },
     get_quarto_params = function() {
-      list()
+      list(
+        r_version = self$.r_version
+      )
     }
   ),
   active = list(

@@ -15,6 +15,7 @@ format:
     number-sections: true
 
 params:
+  r_version: "R version 4.5.1"
   research_cycle_id: "RC-2027-001"
   country: "Example Country"
   release_date: "2027-01-15"
@@ -56,16 +57,16 @@ params:
   visibility_other: "Not applicable"
   objectives_research_questions_df: 
     value: []
-  site_selection_srs: TRUE
+  site_selection_srs: FALSE
   site_selection_systematic: FALSE
   site_selection_purposive: FALSE
   site_selection_cluster: FALSE
   site_selection_exhaustive: FALSE
-  hh_selection_srs: TRUE
+  hh_selection_srs: FALSE
   hh_selection_systematic: FALSE
   hh_selection_rlc: FALSE
-  multiple_methods: TRUE
-  multiple_strata: TRUE
+  multiple_methods: FALSE
+  multiple_strata: FALSE
   fpc: FALSE
   stratified_strata_names_srs_srs: "stratum 1, stratum 2"
   stratified_strata_names_srs_systematic: "stratum 1, stratum 2"
@@ -82,6 +83,14 @@ params:
   stratified_strata_names_purposive_srs: "stratum 1, stratum 2"
   stratified_strata_names_purposive_systematic: "stratum 1, stratum 2"
   stratified_strata_names_purposive_rlc: "stratum 1, stratum 2"
+  stratified_strata_names_site_srs: "stratum 1, stratum 2"
+  stratified_strata_names_site_systematic: "stratum 1, stratum 2"
+  stratified_strata_names_site_proportional: "stratum 1, stratum 2"
+  stratified_strata_names_site_exhaustive: "stratum 1, stratum 2"
+  stratified_strata_names_site_cluster: "stratum 1, stratum 2"
+  stratified_strata_names_hh_srs: "stratum 1, stratum 2"
+  stratified_strata_names_hh_systematic: "stratum 1, stratum 2"
+  stratified_strata_names_hh_rlc: "stratum 1, stratum 2"
   total_population_size: 10000
   total_population_size_included: 8000
   total_population_size_excluded: 2000
@@ -89,25 +98,24 @@ params:
   secondary_data_sources_df: 
     value: []
   anf_framework_path: "ana_framework.svg"
-  ind_muac_children: TRUE
-  ind_muac_women: TRUE
-  ind_mortality: TRUE
-  ind_measles_coverage: TRUE
-  ind_vitamin_a_coverage: TRUE
-  ind_ecfies: TRUE
-  ind_fcs: TRUE
-  ind_rcsi: TRUE
-  ind_hhs: TRUE
-  ind_hdds: TRUE
-  ind_lcsi: TRUE
-  ind_fewsnet_fc: TRUE
-  ind_hwise: TRUE
-  ind_lppd: TRUE
+  ind_muac_children: FALSE
+  ind_muac_women: FALSE
+  ind_mortality: FALSE
+  ind_measles_vaccination: FALSE
+  ind_vitamin_a_coverage: FALSE
+  ind_ecfies: FALSE
+  ind_fcs: FALSE
+  ind_rcsi: FALSE
+  ind_hhs: FALSE
+  ind_hdds: FALSE
+  ind_lcsi: FALSE
+  ind_hwise: FALSE
+  ind_lppd: FALSE
   household_pillars_table_df: 
     value: []
   general_survey: TRUE
-  individual_survey: TRUE
-  rate_survey: TRUE
+  individual_survey: FALSE
+  rate_survey: FALSE
   ind_indicator: "GAM by MUAC"
   rate_indicator: "Crude Mortality Rate"
   sample_size_general_households: 400
@@ -828,6 +836,10 @@ ft
 
 # Rationale
 
+::: {.callout-note}
+**Reviewer Note:** Please take time to complete sections 2.1 and 2.2 to clearly explain the context in which the assessment would be conducted, key information needs, and the intended impact of the assessment.
+:::
+
 ## Background
 
 * Briefly describe the context, i.e. the crisis within which the IPHRA is planned. 
@@ -849,9 +861,11 @@ Goal: To assess the severity of the public health outcomes and identify initial 
 ```{r tbl-objectives_research_questions}
 #| results: asis
 #| echo: false
+#| label: tbl-objectives_research_questions
+#| tbl-cap: "Specific objectives and research questions"
 
-library(flextable)
-library(officer)
+
+# cat(table_caption("Specific objectives and research questions"))
 
 tbl <- params$objectives_research_questions_df
 
@@ -890,13 +904,6 @@ ft <- flextable::padding(
   padding.top = 0,
   padding.bottom = 0,
   part = "all"
-)
-
-ft <- flextable::set_caption(
-  ft,
-  caption = "Specific objectives and research questions",
-  autonum = officer::run_autonum(seq_id = "Table"),
-  style = "Table Caption"
 )
 
 ft
@@ -1050,7 +1057,25 @@ if(params$multiple_strata) {
 
 ## Secondary Data Review
 
-The main assessment design is based off guidance documents and tools for Integrated Public Health Rapid Assessment (IPHRA), available on the IMPACT Intranet (soon, link to intranet).  Secondly, the IPHRA toolkit is designed to align with the Acute Needs Framework (ANF) utilized by IMPACT Initiatives in their Acute Needs Analysis workstreams [@ANF2025]. The intention of the Secondary Data Review step is to identify existing data sources for various ANF Pillars and Sub-Pillars, and to identify data gaps which will inform the design of the primary data collection component of the IPHRA.
+The main assessment design is based off guidance documents and tools for Integrated Public Health Rapid Assessment (IPHRA), available on the IMPACT Intranet (soon, link to intranet).  Secondly, the IPHRA toolkit is designed to align with the Acute Needs Framework (ANF) utilized by IMPACT Initiatives in their Acute Needs Analysis workstreams [@ANF2025]. The intention of the Secondary Data Review step is to identify existing data sources for various ANF Pillars and Sub-Pillars, and to identify data gaps which will inform the design of the primary data collection component of the IPHRA. The below figure illustrates the ANF framework and how it maps against the planned primary data collection, as well as secondary data sources planned to be utilized for this assessment.
+
+Figure: Acute Needs Framework (ANF) and Data Collection Mapping
+
+```{r revised_svg}
+#| out.width: "100%"
+#| label: framework_anf
+#| fig-cap: "Acute Needs Framework (ANF) and Data Collection Mapping"
+
+# cat(figure_caption("Acute Needs Framework (ANF) and Data Collection Mapping"))
+# results: asis
+
+img <- magick::image_read_svg(params$anf_framework_path)
+
+img
+
+```
+
+The below table cites relevant secondary data sources for each of the ANF Pillars and Sub-Pillars, as well as the purpose for which each data source will be utilized in the assessment.
 
 ```{r 'secondary_data_review'}
 #| results: asis
@@ -1062,6 +1087,8 @@ tbl <- params$secondary_data_sources_df
 if (is.list(tbl) && !is.data.frame(tbl)) {
   tbl <- as.data.frame(tbl, stringsAsFactors = FALSE)
 }
+
+colnames(tbl) <- c("Objective", "Source", "Purpose")
 
 ft <- flextable::flextable(tbl)
 
@@ -1105,20 +1132,8 @@ ft
 ```
 
  
-See below for how the ANF framework maps against the planned primary data collection, as well as secondary data sources planned to be utilized for this assessment.  
 
-```{r revised_svg}
-#| out.width: "80%"
-#| fig-align: center
-#| results: asis
 
-cat(figure_caption("Acute Needs Framework (ANF) and Data Collection Mapping"))
-
-img <- magick::image_read_svg(params$anf_framework_path)
-
-img
-
-```
 
 ## Key Definitions
 
@@ -1139,7 +1154,7 @@ if (params$ind_mortality) {
   text_mortality_indicator <- "**Mortality Rate:** An incidence rate of deaths, that includes all deaths regardless of cause, age, or sex. It is measured for a given population for a specified recall period. This should include deaths both in the community and facility-based deaths. During humanitarian emergencies it is usually reported as deaths per 10,000 per day but can also be reported as deaths per 1000 per month or per person-time. Crude Mortality Rade (CMR) and Crude Death Rate (CDR) are interchangeable. All persons in sampled households will be eligible for inclusion. For children under-5 years of age, the under-5 mortality rate (U5MR) will also be calculated. The U5MR is the incidence rate of deaths among children under 5 years of age per 10,000 per day. For this assessment, all children under 5 years of age in sampled households will be eligible for inclusion. "
 } else {text_mortality_indicator <- ""}
 
-if (params$ind_measles_coverage) {
+if (params$ind_measles_vaccination) {
   text_measles_coverage <- "**Measles vaccination coverage:** is the proportion of children aged 9-59 months who have received at least one dose of measles-containing vaccine reported by the caregiver or confirmed by vaccination card. For this assessment, all children 9-59 months in sampled households will be eligible for inclusion. "
 } else {text_measles_coverage <- ""}
 
@@ -1171,10 +1186,6 @@ if (params$ind_lcsi) {
   text_lcsi <- "**Livelihood Coping Strategy Index (LCSI):** is a measure of the frequency and severity of coping strategies employed by households in response to livelihood stress. It is calculated based on the frequency of use of different coping strategies and their assigned weights. For this assessment, all sampled households will be eligible for inclusion. "
 } else {text_lcsi <- ""}
 
-if (params$ind_fewsnet_fc) {
-  text_fewsnet_fc <- "**FEWSNET Food Consumption (FC) Indicator:** is a measure of the prevalence of food insecurity among households based on the FEWSNET Food Consumption (FC) indicator. It is calculated based on the severity of at least one available food consumption proxy indicator for quality (FCS, HDDS) and one for quantity (rCSI, HHS). indicators (FCS, HHS, rCSI, HDDS) their assigned weights. For this assessment, all sampled households will be eligible for inclusion. "
-} else {text_fewsnet_fc <- ""}
-
 if (params$ind_hwise) {
   text_hwise <- "**Household Water Insecurity Experience Scale (HWISE):** is a measure of the prevalence of water insecurity among households based on the Household Water Insecurity Experience Scale (HWISE). It is measured through a set of questions asked to the household about their experience with water insecurity in the past 30 days. For this assessment, all sampled households will be eligible for inclusion. "
 } else {text_hwise <- ""}
@@ -1197,7 +1208,6 @@ if (params$ind_lppd) {
 * `r text_hhs`
 * `r text_hdds`
 * `r text_lcsi`
-* `r text_fewsnet_fc`
 * `r text_hwise`
 * `r text_lppd`
 
@@ -1210,6 +1220,7 @@ if (params$ind_lppd) {
 There are several core and supplemental indicators within the household tool of the IPHRA toolkit. For the objectives of thisthis assessment the following are planned: 
 
 ```{r household_pillar_subpillar_indicator_table}
+#| out.width: "100%"
 
 household_inputs <- params$household_pillars_table_df
 
@@ -1248,12 +1259,11 @@ ft
 ```{r 'sample_size_intro'}
 #| results: asis
 
-r_version <- R.version.string
 
 if (params$general_survey & !params$individual_survey & !params$rate_survey) {
   cat(
     glue::glue(
-      "Household sample size calculations were done in {r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below, resulting in a final target sample size of {params$sample_size_general_households} households.\n\n"
+      "Household sample size calculations were done in {params$r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below, resulting in a final target sample size of {params$sample_size_general_households} households.\n\n"
     )
   )
 }
@@ -1261,7 +1271,7 @@ if (params$general_survey & !params$individual_survey & !params$rate_survey) {
 if (params$individual_survey & !params$rate_survey) {
   cat(
     glue::glue(
-      "Individual and household sample size calculations were done in {r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below for the indicator {ind_indicator}, resulting in a final sample size of {params$sample_size_ind_persons} individuals and {params$sample_size_ind_households} households. \n\n"
+      "Individual and household sample size calculations were done in {params$r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below for the indicator {ind_indicator}, resulting in a final sample size of {params$sample_size_ind_persons} individuals and {params$sample_size_ind_households} households. \n\n"
     )
   )
 }
@@ -1269,7 +1279,7 @@ if (params$individual_survey & !params$rate_survey) {
 if (params$rate_survey & !params$individual_survey) {
   cat(
     glue::glue(
-      "Individual, person-time, and household sample size calculations were done in {r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below for the indicator {params$rate_indicator}, resulting in a final sample size of {params$sample_size_rate_persons} individuals, {params$sample_size_rate_persontime} person-time units, and {params$sample_size_rate_hh} households. \n\n"
+      "Individual, person-time, and household sample size calculations were done in {params$r_version} and made using a 95% confidence level and the following sampling parameters summarized in the table below for the indicator {params$rate_indicator}, resulting in a final sample size of {params$sample_size_rate_persons} individuals, {params$sample_size_rate_persontime} person-time units, and {params$sample_size_rate_hh} households. \n\n"
     )
   )
 }
@@ -1277,7 +1287,7 @@ if (params$rate_survey & !params$individual_survey) {
 if (params$individual_survey & params$rate_survey) {
   cat(
     glue::glue(
-      "Sample sizes were calculated at a 95% confidence level in {r_version} for both {params$ind_indicator} and {params$rate_indicator} with the highest sample size between the two indicators being selected per strata. The sampling parameters for each parameter are summarized in the tables below. The resulting final household sample size across strata is {params$sample_size_hh_final}. \n\n"
+      "Sample sizes were calculated at a 95% confidence level in {params$r_version} for both {params$ind_indicator} and {params$rate_indicator} with the highest sample size between the two indicators being selected per strata. The sampling parameters for each parameter are summarized in the tables below. The resulting final household sample size across strata is {params$sample_size_hh_final}. \n\n"
     )
   )
 }
@@ -1297,8 +1307,14 @@ if (params$general_survey) {
 
 ```
 
+::: {.callout-note}
+**Reviewer Note:** Please add justifications to the sample size tables to explain why each parameter was selected for sampling.
+:::
+
 ```{r 'sample_size_gen_table'}
 #| results: asis
+
+if(params$general_survey) {
 
 cat(table_caption("General sample size calculation parameters"))
 
@@ -1344,56 +1360,8 @@ total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
   ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
   ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
-# ft <- flextable::flextable(tbl)
-
-# ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-# ft <- flextable::fontsize(ft, size = 9, part = "all")
-
-# ft <- flextable::bold(ft, part = "header")
-# ft <- flextable::bg(ft, bg = "#DDDDDE", part = "header")
-
-# ft <- flextable::align(ft, align = "left", part = "all")
-# ft <- flextable::valign(ft, valign = "top", part = "all")
-
-# ft <- flextable::padding(ft, padding = 4, part = "all")
-# ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
-
-# ft <- flextable::border_outer(ft, part = "all")
-# ft <- flextable::border_inner_h(ft, part = "body")
-# ft <- flextable::border_inner_v(ft, part = "all")
-
-# ft <- flextable::width(ft, j = 1, width = 2.3)
-# ft <- flextable::width(ft, j = 2:4, width = 1.3)
-# ft <- flextable::width(ft, j = 5, width = 1.7)
-
-# ft <- flextable::bold(ft, part = "header")
-
-# # Header formatting
-# ft <- flextable::bg(
-#   ft,
-#   bg = "#EE5859",
-#   part = "header"
-# )
-
-# ft <- flextable::color(
-#   ft,
-#   color = "white",
-#   part = "header"
-# )
-
-# # Shade final row
-# ft <- flextable::bg(
-#   ft,
-#   i = nrow(tbl),
-#   bg = "#F2F2F2",
-#   part = "body"
-# )
-# ft <- flextable::fit_to_width(
-#   ft,
-#   max_width = 6.5
-# )
-
 ft
+}
 
 ```
 
@@ -1414,7 +1382,9 @@ if (params$individual_survey) {
 ```{r 'sample_size_ind_table'}
 #| results: asis
 
-cat(table_caption("Sample size calculation parameters for {params$ind_indicator}"))
+if (params$individual_survey) {
+
+cat(glue::glue(table_caption("Sample size calculation parameters for {params$ind_indicator}")))
 
 tbl <- params$sample_size_ind_table_df
 
@@ -1458,45 +1428,9 @@ total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
   ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
   ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
-# ft <- flextable::flextable(tbl)
-
-# ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-# ft <- flextable::fontsize(ft, size = 9, part = "all")
-
-# # Header formatting
-# ft <- flextable::bold(ft, part = "header")
-# ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
-# ft <- flextable::color(ft, color = "white", part = "header")
-
-# # Grey result rows
-# ft <- flextable::bg(
-#   ft,
-#   i = tbl$Parameter %in% c(
-#     "Individuals to be Included",
-#     "Households to be Included"
-#   ),
-#   bg = "#F2F2F2",
-#   part = "body"
-# )
-
-# ft <- flextable::align(ft, align = "left", part = "all")
-# ft <- flextable::valign(ft, valign = "top", part = "all")
-
-# ft <- flextable::padding(ft, padding = 4, part = "all")
-# ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
-
-# ft <- flextable::border_outer(ft, part = "all")
-# ft <- flextable::border_inner_h(ft, part = "body")
-# ft <- flextable::border_inner_v(ft, part = "all")
-
-# ft <- flextable::width(ft, j = 1, width = 2.3)
-# ft <- flextable::width(ft, j = 2:4, width = 1.3)
-# ft <- flextable::width(ft, j = 5, width = 1.7)
-# ft <- flextable::fit_to_width(
-#   ft,
-#   max_width = 6.5
-# )
 ft
+
+}
 
 ```
 
@@ -1518,7 +1452,9 @@ if (params$rate_survey) {
 ```{r 'sample_size_rate_table'}
 #| results: asis
 
-cat(table_caption("Sample size calculation parameters for {params$rate_indicator}"))
+if (params$rate_survey) {
+  
+cat(glue::glue(table_caption("Sample size calculation parameters for {params$rate_indicator}")))
 
 tbl <- params$sample_size_rate_table_df
 
@@ -1562,109 +1498,110 @@ total_row_idx <- which(tbl[["Parameter"]] %in% total_labels)
   ft <- flextable::border_outer(ft, border = fp_outer, part = "all")
   ft <- flextable::hline_bottom(ft, border = fp_outer, part = "header")
 
-# ft <- flextable::flextable(tbl)
-
-# ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
-# ft <- flextable::fontsize(ft, size = 9, part = "all")
-
-# ft <- flextable::bold(ft, part = "header")
-# ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
-# ft <- flextable::color(ft, color = "white", part = "header")
-
-# ft <- flextable::bg(
-#   ft,
-#   i = tbl$Parameter %in% c(
-#     "Population to be Included",
-#     "Person-Time to be Included",
-#     "Households to be Included"
-#   ),
-#   bg = "#F2F2F2",
-#   part = "body"
-# )
-
-# ft <- flextable::align(ft, align = "left", part = "all")
-# ft <- flextable::valign(ft, valign = "top", part = "all")
-
-# ft <- flextable::padding(ft, padding = 4, part = "all")
-# ft <- flextable::line_spacing(ft, space = 0.9, part = "all")
-
-# ft <- flextable::border_outer(ft, part = "all")
-# ft <- flextable::border_inner_h(ft, part = "body")
-# ft <- flextable::border_inner_v(ft, part = "all")
-
-# ft <- flextable::width(ft, j = 1, width = 2.4)
-# ft <- flextable::width(ft, j = 2:4, width = 1.3)
-# ft <- flextable::width(ft, j = 5, width = 1.7)
-# ft <- flextable::fit_to_width(
-#   ft,
-#   max_width = 6.5
-# )
-
 ft
 
+}
+
 ```
+
 
 #### Site Selection Methods
 
 ```{r 'site_selection_methods'}
 #| results: asis
 
-if (params$site_selection_srs) {
-  
-  if (params$multiple_strata == FALSE) {
-
-    cat(glue::glue("A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_srs}. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site. \n"))
-
-  } else if (params$multiple_strata == TRUE) {
-
-    cat(glue::glue("A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_srs}. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be allocated across selected sites with {params$cluster_size} households planned per site and additional weighting applied during analysis to account for under- or over-sampling of population groups between sites. \n"))
-  }
-   
-  } else if (params$site_selection_systematic) {
-    cat(glue::glue(
-  "A total of {params$n_sites} sites will be selected for the assessment covering {params$stratified_strata_names_site_systematic}. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.
-
-  Data collection teams will utilize the following steps:
-
-  * **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.
-  * **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.
-    * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.
-  * **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.
-    * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.
-  * **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.
-    * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).
-    * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:
-      * Decimal between 0–0.2: round sampling interval down.
-      * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.
-      * Decimal between 0.8–0.9: round sampling interval up.
-
-  "
+if (params$multiple_strata) {
+  cat(glue::glue(
+    "The assessment will be conducted across {params$num_strata_units} strata, with a total of {params$n_sites} sites selected for the assessment. Different site selection methods will be used for different stratum The sites will be selected using the following methods:\n"
   ))
-  } else if (params$site_selection_exhaustive) {
-    cat(glue::glue("All eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment covering {params$stratified_strata_names_site_exhaustive}. The household sample will be allocated across these sites proportional to the population size of these sites. \n"))
-  } else if (params$site_selection_cluster) {
-    cat(glue::glue("A total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU, covering {params$stratified_strata_names_site_cluster}. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households. \n"))
-  } else if (params$site_selection_purposive) {
-    cat(glue::glue("A total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment, covering {params$stratified_strata_names_site_purposive}. The sample will be equally distributed across sites with {params$cluster_size} households per site. [PLEASE UPDATE FOR SELECTION CRITERIA]. \n"))
-  }
+}
+
+if (params$site_selection_srs & !params$multiple_strata) {
+  
+    cat(glue::glue(
+      "\nA total of {params$n_sites} sites will be selected for the assessment covering ** {params$stratified_strata_names_site_srs} **. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal change of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.\n"
+    ))
+
+  } else if (params$site_selection_srs & params$multiple_strata) {
+
+    cat(glue::glue(
+      "\n**Simple Random Sampling:** A total of {params$n_sites} sites will be selected for the assessment covering ** {params$stratified_strata_names_site_srs} **. Due to a lack of reliable population data, these sites will be selected with simple random sampling with each site having an equal chance of selection. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be allocated across selected sites with {params$cluster_size} households planned per site and additional weighting applied during analysis to account for under- or over-sampling of population groups between sites.\n"
+    ))
+
+  }   
+  
+if (params$site_selection_systematic & !params$multiple_strata) {
+
+  cat(glue::glue(
+    "\nA total of {params$n_sites} sites will be selected for the assessment. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west to allow for implicit stratification and improve geographic distribution, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.\n\nData collection teams will utilize the following steps:\n\n* **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.\n* **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.\n  * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.\n* **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.\n  * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.\n* **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.\n  * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).\n  * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:\n    * Decimal between 0–0.2: round sampling interval down.\n    * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.\n    * Decimal between 0.8–0.9: round sampling interval up.\n"
+  ))
+}
+
+if (params$site_selection_systematic & params$multiple_strata) {
+cat(glue::glue(
+    "\n**Systematic Random Sampling:** A total of {params$n_sites} sites will be selected for the assessment covering ** {params$stratified_strata_names_site_systematic} **. Due to a lack of reliable population data, these sites will be selected with systematic random sampling with the list of eligible sites being ordered geographically in a list from north to south or east to west to allow for implicit stratification and improve geographic distribution, and sites selected based on a sampling interval and random start. This method for site selection is only applicable when no population data is available, however teams must evaluate population size, find estimates at field level, or evaluate relative population size between sites for later analysis. The sample will be evenly allocated across selected sites with {params$cluster_size} households planned per site.\n\nData collection teams will utilize the following steps:\n\n* **Ordering the Sampling Frame** – Order the sites in the sampling frame geographically either from north to south or east to west. This will help ensure some geographic representation.\n* **Determining the sampling interval** – This will be estimated by dividing the total number of eligible sites in the sampling frame by the number of required sites.\n  * E.g. 42 sites total and 6 sites needed means sampling interval = 42 / 6 = 7.\n* **Select the first sampling unit** – To select a random start, randomly select a number N between 1-X, with X being the sampling interval. Starting from the top of the list, count to Nth site and that will be the first interview.\n  * E.g. randomly select the number 4 between 1 and 7; the 4th site will be the first one selected.\n* **Select the following sampling units** – From the 1st site selected, keep counting down the sampling frame counting the number of sites equal to the sampling interval until you reach the next site to select. Continue doing this until you have selected all sites.\n  * E.g. first site selected is #4, the 2nd selected is #11 (4+7), the 3rd site is #18 (11+7).\n  * If the sampling interval has a decimal, you may need to adjust how you count to ensure you do not run out of sites or exclude sites at the end of the sampling frame. The following rules can apply:\n    * Decimal between 0–0.2: round sampling interval down.\n    * Decimal between 0.3–0.7: alternate between rounding sampling interval down and up.\n    * Decimal between 0.8–0.9: round sampling interval up.\n"
+  ))
+}
+  
+if (params$site_selection_exhaustive & !params$multiple_strata) {
+  cat(glue::glue(
+    "\nAll eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment. The household sample will be allocated across these sites proportional to the population size of these sites.\n"
+  ))
+}
+
+if (params$site_selection_exhaustive & params$multiple_strata) {
+  cat(glue::glue(
+    "**Exhaustive Selection:** All eligible sites will be exhaustively selected and included in the assessment for a total of {params$n_sites} sites for the assessment covering ** {params$stratified_strata_names_site_exhaustive} **. The household sample will be allocated across these sites proportional to the population size of these sites.\n"
+  ))
+}
+  
+if (params$site_selection_cluster & !params$multiple_strata) {
+  cat(glue::glue(
+    "\nA total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households.\n"
+  ))
+}
+
+if (params$site_selection_cluster & params$multiple_strata) {
+  cat(glue::glue(
+    "\n**Probability Proportional to Size (PPS) Sampling:** A total of {params$n_sites} PSUs/clusters will be selected using probability proportional to size (PPS) sampling with the probability of selection proportional the population size of the PSU, covering ** {params$stratified_strata_names_site_cluster} **. Sampling with replacement will be used meaning selected PSU may have the chance to have multiple survey clusters. Each PSU/cluster will have a set cluster size of {params$cluster_size} households.\n"
+  ))
+}
+  
+if (params$site_selection_purposive & !params$multiple_strata) {
+  cat(glue::glue(
+    "\nA total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment. The sample will be equally distributed across sites with {params$cluster_size} households per site. [PLEASE UPDATE FOR SELECTION CRITERIA].\n"
+  ))
+}
+
+if (params$site_selection_purposive & params$multiple_strata) {
+  cat(glue::glue(
+    "\n**Purposive Selection:** A total of {params$n_sites} sites will be selected purposively based on their accessibility at the time of assessment, covering **{params$stratified_strata_names_site_purposive}**. The sample will be equally distributed across sites with {params$cluster_size} households per site.\n"
+  ))
+  cat("
+    ::: callout-note
+    ## Additional Guidance
+    You selected **purposive site selection** *and* indicated that **multiple strata** are present.  
+    Please ensure that purposive criteria are clearly documented for each stratum.
+    :::
+  ")
+
+}
 
 ```
+
 
 #### Household Selection Methods
 
 ```{r 'household_selection_methods'}
 #| results: asis
-srs_household_selection <- FALSE
-systematic_household_selection <- TRUE
-rlc_household_selection <- TRUE
-stratified_strata_names_hh_srs <- "stratum 1, stratum 2, stratum 3"
-cluster_size <- 15
 
 if(params$hh_selection_srs) {
   cat(glue::glue("Within selected sites, households will be selected using simple random sampling methods. Acceptable options for field teams to implement simple random sampling will include (a) sampling from a pre-existing list or map at the community level, (b) creating a rapid listing of households with the support of community leaders, (c) creating a rapid map of households with the support of community leaders walking through the site. If a pre-existing list or map is used at the community level, supervisors should probe and ensure with community leaders that it is up to date with households that may have joined or left the community. \n
   If the site has greater than 100 households, the team should segment the site into smaller manageable areas of 100 households or less. Supervisors should discuss with community leaders on how best to practically split up the community along roads, rivers, or other meaningful landmarks and estimating to the best of their ability the number of households per segment. The supervisor should utilize PPS sampling between these segments to select the number of PSUs needed for that site. \n
   The final list or map of households for the site, or within selected segments, should be numbered sequentially from 1-n. The teams should utilize a random number generator on a phone to randomly select {cluster_size} households from the list or map. "))
-} else if (params$hh_selection_systematic) {
+} 
+
+if (params$hh_selection_systematic) {
   cat(glue::glue(
 "Within selected sites, {params$cluster_size} households will be selected for each site/PSU/cluster using systematic random sampling. Systematic random sampling is used when households are arranged in an ordered fashion such as rows in camps or streets and the total number of units is known.
 
@@ -1685,7 +1622,9 @@ If the site has greater than 100 households, the team should segment the site in
 
 "
 ))
-} else if (params$hh_selection_rlc) {
+} 
+
+if (params$hh_selection_rlc) {
   cat(glue::glue("Within selected sites, households will be selected using Random Location Cluster (RLC) sampling. In RLC sampling, random GPS points are generated within the boundary of selected sites. The boundaries and GPS points can be either set beforehand using GIS software, or while in the field with tools like REACH GeoRand. At each generated GPS points, enumerators are to start exactly, or as close as possible, to that point and then select the three physically closest households for interview. The enumerators should interview the selected household and then either (a) take the GPS point of that household or (b) estimate the approximate meters from the initial GPS point to the household. \n"))
 }
 
@@ -1788,11 +1727,11 @@ if (params$tool_community_kii) {
 
   * Random Selection: Community members should be randomly selected from the community to ensure a diversity of perspectives are included. Community leaders SHOULD NOT select these individuals for the assessment team. The aim of this random selection isn't to ensure any statistical representativeness, but to ensure we are accessing unbiased perspectives in the community. Assessment teams should use a simple random walk following the below procedure:
 
-  * First, go to the approximate center of the assessment site.
-  * Second, spin and toss a pen into the air to determine a direction.  
-  * Third, walk approximately 45 seconds in that direction depending on the size of the area. Choose the household immediately on your right and ask if they consent to an interview. If not, move to the household immediately to the right of that.  
-  * Fourth, return to the center of town, walk approximately 45 seconds in the opposite direction and select the household on the immediate right for a second community member interview.  
-  * Adapt as needed based on the size and shape of the location. 
+    * First, go to the approximate center of the assessment site.
+    * Second, spin and toss a pen into the air to determine a direction.  
+    * Third, walk approximately 45 seconds in that direction depending on the size of the area. Choose the household immediately on your right and ask if they consent to an interview. If not, move to the household immediately to the right of that.  
+    * Fourth, return to the center of town, walk approximately 45 seconds in the opposite direction and select the household on the immediate right for a second community member interview.  
+    * Adapt as needed based on the size and shape of the location. 
 
 In the event of specific at-risk or difficult to identify groups within the population, it may be necessary to identify key informants through snowball sampling by asking local service providers for referrals. Consider this if there are specific groups that you want their views represented in the community key informant tools."))
 
@@ -1910,7 +1849,7 @@ if(params$tool_household) {
 
 ### Household Survey Data
 
-Household data will be collected using a contextualized IPHRA KoboCollect tool. Cleaning, indicator calculations, and analysis will be done using a pre-prepared IPHRA application using `r R.version.string`.
+Household data will be collected using a contextualized IPHRA KoboCollect tool. Cleaning, indicator calculations, and analysis will be done using a pre-prepared IPHRA application using {params$r_version}.
 
 "))
 }
@@ -1919,6 +1858,12 @@ Household data will be collected using a contextualized IPHRA KoboCollect tool. 
 
 ```{r 'hh_analysis_plan'}
 #| results: asis
+
+if (params$multiple_strata == TRUE) {
+  cat(glue::glue(
+    "The data processing and analysis will differ between stratum due to varying sampling strategies. The following approaches will be used for the designated stratum:\n"
+  ))
+}
 
 if (params$tool_household) {
  
@@ -1939,7 +1884,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_srs}} {{stratified_strata_names_srs_systematic}} {{stratified_strata_names_systematic_srs}} {{stratified_strata_names_systematic_systematic}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_site_srs} {params$stratified_strata_names_site_systematic} {params$stratified_strata_names_systematic_srs} {params$stratified_strata_names_systematic_systematic} .\n"))
   }
 
 }  else if ((params$site_selection_srs == TRUE | params$site_selection_systematic == TRUE) & params$hh_selection_rlc == TRUE) {
@@ -1960,7 +1905,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_srs_rlc}} {{stratified_strata_names_systematic_rlc}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_srs_rlc} {params$stratified_strata_names_systematic_rlc} .\n"))
   }
 
 } else if (params$site_selection_cluster == TRUE & (params$hh_selection_srs == TRUE | params$hh_selection_systematic == TRUE)) {
@@ -1983,7 +1928,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_cluster_srs}} {{stratified_strata_names_cluster_systematic}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_cluster_srs} {params$stratified_strata_names_cluster_systematic} .\n"))
   }
 
 } else if (params$site_selection_cluster == TRUE & params$hh_selection_rlc == TRUE) {
@@ -2006,7 +1951,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_cluster_rlc}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_cluster_rlc} .\n"))
   }
 
 } else if (params$site_selection_proportional == TRUE & (params$hh_selection_srs == TRUE | params$hh_selection_systematic == TRUE)) {
@@ -2029,7 +1974,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_proportional_srs}} {{stratified_strata_names_proportional_systematic}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_proportional_srs} {params$stratified_strata_names_proportional_systematic} .\n"))
   }
 
 } else if (params$site_selection_proportional == TRUE & params$hh_selection_rlc == TRUE) {
@@ -2052,7 +1997,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_proportional_rlc}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_proportional_rlc} .\n"))
   }
 
 } else if (params$site_selection_purposive == TRUE & (params$hh_selection_srs == TRUE | params$hh_selection_systematic == TRUE)) {
@@ -2075,7 +2020,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_purposive_srs}} {{stratified_strata_names_purposive_systematic}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_purposive_srs} {params$stratified_strata_names_purposive_systematic} .\n"))
   }
 
 }  else if (params$site_selection_purposive == TRUE & params$hh_selection_rlc == TRUE) {
@@ -2098,7 +2043,7 @@ cat("The household analysis will be treated as a simple random sampling design a
   }
 
   if (params$multiple_methods == TRUE) {
-    cat("This analysis method applies for the following strata: {{stratified_strata_names_purposive_rlc}} .\n")
+    cat(glue::glue("This analysis method applies for the following strata: {params$stratified_strata_names_purposive_rlc} .\n"))
   }
 
 } else {
@@ -2463,16 +2408,24 @@ methods, there are a few limitations to keep in mind:
 #| results: asis
 
 if(!params$site_selection_cluster) {
-cat(glue::glue("* The sampling approach is not a cluster design and is intended for a more localized population, therefore the results may not be generalizable and representative of the wider population.\n"))
+cat(glue::glue("
+* The sampling approach is not a cluster design and is intended for a more localized population, therefore the results may not be generalizable and representative of the wider population.\n"
+))
 }
 if(params$ind_lppd) {
-cat(glue::glue("* The indicator liters per person per day is calculated based on counting journeys to water points and estimating the amount of water collected per journey. This may not be a fully accurate representation of the actual liters per person per day consumed by the population, as it does not account for other sources of water or other factors that may influence water consumption.\n"))
+cat(glue::glue("
+* The indicator liters per person per day is calculated based on counting journeys to water points and estimating the amount of water collected per journey. This may not be a fully accurate representation of the actual liters per person per day consumed by the population, as it does not account for other sources of water or other factors that may influence water consumption.\n"
+))
 }
 if(params$ind_muac_children) {
-cat(glue::glue("* The indicator Global Acute Malnutrition by MUAC is calculated based on the measurement of mid-upper arm circumference of children aged 6-59 months. This may not be a fully accurate representation of the nutritional status of the population, as it does not account for other factors measures that may signify acute malnutrition such as weight for height comparisons.\n"))
+cat(glue::glue("
+* The indicator Global Acute Malnutrition by MUAC is calculated based on the measurement of mid-upper arm circumference of children aged 6-59 months. This may not be a fully accurate representation of the nutritional status of the population, as it does not account for other factors or measures that may signify acute malnutrition such as weight for height comparisons.\n"
+))
 }
 if(params$ind_mortality) {
-cat(glue::glue("* The indicators Crude Mortality Rate and Under-5 Mortality Rate are calculated based on the number of deaths reported by households during the recall period. This may not be a fully accurate representation of the mortality rates in the population, as it relies on self-reported data and may be subject to recall bias or underreporting. Furthermore given this is a rapid assessment, the limited sample size may not be sufficient to provide very precise estimates when mortality rates are very high - particularly with under-5 mortality which should be interpreted with caution given the small sample size.\n"))
+cat(glue::glue("
+* The indicators Crude Mortality Rate and Under-5 Mortality Rate are calculated based on the number of deaths reported by households during the recall period. This may not be a fully accurate representation of the mortality rates in the population, as it relies on self-reported data and may be subject to recall bias or underreporting. Furthermore given this is a rapid assessment, the limited sample size may not be sufficient to provide very precise estimates when mortality rates are very high - particularly with under-5 mortality which should be interpreted with caution given the small sample size.\n"
+))
 }
 
 ```
@@ -2481,6 +2434,10 @@ cat(glue::glue("* The indicators Crude Mortality Rate and Under-5 Mortality Rate
 \newpage
 
 # Key Ethical Considerations and Related Risks
+
+::: {.callout-note}
+**Reviewer Note:** For any ethical consideration that is not met below, please specify any mitigation strategies and liaise with the Research Quality Unit (RQA).
+:::
 
 The proposed research design meets / does not meet the following criteria:
 
@@ -2567,8 +2524,8 @@ ft
 # Roles and Responsibilities
 
 ```{r raci_matrix_table}
-
 #| results: asis
+
 cat(table_caption("RACI Matrix"))
 
 tbl <- data.frame(
@@ -2689,9 +2646,10 @@ ft
 
 \newpage
 
-# Data Analysis Plan (DAP)
+# Data Analysis Plans (DAPs)
 
 ```{r household_tool_analysis_plan_header}
+#| results: asis
 
 if(params$tool_household) {cat(glue::glue("## Household Tool DAP"))}
 

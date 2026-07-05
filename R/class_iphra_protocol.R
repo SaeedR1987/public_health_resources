@@ -343,6 +343,12 @@ IPHRAProtocol <- R6::R6Class(
           ind_muac_women = self$.ind_muac_women,
           ind_vitamin_a_coverage = self$.ind_vitamin_a_coverage,
           ind_mortality = self$.ind_mortality,
+          ind_fcs = self$.ind_fcs,
+          ind_rcsi = self$.ind_rcsi,
+          ind_hhs = self$.ind_hhs,
+          ind_lcsi = self$.ind_lcsi,
+          ind_hwise = self$.ind_hwise,
+          ind_lppd = self$.ind_lppd,
           tool_community_observation = self$.tool_community_observation,
           tool_crops_livestock_observation = self$.tool_crops_livestock_observation,
           tool_health_facility_observation = self$.tool_health_facility_observation,
@@ -478,6 +484,42 @@ IPHRAProtocol <- R6::R6Class(
         return(invisible(FALSE))
       }
       private$..household_has_any_indicator(c("10501", "10502"))
+    },
+    .ind_fcs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("11205"))
+    },
+    .ind_rcsi = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("11202"))
+    },
+    .ind_hhs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("11201"))
+    },
+    .ind_lcsi = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("12301"))
+    },
+    .ind_hwise = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("11701"))
+    },
+    .ind_lppd = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..household_has_any_indicator(c("10901"))
     },
 
     .tool_community_observation = function(value) {
