@@ -975,62 +975,6 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
-      # 1. Get master indicator bank
-
-      indicator_bank <- tryCatch(
-        self$access_nested(
-          field = "framework",
-          member = "master_indicator_bank",
-          update_modified = FALSE
-        ),
-        error = function(e) NULL
-      )
-
-      if (
-        is.null(indicator_bank) ||
-          !is.data.frame(indicator_bank) ||
-          nrow(indicator_bank) == 0L
-      ) {
-        return(NULL)
-      }
-      if (!"indicator_code" %in% names(indicator_bank)) {
-        return(NULL)
-      }
-
-      # Extract indicator codes from both indicator_code and dep_indicator_code columns
-      indicator_codes <- unique(as.character(indicator_bank$indicator_code))
-      indicator_codes <- indicator_codes[
-        !is.na(indicator_codes) & nzchar(indicator_codes)
-      ]
-      
-      # Also include dep_indicator_code if the column exists
-      if ("dep_indicator_code" %in% names(indicator_bank)) {
-        dep_indicator_codes <- unique(as.character(indicator_bank$dep_indicator_code))
-        dep_indicator_codes <- dep_indicator_codes[
-          !is.na(dep_indicator_codes) & nzchar(dep_indicator_codes)
-        ]
-        indicator_codes <- unique(c(indicator_codes, dep_indicator_codes))
-      }
-      
-      if (length(indicator_codes) == 0L) {
-        return(NULL)
-      }
-
-      # Drop threshold-specific columns if present
-      drop_cols <- c(
-        "threshold_name",
-        "threshold_value",
-        "citation_threshold"
-      )
-
-      indicator_bank <- indicator_bank[,
-        setdiff(names(indicator_bank), drop_cols),
-        drop = FALSE
-      ]
-
-      # Remove duplicated rows created by threshold variants
-      indicator_bank <- unique(indicator_bank)
-
       # 2. Get specified tool's revised survey
       revised_survey <- tryCatch(
         self$access_nested(
@@ -1052,7 +996,7 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
-      # 7. Get specified tool's revised choices
+      # 3. Get specified tool's revised choices
       revised_choices <- tryCatch(
         self$access_nested(
           field = "tools",
@@ -1081,20 +1025,79 @@ Protocol <- R6::R6Class(
       )))
 
       survey_indicator_codes <- survey_indicator_codes[
-        nzchar(survey_indicator_codes)
+        nzchar(survey_indicator_codes) & !grepl("00$", survey_indicator_codes)
       ]
 
       if (length(survey_indicator_codes) == 0L) {
         return(NULL)
       }
 
+      # 4. Get master indicator bank
+
+      indicator_bank <- tryCatch(
+        self$access_nested(
+          field = "framework",
+          member = "master_indicator_bank",
+          update_modified = FALSE
+        ),
+        error = function(e) NULL
+      )
+
+      if (
+        is.null(indicator_bank) ||
+          !is.data.frame(indicator_bank) ||
+          nrow(indicator_bank) == 0L
+      ) {
+        return(NULL)
+      }
+      if (!"indicator_code" %in% names(indicator_bank)) {
+        return(NULL)
+      }
+
+      # Extract indicator codes from both indicator_code and dep_indicator_code columns
+      indicator_codes <- unique(as.character(indicator_bank$indicator_code))
+      indicator_codes <- indicator_codes[
+        !is.na(indicator_codes) & nzchar(indicator_codes)
+      ]
+
+      # Also include dep_indicator_code if the column exists
+      if ("dep_indicator_code" %in% names(indicator_bank)) {
+        dep_indicator_codes <- unique(as.character(
+          indicator_bank$dep_indicator_code
+        ))
+        dep_indicator_codes <- dep_indicator_codes[
+          !is.na(dep_indicator_codes) & nzchar(dep_indicator_codes)
+        ]
+        indicator_codes <- unique(c(indicator_codes, dep_indicator_codes))
+      }
+
+      if (length(indicator_codes) == 0L) {
+        return(NULL)
+      }
+
+      # Drop threshold-specific columns if present
+      drop_cols <- c(
+        "threshold_name",
+        "threshold_value",
+        "citation_threshold"
+      )
+
+      indicator_bank <- indicator_bank[,
+        setdiff(names(indicator_bank), drop_cols),
+        drop = FALSE
+      ]
+
+      # Remove duplicated rows created by threshold variants
+      indicator_bank <- unique(indicator_bank)
+
       # Filter indicator bank to indicators actually used in survey
       # Check both indicator_code and dep_indicator_code columns
       keep_rows <- indicator_bank$indicator_code %in% survey_indicator_codes
       if ("dep_indicator_code" %in% names(indicator_bank)) {
-        keep_rows <- keep_rows | indicator_bank$dep_indicator_code %in% survey_indicator_codes
+        keep_rows <- keep_rows |
+          indicator_bank$dep_indicator_code %in% survey_indicator_codes
       }
-      
+
       indicator_bank_filtered <- indicator_bank[keep_rows, , drop = FALSE]
 
       if (nrow(indicator_bank_filtered) == 0L) {
@@ -1120,73 +1123,99 @@ Protocol <- R6::R6Class(
     },
 
     #' @description Construct DAP table rows from survey and framework data.
-    #' @param survey_df Filtered survey data frame
-    #' @param choices_df Choices data frame (may be NULL)
-    #' @param schema_df Primary objectives schema
-    #' @param indicator_codes Character vector of indicator codes
-    #' @return Data frame with DAP structure
+    #' @param survey_df Filtered survey data frame.
+    #' @param choices_df Choices data frame (may be NULL).
+    #' @param indicator_bank Data frame from the master indicator bank, filtered
+    #'   to indicators used in the survey.
+    #' @param lang Language code for label columns (e.g. \code{"en"}, \code{"fr"}).
+    #' @return Data frame with DAP structure, without an indicator_code column,
+    #'   or \code{NULL} when no rows can be constructed.
     ..construct_dap_rows = function(
       survey_df,
       choices_df,
       indicator_bank,
       lang
     ) {
-      # Initialize collectors
       rows <- list()
 
-      # Process each survey row
       for (i in seq_len(nrow(survey_df))) {
         row <- survey_df[i, , drop = FALSE]
 
-        # Get indicator code(s) for this question
+        # Skip calculate question types
+        qtype <- if ("type" %in% names(row)) {
+          tolower(trimws(as.character(row$type)))
+        } else {
+          ""
+        }
+        if (qtype == "calculate") {
+          next
+        }
+
         row_ind_codes <- as.character(row$indicator_code)
         if (is.na(row_ind_codes) || !nzchar(row_ind_codes)) {
           next
         }
 
-        # Split comma-separated codes
         row_ind_codes <- trimws(unlist(strsplit(row_ind_codes, ",")))
         if (length(row_ind_codes) == 0L) {
           next
         }
 
-        # Use first matching indicator code
-        ind_code <- row_ind_codes[1L]
-
-        # Get research question from framework catalog for this indicator code
-        research_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
-          indicator_bank[[as.character(ind_code)]]$research_question %||%
-            ""
+        # Use first code that has a match in indicator_bank; fall back to first code
+        matched_code <- row_ind_codes[
+          row_ind_codes %in% indicator_bank$indicator_code
+        ]
+        ind_code <- if (length(matched_code) > 0L) {
+          matched_code[1L]
         } else {
-          ""
+          row_ind_codes[1L]
         }
 
-        # Get research question from framework catalog for this indicator code
-        disagg_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
-          indicator_bank[[as.character(ind_code)]]$disaggregation %||%
-            ""
-        } else {
-          ""
+        # Skip rows whose indicator_code ends in "00"
+        if (grepl("00$", ind_code)) {
+          next
         }
 
-        # Get research question from framework catalog for this indicator code
-        ind_name_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
-          indicator_bank[[as.character(ind_code)]]$indicator_name %||%
-            ""
-        } else {
-          ""
+        # Lookup the matching row in indicator_bank by indicator_code
+        ib_row <- indicator_bank[
+          indicator_bank$indicator_code == ind_code,
+          ,
+          drop = FALSE
+        ]
+
+        # Also check dep_indicator_code when no direct match found
+        if (
+          nrow(ib_row) == 0L &&
+            "dep_indicator_code" %in% names(indicator_bank)
+        ) {
+          ib_row <- indicator_bank[
+            !is.na(indicator_bank$dep_indicator_code) &
+              indicator_bank$dep_indicator_code == ind_code,
+            ,
+            drop = FALSE
+          ]
         }
 
-        # Get research question from framework catalog for this indicator code
-        dc_level_q <- if (!is.null(indicator_bank[[as.character(ind_code)]])) {
-          indicator_bank[[as.character(ind_code)]]$data_collection_level %||%
-            ""
-        } else {
-          ""
+        # Extract scalar fields from the matched indicator_bank row (first row if multiple)
+        get_ib_field <- function(field) {
+          if (nrow(ib_row) == 0L || !field %in% names(ib_row)) {
+            return("")
+          }
+          val <- as.character(ib_row[[field]][1L])
+          if (is.na(val)) "" else val
         }
 
-        # Get question label (try label::English first, then label)
+        research_q <- get_ib_field("research_question")
+        disagg_q <- get_ib_field("disaggregation")
+        ind_name_q <- get_ib_field("indicator_name")
+        dc_level_q <- get_ib_field("data_collection_level")
 
+        # Skip rows with no Research Question value
+        if (is.na(research_q) || !nzchar(trimws(research_q))) {
+          next
+        }
+
+        # Resolve question label by language
         question_label <- if (
           lang == "en" && "label::English" %in% names(row)
         ) {
@@ -1203,19 +1232,21 @@ Protocol <- R6::R6Class(
           ""
         }
 
-        # Get responses from choices (newline-separated)
+        # Skip rows where the resolved question label is NA or empty
+        if (is.na(question_label) || !nzchar(trimws(question_label))) {
+          next
+        }
+
         responses <- private$..extract_question_responses(
           row,
           choices_df,
           lang = lang
         )
 
-        # Append row (with blank fields as instructed)
         rows[[length(rows) + 1L]] <- data.frame(
           `Research Question` = research_q,
-          `Indicator Code` = ind_code,
           `Indicator / Variable` = ind_name_q,
-          Disaggregation = disagg_q, # leave blank per user instruction
+          Disaggregation = disagg_q,
           `Questionnaire Question` = question_label,
           `Questionnaire Responses` = responses,
           `Data Collection Level` = dc_level_q,
@@ -1228,7 +1259,6 @@ Protocol <- R6::R6Class(
         return(NULL)
       }
 
-      # Combine all rows
       do.call(rbind, rows)
     },
 

@@ -200,135 +200,64 @@ figure_caption <- function(caption) {
 
 iphra_dap_flextable <- function(
     tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
+    merge_cols = c("Research Question", "Indicator Name", "Disaggregation"),
     font_size = 9,
-    max_width = 7.6
+    page_width = 6.5   # default usable width in inches
 ) {
+
+  colnames(tbl) <- c(
+    "Research Question", "Indicator Name", "Disaggregation",
+    "Question", "Responses", "Data Collection Level"
+  )
 
   ft <- flextable::flextable(tbl)
 
-  # Font
-  ft <- flextable::font(
-    ft,
-    fontname = "Arial Narrow",
-    part = "all"
-  )
+  # Font + spacing
+  ft <- flextable::font(ft, fontname = "Arial Narrow", part = "all")
+  ft <- flextable::fontsize(ft, size = font_size, part = "all")
+  ft <- flextable::line_spacing(ft, space = 0.8, part = "all")
 
-  ft <- flextable::fontsize(
-    ft,
-    size = font_size,
-    part = "all"
-  )
-
-  ft <- flextable::line_spacing(
-    ft,
-    space = 0.8,
-    part = "all"
-  )
-
-  # Header
-  ft <- flextable::bold(
-    ft,
-    part = "header"
-  )
-
-  ft <- flextable::bg(
-    ft,
-    bg = "#EE5859",
-    part = "header"
-  )
-
-  ft <- flextable::color(
-    ft,
-    color = "white",
-    part = "header"
-  )
+  # Header styling
+  ft <- flextable::bold(ft, part = "header")
+  ft <- flextable::bg(ft, bg = "#EE5859", part = "header")
+  ft <- flextable::color(ft, color = "white", part = "header")
 
   # Merge repeated cells
   if (length(merge_cols) > 0) {
-    ft <- flextable::merge_v(
-      ft,
-      j = merge_cols
-    )
+    ft <- flextable::merge_v(ft, j = merge_cols)
   }
 
-  # Alignment
-  ft <- flextable::align(
-    ft,
-    align = "left",
-    part = "all"
-  )
-
-  ft <- flextable::valign(
-    ft,
-    valign = "top",
-    part = "all"
-  )
-
-  ft <- flextable::padding(
-    ft,
-    padding = 2,
-    part = "all"
-  )
+  # Alignment + padding
+  ft <- flextable::align(ft, align = "left", part = "all")
+  ft <- flextable::valign(ft, valign = "top", part = "all")
+  ft <- flextable::padding(ft, padding = 2, part = "all")
 
   # Borders
-  ft <- flextable::border_outer(
-    ft,
-    part = "all"
+  ft <- flextable::border_outer(ft, part = "all")
+  ft <- flextable::border_inner_h(ft, part = "body")
+  ft <- flextable::border_inner_v(ft, part = "all")
+
+  # ---- PROPORTIONAL WIDTHS ----
+  # Define proportions for each column (must sum to 1)
+  proportions <- c(
+    "Research Question"      = 0.15,
+    "Indicator Name"         = 0.15,
+    "Disaggregation"         = 0.10,
+    "Question"               = 0.25,
+    "Responses"              = 0.25,
+    "Data Collection Level"  = 0.10
   )
 
-  ft <- flextable::border_inner_h(
-    ft,
-    part = "body"
-  )
-
-  ft <- flextable::border_inner_v(
-    ft,
-    part = "all"
-  )
-
-  # Standard DAP widths
-  if ("Research Question" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Research Question", 1.0)
+  # Apply widths only for columns that exist
+  for (col in names(proportions)) {
+    if (col %in% names(tbl)) {
+      ft <- flextable::width(ft, col, proportions[col] * page_width)
+    }
   }
-
-  if ("Indicator Code" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Indicator Code", 0.6)
-  }
-
-  if ("Indicator / Variable" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Indicator / Variable", 0.8)
-  }
-
-  if ("Disaggregation" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Disaggregation", 0.6)
-  }
-
-  if ("Questionnaire Question" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Questionnaire Question", 1.8)
-  }
-
-  if ("Questionnaire Responses" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Questionnaire Responses", 1.8)
-  }
-
-  if ("Data Collection Level" %in% names(tbl)) {
-    ft <- flextable::width(ft, "Data Collection Level", 0.5)
-  }
-
-  ft <- flextable::fit_to_width(
-    ft,
-    max_width = max_width
-  )
 
   ft
-
 }
+
 
 ```
 
@@ -2671,14 +2600,7 @@ if (is.list(tbl) && !is.data.frame(tbl)) {
 }
 
 ft <- iphra_dap_flextable(
-  tbl,
-  merge_cols = c(
-    "Research Question",
-    "Indicator Code",
-    "Indicator / Variable",
-    "Disaggregation"
-  ),
-  max_width = 7.6
+  tbl
 )
 
 ft
@@ -2707,14 +2629,7 @@ if (is.list(tbl) && !is.data.frame(tbl)) {
 }
 
 ft <- iphra_dap_flextable(
-  tbl,
-  merge_cols = c(
-    "Research Question",
-    "Indicator Code",
-    "Indicator / Variable",
-    "Disaggregation"
-  ),
-  max_width = 7.6
+  tbl
 )
 
 ft
@@ -2722,7 +2637,16 @@ ft
 }
 ```
 
-## Community Observation DAP
+
+```{r analysis_plan_community_observation_header}
+#| results: asis
+
+if(params$tool_community_observation) {cat(glue::glue("## Community Observation DAP"))}
+
+```
+
+
+
 
 ```{r analysis_plan_community_observation_table}
 #| out.width: "100%"
@@ -2737,14 +2661,7 @@ if (is.list(tbl) && !is.data.frame(tbl)) {
 }
 
   ft <- iphra_dap_flextable(
-  tbl,
-  merge_cols = c(
-    "Research Question",
-    "Indicator Code",
-    "Indicator / Variable",
-    "Disaggregation"
-  ),
-  max_width = 7.6
+  tbl
 )
 
 ft
@@ -2752,7 +2669,12 @@ ft
 }
 ```
 
-## Health Facility KII DAP
+```{r analysis_plan_health_facility_kii_header}
+#| results: asis
+
+if(params$tool_health_facility_kii) {cat(glue::glue("## Health Facility KII DAP"))}
+
+```
 
 ```{r analysis_plan_health_facility_kii_table}
 #| out.width: "100%"
@@ -2767,14 +2689,7 @@ cat(table_caption("Health Facility KII DAP"))
 }
 
   ft <- iphra_dap_flextable(
-  tbl,
-  merge_cols = c(
-    "Research Question",
-    "Indicator Code",
-    "Indicator / Variable",
-    "Disaggregation"
-  ),
-  max_width = 7.6
+  tbl
 )
 
 ft
@@ -2782,7 +2697,13 @@ ft
 }
 ```
 
-## Health Facility Observation DAP
+```{r analysis_plan_health_facility_observation_header}
+#| results: asis
+
+if(params$tool_health_facility_observation) {cat(glue::glue("## Health Facility Observation DAP"))}
+
+```
+
 
 ```{r analysis_plan_health_facility_observation_table}
 #| out.width: "100%"
@@ -2798,14 +2719,7 @@ if (params$tool_health_facility_observation) {
 }
 
   ft <- iphra_dap_flextable(
-  tbl,
-  merge_cols = c(
-    "Research Question",
-    "Indicator Code",
-    "Indicator / Variable",
-    "Disaggregation"
-  ),
-  max_width = 7.6
+  tbl
 )
 
 ft
@@ -2813,7 +2727,13 @@ ft
 }
 ```
 
-## Nutrition Facility DAP
+```{r analysis_plan_nutrition_facility_kii_header}
+#| results: asis
+
+if(params$tool_nutrition_facility_kii) {cat(glue::glue("## Nutrition Facility KII DAP"))}
+
+```
+
 
 ```{r analysis_plan_nutrition_facility_kii_table}
 #| out.width: "100%"
@@ -2829,14 +2749,7 @@ if (params$tool_nutrition_facility_kii) {
 }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
@@ -2844,7 +2757,12 @@ if (params$tool_nutrition_facility_kii) {
 }
 ```
 
-## FSL Provider KII DAP
+```{r analysis_plan_fsl_provider_kii_header}
+#| results: asis
+
+if(params$tool_fsl_provider_kii) {cat(glue::glue("## FSL Provider KII DAP"))}
+
+```
 
 ```{r analysis_plan_fsl_provider_kii_table}
 #| out.width: "100%"
@@ -2860,14 +2778,7 @@ if (params$tool_fsl_provider_kii) {
 }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
@@ -2875,7 +2786,12 @@ if (params$tool_fsl_provider_kii) {
 }
 ```
 
-## Market KII DAP
+```{r analysis_plan_market_kii_header}
+#| results: asis
+
+if(params$tool_market_kii) {cat(glue::glue("## Market Vendor KII DAP"))}
+
+```
 
 ```{r analysis_plan_market_kii_table}
 #| out.width: "100%"
@@ -2892,14 +2808,7 @@ if (params$tool_market_kii) {
   }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
@@ -2907,7 +2816,12 @@ if (params$tool_market_kii) {
 }
 ```
 
-## Crops and Livestock Observation DAP
+```{r analysis_plan_crops_livestock_observation_header}
+#| results: asis
+
+if(params$tool_crops_livestock_observation) {cat(glue::glue("## Crops and Livestock Observation DAP"))}
+
+```
 
 ```{r analysis_plan_crops_livestock_observation_table}
 #| out.width: "100%"
@@ -2923,14 +2837,7 @@ if (params$tool_crops_livestock_observation) {
 }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
@@ -2938,7 +2845,12 @@ if (params$tool_crops_livestock_observation) {
 }
 ```
 
-## WASH Provider KII DAP
+```{r analysis_plan_wash_provider_kii_header}
+#| results: asis
+
+if(params$tool_wash_provider_kii) {cat(glue::glue("## WASH Provider KII DAP"))}
+
+```
 
 ```{r analysis_plan_wash_provider_kii_table}
 #| out.width: "100%"
@@ -2954,14 +2866,7 @@ if (params$tool_wash_provider_kii) {
 }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
@@ -2969,7 +2874,12 @@ if (params$tool_wash_provider_kii) {
 }
 ```
 
-## Water Point Observation DAP
+```{r analysis_plan_water_point_observation_header}
+#| results: asis
+
+if(params$tool_water_point_observation) {cat(glue::glue("## Water Point Observation DAP"))}
+
+```
 
 ```{r analysis_plan_water_point_observation_table}
 #| out.width: "100%"
@@ -2985,14 +2895,7 @@ if (params$tool_water_point_observation) {
 }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
@@ -3000,7 +2903,12 @@ if (params$tool_water_point_observation) {
 }
 ```
 
-## Latrine Observation DAP
+```{r analysis_plan_latrine_observation_header}
+#| results: asis
+
+if(params$tool_latrine_observation) {cat(glue::glue("## Latrine Observation DAP"))}
+
+```
 
 ```{r analysis_plan_latrine_observation_table}
 #| out.width: "100%"
@@ -3016,24 +2924,13 @@ if (params$tool_latrine_observation) {
 }
 
   ft <- iphra_dap_flextable(
-    tbl,
-    merge_cols = c(
-      "Research Question",
-      "Indicator Code",
-      "Indicator / Variable",
-      "Disaggregation"
-    ),
-    max_width = 7.6
+    tbl
   )
 
   ft
 
 }
 ```
-
-\newpage
-
-# Annex 1
 
 \newpage
 

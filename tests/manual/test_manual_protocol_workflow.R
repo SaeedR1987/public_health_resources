@@ -43,7 +43,7 @@ protocol$access_nested(
 protocol$access_nested(
   field = "framework",
   member = "set_primary_objectives",
-  objective_codes = c(105, 106)
+  objective_codes = c(101, 105, 106, 109, 112)
 )
 
 # 108, 112, 113, 114, 115, 118, 147
@@ -57,13 +57,13 @@ protocol$access_nested(
 protocol$access_nested(
   "framework",
   member = "modify_adjusted_schema",
-  objective_codes = c(105, 106)
+  objective_codes = c(101, 105, 106, 109, 112)
 )
 
 protocol$access_nested(
   "framework",
   member = "modify_indicator_bank",
-  objective_codes = c(105, 106)
+  objective_codes = c(101, 105, 106, 109, 112)
 )
 
 (protocol$access_nested(
