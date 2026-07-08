@@ -3280,3 +3280,107 @@ test_that("clean() does not apply autoclean entries with new.value = NA when cha
 })
 
 
+# --- .apply_cleaning_changes type coercion tests ---
+
+test_that(".apply_cleaning_changes preserves numeric column type when new.value is numeric string", {
+  df <- tibble::tibble(id = as.character(1:3), score = c(10, 20, 30))
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, uuid = "id")
+  ))
+
+  log_df <- tibble::tibble(
+    uuid = "2", enum_id = "e1", device_id = "d1",
+    question.name = "score", issue = "wrong", feedback = "fix",
+    changed = "yes", old.value = "20", new.value = "25"
+  )
+  d$cleaning_log <- CleaningLog$new(log_df = log_df)
+  d$clean()
+
+  expect_true(is.numeric(d$clean_data$score))
+  expect_equal(d$clean_data$score[2], 25)
+})
+
+
+test_that(".apply_cleaning_changes handles NA new.value for numeric column", {
+  df <- tibble::tibble(id = as.character(1:3), score = c(10, 20, 30))
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, uuid = "id")
+  ))
+
+  log_df <- tibble::tibble(
+    uuid = "2", enum_id = "e1", device_id = "d1",
+    question.name = "score", issue = "remove", feedback = "fix",
+    changed = "yes", old.value = "20", new.value = NA_character_
+  )
+  d$cleaning_log <- CleaningLog$new(log_df = log_df)
+  d$clean()
+
+  expect_true(is.numeric(d$clean_data$score))
+  expect_true(is.na(d$clean_data$score[2]))
+})
+
+
+test_that(".apply_cleaning_changes skips non-coercible value and logs issue", {
+  df <- tibble::tibble(id = as.character(1:3), score = c(10, 20, 30))
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, uuid = "id")
+  ))
+
+  log_df <- tibble::tibble(
+    uuid = "2", enum_id = "e1", device_id = "d1",
+    question.name = "score", issue = "bad", feedback = "fix",
+    changed = "yes", old.value = "20", new.value = "not_a_number"
+  )
+  d$cleaning_log <- CleaningLog$new(log_df = log_df)
+
+  expect_warning(d$clean(), "cannot be safely coerced")
+
+  # Value should remain unchanged
+  expect_equal(d$clean_data$score[2], 20)
+  expect_true(is.numeric(d$clean_data$score))
+
+  # Issue should be logged
+  expect_true(!is.null(d$cleaning_log_issues))
+  expect_equal(nrow(d$cleaning_log_issues), 1)
+  expect_equal(d$cleaning_log_issues$question.name[1], "score")
+})
+
+
+test_that(".apply_cleaning_changes preserves integer column type", {
+  df <- tibble::tibble(id = as.character(1:3), count = as.integer(c(1, 2, 3)))
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, uuid = "id")
+  ))
+
+  log_df <- tibble::tibble(
+    uuid = "1", enum_id = "e1", device_id = "d1",
+    question.name = "count", issue = "fix", feedback = "fix",
+    changed = "yes", old.value = "1", new.value = "5"
+  )
+  d$cleaning_log <- CleaningLog$new(log_df = log_df)
+  d$clean()
+
+  expect_true(is.integer(d$clean_data$count))
+  expect_equal(d$clean_data$count[1], 5L)
+})
+
+
+test_that(".apply_cleaning_changes works for character columns", {
+  df <- tibble::tibble(id = as.character(1:3), name = c("a", "b", "c"))
+  d <- suppressMessages(suppressWarnings(
+    Data$new(data = df, uuid = "id")
+  ))
+
+  log_df <- tibble::tibble(
+    uuid = "3", enum_id = "e1", device_id = "d1",
+    question.name = "name", issue = "typo", feedback = "fix",
+    changed = "yes", old.value = "c", new.value = "corrected"
+  )
+  d$cleaning_log <- CleaningLog$new(log_df = log_df)
+  d$clean()
+
+  expect_true(is.character(d$clean_data$name))
+  expect_equal(d$clean_data$name[3], "corrected")
+})
+
+
