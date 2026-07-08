@@ -2948,6 +2948,7 @@ Data <- R6::R6Class(
             switch(target_class,
               "numeric"  = suppressWarnings(as.numeric(new_val)),
               "integer"  = suppressWarnings(as.integer(new_val)),
+              # mirrors the accepted values validated by .is_safely_coercible("logical")
               "logical"  = {
                 lc <- tolower(trimws(as.character(new_val)))
                 if (lc %in% c("true", "t", "1")) TRUE
@@ -2955,8 +2956,26 @@ Data <- R6::R6Class(
                 else NA
               },
               "Date"     = tryCatch(phr_convert_date(new_val), error = function(e) as.Date(NA)),
-              "POSIXct"  = tryCatch(phr_convert_datetime(new_val), error = function(e) as.POSIXct(NA_real_, origin = "1970-01-01")),
-              "POSIXlt"  = tryCatch(as.POSIXlt(phr_convert_datetime(new_val)), error = function(e) as.POSIXlt(NA_real_, origin = "1970-01-01")),
+              "POSIXct"  = tryCatch(
+                phr_convert_datetime(new_val),
+                error = function(e) {
+                  warning(sprintf(
+                    "Cleaning log row %d: phr_convert_datetime('%s') failed for column '%s' (uuid: %s): %s",
+                    i, new_val, col, u, conditionMessage(e)
+                  ), call. = FALSE)
+                  as.POSIXct(NA_real_, origin = "1970-01-01")
+                }
+              ),
+              "POSIXlt"  = tryCatch(
+                as.POSIXlt(phr_convert_datetime(new_val)),
+                error = function(e) {
+                  warning(sprintf(
+                    "Cleaning log row %d: phr_convert_datetime('%s') failed for column '%s' (uuid: %s): %s",
+                    i, new_val, col, u, conditionMessage(e)
+                  ), call. = FALSE)
+                  as.POSIXlt(NA_real_, origin = "1970-01-01")
+                }
+              ),
               new_val
             )
           }
