@@ -2927,7 +2927,7 @@ Data <- R6::R6Class(
               "numeric"   = suppressWarnings(as.numeric(new_val)),
               "integer"   = suppressWarnings(as.integer(new_val)),
               "logical"   = suppressWarnings(as.logical(new_val)),
-              "Date"      = suppressWarnings(tryCatch(as.Date(new_val), error = function(e) NA)),
+              "Date"      = suppressWarnings(tryCatch(as.Date(new_val), error = function(e) as.Date(NA))),
               new_val
             )
 
