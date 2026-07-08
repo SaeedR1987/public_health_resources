@@ -2922,17 +2922,10 @@ Data <- R6::R6Class(
             # Character columns accept anything
             as.character(new_val)
           } else {
-            # Attempt safe coercion
-            coerced <- switch(target_class,
-              "numeric"   = suppressWarnings(as.numeric(new_val)),
-              "integer"   = suppressWarnings(as.integer(new_val)),
-              "logical"   = suppressWarnings(as.logical(new_val)),
-              "Date"      = suppressWarnings(tryCatch(as.Date(new_val), error = function(e) as.Date(NA))),
-              new_val
-            )
+            # Map integer to numeric for .is_safely_coercible check
+            check_type <- if (target_class == "integer") "numeric" else target_class
 
-            if (is.na(coerced) && !is.na(new_val)) {
-              # Coercion produced NA from a non-NA value: not safely coercible
+            if (!.is_safely_coercible(new_val, check_type)) {
               warning(
                 sprintf(
                   "Cleaning log row %d skipped: new.value '%s' cannot be safely coerced to %s for column '%s' (uuid: %s).",
@@ -2952,7 +2945,20 @@ Data <- R6::R6Class(
               next
             }
 
-            coerced
+            switch(target_class,
+              "numeric"  = suppressWarnings(as.numeric(new_val)),
+              "integer"  = suppressWarnings(as.integer(new_val)),
+              "logical"  = {
+                lc <- tolower(trimws(as.character(new_val)))
+                if (lc %in% c("true", "t", "1")) TRUE
+                else if (lc %in% c("false", "f", "0")) FALSE
+                else NA
+              },
+              "Date"     = tryCatch(phr_convert_date(new_val), error = function(e) as.Date(NA)),
+              "POSIXct"  = tryCatch(phr_convert_datetime(new_val), error = function(e) as.POSIXct(NA_real_, origin = "1970-01-01")),
+              "POSIXlt"  = tryCatch(as.POSIXlt(phr_convert_datetime(new_val)), error = function(e) as.POSIXlt(NA_real_, origin = "1970-01-01")),
+              new_val
+            )
           }
 
           df[[col]][idx] <- typed_val
