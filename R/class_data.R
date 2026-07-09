@@ -3111,6 +3111,7 @@ Data <- R6::R6Class(
     #' - Special regex characters in names/values are automatically escaped
     #'
     #' @keywords internal
+    #' @noRd
     .translate_expression = function(expr, stage = "standardized") {
 
       if (is.null(expr) || expr == "") return(expr)

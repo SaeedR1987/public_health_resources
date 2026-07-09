@@ -531,6 +531,7 @@ HouseholdData <- R6::R6Class(
     #' * If "raw": raw -> clean -> standardized
     #'
     #' @keywords internal
+    #' @noRd
     ..get_data_with_fallback = function(data_obj, stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
@@ -1242,6 +1243,7 @@ HouseholdData <- R6::R6Class(
     #' aggregation rules by dataset type.
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_linked_data = function(hh_data, stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
@@ -1377,6 +1379,7 @@ HouseholdData <- R6::R6Class(
     #' person_time_male, person_time_female
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_deaths_data = function(hh_data, deaths_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
       phr_try({
@@ -1477,6 +1480,7 @@ HouseholdData <- R6::R6Class(
     #' Sums total liters by household and counts number of containers
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_water_container_data = function(hh_data, water_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
       phr_try({
@@ -1564,6 +1568,7 @@ HouseholdData <- R6::R6Class(
     #' available and recall/survey dates exist, also counts births in recall period.
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_roster_data = function(hh_data, roster_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
       phr_try({
@@ -1666,6 +1671,7 @@ HouseholdData <- R6::R6Class(
     #' Aggregates by age groups: children_under2, children_2to5, children_under5 based on age in months
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_nutrition_data = function(hh_data, nutrition_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
       phr_try({
@@ -1779,6 +1785,7 @@ HouseholdData <- R6::R6Class(
     #' Counts total number of people recorded (rows) per household
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_health_data = function(hh_data, health_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
       phr_try({
@@ -1848,6 +1855,7 @@ HouseholdData <- R6::R6Class(
     #' Counts women aged 15-49 per household (all rows in WomenIndividualData represent eligible women)
     #'
     #' @keywords internal
+    #' @noRd
     ..aggregate_women_data = function(hh_data, women_data, hh_uuid_col, linked_hh_col, link_name, linked_obj) {
 
       phr_try({
