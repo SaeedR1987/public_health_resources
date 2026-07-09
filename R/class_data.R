@@ -46,6 +46,7 @@
 #' @field deletion_log DeletionLog R6 object for tracking deletions
 #' @field data_quality_flags Data frame storing quality flags per row
 #' @field data_diagnostics List of diagnostic results
+#' @field cleaning_log_issues Data frame of cleaning log rows that could not be applied (e.g. coercion failures)
 #' @field autosave Logical for automatic saving (if TRUE, snapshots on key steps)
 #' @field linked_objects List of linked Data objects with linkage specifications
 #'
@@ -97,6 +98,7 @@ Data <- R6::R6Class(
     deletion_log = NULL,
     data_quality_flags = NULL,   # NEW: stores DQ flags per row
     data_diagnostics = NULL,
+    cleaning_log_issues = NULL,  # Stores cleaning log rows that failed to apply
 
 
     # Persistence & linkage
@@ -2889,6 +2891,8 @@ Data <- R6::R6Class(
     #' @return Modified data frame with cleaning changes applied
     .apply_cleaning_changes = function(df, log_df, uuid_col) {
 
+      issues <- list()
+
       for (i in seq_len(nrow(log_df))) {
 
         row <- log_df[i, ]
@@ -2900,8 +2904,89 @@ Data <- R6::R6Class(
         idx <- which(as.character(df[[uuid_col]]) == as.character(u))
 
         if (length(idx) == 1 && col %in% names(df) && isTRUE(row$changed == "yes")) {
-          df[[col]][idx] <- new_val
+
+          # Coerce new_val to the target column type before assignment
+          target_class <- class(df[[col]])[1]
+
+          typed_val <- if (is.na(new_val) || identical(new_val, "NA")) {
+            # NA is always safe for any column type
+            switch(target_class,
+              "numeric"   = NA_real_,
+              "integer"   = NA_integer_,
+              "logical"   = NA,
+              "character" = NA_character_,
+              "Date"      = as.Date(NA),
+              NA
+            )
+          } else if (target_class == "character") {
+            # Character columns accept anything
+            as.character(new_val)
+          } else {
+            # Map integer to numeric for .is_safely_coercible check
+            check_type <- if (target_class == "integer") "numeric" else target_class
+
+            if (!.is_safely_coercible(new_val, check_type)) {
+              phrutils::phr_warning(
+                sprintf(
+                  "Cleaning log row %d skipped: new.value '%s' cannot be safely coerced to %s for column '%s' (uuid: %s).",
+                  i, new_val, target_class, col, u
+                ),
+                call. = FALSE
+              )
+              issues[[length(issues) + 1L]] <- data.frame(
+                row_index    = i,
+                uuid         = as.character(u),
+                question.name = col,
+                new.value    = as.character(new_val),
+                target_type  = target_class,
+                reason       = sprintf("Value '%s' is not coercible to %s", new_val, target_class),
+                stringsAsFactors = FALSE
+              )
+              next
+            }
+
+            switch(target_class,
+              "numeric"  = suppressWarnings(as.numeric(new_val)),
+              "integer"  = suppressWarnings(as.integer(new_val)),
+              # mirrors the accepted values validated by .is_safely_coercible("logical")
+              "logical"  = {
+                lc <- tolower(trimws(as.character(new_val)))
+                if (lc %in% c("true", "t", "1")) TRUE
+                else if (lc %in% c("false", "f", "0")) FALSE
+                else NA
+              },
+              "Date"     = tryCatch(phr_convert_date(new_val), error = function(e) as.Date(NA)),
+              "POSIXct"  = tryCatch(
+                phr_convert_datetime(new_val),
+                error = function(e) {
+                  phrutils::phr_warning(sprintf(
+                    "Cleaning log row %d: phr_convert_datetime('%s') failed for column '%s' (uuid: %s): %s",
+                    i, new_val, col, u, conditionMessage(e)
+                  ), call. = FALSE)
+                  as.POSIXct(NA_real_, origin = "1970-01-01")
+                }
+              ),
+              "POSIXlt"  = tryCatch(
+                as.POSIXlt(phr_convert_datetime(new_val)),
+                error = function(e) {
+                  phrutils::phr_warning(sprintf(
+                    "Cleaning log row %d: phr_convert_datetime('%s') failed for column '%s' (uuid: %s): %s",
+                    i, new_val, col, u, conditionMessage(e)
+                  ), call. = FALSE)
+                  as.POSIXlt(NA_real_, origin = "1970-01-01")
+                }
+              ),
+              new_val
+            )
+          }
+
+          df[[col]][idx] <- typed_val
         }
+      }
+
+      # Store any issues for user follow-up
+      if (length(issues) > 0) {
+        self$cleaning_log_issues <- do.call(rbind, issues)
       }
 
       df
