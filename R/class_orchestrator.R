@@ -96,6 +96,8 @@ Orchestrator <- R6::R6Class(
     #' @param role Optional character scalar used to resolve a list element in
     #'   \code{field} by role-like name (for example \code{"household"} for
     #'   \code{"tool_household_iphra_v2"}).
+    #' @param update_sync Logical indicating whether to synchronize state after access.
+    #' @param update_modified Logical indicating whether to update the modified timestamp.
     #' @param ... Arguments passed to the nested method when \code{member}
     #'   resolves to a function.
     #' @return The requested nested value, or the nested method result.

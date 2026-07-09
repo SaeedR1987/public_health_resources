@@ -590,6 +590,7 @@ Protocol <- R6::R6Class(
     #'
     #' @param tool_name Character. Name of the tool to use for survey questions
     #'   and responses. Must match a key in \code{self$tools}.
+    #' @param lang Character. Language code for labels (default: "en").
     #' @return Data frame with columns: Research Question, Indicator Code,
     #'   Indicator / Variable, Disaggregation, Questionnaire Question,
     #'   Questionnaire Responses, Data Collection Level. Returns \code{NULL} when
