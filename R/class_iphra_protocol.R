@@ -322,6 +322,8 @@ IPHRAProtocol <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Get Quarto parameters for rendering.
+    #' @return A named list of parameters to pass to Quarto rendering.
     get_quarto_params = function() {
       params <- super$get_quarto_params()
 
