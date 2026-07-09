@@ -350,6 +350,8 @@ Sample <- R6::R6Class(
   private = list(
     #' @description Update modified timestamp.
     #' @return Invisibly returns NULL.
+    #' @keywords internal
+    #' @noRd
     ..touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
@@ -358,6 +360,8 @@ Sample <- R6::R6Class(
     #' @description Resolve the stratum name column from a sample table.
     #' @param st Data frame sample table.
     #' @return Character scalar naming the column, or NULL if not found.
+    #' @keywords internal
+    #' @noRd
     ..resolve_stratum_name_col = function(st) {
       if ("stratum_name" %in% names(st)) {
         "stratum_name"
