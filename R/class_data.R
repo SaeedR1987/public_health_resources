@@ -2926,7 +2926,7 @@ Data <- R6::R6Class(
             check_type <- if (target_class == "integer") "numeric" else target_class
 
             if (!.is_safely_coercible(new_val, check_type)) {
-              warning(
+              phrutils::phr_warning(
                 sprintf(
                   "Cleaning log row %d skipped: new.value '%s' cannot be safely coerced to %s for column '%s' (uuid: %s).",
                   i, new_val, target_class, col, u
@@ -2959,7 +2959,7 @@ Data <- R6::R6Class(
               "POSIXct"  = tryCatch(
                 phr_convert_datetime(new_val),
                 error = function(e) {
-                  warning(sprintf(
+                  phrutils::phr_warning(sprintf(
                     "Cleaning log row %d: phr_convert_datetime('%s') failed for column '%s' (uuid: %s): %s",
                     i, new_val, col, u, conditionMessage(e)
                   ), call. = FALSE)
@@ -2969,7 +2969,7 @@ Data <- R6::R6Class(
               "POSIXlt"  = tryCatch(
                 as.POSIXlt(phr_convert_datetime(new_val)),
                 error = function(e) {
-                  warning(sprintf(
+                  phrutils::phr_warning(sprintf(
                     "Cleaning log row %d: phr_convert_datetime('%s') failed for column '%s' (uuid: %s): %s",
                     i, new_val, col, u, conditionMessage(e)
                   ), call. = FALSE)
