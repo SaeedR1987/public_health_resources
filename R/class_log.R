@@ -36,7 +36,6 @@ Log <- R6::R6Class(
     schema = NULL,
 
     validated = FALSE,
-    #' @field metadata List containing sample metadata.
     metadata = list(
       created_datetime = NULL,
       modified_datetime = NULL
@@ -473,6 +472,8 @@ Log <- R6::R6Class(
     },
     #' @description Update modified timestamp.
     #' @return Invisibly returns NULL.
+    #' @keywords internal
+    #' @noRd
     ..touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
