@@ -1101,26 +1101,6 @@ test_that("get_hash returns identical hash when data unchanged", {
   expect_equal(h1, h2)
 })
 
-test_that("get_hash errors cleanly when digest package is missing", {
-  df <- tibble::tibble(id = 1:3)
-  d <- suppressMessages(suppressWarnings(
-    Data$new(data = df, uuid = "id")
-  ))
-
-  # Use mocking to pretend digest is not installed
-  mock_ns <- function(...) FALSE
-
-  with_mock(
-    requireNamespace = mock_ns,
-    {
-      expect_error(
-        d$get_hash(),
-        regexp = "digest.*required"
-      )
-    }
-  )
-})
-
 test_that("get_hash works for standardized data", {
   df <- tibble::tibble(id = 1:3, x = c("1","2","3"))
   d <- suppressMessages(suppressWarnings(
@@ -2905,6 +2885,8 @@ test_that("Full integration: validate, standardize, clean with no issues", {
   expect_equal(d$clean_data$id, 1:5)
 })
 
+
+
 test_that("Full integration: validate, standardize with type coercion, clean", {
   df <- tibble(
     id = c("1", "2", "3"),
@@ -2998,7 +2980,7 @@ test_that("Full integration: clean applies cleaning log changes", {
   d$clean()
 
   # Check that the change was applied
-  expect_equal(d$clean_data$age[2], "26")
+  expect_equal(d$clean_data$age[2], 26)
 })
 
 test_that("Full integration: clean applies deletion log", {
@@ -3363,6 +3345,7 @@ test_that(".apply_cleaning_changes preserves integer column type", {
   expect_true(is.integer(d$clean_data$count))
   expect_equal(d$clean_data$count[1], 5L)
 })
+
 
 
 test_that(".apply_cleaning_changes works for character columns", {

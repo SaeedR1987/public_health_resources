@@ -51,8 +51,8 @@ Suggests:
     treemapify,
     withr
 Encoding: UTF-8
-RoxygenNote: 7.3.3
 Config/testthat/edition: 3
 Collate:
     'class_orchestrator.R'
     'class_document.R'
+Config/roxygen2/version: 8.0.0
