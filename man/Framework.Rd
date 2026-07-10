@@ -227,6 +227,7 @@ codes.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
+      \item{\code{objective}}{Character. The objective code that this data source relates to.}
       \item{\code{source}}{Character. The name of the secondary data source.}
       \item{\code{purpose}}{Character. The purpose of the secondary data source.}
     }
@@ -250,6 +251,7 @@ codes.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
+      \item{\code{objective}}{Character. The objective code that this data source relates to.}
       \item{\code{source}}{Character. The name of the secondary data source to remove.}
     }
     \if{html}{\out{</div>}}

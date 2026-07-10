@@ -119,15 +119,6 @@ An \code{\link{ANAFramework}} is automatically created and stored in
 )}
     \if{html}{\out{</div>}}
   }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{assessment_title}}{Character. Title of the assessment}
-      \item{\code{country_name}}{Character. Country where assessment takes place}
-      \item{\code{month_year}}{Character. Month and year of data collection (e.g., "January 2024")}
-    }
-    \if{html}{\out{</div>}}
-  }
   \subsection{Returns}{
     A new IPHRAProtocol object.
   }
@@ -214,10 +205,14 @@ Defaults to \code{"tool_household_iphra_v2"}.}
 \if{html}{\out{<a id="method-IPHRAProtocol-get_quarto_params"></a>}}
 \if{latex}{\out{\hypertarget{method-IPHRAProtocol-get_quarto_params}{}}}
 \subsection{\code{IPHRAProtocol$get_quarto_params()}}{
+  Get Quarto parameters for rendering.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{IPHRAProtocol$get_quarto_params()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named list of parameters to pass to Quarto rendering.
   }
 }
 

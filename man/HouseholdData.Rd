@@ -202,30 +202,7 @@ datasets are overwritten with household values. Uses fallback logic to find avai
 [Data], [IndividualData], [DeathIndividualData], [WaterContainerData],
   [NutritionIndividualData], [HealthIndividualData]
 }
-\keyword{Aggregate}
-\keyword{Container}
-\keyword{Data}
-\keyword{Dataset}
-\keyword{Datasets}
-\keyword{Deaths}
-\keyword{Frame}
-\keyword{Generate}
-\keyword{Health}
-\keyword{Household}
-\keyword{Linked}
-\keyword{Merge}
-\keyword{Nutrition}
-\keyword{Roster}
-\keyword{Sampling}
-\keyword{Survey}
-\keyword{Variables}
-\keyword{Water}
-\keyword{Weights}
-\keyword{Women}
-\keyword{a}
-\keyword{from}
 \keyword{internal}
-\keyword{to}
 \section{Super class}{
 \code{\link[phr:Data]{Data}} -> \code{HouseholdData}
 }
