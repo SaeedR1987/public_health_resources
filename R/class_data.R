@@ -3110,7 +3110,6 @@ Data <- R6::R6Class(
     #' - Variable names in functions (e.g., is.na(var)) are translated
     #' - Special regex characters in names/values are automatically escaped
     #'
-    #' @keywords internal
     #' @noRd
     .translate_expression = function(expr, stage = "standardized") {
 
