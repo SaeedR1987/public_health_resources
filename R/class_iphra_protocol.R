@@ -66,6 +66,10 @@ IPHRAProtocol <- R6::R6Class(
     #' An \code{\link{ANAFramework}} is automatically created and stored in
     #' \code{self$framework}.
     #'
+    #' @param assessment_title Character. The title of the assessment.
+    #' @param country_name Character. The name of the country.
+    #' @param month_year Character. The month and year of the assessment.
+    #'
     #' @return A new IPHRAProtocol object.
     initialize = function(
       assessment_title = NULL,
