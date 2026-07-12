@@ -217,7 +217,6 @@ Placeholder: UI modal implementation will be developed in a separate branch.
 \seealso{
 [HouseholdData], [MortalityHouseholdData], [RosterData]
 }
-\keyword{internal}
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
