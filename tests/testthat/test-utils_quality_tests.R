@@ -2659,3 +2659,306 @@ test_that("quality_test_ageratio_count_group handles all zeros for one age group
   expect_true(is.na(result$statistic))
 })
 
+
+# 22. SD TEST ####
+
+test_that("quality_test_sd calculates standard deviation correctly", {
+  df <- tibble::tibble(
+    var1 = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_sd(sdesign, "var1")
+
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.na(result$p_value))
+  expect_equal(result$statistic, sd(df$var1), tolerance = 0.01)
+})
+
+test_that("quality_test_sd errors with multiple variables", {
+  df <- tibble::tibble(var1 = 1:5, var2 = 2:6)
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    quality_test_sd(sdesign, c("var1", "var2")),
+    regexp = "exactly 1 variable"
+  )
+})
+
+test_that("quality_test_sd handles missing column", {
+  df <- tibble::tibble(var1 = 1:5)
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_sd(sdesign, "nonexistent"),
+    regexp = "not found"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_sd handles insufficient data", {
+  df <- tibble::tibble(var1 = c(5))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_sd(sdesign, "var1"),
+    regexp = "Insufficient data"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_sd handles NA values", {
+  df <- tibble::tibble(var1 = c(1, 2, NA, 4, 5))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_sd(sdesign, "var1")
+
+  expect_true(!is.na(result$statistic))
+  expect_equal(result$statistic, sd(c(1, 2, 4, 5)), tolerance = 0.01)
+})
+
+
+# 23. SD ACROSS PERCENTAGE TEST ####
+
+test_that("quality_test_sd_across_percentage calculates percentage correctly", {
+  df <- tibble::tibble(
+    var1 = c(1, 2, 3, 4, 5),
+    var2 = c(1.1, 2.1, 3.1, 4.1, 5.1),
+    var3 = c(1.2, 2.2, 3.2, 4.2, 5.2)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_sd_across_percentage(sdesign, c("var1", "var2", "var3"), threshold = 0.5)
+
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.na(result$p_value))
+  expect_true(result$statistic >= 0 && result$statistic <= 100)
+})
+
+test_that("quality_test_sd_across_percentage errors with single variable", {
+  df <- tibble::tibble(var1 = 1:5)
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    quality_test_sd_across_percentage(sdesign, "var1"),
+    regexp = "at least 2 variables"
+  )
+})
+
+test_that("quality_test_sd_across_percentage handles missing columns", {
+  df <- tibble::tibble(var1 = 1:5, var2 = 2:6)
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_sd_across_percentage(sdesign, c("var1", "nonexistent")),
+    regexp = "not found"
+  )
+})
+
+test_that("quality_test_sd_across_percentage uses custom threshold", {
+  df <- tibble::tibble(
+    var1 = c(1, 2, 3, 4, 5),
+    var2 = c(1.1, 2.1, 3.1, 4.1, 5.1),
+    var3 = c(1.2, 2.2, 3.2, 4.2, 5.2)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_sd_across_percentage(sdesign, c("var1", "var2", "var3"), threshold = 2.0)
+
+  expect_true(is.numeric(result$statistic))
+})
+
+
+# 24. ANY FLAG PERCENTAGE TEST ####
+
+test_that("quality_test_any_flag_percentage calculates percentage correctly", {
+  df <- tibble::tibble(
+    flag1 = c(0, 1, 0, 1, 0),
+    flag2 = c(0, 0, 1, 1, 0),
+    flag3 = c(0, 0, 0, 0, 0)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_any_flag_percentage(sdesign, c("flag1", "flag2", "flag3"))
+
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.na(result$p_value))
+  expect_equal(result$statistic, 60)  # 3 out of 5 rows have at least one flag
+})
+
+test_that("quality_test_any_flag_percentage handles custom flag value", {
+  df <- tibble::tibble(
+    flag1 = c(2, 0, 2, 0, 0),
+    flag2 = c(0, 2, 0, 2, 0)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_any_flag_percentage(sdesign, c("flag1", "flag2"), flag_value = 2)
+
+  expect_true(is.numeric(result$statistic))
+  expect_equal(result$statistic, 80)  # 4 out of 5 rows have flag value 2
+})
+
+test_that("quality_test_any_flag_percentage handles missing columns", {
+  df <- tibble::tibble(flag1 = c(0, 1, 0))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_any_flag_percentage(sdesign, c("flag1", "nonexistent")),
+    regexp = "not found"
+  )
+})
+
+test_that("quality_test_any_flag_percentage handles all NA values", {
+  df <- tibble::tibble(
+    flag1 = c(NA, NA, NA),
+    flag2 = c(NA, NA, NA)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_any_flag_percentage(sdesign, c("flag1", "flag2")),
+    regexp = "No rows with non-missing values"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+
+# 25. SEX RATIO TEST ####
+
+test_that("quality_test_sexratio performs test correctly", {
+  df <- tibble::tibble(
+    sex = c("M", "F", "M", "F", "M", "F", "M", "F", "M", "F")
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_sexratio(sdesign, "sex", male_val = "M", female_val = "F")
+
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.numeric(result$p_value))
+  expect_equal(result$statistic, 1.0, tolerance = 0.01)  # 1:1 ratio
+})
+
+test_that("quality_test_sexratio errors with multiple variables", {
+  df <- tibble::tibble(sex = c("M", "F", "M"))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    quality_test_sexratio(sdesign, c("sex", "other"), male_val = "M", female_val = "F"),
+    regexp = "single character column"
+  )
+})
+
+test_that("quality_test_sexratio handles missing column", {
+  df <- tibble::tibble(sex = c("M", "F", "M"))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_sexratio(sdesign, "nonexistent", male_val = "M", female_val = "F"),
+    regexp = "not found"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_sexratio handles insufficient data", {
+  df <- tibble::tibble(sex = c("M", "F"))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_sexratio(sdesign, "sex", male_val = "M", female_val = "F"),
+    regexp = "Insufficient data"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_sexratio handles custom expected ratio", {
+  df <- tibble::tibble(
+    sex = c("M", "M", "F", "M", "F", "M", "F", "M", "F", "M")
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_sexratio(sdesign, "sex", male_val = "M", female_val = "F", expected_ratio_val = 1.5)
+
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.numeric(result$p_value))
+})
+
+
+# 26. AGE RATIO TEST ####
+
+test_that("quality_test_ageratio performs test correctly", {
+  df <- tibble::tibble(
+    age_group1 = c(1, 0, 1, 0, 1, 0, 1, 0, 1, 0),
+    age_group2 = c(0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_ageratio(sdesign, c("age_group1", "age_group2"))
+
+  expect_true(is.list(result))
+  expect_true("statistic" %in% names(result))
+  expect_true("p_value" %in% names(result))
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.numeric(result$p_value))
+})
+
+test_that("quality_test_ageratio errors with wrong number of variables", {
+  df <- tibble::tibble(age_group1 = c(1, 0, 1))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    quality_test_ageratio(sdesign, "age_group1"),
+    regexp = "length 2"
+  )
+})
+
+test_that("quality_test_ageratio handles missing columns", {
+  df <- tibble::tibble(age_group1 = c(1, 0, 1))
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_ageratio(sdesign, c("age_group1", "nonexistent")),
+    regexp = "not found"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_ageratio handles insufficient data", {
+  df <- tibble::tibble(
+    age_group1 = c(1, 0),
+    age_group2 = c(0, 1)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  expect_warning(
+    result <- quality_test_ageratio(sdesign, c("age_group1", "age_group2")),
+    regexp = "Insufficient data"
+  )
+  expect_true(is.na(result$statistic))
+})
+
+test_that("quality_test_ageratio handles custom expected ratio", {
+  df <- tibble::tibble(
+    age_group1 = c(1, 0, 1, 0, 1, 0, 1, 0, 1, 0),
+    age_group2 = c(0, 1, 0, 1, 0, 1, 0, 1, 0, 1)
+  )
+  sdesign <- srvyr::as_survey_design(df, ids = 1)
+
+  result <- quality_test_ageratio(sdesign, c("age_group1", "age_group2"), expected_ratio_val = 1.2)
+
+  expect_true(is.numeric(result$statistic))
+  expect_true(is.numeric(result$p_value))
+})
+
