@@ -24,6 +24,8 @@ Imports:
     lubridate,
     officer,
     openxlsx,
+    phr_indicators,
+    phrutils,
     pps,
     purrr,
     R6,
@@ -50,6 +52,9 @@ Suggests:
     testthat (>= 3.0.0),
     treemapify,
     withr
+Remotes:
+    impact-initiatives/phrutils,
+    impact-initiatives/phr_indicators
 Encoding: UTF-8
 Config/testthat/edition: 3
 Collate:
