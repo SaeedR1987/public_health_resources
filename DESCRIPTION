@@ -24,7 +24,7 @@ Imports:
     lubridate,
     officer,
     openxlsx,
-    phr_indicators,
+    phrindicators,
     phrutils,
     pps,
     purrr,
@@ -54,7 +54,7 @@ Suggests:
     withr
 Remotes:
     impact-initiatives/phrutils,
-    impact-initiatives/phr_indicators
+    impact-initiatives/phrindicators
 Encoding: UTF-8
 Config/testthat/edition: 3
 Collate:
