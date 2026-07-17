@@ -1877,7 +1877,7 @@ quality_test_poisson_ratio <- function(
 
       if (!is.character(variables) || length(variables) != 2L) {
         phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = "`variables` must be a character vector of exactly 2 column names (events, exposure)"
         )
       }
@@ -1889,29 +1889,22 @@ quality_test_poisson_ratio <- function(
           expected_rate <= 0
       ) {
         phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = "`expected_rate` must be a single positive numeric value"
         )
       }
 
       if (!alternative %in% c("two.sided", "greater", "less")) {
         phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
-        )
-      }
-
-      if (!is.character(pval_colname) || length(pval_colname) != 1L) {
-        phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
-          message = "`pval_colname` must be a single character string"
         )
       }
 
       missing_cols <- setdiff(variables, names(data))
       if (length(missing_cols) > 0) {
         phr_warning(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = paste0(
             "Columns not found in data: ",
             paste(missing_cols, collapse = ", ")
@@ -1926,8 +1919,8 @@ quality_test_poisson_ratio <- function(
       exposure_vals <- data[[exposure_col]]
 
       # Aggregate
-      total_events <- sum(events, na.rm = TRUE)
-      total_exposure <- sum(exposure, na.rm = TRUE)
+      total_events <- sum(event_vals, na.rm = TRUE)
+      total_exposure <- sum(exposure_vals, na.rm = TRUE)
 
       # Validate aggregated values
       if (
@@ -1964,7 +1957,7 @@ quality_test_poisson_ratio <- function(
       ))
     },
     on_error = "warn",
-    origin = "quality_test_poisson_ratio_rowwise"
+    origin = "quality_test_poisson_ratio"
   )
 }
 
