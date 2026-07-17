@@ -181,7 +181,7 @@ Log <- R6::R6Class(
                 got <- class(self$log_df[[nm]])[1]
 
                 # Safe coercion classification
-                coercible <- .is_safely_coercible(self$log_df[[nm]], want)
+                coercible <- is_safely_coercible(self$log_df[[nm]], want)
 
                 # Soft-coercion when safe
                 if (!identical(got, want) && coercible) {

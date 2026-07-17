@@ -430,7 +430,7 @@ quality_validate_schema_to_table <- function(qc_schema, origin = "quality_valida
           )
         }
 
-        if (!.is_logical_expression(thr$threshold_expression)) {
+        if (!is_logical_expression(thr$threshold_expression)) {
           phr_error(
             origin  = origin,
             message = phr_txt(

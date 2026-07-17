@@ -475,7 +475,7 @@ Data <- R6::R6Class(
 
               want <- sch$types[[nm]]
 
-              if (.is_safely_coercible(col, want)) {
+              if (is_safely_coercible(col, want)) {
 
                 # numeric
                 if (want == "numeric") {
@@ -531,11 +531,11 @@ Data <- R6::R6Class(
             )
 
             # numeric
-            if (identical(inferred, "numeric") && .is_safely_coercible(col, "numeric")) {
+            if (identical(inferred, "numeric") && is_safely_coercible(col, "numeric")) {
               new <- suppressWarnings(as.numeric(col))
 
               # logical
-            } else if (identical(inferred, "logical") && .is_safely_coercible(col, "logical")) {
+            } else if (identical(inferred, "logical") && is_safely_coercible(col, "logical")) {
 
               lc <- tolower(trimws(as.character(col)))
               true_vals  <- c("true","t","yes","y","1")
@@ -546,7 +546,7 @@ Data <- R6::R6Class(
               )
 
               # date
-            } else if (identical(inferred, "date") && .is_safely_coercible(col, "Date")) {
+            } else if (identical(inferred, "date") && is_safely_coercible(col, "Date")) {
               new <- phr_convert_date(col)
 
               # fallback \u2192 clean character
@@ -1902,7 +1902,7 @@ Data <- R6::R6Class(
           # Determine safely_coercible
           safely_coercible <- NA
           if (var_exists) {
-            safely_coercible <- .is_safely_coercible(df[[mapped_variable]], required_type)
+            safely_coercible <- is_safely_coercible(df[[mapped_variable]], required_type)
           }
 
           # Check if this variable has value mappings in schema
@@ -2167,12 +2167,12 @@ Data <- R6::R6Class(
               x    <- df[[col]]
 
               # Column-level coercibility
-              is_ok <- .is_safely_coercible(x, want)
+              is_ok <- is_safely_coercible(x, want)
 
               if (is_ok) {
                 add_flag(paste0("flag_", col, "_type"), rep(0, nrow(df)))
               } else {
-                bad_rows <- .which_bad_coercible(x, want)
+                bad_rows <- which_bad_coercible(x, want)
                 add_flag(paste0("flag_", col, "_type"), ifelse(bad_rows, 1, 0))
               }
             }
@@ -2922,10 +2922,10 @@ Data <- R6::R6Class(
             # Character columns accept anything
             as.character(new_val)
           } else {
-            # Map integer to numeric for .is_safely_coercible check
+            # Map integer to numeric for is_safely_coercible check
             check_type <- if (target_class == "integer") "numeric" else target_class
 
-            if (!.is_safely_coercible(new_val, check_type)) {
+            if (!is_safely_coercible(new_val, check_type)) {
               phrutils::phr_warning(
                 message = sprintf(
                   "Cleaning log row %d skipped: new.value '%s' cannot be safely coerced to %s for column '%s' (uuid: %s).",
@@ -2949,7 +2949,7 @@ Data <- R6::R6Class(
             switch(target_class,
               "numeric"  = suppressWarnings(as.numeric(new_val)),
               "integer"  = suppressWarnings(as.integer(new_val)),
-              # mirrors the accepted values validated by .is_safely_coercible("logical")
+              # mirrors the accepted values validated by is_safely_coercible("logical")
               "logical"  = {
                 lc <- tolower(trimws(as.character(new_val)))
                 if (lc %in% c("true", "t", "1")) TRUE
