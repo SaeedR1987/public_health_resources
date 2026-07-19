@@ -1111,3 +1111,111 @@ test_that("NutritionDataAnalytics$post_run_analysis uses 0-23 vs 24-59 age range
 
   expect_true(!is.null(nut$analysis_results[["muac_weighted"]]))
 })
+
+# ============================================================================
+# add_all_to_dap
+# ============================================================================
+
+test_that("add_all_to_dap classifies columns and amends the plan", {
+  df <- tibble::tibble(
+    hh_uuid     = sprintf("uuid-%030d", 1:30),               # skipped (>20 unique char)
+    stratum_col = rep(c("north", "south", "east"), 10),
+    fcs_score   = seq(1, 30),                                # already in map + dap
+    wash_soap   = rep(c(0, 1), 15),                          # prop
+    edu_level   = rep(c("primary", "secondary", "none"), 10),# cat
+    water_src   = rep(c("piped tap", "well,spring", "river"), 10) # select_multiple_cat
+  )
+
+  da <- suppressMessages(DataAnalytics$new(
+    data = df, dataset_name = "AddAllDA",
+    variable_map = list(stratum = "stratum_col", fcs = "fcs_score")
+  ))
+  suppressMessages(da$add_indicator_dap(
+    indicator_name = "FCS mean", calculation = "mean", var_name = "fcs_score",
+    multiplier = 1, indicator_unit = "score"
+  ))
+
+  suppressMessages(da$add_all_to_dap())
+  plan <- da$data_analysis_plan$log_df
+
+  # Skipped high-cardinality character column
+  expect_false("hh_uuid" %in% plan$var_name)
+  expect_false("hh_uuid" %in% unlist(da$variable_map))
+
+  # Column already in map + dap is not duplicated
+  expect_equal(sum(plan$var_name == "fcs_score"), 1)
+
+  # In map but not dap: added using existing variable_map role as indicator name
+  expect_true("stratum" %in% plan$indicator_name)
+  expect_equal(plan$calculation[plan$var_name == "stratum_col"], "cat")
+
+  # Novel columns added to variable_map and dap with guessed calculations
+  expect_equal(da$variable_map[["wash_soap"]], "wash_soap")
+  expect_equal(unique(plan$calculation[plan$var_name == "wash_soap"]), "prop")
+  expect_equal(unique(plan$calculation[plan$var_name == "edu_level"]), "cat")
+  expect_equal(unique(plan$calculation[plan$var_name == "water_src"]), "select_multiple_cat")
+
+  # prop/cat/select_multiple_cat rows use multiplier 100 and unit %
+  new_rows <- plan[plan$var_name %in% c("wash_soap", "edu_level", "water_src"), ]
+  expect_true(all(new_rows$multiplier == 100))
+  expect_true(all(new_rows$indicator_unit == "%"))
+
+  # Valid stratum in variable_map: new rows replicated with stratum disaggregation
+  soap_rows <- plan[plan$var_name == "wash_soap", ]
+  expect_equal(nrow(soap_rows), 2)
+  expect_true("stratum_col" %in% soap_rows$disaggregation)
+  # The stratum column itself is not disaggregated by itself
+  expect_equal(nrow(plan[plan$var_name == "stratum_col", ]), 1)
+})
+
+test_that("add_all_to_dap guesses mean for numeric columns beyond 0/1", {
+  df <- tibble::tibble(score = c(0, 1, 2.5, 7))
+  da <- suppressMessages(DataAnalytics$new(data = df, dataset_name = "MeanDA"))
+
+  suppressMessages(da$add_all_to_dap())
+  plan <- da$data_analysis_plan$log_df
+
+  expect_equal(plan$calculation[plan$var_name == "score"], "mean")
+  expect_equal(plan$multiplier[plan$var_name == "score"], 1)
+  expect_equal(plan$indicator_unit[plan$var_name == "score"], "score")
+})
+
+test_that("add_all_to_dap iterates over multiple field sets from the pre-hook", {
+  MultiDA <- R6::R6Class(
+    "MultiDA",
+    inherit = DataAnalytics,
+    public = list(
+      data2 = NULL,
+      variable_map2 = NULL,
+      data_analysis_plan2 = NULL,
+      pre_add_all_to_dap = function() {
+        list(
+          main = list(
+            data = "data", variable_map = "variable_map",
+            data_analysis_plan = "data_analysis_plan"
+          ),
+          second = list(
+            data = "data2", variable_map = "variable_map2",
+            data_analysis_plan = "data_analysis_plan2"
+          )
+        )
+      }
+    )
+  )
+
+  da <- suppressMessages(MultiDA$new(
+    data = tibble::tibble(a_bin = c(0, 1, 1, 0)), dataset_name = "MultiDA"
+  ))
+  da$data2 <- tibble::tibble(b_txt = c("x", "y", "x", "y"))
+  da$variable_map2 <- list()
+
+  suppressMessages(da$add_all_to_dap())
+
+  expect_equal(da$data_analysis_plan$log_df$var_name, "a_bin")
+  expect_equal(da$data_analysis_plan$log_df$calculation, "prop")
+
+  expect_s3_class(da$data_analysis_plan2, "QuantDataAnalysisPlanLog")
+  expect_equal(da$data_analysis_plan2$log_df$var_name, "b_txt")
+  expect_equal(da$data_analysis_plan2$log_df$calculation, "cat")
+  expect_equal(da$variable_map2[["b_txt"]], "b_txt")
+})

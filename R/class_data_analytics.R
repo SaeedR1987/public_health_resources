@@ -1853,6 +1853,72 @@ DataAnalytics <- R6::R6Class(
       hint = "Ensure indicator_name exists in data_analysis_plan.")
     },
 
+    #' @description Pre-hook providing the field sets used by \code{add_all_to_dap()}.
+    #'
+    #' The default implementation returns a single set pointing at the core
+    #' \code{data}, \code{variable_map} and \code{data_analysis_plan} fields.
+    #' Subclasses that hold multiple datasets (e.g. linked roster or deaths
+    #' data) can override this method to return one entry per dataset. Each
+    #' entry must be a named list with elements \code{data},
+    #' \code{variable_map} and \code{data_analysis_plan}, giving the names of
+    #' the public fields that hold the dataset, its variable map, and its
+    #' data analysis plan respectively.
+    #'
+    #' @return A named list of field sets.
+    pre_add_all_to_dap = function() {
+      list(
+        main = list(
+          data               = "data",
+          variable_map       = "variable_map",
+          data_analysis_plan = "data_analysis_plan"
+        )
+      )
+    },
+
+    #' @description Add all data columns to the data analysis plan(s).
+    #'
+    #' For every field set returned by \code{pre_add_all_to_dap()}, this
+    #' method lists all column names in the data and classifies them as:
+    #' (1) already present in both the variable_map and the
+    #' data_analysis_plan, (2) present in the variable_map but not the
+    #' data_analysis_plan, or (3) present in neither. Columns in group (2)
+    #' are added to the data_analysis_plan using their existing variable_map
+    #' reference; columns in group (3) are first added to the variable_map as
+    #' novel entries keyed by their column name and then added to the
+    #' data_analysis_plan. The calculation type is best-guess estimated as
+    #' "prop", "mean", "cat", or "select_multiple_cat" based on the column
+    #' values. Character columns with more than 20 unique values that are not
+    #' comma- or space-separated are skipped (likely metadata or uuid fields).
+    #' If a valid stratum column is defined in the variable_map, each newly
+    #' added row is replicated with the stratum column in the disaggregation
+    #' field.
+    #'
+    #' @return Invisibly returns self.
+    add_all_to_dap = function() {
+      origin <- paste0(self$dataset_name, "$add_all_to_dap")
+
+      phr_try({
+        sets <- self$pre_add_all_to_dap()
+
+        if (is.null(sets) || length(sets) == 0) {
+          phr_warning(origin, "pre_add_all_to_dap() returned no field sets. Nothing to do.")
+          return(invisible(self))
+        }
+
+        set_names <- names(sets) %||% rep("", length(sets))
+
+        for (i in seq_along(sets)) {
+          set_name <- if (nzchar(set_names[i])) set_names[i] else paste0("set_", i)
+          private$.add_all_to_dap_single(sets[[i]], set_name, origin)
+        }
+      },
+      on_error = "warn",
+      origin = origin,
+      hint = "Check that pre_add_all_to_dap() returns valid field-name sets.")
+
+      invisible(self)
+    },
+
     #' @description Convert the analysis schema tibble to a named list
     #' @return A named list of indicator specification lists
     to_list_schema = function() {
@@ -2064,7 +2130,8 @@ DataAnalytics <- R6::R6Class(
           }
 
           invalid_calc <- self$data_analysis_plan$log_df |>
-            dplyr::filter(!.data$calculation %in% c("prop", "mean", "median", "ratio"))
+            dplyr::filter(!.data$calculation %in% c("prop", "mean", "median", "ratio",
+                                                    "cat", "categorical", "select_multiple_cat"))
 
           if (nrow(invalid_calc) > 0) {
             issues <- dplyr::bind_rows(issues, tibble::tibble(
@@ -2354,6 +2421,210 @@ DataAnalytics <- R6::R6Class(
 
 
   private = list(
+
+    # Amend one data / variable_map / data_analysis_plan field set for
+    # add_all_to_dap().
+    #
+    # @param set Named list with elements data, variable_map and
+    #   data_analysis_plan giving public field names on self.
+    # @param set_name Character; label for the set (used in messages).
+    # @param origin Character; origin label for messages/warnings.
+    # @return Invisibly NULL.
+    .add_all_to_dap_single = function(set, set_name, origin) {
+
+      if (!is.list(set) ||
+          is.null(set$data) || is.null(set$variable_map) ||
+          is.null(set$data_analysis_plan)) {
+        phr_warning(origin, paste0(
+          "Field set '", set_name,
+          "' must contain 'data', 'variable_map' and 'data_analysis_plan' field names. Skipping."))
+        return(invisible(NULL))
+      }
+
+      df <- self[[set$data]]
+      if (is.null(df) || !is.data.frame(df) || ncol(df) == 0) {
+        phr_warning(origin, paste0(
+          "Field set '", set_name, "': field '", set$data,
+          "' is not a non-empty data frame. Skipping."))
+        return(invisible(NULL))
+      }
+
+      vm <- self[[set$variable_map]] %||% list()
+
+      if (is.null(self[[set$data_analysis_plan]])) {
+        self[[set$data_analysis_plan]] <- QuantDataAnalysisPlanLog$new()
+      }
+      dap <- self[[set$data_analysis_plan]]
+
+      status <- private$.classify_columns_for_dap(df, vm, dap)
+
+      phr_message(origin, paste0(
+        "Field set '", set_name, "': ", length(status$all_cols),
+        " column(s) in data. ",
+        length(status$in_both), " already in variable_map and data_analysis_plan (",
+        paste(status$in_both, collapse = ", "), "); ",
+        length(status$in_map_not_dap), " in variable_map only (",
+        paste(status$in_map_not_dap, collapse = ", "), "); ",
+        length(status$in_neither), " in neither (",
+        paste(status$in_neither, collapse = ", "), ")."))
+
+      # Resolve a valid stratum column (if defined in the variable_map) so
+      # newly added rows can be replicated with stratum as disaggregation.
+      stratum_col <- vm[["stratum"]]
+      if (!is.character(stratum_col) || length(stratum_col) != 1 ||
+          !nzchar(stratum_col) || !stratum_col %in% names(df)) {
+        stratum_col <- NULL
+      }
+
+      add_with_stratum <- function(indicator_name, guess, col) {
+        dap$add_indicator(
+          indicator_name = indicator_name,
+          calculation    = guess$calculation,
+          var_name       = col,
+          multiplier     = guess$multiplier,
+          indicator_unit = guess$indicator_unit
+        )
+        if (!is.null(stratum_col) && !identical(col, stratum_col)) {
+          dap$add_indicator(
+            indicator_name = indicator_name,
+            calculation    = guess$calculation,
+            var_name       = col,
+            disaggregation = stratum_col,
+            multiplier     = guess$multiplier,
+            indicator_unit = guess$indicator_unit
+          )
+        }
+      }
+
+      # (c) In variable_map but not in the data_analysis_plan: add to the
+      #     plan using the existing variable_map reference.
+      for (col in status$in_map_not_dap) {
+        guess <- private$.guess_dap_calculation(df[[col]])
+        if (is.null(guess)) {
+          phr_message(origin, paste0(
+            "Skipping column '", col,
+            "' (character with > 20 unique values; likely metadata or uuid)."))
+          next
+        }
+        add_with_stratum(status$map_roles[[col]], guess, col)
+      }
+
+      # (d) In neither: add as a novel variable_map entry keyed by the
+      #     column name, then add to the data_analysis_plan.
+      for (col in status$in_neither) {
+        guess <- private$.guess_dap_calculation(df[[col]])
+        if (is.null(guess)) {
+          phr_message(origin, paste0(
+            "Skipping column '", col,
+            "' (character with > 20 unique values; likely metadata or uuid)."))
+          next
+        }
+        vm[[col]] <- col
+        add_with_stratum(col, guess, col)
+      }
+
+      self[[set$variable_map]] <- vm
+
+      invisible(NULL)
+    },
+
+    # Classify data columns by their presence in the variable_map and the
+    # data_analysis_plan.
+    #
+    # @param df Data frame whose columns should be classified.
+    # @param variable_map Named list mapping canonical roles to column names.
+    # @param dap QuantDataAnalysisPlanLog object (or NULL).
+    # @return A list with elements all_cols, in_both, in_map_not_dap,
+    #   in_neither, and map_roles (named list of column name -> canonical role).
+    .classify_columns_for_dap = function(df, variable_map, dap) {
+
+      all_cols <- names(df)
+
+      map_roles <- list()
+      for (role in names(variable_map)) {
+        cols <- variable_map[[role]]
+        if (is.null(cols)) next
+        for (col in as.character(cols)) {
+          if (nzchar(col) && is.null(map_roles[[col]])) {
+            map_roles[[col]] <- role
+          }
+        }
+      }
+
+      dap_vars <- character(0)
+      if (!is.null(dap) && !is.null(dap$log_df) &&
+          nrow(dap$log_df) > 0 && "var_name" %in% names(dap$log_df)) {
+        dap_vars <- unique(dap$log_df$var_name)
+        dap_vars <- dap_vars[!is.na(dap_vars)]
+      }
+
+      in_map         <- all_cols[all_cols %in% names(map_roles)]
+      in_dap         <- all_cols[all_cols %in% dap_vars]
+      in_both        <- intersect(in_map, in_dap)
+      in_map_not_dap <- setdiff(in_map, in_dap)
+      in_neither     <- setdiff(all_cols, union(in_map, in_dap))
+
+      list(
+        all_cols       = all_cols,
+        in_both        = in_both,
+        in_map_not_dap = in_map_not_dap,
+        in_neither     = in_neither,
+        map_roles      = map_roles
+      )
+    },
+
+    # Best-guess the calculation type for a data column.
+    #
+    # Rules:
+    # * numeric (or safely coercible to numeric) with only 0/1 values -> prop
+    # * numeric (or safely coercible to numeric) beyond 0/1           -> mean
+    # * character with comma- or space-separated values -> select_multiple_cat
+    # * character otherwise                             -> cat
+    # * character, not comma/space separated, with more than 20 unique
+    #   values (likely metadata or uuid fields)         -> NULL (skip)
+    #
+    # @param values Vector of column values.
+    # @return A list with elements calculation, multiplier, indicator_unit,
+    #   or NULL when the column should be skipped.
+    .guess_dap_calculation = function(values) {
+
+      cat_guess <- list(calculation = "cat", multiplier = 100, indicator_unit = "%")
+
+      if (is.list(values)) {
+        return(list(calculation = "select_multiple_cat",
+                    multiplier = 100, indicator_unit = "%"))
+      }
+
+      vals <- values[!is.na(values)]
+      if (length(vals) == 0) {
+        return(cat_guess)
+      }
+
+      vals_chr <- trimws(as.character(vals))
+      vals_chr <- vals_chr[nzchar(vals_chr)]
+      if (length(vals_chr) == 0) {
+        return(cat_guess)
+      }
+
+      vals_num <- suppressWarnings(as.numeric(vals_chr))
+      if (!anyNA(vals_num)) {
+        if (all(vals_num %in% c(0, 1))) {
+          return(list(calculation = "prop", multiplier = 100, indicator_unit = "%"))
+        }
+        return(list(calculation = "mean", multiplier = 1, indicator_unit = "score"))
+      }
+
+      if (any(grepl("[ ,]", vals_chr))) {
+        return(list(calculation = "select_multiple_cat",
+                    multiplier = 100, indicator_unit = "%"))
+      }
+
+      if (length(unique(vals_chr)) > 20) {
+        return(NULL)
+      }
+
+      cat_guess
+    },
 
     # Resolve @ references in test_params into concrete values for do.call()
     #
