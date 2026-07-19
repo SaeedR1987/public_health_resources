@@ -2548,7 +2548,7 @@ test_that("quality_test_anova_by_exposure handles non-positive exposure", {
       sdesign,
       c("events", "exposure", "group")
     ),
-    regexp = "Exposure must be positive"
+    regexp = "2 records with non-positive exposure were removed"
   )
   expect_true(is.na(result$statistic))
 })
