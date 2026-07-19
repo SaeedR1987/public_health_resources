@@ -203,7 +203,9 @@ fsl_analytics <- good_hh$generate_data_analytics(
   type = "fsl"
 )
 
-fsl_analytics$data_analysis_plan$log_df
+fsl_analytics$add_all_to_dap()
+
+View(fsl_analytics$data_analysis_plan$log_df)
 
 fsl_analytics$run_analysis()
 fsl_analytics$run_quality_checks()
@@ -242,6 +244,8 @@ mortality_analyics$run_analysis()
 mortality_analyics$quality_diagnose()
 View(mortality_analyics$quality_issues_log)
 mortality_analyics$run_quality_checks()
+
+mortality_analyics$tables$plausibility$penalty_summary
 
 mortality_analyics$outputs_diagnose()
 View(mortality_analyics$outputs_issues_log)
