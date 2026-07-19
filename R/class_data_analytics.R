@@ -741,8 +741,8 @@ DataAnalytics <- R6::R6Class(
           return(result)
         }
 
-        if (is.list(test_result) && "statistic" %in% names(test_result)) {
-          result$test_statistic <- test_result$statistic
+        if (is.list(test_result) && any(c("statistic", "test_statistic") %in% names(test_result))) {
+          result$test_statistic <- test_result$statistic %||% test_result$test_statistic
           if ("p_value" %in% names(test_result)) {
             result$p_value <- test_result$p_value
           }
@@ -784,6 +784,14 @@ DataAnalytics <- R6::R6Class(
       )
 
       if (is.null(thresholds) || length(thresholds) == 0) {
+        return(result)
+      }
+
+      # Short-circuit when test_statistic is NA — threshold evaluation is meaningless
+      if ((length(test_statistic) == 1 && is.na(test_statistic)) || all(is.na(test_statistic))) {
+        all_penalties  <- sapply(thresholds, function(x) x$penalty %||% x$penalty_score %||% 0)
+        result$max_penalty <- max(all_penalties, na.rm = TRUE)
+        result$message <- "Test statistic is NA; threshold evaluation skipped (insufficient data or invalid inputs for the quality check)"
         return(result)
       }
 
