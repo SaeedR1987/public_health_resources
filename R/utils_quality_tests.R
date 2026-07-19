@@ -2437,14 +2437,30 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
         return(list(statistic = NA_real_, p_value = NA_real_))
       }
 
-      # Compute rate = events / exposure
-      if (any(exposure <= 0, na.rm = TRUE)) {
+      # Filter out records with invalid (non-positive) exposure
+      initial_count <- length(events)
+      valid_exposure <- exposure > 0
+      events <- events[valid_exposure]
+      exposure <- exposure[valid_exposure]
+      group <- group[valid_exposure]
+      removed_count <- initial_count - length(events)
+
+      if (removed_count > 0) {
         phr_warning(
           origin = "quality_test_anova",
-          message = "Exposure must be positive for rate calculation"
+          message = paste0(removed_count, " records with non-positive exposure were removed from the calculation")
+        )
+      }
+
+      if (length(events) < 3) {
+        phr_warning(
+          origin = "quality_test_anova",
+          message = "Insufficient data for ANOVA after filtering (need at least 3 valid observations)"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
       }
+
+      # Compute rate = events / exposure
 
       rate <- events / exposure
       group <- as.factor(group)
