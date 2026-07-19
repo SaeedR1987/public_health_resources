@@ -454,6 +454,94 @@ test_that("IndividualData (roster) still uses aggregate_roster_data method", {
   expect_equal(hh2_row$linked_roster_household_size, 1)
 })
 
+test_that("aggregate_roster_data adds linked_roster_birth_months from calc_month_birth", {
+  # Create household data
+  hh_data <- suppressMessages(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
+    )
+  )
+
+  # Create roster data with calc_month_birth column
+  roster_data <- suppressMessages(
+    IndividualData$new(
+      data = tibble::tibble(
+        person_id = c("r1", "r2", "r3", "r4"),
+        hh_uuid = c("hh1", "hh1", "hh2", "hh3"),
+        sex = c("M", "F", "M", "F"),
+        age = c(25, 30, 40, 5),
+        calc_month_birth = c("2001-01", "1996-05", "1986-03", NA)
+      )
+    )
+  )
+
+  # Link and standardize
+  suppressMessages(hh_data$add_linked_dataset("roster", roster_data))
+  suppressMessages(hh_data$standardize())
+
+  std_data <- hh_data$standardized_data
+  expect_true("linked_roster_birth_months" %in% names(std_data))
+
+  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  expect_equal(hh1_row$linked_roster_birth_months, "2001-01, 1996-05")
+
+  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  expect_equal(hh2_row$linked_roster_birth_months, "1986-03")
+
+  # hh3 has NA calc_month_birth, so should be empty string
+  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  expect_equal(hh3_row$linked_roster_birth_months, "")
+})
+
+test_that("aggregate_deaths_data adds linked_deaths_death_month from calc_month_death", {
+  # Create household data
+  hh_data <- suppressMessages(
+    HouseholdData$new(
+      data = tibble::tibble(
+        uuid = c("hh1", "hh2", "hh3"),
+        consent = c("yes", "yes", "yes"),
+        interview_date = Sys.Date(),
+        enumerator_id = c("E1", "E2", "E3")
+      )
+    )
+  )
+
+  # Create death data with calc_month_death column
+  death_data <- suppressMessages(
+    DeathIndividualData$new(
+      data = tibble::tibble(
+        person_id = c("d1", "d2", "d3"),
+        hh_uuid = c("hh1", "hh1", "hh2"),
+        sex = c("M", "F", "M"),
+        age = c(60, 45, 70),
+        calc_month_death = c("2024-03", "2024-06", "2024-01")
+      )
+    )
+  )
+
+  # Link and standardize
+  suppressMessages(hh_data$add_linked_dataset("deaths", death_data))
+  suppressMessages(hh_data$standardize())
+
+  std_data <- hh_data$standardized_data
+  expect_true("linked_deaths_death_month" %in% names(std_data))
+
+  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  expect_equal(hh1_row$linked_deaths_death_month, "2024-03, 2024-06")
+
+  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  expect_equal(hh2_row$linked_deaths_death_month, "2024-01")
+
+  # hh3 has no deaths, should be empty string
+  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  expect_equal(hh3_row$linked_deaths_death_month, "")
+})
+
 test_that("Household variables are merged to linked datasets during standardize", {
   # Create household data with various household-level variables
   hh_data <- suppressMessages(
