@@ -2591,6 +2591,8 @@ DataAnalytics <- R6::R6Class(
       cat_guess <- list(calculation = "cat", multiplier = 100, indicator_unit = "%")
 
       if (is.list(values)) {
+        # List columns hold multiple values per row, so they are treated as
+        # select-multiple categorical variables.
         return(list(calculation = "select_multiple_cat",
                     multiplier = 100, indicator_unit = "%"))
       }

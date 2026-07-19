@@ -1168,6 +1168,23 @@ test_that("add_all_to_dap classifies columns and amends the plan", {
   expect_equal(nrow(plan[plan$var_name == "stratum_col", ]), 1)
 })
 
+test_that("add_all_to_dap keeps character columns with exactly 20 unique values", {
+  df <- tibble::tibble(cat20 = paste0("opt", 1:20))
+  da <- suppressMessages(DataAnalytics$new(data = df, dataset_name = "Cat20DA"))
+
+  suppressMessages(da$add_all_to_dap())
+  plan <- da$data_analysis_plan$log_df
+
+  expect_equal(plan$calculation[plan$var_name == "cat20"], "cat")
+
+  # One more unique value crosses the threshold and the column is skipped
+  df21 <- tibble::tibble(cat21 = paste0("opt", 1:21))
+  da21 <- suppressMessages(DataAnalytics$new(data = df21, dataset_name = "Cat21DA"))
+
+  suppressMessages(da21$add_all_to_dap())
+  expect_false("cat21" %in% da21$data_analysis_plan$log_df$var_name)
+})
+
 test_that("add_all_to_dap guesses mean for numeric columns beyond 0/1", {
   df <- tibble::tibble(score = c(0, 1, 2.5, 7))
   da <- suppressMessages(DataAnalytics$new(data = df, dataset_name = "MeanDA"))
