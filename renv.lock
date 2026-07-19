@@ -2126,8 +2126,9 @@
       "RemoteHost": "api.github.com",
       "RemoteRepo": "phrindicators",
       "RemoteUsername": "impact-initiatives",
+      "RemotePkgRef": "impact-initiatives/phrindicators",
       "RemoteRef": "HEAD",
-      "RemoteSha": "9b39fb7105fcdfe7b72b56486e5367959b023738",
+      "RemoteSha": "bf1ac51b90e8093f4a5dbd7acc4d817dec5c654e",
       "NeedsCompilation": "no",
       "Author": "Saeed Rahman [aut, cre]",
       "Maintainer": "Saeed Rahman <saeed.rahman0@gmail.com>"
@@ -2162,7 +2163,7 @@
       "RemoteRepo": "phrutils",
       "RemoteUsername": "impact-initiatives",
       "RemoteRef": "HEAD",
-      "RemoteSha": "f5eeaa28d66a3e946771aa4bad92df93fc754d30",
+      "RemoteSha": "e6f767dfdb37478b6ea1edb5900d4e30c80fd820",
       "NeedsCompilation": "no",
       "Author": "Saeed Rahman [aut, cre]",
       "Maintainer": "Saeed Rahman <saeed.rahman0@gmail.com>"
