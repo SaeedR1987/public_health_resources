@@ -305,7 +305,7 @@ nut_analytics$run_outputs()
 nut_analytics$visualizations$enumerator
 
 
-nut_analytics$tables$plausibility_anthro$penalty_summary_stratum_Strata_A
+nut_analytics$tables$anthro$plausibility$penalty_summary_stratum_Strata_A
 
 nut_analytics$visualizations$base$mfaz_cat_overall
 nut_analytics$visualizations$base$muac_cat_overall

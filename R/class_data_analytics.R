@@ -3009,10 +3009,10 @@ DataAnalytics <- R6::R6Class(
       }
 
       dap <- inputs$data_analysis_plan
-      dap_df <- if (!is.null(dap) && !is.null(dap$log_df)) {
-        dap$log_df
-      } else if (is.data.frame(dap)) {
+      dap_df <- if (is.data.frame(dap)) {
         dap
+      } else if (!is.null(dap) && !is.null(dap[["log_df"]])) {
+        dap[["log_df"]]
       } else {
         NULL
       }
