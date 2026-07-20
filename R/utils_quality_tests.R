@@ -2379,7 +2379,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
       # Expect exactly 3 columns: events, exposure, group
       if (!is.character(variables) || length(variables) != 3L) {
         phr_error(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "`variables` must be a character vector of exactly 3 column names (events, exposure, group)"
         )
       }
@@ -2391,7 +2391,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
       missing_cols <- setdiff(variables, names(data))
       if (length(missing_cols) > 0) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = paste0(
             "Columns not found in data: ",
             paste(missing_cols, collapse = ", ")
@@ -2407,14 +2407,14 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
       # Validate numeric inputs
       is_valid_events <- phr_validate_numeric(
         events,
-        origin = "quality_test_anova",
+        origin = "quality_test_anova_by_exposure",
         hint = phr_txt("Events column must be numeric."),
         soft = TRUE
       )
 
       is_valid_exposure <- phr_validate_numeric(
         exposure,
-        origin = "quality_test_anova",
+        origin = "quality_test_anova_by_exposure",
         hint = phr_txt("Exposure column must be numeric."),
         soft = TRUE
       )
@@ -2431,7 +2431,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
 
       if (length(events) < 3) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "Insufficient data for ANOVA (need at least 3 non-missing observations)"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
@@ -2447,14 +2447,17 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
 
       if (removed_count > 0) {
         phr_warning(
-          origin = "quality_test_anova",
-          message = paste0(removed_count, " records with non-positive exposure were removed from the calculation")
+          origin = "quality_test_anova_by_exposure",
+          message = paste0(
+            removed_count,
+            " records with non-positive exposure were removed from the calculation"
+          )
         )
       }
 
       if (length(events) < 3) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "Insufficient data for ANOVA after filtering (need at least 3 valid observations)"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
@@ -2467,7 +2470,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
 
       if (nlevels(group) < 2) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "Group column must have at least 2 distinct levels for ANOVA"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
@@ -2581,6 +2584,25 @@ quality_test_event_group_variance <- function(survey_design, variables) {
       group1 <- as.factor(data[[group1_col]])
       group2 <- as.factor(data[[group2_col]])
 
+      # Filter out records with invalid (non-positive) exposure
+      initial_count <- length(events)
+      valid_exposure <- exposure > 0
+      events <- events[valid_exposure]
+      exposure <- exposure[valid_exposure]
+      group1 <- group1[valid_exposure]
+      group2 <- group2[valid_exposure]
+      removed_count <- initial_count - length(events)
+
+      if (removed_count > 0) {
+        phr_warning(
+          origin = "quality_test_event_group_variance",
+          message = paste0(
+            removed_count,
+            " records with non-positive exposure were removed from the calculation"
+          )
+        )
+      }
+
       # Remove missing
       cc <- complete.cases(events, exposure, group1, group2)
       events <- events[cc]
@@ -2596,21 +2618,14 @@ quality_test_event_group_variance <- function(survey_design, variables) {
         return(list(test_statistic = NA_real_, p_value = NA_real_))
       }
 
-      # Exposure must be positive
-      if (any(exposure <= 0)) {
-        phrutils::phr_warning(
-          origin = "quality_test_event_group_variance",
-          message = "Exposure must be positive for rate calculation"
-        )
-        return(list(test_statistic = NA_real_, p_value = NA_real_))
-      }
-
       # Compute rate = events / exposure
       rate <- events / exposure
 
       # Fit full mixed model: rate ~ 1 + (1|group1) + (1|group2)
       full_model <- tryCatch(
+        # suppressMessages(
         lme4::lmer(rate ~ 1 + (1 | group1) + (1 | group2)),
+        # )
         error = function(e) NULL
       )
 
@@ -2635,8 +2650,10 @@ quality_test_event_group_variance <- function(survey_design, variables) {
 
       # Likelihood ratio test for group1 random effect
       reduced_model <- tryCatch(
+        # suppressMessages(
         lme4::lmer(rate ~ 1 + (1 | group2)),
         error = function(e) NULL
+        # )
       )
 
       if (is.null(reduced_model)) {
