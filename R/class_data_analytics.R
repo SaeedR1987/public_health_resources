@@ -20,6 +20,11 @@
 #'   ("data" for quality outputs, "survey_design" for analysis outputs)
 #' * `results` stores quality check results; `analysis_results` stores analysis results
 #' * All outputs store into the same `visualizations` and `tables` fields
+#' * The `pre_run_quality_checks()`, `pre_run_analysis()` and `pre_run_outputs()`
+#'   hooks return named sets of input field names; subclasses with multiple
+#'   datasets/schemas (e.g. [MortalityDataAnalytics]) override them so the
+#'   inherited `run_quality_checks()`, `run_analysis()` and `run_outputs()`
+#'   iterate over each set and store results under the set's role name
 #'
 #' @field data Data frame containing the dataset (standardized or clean data, not raw)
 #' @field parent_data_object Reference to the parent Data object
@@ -622,111 +627,96 @@ DataAnalytics <- R6::R6Class(
 
     # Quality Checks
 
-    #' @description Run all quality checks defined in the quality schema
-    #' @return A list of check results (invisibly)
+    #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
+    #'
+    #' The default implementation returns a single set (named \code{main})
+    #' pointing at the core \code{data}, \code{quality_schema},
+    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    #' fields. Subclasses that hold multiple datasets or quality schemas can
+    #' override this method to return one entry per dataset/schema. Each entry
+    #' must be a named list whose elements give the names of the public fields
+    #' holding the respective inputs.
+    #'
+    #' When more than one set is returned (or the single set is not named
+    #' \code{main}), quality results are stored under the set's role name in
+    #' \code{plausibility_results} and penalty tables under
+    #' \code{tables[[role]][["plausibility"]]}.
+    #'
+    #' @return A named list of field sets.
+    pre_run_quality_checks = function() {
+      list(
+        main = list(
+          data = "data",
+          quality_schema = "quality_schema",
+          base_survey_design = "base_survey_design",
+          survey_design = "survey_design",
+          variable_map = "variable_map"
+        )
+      )
+    },
+
+    #' @description Run all quality checks defined in the quality schema(s).
+    #'
+    #' Iterates over every input set returned by
+    #' \code{pre_run_quality_checks()}. For the default single \code{main} set
+    #' the behaviour is unchanged: results are stored flat in
+    #' \code{plausibility_results} and tables in
+    #' \code{tables[["plausibility"]]}. When multiple sets are defined, results
+    #' are nested under each set's role name (e.g.
+    #' \code{plausibility_results$roster},
+    #' \code{tables$roster$plausibility}).
+    #'
+    #' @return A list of check results (invisibly). Nested per role when
+    #'   multiple input sets are defined.
     run_quality_checks = function() {
       phr_try(
         {
-          if (
-            is.null(self$quality_schema) || length(self$quality_schema) == 0
-          ) {
+          sets <- self$pre_run_quality_checks()
+
+          if (is.null(sets) || length(sets) == 0) {
             phr_warning(
-              message = "No quality checks defined in schema.",
+              message = "pre_run_quality_checks() returned no input sets.",
               origin = self$dataset_name
             )
             return(invisible(list()))
           }
 
-          results <- list()
+          set_names <- names(sets) %||% rep("", length(sets))
+          nested <- !(length(sets) == 1 && identical(set_names, "main"))
 
-          for (check_name in names(self$quality_schema)) {
-            check <- self$quality_schema[[check_name]]
-            result <- self$execute_check(check)
-            results[[check_name]] <- result
-          }
+          all_results <- list()
+          combined_results <- list()
 
-          self$plausibility_results <- results
-          self$calculate_overall_score()
-
-          # --- Plausibility tables
-          if (is.null(self$tables[["plausibility"]])) {
-            self$tables[["plausibility"]] <- list()
-          }
-
-          results_df <- self$results_to_table()
-          penalty_tbl <- table_quality_penalty_summary(
-            results_df,
-            title_name = "Data Quality Penalty Summary"
-          )
-          if (!is.null(penalty_tbl)) {
-            self$tables[["plausibility"]][["penalty_summary"]] <- penalty_tbl
-          }
-
-          for (role in c("enum_id", "stratum")) {
-            col_name <- self$get_variable(role)
-            if (
-              !is.null(col_name) &&
-                nzchar(col_name) &&
-                col_name %in% names(self$data)
-            ) {
-              per_group_df <- self$.compute_results_by_group(col_name)
-              if (!is.null(per_group_df) && nrow(per_group_df) > 0) {
-                tbl_key <- paste0("penalty_summary_by_", role)
-                group_label <- if (role == "enum_id") {
-                  "Enumerator ID"
-                } else {
-                  "Stratum"
-                }
-                tbl_title <- if (role == "enum_id") {
-                  "Data Quality Penalty Summary by Enumerator"
-                } else {
-                  "Data Quality Penalty Summary by Stratum"
-                }
-                per_group_tbl <- table_quality_penalty_summary_by_group(
-                  per_group_df,
-                  group_col = "group_value",
-                  group_label = group_label,
-                  title_name = tbl_title
-                )
-                if (!is.null(per_group_tbl)) {
-                  self$tables[["plausibility"]][[tbl_key]] <- per_group_tbl
-                }
-
-                group_values <- sort(unique(per_group_df$group_value))
-                for (gv in group_values) {
-                  gv_label <- as.character(gv)
-                  gv_safe <- gsub("[^A-Za-z0-9]", "_", gv_label)
-                  gv_results <- per_group_df |>
-                    dplyr::filter(.data$group_value == gv) |>
-                    dplyr::select(-"group_value")
-                  gv_title <- if (role == "enum_id") {
-                    paste0(
-                      "Data Quality Penalty Summary - Enumerator: ",
-                      gv_label
-                    )
-                  } else {
-                    paste0("Data Quality Penalty Summary - Stratum: ", gv_label)
-                  }
-                  gv_tbl_key <- paste0("penalty_summary_", role, "_", gv_safe)
-                  gv_tbl <- table_quality_penalty_summary(
-                    gv_results,
-                    title_name = gv_title
-                  )
-                  if (!is.null(gv_tbl)) {
-                    self$tables[["plausibility"]][[gv_tbl_key]] <- gv_tbl
-                  }
-                }
-              }
+          for (i in seq_along(sets)) {
+            set_role <- if (nzchar(set_names[i])) {
+              set_names[i]
+            } else {
+              paste0("set_", i)
             }
+            inputs <- private$.resolve_field_set(sets[[i]])
+            results <- private$.run_quality_checks_for_set(
+              inputs = inputs,
+              set_role = set_role,
+              nested = nested
+            )
+            all_results[[set_role]] <- results %||% list()
+            combined_results <- c(combined_results, results %||% list())
           }
+
+          self$plausibility_results <- if (nested) {
+            all_results
+          } else {
+            all_results[[1]]
+          }
+          self$calculate_overall_score(results = combined_results)
 
           phr_message(
             phr_txt(glue::glue(
-              "Ran {length(results)} quality checks for {self$dataset_name}."
+              "Ran {length(combined_results)} quality checks for {self$dataset_name}."
             ))
           )
 
-          invisible(results)
+          invisible(self$plausibility_results)
         },
         on_error = "warn",
         origin = paste0(self$dataset_name, "$run_quality_checks")
@@ -738,10 +728,21 @@ DataAnalytics <- R6::R6Class(
     #' @param survey_design Optional srvyr survey design to use. Defaults to
     #'   \code{self$base_survey_design} (or \code{self$survey_design} as fallback)
     #'   when \code{NULL}.
+    #' @param data Optional data frame to check variables against. Defaults to
+    #'   \code{self$data} when \code{NULL}.
+    #' @param variable_map Optional named list mapping canonical names to actual
+    #'   column names. Defaults to \code{self$variable_map} when \code{NULL}.
     #' @return A list containing the check result
-    execute_check = function(check, survey_design = NULL) {
+    execute_check = function(
+      check,
+      survey_design = NULL,
+      data = NULL,
+      variable_map = NULL
+    ) {
       phr_try(
         {
+          check_data <- data %||% self$data
+
           result <- list(
             check_name = check$check_name %||% "unknown",
             check_label = check$check_label %||% "",
@@ -764,8 +765,11 @@ DataAnalytics <- R6::R6Class(
             return(result)
           }
 
-          mapped_vars <- self$.translate_canonical_to_actual_vars(variables)
-          available_vars <- intersect(mapped_vars, names(self$data))
+          mapped_vars <- self$.translate_canonical_to_actual_vars(
+            variables,
+            variable_map = variable_map
+          )
+          available_vars <- intersect(mapped_vars, names(check_data))
           if (length(available_vars) != length(mapped_vars)) {
             missing_vars <- setdiff(mapped_vars, available_vars)
             result$message <- paste0(
@@ -984,11 +988,15 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Calculate the overall quality score based on penalties
+    #' @param results Optional flat named list of check results to score.
+    #'   Defaults to \code{self$plausibility_results} when \code{NULL}.
     #' @return The overall quality score (0-100)
-    calculate_overall_score = function() {
+    calculate_overall_score = function(results = NULL) {
       phr_try(
         {
-          if (length(self$plausibility_results) == 0) {
+          score_results <- results %||% self$plausibility_results
+
+          if (length(score_results) == 0) {
             self$overall_score <- NA_real_
             return(NA_real_)
           }
@@ -996,7 +1004,7 @@ DataAnalytics <- R6::R6Class(
           total_penalty <- 0
           max_penalty <- 0
 
-          for (result in self$plausibility_results) {
+          for (result in score_results) {
             if (!is.null(result$penalty)) {
               total_penalty <- total_penalty + result$penalty
             }
@@ -1038,11 +1046,15 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Convert quality results to a tabular format
+    #' @param results Optional flat named list of check results to convert.
+    #'   Defaults to \code{self$plausibility_results} when \code{NULL}.
     #' @return A tibble with quality check results
-    results_to_table = function() {
+    results_to_table = function(results = NULL) {
       phr_try(
         {
-          if (length(self$plausibility_results) == 0) {
+          table_results <- results %||% self$plausibility_results
+
+          if (length(table_results) == 0) {
             return(tibble::tibble(
               check_name = character(),
               check_label = character(),
@@ -1056,8 +1068,8 @@ DataAnalytics <- R6::R6Class(
             ))
           }
 
-          rows <- lapply(names(self$plausibility_results), function(nm) {
-            r <- self$plausibility_results[[nm]]
+          rows <- lapply(names(table_results), function(nm) {
+            r <- table_results[[nm]]
             tibble::tibble(
               check_name = r$check_name %||% nm,
               check_label = r$check_label %||% NA_character_,
@@ -1128,20 +1140,31 @@ DataAnalytics <- R6::R6Class(
 
     #' @description Translate canonical variable names to actual column names using variable_map
     #' @param canonical_vars Character vector of canonical variable names
+    #' @param variable_map Optional named list mapping canonical names to actual
+    #'   column names. Defaults to \code{self$variable_map} when \code{NULL}.
     #' @return Character vector of actual column names
-    .translate_canonical_to_actual_vars = function(canonical_vars) {
+    .translate_canonical_to_actual_vars = function(
+      canonical_vars,
+      variable_map = NULL
+    ) {
       if (is.null(canonical_vars) || length(canonical_vars) == 0) {
         return(character(0))
       }
 
-      if (is.null(self$variable_map) || length(self$variable_map) == 0) {
+      vm <- variable_map %||% self$variable_map
+
+      if (is.null(vm) || length(vm) == 0) {
         return(canonical_vars)
       }
 
       actual_vars <- sapply(
         canonical_vars,
         function(canonical_name) {
-          actual_name <- self$get_variable(canonical_name)
+          actual_name <- if (canonical_name %in% names(vm)) {
+            vm[[canonical_name]]
+          } else {
+            NULL
+          }
           if (!is.null(actual_name) && nzchar(actual_name)) {
             actual_name
           } else {
@@ -1155,27 +1178,39 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Run quality checks on data subsets for each unique value of a grouping column
-    #' @param group_col Character string. The actual column name in self$data to group by.
+    #' @param group_col Character string. The actual column name in the data to group by.
+    #' @param data Optional data frame to subset. Defaults to \code{self$data}.
+    #' @param quality_schema Optional quality schema to execute. Defaults to
+    #'   \code{self$quality_schema}.
+    #' @param variable_map Optional named list mapping canonical names to actual
+    #'   column names. Defaults to \code{self$variable_map}.
     #' @return A tibble with per-group check results, or NULL
-    .compute_results_by_group = function(group_col) {
+    .compute_results_by_group = function(
+      group_col,
+      data = NULL,
+      quality_schema = NULL,
+      variable_map = NULL
+    ) {
       phr_try(
         {
+          full_data <- data %||% self$data
+          schema <- quality_schema %||% self$quality_schema
+
           if (
             is.null(group_col) ||
               !nzchar(group_col) ||
-              !group_col %in% names(self$data)
+              is.null(full_data) ||
+              !group_col %in% names(full_data)
           ) {
             return(NULL)
           }
 
-          group_values <- unique(self$data[[group_col]])
+          group_values <- unique(full_data[[group_col]])
           group_values <- group_values[!is.na(group_values)]
 
           if (length(group_values) == 0) {
             return(NULL)
           }
-
-          full_data <- self$data
 
           all_group_results <- list()
 
@@ -1189,12 +1224,14 @@ DataAnalytics <- R6::R6Class(
             )
 
             group_rows <- lapply(
-              names(self$quality_schema),
+              names(schema),
               function(check_name) {
-                check <- self$quality_schema[[check_name]]
+                check <- schema[[check_name]]
                 result <- self$execute_check(
                   check,
-                  survey_design = subset_design
+                  survey_design = subset_design,
+                  data = subset_data,
+                  variable_map = variable_map
                 )
                 tibble::tibble(
                   group_value = as.character(gv),
@@ -1730,15 +1767,49 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description
-    #' Run all outputs defined in the outputs_schema.
+    #' @description Pre-hook providing the input sets used by \code{run_outputs()}.
     #'
-    #' Iterates through the unified outputs schema, resolves \code{@variable_map},
-    #' \code{@value_map}, \code{@variable_label}, \code{@value_label}, and
-    #' \code{@results_table} references in \code{test_params}, determines the
-    #' first positional argument from \code{dataset_type} (defaulting to
-    #' \code{"base"}), calls the specified output function, and stores results
-    #' in \code{self$visualizations} or \code{self$tables}.
+    #' The default implementation returns a single set (named \code{main})
+    #' pointing at the core \code{data}, \code{outputs_schema},
+    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    #' fields. Subclasses that hold multiple datasets (e.g. linked roster or
+    #' deaths data) can override this method to return one entry per dataset.
+    #' Each entry must be a named list whose elements give the names of the
+    #' public fields holding the respective inputs. An optional
+    #' \code{analysis_results_key} element (a plain character key, not a field
+    #' name) selects the sub-list of \code{analysis_results} used for
+    #' \code{dataset_type = "analysis_results_*"} outputs; it defaults to the
+    #' set's role name when multiple sets are defined.
+    #'
+    #' When more than one set is returned (or the single set is not named
+    #' \code{main}), outputs are stored under the set's role name in
+    #' \code{visualizations} and \code{tables} (e.g.
+    #' \code{visualizations$roster}, \code{tables$deaths}).
+    #'
+    #' @return A named list of field sets.
+    pre_run_outputs = function() {
+      list(
+        main = list(
+          data = "data",
+          outputs_schema = "outputs_schema",
+          base_survey_design = "base_survey_design",
+          survey_design = "survey_design",
+          variable_map = "variable_map",
+          analysis_results_key = NULL
+        )
+      )
+    },
+
+    #' @description Run all outputs defined in the outputs schema(s).
+    #'
+    #' Iterates over every input set returned by \code{pre_run_outputs()}.
+    #' For each output entry in a set's outputs schema, resolves the required
+    #' dataset from the set's survey design objects or analysis results, calls
+    #' the specified output function, and stores results in
+    #' \code{self$visualizations} or \code{self$tables}. For the default single
+    #' \code{main} set results are stored flat (unchanged behaviour); when
+    #' multiple sets are defined, results are nested under each set's role name
+    #' (e.g. \code{tables$roster}, \code{visualizations$deaths}).
     #'
     #' The \code{output_name} field in each schema entry controls the key used
     #' when storing results in \code{visualizations} or \code{tables}. The
@@ -1752,10 +1823,10 @@ DataAnalytics <- R6::R6Class(
     #'
     #' Supported \code{dataset_type} values:
     #' \describe{
-    #'   \item{"base"}{uses \code{self$base_survey_design} (unweighted; default for all quality outputs)}
-    #'   \item{"survey_design"}{uses \code{self$survey_design} (weighted)}
-    #'   \item{"analysis_results_surveydesign"}{uses \code{self$analysis_results$survey_design}}
-    #'   \item{"analysis_results_base"}{uses \code{self$analysis_results$base}}
+    #'   \item{"base" / "data"}{uses the set's base (unweighted) survey design (default for all quality outputs)}
+    #'   \item{"survey_design"}{uses the set's weighted survey design}
+    #'   \item{"analysis_results_surveydesign"}{uses the set's \code{analysis_results$survey_design}}
+    #'   \item{"analysis_results_base"}{uses the set's \code{analysis_results$base}}
     #' }
     #'
     #' @param language Character string specifying the language for auto-generated
@@ -1766,11 +1837,11 @@ DataAnalytics <- R6::R6Class(
     run_outputs = function(language = "english") {
       phr_try(
         {
-          if (
-            is.null(self$outputs_schema) || length(self$outputs_schema) == 0
-          ) {
+          sets <- self$pre_run_outputs()
+
+          if (is.null(sets) || length(sets) == 0) {
             phr_warning(
-              message = "No outputs defined in outputs_schema.",
+              message = "pre_run_outputs() returned no input sets.",
               origin = self$dataset_name
             )
             return(invisible(list(
@@ -1779,386 +1850,21 @@ DataAnalytics <- R6::R6Class(
             )))
           }
 
-          phr_message(phr_txt(glue::glue(
-            "Running {length(self$outputs_schema)} output(s) for {self$dataset_name}..."
-          )))
+          set_names <- names(sets) %||% rep("", length(sets))
+          nested <- !(length(sets) == 1 && identical(set_names, "main"))
 
-          for (out_name in names(self$outputs_schema)) {
-            out <- self$outputs_schema[[out_name]]
-
-            phr_try(
-              {
-                func_name <- out$output_func_name
-                if (
-                  is.null(func_name) || is.na(func_name) || !nzchar(func_name)
-                ) {
-                  phr_warning(
-                    message = phr_txt(glue::glue(
-                      "Output '{out_name}' has no output_func_name specified. Skipping."
-                    )),
-                    origin = self$dataset_name
-                  )
-                  next
-                }
-
-                output_function <- NULL
-                if (requireNamespace("phr", quietly = TRUE)) {
-                  tryCatch(
-                    {
-                      ns <- asNamespace("phr")
-                      if (
-                        exists(
-                          func_name,
-                          envir = ns,
-                          mode = "function",
-                          inherits = FALSE
-                        )
-                      ) {
-                        output_function <- get(
-                          func_name,
-                          envir = ns,
-                          mode = "function",
-                          inherits = FALSE
-                        )
-                      }
-                    },
-                    error = function(e) NULL
-                  )
-                }
-                if (is.null(output_function)) {
-                  tryCatch(
-                    {
-                      if (
-                        exists(func_name, mode = "function", inherits = TRUE)
-                      ) {
-                        output_function <- get(
-                          func_name,
-                          mode = "function",
-                          inherits = TRUE
-                        )
-                      }
-                    },
-                    error = function(e) NULL
-                  )
-                }
-                if (is.null(output_function)) {
-                  phr_warning(
-                    message = phr_txt(glue::glue(
-                      "Function '{func_name}' for output '{out_name}' not found. Skipping."
-                    )),
-                    origin = self$dataset_name
-                  )
-                  next
-                }
-
-                # Determine first positional argument based on dataset_type column.
-                # Supported values:
-                #   "base"                          – self$base_survey_design (unweighted)
-                #   "survey_design"                 – self$survey_design (weighted)
-                #   "analysis_results_surveydesign" – self$analysis_results$survey_design
-                #   "analysis_results_base"         – self$analysis_results$base
-                dataset_type <- if (
-                  !is.null(out$dataset_type) &&
-                    !is.na(out$dataset_type) &&
-                    nzchar(out$dataset_type)
-                ) {
-                  out$dataset_type
-                } else {
-                  "base"
-                }
-
-                first_arg <- switch(
-                  dataset_type,
-                  "base" = self$base_survey_design,
-                  "survey_design" = self$survey_design,
-                  "analysis_results_surveydesign" = if (
-                    !is.null(self$analysis_results)
-                  ) {
-                    self$analysis_results$survey_design
-                  } else {
-                    NULL
-                  },
-                  "analysis_results_base" = if (
-                    !is.null(self$analysis_results)
-                  ) {
-                    self$analysis_results$base
-                  } else {
-                    NULL
-                  },
-                  self$base_survey_design # default: "base" (unweighted survey design)
-                )
-
-                func_args <- list(first_arg)
-
-                # Check if any test_param uses @results_table; if so, replace first arg
-                if (!is.null(out$test_params) && length(out$test_params) > 0) {
-                  for (arg_name_check in names(out$test_params)) {
-                    arg_val_check <- out$test_params[[arg_name_check]]
-                    if (
-                      is.character(arg_val_check) &&
-                        arg_val_check == "@results_table"
-                    ) {
-                      func_args[[1]] <- self$results_to_table()
-                      break
-                    }
-                  }
-                }
-
-                if (!is.null(out$test_params) && length(out$test_params) > 0) {
-                  func_args <- private$.resolve_output_params(
-                    func_args = func_args,
-                    test_params = out$test_params,
-                    out_name = out_name,
-                    skip_results_table = TRUE
-                  )
-                }
-
-                # Storage key: use output_name field; fall back to out_name (schema list key)
-                label <- if (
-                  !is.null(out$output_name) &&
-                    !is.na(out$output_name) &&
-                    nzchar(out$output_name)
-                ) {
-                  out$output_name
-                } else {
-                  out_name
-                }
-
-                # Auto-inject title_name unless already supplied in test_params
-                if (is.null(func_args[["title_name"]])) {
-                  title_field <- switch(
-                    language,
-                    "french" = "output_title_french",
-                    "arabic" = "output_title_arabic",
-                    "output_title_english"
-                  )
-                  auto_title <- out[[title_field]]
-                  if (
-                    is.null(auto_title) ||
-                      is.na(auto_title) ||
-                      !nzchar(auto_title)
-                  ) {
-                    auto_title <- out$output_title
-                  }
-                  if (
-                    !is.null(auto_title) &&
-                      !is.na(auto_title) &&
-                      nzchar(auto_title)
-                  ) {
-                    func_args[["title_name"]] <- auto_title
-                  }
-                }
-
-                group <- if (
-                  !is.null(out$outputs_group) &&
-                    !is.na(out$outputs_group) &&
-                    nzchar(out$outputs_group)
-                ) {
-                  out$outputs_group
-                } else {
-                  NULL
-                }
-
-                store_result <- function(result, key) {
-                  if (!is.null(out$output_type) && out$output_type == "table") {
-                    if (!is.null(group)) {
-                      if (is.null(self$tables[[group]])) {
-                        self$tables[[group]] <- list()
-                      }
-                      self$tables[[group]][[key]] <- result
-                    } else {
-                      self$tables[[key]] <- result
-                    }
-                    phr_message(phr_txt(glue::glue(
-                      "Table '{key}' stored successfully."
-                    )))
-                  } else if (
-                    !is.null(out$output_type) &&
-                      out$output_type == "visualization"
-                  ) {
-                    if (!is.null(group)) {
-                      if (is.null(self$visualizations[[group]])) {
-                        self$visualizations[[group]] <- list()
-                      }
-                      self$visualizations[[group]][[key]] <- result
-                    } else {
-                      self$visualizations[[key]] <- result
-                    }
-                    phr_message(phr_txt(glue::glue(
-                      "Visualization '{key}' stored successfully."
-                    )))
-                  } else {
-                    phr_warning(
-                      message = phr_txt(glue::glue(
-                        "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
-                        "Expected 'visualization' or 'table'. Result not stored."
-                      )),
-                      origin = self$dataset_name
-                    )
-                  }
-                }
-
-                per_group_ref <- if (
-                  !is.null(out$outputs_per_group) &&
-                    !is.na(out$outputs_per_group) &&
-                    nzchar(out$outputs_per_group)
-                ) {
-                  out$outputs_per_group
-                } else {
-                  NULL
-                }
-
-                if (!is.null(per_group_ref)) {
-                  if (grepl("^@variable_map\\$", per_group_ref)) {
-                    role <- sub("^@variable_map\\$", "", per_group_ref)
-                    col_name <- self$variable_map[[role]]
-                    var_label <- role
-                    if (is.null(col_name)) {
-                      phr_warning(
-                        message = phr_txt(glue::glue(
-                          "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
-                        )),
-                        origin = self$dataset_name
-                      )
-                      col_name <- NULL
-                    }
-                  } else {
-                    col_name <- per_group_ref
-                    var_label <- per_group_ref
-                  }
-
-                  # Determine the data frame used for finding unique group values.
-                  # All survey_design types: extract variables tibble.
-                  source_df <- switch(
-                    dataset_type,
-                    "analysis_results_surveydesign" = if (
-                      !is.null(self$analysis_results)
-                    ) {
-                      self$analysis_results$survey_design
-                    } else {
-                      NULL
-                    },
-                    "analysis_results_base" = if (
-                      !is.null(self$analysis_results)
-                    ) {
-                      self$analysis_results$base
-                    } else {
-                      NULL
-                    },
-                    # default: base or survey_design – extract variables tibble
-                    {
-                      design_obj <- if (dataset_type == "survey_design") {
-                        self$survey_design
-                      } else {
-                        self$base_survey_design
-                      }
-                      if (!is.null(design_obj)) {
-                        tryCatch(design_obj$variables, error = function(e) NULL)
-                      } else {
-                        NULL
-                      }
-                    }
-                  )
-
-                  is_survey_design_type <- !(dataset_type %in%
-                    c("analysis_results_surveydesign", "analysis_results_base"))
-
-                  if (
-                    !is.null(col_name) &&
-                      !is.null(source_df) &&
-                      col_name %in% names(source_df)
-                  ) {
-                    unique_vals <- unique(source_df[[col_name]])
-                    unique_vals <- unique_vals[!is.na(unique_vals)]
-
-                    phr_message(phr_txt(glue::glue(
-                      "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
-                    )))
-
-                    for (val in unique_vals) {
-                      if (is_survey_design_type) {
-                        design_to_filter <- if (
-                          dataset_type == "survey_design"
-                        ) {
-                          self$survey_design
-                        } else {
-                          self$base_survey_design
-                        }
-                        filtered_first_arg <- tryCatch(
-                          dplyr::filter(
-                            design_to_filter,
-                            !!rlang::sym(col_name) == val
-                          ),
-                          error = function(e) {
-                            phr_warning(
-                              message = phr_txt(glue::glue(
-                                "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
-                              )),
-                              origin = self$dataset_name
-                            )
-                            NULL
-                          }
-                        )
-                      } else {
-                        filtered_first_arg <- tryCatch(
-                          source_df |>
-                            dplyr::filter(!!rlang::sym(col_name) == val),
-                          error = function(e) {
-                            phr_warning(
-                              message = phr_txt(glue::glue(
-                                "Failed to filter data for '{var_label}' == '{val}': {e$message}"
-                              )),
-                              origin = self$dataset_name
-                            )
-                            NULL
-                          }
-                        )
-                      }
-
-                      if (is.null(filtered_first_arg)) {
-                        next
-                      }
-
-                      per_group_args <- func_args
-                      per_group_args[[1]] <- filtered_first_arg
-                      amended_label <- paste0(label, "-", var_label, ".", val)
-
-                      phr_try(
-                        {
-                          output_result <- do.call(
-                            output_function,
-                            per_group_args
-                          )
-                          store_result(output_result, amended_label)
-                        },
-                        on_error = "warn",
-                        origin = paste0(
-                          self$dataset_name,
-                          "$run_outputs$",
-                          out_name,
-                          "$",
-                          val
-                        )
-                      )
-                    }
-                  } else if (!is.null(col_name)) {
-                    phr_warning(
-                      message = phr_txt(glue::glue(
-                        "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
-                      )),
-                      origin = self$dataset_name
-                    )
-                  }
-                } else {
-                  phr_message(phr_txt(glue::glue(
-                    "Calling {func_name} for output '{out_name}'..."
-                  )))
-                  output_result <- do.call(output_function, func_args)
-                  store_result(output_result, label)
-                }
-              },
-              on_error = "warn",
-              origin = paste0(self$dataset_name, "$run_outputs$", out_name)
+          for (i in seq_along(sets)) {
+            set_role <- if (nzchar(set_names[i])) {
+              set_names[i]
+            } else {
+              paste0("set_", i)
+            }
+            inputs <- private$.resolve_field_set(sets[[i]])
+            private$.run_outputs_for_set(
+              inputs = inputs,
+              set_role = set_role,
+              nested = nested,
+              language = language
             )
           }
 
@@ -2761,12 +2467,40 @@ DataAnalytics <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Run the data analysis plan and store results in analysis_results
+    #' @description Pre-hook providing the input sets used by \code{run_analysis()}.
     #'
-    #' Executes every indicator twice: once using the full survey design (weighted)
-    #' and once using a simple unweighted design.  Both sets are stored in
-    #' \code{self$analysis_results} as a named list with elements
-    #' \code{survey_design} and \code{base}.
+    #' The default implementation returns a single set (named \code{main})
+    #' pointing at the core \code{data}, \code{survey_design} and
+    #' \code{data_analysis_plan} fields. Subclasses that hold multiple datasets
+    #' (e.g. linked roster or deaths data) can override this method to return
+    #' one entry per dataset. Each entry must be a named list whose elements
+    #' give the names of the public fields holding the respective inputs.
+    #'
+    #' When more than one set is returned (or the single set is not named
+    #' \code{main}), analysis results are stored under the set's role name in
+    #' \code{analysis_results} (e.g. \code{analysis_results$roster}).
+    #'
+    #' @return A named list of field sets.
+    pre_run_analysis = function() {
+      list(
+        main = list(
+          data = "data",
+          survey_design = "survey_design",
+          data_analysis_plan = "data_analysis_plan"
+        )
+      )
+    },
+
+    #' @description Run the data analysis plan(s) and store results in analysis_results
+    #'
+    #' Iterates over every input set returned by \code{pre_run_analysis()}.
+    #' Each set's indicators are executed twice: once using the set's full
+    #' survey design (weighted) and once using a simple unweighted design.
+    #' For the default single \code{main} set both result sets are stored flat
+    #' in \code{self$analysis_results} as a named list with elements
+    #' \code{survey_design} and \code{base} (unchanged behaviour). When
+    #' multiple sets are defined, results are nested under each set's role
+    #' name (e.g. \code{analysis_results$roster$survey_design}).
     #'
     #' After storing the results, \code{self$post_run_analysis()} is called to
     #' allow subclasses to perform additional analysis steps.
@@ -2776,55 +2510,41 @@ DataAnalytics <- R6::R6Class(
       origin <- paste0(self$dataset_name, "$run_analysis")
       phr_message(origin, "Running analysis plan...")
 
-      if (is.null(self$survey_design)) {
-        phr_error(origin, "Survey design not set.")
+      sets <- self$pre_run_analysis()
+
+      if (is.null(sets) || length(sets) == 0) {
+        phr_error(origin, "pre_run_analysis() returned no input sets.")
         return(invisible(self))
       }
 
-      if (
-        is.null(self$data_analysis_plan) ||
-          nrow(self$data_analysis_plan$log_df) == 0
-      ) {
-        phr_error(origin, "No data_analysis_plan provided.")
-        return(invisible(self))
-      }
+      set_names <- names(sets) %||% rep("", length(sets))
+      nested <- !(length(sets) == 1 && identical(set_names, "main"))
 
-      survey_design_results <- phr_try(
-        phr_calc_survey_from_plan(
-          design = self$survey_design,
-          analysis_plan = self$data_analysis_plan$log_df
-        ),
-        on_error = "warn",
-        origin = origin,
-        hint = "Verify all variables exist and analysis plan is valid."
-      )
+      all_results <- list()
 
-      base_results <- NULL
-      if (!is.null(self$data)) {
-        base_design <- phr_try(
-          srvyr::as_survey_design(.data = self$data, ids = 1),
-          on_error = "warn",
-          origin = origin,
-          hint = "Could not create base (unweighted) survey design from self$data."
+      for (i in seq_along(sets)) {
+        set_role <- if (nzchar(set_names[i])) {
+          set_names[i]
+        } else {
+          paste0("set_", i)
+        }
+        inputs <- private$.resolve_field_set(sets[[i]])
+        set_results <- private$.run_analysis_for_set(
+          inputs = inputs,
+          set_role = set_role,
+          nested = nested,
+          origin = origin
         )
-
-        if (!is.null(base_design)) {
-          base_results <- phr_try(
-            phr_calc_survey_from_plan(
-              design = base_design,
-              analysis_plan = self$data_analysis_plan$log_df
-            ),
-            on_error = "warn",
-            origin = origin,
-            hint = "Verify all variables exist in the base (unweighted) design."
-          )
+        if (!is.null(set_results)) {
+          all_results[[set_role]] <- set_results
         }
       }
 
-      self$analysis_results <- list(
-        survey_design = survey_design_results,
-        base = base_results
-      )
+      self$analysis_results <- if (nested) {
+        all_results
+      } else {
+        all_results[[1]] %||% list(survey_design = NULL, base = NULL)
+      }
 
       phr_message(origin, "Analysis completed successfully.")
 
@@ -3076,6 +2796,761 @@ DataAnalytics <- R6::R6Class(
   # Private helpers
 
   private = list(
+
+    # Resolve a field-name set (as returned by the pre_run_* hooks) into the
+    # actual objects stored on self.
+    #
+    # Each element of `set` is normally a length-1 character string naming a
+    # public field on self. Elements listed in `keep_as_is` (e.g.
+    # analysis_results_key) are passed through unchanged. Non-character
+    # elements are also passed through unchanged, allowing hooks to supply
+    # objects directly.
+    #
+    # @param set A named list of field names (or literal objects).
+    # @param keep_as_is Character vector of element names passed through as-is.
+    # @return A named list of resolved objects.
+    .resolve_field_set = function(set, keep_as_is = "analysis_results_key") {
+      resolved <- list()
+      for (nm in names(set)) {
+        val <- set[[nm]]
+        if (is.null(val)) {
+          next
+        }
+        if (nm %in% keep_as_is) {
+          resolved[[nm]] <- val
+        } else if (is.character(val) && length(val) == 1) {
+          resolved[[nm]] <- self[[val]]
+        } else {
+          resolved[[nm]] <- val
+        }
+      }
+      resolved
+    },
+
+    # Run all quality checks for a single resolved input set.
+    #
+    # Executes every check in the set's quality schema against the set's data
+    # and (unweighted) survey design, then generates the penalty summary
+    # tables. Tables are stored in self$tables[["plausibility"]] for the
+    # default single main set, or in self$tables[[set_role]][["plausibility"]]
+    # when nested.
+    #
+    # @param inputs Named list of resolved inputs: data, quality_schema,
+    #   base_survey_design, survey_design and variable_map.
+    # @param set_role Character role name for this input set.
+    # @param nested Logical; TRUE when results are stored under set_role.
+    # @return A named list of check results.
+    .run_quality_checks_for_set = function(inputs, set_role, nested) {
+      quality_schema <- inputs$quality_schema
+
+      if (is.null(quality_schema) || length(quality_schema) == 0) {
+        phr_warning(
+          message = phr_txt(glue::glue(
+            "No quality checks defined in schema for '{set_role}'."
+          )),
+          origin = self$dataset_name
+        )
+        return(list())
+      }
+
+      check_data <- inputs$data
+      vm <- inputs$variable_map %||% self$variable_map %||% list()
+
+      base_design <- inputs$base_survey_design
+      if (is.null(base_design) && !is.null(check_data)) {
+        base_design <- phr_try(
+          srvyr::as_survey_design(.data = check_data, ids = 1),
+          on_error = "warn",
+          origin = paste0(self$dataset_name, "$run_quality_checks"),
+          hint = paste0(
+            "Could not create base (unweighted) survey design for '",
+            set_role,
+            "'."
+          )
+        )
+      }
+      effective_design <- base_design %||% inputs$survey_design
+
+      results <- list()
+
+      for (check_name in names(quality_schema)) {
+        check <- quality_schema[[check_name]]
+        result <- self$execute_check(
+          check,
+          survey_design = effective_design,
+          data = check_data,
+          variable_map = vm
+        )
+        results[[check_name]] <- result
+      }
+
+      # --- Plausibility tables
+      store_tbl <- function(key, tbl) {
+        if (is.null(tbl)) {
+          return(invisible(NULL))
+        }
+        if (nested) {
+          if (is.null(self$tables[[set_role]])) {
+            self$tables[[set_role]] <- list()
+          }
+          if (is.null(self$tables[[set_role]][["plausibility"]])) {
+            self$tables[[set_role]][["plausibility"]] <- list()
+          }
+          self$tables[[set_role]][["plausibility"]][[key]] <- tbl
+        } else {
+          if (is.null(self$tables[["plausibility"]])) {
+            self$tables[["plausibility"]] <- list()
+          }
+          self$tables[["plausibility"]][[key]] <- tbl
+        }
+        invisible(NULL)
+      }
+
+      if (!nested && is.null(self$tables[["plausibility"]])) {
+        self$tables[["plausibility"]] <- list()
+      }
+
+      results_df <- self$results_to_table(results = results)
+      penalty_tbl <- table_quality_penalty_summary(
+        results_df,
+        title_name = "Data Quality Penalty Summary"
+      )
+      store_tbl("penalty_summary", penalty_tbl)
+
+      for (vm_role in c("enum_id", "stratum")) {
+        col_name <- vm[[vm_role]]
+        if (
+          !is.null(col_name) &&
+            nzchar(col_name) &&
+            !is.null(check_data) &&
+            col_name %in% names(check_data)
+        ) {
+          per_group_df <- self$.compute_results_by_group(
+            col_name,
+            data = check_data,
+            quality_schema = quality_schema,
+            variable_map = vm
+          )
+          if (!is.null(per_group_df) && nrow(per_group_df) > 0) {
+            tbl_key <- paste0("penalty_summary_by_", vm_role)
+            group_label <- if (vm_role == "enum_id") {
+              "Enumerator ID"
+            } else {
+              "Stratum"
+            }
+            tbl_title <- if (vm_role == "enum_id") {
+              "Data Quality Penalty Summary by Enumerator"
+            } else {
+              "Data Quality Penalty Summary by Stratum"
+            }
+            per_group_tbl <- table_quality_penalty_summary_by_group(
+              per_group_df,
+              group_col = "group_value",
+              group_label = group_label,
+              title_name = tbl_title
+            )
+            store_tbl(tbl_key, per_group_tbl)
+
+            group_values <- sort(unique(per_group_df$group_value))
+            for (gv in group_values) {
+              gv_label <- as.character(gv)
+              gv_safe <- gsub("[^A-Za-z0-9]", "_", gv_label)
+              gv_results <- per_group_df |>
+                dplyr::filter(.data$group_value == gv) |>
+                dplyr::select(-"group_value")
+              gv_title <- if (vm_role == "enum_id") {
+                paste0(
+                  "Data Quality Penalty Summary - Enumerator: ",
+                  gv_label
+                )
+              } else {
+                paste0("Data Quality Penalty Summary - Stratum: ", gv_label)
+              }
+              gv_tbl_key <- paste0("penalty_summary_", vm_role, "_", gv_safe)
+              gv_tbl <- table_quality_penalty_summary(
+                gv_results,
+                title_name = gv_title
+              )
+              store_tbl(gv_tbl_key, gv_tbl)
+            }
+          }
+        }
+      }
+
+      results
+    },
+
+    # Run the analysis plan for a single resolved input set.
+    #
+    # Executes every indicator twice: once using the set's full survey design
+    # (weighted) and once using a simple unweighted design built from the
+    # set's data.
+    #
+    # @param inputs Named list of resolved inputs: data, survey_design and
+    #   data_analysis_plan.
+    # @param set_role Character role name for this input set.
+    # @param nested Logical; TRUE when multiple sets are being processed.
+    # @param origin Character origin label for messages.
+    # @return A named list with elements survey_design and base, or NULL when
+    #   the set could not be analysed.
+    .run_analysis_for_set = function(inputs, set_role, nested, origin) {
+      if (is.null(inputs$survey_design)) {
+        if (nested) {
+          phr_warning(
+            origin,
+            phr_txt(glue::glue(
+              "Survey design not set for '{set_role}'. Skipping."
+            ))
+          )
+        } else {
+          phr_error(origin, "Survey design not set.")
+        }
+        return(NULL)
+      }
+
+      dap <- inputs$data_analysis_plan
+      dap_df <- if (is.data.frame(dap)) {
+        dap
+      } else if (!is.null(dap) && !is.null(dap[["log_df"]])) {
+        dap[["log_df"]]
+      } else {
+        NULL
+      }
+
+      if (is.null(dap_df) || nrow(dap_df) == 0) {
+        if (nested) {
+          phr_warning(
+            origin,
+            phr_txt(glue::glue(
+              "No data_analysis_plan provided for '{set_role}'. Skipping."
+            ))
+          )
+        } else {
+          phr_error(origin, "No data_analysis_plan provided.")
+        }
+        return(NULL)
+      }
+
+      survey_design_results <- phr_try(
+        phr_calc_survey_from_plan(
+          design = inputs$survey_design,
+          analysis_plan = dap_df
+        ),
+        on_error = "warn",
+        origin = origin,
+        hint = "Verify all variables exist and analysis plan is valid."
+      )
+
+      base_results <- NULL
+      if (!is.null(inputs$data)) {
+        base_design <- phr_try(
+          srvyr::as_survey_design(.data = inputs$data, ids = 1),
+          on_error = "warn",
+          origin = origin,
+          hint = "Could not create base (unweighted) survey design from the set's data."
+        )
+
+        if (!is.null(base_design)) {
+          base_results <- phr_try(
+            phr_calc_survey_from_plan(
+              design = base_design,
+              analysis_plan = dap_df
+            ),
+            on_error = "warn",
+            origin = origin,
+            hint = "Verify all variables exist in the base (unweighted) design."
+          )
+        }
+      }
+
+      list(
+        survey_design = survey_design_results,
+        base = base_results
+      )
+    },
+
+    # Run all outputs for a single resolved input set.
+    #
+    # Contains the per-output logic used by \code{run_outputs()}: resolves the
+    # first positional argument from \code{dataset_type}, resolves
+    # \code{test_params} references, calls the output function, and stores
+    # results in \code{self$visualizations} / \code{self$tables} (nested under
+    # \code{set_role} when \code{nested} is TRUE).
+    #
+    # @param inputs Named list of resolved inputs: data, outputs_schema,
+    #   base_survey_design, survey_design, variable_map and (optionally)
+    #   analysis_results_key.
+    # @param set_role Character role name for this input set.
+    # @param nested Logical; TRUE when results are stored under set_role.
+    # @param language Character language for auto-generated titles.
+    # @return Invisibly returns NULL.
+    .run_outputs_for_set = function(
+      inputs,
+      set_role,
+      nested,
+      language = "english"
+    ) {
+      outputs_schema <- inputs$outputs_schema
+
+      if (is.null(outputs_schema) || length(outputs_schema) == 0) {
+        phr_warning(
+          message = phr_txt(glue::glue(
+            "No outputs defined in outputs schema for '{set_role}'. Skipping."
+          )),
+          origin = self$dataset_name
+        )
+        return(invisible(NULL))
+      }
+
+      base_design <- inputs$base_survey_design
+      if (is.null(base_design) && !is.null(inputs$data)) {
+        base_design <- phr_try(
+          srvyr::as_survey_design(.data = inputs$data, ids = 1),
+          on_error = "warn",
+          origin = paste0(self$dataset_name, "$run_outputs"),
+          hint = paste0(
+            "Could not create base (unweighted) survey design for '",
+            set_role,
+            "'."
+          )
+        )
+      }
+      weighted_design <- inputs$survey_design
+
+      vm <- inputs$variable_map %||% self$variable_map %||% list()
+
+      # Resolve the analysis results sub-list for this set. An explicit
+      # analysis_results_key takes precedence; otherwise nested sets default
+      # to their own role name when present in analysis_results.
+      analysis_res <- self$analysis_results
+      ar_key <- inputs$analysis_results_key %||% (if (nested) set_role else NULL)
+      if (
+        !is.null(ar_key) &&
+          is.list(analysis_res) &&
+          ar_key %in% names(analysis_res)
+      ) {
+        analysis_res <- analysis_res[[ar_key]]
+      }
+
+      # Resolve the plausibility results for this set (used by @results_table).
+      plaus_results <- self$plausibility_results
+      if (
+        nested &&
+          is.list(plaus_results) &&
+          set_role %in% names(plaus_results)
+      ) {
+        plaus_results <- plaus_results[[set_role]]
+      }
+
+      phr_message(phr_txt(glue::glue(
+        "Running {length(outputs_schema)} output(s) for {self$dataset_name} ('{set_role}')..."
+      )))
+
+      for (out_name in names(outputs_schema)) {
+        out <- outputs_schema[[out_name]]
+        phr_try(
+          {
+            func_name <- out$output_func_name
+            if (
+              is.null(func_name) || is.na(func_name) || !nzchar(func_name)
+            ) {
+              phr_warning(
+                message = phr_txt(glue::glue(
+                  "Output '{out_name}' has no output_func_name specified. Skipping."
+                )),
+                origin = self$dataset_name
+              )
+              next
+            }
+
+            output_function <- NULL
+            if (requireNamespace("phr", quietly = TRUE)) {
+              tryCatch(
+                {
+                  ns <- asNamespace("phr")
+                  if (
+                    exists(
+                      func_name,
+                      envir = ns,
+                      mode = "function",
+                      inherits = FALSE
+                    )
+                  ) {
+                    output_function <- get(
+                      func_name,
+                      envir = ns,
+                      mode = "function",
+                      inherits = FALSE
+                    )
+                  }
+                },
+                error = function(e) NULL
+              )
+            }
+            if (is.null(output_function)) {
+              tryCatch(
+                {
+                  if (
+                    exists(func_name, mode = "function", inherits = TRUE)
+                  ) {
+                    output_function <- get(
+                      func_name,
+                      mode = "function",
+                      inherits = TRUE
+                    )
+                  }
+                },
+                error = function(e) NULL
+              )
+            }
+            if (is.null(output_function)) {
+              phr_warning(
+                message = phr_txt(glue::glue(
+                  "Function '{func_name}' for output '{out_name}' not found. Skipping."
+                )),
+                origin = self$dataset_name
+              )
+              next
+            }
+
+            # Determine first positional argument based on dataset_type column.
+            # Supported values:
+            #   "base" / "data"                 – base_design (unweighted)
+            #   "survey_design"                 – weighted_design (weighted)
+            #   "analysis_results_surveydesign" – analysis_res$survey_design
+            #   "analysis_results_base"         – analysis_res$base
+            dataset_type <- if (
+              !is.null(out$dataset_type) &&
+                !is.na(out$dataset_type) &&
+                nzchar(out$dataset_type)
+            ) {
+              out$dataset_type
+            } else {
+              "base"
+            }
+
+            first_arg <- switch(
+              dataset_type,
+              "base" = base_design,
+              "data" = base_design,
+              "survey_design" = weighted_design,
+              "analysis_results_surveydesign" = if (
+                !is.null(analysis_res)
+              ) {
+                analysis_res$survey_design
+              } else {
+                NULL
+              },
+              "analysis_results_base" = if (
+                !is.null(analysis_res)
+              ) {
+                analysis_res$base
+              } else {
+                NULL
+              },
+              base_design # default: "base" (unweighted survey design)
+            )
+
+            func_args <- list(first_arg)
+
+            # Check if any test_param uses @results_table; if so, replace first arg
+            if (!is.null(out$test_params) && length(out$test_params) > 0) {
+              for (arg_name_check in names(out$test_params)) {
+                arg_val_check <- out$test_params[[arg_name_check]]
+                if (
+                  is.character(arg_val_check) &&
+                    arg_val_check == "@results_table"
+                ) {
+                  func_args[[1]] <- self$results_to_table(results = plaus_results)
+                  break
+                }
+              }
+            }
+
+            if (!is.null(out$test_params) && length(out$test_params) > 0) {
+              func_args <- private$.resolve_output_params(
+                func_args = func_args,
+                test_params = out$test_params,
+                out_name = out_name,
+                skip_results_table = TRUE
+              )
+            }
+
+            # Storage key: use output_name field; fall back to out_name (schema list key)
+            label <- if (
+              !is.null(out$output_name) &&
+                !is.na(out$output_name) &&
+                nzchar(out$output_name)
+            ) {
+              out$output_name
+            } else {
+              out_name
+            }
+
+            # Auto-inject title_name unless already supplied in test_params
+            if (is.null(func_args[["title_name"]])) {
+              title_field <- switch(
+                language,
+                "french" = "output_title_french",
+                "arabic" = "output_title_arabic",
+                "output_title_english"
+              )
+              auto_title <- out[[title_field]]
+              if (
+                is.null(auto_title) ||
+                  is.na(auto_title) ||
+                  !nzchar(auto_title)
+              ) {
+                auto_title <- out$output_title
+              }
+              if (
+                !is.null(auto_title) &&
+                  !is.na(auto_title) &&
+                  nzchar(auto_title)
+              ) {
+                func_args[["title_name"]] <- auto_title
+              }
+            }
+
+            group <- if (
+              !is.null(out$outputs_group) &&
+                !is.na(out$outputs_group) &&
+                nzchar(out$outputs_group)
+            ) {
+              out$outputs_group
+            } else {
+              NULL
+            }
+
+            store_result <- function(result, key) {
+              if (!is.null(out$output_type) && out$output_type == "table") {
+                if (nested) {
+                  if (is.null(self$tables[[set_role]])) {
+                    self$tables[[set_role]] <- list()
+                  }
+                  if (!is.null(group)) {
+                    if (is.null(self$tables[[set_role]][[group]])) {
+                      self$tables[[set_role]][[group]] <- list()
+                    }
+                    self$tables[[set_role]][[group]][[key]] <- result
+                  } else {
+                    self$tables[[set_role]][[key]] <- result
+                  }
+                } else if (!is.null(group)) {
+                  if (is.null(self$tables[[group]])) {
+                    self$tables[[group]] <- list()
+                  }
+                  self$tables[[group]][[key]] <- result
+                } else {
+                  self$tables[[key]] <- result
+                }
+                phr_message(phr_txt(glue::glue(
+                  "Table '{key}' stored successfully."
+                )))
+              } else if (
+                !is.null(out$output_type) &&
+                  out$output_type == "visualization"
+              ) {
+                if (nested) {
+                  if (is.null(self$visualizations[[set_role]])) {
+                    self$visualizations[[set_role]] <- list()
+                  }
+                  if (!is.null(group)) {
+                    if (is.null(self$visualizations[[set_role]][[group]])) {
+                      self$visualizations[[set_role]][[group]] <- list()
+                    }
+                    self$visualizations[[set_role]][[group]][[key]] <- result
+                  } else {
+                    self$visualizations[[set_role]][[key]] <- result
+                  }
+                } else if (!is.null(group)) {
+                  if (is.null(self$visualizations[[group]])) {
+                    self$visualizations[[group]] <- list()
+                  }
+                  self$visualizations[[group]][[key]] <- result
+                } else {
+                  self$visualizations[[key]] <- result
+                }
+                phr_message(phr_txt(glue::glue(
+                  "Visualization '{key}' stored successfully."
+                )))
+              } else {
+                phr_warning(
+                  message = phr_txt(glue::glue(
+                    "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
+                    "Expected 'visualization' or 'table'. Result not stored."
+                  )),
+                  origin = self$dataset_name
+                )
+              }
+            }
+
+            per_group_ref <- if (
+              !is.null(out$outputs_per_group) &&
+                !is.na(out$outputs_per_group) &&
+                nzchar(out$outputs_per_group)
+            ) {
+              out$outputs_per_group
+            } else {
+              NULL
+            }
+
+            if (!is.null(per_group_ref)) {
+              if (grepl("^@variable_map\\$", per_group_ref)) {
+                role <- sub("^@variable_map\\$", "", per_group_ref)
+                col_name <- vm[[role]]
+                var_label <- role
+                if (is.null(col_name)) {
+                  phr_warning(
+                    message = phr_txt(glue::glue(
+                      "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
+                    )),
+                    origin = self$dataset_name
+                  )
+                  col_name <- NULL
+                }
+              } else {
+                col_name <- per_group_ref
+                var_label <- per_group_ref
+              }
+
+              # Determine the data frame used for finding unique group values.
+              # All survey_design types: extract variables tibble.
+              source_df <- switch(
+                dataset_type,
+                "analysis_results_surveydesign" = if (
+                  !is.null(analysis_res)
+                ) {
+                  analysis_res$survey_design
+                } else {
+                  NULL
+                },
+                "analysis_results_base" = if (
+                  !is.null(analysis_res)
+                ) {
+                  analysis_res$base
+                } else {
+                  NULL
+                },
+                # default: base or survey_design – extract variables tibble
+                {
+                  design_obj <- if (dataset_type == "survey_design") {
+                    weighted_design
+                  } else {
+                    base_design
+                  }
+                  if (!is.null(design_obj)) {
+                    tryCatch(design_obj$variables, error = function(e) NULL)
+                  } else {
+                    NULL
+                  }
+                }
+              )
+
+              is_survey_design_type <- !(dataset_type %in%
+                c("analysis_results_surveydesign", "analysis_results_base"))
+
+              if (
+                !is.null(col_name) &&
+                  !is.null(source_df) &&
+                  col_name %in% names(source_df)
+              ) {
+                unique_vals <- unique(source_df[[col_name]])
+                unique_vals <- unique_vals[!is.na(unique_vals)]
+
+                phr_message(phr_txt(glue::glue(
+                  "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
+                )))
+
+                for (val in unique_vals) {
+                  if (is_survey_design_type) {
+                    design_to_filter <- if (
+                      dataset_type == "survey_design"
+                    ) {
+                      weighted_design
+                    } else {
+                      base_design
+                    }
+                    filtered_first_arg <- tryCatch(
+                      dplyr::filter(
+                        design_to_filter,
+                        !!rlang::sym(col_name) == val
+                      ),
+                      error = function(e) {
+                        phr_warning(
+                          message = phr_txt(glue::glue(
+                            "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
+                          )),
+                          origin = self$dataset_name
+                        )
+                        NULL
+                      }
+                    )
+                  } else {
+                    filtered_first_arg <- tryCatch(
+                      source_df |>
+                        dplyr::filter(!!rlang::sym(col_name) == val),
+                      error = function(e) {
+                        phr_warning(
+                          message = phr_txt(glue::glue(
+                            "Failed to filter data for '{var_label}' == '{val}': {e$message}"
+                          )),
+                          origin = self$dataset_name
+                        )
+                        NULL
+                      }
+                    )
+                  }
+
+                  if (is.null(filtered_first_arg)) {
+                    next
+                  }
+
+                  per_group_args <- func_args
+                  per_group_args[[1]] <- filtered_first_arg
+                  amended_label <- paste0(label, "-", var_label, ".", val)
+
+                  phr_try(
+                    {
+                      output_result <- do.call(
+                        output_function,
+                        per_group_args
+                      )
+                      store_result(output_result, amended_label)
+                    },
+                    on_error = "warn",
+                    origin = paste0(
+                      self$dataset_name,
+                      "$run_outputs$",
+                      out_name,
+                      "$",
+                      val
+                    )
+                  )
+                }
+              } else if (!is.null(col_name)) {
+                phr_warning(
+                  message = phr_txt(glue::glue(
+                    "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
+                  )),
+                  origin = self$dataset_name
+                )
+              }
+            } else {
+              phr_message(phr_txt(glue::glue(
+                "Calling {func_name} for output '{out_name}'..."
+              )))
+              output_result <- do.call(output_function, func_args)
+              store_result(output_result, label)
+            }
+          },
+          on_error = "warn",
+          origin = paste0(self$dataset_name, "$run_outputs$", set_role, "$", out_name)
+        )
+      }
+      invisible(NULL)
+    },
+
     # Amend one data / variable_map / data_analysis_plan field set for
     # add_all_to_dap().
     #
