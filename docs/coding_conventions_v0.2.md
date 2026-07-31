@@ -135,6 +135,7 @@ Use appropriate directives such as:
 
 Dependencies SHOULD be imported as narrowly as possible, favoring `@importFrom` over broad package imports to maintain namespace clarity and reduce unnecessary coupling.
 
+For internal GitHub‑based dependencies declared via Remotes:, packages MUST pin to a specific tag or commit rather than an unversioned branch, except during active co‑development.
 
 ### Documentation Quality
 
@@ -298,6 +299,8 @@ Package dependencies should follow these principles:
 - Explicitly namespace non-base package functions (e.g., dplyr::mutate()) to improve code clarity and reduce namespace conflicts.
 - Remove unused dependencies promptly and avoid introducing dependencies for functionality that can be reasonably implemented within the package.
 - Evaluate new dependencies for maintenance status, licensing, community adoption, and long-term sustainability before adding them.
+- For internal GitHub Remotes dependencies, pin all references to a specific tag or commit (e.g., org/pkg@v1.2.0) rather than an unpinned branch.
+- Use unpinned Remotes only for active co‑development on shared feature branches, and bump pinned versions deliberately through reviewed changes so updates are explicit and auditable.
 
 # 9. R Environment Management
 
