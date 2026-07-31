@@ -1418,6 +1418,20 @@ HouseholdData <- R6::R6Class(
             .groups = "drop"
           )
 
+        # Aggregate calc_month_death into comma-separated list per household
+        if ("calc_month_death" %in% names(deaths_data)) {
+          death_months_agg <- deaths_data |>
+            dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
+            dplyr::summarise(
+              death_month = paste(
+                stats::na.omit(calc_month_death), collapse = ", "
+              ),
+              .groups = "drop"
+            )
+          names(death_months_agg) <- c(linked_hh_col, "death_month")
+          agg_data <- dplyr::left_join(agg_data, death_months_agg, by = linked_hh_col)
+        }
+
         # Rename columns with prefix to show they come from linked dataset
         prefix <- paste0("linked_", link_name, "_")
         col_names <- names(agg_data)
@@ -1443,10 +1457,17 @@ HouseholdData <- R6::R6Class(
         # Replace NA values with 0 for all linked columns
         # Households with no linked records will have NA after left_join.
         # For count/sum aggregations, 0 is semantically correct (measured as zero).
+        # For text aggregations (comma-separated lists), use empty string.
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
-        if (length(linked_cols) > 0) {
+        text_cols <- intersect(linked_cols, grep("death_month$", linked_cols, value = TRUE))
+        numeric_cols <- setdiff(linked_cols, text_cols)
+        if (length(numeric_cols) > 0) {
           hh_data <- hh_data |>
-            dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
+            dplyr::mutate(dplyr::across(dplyr::all_of(numeric_cols), ~ ifelse(is.na(.), 0, .)))
+        }
+        if (length(text_cols) > 0) {
+          hh_data <- hh_data |>
+            dplyr::mutate(dplyr::across(dplyr::all_of(text_cols), ~ ifelse(is.na(.), "", .)))
         }
 
         phr_message(
@@ -1607,6 +1628,20 @@ HouseholdData <- R6::R6Class(
             )
         }
 
+        # Aggregate calc_month_birth into comma-separated list per household
+        if ("calc_month_birth" %in% names(roster_data)) {
+          birth_months_agg <- roster_data |>
+            dplyr::group_by(!!rlang::sym(linked_hh_col)) |>
+            dplyr::summarise(
+              roster_birth_months = paste(
+                stats::na.omit(calc_month_birth), collapse = ", "
+              ),
+              .groups = "drop"
+            )
+          names(birth_months_agg) <- c(linked_hh_col, "roster_birth_months")
+          agg_data <- dplyr::left_join(agg_data, birth_months_agg, by = linked_hh_col)
+        }
+
         # Rename columns with prefix to show they come from linked dataset
         prefix <- paste0("linked_")
         col_names <- names(agg_data)
@@ -1632,10 +1667,17 @@ HouseholdData <- R6::R6Class(
         # Replace NA values with 0 for all linked columns
         # Households with no linked records will have NA after left_join.
         # For count/sum aggregations, 0 is semantically correct (measured as zero).
+        # For text aggregations (comma-separated lists), use empty string.
         linked_cols <- setdiff(names(agg_data), hh_uuid_col)
-        if (length(linked_cols) > 0) {
+        text_cols <- intersect(linked_cols, grep("birth_months$", linked_cols, value = TRUE))
+        numeric_cols <- setdiff(linked_cols, text_cols)
+        if (length(numeric_cols) > 0) {
           hh_data <- hh_data |>
-            dplyr::mutate(dplyr::across(dplyr::all_of(linked_cols), ~ ifelse(is.na(.), 0, .)))
+            dplyr::mutate(dplyr::across(dplyr::all_of(numeric_cols), ~ ifelse(is.na(.), 0, .)))
+        }
+        if (length(text_cols) > 0) {
+          hh_data <- hh_data |>
+            dplyr::mutate(dplyr::across(dplyr::all_of(text_cols), ~ ifelse(is.na(.), "", .)))
         }
 
         phr_message(

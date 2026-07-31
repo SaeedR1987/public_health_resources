@@ -1847,9 +1847,9 @@ quality_test_ttest_summary_rowwise <- function(
   )
 }
 
-#' Poisson Rate Test (Row-wise)
+#' Poisson Rate Test
 #'
-#' Perform a row-wise exact Poisson test comparing an observed event count
+#' Perform an exact Poisson test comparing an observed event count
 #' against an expected rate, appending a p-value column to the data frame.
 #'
 #' @param survey_design A srvyr survey design object (e.g., created with \code{srvyr::as_survey_design()})
@@ -1877,7 +1877,7 @@ quality_test_poisson_ratio <- function(
 
       if (!is.character(variables) || length(variables) != 2L) {
         phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = "`variables` must be a character vector of exactly 2 column names (events, exposure)"
         )
       }
@@ -1889,29 +1889,22 @@ quality_test_poisson_ratio <- function(
           expected_rate <= 0
       ) {
         phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = "`expected_rate` must be a single positive numeric value"
         )
       }
 
       if (!alternative %in% c("two.sided", "greater", "less")) {
         phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = "`alternative` must be one of 'two.sided', 'greater', or 'less'"
-        )
-      }
-
-      if (!is.character(pval_colname) || length(pval_colname) != 1L) {
-        phr_error(
-          origin = "quality_test_poisson_ratio_rowwise",
-          message = "`pval_colname` must be a single character string"
         )
       }
 
       missing_cols <- setdiff(variables, names(data))
       if (length(missing_cols) > 0) {
         phr_warning(
-          origin = "quality_test_poisson_ratio_rowwise",
+          origin = "quality_test_poisson_ratio",
           message = paste0(
             "Columns not found in data: ",
             paste(missing_cols, collapse = ", ")
@@ -1922,12 +1915,13 @@ quality_test_poisson_ratio <- function(
 
       event_col <- variables[1]
       exposure_col <- variables[2]
-      event_vals <- data[[event_col]]
-      exposure_vals <- data[[exposure_col]]
+
+      event_vals <- suppressWarnings(as.numeric(data[[event_col]]))
+      exposure_vals <- suppressWarnings(as.numeric(data[[exposure_col]]))
 
       # Aggregate
-      total_events <- sum(events, na.rm = TRUE)
-      total_exposure <- sum(exposure, na.rm = TRUE)
+      total_events <- sum(event_vals, na.rm = TRUE)
+      total_exposure <- sum(exposure_vals, na.rm = TRUE)
 
       # Validate aggregated values
       if (
@@ -1942,7 +1936,7 @@ quality_test_poisson_ratio <- function(
       # Perform single Poisson exact test
       pt <- tryCatch(
         poisson.test(
-          x = as.integer(total_events),
+          x = total_events,
           T = total_exposure,
           r = expected_rate,
           alternative = alternative
@@ -1955,8 +1949,10 @@ quality_test_poisson_ratio <- function(
       }
 
       # Extract statistic + p-value
-      test_statistic <- unname(pt$statistic) # usually rate ratio or test statistic
-      p_value <- round(pt$p.value, 5)
+      test_statistic <- as.numeric(pt$statistic)
+      p_value <- as.numeric(pt$p.value)
+      # test_statistic <- unname(pt$statistic) # usually rate ratio or test statistic
+      # p_value <- round(pt$p.value, 5)
 
       return(list(
         test_statistic = test_statistic,
@@ -1964,7 +1960,7 @@ quality_test_poisson_ratio <- function(
       ))
     },
     on_error = "warn",
-    origin = "quality_test_poisson_ratio_rowwise"
+    origin = "quality_test_poisson_ratio"
   )
 }
 
@@ -2018,8 +2014,10 @@ quality_test_count <- function(survey_design, variables) {
 #' there is evidence of over-dispersion (clustering) or under-dispersion
 #' (uniformity).
 #'
-#' The function aggregates the event counts across all clusters/sites in the
-#' survey design and returns only two values:
+#' The function accepts record-level survey data containing an event-count
+#' column and a cluster-identifier column. Event counts are aggregated to the
+#' cluster level, and the dispersion test is applied to the resulting
+#' cluster-level totals. The function returns:
 #' \itemize{
 #'   \item \code{test_statistic}: the chi-square statistic
 #'   \item \code{p_value}: the p-value for the dispersion test
@@ -2027,8 +2025,9 @@ quality_test_count <- function(survey_design, variables) {
 #'
 #' @param survey_design A srvyr survey design object (e.g., created with
 #'   \code{srvyr::as_survey_design()}).
-#' @param variables A character vector of length 1 giving the column name
-#'   containing event counts for each cluster or site.
+#' @param variables A character vector of length 2. The first element must be
+#'   the column containing record-level event counts (non-negative numeric),
+#'   and the second must be the column containing cluster or site identifiers.
 #'
 #' @return A list with two numeric elements:
 #'   \itemize{
@@ -2038,54 +2037,74 @@ quality_test_count <- function(survey_design, variables) {
 #'   }
 #'
 #' @details
-#' The Index of Dispersion (ID) is defined as:
-#' \deqn{ID = \frac{\mathrm{Var}(X)}{\mathrm{Mean}(X)}}
+#' Event counts are first aggregated by cluster. Let \eqn{X_i} denote the total
+#' number of events in cluster \eqn{i}. The Index of Dispersion (ID) is defined as:
 #'
-#' Under the null hypothesis that counts follow a Poisson distribution,
-#' the statistic:
+#' \deqn{ID = \frac{\mathrm{Var}(X_i)}{\mathrm{Mean}(X_i)}}
+#'
+#' Under the null hypothesis that cluster-level counts follow a Poisson
+#' distribution, the statistic:
+#'
 #' \deqn{X^2 = (n - 1) \times ID}
-#' approximately follows a chi-square distribution with \code{n - 1}
-#' degrees of freedom, where \code{n} is the number of clusters/sites.
+#'
+#' approximately follows a chi-square distribution with \eqn{n - 1} degrees of
+#' freedom, where \eqn{n} is the number of clusters.
 #'
 #' A small p-value indicates significant over-dispersion (clustering) or
-#' under-dispersion (uniformity), suggesting potential spatial bias or
-#' data quality issues.
+#' under-dispersion (uniformity), suggesting potential spatial bias or data
+#' quality issues.
+#'
+#' Records with missing event counts or missing cluster identifiers are
+#' excluded. Negative event counts trigger a warning and result in \code{NA}
+#' outputs. If fewer than two clusters contain valid data, the function returns
+#' \code{NA} for both outputs.
 #'
 #' @export
 quality_test_index_dispersion <- function(survey_design, variables) {
-  phr_try(
+  phrutils::phr_try(
     {
-      data <- phr_get_data_from_design(survey_design)
+      data <- phrutils::phr_get_data_from_design(survey_design)
 
-      # Validate inputs
-      if (!is.character(variables) || length(variables) != 1L) {
-        phr_error(
+      # Expect exactly 2 variables: event_count, cluster_id
+      if (!is.character(variables) || length(variables) != 2L) {
+        phrutils::phr_error(
           origin = "quality_test_index_dispersion",
-          message = "`variables` must be a character vector of exactly 1 column name (event counts)"
+          message = "`variables` must be a character vector of length 2 (event_count, cluster_id)"
         )
       }
 
       event_col <- variables[1]
+      cluster_col <- variables[2]
 
-      if (!event_col %in% names(data)) {
+      missing_cols <- setdiff(variables, names(data))
+      if (length(missing_cols) > 0) {
         phr_warning(
           origin = "quality_test_index_dispersion",
-          message = paste0("Column not found in data: ", event_col)
+          message = paste0(
+            "Columns not found in data: ",
+            paste(missing_cols, collapse = ", ")
+          )
         )
         return(list(test_statistic = NA_real_, p_value = NA_real_))
       }
 
-      # Extract event counts across clusters/sites
-      counts <- data[[event_col]]
+      # Extract
+      events <- suppressWarnings(as.numeric(data[[event_col]]))
+      clusters <- data[[cluster_col]]
 
-      # Validate counts
-      if (all(is.na(counts)) || length(counts) == 0) {
+      cc <- complete.cases(events, clusters)
+      events <- events[cc]
+      clusters <- clusters[cc]
+
+      if (length(events) < 2) {
+        phr_warning(
+          origin = "quality_test_index_dispersion",
+          message = "Insufficient data for dispersion test"
+        )
         return(list(test_statistic = NA_real_, p_value = NA_real_))
       }
 
-      counts <- counts[!is.na(counts)]
-
-      if (any(counts < 0)) {
+      if (any(events < 0, na.rm = TRUE)) {
         phr_warning(
           origin = "quality_test_index_dispersion",
           message = "Negative event counts found; returning NA"
@@ -2093,27 +2112,38 @@ quality_test_index_dispersion <- function(survey_design, variables) {
         return(list(test_statistic = NA_real_, p_value = NA_real_))
       }
 
-      # Compute mean and variance
-      mean_count <- mean(counts)
-      var_count <- var(counts)
+      # Aggregate to cluster-level counts
+      events_by_cluster <- tapply(events, clusters, sum)
 
-      # Index of dispersion (variance-to-mean ratio)
+      # Validate cluster-level counts
+      if (length(events_by_cluster) < 2) {
+        phr_warning(
+          origin = "quality_test_index_dispersion",
+          message = "Need at least 2 clusters with non-missing counts"
+        )
+        return(list(test_statistic = NA_real_, p_value = NA_real_))
+      }
+
+      mean_count <- mean(events_by_cluster)
+      var_count <- var(events_by_cluster)
+
+      if (mean_count <= 0) {
+        return(list(test_statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Index of dispersion
       ID <- var_count / mean_count
 
-      # Test statistic for index of dispersion test
-      # (chi-square with df = n - 1)
-      n <- length(counts)
+      # Chi-square statistic
+      n <- length(events_by_cluster)
       test_statistic <- (n - 1) * ID
 
-      # p-value: test against Poisson assumption
-      p_value <- round(
-        pchisq(test_statistic, df = n - 1, lower.tail = FALSE),
-        digits = 5
-      )
+      # p-value
+      p_value <- pchisq(test_statistic, df = n - 1, lower.tail = FALSE)
 
       return(list(
-        test_statistic = test_statistic,
-        p_value = p_value
+        test_statistic = as.numeric(test_statistic),
+        p_value = as.numeric(round(p_value, 5))
       ))
     },
     on_error = "warn",
@@ -2349,7 +2379,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
       # Expect exactly 3 columns: events, exposure, group
       if (!is.character(variables) || length(variables) != 3L) {
         phr_error(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "`variables` must be a character vector of exactly 3 column names (events, exposure, group)"
         )
       }
@@ -2361,7 +2391,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
       missing_cols <- setdiff(variables, names(data))
       if (length(missing_cols) > 0) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = paste0(
             "Columns not found in data: ",
             paste(missing_cols, collapse = ", ")
@@ -2377,14 +2407,14 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
       # Validate numeric inputs
       is_valid_events <- phr_validate_numeric(
         events,
-        origin = "quality_test_anova",
+        origin = "quality_test_anova_by_exposure",
         hint = phr_txt("Events column must be numeric."),
         soft = TRUE
       )
 
       is_valid_exposure <- phr_validate_numeric(
         exposure,
-        origin = "quality_test_anova",
+        origin = "quality_test_anova_by_exposure",
         hint = phr_txt("Exposure column must be numeric."),
         soft = TRUE
       )
@@ -2401,27 +2431,46 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
 
       if (length(events) < 3) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "Insufficient data for ANOVA (need at least 3 non-missing observations)"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
       }
 
-      # Compute rate = events / exposure
-      if (any(exposure <= 0, na.rm = TRUE)) {
+      # Filter out records with invalid (non-positive) exposure
+      initial_count <- length(events)
+      valid_exposure <- exposure > 0
+      events <- events[valid_exposure]
+      exposure <- exposure[valid_exposure]
+      group <- group[valid_exposure]
+      removed_count <- initial_count - length(events)
+
+      if (removed_count > 0) {
         phr_warning(
-          origin = "quality_test_anova",
-          message = "Exposure must be positive for rate calculation"
+          origin = "quality_test_anova_by_exposure",
+          message = paste0(
+            removed_count,
+            " records with non-positive exposure were removed from the calculation"
+          )
+        )
+      }
+
+      if (length(events) < 3) {
+        phr_warning(
+          origin = "quality_test_anova_by_exposure",
+          message = "Insufficient data for ANOVA after filtering (need at least 3 valid observations)"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
       }
+
+      # Compute rate = events / exposure
 
       rate <- events / exposure
       group <- as.factor(group)
 
       if (nlevels(group) < 2) {
         phr_warning(
-          origin = "quality_test_anova",
+          origin = "quality_test_anova_by_exposure",
           message = "Group column must have at least 2 distinct levels for ANOVA"
         )
         return(list(statistic = NA_real_, p_value = NA_real_))
@@ -2501,14 +2550,14 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
 #'
 #' @export
 quality_test_event_group_variance <- function(survey_design, variables) {
-  phr_try(
+  phrutils::phr_try(
     {
-      data <- phr_get_data_from_design(survey_design)
+      data <- phrutils::phr_get_data_from_design(survey_design)
 
       # Expect exactly 4 columns: events, exposure, group1, group2
       if (!is.character(variables) || length(variables) != 4L) {
-        phr_error(
-          origin = "quality_test_variance_partitioning",
+        phrutils::phr_error(
+          origin = "quality_test_event_group_variance",
           message = "`variables` must be a character vector of exactly 4 column names (events, exposure, group1, group2)"
         )
       }
@@ -2520,8 +2569,8 @@ quality_test_event_group_variance <- function(survey_design, variables) {
 
       missing_cols <- setdiff(variables, names(data))
       if (length(missing_cols) > 0) {
-        phr_warning(
-          origin = "quality_test_variance_partitioning",
+        phrutils::phr_warning(
+          origin = "quality_test_event_group_variance",
           message = paste0(
             "Columns not found in data: ",
             paste(missing_cols, collapse = ", ")
@@ -2535,6 +2584,25 @@ quality_test_event_group_variance <- function(survey_design, variables) {
       group1 <- as.factor(data[[group1_col]])
       group2 <- as.factor(data[[group2_col]])
 
+      # Filter out records with invalid (non-positive) exposure
+      initial_count <- length(events)
+      valid_exposure <- exposure > 0
+      events <- events[valid_exposure]
+      exposure <- exposure[valid_exposure]
+      group1 <- group1[valid_exposure]
+      group2 <- group2[valid_exposure]
+      removed_count <- initial_count - length(events)
+
+      if (removed_count > 0) {
+        phr_warning(
+          origin = "quality_test_event_group_variance",
+          message = paste0(
+            removed_count,
+            " records with non-positive exposure were removed from the calculation"
+          )
+        )
+      }
+
       # Remove missing
       cc <- complete.cases(events, exposure, group1, group2)
       events <- events[cc]
@@ -2543,18 +2611,9 @@ quality_test_event_group_variance <- function(survey_design, variables) {
       group2 <- group2[cc]
 
       if (length(events) < 5) {
-        phr_warning(
-          origin = "quality_test_variance_partitioning",
+        phrutils::phr_warning(
+          origin = "quality_test_event_group_variance",
           message = "Insufficient data for variance partitioning"
-        )
-        return(list(test_statistic = NA_real_, p_value = NA_real_))
-      }
-
-      # Exposure must be positive
-      if (any(exposure <= 0)) {
-        phr_warning(
-          origin = "quality_test_variance_partitioning",
-          message = "Exposure must be positive for rate calculation"
         )
         return(list(test_statistic = NA_real_, p_value = NA_real_))
       }
@@ -2564,7 +2623,9 @@ quality_test_event_group_variance <- function(survey_design, variables) {
 
       # Fit full mixed model: rate ~ 1 + (1|group1) + (1|group2)
       full_model <- tryCatch(
+        # suppressMessages(
         lme4::lmer(rate ~ 1 + (1 | group1) + (1 | group2)),
+        # )
         error = function(e) NULL
       )
 
@@ -2589,8 +2650,10 @@ quality_test_event_group_variance <- function(survey_design, variables) {
 
       # Likelihood ratio test for group1 random effect
       reduced_model <- tryCatch(
+        # suppressMessages(
         lme4::lmer(rate ~ 1 + (1 | group2)),
         error = function(e) NULL
+        # )
       )
 
       if (is.null(reduced_model)) {
@@ -2609,7 +2672,141 @@ quality_test_event_group_variance <- function(survey_design, variables) {
       ))
     },
     on_error = "warn",
-    origin = "quality_test_variance_partitioning"
+    origin = "quality_test_event_group_variance"
+  )
+}
+
+#' Sex Ratio Consistency Test Against Expected Ratio (Count-Based)
+#'
+#' This function evaluates whether the observed sex ratio (male vs female)
+#' differs significantly from an expected ratio supplied by the user.
+#' It is designed for household-level survey data where each record contains
+#' numeric counts of males and females.
+#'
+#' A 2×1 contingency table is constructed from total male and female counts.
+#' A chi-squared goodness-of-fit test is performed comparing observed counts
+#' to expected proportions:
+#'
+#' \deqn{\text{Observed sex counts} \;\sim\; \text{Expected male:female ratio}}
+#'
+#' @param survey_design A srvyr survey design object.
+#' @param variables A character vector of length 2: male count column, female count column.
+#' @param expected_ratio A numeric vector of length 2 giving expected proportions
+#'        (e.g., c(male = 0.51, female = 0.49)).
+#'
+#' @return A list with:
+#'   \itemize{
+#'     \item \code{statistic} Chi-squared test statistic.
+#'     \item \code{p_value} P-value from the goodness-of-fit test.
+#'   }
+#'
+#' @export
+quality_test_sexratio_count <- function(
+  survey_design,
+  variables,
+  expected_ratio = c(0.5, 0.5)
+) {
+  phr_try(
+    {
+      data <- phr_get_data_from_design(survey_design)
+
+      # Expect exactly 2 variables: num_male, num_female
+      if (!is.character(variables) || length(variables) != 2L) {
+        phr_error(
+          origin = "quality_test_sexratio_count_expected",
+          message = "`variables` must be a character vector of length 2 (num_male, num_female)"
+        )
+      }
+
+      male_col <- variables[1]
+      female_col <- variables[2]
+
+      missing_cols <- setdiff(variables, names(data))
+      if (length(missing_cols) > 0) {
+        phr_warning(
+          origin = "quality_test_sexratio_count_expected",
+          message = paste0(
+            "Columns not found in data: ",
+            paste(missing_cols, collapse = ", ")
+          )
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Validate expected ratio
+      if (
+        !is.numeric(expected_ratio) ||
+          length(expected_ratio) != 2 ||
+          any(expected_ratio < 0) ||
+          sum(expected_ratio) <= 0
+      ) {
+        phr_warning(
+          origin = "quality_test_sexratio_count_expected",
+          message = "`expected_ratio` must be numeric length 2 with non-negative values"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Normalize expected ratio to proportions
+      expected_ratio <- expected_ratio / sum(expected_ratio)
+
+      male_counts <- data[[male_col]]
+      female_counts <- data[[female_col]]
+
+      cc <- complete.cases(male_counts, female_counts)
+      male_counts <- male_counts[cc]
+      female_counts <- female_counts[cc]
+
+      if (length(male_counts) < 5) {
+        phr_warning(
+          origin = "quality_test_sexratio_count_expected",
+          message = "Insufficient data for sex ratio expected test"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Must be non-negative numeric counts
+      if (
+        any(male_counts < 0, na.rm = TRUE) ||
+          any(female_counts < 0, na.rm = TRUE)
+      ) {
+        phr_warning(
+          origin = "quality_test_sexratio_count_expected",
+          message = "Negative counts found; cannot test sex ratio"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Aggregate totals
+      total_male <- sum(male_counts)
+      total_female <- sum(female_counts)
+
+      if (total_male == 0 || total_female == 0) {
+        phr_warning(
+          origin = "quality_test_sexratio_count_expected",
+          message = "One sex category has zero total counts; cannot test sex ratio"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      observed <- c(male = total_male, female = total_female)
+
+      # Expected counts under expected ratio
+      expected <- sum(observed) * expected_ratio
+
+      # Chi-square goodness-of-fit test
+      test_result <- suppressWarnings(chisq.test(
+        x = observed,
+        p = expected_ratio
+      ))
+
+      return(list(
+        statistic = as.numeric(test_result$statistic),
+        p_value = as.numeric(test_result$p.value)
+      ))
+    },
+    on_error = "warn",
+    origin = "quality_test_sexratio_count_expected"
   )
 }
 
@@ -2761,6 +2958,139 @@ quality_test_sexratio_count_group <- function(
   )
 }
 
+#' Age Group Ratio Test Against Expected Ratio (Count-Based)
+#'
+#' This function evaluates whether the observed ratio of individuals in two
+#' age groups differs significantly from an expected ratio supplied by the user.
+#' It is designed for household-level survey data where each record contains
+#' numeric counts of individuals in two age groups.
+#'
+#' A chi-squared goodness-of-fit test is performed comparing observed total
+#' counts to expected proportions:
+#'
+#' \deqn{\text{Observed age-group counts} \;\sim\; \text{Expected ratio}}
+#'
+#' @param survey_design A srvyr survey design object.
+#' @param variables A character vector of length 2: age group 1 count column,
+#'        age group 2 count column.
+#' @param expected_ratio A numeric vector of length 2 giving expected proportions
+#'        (e.g., c(0.60, 0.40)).
+#'
+#' @return A list with:
+#'   \itemize{
+#'     \item \code{statistic} Chi-squared test statistic.
+#'     \item \code{p_value} P-value from the goodness-of-fit test.
+#'   }
+#'
+#' @export
+quality_test_ageratio_count <- function(
+  survey_design,
+  variables,
+  expected_ratio
+) {
+  phr_try(
+    {
+      data <- phr_get_data_from_design(survey_design)
+
+      # Expect exactly 2 variables: agegroup1_count, agegroup2_count
+      if (!is.character(variables) || length(variables) != 2L) {
+        phr_error(
+          origin = "quality_test_ageratio_count",
+          message = "`variables` must be a character vector of length 2 (agegroup1_count, agegroup2_count)"
+        )
+      }
+
+      age1_col <- variables[1]
+      age2_col <- variables[2]
+
+      missing_cols <- setdiff(variables, names(data))
+      if (length(missing_cols) > 0) {
+        phr_warning(
+          origin = "quality_test_ageratio_count",
+          message = paste0(
+            "Columns not found in data: ",
+            paste(missing_cols, collapse = ", ")
+          )
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Validate expected ratio
+      if (
+        !is.numeric(expected_ratio) ||
+          length(expected_ratio) != 2 ||
+          any(expected_ratio < 0) ||
+          sum(expected_ratio) <= 0
+      ) {
+        phr_warning(
+          origin = "quality_test_ageratio_count",
+          message = "`expected_ratio` must be numeric length 2 with non-negative values"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Normalize expected ratio to proportions
+      expected_ratio <- expected_ratio / sum(expected_ratio)
+
+      age1_counts <- data[[age1_col]]
+      age2_counts <- data[[age2_col]]
+
+      cc <- complete.cases(age1_counts, age2_counts)
+      age1_counts <- age1_counts[cc]
+      age2_counts <- age2_counts[cc]
+
+      if (length(age1_counts) < 5) {
+        phr_warning(
+          origin = "quality_test_ageratio_count",
+          message = "Insufficient data for age ratio expected test"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Must be non-negative numeric counts
+      if (
+        any(age1_counts < 0, na.rm = TRUE) ||
+          any(age2_counts < 0, na.rm = TRUE)
+      ) {
+        phr_warning(
+          origin = "quality_test_ageratio_count",
+          message = "Negative counts found; cannot test age ratio"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      # Aggregate totals
+      total_age1 <- sum(age1_counts)
+      total_age2 <- sum(age2_counts)
+
+      if (total_age1 == 0 || total_age2 == 0) {
+        phr_warning(
+          origin = "quality_test_ageratio_count",
+          message = "One age group has zero total counts; cannot test age ratio"
+        )
+        return(list(statistic = NA_real_, p_value = NA_real_))
+      }
+
+      observed <- c(age_group1 = total_age1, age_group2 = total_age2)
+
+      # Expected counts under expected ratio
+      expected <- sum(observed) * expected_ratio
+
+      # Chi-square goodness-of-fit test
+      test_result <- suppressWarnings(chisq.test(
+        x = observed,
+        p = expected_ratio
+      ))
+
+      return(list(
+        statistic = as.numeric(test_result$statistic),
+        p_value = as.numeric(test_result$p.value)
+      ))
+    },
+    on_error = "warn",
+    origin = "quality_test_ageratio_count"
+  )
+}
 
 #' Age Group Ratio Consistency Test Across Groups (Count-Based)
 #'
