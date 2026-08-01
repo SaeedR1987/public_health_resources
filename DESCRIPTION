@@ -100,8 +100,6 @@ Collate:
     'utils_color_palettes.R'
     'utils_data_class.R'
     'utils_data_quality.R'
-    'utils_data_water_container.R'
-    'utils_demographics_analysis.R'
     'utils_doc_schema_handlers_iphra.R'
     'utils_flextable_themes.R'
     'utils_formatting.R'
