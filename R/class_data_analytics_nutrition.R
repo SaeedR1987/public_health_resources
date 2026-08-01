@@ -179,6 +179,13 @@ NutritionDataAnalytics <- R6::R6Class(
       modified_data <- sd_vars
       modified_data[[tmp_col]] <- composite_wt
 
+      # Restrict to rows with a valid composite weight (i.e. children aged
+      # 0-59 months). Rows outside this range receive NA from
+      # .compute_weights_muac_alt and must be dropped before survey design
+      # construction, otherwise srvyr raises "missing values in 'weights'".
+      valid_rows    <- !is.na(modified_data[[tmp_col]])
+      modified_data <- modified_data[valid_rows, , drop = FALSE]
+
       # ------------------------------------------------------------------
       # 5. Build temporary survey design with the composite weight
       # ------------------------------------------------------------------
@@ -631,7 +638,9 @@ NutritionDataAnalytics <- R6::R6Class(
 
     # Build a temporary survey design using `weight_col` as the weight column.
     # Cluster, strata, and FPC are resolved from self$variable_map as usual.
-    # Returns NULL on failure.
+    # Any variable (including weight_col) that is absent from modified_data
+    # is silently omitted so that a simple random-sample design is always
+    # producible as a minimum.  Returns NULL on failure.
     .build_muac_survey_design = function(modified_data, weight_col) {
 
       origin <- paste0(self$dataset_name, "$post_run_analysis$.build_muac_survey_design")
@@ -652,9 +661,15 @@ NutritionDataAnalytics <- R6::R6Class(
       fpc_col <- self$variable_map[["fpc"]]
       if (is.null(fpc_col) || !fpc_col %in% names(modified_data)) fpc_col <- NULL
 
+      # weight_col is the composite weight created by post_run_analysis; treat
+      # it as optional so the design can always be built at minimum as an SRS.
+      if (is.null(weight_col) || !weight_col %in% names(modified_data)) {
+        weight_col <- NULL
+      }
+
       ids_sym    <- if (!is.null(cluster_col)) rlang::sym(cluster_col) else 1
       strata_sym <- if (!is.null(strata_col))  rlang::sym(strata_col)  else NULL
-      weight_sym <- rlang::sym(weight_col)
+      weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
       fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
 
       design <- phrutils::phr_try(
