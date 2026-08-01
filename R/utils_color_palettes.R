@@ -73,7 +73,7 @@ reach_colors <- function(ramp = 1, n = NULL, reverse = FALSE) {
   )
 
   # Validate ramp parameter
-  phr_assert(ramp %in% 1:4,
+  phrutils::phr_assert(ramp %in% 1:4,
                phr_txt("ramp must be an integer between 1 and 4"),
                origin = origin)
 
@@ -87,7 +87,7 @@ reach_colors <- function(ramp = 1, n = NULL, reverse = FALSE) {
 
   # If n is specified, interpolate to get exactly n colors
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -153,7 +153,7 @@ traffic_light_colors <- function(n = NULL, include_grey = TRUE, reverse = FALSE)
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -257,7 +257,7 @@ group_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -376,7 +376,7 @@ ipc_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -434,7 +434,7 @@ water_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -495,7 +495,7 @@ sanitation_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -556,7 +556,7 @@ hygiene_colors <- function(n = NULL, reverse = FALSE) {
 
   # If n is specified, adjust the color vector
   if (!is.null(n)) {
-    phr_assert(is.numeric(n) && n > 0,
+    phrutils::phr_assert(is.numeric(n) && n > 0,
                  phr_txt("n must be a positive integer"),
                  origin = origin)
 
@@ -630,7 +630,7 @@ get_color_palette <- function(type = "reach1", n = NULL, reverse = FALSE) {
 
   # Validate type
   valid_types <- c("reach1", "reach2", "reach3", "reach4", "traffic_light", "sex", "group", "iycf_area", "ipc", "water", "sanitation", "hygiene", "default")
-  phr_assert(type %in% valid_types,
+  phrutils::phr_assert(type %in% valid_types,
                phr_txt("type must be one of: {paste(valid_types, collapse = ', ')}"),
                origin = origin)
 

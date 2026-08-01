@@ -110,7 +110,7 @@ Orchestrator <- R6::R6Class(
       update_modified = TRUE,
       ...
     ) {
-      phr_try(
+      phrutils::phr_try(
         {
           target <- private$..resolve_nested_target(
             field = field,
@@ -128,12 +128,12 @@ Orchestrator <- R6::R6Class(
             return(target)
           }
 
-          phr_assert(
+          phrutils::phr_assert(
             is.character(member) && length(member) == 1L && nzchar(member),
             message = phr_txt("member must be a non-empty character string."),
             origin = "Orchestrator$access_nested"
           )
-          phr_assert(
+          phrutils::phr_assert(
             !is.null(target[[member]]),
             message = phr_txt(
               "Member '{member}' does not exist on the resolved target."
@@ -178,9 +178,9 @@ Orchestrator <- R6::R6Class(
     #' @param role Optional character scalar used to resolve a list element in
     #'   \code{field} by role-like name.
     set_nested = function(field, member, value, name = NULL, role = NULL) {
-      phr_try(
+      phrutils::phr_try(
         {
-          phr_assert(
+          phrutils::phr_assert(
             is.character(member) && length(member) == 1L && nzchar(member),
             message = phr_txt("member must be a non-empty character string."),
             origin = "Orchestrator$set_nested"
@@ -248,12 +248,12 @@ Orchestrator <- R6::R6Class(
           !is.null(name) ||
           !is.null(role)
       ) {
-        phr_assert(
+        phrutils::phr_assert(
           is.character(field) && length(field) == 1L && nzchar(field),
           message = phr_txt("field must be a non-empty character string."),
           origin = "Orchestrator$sync_state"
         )
-        phr_assert(
+        phrutils::phr_assert(
           is.character(member) && length(member) == 1L && nzchar(member),
           message = phr_txt("member must be a non-empty character string."),
           origin = "Orchestrator$sync_state"
@@ -263,7 +263,7 @@ Orchestrator <- R6::R6Class(
           name = name,
           role = role
         )
-        phr_assert(
+        phrutils::phr_assert(
           !is.null(target[[member]]),
           message = phr_txt(
             "Member '{member}' does not exist on the resolved target."
@@ -343,19 +343,19 @@ Orchestrator <- R6::R6Class(
     #' @keywords internal
     #' @noRd
     ..resolve_nested_target = function(field, name = NULL, role = NULL) {
-      phr_assert(
+      phrutils::phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
         message = phr_txt("field must be a non-empty character string."),
         origin = "Orchestrator$.resolve_nested_target"
       )
-      phr_assert(
+      phrutils::phr_assert(
         !is.null(self[[field]]),
         message = phr_txt("Field '{field}' is not available on this object."),
         origin = "Orchestrator$.resolve_nested_target"
       )
       container <- self[[field]]
 
-      phr_assert(
+      phrutils::phr_assert(
         !(!is.null(name) && !is.null(role)),
         message = phr_txt("Provide only one of name or role."),
         origin = "Orchestrator$.resolve_nested_target"
@@ -365,7 +365,7 @@ Orchestrator <- R6::R6Class(
         return(container)
       }
 
-      phr_assert(
+      phrutils::phr_assert(
         is.list(container),
         message = phr_txt(
           "Field '{field}' must be a list when resolving name/role."
@@ -374,14 +374,14 @@ Orchestrator <- R6::R6Class(
       )
 
       if (!is.null(name)) {
-        phr_assert(
+        phrutils::phr_assert(
           is.character(name) && length(name) == 1L && nzchar(name),
           message = phr_txt(
             "name must be a non-empty character string when provided."
           ),
           origin = "Orchestrator$.resolve_nested_target"
         )
-        phr_assert(
+        phrutils::phr_assert(
           !is.null(container[[name]]),
           message = phr_txt("Name '{name}' was not found in field '{field}'."),
           origin = "Orchestrator$.resolve_nested_target"
@@ -389,7 +389,7 @@ Orchestrator <- R6::R6Class(
         return(container[[name]])
       }
 
-      phr_assert(
+      phrutils::phr_assert(
         is.character(role) && length(role) == 1L && nzchar(role),
         message = phr_txt(
           "role must be a non-empty character string when provided."
@@ -398,7 +398,7 @@ Orchestrator <- R6::R6Class(
       )
 
       nms <- names(container)
-      phr_assert(
+      phrutils::phr_assert(
         !is.null(nms) && length(nms) > 0L,
         message = phr_txt(
           "Field '{field}' has no named elements for role-based lookup."
@@ -421,7 +421,7 @@ Orchestrator <- R6::R6Class(
         )
       }
 
-      phr_assert(
+      phrutils::phr_assert(
         length(idx) == 1L,
         message = if (length(idx) == 0L) {
           phr_txt("Role '{role}' was not found in field '{field}'.")
@@ -453,7 +453,7 @@ Orchestrator <- R6::R6Class(
     #' @keywords internal
     #' @noRd
     ..assign_sync_value = function(target_field, value) {
-      phr_assert(
+      phrutils::phr_assert(
         is.character(target_field) &&
           length(target_field) == 1L &&
           nzchar(target_field),
@@ -463,7 +463,7 @@ Orchestrator <- R6::R6Class(
 
       path <- strsplit(target_field, "\\$", fixed = FALSE)[[1L]]
       path <- path[nzchar(path)]
-      phr_assert(
+      phrutils::phr_assert(
         length(path) >= 1L,
         message = phr_txt("target_field path is invalid."),
         origin = "Orchestrator$.assign_sync_value"

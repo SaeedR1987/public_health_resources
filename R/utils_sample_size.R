@@ -51,44 +51,44 @@ calculate_sample_size_general <- function(
   origin <- "calculate_sample_size_general"
 
   # --- Type validation ---
-  phr_validate_numeric(expected_proportion, origin = origin, soft = FALSE)
-  phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
-  phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
-  phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
-  phr_validate_logical(fpc, origin = origin, soft = FALSE)
-  phr_validate_character(design, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(expected_proportion, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phrutils::phr_validate_logical(fpc, origin = origin, soft = FALSE)
+  phrutils::phr_validate_character(design, origin = origin, soft = FALSE)
 
   # --- Range / logical checks ---
-  phr_assert(
+  phrutils::phr_assert(
     expected_proportion >= 0 && expected_proportion <= 100,
     message = "expected_proportion must be between 0 and 100.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     desired_precision > 0 && desired_precision < 100,
     message = "desired_precision must be between 0 and 100 (exclusive).",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     non_response_rate >= 0 && non_response_rate < 100,
     message = "non_response_rate must be between 0 and 100 (exclusive).",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     design %in% c("simple_random", "cluster"),
     message = "design must be 'simple_random' or 'cluster'.",
     origin = origin
   )
   if (design == "cluster") {
-    phr_validate_numeric(design_effect, origin = origin, soft = FALSE)
-    phr_assert(
+    phrutils::phr_validate_numeric(design_effect, origin = origin, soft = FALSE)
+    phrutils::phr_assert(
       design_effect >= 1,
       message = "design_effect must be >= 1 for cluster designs.",
       origin = origin
     )
   }
   if (fpc) {
-    phr_assert(
+    phrutils::phr_assert(
       !is.null(total_population) &&
         is.numeric(total_population) &&
         total_population > 0,
@@ -200,7 +200,7 @@ calculate_sample_size_individual <- function(
   origin <- "calculate_sample_size_individual"
 
   # --- Type validation ---
-  phr_validate_numeric(sub_population_percent, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(sub_population_percent, origin = origin, soft = FALSE)
 
   # --- Range checks ---
   if (missing(average_household_size)) {
@@ -209,13 +209,13 @@ calculate_sample_size_individual <- function(
       origin = origin
     )
   }
-  phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
-  phr_assert(
+  phrutils::phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
+  phrutils::phr_assert(
     average_household_size > 0,
     message = "average_household_size must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     sub_population_percent > 0 && sub_population_percent <= 100,
     message = "sub_population_percent must be between 0 (exclusive) and 100.",
     origin = origin
@@ -310,22 +310,22 @@ calculate_sample_size_rate <- function(
   origin <- "calculate_sample_size_mortality"
 
   # --- Type validation ---
-  phr_validate_numeric(expected_rate, origin = origin, soft = FALSE)
-  phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
-  phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
-  phr_validate_numeric(recall_days, origin = origin, soft = FALSE)
-  phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
-  phr_validate_numeric(multiplier, origin = origin, soft = FALSE)
-  phr_validate_logical(fpc, origin = origin, soft = FALSE)
-  phr_validate_character(design, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(expected_rate, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(recall_days, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(multiplier, origin = origin, soft = FALSE)
+  phrutils::phr_validate_logical(fpc, origin = origin, soft = FALSE)
+  phrutils::phr_validate_character(design, origin = origin, soft = FALSE)
 
   # --- Range / logical checks ---
-  phr_assert(
+  phrutils::phr_assert(
     expected_rate > 0,
     message = "expected_rate must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     desired_precision > 0,
     message = "desired_precision must be positive.",
     origin = origin
@@ -336,32 +336,32 @@ calculate_sample_size_rate <- function(
       origin = origin
     )
   }
-  phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
-  phr_assert(
+  phrutils::phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
+  phrutils::phr_assert(
     average_household_size > 0,
     message = "average_household_size must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     recall_days > 0,
     message = "recall_days must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     design %in% c("simple_random", "cluster"),
     message = "design must be 'simple_random' or 'cluster'.",
     origin = origin
   )
   if (design == "cluster") {
-    phr_validate_numeric(design_effect, origin = origin, soft = FALSE)
-    phr_assert(
+    phrutils::phr_validate_numeric(design_effect, origin = origin, soft = FALSE)
+    phrutils::phr_assert(
       design_effect >= 1,
       message = "design_effect must be >= 1 for cluster designs.",
       origin = origin
     )
   }
   if (fpc) {
-    phr_assert(
+    phrutils::phr_assert(
       !is.null(total_population) &&
         is.numeric(total_population) &&
         total_population > 0,
@@ -502,47 +502,47 @@ estimate_field_plan <- function(
   origin <- "estimate_field_plan"
 
   # --- Type validation ---
-  phr_validate_character(sample_design, origin = origin, soft = FALSE)
-  phr_validate_numeric(number_of_teams, origin = origin, soft = FALSE)
-  phr_validate_numeric(enumerators_per_team, origin = origin, soft = FALSE)
-  phr_validate_numeric(average_interview_time, origin = origin, soft = FALSE)
-  phr_validate_numeric(average_travel_time, origin = origin, soft = FALSE)
-  phr_validate_numeric(average_rest_time, origin = origin, soft = FALSE)
+  phrutils::phr_validate_character(sample_design, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(number_of_teams, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(enumerators_per_team, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(average_interview_time, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(average_travel_time, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(average_rest_time, origin = origin, soft = FALSE)
 
   # --- Range / logic checks ---
-  phr_assert(
+  phrutils::phr_assert(
     number_of_teams > 0,
     message = "number_of_teams must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     enumerators_per_team > 0,
     message = "enumerators_per_team must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     average_interview_time > 0,
     message = "average_interview_time must be positive.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     average_travel_time >= 0,
     message = "average_travel_time must be non-negative.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     average_rest_time >= 0,
     message = "average_rest_time must be non-negative.",
     origin = origin
   )
-  phr_assert(
+  phrutils::phr_assert(
     sample_design %in% c("simple_random", "cluster"),
     message = "sample_design must be 'simple_random' or 'cluster'.",
     origin = origin
   )
 
   if (sample_design == "cluster") {
-    phr_assert(
+    phrutils::phr_assert(
       !is.null(number_of_psu_per_team_per_day) &&
         is.numeric(number_of_psu_per_team_per_day) &&
         number_of_psu_per_team_per_day > 0,
@@ -577,7 +577,7 @@ estimate_field_plan <- function(
     ))
   }
 
-  phr_assert(
+  phrutils::phr_assert(
     total_working_minutes > 0,
     message = "end_time must be after start_time.",
     origin = origin
@@ -674,9 +674,9 @@ calculate_sample_size_strata_table <- function(sample_table) {
   # Default design effect used as fallback when no value is stored.
   .default_design_effect <- 1.5
 
-  phr_try(
+  phrutils::phr_try(
     {
-      phr_assert(
+      phrutils::phr_assert(
         isTRUE(validate_strata_table(sample_table)),
         message = phr_txt(
           "sample_table is invalid. Ensure it was built via add_stratum() or conforms to the required schema."
@@ -738,7 +738,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             NULL
           }
 
-          pop_ss <- phr_try(
+          pop_ss <- phrutils::phr_try(
             calculate_sample_size_general(
               expected_proportion = row$pop_expected_prevalence,
               desired_precision = row$pop_precision,
@@ -790,7 +790,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             100
           }
 
-          ind_res <- phr_try(
+          ind_res <- phrutils::phr_try(
             calculate_sample_size_individual(
               expected_proportion = row$ind_expected_prevalence,
               desired_precision = row$ind_precision,
@@ -847,7 +847,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             90
           }
 
-          rate_res <- phr_try(
+          rate_res <- phrutils::phr_try(
             calculate_sample_size_rate(
               expected_rate = row$rate_expected_rate,
               desired_precision = row$rate_precision,
@@ -939,7 +939,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
         print(paste0("I am here 12 -", i))
 
         if (has_base && has_cluster_param) {
-          fp <- phr_try(
+          fp <- phrutils::phr_try(
             estimate_field_plan(
               sample_design = design_type,
               number_of_teams = row$teams,

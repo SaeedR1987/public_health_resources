@@ -94,7 +94,7 @@ IPHRAProtocol <- R6::R6Class(
       self$metadata$month_year <- month_year
       self$metadata$framework_type <- "ana"
 
-      phr_message(
+      phrutils::phr_message(
         phr_txt("IPHRAProtocol initialized."),
         origin = "IPHRAProtocol$initialize"
       )
@@ -112,11 +112,11 @@ IPHRAProtocol <- R6::R6Class(
     #' @param tool_name Character. One of the recognised IPHRA tool names.
     #' @return Invisibly returns \code{self} for method chaining.
     add_tools = function(tool_name) {
-      phr_try(
+      phrutils::phr_try(
         {
           allowable <- private$..iphra_tools
 
-          phr_assert(
+          phrutils::phr_assert(
             is.character(tool_name) &&
               length(tool_name) == 1 &&
               nzchar(tool_name),
@@ -125,7 +125,7 @@ IPHRAProtocol <- R6::R6Class(
             ),
             origin = "IPHRAProtocol$add_tools"
           )
-          phr_assert(
+          phrutils::phr_assert(
             tool_name %in% names(allowable),
             message = phr_txt(
               "'{tool_name}' is not a recognised IPHRA tool. Allowable tools: {paste(names(allowable), collapse=', ')}."
@@ -153,7 +153,7 @@ IPHRAProtocol <- R6::R6Class(
               private$..load_tool_from_path(t, tool_path)
               t
             } else {
-              phr_warning(
+              phrutils::phr_warning(
                 message = phr_txt(
                   "XLSForm file not found for '{tool_name}': {xlsx_file}. Creating empty tool."
                 ),
@@ -171,7 +171,7 @@ IPHRAProtocol <- R6::R6Class(
               private$..load_tool_from_path(t, tool_path)
               t
             } else {
-              phr_warning(
+              phrutils::phr_warning(
                 message = phr_txt(
                   "XLSForm file not found for '{tool_name}': {xlsx_file}. Creating empty tool."
                 ),
@@ -190,7 +190,7 @@ IPHRAProtocol <- R6::R6Class(
               private$..load_tool_from_path(t, tool_path)
               t
             } else {
-              phr_warning(
+              phrutils::phr_warning(
                 message = phr_txt(
                   "XLSForm file not found for '{tool_name}': {xlsx_file}. Creating empty tool."
                 ),
@@ -205,7 +205,7 @@ IPHRAProtocol <- R6::R6Class(
           }
           self$tools[[tool_name]] <- tool
           private$..touch()
-          phr_message(
+          phrutils::phr_message(
             phr_txt("IPHRA tool '{tool_name}' added."),
             origin = "IPHRAProtocol$add_tools"
           )
@@ -239,9 +239,9 @@ IPHRAProtocol <- R6::R6Class(
       recall_date,
       tool_name = "tool_household_iphra_v2"
     ) {
-      phr_try(
+      phrutils::phr_try(
         {
-          phr_assert(
+          phrutils::phr_assert(
             !is.null(recall_date),
             message = phr_txt("recall_date must not be NULL."),
             origin = "IPHRAProtocol$update_recall_date"
@@ -264,7 +264,7 @@ IPHRAProtocol <- R6::R6Class(
           month_first <- format(date_obj, "%Y-%m-01")
           recall_event_str <- format(date_obj, "%d %B %Y")
 
-          phr_assert(
+          phrutils::phr_assert(
             !is.null(self$tools) && tool_name %in% names(self$tools),
             message = phr_txt(
               "Tool '{tool_name}' not found. Add it first with add_tools()."
@@ -313,7 +313,7 @@ IPHRAProtocol <- R6::R6Class(
           tool$revised_survey <- .update_recall_in_survey(tool$revised_survey)
 
           private$..touch()
-          phr_message(
+          phrutils::phr_message(
             phr_txt(
               "Recall date updated to '{date_str}' in tool '{tool_name}'."
             ),

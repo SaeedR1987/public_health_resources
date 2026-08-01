@@ -111,7 +111,7 @@ CleaningLog <- R6::R6Class(
     #' Sets self$validated and self$issues based on results.
     validate = function(data_obj = NULL, stage = "clean") {
 
-      phr_try({
+      phrutils::phr_try({
 
 
         # 1. Start with super validation
@@ -148,7 +148,7 @@ CleaningLog <- R6::R6Class(
         if (length(bad_cols) > 0) {
           super_issues$missing_or_empty <- bad_cols
 
-          phr_warning(
+          phrutils::phr_warning(
             self$log_name,
             phr_txt(glue::glue("Cleaning log contains missing/empty values in: {paste(bad_cols, collapse=', ')}."))
           )
@@ -233,7 +233,7 @@ CleaningLog <- R6::R6Class(
       missing_uuid <- setdiff(df_log$uuid, as.character(df[[uuid_col]]))
       if (length(missing_uuid) > 0) {
         issues$uuid_not_found <- missing_uuid
-        phr_warning(
+        phrutils::phr_warning(
           self$log_name,
           phr_txt(glue::glue("Unknown UUID(s) in cleaning log: {paste(missing_uuid, collapse=', ')}"))
         )
@@ -250,7 +250,7 @@ CleaningLog <- R6::R6Class(
 
           if (length(missing_enum) > 0) {
             issues$enum_id_not_found <- missing_enum
-            phr_warning(
+            phrutils::phr_warning(
               self$log_name,
               phr_txt(glue::glue("Unknown enum_id(s): {paste(missing_enum, collapse=', ')}"))
             )
@@ -264,7 +264,7 @@ CleaningLog <- R6::R6Class(
       missing_q <- setdiff(df_log$`question.name`, names(df))
       if (length(missing_q) > 0) {
         issues$unknown_question_names <- missing_q
-        phr_warning(
+        phrutils::phr_warning(
           self$log_name,
           phr_txt(glue::glue("Unknown question.name columns: {paste(missing_q, collapse=', ')}"))
         )
@@ -296,7 +296,7 @@ CleaningLog <- R6::R6Class(
               paste0("uuid=", uuid_val, ", col=", col_name)
             )
 
-            phr_warning(
+            phrutils::phr_warning(
               self$log_name,
               phr_txt(
                 "old.value mismatch for uuid {uuid_val}, column {col_name}: expected '{old_val}', found '{actual}'."

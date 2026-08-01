@@ -199,14 +199,14 @@ Protocol <- R6::R6Class(
       reference_doc_filename = NULL,
       reference_ppt_filename = NULL
     ) {
-      phr_try(
+      phrutils::phr_try(
         {
           super$initialize(
             reference_doc_filename = private$..default_template_filenames(),
             reference_ppt_filename = private$..default_ppt_template_filenames()
           )
           valid_fw_types <- c("none", "ana")
-          phr_assert(
+          phrutils::phr_assert(
             is.character(framework_type) &&
               length(framework_type) == 1 &&
               framework_type %in% valid_fw_types,
@@ -234,7 +234,7 @@ Protocol <- R6::R6Class(
           }
           private$..sync_state()
 
-          phr_message(
+          phrutils::phr_message(
             phr_txt("Protocol initialized."),
             origin = "Protocol$initialize"
           )
@@ -258,10 +258,10 @@ Protocol <- R6::R6Class(
     #'   from \code{tool_type} and the current count (e.g. \code{"household_1"}).
     #' @return Invisibly returns self for method chaining.
     add_tools = function(tool_type = "household", tool_name = NULL) {
-      phr_try(
+      phrutils::phr_try(
         {
           valid_types <- self$valid_tool_types %||% character(0)
-          phr_assert(
+          phrutils::phr_assert(
             tool_type %in% valid_types,
             message = phr_txt(
               "tool_type must be one of: {paste(valid_types, collapse=', ')}."
@@ -299,7 +299,7 @@ Protocol <- R6::R6Class(
           private$..sync_state()
           private$..touch()
           self$diagnose_coherence()
-          phr_message(
+          phrutils::phr_message(
             phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
             origin = "Protocol$add_tools"
           )
@@ -351,7 +351,7 @@ Protocol <- R6::R6Class(
     #'   for recoverable problems.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{TRUE} if valid.
     validate_objective_schema = function(schema, soft = FALSE) {
-      phr_try(
+      phrutils::phr_try(
         {
           origin <- "Protocol$validate_objective_schema"
 
@@ -368,7 +368,7 @@ Protocol <- R6::R6Class(
           if (nrow(schema) == 0) {
             msg <- phr_txt("Objective schema is empty (zero rows).")
             if (soft) {
-              phr_warning(origin = origin, message = msg)
+              phrutils::phr_warning(origin = origin, message = msg)
               return(invisible(FALSE))
             }
             phr_error(origin = origin, message = msg)
@@ -408,7 +408,7 @@ Protocol <- R6::R6Class(
               "All 'short_objective' values in the objective schema are NA."
             )
             if (soft) {
-              phr_warning(origin = origin, message = msg)
+              phrutils::phr_warning(origin = origin, message = msg)
             } else {
               phr_error(origin = origin, message = msg)
             }
@@ -428,7 +428,7 @@ Protocol <- R6::R6Class(
               )
             )
             if (soft) {
-              phr_warning(origin = origin, message = msg)
+              phrutils::phr_warning(origin = origin, message = msg)
             } else {
               phr_error(origin = origin, message = msg)
             }
@@ -568,14 +568,14 @@ Protocol <- R6::R6Class(
       }
 
       if (length(self$issues_coherence) == 0) {
-        phr_message(
+        phrutils::phr_message(
           phr_txt(
             "Coherence validation passed: all objectives have tool coverage and all tool indicators match the schema."
           ),
           origin = "Protocol$diagnose_coherence"
         )
       } else {
-        phr_message(
+        phrutils::phr_message(
           phr_txt(
             "Coherence validation found {length(self$issues_coherence)} issue(s). Check self$issues_coherence for details."
           ),
@@ -597,10 +597,10 @@ Protocol <- R6::R6Class(
     #'   framework is not configured, no primary objectives are set, or the
     #'   specified tool is not found.
     get_dap_table = function(tool_name, lang = "en") {
-      phr_try(
+      phrutils::phr_try(
         {
           # Validate tool_name parameter
-          phr_assert(
+          phrutils::phr_assert(
             is.character(tool_name) &&
               length(tool_name) == 1 &&
               nzchar(tool_name),
@@ -998,7 +998,7 @@ Protocol <- R6::R6Class(
           !is.data.frame(revised_survey) ||
           nrow(revised_survey) == 0L
       ) {
-        phr_warning(
+        phrutils::phr_warning(
           phr_txt("Tool '{tool_name}' has no revised_survey data."),
           origin = "Protocol$get_dap_table"
         )
@@ -1016,7 +1016,7 @@ Protocol <- R6::R6Class(
       )
 
       if (!"indicator_code" %in% names(revised_survey)) {
-        phr_warning(
+        phrutils::phr_warning(
           phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
           origin = "Protocol$get_dap_table"
         )
@@ -1115,7 +1115,7 @@ Protocol <- R6::R6Class(
 
       lang <- tolower(trimws(as.character(lang)))
       if (!lang %in% c("en", "fr", "es", "ar")) {
-        phr_warning(
+        phrutils::phr_warning(
           phr_txt("Invalid lang '{lang}' specified; defaulting to 'en'."),
           origin = "Protocol$get_dap_table"
         )
