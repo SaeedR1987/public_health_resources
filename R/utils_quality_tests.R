@@ -2061,7 +2061,7 @@ quality_test_count <- function(survey_design, variables) {
 #'
 #' @export
 quality_test_index_dispersion <- function(survey_design, variables) {
-  phrutils::phrutils::phr_try(
+  phrutils::phr_try(
     {
       data <- phrutils::phr_get_data_from_design(survey_design)
 
@@ -2550,7 +2550,7 @@ quality_test_anova_by_exposure <- function(survey_design, variables) {
 #'
 #' @export
 quality_test_event_group_variance <- function(survey_design, variables) {
-  phrutils::phrutils::phr_try(
+  phrutils::phr_try(
     {
       data <- phrutils::phr_get_data_from_design(survey_design)
 
@@ -2569,7 +2569,7 @@ quality_test_event_group_variance <- function(survey_design, variables) {
 
       missing_cols <- setdiff(variables, names(data))
       if (length(missing_cols) > 0) {
-        phrutils::phrutils::phr_warning(
+        phrutils::phr_warning(
           origin = "quality_test_event_group_variance",
           message = paste0(
             "Columns not found in data: ",
@@ -2611,7 +2611,7 @@ quality_test_event_group_variance <- function(survey_design, variables) {
       group2 <- group2[cc]
 
       if (length(events) < 5) {
-        phrutils::phrutils::phr_warning(
+        phrutils::phr_warning(
           origin = "quality_test_event_group_variance",
           message = "Insufficient data for variance partitioning"
         )

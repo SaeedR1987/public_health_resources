@@ -102,7 +102,7 @@ HouseholdData <- R6::R6Class(
       metadata = NULL,
       variable_map = NULL
     ) {
-      phrutils::phrutils::phr_try(
+      phrutils::phr_try(
         {
           # Default variable map for common household fields (roles -> columns)
           default_map <- list(
@@ -131,7 +131,7 @@ HouseholdData <- R6::R6Class(
           default_ind_schema <- self$default_indicator_schema()
           if (length(default_ind_schema) > 0) {
             self$set_indicator_schema(default_ind_schema)
-            phrutils::phrutils::phr_message(
+            phrutils::phr_message(
               phr_txt(glue::glue(
                 "Loaded default indicator schema with {length(default_ind_schema)} indicator(s)."
               ))
@@ -142,7 +142,7 @@ HouseholdData <- R6::R6Class(
           default_dep_schema <- self$default_dependency_schema()
           if (length(default_dep_schema$dependencies) > 0) {
             self$set_dependency_schema(default_dep_schema)
-            phrutils::phrutils::phr_message(
+            phrutils::phr_message(
               phr_txt(
                 "Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies."
               )
@@ -177,7 +177,7 @@ HouseholdData <- R6::R6Class(
             self$variable_map$gps_lon
           )
 
-          phrutils::phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phr_txt(
             "{dataset_name} initialized as HouseholdData object."
           ))
         },
@@ -388,7 +388,10 @@ HouseholdData <- R6::R6Class(
         wts <- suppressWarnings(as.numeric(df[[self$variable_map$weight]]))
 
         if (any(is.na(wts))) {
-          phrutils::phr_warning(nm, phr_txt("Missing values found in weight variable."))
+          phrutils::phr_warning(
+            nm,
+            phr_txt("Missing values found in weight variable.")
+          )
           had_issues <- TRUE
         }
 
@@ -415,14 +418,20 @@ HouseholdData <- R6::R6Class(
       # Link placeholders
 
       if (!is.null(self$roster_link)) {
-        phrutils::phr_message(phr_txt("Validating linked roster data (placeholder)."))
+        phrutils::phr_message(phr_txt(
+          "Validating linked roster data (placeholder)."
+        ))
       }
 
       if (!is.null(self$deaths_link)) {
-        phrutils::phr_message(phr_txt("Validating linked deaths data (placeholder)."))
+        phrutils::phr_message(phr_txt(
+          "Validating linked deaths data (placeholder)."
+        ))
       }
 
-      phrutils::phr_message(phr_txt(glue::glue("Post-validation for {nm} complete.")))
+      phrutils::phr_message(phr_txt(glue::glue(
+        "Post-validation for {nm} complete."
+      )))
 
       # Return TRUE (good) or FALSE (warnings occurred)
       return(!had_issues)
@@ -1029,7 +1038,9 @@ HouseholdData <- R6::R6Class(
               next
             }
 
-            phrutils::phr_message(phr_txt("Cleaning linked dataset '{link_name}'..."))
+            phrutils::phr_message(phr_txt(
+              "Cleaning linked dataset '{link_name}'..."
+            ))
             linked_obj$clean()
           }
         },
@@ -2532,7 +2543,7 @@ HouseholdData <- R6::R6Class(
       hh_stage <- match.arg(hh_stage)
       linked_stage <- match.arg(linked_stage)
 
-      phrutils::phrutils::phr_try(
+      phrutils::phr_try(
         {
           if (!inherits(linked_obj, "Data")) {
             return(invisible(NULL))
@@ -2544,7 +2555,7 @@ HouseholdData <- R6::R6Class(
             linked_stage
           )
           if (is.null(linked_data_result)) {
-            phrutils::phrutils::phr_warning(
+            phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
                 "Linked dataset '{link_name}' has no data at any stage to merge variables to."
@@ -2555,14 +2566,14 @@ HouseholdData <- R6::R6Class(
 
           linked_data <- linked_data_result$data
           linked_data_stage <- linked_data_result$stage
-          phrutils::phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phr_txt(
             "Using linked dataset '{link_name}' data from stage: {linked_data_stage}"
           ))
 
           # Get household data using fallback logic
           hh_data_result <- self$..get_data_with_fallback(self, hh_stage)
           if (is.null(hh_data_result)) {
-            phrutils::phrutils::phr_warning(
+            phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
                 "Household data not available at any stage; cannot merge variables to linked dataset '{link_name}'."
@@ -2573,7 +2584,7 @@ HouseholdData <- R6::R6Class(
 
           hh_data <- hh_data_result$data
           hh_data_stage <- hh_data_result$stage
-          phrutils::phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phr_txt(
             "Using household data from stage: {hh_data_stage}"
           ))
 
@@ -2581,7 +2592,7 @@ HouseholdData <- R6::R6Class(
           hh_uuid_col <- self$uuid
 
           if (!hh_uuid_col %in% names(hh_data)) {
-            phrutils::phrutils::phr_warning(
+            phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
                 "Household UUID column '{hh_uuid_col}' not found. Cannot merge variables to linked dataset '{link_name}'."
@@ -2596,7 +2607,7 @@ HouseholdData <- R6::R6Class(
             "hh_uuid"
 
           if (!linked_hh_col %in% names(linked_data)) {
-            phrutils::phrutils::phr_warning(
+            phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
                 "Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'."
@@ -2639,13 +2650,13 @@ HouseholdData <- R6::R6Class(
           }
 
           if (length(vars_to_merge) == 0) {
-            phrutils::phrutils::phr_message(phr_txt(
+            phrutils::phr_message(phr_txt(
               "No household variables found to merge to linked dataset '{link_name}'."
             ))
             return(invisible(NULL))
           }
 
-          phrutils::phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phr_txt(
             "Merging {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'..."
           ))
 
@@ -2656,7 +2667,7 @@ HouseholdData <- R6::R6Class(
           # Check which variables already exist in linked data and will be overwritten
           existing_vars <- intersect(unlist(vars_to_merge), names(linked_data))
           if (length(existing_vars) > 0) {
-            phrutils::phrutils::phr_message(
+            phrutils::phr_message(
               phr_txt(
                 "The following variables already exist in linked dataset '{link_name}' and will be overwritten: {paste(existing_vars, collapse=', ')}"
               )
@@ -2684,7 +2695,7 @@ HouseholdData <- R6::R6Class(
             linked_obj$raw_data <- linked_data_merged
           }
 
-          phrutils::phrutils::phr_message(
+          phrutils::phr_message(
             phr_txt(
               "Successfully merged {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'."
             )
