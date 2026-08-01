@@ -48,7 +48,7 @@ Document <- R6::R6Class(
       params = list(),
       open = FALSE
     ) {
-      phr_try(
+      phrutils::phr_try(
         {
           # Resolve template path
           if (is.null(template_file)) {
@@ -99,7 +99,7 @@ Document <- R6::R6Class(
             file.copy(rendered_file, output_file, overwrite = TRUE)
           }
 
-          phr_message(
+          phrutils::phr_message(
             phr_txt("Quarto document saved to: {output_file}"),
             origin = "Document$generate_quarto_doc"
           )
@@ -133,7 +133,7 @@ Document <- R6::R6Class(
       content = "",
       open = FALSE
     ) {
-      phr_try(
+      phrutils::phr_try(
         {
           # Resolve template path
           if (is.null(template_file)) {
@@ -208,7 +208,7 @@ Document <- R6::R6Class(
             file.copy(rendered_file, output_file, overwrite = TRUE)
           }
 
-          phr_message(
+          phrutils::phr_message(
             phr_txt("Quarto presentation saved to: {output_file}"),
             origin = "Document$generate_quarto_ppt"
           )

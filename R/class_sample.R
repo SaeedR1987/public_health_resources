@@ -31,7 +31,7 @@ Sample <- R6::R6Class(
       if (is.null(sample_table)) {
         self$sample_table <- NULL
       } else {
-        phr_validate_dataframe(
+        phrutils::phr_validate_dataframe(
           sample_table,
           origin = "Sample$initialize",
           soft = FALSE
@@ -47,7 +47,7 @@ Sample <- R6::R6Class(
     #' @description Replace the current sample table.
     #' @param sample_table Data frame.
     set_sample_table = function(sample_table) {
-      phr_validate_dataframe(
+      phrutils::phr_validate_dataframe(
         sample_table,
         origin = "Sample$set_sample_table",
         soft = FALSE
@@ -177,7 +177,7 @@ Sample <- R6::R6Class(
         pop_precision <- precision
       }
 
-      phr_assert(
+      phrutils::phr_assert(
         !is.null(sampling_method_site),
         message = phr_txt("sampling_method_site is required."),
         origin = "Sample$add_stratum"
@@ -190,7 +190,7 @@ Sample <- R6::R6Class(
         "systematic",
         "purposive"
       )
-      phr_assert(
+      phrutils::phr_assert(
         sampling_method_site %in% site_selection_methods,
         message = phr_txt(
           "sampling_method_site must be one of: {paste(site_selection_methods, collapse=', ')}."
@@ -199,7 +199,7 @@ Sample <- R6::R6Class(
       )
 
       if (sampling_method_site %in% site_selection_methods) {
-        phr_assert(
+        phrutils::phr_assert(
           !is.null(n_sites) && !is.na(n_sites),
           message = phr_txt(
             "n_sites is required for sampling_method '{sampling_method_site}'."
@@ -279,7 +279,7 @@ Sample <- R6::R6Class(
         self$sample_table <- new_row
       } else {
         if (stratum_id %in% self$sample_table$stratum_id) {
-          phr_warning(
+          phrutils::phr_warning(
             message = phr_txt(
               "Stratum ID '{stratum_id}' already exists and will be overwritten."
             ),
@@ -304,7 +304,7 @@ Sample <- R6::R6Class(
     #' @description Remove a stratum row by strata name.
     #' @param strata_name Character scalar naming the stratum to remove.
     remove_stratum = function(strata_name) {
-      phr_assert(
+      phrutils::phr_assert(
         is.character(strata_name) &&
           length(strata_name) == 1L &&
           nzchar(strata_name),
@@ -320,7 +320,7 @@ Sample <- R6::R6Class(
       }
 
       stratum_col <- private$..resolve_stratum_name_col(st)
-      phr_assert(
+      phrutils::phr_assert(
         !is.null(stratum_col),
         message = phr_txt(
           "sample_table does not contain a stratum name column."
@@ -345,7 +345,7 @@ Sample <- R6::R6Class(
 
     #' @description Calculate sample sizes for all strata rows.
     calculate_sample_sizes = function() {
-      phr_assert(
+      phrutils::phr_assert(
         !is.null(self$sample_table) && nrow(self$sample_table) > 0,
         message = phr_txt("sample_table is empty. Call add_stratum() first."),
         origin = "Sample$calculate_sample_sizes"

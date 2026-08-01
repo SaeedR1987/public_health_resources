@@ -71,7 +71,7 @@ load_objective_schema <- function() {
   file <- system.file("resources", "reference_objectives.xlsx", package = "phr")
 
   if (!file.exists(file) || file == "") {
-    phr_warning(
+    phrutils::phr_warning(
       origin  = "load_objective_schema",
       message = phr_txt("Could not locate reference_objectives.xlsx; returning empty objective schema."),
       hint    = phr_txt("Ensure the 'inst/resources/reference_objectives.xlsx' file is present in the package installation.")
@@ -79,7 +79,7 @@ load_objective_schema <- function() {
     return(data.frame())
   }
 
-  schema <- phr_try(
+  schema <- phrutils::phr_try(
     readxl::read_xlsx(file),
     on_error = "warn",
     origin   = "load_objective_schema",
@@ -116,7 +116,7 @@ load_indicator_bank <- function() {
   file <- system.file("resources", "reference_indicator_bank.xlsx", package = "phr")
 
   if (!file.exists(file) || file == "") {
-    phr_warning(
+    phrutils::phr_warning(
       origin  = "load_indicator_bank",
       message = phr_txt("Could not locate reference_indicator_bank.xlsx; returning empty indicator bank."),
       hint    = phr_txt("Ensure the 'inst/resources/reference_indicator_bank.xlsx' file is present in the package installation.")
@@ -124,7 +124,7 @@ load_indicator_bank <- function() {
     return(data.frame())
   }
 
-  bank <- phr_try(
+  bank <- phrutils::phr_try(
     readxl::read_xlsx(file),
     on_error = "warn",
     origin   = "load_indicator_bank",
@@ -166,7 +166,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
 
   origin <- "validate_objective_schema"
 
-  phr_try({
+  phrutils::phr_try({
 
     # Must be a non-NULL data frame
     if (is.null(schema) || !is.data.frame(schema)) {
@@ -181,7 +181,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
     if (nrow(schema) == 0) {
       msg <- phr_txt("Objective schema is empty (zero rows).")
       if (soft) {
-        phr_warning(origin = origin, message = msg)
+        phrutils::phr_warning(origin = origin, message = msg)
         return(invisible(FALSE))
       }
       phr_error(origin = origin, message = msg)
@@ -217,7 +217,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
     if (all(is.na(schema$short_objective))) {
       msg <- phr_txt("All 'short_objective' values in the objective schema are NA.")
       if (soft) {
-        phr_warning(origin = origin, message = msg)
+        phrutils::phr_warning(origin = origin, message = msg)
       } else {
         phr_error(origin = origin, message = msg)
       }
@@ -237,7 +237,7 @@ validate_objective_schema <- function(schema, soft = FALSE) {
         )
       )
       if (soft) {
-        phr_warning(origin = origin, message = msg)
+        phrutils::phr_warning(origin = origin, message = msg)
       } else {
         phr_error(origin = origin, message = msg)
       }
