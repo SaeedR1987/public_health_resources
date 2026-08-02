@@ -2095,11 +2095,13 @@ HouseholdData <- R6::R6Class(
             }
 
             if (!is.null(dob_col_for_fallback) && !is.null(recall_col_for_fallback)) {
-              dob_final_vals <- suppressWarnings(
-                as.Date(roster_data[[dob_col_for_fallback]])
+              dob_final_vals <- tryCatch(
+                phrutils::phr_convert_date(roster_data[[dob_col_for_fallback]]),
+                error = function(e) as.Date(rep(NA_character_, nrow(roster_data)))
               )
-              recall_dt_vals <- suppressWarnings(
-                as.Date(roster_data[[recall_col_for_fallback]])
+              recall_dt_vals <- tryCatch(
+                phrutils::phr_convert_date(roster_data[[recall_col_for_fallback]]),
+                error = function(e) as.Date(rep(NA_character_, nrow(roster_data)))
               )
               roster_data[["roster_birth"]] <- as.integer(
                 !is.na(dob_final_vals) &
