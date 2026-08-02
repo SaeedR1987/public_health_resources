@@ -527,12 +527,13 @@ test_that("aggregate_deaths_data adds linked_deaths_death_month from calc_month_
   death_data <- suppressWarnings(suppressMessages(
     DeathIndividualData$new(
       data = tibble::tibble(
-        person_id = c("d1", "d2", "d3"),
+        death_id = c("d1", "d2", "d3"),
         hh_uuid = c("hh1", "hh1", "hh2"),
         sex = c("M", "F", "M"),
         age = c(60, 45, 70),
         calc_month_death = c("2024-03", "2024-06", "2024-01")
-      )
+      ),
+      recall_date = "2022-01-01",
     )
   ))
 
@@ -1160,7 +1161,7 @@ test_that("Roster data aggregates births in recall period when recall_date colum
           "2023-01-01",
           "2023-01-01"
         )),
-        dob_exact = as.Date(c(
+        calc_date_birth_final = as.character(c(
           "2023-06-01",
           "1998-01-01",
           "1993-01-01",
@@ -1193,41 +1194,45 @@ test_that("Roster data aggregates births in recall period when recall_date colum
 
 test_that("Roster data aggregates canonical columns when they exist", {
   # Create household data
-  hh_data <- suppressMessages(
-    HouseholdData$new(
-      data = tibble::tibble(
-        uuid = c("hh1", "hh2", "hh3"),
-        consent = c("yes", "yes", "yes"),
-        interview_date = Sys.Date(),
-        enumerator_id = c("E1", "E2", "E3")
+  suppressWarnings(
+    hh_data <- suppressMessages(
+      HouseholdData$new(
+        data = tibble::tibble(
+          uuid = c("hh1", "hh2", "hh3"),
+          consent = c("yes", "yes", "yes"),
+          interview_date = Sys.Date(),
+          enumerator_id = c("E1", "E2", "E3")
+        )
       )
     )
   )
 
   # Create roster data with canonical columns (as would be created by add_standardized_roster_demographics)
-  roster_data <- suppressMessages(
-    IndividualData$new(
-      data = tibble::tibble(
-        person_id = c("r1", "r2", "r3", "r4", "r5", "r6"),
-        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
-        calc_age_years = c(1, 25, 4, 40, 17, 50),
-        sex = c("M", "F", "F", "M", "F", "F"),
-        roster_child_under2 = c(1, 0, 0, 0, 0, 0),
-        roster_child_under5 = c(1, 0, 1, 0, 0, 0),
-        roster_male = c(1, 0, 0, 1, 0, 0),
-        roster_female = c(0, 1, 1, 0, 1, 1),
-        roster_woman_15to49 = c(0, 1, 0, 0, 1, 0)
+  suppressWarnings(
+    roster_data <- suppressMessages(
+      IndividualData$new(
+        data = tibble::tibble(
+          person_id = c("r1", "r2", "r3", "r4", "r5", "r6"),
+          hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
+          calc_age_years = c(1, 25, 4, 40, 17, 50),
+          sex = c("M", "F", "F", "M", "F", "F"),
+          roster_child_under2 = c(1, 0, 0, 0, 0, 0),
+          roster_child_under5 = c(1, 0, 1, 0, 0, 0),
+          roster_male = c(1, 0, 0, 1, 0, 0),
+          roster_female = c(0, 1, 1, 0, 1, 1),
+          roster_woman_15to49 = c(0, 1, 0, 0, 1, 0)
+        )
       )
     )
   )
 
   # Link and standardize (may message/warn)
-  suppressMessages(
+  suppressWarnings(suppressMessages(
     hh_data$add_linked_dataset("roster", roster_data)
-  )
-  suppressMessages(
+  ))
+  suppressWarnings(suppressMessages(
     hh_data$standardize()
-  )
+  ))
 
   # Check aggregated columns exist
   std_data <- hh_data$standardized_data
@@ -1268,38 +1273,42 @@ test_that("Roster data aggregates canonical columns when they exist", {
 
 test_that("Nutrition data aggregates canonical columns when they exist", {
   # Create household data
-  hh_data <- suppressMessages(
-    HouseholdData$new(
-      data = tibble::tibble(
-        uuid = c("hh1", "hh2", "hh3"),
-        consent = c("yes", "yes", "yes"),
-        interview_date = Sys.Date(),
-        enumerator_id = c("E1", "E2", "E3")
+  suppressWarnings(
+    hh_data <- suppressMessages(
+      HouseholdData$new(
+        data = tibble::tibble(
+          uuid = c("hh1", "hh2", "hh3"),
+          consent = c("yes", "yes", "yes"),
+          interview_date = Sys.Date(),
+          enumerator_id = c("E1", "E2", "E3")
+        )
       )
     )
   )
 
   # Create nutrition data with canonical columns (as would be created by add_standardized_nutrition_demographics)
-  nutr_data <- suppressMessages(
-    NutritionIndividualData$new(
-      data = tibble::tibble(
-        person_id = c("n1", "n2", "n3", "n4", "n5", "n6"),
-        hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
-        calc_age_years = c(0.8, 2.5, 4, 6, 1.2, 1.6),
-        nutrition_child_under2 = c(1, 0, 0, 0, 1, 1),
-        nutrition_child_2to5 = c(0, 1, 1, 0, 0, 0),
-        nutrition_child_under5 = c(1, 1, 1, 0, 1, 1)
+  suppressWarnings(
+    nutr_data <- suppressMessages(
+      NutritionIndividualData$new(
+        data = tibble::tibble(
+          person_id = c("n1", "n2", "n3", "n4", "n5", "n6"),
+          hh_uuid = c("hh1", "hh1", "hh2", "hh2", "hh3", "hh3"),
+          calc_age_years = c(0.8, 2.5, 4, 6, 1.2, 1.6),
+          nutrition_child_under2 = c(1, 0, 0, 0, 1, 1),
+          nutrition_child_2to5 = c(0, 1, 1, 0, 0, 0),
+          nutrition_child_under5 = c(1, 1, 1, 0, 1, 1)
+        )
       )
     )
   )
 
   # Link and standardize (may message/warn)
-  suppressMessages(
+  suppressWarnings(suppressMessages(
     hh_data$add_linked_dataset("nutrition", nutr_data)
-  )
-  suppressMessages(
+  ))
+  suppressWarnings(suppressMessages(
     hh_data$standardize()
-  )
+  ))
 
   # Check aggregated columns exist
   std_data <- hh_data$standardized_data
@@ -1328,17 +1337,17 @@ test_that("Nutrition data aggregates canonical columns when they exist", {
 
 test_that("generate_cleaning_log propagates to linked data objects", {
   # Create household data
-  hh_data <- suppressMessages(
+  hh_data <- suppressWarnings(suppressMessages(
     HouseholdData$new(
       data = tibble::tibble(
         uuid = c("hh1", "hh2"),
         consent = c("yes", "yes")
       )
     )
-  )
+  ))
 
   # Create a linked roster dataset
-  roster_data <- suppressMessages(
+  roster_data <- suppressWarnings(suppressMessages(
     IndividualData$new(
       data = tibble::tibble(
         person_id = c("p1", "p2"),
@@ -1346,14 +1355,14 @@ test_that("generate_cleaning_log propagates to linked data objects", {
         age_years = c(10, 25)
       )
     )
-  )
+  ))
 
-  suppressMessages(
+  suppressWarnings(suppressMessages(
     hh_data$add_linked_dataset("roster", roster_data)
-  )
-  suppressMessages(
+  ))
+  suppressWarnings(suppressMessages(
     hh_data$standardize()
-  )
+  ))
 
   # Calling generate_cleaning_log on household should not error and should also
   # attempt to run on the linked dataset
@@ -1369,17 +1378,17 @@ test_that("generate_cleaning_log propagates to linked data objects", {
 
 test_that("clean propagates to linked data objects", {
   # Create household data
-  hh_data <- suppressMessages(
+  hh_data <- suppressWarnings(suppressMessages(
     HouseholdData$new(
       data = tibble::tibble(
         uuid = c("hh1", "hh2"),
         consent = c("yes", "yes")
       )
     )
-  )
+  ))
 
   # Create a linked roster dataset
-  roster_data <- suppressMessages(
+  roster_data <- suppressWarnings(suppressMessages(
     IndividualData$new(
       data = tibble::tibble(
         person_id = c("p1", "p2"),
@@ -1387,19 +1396,19 @@ test_that("clean propagates to linked data objects", {
         age_years = c(10, 25)
       )
     )
-  )
+  ))
 
-  suppressMessages(
+  suppressWarnings(suppressMessages(
     hh_data$add_linked_dataset("roster", roster_data)
-  )
-  suppressMessages(
+  ))
+  suppressWarnings(suppressMessages(
     hh_data$standardize()
-  )
+  ))
 
   # Calling clean on household should also clean the linked dataset
-  suppressMessages(
+  suppressWarnings(suppressMessages(
     expect_no_error(hh_data$clean())
-  )
+  ))
 
   # The household dataset itself should be cleaned
   expect_true(hh_data$cleaned)
@@ -1411,7 +1420,7 @@ test_that("clean propagates to linked data objects", {
 
 test_that("clean and generate_cleaning_log skip non-Data linked objects gracefully", {
   # Create household data
-  hh_data <- suppressMessages(suppressWarnings(HouseholdData$new(
+  hh_data <- suppressWarnings(suppressMessages(HouseholdData$new(
     data = tibble::tibble(
       uuid = c("hh1"),
       consent = c("yes")
@@ -1432,14 +1441,14 @@ test_that("clean and generate_cleaning_log skip non-Data linked objects graceful
 # generate_data_analytics mortality ####
 
 test_that("generate_data_analytics returns MortalityDataAnalytics without error (no linked data)", {
-  hh_data <- suppressMessages(suppressWarnings(HouseholdData$new(
+  hh_data <- suppressWarnings(suppressMessages(HouseholdData$new(
     data = tibble::tibble(
       uuid = c("hh1", "hh2"),
       consent = c("yes", "yes")
     )
   )))
 
-  suppressMessages(suppressWarnings(hh_data$standardize()))
+  suppressWarnings(suppressMessages(hh_data$standardize()))
 
   result <- suppressWarnings(suppressMessages(
     hh_data$generate_data_analytics(stage = "standardized", type = "mortality")
@@ -1499,7 +1508,7 @@ test_that("generate_data_analytics with mortality type succeeds when linked rost
 # generate_weights ####
 
 test_that("generate_weights skips when no SamplingFrame is available", {
-  hh <- suppressMessages(suppressWarnings(
+  hh <- suppressWarnings(suppressMessages(
     HouseholdData$new(
       data = tibble::tibble(
         uuid = c("1", "2"),
@@ -1513,10 +1522,10 @@ test_that("generate_weights skips when no SamplingFrame is available", {
   ))
 
   # No sampling_frame set, no argument provided — should skip silently
-  expect_message(
-    suppressMessages(suppressWarnings(hh$generate_weights())),
+  suppressMessages(expect_message(
+    suppressWarnings(hh$generate_weights()),
     regexp = "No SamplingFrame available"
-  )
+  ))
 })
 
 test_that("generate_weights skips when stratum not mapped in variable_map", {
@@ -1528,7 +1537,7 @@ test_that("generate_weights skips when stratum not mapped in variable_map", {
     sampled_psu = NA_character_,
     allocated_sample = NA_real_
   )
-  sf <- SamplingFrame$new(log_df = sf_df)
+  suppressMessages(sf <- SamplingFrame$new(log_df = sf_df))
 
   hh <- suppressMessages(suppressWarnings(
     HouseholdData$new(
@@ -1537,18 +1546,19 @@ test_that("generate_weights skips when stratum not mapped in variable_map", {
         consent = "yes",
         interview_date = Sys.Date(),
         enumerator_id = "E1",
-        stratum = c("A", "B")
+        strataz = c("A", "B")
       )
       # no stratum mapped in variable_map
     )
   ))
 
-  expect_message(
-    suppressMessages(suppressWarnings(hh$generate_weights(
-      sampling_frame = sf
-    ))),
+  suppressWarnings(suppressMessages(expect_message(
+    hh$generate_weights(
+      sampling_frame = sf,
+      stage = "raw"
+    ),
     regexp = "No stratum role"
-  )
+  )))
 })
 
 test_that("generate_weights computes correct weights and writes to 'survey_weight' when no weight mapped", {
@@ -1560,7 +1570,7 @@ test_that("generate_weights computes correct weights and writes to 'survey_weigh
     sampled_psu = NA_character_,
     allocated_sample = NA_real_
   )
-  sf <- SamplingFrame$new(log_df = sf_df)
+  suppressMessages(sf <- SamplingFrame$new(log_df = sf_df))
 
   hh <- suppressMessages(suppressWarnings(
     HouseholdData$new(
@@ -1599,7 +1609,7 @@ test_that("generate_weights uses existing mapped weight column when available", 
     sampled_psu = NA_character_,
     allocated_sample = NA_real_
   )
-  sf <- SamplingFrame$new(log_df = sf_df)
+  suppressMessages(sf <- SamplingFrame$new(log_df = sf_df))
 
   hh <- suppressMessages(suppressWarnings(
     HouseholdData$new(
@@ -1639,7 +1649,7 @@ test_that("generate_weights produces NA and warns for strata not in SamplingFram
     sampled_psu = NA_character_,
     allocated_sample = NA_real_
   )
-  sf <- SamplingFrame$new(log_df = sf_df)
+  suppressMessages(sf <- SamplingFrame$new(log_df = sf_df))
 
   hh <- suppressMessages(suppressWarnings(
     HouseholdData$new(
@@ -1654,13 +1664,13 @@ test_that("generate_weights produces NA and warns for strata not in SamplingFram
     )
   ))
 
-  expect_warning(
-    suppressMessages(suppressWarnings(hh$generate_weights(
+  suppressWarnings(expect_warning(
+    suppressMessages(hh$generate_weights(
       sampling_frame = sf,
       stage = "raw"
-    ))),
+    )),
     regexp = "Rural"
-  )
+  ))
 
   df <- suppressMessages(suppressWarnings(hh$raw_data))
   # Urban: N=500 (only stratum), N_s=500, n=2 valid rows, n_s=1 -> (500/500)/(1/2) = 2
@@ -1677,7 +1687,7 @@ test_that("generate_weights is called automatically inside pre_standardize when 
     sampled_psu = NA_character_,
     allocated_sample = NA_real_
   )
-  sf <- SamplingFrame$new(log_df = sf_df)
+  suppressMessages(sf <- SamplingFrame$new(log_df = sf_df))
 
   hh <- suppressMessages(suppressWarnings(
     HouseholdData$new(
