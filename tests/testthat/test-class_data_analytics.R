@@ -9,8 +9,10 @@ test_that("DataAnalytics initializes with valid data", {
   df <- tibble::tibble(id = 1:10, x = rnorm(10))
 
   # Suppress expected, non-consequential startup output (warnings/messages)
-  da <- suppressMessages(
-    DataAnalytics$new(data = df, dataset_name = "TestDA")
+  suppressWarnings(
+    da <- suppressMessages(
+      DataAnalytics$new(data = df, dataset_name = "TestDA")
+    )
   )
 
   expect_s3_class(da, "DataAnalytics")
@@ -1227,11 +1229,13 @@ test_that("add_all_to_dap classifies columns and amends the plan", {
     water_src = rep(c("piped tap", "well,spring", "river"), 10) # select_multiple_cat
   )
 
-  da <- suppressMessages(DataAnalytics$new(
-    data = df,
-    dataset_name = "AddAllDA",
-    variable_map = list(stratum = "stratum_col", fcs = "fcs_score")
-  ))
+  suppressWarnings(
+    da <- suppressMessages(DataAnalytics$new(
+      data = df,
+      dataset_name = "AddAllDA",
+      variable_map = list(stratum = "stratum_col", fcs = "fcs_score")
+    ))
+  )
   suppressMessages(da$add_indicator_dap(
     indicator_name = "FCS mean",
     calculation = "mean",
@@ -1240,7 +1244,7 @@ test_that("add_all_to_dap classifies columns and amends the plan", {
     indicator_unit = "score"
   ))
 
-  suppressMessages(da$add_all_to_dap())
+  suppressWarnings(suppressMessages(da$add_all_to_dap()))
   plan <- da$data_analysis_plan$log_df
 
   # Skipped high-cardinality character column
@@ -1280,29 +1284,35 @@ test_that("add_all_to_dap classifies columns and amends the plan", {
 
 test_that("add_all_to_dap keeps character columns with exactly 20 unique values", {
   df <- tibble::tibble(cat20 = paste0("opt", 1:20))
-  da <- suppressMessages(DataAnalytics$new(data = df, dataset_name = "Cat20DA"))
+  da <- suppressWarnings(suppressMessages(DataAnalytics$new(
+    data = df,
+    dataset_name = "Cat20DA"
+  )))
 
-  suppressMessages(da$add_all_to_dap())
+  suppressWarnings(suppressMessages(da$add_all_to_dap()))
   plan <- da$data_analysis_plan$log_df
 
   expect_equal(plan$calculation[plan$var_name == "cat20"], "cat")
 
   # One more unique value crosses the threshold and the column is skipped
   df21 <- tibble::tibble(cat21 = paste0("opt", 1:21))
-  da21 <- suppressMessages(DataAnalytics$new(
+  da21 <- suppressWarnings(suppressMessages(DataAnalytics$new(
     data = df21,
     dataset_name = "Cat21DA"
-  ))
+  )))
 
-  suppressMessages(da21$add_all_to_dap())
+  suppressWarnings(suppressMessages(da21$add_all_to_dap()))
   expect_false("cat21" %in% da21$data_analysis_plan$log_df$var_name)
 })
 
 test_that("add_all_to_dap guesses mean for numeric columns beyond 0/1", {
   df <- tibble::tibble(score = c(0, 1, 2.5, 7))
-  da <- suppressMessages(DataAnalytics$new(data = df, dataset_name = "MeanDA"))
+  da <- suppressWarnings(suppressMessages(DataAnalytics$new(
+    data = df,
+    dataset_name = "MeanDA"
+  )))
 
-  suppressMessages(da$add_all_to_dap())
+  suppressWarnings(suppressMessages(da$add_all_to_dap()))
   plan <- da$data_analysis_plan$log_df
 
   expect_equal(plan$calculation[plan$var_name == "score"], "mean")
@@ -1335,14 +1345,16 @@ test_that("add_all_to_dap iterates over multiple field sets from the pre-hook", 
     )
   )
 
-  da <- suppressMessages(MultiDA$new(
-    data = tibble::tibble(a_bin = c(0, 1, 1, 0)),
-    dataset_name = "MultiDA"
-  ))
+  suppressWarnings(
+    da <- suppressMessages(MultiDA$new(
+      data = tibble::tibble(a_bin = c(0, 1, 1, 0)),
+      dataset_name = "MultiDA"
+    ))
+  )
   da$data2 <- tibble::tibble(b_txt = c("x", "y", "x", "y"))
   da$variable_map2 <- list()
 
-  suppressMessages(da$add_all_to_dap())
+  suppressWarnings(suppressMessages(da$add_all_to_dap()))
 
   expect_equal(da$data_analysis_plan$log_df$var_name, "a_bin")
   expect_equal(da$data_analysis_plan$log_df$calculation, "prop")

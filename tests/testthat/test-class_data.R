@@ -1,4 +1,3 @@
-
 library(testthat)
 library(tibble)
 library(withr)
@@ -38,12 +37,15 @@ test_that("Data$new() errors when data is NULL", {
 })
 
 test_that("Data$new() errors when data is not a data.frame/tibble", {
-  expect_error(Data$new(data = 123, uuid = "id"), regexp = "Expected a data frame")
+  expect_error(
+    Data$new(data = 123, uuid = "id"),
+    regexp = "Expected a data frame"
+  )
 })
 
 test_that("value_map initializes correctly", {
   df <- tibble::tibble(id = 1)
-  vm <- list(category = c("a","b"))
+  vm <- list(category = c("a", "b"))
 
   d <- suppressMessages(
     Data$new(data = df, value_map = vm, uuid = "id")
@@ -88,8 +90,10 @@ test_that("metadata timestamps exist after initialization", {
 test_that("Data initialization emits an initialization message", {
   df <- tibble::tibble(id = 1)
 
-  expect_no_error(
-    Data$new(data = df, dataset_name = "MsgTest", uuid = "id")
+  suppressMessages(
+    expect_no_error(
+      Data$new(data = df, dataset_name = "MsgTest", uuid = "id")
+    )
   )
 })
 
@@ -187,10 +191,13 @@ test_that("variable_label and value_label accept correct structures", {
     Data$new(data = df, uuid = "id")
   )
 
-  d$set_label("sex", "Sex of respondent")
+  suppressWarnings(suppressMessages(d$set_label("sex", "Sex of respondent")))
   expect_equal(d$variable_label$sex, "Sex of respondent")
 
-  d$set_value_labels("sex", c(M = "Male", F = "Female"))
+  suppressWarnings(suppressMessages(d$set_value_labels(
+    "sex",
+    c(M = "Male", F = "Female")
+  )))
   expect_equal(d$value_label$sex, c(M = "Male", F = "Female"))
 })
 
@@ -252,11 +259,13 @@ test_that("linked_objects is properly structured when linking", {
     Data$new(data = df2, dataset_name = "D2", uuid = "hh_id")
   )
 
-  d1$add_linked_dataset(
-    name = "household",
-    other_object = d2,
-    by_self_role = "hh_id",
-    by_other_role = "hh_id"
+  suppressMessages(
+    d1$add_linked_dataset(
+      name = "household",
+      other_object = d2,
+      by_self_role = "hh_id",
+      by_other_role = "hh_id"
+    )
   )
 
   expect_length(d1$linked_objects, 1)
@@ -276,16 +285,15 @@ test_that("validate() completes successfully on a minimal valid dataset", {
     Data$new(data = df, uuid = "id")
   )
 
-  out <- d$validate()
+  suppressMessages(out <- d$validate())
 
-  expect_no_error(d$validate())
+  suppressMessages(expect_no_error(d$validate()))
   expect_true(d$validated)
 })
 
 
 test_that("initialization errors when UUID column is missing", {
-
-  df <- tibble::tibble(a = 1:3, b = 4:6)  # no 'id'
+  df <- tibble::tibble(a = 1:3, b = 4:6) # no 'id'
 
   expect_error(
     Data$new(data = df, uuid = "id"),
@@ -301,10 +309,10 @@ test_that("validate() errors when UUID column has missing values", {
     Data$new(data = df, uuid = "id")
   )
 
-  expect_warning(
+  suppressMessages(expect_warning(
     d$validate(),
     regexp = "contains missing \\(NA\\)"
-  )
+  ))
   expect_false(d$validated)
 })
 
@@ -315,10 +323,10 @@ test_that("validate() errors when UUID column contains duplicates", {
     Data$new(data = df, uuid = "id")
   )
 
-  expect_warning(
+  suppressMessages(expect_warning(
     d$validate(),
     regexp = "Duplicate"
-  )
+  ))
   expect_false(d$validated)
 })
 
@@ -329,14 +337,14 @@ test_that("validate() warns when variable_map refers to missing dataset columns"
     Data$new(
       data = df,
       uuid = "id",
-      variable_map = list(uuid = "id", age = "age")   # "age" does not exist
+      variable_map = list(uuid = "id", age = "age") # "age" does not exist
     )
   )
 
-  expect_warning(
+  suppressMessages(expect_warning(
     d$validate(),
     regexp = "Mapped columns missing"
-  )
+  ))
   expect_false(d$validated)
 })
 
@@ -361,7 +369,7 @@ test_that("validate() warns when value_map references missing columns", {
   d <- suppressMessages(
     Data$new(
       data = df,
-      variable_map = list(uuid = "id"),   # no mapping for role "sex_role"
+      variable_map = list(uuid = "id"), # no mapping for role "sex_role"
       value_map = list(sex_role = c("M", "F")),
       uuid = "id"
     )
@@ -414,7 +422,6 @@ test_that("validate() errors when data is not a data.frame", {
 
 
 test_that("validate() calls pre_validate and post_validate hooks", {
-
   TestClass <- R6::R6Class(
     inherit = Data,
     public = list(
@@ -425,9 +432,10 @@ test_that("validate() calls pre_validate and post_validate hooks", {
         self$pre_called <- TRUE
       },
 
-      post_validate = function(df) {   # <-- FIXED (added df)
+      post_validate = function(df) {
+        # <-- FIXED (added df)
         self$post_called <- TRUE
-        return(TRUE)                   # post_validate MUST return TRUE/FALSE
+        return(TRUE) # post_validate MUST return TRUE/FALSE
       }
     )
   )
@@ -460,7 +468,7 @@ test_that("validate() updates metadata timestamps and flags", {
 # Standardization Pipeline Tests ####
 
 test_that("standardize() copies raw_data into standardized_data when no changes needed", {
-  df <- tibble::tibble(id = 1:3, x = c("a","b","c"))
+  df <- tibble::tibble(id = 1:3, x = c("a", "b", "c"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -502,12 +510,10 @@ test_that("standardize() succeeds when data is valid", {
 })
 
 
-
 ###  Type inference and coercion behavior
 
-
 test_that("standardize() correctly coerces numeric-like columns", {
-  df <- tibble::tibble(id = 1:3, x = c("1","2","3"))
+  df <- tibble::tibble(id = 1:3, x = c("1", "2", "3"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -515,7 +521,7 @@ test_that("standardize() correctly coerces numeric-like columns", {
   d$standardize()
 
   expect_type(d$standardized_data$x, "double")
-  expect_equal(d$standardized_data$x, c(1,2,3))
+  expect_equal(d$standardized_data$x, c(1, 2, 3))
 })
 
 
@@ -570,8 +576,10 @@ test_that("standardize() does not coerce mixed-format date-like values without s
   expect_true(is.character(d$standardized_data$date))
 
   # Values should be trimmed and unchanged
-  expect_equal(d$standardized_data$date,
-               c("2022-01-01","2022/01/02","01/03/2022"))
+  expect_equal(
+    d$standardized_data$date,
+    c("2022-01-01", "2022/01/02", "01/03/2022")
+  )
 })
 
 test_that("standardize() coerces ISO date format YYYY-MM-DD", {
@@ -634,7 +642,7 @@ test_that("standardize() coerces DD/MM/YYYY format", {
 })
 
 test_that("standardize() coerces other columns to character by default", {
-  df <- tibble::tibble(id = 1:3, x = factor(c("a","b","c")))
+  df <- tibble::tibble(id = 1:3, x = factor(c("a", "b", "c")))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -645,13 +653,10 @@ test_that("standardize() coerces other columns to character by default", {
 })
 
 
-
 ### Type inference error safety
 
-
 test_that("standardize() rejects non-atomic (list-column) inputs", {
-
-  df <- tibble::tibble(id = 1:3, x = I(list(1,2,3)))
+  df <- tibble::tibble(id = 1:3, x = I(list(1, 2, 3)))
 
   expect_error(
     Data$new(data = df, uuid = "id"),
@@ -661,9 +666,7 @@ test_that("standardize() rejects non-atomic (list-column) inputs", {
 })
 
 
-
 ### State management and metadata updates
-
 
 test_that("standardize() updates metadata timestamps", {
   df <- tibble::tibble(id = 1:3, uuid = "id")
@@ -694,9 +697,7 @@ test_that("standardize() sets standardized_data and standardized flag", {
 })
 
 
-
 ### Robustness and error handling
-
 
 test_that("standardize() errors if raw_data is corrupted or missing", {
   df <- tibble::tibble(id = 1:3)
@@ -705,7 +706,7 @@ test_that("standardize() errors if raw_data is corrupted or missing", {
   )
   d$validate()
 
-  d$raw_data <- NULL   # force failure
+  d$raw_data <- NULL # force failure
   a <- d$standardize()
 
   # Check if the error string matches the expected pattern
@@ -717,7 +718,7 @@ test_that("standardize() errors if raw_data is corrupted or missing", {
 
 
 test_that("standardize() maintains row and column structure", {
-  df <- tibble::tibble(id = 1:3, x = c("1","2","3"))
+  df <- tibble::tibble(id = 1:3, x = c("1", "2", "3"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -730,9 +731,7 @@ test_that("standardize() maintains row and column structure", {
 
 # Cleaning Pipeline Testing ####
 
-
 ### Cleaning Pipeline Tests for Data Class
-
 
 test_that("clean() warns when run before standardization", {
   df <- tibble::tibble(id = 1:3)
@@ -746,12 +745,12 @@ test_that("clean() warns when run before standardization", {
   )
 
   expect_true(d$cleaned)
-  expect_equal(d$clean_data, df)   # fallback copy
+  expect_equal(d$clean_data, df) # fallback copy
 })
 
 
 test_that("clean() copies standardized_data when available", {
-  df <- tibble::tibble(id = 1:3, x = c("1","2","3"))
+  df <- tibble::tibble(id = 1:3, x = c("1", "2", "3"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -812,7 +811,7 @@ test_that("clean() sets cleaned flag to TRUE", {
 
 
 test_that("clean() does not alter row or column count", {
-  df <- tibble::tibble(id = 1:3, x = c("a","b","c"))
+  df <- tibble::tibble(id = 1:3, x = c("a", "b", "c"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -834,7 +833,7 @@ test_that("clean() does not modify values when no cleaning rules exist", {
 
   d$clean()
 
-  expect_equal(d$clean_data$x, c("a","b","c"))
+  expect_equal(d$clean_data$x, c("a", "b", "c"))
 })
 
 
@@ -867,13 +866,9 @@ test_that("clean() returns invisible TRUE-like behavior", {
 })
 
 
-
-
 # Data Access Testing ####
 
-
 ### Data Access Tests for Data Class  (get_data)
-
 
 test_that("get_data returns raw_data for stage='raw'", {
   df <- tibble::tibble(id = 1:3)
@@ -886,7 +881,7 @@ test_that("get_data returns raw_data for stage='raw'", {
 })
 
 test_that("get_data returns standardized_data for stage='standardized' when available", {
-  df <- tibble::tibble(id = 1:3, x = c("1","2","3"))
+  df <- tibble::tibble(id = 1:3, x = c("1", "2", "3"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -931,7 +926,7 @@ test_that("get_data handles default stage correctly (raw)", {
     Data$new(data = df, uuid = "id")
   )
 
-  out <- d$get_data()  # default argument
+  out <- d$get_data() # default argument
   expect_equal(out, df, uuid = "id")
 })
 
@@ -1059,7 +1054,7 @@ test_that("get_hash returns a valid digest hash for raw data", {
   h <- d$get_hash("raw")
 
   expect_true(is.character(h))
-  expect_equal(nchar(h), 32)  # MD5 length
+  expect_equal(nchar(h), 32) # MD5 length
 })
 
 test_that("get_hash returns NA when stage has no data", {
@@ -1102,7 +1097,7 @@ test_that("get_hash returns identical hash when data unchanged", {
 })
 
 test_that("get_hash works for standardized data", {
-  df <- tibble::tibble(id = 1:3, x = c("1","2","3"))
+  df <- tibble::tibble(id = 1:3, x = c("1", "2", "3"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -1144,7 +1139,7 @@ test_that("set_variable errors if role is not a single character string", {
     Data$new(data = df, uuid = "id")
   )
 
-  expect_error(d$set_variable(c("x","y"), "id"))
+  expect_error(d$set_variable(c("x", "y"), "id"))
   expect_error(d$set_variable(123, "id"))
 })
 
@@ -1154,7 +1149,7 @@ test_that("set_variable errors if column_name is not a single character string",
     Data$new(data = df, uuid = "id")
   )
 
-  expect_error(d$set_variable("role", c("id","other")))
+  expect_error(d$set_variable("role", c("id", "other")))
   expect_error(d$set_variable("role", 123))
 })
 
@@ -1180,7 +1175,6 @@ test_that("get_variable returns NULL for unmapped roles", {
 
 
 # BASIC BEHAVIOR (unchanged)
-
 
 test_that("resolve_column returns the mapped column when role exists", {
   df <- tibble::tibble(id = 1:3, age = 1:3)
@@ -1208,7 +1202,7 @@ test_that("resolve_column warns if mapped column does not exist in stage data", 
     Data$new(data = df, uuid = "id")
   )
 
-  d$variable_map$age_role <- "age"  # missing from df
+  d$variable_map$age_role <- "age" # missing from df
 
   expect_warning(
     out <- d$resolve_column("age_role", "raw"),
@@ -1224,7 +1218,7 @@ test_that("resolve_column returns NULL if stage data is NULL", {
     Data$new(data = df, uuid = "id")
   )
 
-  d$raw_data <- NULL  # break raw data
+  d$raw_data <- NULL # break raw data
 
   expect_null(d$resolve_column("id", stage = "raw"))
 })
@@ -1232,20 +1226,19 @@ test_that("resolve_column returns NULL if stage data is NULL", {
 
 # VALUE MAP AWARENESS
 
-
 test_that("resolve_column(values=TRUE) returns column + mapped values when available", {
-  df <- tibble::tibble(id = 1:3, sex = c("M","F","F"))
+  df <- tibble::tibble(id = 1:3, sex = c("M", "F", "F"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
 
   d$variable_map <- list(sex_role = "sex")
-  d$value_map    <- list(sex_role = c("M","F","X"))
+  d$value_map <- list(sex_role = c("M", "F", "X"))
 
   out <- d$resolve_column("sex_role", "raw", values = TRUE)
 
   expect_equal(out$column, "sex")
-  expect_setequal(out$values, c("M","F","X"))
+  expect_setequal(out$values, c("M", "F", "X"))
 })
 
 test_that("resolve_column(values=TRUE) returns NULL values when no value_map exists", {
@@ -1269,7 +1262,7 @@ test_that("resolve_column(values=TRUE) returns NULL column if column missing", {
   )
 
   d$variable_map <- list(sex_role = "sex")
-  d$value_map    <- list(sex_role = c("M","F"))
+  d$value_map <- list(sex_role = c("M", "F"))
 
   expect_warning(
     out <- d$resolve_column("sex_role", values = TRUE),
@@ -1277,29 +1270,28 @@ test_that("resolve_column(values=TRUE) returns NULL column if column missing", {
   )
 
   expect_null(out$column)
-  expect_equal(out$values, c("M","F"))
+  expect_equal(out$values, c("M", "F"))
 })
 
 
 # FULL MODE (full = TRUE)
 
-
 test_that("resolve_column(full=TRUE) returns full diagnostic structure", {
-  df <- tibble::tibble(id = 1:3, sex = c("M","F","F"))
+  df <- tibble::tibble(id = 1:3, sex = c("M", "F", "F"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
 
   d$variable_map <- list(sex_role = "sex")
-  d$value_map    <- list(sex_role = c("M","F","X"))
+  d$value_map <- list(sex_role = c("M", "F", "X"))
 
   out <- d$resolve_column("sex_role", "raw", full = TRUE)
 
   expect_equal(out$role, "sex_role")
   expect_equal(out$column, "sex")
-  expect_equal(out$values, c("M","F","X"))
+  expect_equal(out$values, c("M", "F", "X"))
   expect_true(out$exists_in_data)
-  expect_setequal(out$values_in_data, c("M","F"))
+  expect_setequal(out$values_in_data, c("M", "F"))
 })
 
 test_that("resolve_column(full=TRUE) reports missing column correctly", {
@@ -1309,7 +1301,7 @@ test_that("resolve_column(full=TRUE) reports missing column correctly", {
   )
 
   d$variable_map <- list(sex_role = "sex")
-  d$value_map    <- list(sex_role = c("M","F"))
+  d$value_map <- list(sex_role = c("M", "F"))
 
   expect_warning(
     out <- d$resolve_column("sex_role", full = TRUE),
@@ -1318,7 +1310,7 @@ test_that("resolve_column(full=TRUE) reports missing column correctly", {
 
   expect_equal(out$role, "sex_role")
   expect_null(out$column)
-  expect_equal(out$values, c("M","F"))
+  expect_equal(out$values, c("M", "F"))
   expect_false(out$exists_in_data)
   expect_null(out$values_in_data)
 })
@@ -1326,9 +1318,8 @@ test_that("resolve_column(full=TRUE) reports missing column correctly", {
 
 # DIRECT COLUMN NAME + FULL MODE
 
-
 test_that("resolve_column(full=TRUE) works for direct column names", {
-  df <- tibble::tibble(id = 1:3, region = c("A","B","C"))
+  df <- tibble::tibble(id = 1:3, region = c("A", "B", "C"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
@@ -1338,12 +1329,11 @@ test_that("resolve_column(full=TRUE) works for direct column names", {
   expect_equal(out$column, "region")
   expect_null(out$values) # no value_map
   expect_true(out$exists_in_data)
-  expect_setequal(out$values_in_data, c("A","B","C"))
+  expect_setequal(out$values_in_data, c("A", "B", "C"))
 })
 
 
 # EDGE CASE: role missing or blank
-
 
 test_that("resolve_column returns NULL on missing/blank role", {
   df <- tibble::tibble(id = 1:3)
@@ -1373,7 +1363,7 @@ test_that("variable_map handles NULL or empty maps safely during validate", {
     Data$new(data = df, uuid = "id")
   )
 
-  d$variable_map <- list()  # clear map
+  d$variable_map <- list() # clear map
 
   expect_no_error(d$validate())
 })
@@ -1381,7 +1371,11 @@ test_that("variable_map handles NULL or empty maps safely during validate", {
 test_that("validate warns about mapped columns missing in the dataset", {
   df <- tibble::tibble(id = 1:3)
   d <- suppressMessages(
-    Data$new(data = df, variable_map = list(uuid="id", age_role="age"), uuid = "id")
+    Data$new(
+      data = df,
+      variable_map = list(uuid = "id", age_role = "age"),
+      uuid = "id"
+    )
   )
 
   expect_warning(
@@ -1426,14 +1420,19 @@ test_that("value_map initializes as empty list when not provided", {
 })
 
 test_that("value_map can be provided at initialization", {
-  df <- tibble::tibble(id = 1:3, sex = c("M","F","M"))
-  vm <- list(sex_role = c("M","F"))
+  df <- tibble::tibble(id = 1:3, sex = c("M", "F", "M"))
+  vm <- list(sex_role = c("M", "F"))
 
   d <- suppressMessages(
-    Data$new(data = df, variable_map = list(sex_role = "sex"), value_map = vm, uuid = "id")
+    Data$new(
+      data = df,
+      variable_map = list(sex_role = "sex"),
+      value_map = vm,
+      uuid = "id"
+    )
   )
 
-  expect_equal(d$value_map$sex_role, c("M","F"))
+  expect_equal(d$value_map$sex_role, c("M", "F"))
 })
 
 test_that("validate warns when value map refers to a column not in the dataset", {
@@ -1441,8 +1440,8 @@ test_that("validate warns when value map refers to a column not in the dataset",
   d <- suppressMessages(
     Data$new(
       data = df,
-      variable_map = list(uuid="id", sex_role="sex"),
-      value_map = list(sex_role = c("M","F")),
+      variable_map = list(uuid = "id", sex_role = "sex"),
+      value_map = list(sex_role = c("M", "F")),
       uuid = "id"
     )
   )
@@ -1454,12 +1453,12 @@ test_that("validate warns when value map refers to a column not in the dataset",
 })
 
 test_that("validate warns when mapped values are not found in the dataset", {
-  df <- tibble::tibble(id = 1:3, sex = c("M","M","M"))
+  df <- tibble::tibble(id = 1:3, sex = c("M", "M", "M"))
   d <- suppressMessages(
     Data$new(
       data = df,
-      variable_map = list(sex_role="sex"),
-      value_map = list(sex_role = c("M","F")),
+      variable_map = list(sex_role = "sex"),
+      value_map = list(sex_role = c("M", "F")),
       uuid = "id"
     )
   )
@@ -1498,19 +1497,23 @@ test_that("export_data errors if requested stage has no data", {
   # no standardize, no clean → standardized and clean are NULL
 
   expect_error(
-    d$export_data(stage = "standardized", format = "csv", file_path = tempfile()),
+    d$export_data(
+      stage = "standardized",
+      format = "csv",
+      file_path = tempfile()
+    ),
     regexp = "No data available"
   )
 })
 
 test_that("export_data creates CSV file and returns the path", {
-  local_tempdir()  # keep output isolated
+  local_tempdir() # keep output isolated
 
   df <- tibble(id = 1:3)
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
-  d$clean_data <- df  # simulate cleaned stage
+  d$clean_data <- df # simulate cleaned stage
 
   out <- d$export_data(stage = "clean", format = "csv")
 
@@ -1625,22 +1628,21 @@ test_that("export_data exports standardized data correctly", {
     Data$new(data = df, uuid = "id")
   )
   d$validate()
-  d$standardize()  # creates numeric conversions for these columns
+  d$standardize() # creates numeric conversions for these columns
 
   expect_true(d$standardized)
 
   out <- d$export_data(stage = "standardized", format = "csv")
 
   exported <- read.csv(out)
-  expect_equal(exported$id, c(1,2))   # numeric conversion verified
-  expect_equal(exported$v, c(3,4))
+  expect_equal(exported$id, c(1, 2)) # numeric conversion verified
+  expect_equal(exported$v, c(3, 4))
 })
 
 
 # Linking and Relational Validation Tests ####
 
 test_that("add_linked_dataset registers links correctly", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1663,7 +1665,6 @@ test_that("add_linked_dataset registers links correctly", {
 
 
 test_that("validate_links returns TRUE when foreign keys match", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1674,7 +1675,12 @@ test_that("validate_links returns TRUE when foreign keys match", {
   d1$set_variable("uuid", "id")
   d2$set_variable("parent", "pid")
 
-  d1$add_linked_dataset("child", d2, by_self_role = "uuid", by_other_role = "parent")
+  d1$add_linked_dataset(
+    "child",
+    d2,
+    by_self_role = "uuid",
+    by_other_role = "parent"
+  )
 
   # Should return invisible(TRUE)
   res <- d1$validate_links()
@@ -1684,7 +1690,6 @@ test_that("validate_links returns TRUE when foreign keys match", {
 
 
 test_that("validate_links detects missing foreign keys", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1697,11 +1702,20 @@ test_that("validate_links detects missing foreign keys", {
   d1$set_variable("uuid", "id")
   d2$set_variable("parent", "pid")
 
-  d1$add_linked_dataset("child", d2, by_self_role = "uuid", by_other_role = "parent")
+  d1$add_linked_dataset(
+    "child",
+    d2,
+    by_self_role = "uuid",
+    by_other_role = "parent"
+  )
 
   # --- Run full workflow on both datasets ---
-  d1$validate("raw"); d1$standardize(); d1$clean()
-  d2$validate("raw"); d2$standardize(); d2$clean()
+  d1$validate("raw")
+  d1$standardize()
+  d1$clean()
+  d2$validate("raw")
+  d2$standardize()
+  d2$clean()
 
   # Now run link validation
   res <- d1$validate_links()
@@ -1716,7 +1730,6 @@ test_that("validate_links detects missing foreign keys", {
 
 
 test_that("validate_links warns when a link role resolves to a missing column", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1729,7 +1742,12 @@ test_that("validate_links warns when a link role resolves to a missing column", 
   d2$set_variable("parent", "x")
 
   # Introduce a mismatch: map child's linking role to a column that doesn't exist
-  d1$add_linked_dataset("child", d2, by_self_role = "missing_role", by_other_role = "parent")
+  d1$add_linked_dataset(
+    "child",
+    d2,
+    by_self_role = "missing_role",
+    by_other_role = "parent"
+  )
 
   expect_warning(
     d1$validate_links(),
@@ -1740,7 +1758,6 @@ test_that("validate_links warns when a link role resolves to a missing column", 
 
 
 test_that("validate_links handles no linked objects gracefully", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1752,25 +1769,33 @@ test_that("validate_links handles no linked objects gracefully", {
 
 
 test_that("add_linked_dataset throws error when name is invalid", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), uuid = "id")
   )
 
   expect_error(
-    d1$add_linked_dataset(name = NULL, other_object = d1, by_self_role = "uuid", by_other_role = "uuid"),
+    d1$add_linked_dataset(
+      name = NULL,
+      other_object = d1,
+      by_self_role = "uuid",
+      by_other_role = "uuid"
+    ),
     regexp = "must be a single character string"
   )
 
   expect_error(
-    d1$add_linked_dataset(name = c("a", "b"), other_object = d1, by_self_role = "uuid", by_other_role = "uuid"),
+    d1$add_linked_dataset(
+      name = c("a", "b"),
+      other_object = d1,
+      by_self_role = "uuid",
+      by_other_role = "uuid"
+    ),
     regexp = "must be a single character string"
   )
 })
 
 
 test_that("validate_links does nothing if roles resolve to NULL", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1782,7 +1807,12 @@ test_that("validate_links does nothing if roles resolve to NULL", {
   d2$set_variable("parent", "pid")
 
   # Role in D1 is missing so resolve_column returns NULL
-  d1$add_linked_dataset("child", d2, by_self_role = "unknown_role", by_other_role = "parent")
+  d1$add_linked_dataset(
+    "child",
+    d2,
+    by_self_role = "unknown_role",
+    by_other_role = "parent"
+  )
 
   res <- d1$validate_links()
   expect_true(isTRUE(res))
@@ -1790,7 +1820,6 @@ test_that("validate_links does nothing if roles resolve to NULL", {
 
 
 test_that("validate_links respects specified stages for both objects", {
-
   d1 <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D1", uuid = "id")
   )
@@ -1807,10 +1836,17 @@ test_that("validate_links respects specified stages for both objects", {
   d1$clean_data <- d1$raw_data
   d2$clean_data <- d2$raw_data
 
+  d1$add_linked_dataset(
+    "child",
+    d2,
+    by_self_role = "uuid",
+    by_other_role = "parent"
+  )
 
-  d1$add_linked_dataset("child", d2, by_self_role = "uuid", by_other_role = "parent")
-
-  result <- d1$validate_links(stage_self = "standardized", stage_other = "standardized")
+  result <- d1$validate_links(
+    stage_self = "standardized",
+    stage_other = "standardized"
+  )
 
   expect_equal(result, TRUE)
 })
@@ -1818,7 +1854,6 @@ test_that("validate_links respects specified stages for both objects", {
 # RUN_QUALITY_CHECK Testing ####
 
 test_that("run_quality_checks errors when data at stage is NULL", {
-
   d <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D", uuid = "id")
   )
@@ -1834,7 +1869,6 @@ test_that("run_quality_checks errors when data at stage is NULL", {
 
 
 test_that("run_quality_checks warns and returns NULL when no schema is attached", {
-
   d <- suppressMessages(
     Data$new(data = tibble(id = 1:3), dataset_name = "D", uuid = "id")
   )
@@ -1906,7 +1940,16 @@ test_that("data_diagnose generates basic diagnostic table with types only", {
 
   expect_s3_class(result, "data.frame")
   expect_true(nrow(result) >= 2)
-  expect_true(all(c("required_variable", "required_type", "mapped_variable", "safely_coercible", "issues") %in% names(result)))
+  expect_true(all(
+    c(
+      "required_variable",
+      "required_type",
+      "mapped_variable",
+      "safely_coercible",
+      "issues"
+    ) %in%
+      names(result)
+  ))
 
   # Check that id and age are in the diagnostic table
   expect_true("id" %in% result$required_variable)
@@ -1932,7 +1975,7 @@ test_that("data_diagnose detects unmapped variables", {
   )
 
   d$set_variable_schema(schema)
-  d$variable_map <- list(id = "id")  # age not mapped
+  d$variable_map <- list(id = "id") # age not mapped
 
   result <- d$data_diagnose(stage = "raw")
 
@@ -1954,7 +1997,7 @@ test_that("data_diagnose detects mapped variables not in dataset", {
   )
 
   d$set_variable_schema(schema)
-  d$variable_map <- list(id = "id", age = "age_col")  # age_col doesn't exist
+  d$variable_map <- list(id = "id", age = "age_col") # age_col doesn't exist
 
   result <- d$data_diagnose(stage = "raw")
 
@@ -1971,7 +2014,7 @@ test_that("data_diagnose detects type coercion issues", {
   schema <- list(
     types = list(
       id = "numeric",
-      status = "numeric"  # Can't coerce text to numeric
+      status = "numeric" # Can't coerce text to numeric
     )
   )
 
@@ -2059,7 +2102,7 @@ test_that("data_diagnose detects mapped values not in dataset", {
     value_map = list(
       status = list(
         active = c("A"),
-        inactive = c("I", "X")  # X not in data
+        inactive = c("I", "X") # X not in data
       )
     )
   )
@@ -2150,7 +2193,9 @@ test_that("generate_cleaning_log creates entries from quality flags", {
   expect_true(nrow(d$cleaning_log$log_df) > 0)
 
   # Check that age issues are logged
-  age_entries <- d$cleaning_log$log_df[grepl("age", d$cleaning_log$log_df$question.name), ]
+  age_entries <- d$cleaning_log$log_df[
+    grepl("age", d$cleaning_log$log_df$question.name),
+  ]
   expect_true(nrow(age_entries) > 0)
 })
 
@@ -2216,7 +2261,9 @@ test_that("generate_cleaning_log sets changed='yes' for autoclean flags", {
   d$generate_cleaning_log(stage = "standardized")
 
   # Type coercion issues should be marked as changed='yes'
-  type_entries <- d$cleaning_log$log_df[grepl("_type$", d$cleaning_log$log_df$issue), ]
+  type_entries <- d$cleaning_log$log_df[
+    grepl("_type$", d$cleaning_log$log_df$issue),
+  ]
   if (nrow(type_entries) > 0) {
     expect_true(all(type_entries$changed == "yes"))
   }
@@ -2248,7 +2295,9 @@ test_that("generate_cleaning_log handles 'other' columns", {
   d$generate_cleaning_log(stage = "standardized")
 
   # Should have entries for the other response
-  other_entries <- d$cleaning_log$log_df[grepl("other_response|has_other_response", d$cleaning_log$log_df$issue), ]
+  other_entries <- d$cleaning_log$log_df[
+    grepl("other_response|has_other_response", d$cleaning_log$log_df$issue),
+  ]
   expect_true(nrow(other_entries) > 0)
 
   # Check that both the main column and linked column have entries
@@ -2288,7 +2337,9 @@ test_that("generate_cleaning_log uses enum_id and device_id when available", {
   d$generate_cleaning_log(stage = "standardized")
 
   # Check that enum_id and device_id are populated
-  entries_with_ids <- d$cleaning_log$log_df[!is.na(d$cleaning_log$log_df$enum_id), ]
+  entries_with_ids <- d$cleaning_log$log_df[
+    !is.na(d$cleaning_log$log_df$enum_id),
+  ]
   expect_true(nrow(entries_with_ids) > 0)
 })
 
@@ -2298,7 +2349,7 @@ test_that("generate_cleaning_log uses actual column names from variable_map", {
     uuid_col = 1:3,
     my_enum = c("E1", "E2", "E3"),
     my_device = c("D1", "D2", "D3"),
-    person_age = c("a", "25", "200")  # Two out of range
+    person_age = c("a", "25", "200") # Two out of range
   )
 
   # Variable map: canonical name 'age' maps to actual column 'person_age'
@@ -2311,7 +2362,7 @@ test_that("generate_cleaning_log uses actual column names from variable_map", {
         uuid = "uuid_col",
         enum_id = "my_enum",
         device_id = "my_device",
-        age = "person_age"  # Canonical name -> actual column
+        age = "person_age" # Canonical name -> actual column
       )
     )
   )
@@ -2319,19 +2370,19 @@ test_that("generate_cleaning_log uses actual column names from variable_map", {
   d$set_variable_schema(
     data_table_to_schema(
       data.frame(
-        rule_type = c("variable","variable","variable","variable"),
+        rule_type = c("variable", "variable", "variable", "variable"),
         variable = c("uuid_col", "my_enum", "my_device", "person_age"),
-        value = c(NA,NA,NA,NA),
-        required = c(TRUE, FALSE, FALSE,FALSE),
-        type = c("character", "character", "character","numeric"),
-        question_type = c(NA,NA,NA,NA),
-        is_other = c(NA,NA,NA,NA),
-        other_column_link = c(NA,NA,NA,NA),
-        allowed = c(NA,NA,NA,NA),
+        value = c(NA, NA, NA, NA),
+        required = c(TRUE, FALSE, FALSE, FALSE),
+        type = c("character", "character", "character", "numeric"),
+        question_type = c(NA, NA, NA, NA),
+        is_other = c(NA, NA, NA, NA),
+        other_column_link = c(NA, NA, NA, NA),
+        allowed = c(NA, NA, NA, NA),
         col_names = c("uuid_col", "my_enum", "my_device", "person_age"),
-        unique = c(TRUE, FALSE, FALSE,FALSE),
-        label = c(NA,NA,NA,NA),
-        comment = c(NA,NA,NA,NA),
+        unique = c(TRUE, FALSE, FALSE, FALSE),
+        label = c(NA, NA, NA, NA),
+        comment = c(NA, NA, NA, NA),
         stringsAsFactors = FALSE
       )
     )
@@ -2368,9 +2419,9 @@ test_that("generate_cleaning_log adds entries for all variables in dependency ch
       uuid = "id",
       variable_map = list(
         uuid = "id",
-        fever = "fever_status",  # Canonical -> actual
-        temp = "temperature",    # Canonical -> actual
-        meds = "medication"      # Canonical -> actual
+        fever = "fever_status", # Canonical -> actual
+        temp = "temperature", # Canonical -> actual
+        meds = "medication" # Canonical -> actual
       ),
       value_map = list(
         fever = list(yes = "yes", no = "no")
@@ -2381,19 +2432,19 @@ test_that("generate_cleaning_log adds entries for all variables in dependency ch
   d$set_variable_schema(
     data_table_to_schema(
       data.frame(
-        rule_type = c("variable","variable","variable","variable"),
+        rule_type = c("variable", "variable", "variable", "variable"),
         variable = c("id", "fever_status", "temperature", "medication"),
-        value = c(NA,"yes,no",NA,NA),
-        required = c(TRUE, FALSE, FALSE,FALSE),
-        type = c("character", "character", "numeric","character"),
-        question_type = c(NA,NA,NA,NA),
-        is_other = c(NA,NA,NA,NA),
-        other_column_link = c(NA,NA,NA,NA),
-        allowed = c(NA,NA,NA,NA),
+        value = c(NA, "yes,no", NA, NA),
+        required = c(TRUE, FALSE, FALSE, FALSE),
+        type = c("character", "character", "numeric", "character"),
+        question_type = c(NA, NA, NA, NA),
+        is_other = c(NA, NA, NA, NA),
+        other_column_link = c(NA, NA, NA, NA),
+        allowed = c(NA, NA, NA, NA),
         col_names = c("id", "fever_status", "temperature", "medication"),
-        unique = c(TRUE, FALSE, FALSE,FALSE),
-        label = c(NA,NA,NA,NA),
-        comment = c(NA,NA,NA,NA),
+        unique = c(TRUE, FALSE, FALSE, FALSE),
+        label = c(NA, NA, NA, NA),
+        comment = c(NA, NA, NA, NA),
         stringsAsFactors = FALSE
       )
     )
@@ -2403,7 +2454,7 @@ test_that("generate_cleaning_log adds entries for all variables in dependency ch
   d$set_dependency_schema(list(
     dependencies = list(
       flag_fever_temp_check = list(
-        variables = c("fever", "temp", "meds"),  # Canonical names
+        variables = c("fever", "temp", "meds"), # Canonical names
         condition_if = "fever == 'yes'",
         then = "!is.na(temp)",
         action = "flag_warning"
@@ -2452,8 +2503,8 @@ test_that("generate_cleaning_log works when canonical names equal actual column 
       uuid = "id",
       variable_map = list(
         uuid = "id",
-        status = "status",  # Same name
-        status_other = "status_other"  # Same name
+        status = "status", # Same name
+        status_other = "status_other" # Same name
       )
     )
   )
@@ -2495,7 +2546,7 @@ test_that("generate_cleaning_log handles unmapped canonical names gracefully", {
   d$set_dependency_schema(list(
     dependencies = list(
       flag_fever_check = list(
-        variables = c("fever", "temp"),  # These are not in variable_map
+        variables = c("fever", "temp"), # These are not in variable_map
         condition_if = "fever == 'yes'",
         then = "!is.na(temp)",
         action = "flag_warning"
@@ -2576,7 +2627,9 @@ test_that("generate_cleaning_log does not add flag_delete records to cleaning lo
   expect_equal(as.character(d$deletion_log$log_df$uuid), "2")
 
   # Cleaning log should NOT have any entries for this flag
-  flag_entries <- d$cleaning_log$log_df[d$cleaning_log$log_df$issue == "flag_bad_record", ]
+  flag_entries <- d$cleaning_log$log_df[
+    d$cleaning_log$log_df$issue == "flag_bad_record",
+  ]
   expect_equal(nrow(flag_entries), 0)
 })
 
@@ -2590,7 +2643,11 @@ test_that("generate_cleaning_log flag_delete populates enum_id and device_id in 
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
-  d$variable_map <- list(uuid = "id", enum_id = "enum_id", device_id = "device_id")
+  d$variable_map <- list(
+    uuid = "id",
+    enum_id = "enum_id",
+    device_id = "device_id"
+  )
 
   d$set_dependency_schema(list(
     dependencies = list(
@@ -2675,7 +2732,9 @@ test_that("generate_cleaning_log handles mixed actions: flag_delete and flag_aut
   expect_equal(nrow(d$deletion_log$log_df), 2)
 
   # Cleaning log should have entries for flag_bad_age (rows 2 with "bad" age)
-  age_entries <- d$cleaning_log$log_df[d$cleaning_log$log_df$issue == "flag_bad_age", ]
+  age_entries <- d$cleaning_log$log_df[
+    d$cleaning_log$log_df$issue == "flag_bad_age",
+  ]
   expect_gt(nrow(age_entries), 0)
   expect_true(all(age_entries$changed == "yes"))
 })
@@ -2732,7 +2791,12 @@ test_that("generate_cleaning_log routes flag_delete (condition_if only) rows to 
 
   expect_equal(nrow(d$deletion_log$log_df), 1)
   expect_equal(as.character(d$deletion_log$log_df$uuid), "2")
-  expect_equal(nrow(d$cleaning_log$log_df[d$cleaning_log$log_df$issue == "flag_low_score", ]), 0)
+  expect_equal(
+    nrow(d$cleaning_log$log_df[
+      d$cleaning_log$log_df$issue == "flag_low_score",
+    ]),
+    0
+  )
 })
 
 
@@ -2812,11 +2876,19 @@ test_that("generate_cleaning_log uses variable_map to resolve unique variable co
     Data$new(data = df, uuid = "survey_id")
   )
   d$set_variable_schema(list(
-    types = list(survey_id = "numeric", enumerator = "character", q_code = "character"),
+    types = list(
+      survey_id = "numeric",
+      enumerator = "character",
+      q_code = "character"
+    ),
     unique = c("q_code")
   ))
   # Map canonical "q_code" → actual column "q_code", and set up enum_id
-  d$variable_map <- list(uuid = "survey_id", enum_id = "enumerator", q_code = "q_code")
+  d$variable_map <- list(
+    uuid = "survey_id",
+    enum_id = "enumerator",
+    q_code = "q_code"
+  )
   d$standardize()
   d$generate_cleaning_log(stage = "standardized")
 
@@ -2835,7 +2907,7 @@ test_that("generate_cleaning_log skips unique variable not present in dataset", 
   )
   d$set_variable_schema(list(
     types = list(id = "numeric", name = "character"),
-    unique = c("nonexistent_col")  # column not in dataset
+    unique = c("nonexistent_col") # column not in dataset
   ))
   d$standardize()
   # Should not error; just skips the missing column
@@ -2884,7 +2956,6 @@ test_that("Full integration: validate, standardize, clean with no issues", {
   expect_equal(nrow(d$clean_data), 5)
   expect_equal(d$clean_data$id, 1:5)
 })
-
 
 
 test_that("Full integration: validate, standardize with type coercion, clean", {
@@ -3088,7 +3159,7 @@ test_that("Full integration: end-to-end with dependency checks", {
 
 test_that("Full integration: validate catches issues before standardize", {
   df <- tibble(
-    id = c(1, 1, 2),  # Duplicate IDs
+    id = c(1, 1, 2), # Duplicate IDs
     age = c(20, 25, 30)
   )
 
@@ -3141,7 +3212,7 @@ test_that("Full integration: value_map is used during quality checks", {
       flag_valid_status = list(
         variables = c("status"),
         condition_if = "TRUE",
-        then = "status %in% c('active', 'inactive')",  # Using canonical values
+        then = "status %in% c('active', 'inactive')", # Using canonical values
         action = "flag_warning"
       )
     ),
@@ -3173,7 +3244,6 @@ test_that("Full integration: value_map is used during quality checks", {
 
 
 # clean() respects the changed field ####
-
 
 test_that("clean() does not apply cleaning log entries with changed = 'no'", {
   df <- tibble::tibble(id = 1:3, x = c("a", "b", "c"))
@@ -3271,9 +3341,15 @@ test_that(".apply_cleaning_changes preserves numeric column type when new.value 
   )
 
   log_df <- tibble::tibble(
-    uuid = "2", enum_id = "e1", device_id = "d1",
-    question.name = "score", issue = "wrong", feedback = "fix",
-    changed = "yes", old.value = "20", new.value = "25"
+    uuid = "2",
+    enum_id = "e1",
+    device_id = "d1",
+    question.name = "score",
+    issue = "wrong",
+    feedback = "fix",
+    changed = "yes",
+    old.value = "20",
+    new.value = "25"
   )
   d$cleaning_log <- CleaningLog$new(log_df = log_df)
   d$clean()
@@ -3290,9 +3366,15 @@ test_that(".apply_cleaning_changes handles NA new.value for numeric column", {
   )
 
   log_df <- tibble::tibble(
-    uuid = "2", enum_id = "e1", device_id = "d1",
-    question.name = "score", issue = "remove", feedback = "fix",
-    changed = "yes", old.value = "20", new.value = NA_character_
+    uuid = "2",
+    enum_id = "e1",
+    device_id = "d1",
+    question.name = "score",
+    issue = "remove",
+    feedback = "fix",
+    changed = "yes",
+    old.value = "20",
+    new.value = NA_character_
   )
   d$cleaning_log <- CleaningLog$new(log_df = log_df)
   d$clean()
@@ -3309,9 +3391,15 @@ test_that(".apply_cleaning_changes skips non-coercible value and logs issue", {
   )
 
   log_df <- tibble::tibble(
-    uuid = "2", enum_id = "e1", device_id = "d1",
-    question.name = "score", issue = "bad", feedback = "fix",
-    changed = "yes", old.value = "20", new.value = "not_a_number"
+    uuid = "2",
+    enum_id = "e1",
+    device_id = "d1",
+    question.name = "score",
+    issue = "bad",
+    feedback = "fix",
+    changed = "yes",
+    old.value = "20",
+    new.value = "not_a_number"
   )
   d$cleaning_log <- CleaningLog$new(log_df = log_df)
 
@@ -3335,9 +3423,15 @@ test_that(".apply_cleaning_changes preserves integer column type", {
   )
 
   log_df <- tibble::tibble(
-    uuid = "1", enum_id = "e1", device_id = "d1",
-    question.name = "count", issue = "fix", feedback = "fix",
-    changed = "yes", old.value = "1", new.value = "5"
+    uuid = "1",
+    enum_id = "e1",
+    device_id = "d1",
+    question.name = "count",
+    issue = "fix",
+    feedback = "fix",
+    changed = "yes",
+    old.value = "1",
+    new.value = "5"
   )
   d$cleaning_log <- CleaningLog$new(log_df = log_df)
   d$clean()
@@ -3347,7 +3441,6 @@ test_that(".apply_cleaning_changes preserves integer column type", {
 })
 
 
-
 test_that(".apply_cleaning_changes works for character columns", {
   df <- tibble::tibble(id = as.character(1:3), name = c("a", "b", "c"))
   d <- suppressMessages(
@@ -3355,9 +3448,15 @@ test_that(".apply_cleaning_changes works for character columns", {
   )
 
   log_df <- tibble::tibble(
-    uuid = "3", enum_id = "e1", device_id = "d1",
-    question.name = "name", issue = "typo", feedback = "fix",
-    changed = "yes", old.value = "c", new.value = "corrected"
+    uuid = "3",
+    enum_id = "e1",
+    device_id = "d1",
+    question.name = "name",
+    issue = "typo",
+    feedback = "fix",
+    changed = "yes",
+    old.value = "c",
+    new.value = "corrected"
   )
   d$cleaning_log <- CleaningLog$new(log_df = log_df)
   d$clean()
@@ -3365,5 +3464,3 @@ test_that(".apply_cleaning_changes works for character columns", {
   expect_true(is.character(d$clean_data$name))
   expect_equal(d$clean_data$name[3], "corrected")
 })
-
-
