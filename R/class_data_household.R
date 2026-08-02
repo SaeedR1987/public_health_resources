@@ -2075,6 +2075,40 @@ HouseholdData <- R6::R6Class(
             "roster_age_30_59m"
           )
 
+          # Compute roster_birth from date columns as a fallback when the
+          # indicator pipeline (add_standardized_age) did not produce it.
+          if (!"roster_birth" %in% names(roster_data)) {
+            dob_col_for_fallback <- if ("calc_date_birth_final" %in% names(roster_data)) {
+              "calc_date_birth_final"
+            } else if ("dob_exact" %in% names(roster_data)) {
+              "dob_exact"
+            } else if ("dob_approx" %in% names(roster_data)) {
+              "dob_approx"
+            } else {
+              NULL
+            }
+
+            recall_col_for_fallback <- if ("recall_date" %in% names(roster_data)) {
+              "recall_date"
+            } else {
+              NULL
+            }
+
+            if (!is.null(dob_col_for_fallback) && !is.null(recall_col_for_fallback)) {
+              dob_final_vals <- suppressWarnings(
+                as.Date(roster_data[[dob_col_for_fallback]])
+              )
+              recall_dt_vals <- suppressWarnings(
+                as.Date(roster_data[[recall_col_for_fallback]])
+              )
+              roster_data[["roster_birth"]] <- as.integer(
+                !is.na(dob_final_vals) &
+                  !is.na(recall_dt_vals) &
+                  dob_final_vals >= recall_dt_vals
+              )
+            }
+          }
+
           # Filter to columns that actually exist in roster_data
           available_cols <- intersect(canonical_cols, names(roster_data))
 
