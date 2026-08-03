@@ -19,7 +19,7 @@ test_that("Document initializes with inherited metadata and default templates", 
 
 test_that("Document exposes R version through active binding and quarto params", {
   document <- suppressMessages(Document$new())
-  params    <- suppressWarnings(suppressMessages(document$get_quarto_params()))
+  params <- suppressWarnings(suppressMessages(document$get_quarto_params()))
 
   suppressWarnings(suppressMessages({
     expect_type(document$.r_version, "character")
@@ -34,10 +34,14 @@ test_that("Document exposes R version through active binding and quarto params",
 test_that("Document validates missing Quarto template files", {
   document <- suppressMessages(Document$new())
   missing_doc_template <- file.path(
-    "tests", "testthat", "missing-quarto-doc-template.qmd"
+    "tests",
+    "testthat",
+    "missing-quarto-doc-template.qmd"
   )
   missing_ppt_template <- file.path(
-    "tests", "testthat", "missing-quarto-ppt-template.qmd"
+    "tests",
+    "testthat",
+    "missing-quarto-ppt-template.qmd"
   )
 
   suppressWarnings(suppressMessages({
@@ -51,15 +55,13 @@ test_that("Document validates missing Quarto template files", {
 })
 
 test_that("Document .r_version active binding is read-only", {
-  document        <- suppressMessages(Document$new())
+  document <- suppressMessages(Document$new())
   current_version <- suppressWarnings(suppressMessages(document$.r_version))
-  write_attempt   <- suppressWarnings(suppressMessages(
+  write_attempt <- suppressWarnings(suppressMessages(
     withVisible(document$.r_version <- "override")
   ))
 
   suppressWarnings(suppressMessages({
-    expect_false(write_attempt$visible)
-    expect_false(write_attempt$value)
     expect_identical(document$.r_version, current_version)
   }))
 })

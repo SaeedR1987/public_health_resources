@@ -51,10 +51,26 @@ calculate_sample_size_general <- function(
   origin <- "calculate_sample_size_general"
 
   # --- Type validation ---
-  phrutils::phr_validate_numeric(expected_proportion, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    expected_proportion,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    desired_precision,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    non_response_rate,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    confidence_level,
+    origin = origin,
+    soft = FALSE
+  )
   phrutils::phr_validate_logical(fpc, origin = origin, soft = FALSE)
   phrutils::phr_validate_character(design, origin = origin, soft = FALSE)
 
@@ -200,7 +216,11 @@ calculate_sample_size_individual <- function(
   origin <- "calculate_sample_size_individual"
 
   # --- Type validation ---
-  phrutils::phr_validate_numeric(sub_population_percent, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    sub_population_percent,
+    origin = origin,
+    soft = FALSE
+  )
 
   # --- Range checks ---
   if (missing(average_household_size)) {
@@ -209,7 +229,11 @@ calculate_sample_size_individual <- function(
       origin = origin
     )
   }
-  phrutils::phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    average_household_size,
+    origin = origin,
+    soft = FALSE
+  )
   phrutils::phr_assert(
     average_household_size > 0,
     message = "average_household_size must be positive.",
@@ -311,10 +335,22 @@ calculate_sample_size_rate <- function(
 
   # --- Type validation ---
   phrutils::phr_validate_numeric(expected_rate, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(desired_precision, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(non_response_rate, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    desired_precision,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    non_response_rate,
+    origin = origin,
+    soft = FALSE
+  )
   phrutils::phr_validate_numeric(recall_days, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(confidence_level, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    confidence_level,
+    origin = origin,
+    soft = FALSE
+  )
   phrutils::phr_validate_numeric(multiplier, origin = origin, soft = FALSE)
   phrutils::phr_validate_logical(fpc, origin = origin, soft = FALSE)
   phrutils::phr_validate_character(design, origin = origin, soft = FALSE)
@@ -336,7 +372,11 @@ calculate_sample_size_rate <- function(
       origin = origin
     )
   }
-  phrutils::phr_validate_numeric(average_household_size, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    average_household_size,
+    origin = origin,
+    soft = FALSE
+  )
   phrutils::phr_assert(
     average_household_size > 0,
     message = "average_household_size must be positive.",
@@ -504,10 +544,26 @@ estimate_field_plan <- function(
   # --- Type validation ---
   phrutils::phr_validate_character(sample_design, origin = origin, soft = FALSE)
   phrutils::phr_validate_numeric(number_of_teams, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(enumerators_per_team, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(average_interview_time, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(average_travel_time, origin = origin, soft = FALSE)
-  phrutils::phr_validate_numeric(average_rest_time, origin = origin, soft = FALSE)
+  phrutils::phr_validate_numeric(
+    enumerators_per_team,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    average_interview_time,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    average_travel_time,
+    origin = origin,
+    soft = FALSE
+  )
+  phrutils::phr_validate_numeric(
+    average_rest_time,
+    origin = origin,
+    soft = FALSE
+  )
 
   # --- Range / logic checks ---
   phrutils::phr_assert(
@@ -697,8 +753,6 @@ calculate_sample_size_strata_table <- function(sample_table) {
         if (!col %in% names(sample_table)) sample_table[[col]] <- NA_real_
       }
 
-      print("I am here 0")
-
       for (i in seq_len(nrow(sample_table))) {
         row <- sample_table[i, ]
 
@@ -752,7 +806,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             origin = origin,
             step = phr_txt("General sample size — stratum {row$stratum_id}")
           )
-          if (!phr_failed(pop_ss)) {
+          if (!phrutils::phr_failed(pop_ss)) {
             sample_table$General_HH_Sample_Size[i] <- pop_ss
           }
         }
@@ -806,7 +860,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             origin = origin,
             step = phr_txt("Individual sample size — stratum {row$stratum_id}")
           )
-          if (!phr_failed(ind_res) && !is.null(ind_res)) {
+          if (!phrutils::phr_failed(ind_res) && !is.null(ind_res)) {
             sample_table$Ind_Sample_Size[i] <- ind_res$sample_size_individuals
             sample_table$Ind_HH_Sample_Size[i] <- ind_res$sample_size_households
           }
@@ -863,7 +917,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             origin = origin,
             step = phr_txt("Rate sample size — stratum {row$stratum_id}")
           )
-          if (!phr_failed(rate_res) && !is.null(rate_res)) {
+          if (!phrutils::phr_failed(rate_res) && !is.null(rate_res)) {
             sample_table$Rate_Ind_Sample_Size[
               i
             ] <- rate_res$sample_size_individuals
@@ -928,15 +982,11 @@ calculate_sample_size_strata_table <- function(sample_table) {
           logical(1L)
         ))
 
-        print(paste0("I am here 11 -", i))
-
         has_cluster_param <- design_type != "cluster" ||
           ("clusters_per_day" %in%
             names(row) &&
             !is.na(row$clusters_per_day) &&
             row$clusters_per_day > 0)
-
-        print(paste0("I am here 12 -", i))
 
         if (has_base && has_cluster_param) {
           fp <- phrutils::phr_try(
@@ -960,7 +1010,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             origin = origin,
             step = phr_txt("Field plan — stratum {row$stratum_id}")
           )
-          if (!phr_failed(fp)) {
+          if (!phrutils::phr_failed(fp)) {
             sample_table$num_interview_per_enum_per_day[
               i
             ] <- fp$num_interview_per_enum_per_day

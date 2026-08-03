@@ -208,6 +208,11 @@ Sample <- R6::R6Class(
         )
       }
 
+      # Default household sampling method if NULL or missing
+      if (is.null(sampling_method_hh) || is.na(sampling_method_hh)) {
+        sampling_method_hh <- "simple_random"
+      }
+
       if (
         sampling_method_hh %in%
           "rlc" &&
@@ -221,6 +226,21 @@ Sample <- R6::R6Class(
         sampling_method_hh
       } else {
         "simple_random"
+      }
+      # Warn early if stratum_id already exists and will be overwritten
+      if (
+        !is.null(self$sample_table) &&
+          stratum_id %in% self$sample_table$stratum_id
+      ) {
+        phrutils::phr_warning(
+          message = phr_txt(
+            "Stratum ID '{stratum_id}' already exists and will be overwritten."
+          ),
+          origin = "Sample$add_stratum",
+          hint = phr_txt(
+            "The existing row for '{stratum_id}' will be replaced with new values."
+          )
+        )
       }
 
       new_row <- data.frame(
