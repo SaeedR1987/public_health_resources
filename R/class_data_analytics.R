@@ -1860,6 +1860,12 @@ DataAnalytics <- R6::R6Class(
               paste0("set_", i)
             }
             inputs <- private$.resolve_field_set(sets[[i]])
+
+
+            print("I am here testing 1")
+            print(paste0(names(inputs)))
+            print(paste0(inputs$variable_map))
+
             private$.run_outputs_for_set(
               inputs = inputs,
               set_role = set_role,

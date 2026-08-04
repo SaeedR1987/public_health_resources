@@ -723,7 +723,7 @@ MortalityDataAnalytics <- R6::R6Class(
             outputs_schema = "outputs_schema_roster",
             base_survey_design = "base_survey_design_roster",
             survey_design = "survey_design_roster",
-            variable_map = "variable_map"
+            variable_map = "linked_ind_roster_variable_map"
           )
         } else {
           phr_message(origin, "Linked roster data present but outputs_schema_roster is empty. Skipping roster outputs.")
@@ -737,7 +737,7 @@ MortalityDataAnalytics <- R6::R6Class(
             outputs_schema = "outputs_schema_deaths",
             base_survey_design = "base_survey_design_deaths",
             survey_design = "survey_design_deaths",
-            variable_map = "variable_map"
+            variable_map = "linked_ind_deaths_variable_map"
           )
         } else {
           phr_message(origin, "Linked deaths data present but outputs_schema_deaths is empty. Skipping deaths outputs.")
