@@ -114,8 +114,8 @@ xlsform_collect_variables <- function(df, col, only_unique = TRUE,
                                        pattern = "\\$\\{([^}]+)\\}") {
   origin <- "xlsform_collect_variables"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     is.character(col) && length(col) == 1L && col %in% names(df),
     paste0("Column '", col, "' not found in `df`."),
     origin = origin,
@@ -228,14 +228,14 @@ xlsform_varname_in_survey <- function(varname, name_vector) {
 
   if (!is.character(varname) || length(varname) != 1L || is.na(varname)) {
     msg <- "Argument `varname` must be a single non-NA character string."
-    phr_warning(msg, origin = origin)
+    phrutils::phr_warning(msg, origin = origin)
     return(list(
       valid  = FALSE,
       issues = list(list(row = NA_integer_, message = phr_txt(msg, default = msg)))
     ))
   }
 
-  phr_assert(
+  phrutils::phr_assert(
     is.character(name_vector),
     "Argument `name_vector` must be a character vector.",
     origin = origin,
@@ -421,8 +421,8 @@ xlsform_orphan_square_brackets <- function(cell) {
 xlsform_check_group_repeats <- function(df, type_col = "type") {
   origin <- "xlsform_check_group_repeats"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     is.character(type_col) && length(type_col) == 1L && type_col %in% names(df),
     paste0("Column '", type_col, "' not found in `df`."),
     origin = origin,
@@ -519,10 +519,10 @@ xlsform_check_required_sheet_cols <- function(df,
                                                required_cols = NULL) {
   origin <- "xlsform_check_required_sheet_cols"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
 
   if (!is.null(required_cols)) {
-    phr_assert(
+    phrutils::phr_assert(
       is.character(required_cols) && length(required_cols) >= 1L,
       "Argument `required_cols` must be a non-empty character vector.",
       origin = origin
@@ -592,8 +592,8 @@ xlsform_check_required_sheet_cols <- function(df,
 xlsform_check_duplicate_names <- function(df, name_col = "name", type_col = "type") {
   origin <- "xlsform_check_duplicate_names"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     is.character(name_col) && length(name_col) == 1L && name_col %in% names(df),
     paste0("Column '", name_col, "' not found in `df`."),
     origin = origin,
@@ -739,15 +739,15 @@ xlsform_check_choice_references <- function(survey_df, choices_df,
                                              list_name_col = "list_name") {
   origin <- "xlsform_check_choice_references"
 
-  phr_assert(is.data.frame(survey_df),  "Argument `survey_df` must be a data frame.",  origin = origin)
-  phr_assert(is.data.frame(choices_df), "Argument `choices_df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(survey_df),  "Argument `survey_df` must be a data frame.",  origin = origin)
+  phrutils::phr_assert(is.data.frame(choices_df), "Argument `choices_df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     type_col %in% names(survey_df),
     paste0("Column '", type_col, "' not found in `survey_df`."),
     origin = origin,
     hint = "Pass the correct column name via `type_col`."
   )
-  phr_assert(
+  phrutils::phr_assert(
     list_name_col %in% names(choices_df),
     paste0("Column '", list_name_col, "' not found in `choices_df`."),
     origin = origin,
@@ -825,8 +825,8 @@ xlsform_check_label_presence <- function(df,
                                           name_col  = "name") {
   origin <- "xlsform_check_label_presence"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     type_col %in% names(df),
     paste0("Column '", type_col, "' not found in `df`."),
     origin = origin
@@ -909,8 +909,8 @@ xlsform_check_calculate_expression <- function(df,
                                                 name_col        = "name") {
   origin <- "xlsform_check_calculate_expression"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     type_col %in% names(df),
     paste0("Column '", type_col, "' not found in `df`."),
     origin = origin
@@ -994,8 +994,8 @@ xlsform_check_undefined_references <- function(df,
                                                 check_cols = c("relevant", "constraint", "calculation")) {
   origin <- "xlsform_check_undefined_references"
 
-  phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
-  phr_assert(
+  phrutils::phr_assert(is.data.frame(df), "Argument `df` must be a data frame.", origin = origin)
+  phrutils::phr_assert(
     is.character(name_col) && length(name_col) == 1L && name_col %in% names(df),
     paste0("Column '", name_col, "' not found in `df`."),
     origin = origin,

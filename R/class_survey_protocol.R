@@ -166,15 +166,15 @@ SurveyProtocol <- R6::R6Class(
     #'   A \code{stratum} column enables stratified sampling.
     #' @return Invisibly returns \code{self} for method chaining.
     set_sampling_frame = function(frame) {
-      phr_try(
+      phrutils::phr_try(
         {
           # 1. Confirm it is a data frame and not empty
-          phr_validate_dataframe(
+          phrutils::phr_validate_dataframe(
             frame,
             origin = "SurveyProtocol$set_sampling_frame",
             soft = FALSE
           )
-          phr_assert(
+          phrutils::phr_assert(
             nrow(frame) > 0,
             message = phr_txt("Sampling frame is empty."),
             origin = "SurveyProtocol$set_sampling_frame",
@@ -204,7 +204,7 @@ SurveyProtocol <- R6::R6Class(
           # 3. Add inclusion column (all TRUE) if absent
           if (!"inclusion" %in% names(frame)) {
             frame$inclusion <- TRUE
-            phr_message(
+            phrutils::phr_message(
               phr_txt(
                 "'inclusion' column not found — defaulting all PSUs to TRUE."
               ),
@@ -220,7 +220,7 @@ SurveyProtocol <- R6::R6Class(
           private$..sync_state()
           private$..touch()
           self$diagnose_coherence()
-          phr_message(
+          phrutils::phr_message(
             phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
             origin = "SurveyProtocol$set_sampling_frame"
           )
@@ -730,7 +730,7 @@ SurveyProtocol <- R6::R6Class(
       }
       st <- tryCatch(self$get_sample_table(), error = function(e) NULL)
       if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        return(NULL)
+        return(0L)
       }
       nrow(st)
     },

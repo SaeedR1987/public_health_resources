@@ -22,7 +22,7 @@
 plot_correlogram <- function (survey_design, numeric_cols = c("fsl_fcs_score",  "fsl_rcsi_score",  "fsl_hhs_score"), title_name = NULL, variable_label = NULL, subtitle = NULL){
   origin <- "plot_correlogram"
 
-  phr_try({
+  phrutils::phr_try({
 
     if (!requireNamespace("GGally", quietly = TRUE)) {
       phr_error(phr_txt("Package 'GGally' is required for plot_correlogram(). Install it with: install.packages('GGally')"),
@@ -31,9 +31,9 @@ plot_correlogram <- function (survey_design, numeric_cols = c("fsl_fcs_score",  
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
-    phr_validate_vector_length(numeric_cols, min_length = 1, origin = origin, soft = FALSE)
-    phr_validate_columns(df, numeric_cols, origin = origin,
+    phrutils::phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
+    phrutils::phr_validate_vector_length(numeric_cols, min_length = 1, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, numeric_cols, origin = origin,
                           hint = phr_txt("Ensure all specified columns exist in the dataset"), soft = FALSE)
 
     print(numeric_cols)
@@ -122,14 +122,14 @@ plot_age_pyramid <- function (survey_design,
 {
   origin <- "plot_age_pyramid"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_assert(!missing(sex_col) && !is.null(sex_col),
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_assert(!missing(sex_col) && !is.null(sex_col),
                  phr_txt("sex_col is required and cannot be NULL"), origin = origin)
-    phr_assert(!missing(age_years_col) && !is.null(age_years_col),
+    phrutils::phr_assert(!missing(age_years_col) && !is.null(age_years_col),
                  phr_txt("age_years_col is required and cannot be NULL"), origin = origin)
 
     # Ensure fallback values using ensure_value function for values and labels only
@@ -144,7 +144,7 @@ plot_age_pyramid <- function (survey_design,
 
     # Handle age grouping
     if (age_grouping == FALSE) {
-      phr_validate_columns(plot_data, age_years_col, origin = origin,
+      phrutils::phr_validate_columns(plot_data, age_years_col, origin = origin,
                              hint = phr_txt("Ensure age_years_col column exists in the dataset"), soft = FALSE)
       plot_data <- plot_data |>
         dplyr::mutate(age_group_plot = cut(as.numeric(!!rlang::sym(age_years_col)),
@@ -153,8 +153,8 @@ plot_age_pyramid <- function (survey_design,
                                                       "20-24", "25-29", "30-34", "35-39","40-44", "45-49", "50-54", "55-59",
                                                       "60-64", "65-69", "70-74", "75-79", "80-84", "85+")))
     } else {
-      phr_validate_not_null(age_group_col, origin = origin, soft = FALSE)
-      phr_validate_columns(plot_data, age_group_col, origin = origin,
+      phrutils::phr_validate_not_null(age_group_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(plot_data, age_group_col, origin = origin,
                              hint = phr_txt(paste0("When age_grouping=TRUE, '", age_group_col, "' column must exist in the dataset")),
                              soft = FALSE)
       plot_data <- plot_data |>
@@ -162,7 +162,7 @@ plot_age_pyramid <- function (survey_design,
     }
 
     # Validate sex column
-    phr_validate_columns(plot_data, sex_col, origin = origin,
+    phrutils::phr_validate_columns(plot_data, sex_col, origin = origin,
                            hint = phr_txt("Ensure sex_col column exists in the dataset"), soft = FALSE)
 
     # Convert sex column to character for matching
@@ -172,17 +172,17 @@ plot_age_pyramid <- function (survey_design,
     # Handle weights column if provided
     use_weights <- FALSE
     if (!is.null(weights_col)) {
-      phr_validate_columns(plot_data, weights_col, origin = origin,
+      phrutils::phr_validate_columns(plot_data, weights_col, origin = origin,
                              hint = phr_txt("Ensure weights_col column exists in the dataset"), soft = FALSE)
 
       # Validate that weights column is numeric
       weights_values <- plot_data[[weights_col]]
-      phr_validate_all_numeric(weights_values, origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(weights_values, origin = origin, soft = FALSE)
 
       # Filter out NA weights and inform user
       n_na_weights <- sum(is.na(weights_values))
       if (n_na_weights > 0) {
-        phr_message(phr_txt(paste0("Removing ", n_na_weights, " rows with NA values in weights_col '", weights_col, "'")),
+        phrutils::phr_message(phr_txt(paste0("Removing ", n_na_weights, " rows with NA values in weights_col '", weights_col, "'")),
                       origin = origin)
         plot_data <- plot_data |>
           dplyr::filter(!is.na(!!rlang::sym(weights_col)))
@@ -195,11 +195,11 @@ plot_age_pyramid <- function (survey_design,
       use_weights <- weighted_result
 
       if (weighted_result) {
-        phr_message(phr_txt(paste0("Using weighted counts from '", weights_col, "' column")), origin = origin)
+        phrutils::phr_message(phr_txt(paste0("Using weighted counts from '", weights_col, "' column")), origin = origin)
       }
     } else {
       if (weighted_result) {
-        phr_message(phr_txt("weighted_result=TRUE but no weights_col provided. Using unweighted counts."),
+        phrutils::phr_message(phr_txt("weighted_result=TRUE but no weights_col provided. Using unweighted counts."),
                       origin = origin)
       }
       # Create a weight column with value 1 for all rows (unweighted)
@@ -212,7 +212,7 @@ plot_age_pyramid <- function (survey_design,
 
     # Validate that sex_male_val exists in the data
     if (!as.character(sex_male_val) %in% unique_sex) {
-      phr_assert(FALSE,
+      phrutils::phr_assert(FALSE,
                    phr_txt(paste0("sex_male_val '", sex_male_val,
                                     "' not found in ", sex_col, " column. Available values: ",
                                     paste(unique_sex, collapse = ", "))),
@@ -221,7 +221,7 @@ plot_age_pyramid <- function (survey_design,
 
     # Validate that sex_female_val exists in the data
     if (!as.character(sex_female_val) %in% unique_sex) {
-      phr_assert(FALSE,
+      phrutils::phr_assert(FALSE,
                    phr_txt(paste0("sex_female_val '", sex_female_val,
                                     "' not found in ", sex_col, " column. Available values: ",
                                     paste(unique_sex, collapse = ", "))),
@@ -231,7 +231,7 @@ plot_age_pyramid <- function (survey_design,
     # Check if there are other sex values in the data
     other_sex_values <- setdiff(unique_sex, c(as.character(sex_male_val), as.character(sex_female_val)))
     if (length(other_sex_values) > 0) {
-      phr_message(phr_txt(paste0("Note: Additional sex values found in data that will be excluded from plot: ",
+      phrutils::phr_message(phr_txt(paste0("Note: Additional sex values found in data that will be excluded from plot: ",
                                      paste(other_sex_values, collapse = ", "))), origin = origin)
     }
 
@@ -242,7 +242,7 @@ plot_age_pyramid <- function (survey_design,
 
     # Check if data is empty after filtering
     if (nrow(plot_data) == 0) {
-      phr_assert(FALSE,
+      phrutils::phr_assert(FALSE,
                    phr_txt("No valid data remains after filtering for specified sex values and removing NAs"),
                    origin = origin)
     }
@@ -301,7 +301,7 @@ plot_age_pyramid <- function (survey_design,
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
     # Get colors
-    colors <- get_color_palette(type = color_palette, n = 2)
+    colors <- phrutils::get_color_palette(type = color_palette, n = 2)
     names(colors) <- c(sex_male_lab, sex_female_lab)
 
     # Set default x_lab if not provided
@@ -425,25 +425,25 @@ plot_age_distribution <- function (survey_design,
                                    weights_col = NULL) {
   origin <- "plot_age_distribution"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
 
     if(!is.null(by_group_col)) {
-      phr_validate_columns(df, by_group_col, origin = origin,
+      phrutils::phr_validate_columns(df, by_group_col, origin = origin,
                              hint = phr_txt("Ensure grouping column exists in the dataset"), soft = FALSE)
     }
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -451,18 +451,18 @@ plot_age_distribution <- function (survey_design,
     y_lab <- ensure_value(y_lab, if (weighted) "Weighted Count" else "Count")
 
     # Get color for histogram
-    hist_color <- get_color_palette(type = color_palette, n = 1)[1]
+    hist_color <- phrutils::get_color_palette(type = color_palette, n = 1)[1]
 
     if(is.null(year_or_month) | year_or_month == "year"){
-      phr_validate_columns(df, age_years_col, origin = origin,
+      phrutils::phr_validate_columns(df, age_years_col, origin = origin,
                              hint = phr_txt("Ensure age_years_col column exists in the dataset"), soft = FALSE)
       if (is.null(min_age)) {
         min_age <- 0
-        phr_message(phr_txt("No minimum age specified. Defaulting to 0 years."), origin = origin)
+        phrutils::phr_message(phr_txt("No minimum age specified. Defaulting to 0 years."), origin = origin)
       }
       if (is.null(max_age)) {
         max_age <- 5
-        phr_message(phr_txt("No maximum age specified. Defaulting to 5 years."), origin = origin)
+        phrutils::phr_message(phr_txt("No maximum age specified. Defaulting to 5 years."), origin = origin)
       }
       if (is.null(breaks)) {
         breaks <- 1
@@ -515,15 +515,15 @@ plot_age_distribution <- function (survey_design,
     }
 
     if(year_or_month == "month"){
-      phr_validate_columns(df, age_months_col, origin = origin,
+      phrutils::phr_validate_columns(df, age_months_col, origin = origin,
                              hint = phr_txt("Ensure age_months_col column exists in the dataset"), soft = FALSE)
       if (is.null(min_age)) {
         min_age <- 0
-        phr_message(phr_txt("No minimum age specified. Defaulting to 0 months."), origin = origin)
+        phrutils::phr_message(phr_txt("No minimum age specified. Defaulting to 0 months."), origin = origin)
       }
       if (is.null(max_age)) {
         max_age <- 59
-        phr_message(phr_txt("No maximum age specified. Defaulting to 59 months."), origin = origin)
+        phrutils::phr_message(phr_txt("No maximum age specified. Defaulting to 59 months."), origin = origin)
       }
       if (is.null(breaks)) {
         breaks <- 12
@@ -645,7 +645,7 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
 {
   origin <- "plot_ridge_distribution"
 
-  phr_try({
+  phrutils::phr_try({
 
     if (!requireNamespace("ggridges", quietly = TRUE)) {
       phr_error(phr_txt("Package 'ggridges' is required for plot_ridge_distribution(). Install it with: install.packages('ggridges')"),
@@ -654,27 +654,27 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
-    phr_validate_columns(df, numeric_cols, origin = origin,
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(numeric_cols, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, numeric_cols, origin = origin,
                            hint = phr_txt("Ensure all numeric columns exist in the dataset"), soft = FALSE)
 
     # Validate numeric_cols_labels if provided
     if (!is.null(numeric_cols_labels)) {
-      phr_assert(length(numeric_cols_labels) == length(numeric_cols),
+      phrutils::phr_assert(length(numeric_cols_labels) == length(numeric_cols),
                    phr_txt(paste0("numeric_cols_labels must have the same length as numeric_cols. ",
                                     "Expected: ", length(numeric_cols), ", Got: ", length(numeric_cols_labels))),
                    origin = origin)
     }
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -689,7 +689,7 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
       grouping <- "group"
       a <- 1
     } else {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt("Ensure grouping column exists in the dataset"), soft = FALSE)
     }
 
@@ -723,7 +723,7 @@ plot_ridge_distribution <- function (survey_design, numeric_cols = NULL,
 
     # Get colors based on number of groups
     n_colors <- length(unique(df[[name_groups]]))
-    colors <- get_color_palette(type = color_palette, n = n_colors)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
 
     g <- ggplot2::ggplot(df,
                          if (weighted) ggplot2::aes(x = get(name_units), y = get(name_groups), fill = get(name_groups), weight = !!rlang::sym(weights_col))
@@ -804,7 +804,7 @@ plot_ridge_distribution_by_group <- function(survey_design,
                                              weights_col = NULL) {
   origin <- "plot_ridge_distribution_by_group"
 
-  phr_try({
+  phrutils::phr_try({
 
     if (!requireNamespace("ggridges", quietly = TRUE)) {
       phr_error(phr_txt("Package 'ggridges' is required for plot_ridge_distribution_by_group(). Install it with: install.packages('ggridges')"),
@@ -813,27 +813,27 @@ plot_ridge_distribution_by_group <- function(survey_design,
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_not_null(numeric_col, origin = origin, soft = FALSE)
-    phr_validate_not_null(grouping, origin = origin, soft = FALSE)
-    phr_validate_character(numeric_col, origin = origin, soft = FALSE)
-    phr_validate_character(grouping, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(numeric_col, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(grouping, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(numeric_col, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(grouping, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
 
-    phr_validate_columns(df, numeric_col, origin = origin,
+    phrutils::phr_validate_columns(df, numeric_col, origin = origin,
                            hint = phr_txt("Ensure the numeric column exists in the dataset"),
                            soft = FALSE)
-    phr_validate_columns(df, grouping, origin = origin,
+    phrutils::phr_validate_columns(df, grouping, origin = origin,
                            hint = phr_txt("Ensure the grouping column exists in the dataset"),
                            soft = FALSE)
 
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |>
         dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
@@ -876,7 +876,7 @@ plot_ridge_distribution_by_group <- function(survey_design,
 
     # Get colors: one per level (overall + each group)
     n_levels <- length(levels(df_combined$.group_label))
-    colors <- get_color_palette(type = color_palette, n = n_levels)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_levels)
 
     # Build the ridge plot
     g <- ggplot2::ggplot(
@@ -982,27 +982,27 @@ plot_cumulative_distribution <- function(survey_design, data_var,
                                          weights_col = NULL) {
   origin <- "plot_cumulative_distribution"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_character(data_var, origin = origin, soft = FALSE)
-    phr_validate_vector_length(data_var, exact_length = 1, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(data_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_vector_length(data_var, exact_length = 1, origin = origin, soft = FALSE)
 
     # Validate column existence
-    phr_validate_columns(df, data_var, origin = origin,
+    phrutils::phr_validate_columns(df, data_var, origin = origin,
                            hint = phr_txt("The data column '{data_var}' does not exist in the dataset"),
                            soft = FALSE)
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -1010,7 +1010,7 @@ plot_cumulative_distribution <- function(survey_design, data_var,
     df <- df |> dplyr::mutate(!!rlang::sym(data_var) := as.numeric(!!rlang::sym(data_var)))
     n_after <- sum(!is.na(df[[data_var]]))
     if (n_after < n_before) {
-      phr_warning(
+      phrutils::phr_warning(
         paste0("Coercing '", data_var, "' to numeric introduced ", n_before - n_after, " NA value(s). Check that the column contains valid numbers."),
         origin = origin
       )
@@ -1033,9 +1033,9 @@ plot_cumulative_distribution <- function(survey_design, data_var,
 
     # Validate vline parameters if provided
     if (!is.null(vline_intercepts)) {
-      phr_validate_all_numeric(vline_intercepts, origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(vline_intercepts, origin = origin, soft = FALSE)
       if (!is.null(vline_colors)) {
-        phr_assert(is.character(vline_colors) && length(vline_colors) == length(vline_intercepts),
+        phrutils::phr_assert(is.character(vline_colors) && length(vline_colors) == length(vline_intercepts),
                      phr_txt("vline_colors must be a character vector with same length as vline_intercepts"),
                      origin = origin)
       }
@@ -1051,7 +1051,7 @@ plot_cumulative_distribution <- function(survey_design, data_var,
       total_n <- sum(!is.na(df[[data_var]]))
       auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
     } else {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt("Ensure the grouping column '{grouping}' exists in the dataset"), soft = FALSE)
 
       n_by_group <- df |>
@@ -1117,11 +1117,11 @@ plot_cumulative_distribution <- function(survey_design, data_var,
 
     # Use color palette
     if(missing(grouping) || is.null(grouping)) {
-      colors <- get_color_palette(type = color_palette, n = 1)
+      colors <- phrutils::get_color_palette(type = color_palette, n = 1)
     } else {
       values <- df |> dplyr::select(!!rlang::sym(grouping)) |> dplyr::pull() |> unique()
       n_colors <- length(values) + 1  # +1 for "Overall"
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
     }
 
     g <- g +
@@ -1209,35 +1209,35 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
                                     weights_col = NULL) {
   origin <- "plot_zscore_distribution"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_character(zscore_var, origin = origin, soft = FALSE)
-    phr_validate_vector_length(zscore_var, exact_length = 1, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(zscore_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_vector_length(zscore_var, exact_length = 1, origin = origin, soft = FALSE)
 
     # Validate column existence
-    phr_validate_columns(df, zscore_var, origin = origin,
+    phrutils::phr_validate_columns(df, zscore_var, origin = origin,
                           hint = phr_txt("The z-score column '{zscore_var}' does not exist in the dataset"),
                           soft = FALSE)
 
     # Validate vline parameters if provided
     if (!is.null(vline_intercepts)) {
-      phr_validate_all_numeric(vline_intercepts, origin = origin, soft = FALSE)
-      phr_assert(is.character(vline_colors) && length(vline_colors) == length(vline_intercepts),
+      phrutils::phr_validate_all_numeric(vline_intercepts, origin = origin, soft = FALSE)
+      phrutils::phr_assert(is.character(vline_colors) && length(vline_colors) == length(vline_intercepts),
                    phr_txt("vline_colors must be a character vector with same length as vline_intercepts"),
                    origin = origin)
     }
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -1262,7 +1262,7 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
         y = stats::dnorm(seq(from = -6, to = 6, by = 0.12), mean = 0, sd = 1)
       )
       # Get colors from palette
-      colors <- get_color_palette(type = color_palette, n = 2)
+      colors <- phrutils::get_color_palette(type = color_palette, n = 2)
 
       g <- ggplot2::ggplot(df, ggplot2::aes(get(zscore_var))) +
         ggplot2::geom_histogram(
@@ -1294,7 +1294,7 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
     }
 
     if(!is.null(grouping)) {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                             hint = phr_txt("Ensure the grouping column '{grouping}' exists in the dataset"),
                             soft = FALSE)
 
@@ -1317,7 +1317,7 @@ plot_zscore_distribution <- function(survey_design, zscore_var,
 
       # Get colors from palette
       n_colors <- length(unique(df$group_var))
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
 
       g <- ggplot2::ggplot(df, ggplot2::aes(x = get(zscore_var), color = as.factor(get("group_var")))) +
         ggplot2::geom_density(if (weighted) ggplot2::aes(weight=!!rlang::sym(weights_col)) else NULL, linewidth = 1) +
@@ -1478,7 +1478,7 @@ plot_iycf_areagraph <- function(survey_design,
                                 weights_col = NULL) {
   origin <- "plot_iycf_areagraph"
 
-  phr_try({
+  phrutils::phr_try({
 
     if (!requireNamespace("ggnewscale", quietly = TRUE)) {
       phr_error(phr_txt("Package 'ggnewscale' is required for plot_iycf_areagraph(). Install it with: install.packages('ggnewscale')"),
@@ -1487,14 +1487,14 @@ plot_iycf_areagraph <- function(survey_design,
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_columns(df, age_months_col, origin = origin,
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, age_months_col, origin = origin,
                            hint = phr_txt(paste0("Age in months column '", age_months_col, "' is required to create the IYCF Area Graph but is not in your data. Please check your input.")),
                            soft = FALSE)
 
     # Validate age column is numeric or safely coercible to numeric
-    phr_validate_all_numeric(df[[age_months_col]], origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(df[[age_months_col]], origin = origin, soft = FALSE)
 
     # Collect all required columns
     liquid_cols <- c(iycf_6a_col, iycf_6b_col, iycf_6c_col, iycf_6d_col,
@@ -1510,7 +1510,7 @@ plot_iycf_areagraph <- function(survey_design,
     area_graph_vars <- c(iycf_ebf_col, iycf_4_col, liquid_cols, food_cols)
 
     # Validate all required IYCF columns exist
-    phr_validate_columns(df, area_graph_vars, origin = origin,
+    phrutils::phr_validate_columns(df, area_graph_vars, origin = origin,
                            hint = phr_txt("You don't have all the required IYCF variables to create the IYCF Area Graph. Please check your input."),
                            soft = FALSE)
 
@@ -1521,16 +1521,16 @@ plot_iycf_areagraph <- function(survey_design,
     for (i in seq_along(frequency_cols)) {
       col <- frequency_cols[i]
       col_name <- frequency_names[i]
-      phr_validate_all_numeric(df[[col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[col]], origin = origin, soft = FALSE)
     }
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -1728,7 +1728,7 @@ plot_iycf_areagraph <- function(survey_design,
 
     # Get color palette for IYCF categories
     # Order from lightest (Unknown) to darkest (Exclusive Breastfed)
-    category_colors <- get_color_palette(type = color_palette)
+    category_colors <- phrutils::get_color_palette(type = color_palette)
 
     # Create plot with fixed color scale
     g <- ggplot(data = df, aes(x = age_group, y = percentage)) +
@@ -1839,62 +1839,62 @@ plot_date_runner <- function(survey_design,
                              weights_col = NULL) {
   origin <- "plot_date_runner"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_assert(!missing(numeric_col) && !is.null(numeric_col),
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_assert(!missing(numeric_col) && !is.null(numeric_col),
                  phr_txt("numeric_col is required"), origin = origin)
 
     # Validate date column exists
-    phr_validate_columns(df, date_col, origin = origin,
+    phrutils::phr_validate_columns(df, date_col, origin = origin,
                            hint = phr_txt(paste0("Date column '", date_col, "' must exist in the dataframe")),
                            soft = FALSE)
 
     # Validate numeric column exists
-    phr_validate_columns(df, numeric_col, origin = origin,
+    phrutils::phr_validate_columns(df, numeric_col, origin = origin,
                            hint = phr_txt(paste0("Numeric column '", numeric_col, "' must exist in the dataframe")),
                            soft = FALSE)
 
     # Validate operation
     valid_operations <- c("mean", "sd", "dps", "count", "ratio")
-    phr_validate_choice(operation, choices = valid_operations, origin = origin, soft = FALSE)
+    phrutils::phr_validate_choice(operation, choices = valid_operations, origin = origin, soft = FALSE)
 
     # For ratio operation, validate second numeric column
     if (operation == "ratio") {
-      phr_validate_not_null(numeric_col2, origin = origin, soft = FALSE)
-      phr_validate_columns(df, numeric_col2, origin = origin,
+      phrutils::phr_validate_not_null(numeric_col2, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, numeric_col2, origin = origin,
                              hint = phr_txt(paste0("Second numeric column '", numeric_col2, "' must exist in the dataframe")),
                              soft = FALSE)
     }
 
     # Validate numeric columns are numeric or safely coercible
-    phr_validate_all_numeric(df[[numeric_col]], origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(df[[numeric_col]], origin = origin, soft = FALSE)
 
     if (!is.null(numeric_col2)) {
-      phr_validate_all_numeric(df[[numeric_col2]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[numeric_col2]], origin = origin, soft = FALSE)
     }
 
     # Validate grouping column if provided
     if (!is.null(grouping_col)) {
-      phr_validate_columns(df, grouping_col, origin = origin,
+      phrutils::phr_validate_columns(df, grouping_col, origin = origin,
                              hint = phr_txt(paste0("Grouping column '", grouping_col, "' must exist in the dataframe")),
                              soft = FALSE)
     }
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_overall, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
       if (!operation %in% c("mean", "sd")) {
-        phr_message(phr_txt(paste0("Weighting is only supported for 'mean' and 'sd' operations. Ignoring weights for '", operation, "' operation.")), origin = origin)
+        phrutils::phr_message(phr_txt(paste0("Weighting is only supported for 'mean' and 'sd' operations. Ignoring weights for '", operation, "' operation.")), origin = origin)
         weighted <- FALSE
       }
     }
@@ -2090,11 +2090,11 @@ plot_date_runner <- function(survey_design,
     # Apply color palette if there are groups
     n_groups <- length(groups)
     if (n_groups > 1) {
-      colors <- get_color_palette(type = color_palette, n = n_groups)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_groups)
       g <- g + ggplot2::scale_color_manual(values = colors, name = "Group")
     } else {
       # For single group, use first color from palette
-      colors <- get_color_palette(type = color_palette, n = 1)
+      colors <- phrutils::get_color_palette(type = color_palette, n = 1)
       g <- g + ggplot2::scale_color_manual(values = colors, guide = "none")
     }
 
@@ -2234,14 +2234,14 @@ plot_domain_radar <- function(survey_design,
                            weights_col = NULL) {
   origin <- "plot_domain_radar"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_not_null(domain_cols, origin = origin, soft = FALSE)
-    phr_validate_columns(df, domain_cols, origin = origin,
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(domain_cols, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, domain_cols, origin = origin,
                            hint = phr_txt("Ensure all domain columns exist in the dataset"), soft = FALSE)
 
     if (!requireNamespace("ggradar", quietly = TRUE)) {
@@ -2255,19 +2255,19 @@ plot_domain_radar <- function(survey_design,
       df <- df |> dplyr::mutate(group = "All")
       grouping_var <- "group"
     } else {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt("Ensure grouping column exists in the dataset"), soft = FALSE)
       # Don't rename - keep original column name for grouping
       grouping_var <- grouping
     }
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -2316,7 +2316,7 @@ plot_domain_radar <- function(survey_design,
 
     # Get colors based on number of groups
     n_groups <- nrow(summary)
-    colors <- get_color_palette(type = color_palette, n = n_groups)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_groups)
 
     # Determine if we should show percentage labels (only for single group)
     show_labels <- !has_grouping || n_groups == 1
@@ -2508,16 +2508,16 @@ plot_domain_distribution <- function(survey_design,
                                      weights_col = NULL) {
   origin <- "plot_domain_distribution"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_not_null(domain_list, origin = origin, soft = FALSE)
-    phr_validate_list(domain_list, origin = origin, soft = FALSE)
-    phr_assert(length(domain_list) > 0, phr_txt("domain_list must contain at least one domain"), origin = origin)
-    phr_validate_logical(show_percentage, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(domain_list, origin = origin, soft = FALSE)
+    phrutils::phr_validate_list(domain_list, origin = origin, soft = FALSE)
+    phrutils::phr_assert(length(domain_list) > 0, phr_txt("domain_list must contain at least one domain"), origin = origin)
+    phrutils::phr_validate_logical(show_percentage, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
 
     # Extract domain names
     domain_names <- names(domain_list)
@@ -2559,17 +2559,17 @@ plot_domain_distribution <- function(survey_design,
     }
 
     # Validate all response columns exist
-    phr_validate_columns(df, all_responses, origin = origin,
+    phrutils::phr_validate_columns(df, all_responses, origin = origin,
                            hint = phr_txt("Ensure all response columns exist in the dataset"),
                            soft = FALSE)
 
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -2665,7 +2665,7 @@ plot_domain_distribution <- function(survey_design,
     # Get colors based on number of unique domains
     unique_domains <- unique(plot_data$domain)
     n_domains <- length(unique_domains)
-    colors <- get_color_palette(type = color_palette, n = n_domains)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_domains)
 
     # Create named color vector for consistent mapping (use original domain names)
     domain_colors <- setNames(colors, unique_domains)
@@ -2838,30 +2838,30 @@ plot_stacked_bar <- function(survey_design,
                              legend_position = "bottom") {
   origin <- "plot_stacked_bar"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_not_null(category_var, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
-    phr_validate_logical(show_NA, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(category_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_NA, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
 
-    phr_validate_columns(df, category_var, origin = origin,
+    phrutils::phr_validate_columns(df, category_var, origin = origin,
                          hint = phr_txt("Ensure the category column '{category_var}' exists in the dataset"),
                          soft = FALSE)
 
     # Validate weights if weighted = TRUE
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                            hint = phr_txt("Ensure the weights column '{weights_col}' exists in the dataset"),
                            soft = FALSE)
 
       # Validate weights column is numeric
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
 
       # Convert weights to numeric
       df <- df |>
@@ -2872,7 +2872,7 @@ plot_stacked_bar <- function(survey_design,
     if (is.null(fill_var)) {
       fill_var <- category_var
     } else {
-      phr_validate_columns(df, fill_var, origin = origin,
+      phrutils::phr_validate_columns(df, fill_var, origin = origin,
                            hint = phr_txt("Ensure the fill column '{fill_var}' exists in the dataset"),
                            soft = FALSE)
     }
@@ -2925,12 +2925,12 @@ plot_stacked_bar <- function(survey_design,
       # Determine number of colors needed
       if (is.factor(df[[fill_var]])) {
         all_levels <- levels(df[[fill_var]])
-        all_colors <- get_color_palette(type = color_palette, n = length(all_levels))
+        all_colors <- phrutils::get_color_palette(type = color_palette, n = length(all_levels))
         names(all_colors) <- all_levels
         colors <- all_colors
       } else {
         n_colors <- length(unique(df_plot[[fill_var]]))
-        colors <- get_color_palette(type = color_palette, n = n_colors)
+        colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
       }
 
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
@@ -2964,7 +2964,7 @@ plot_stacked_bar <- function(survey_design,
 
     } else {
       # Grouped plot
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                            hint = phr_txt("Ensure the grouping column '{grouping}' exists in the dataset"),
                            soft = FALSE)
 
@@ -3027,12 +3027,12 @@ plot_stacked_bar <- function(survey_design,
       # Determine number of colors needed
       if (is.factor(df[[fill_var]])) {
         all_levels <- levels(df[[fill_var]])
-        all_colors <- get_color_palette(type = color_palette, n = length(all_levels))
+        all_colors <- phrutils::get_color_palette(type = color_palette, n = length(all_levels))
         names(all_colors) <- all_levels
         colors <- all_colors
       } else {
         n_colors <- length(unique(df_plot[[fill_var]]))
-        colors <- get_color_palette(type = color_palette, n = n_colors)
+        colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
       }
 
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
@@ -3162,7 +3162,7 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
                                            group_spacing = 0.1) {
   origin <- "plot_stacked_bar_multiple_vars"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
@@ -3189,20 +3189,20 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
     legend_label <- ensure_value(legend_label, NULL)
 
     # Validate inputs
-    phr_validate_not_null(category_vars, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_logical(show_labels, origin = origin, soft = FALSE)
-    phr_validate_logical(separate_legends, origin = origin, soft = FALSE)
-    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_character(overall_label, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(bar_spacing, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(group_spacing, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(category_vars, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_labels, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(separate_legends, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(overall_label, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(bar_spacing, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(group_spacing, origin = origin, soft = FALSE)
 
     # Check for ggnewscale if separate_legends = TRUE
     if (separate_legends && !requireNamespace("ggnewscale", quietly = TRUE)) {
-      phr_warning(phr_txt("separate_legends=TRUE requires ggnewscale package. Install with install.packages('ggnewscale'). Falling back to combined legend."),
+      phrutils::phr_warning(phr_txt("separate_legends=TRUE requires ggnewscale package. Install with install.packages('ggnewscale'). Falling back to combined legend."),
                     origin = origin)
       separate_legends <- FALSE
     }
@@ -3215,8 +3215,8 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
     if (x_label == "") x_label <- NULL
 
     # Validate category_vars
-    phr_validate_vector_length(category_vars, min_length = 2, origin = origin, soft = FALSE)
-    phr_validate_columns(df, category_vars, origin = origin,
+    phrutils::phr_validate_vector_length(category_vars, min_length = 2, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, category_vars, origin = origin,
                            hint = phr_txt("Ensure all category variable columns exist in the dataset"),
                            soft = FALSE)
 
@@ -3233,7 +3233,7 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
 
     # Validate category_labels if provided
     if (!is.null(category_labels)) {
-      phr_validate_character(category_labels, origin = origin, soft = FALSE)
+      phrutils::phr_validate_character(category_labels, origin = origin, soft = FALSE)
       if (length(category_labels) != length(category_vars)) {
         phr_error(phr_txt(paste0("category_labels must be same length as category_vars. Expected ",
                                      length(category_vars), " labels but got ", length(category_labels))),
@@ -3269,25 +3269,25 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
 
     # Validate weights if weighted = TRUE
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
     # Validate grouping if provided
     has_grouping <- !is.null(grouping)
     if (has_grouping) {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt(paste0("Grouping column '", grouping, "' must exist")),
                              soft = FALSE)
     }
 
     # If show_overall is TRUE but no grouping, warn and set to FALSE
     if (show_overall && !has_grouping) {
-      phr_warning(phr_txt("show_overall=TRUE only applies when grouping is provided. Ignoring show_overall."),
+      phrutils::phr_warning(phr_txt("show_overall=TRUE only applies when grouping is provided. Ignoring show_overall."),
                     origin = origin)
       show_overall <- FALSE
     }
@@ -3530,7 +3530,7 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
           all_levels <- unique(df_var$category)
         }
         n_colors <- length(all_levels)
-        colors <- get_color_palette(type = var_palette, n = n_colors)
+        colors <- phrutils::get_color_palette(type = var_palette, n = n_colors)
         color_map <- setNames(colors, all_levels)
 
         # Add this variable's bars
@@ -3565,7 +3565,7 @@ plot_stacked_bar_multiple_vars <- function(survey_design,
       for (i in seq_along(category_vars)) {
         var_levels_i <- var_levels_list[[i]]
         n_colors_i <- length(var_levels_i)
-        colors_i <- get_color_palette(type = color_palettes[i], n = n_colors_i)
+        colors_i <- phrutils::get_color_palette(type = color_palettes[i], n = n_colors_i)
         new_entries <- setNames(colors_i, var_levels_i)
         new_entries <- new_entries[!names(new_entries) %in% names(combined_colors)]
         combined_colors <- c(combined_colors, new_entries)
@@ -3737,22 +3737,22 @@ plot_grouped_bar_multiple <- function(survey_design,
                                       legend_position = "bottom") {
   origin <- "plot_grouped_bar_multiple"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
 
     # --- Input validation ---
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_not_null(var_name, origin = origin, soft = FALSE)
-    phr_validate_character(var_name, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(var_name, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(var_name, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
 
-    phr_validate_columns(df, var_name, origin = origin,
+    phrutils::phr_validate_columns(df, var_name, origin = origin,
                          hint = phr_txt(paste0("Ensure column '", var_name, "' exists in the dataset")),
                          soft = FALSE)
 
     if (!is.null(grouping)) {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                            hint = phr_txt(paste0("Ensure the grouping column '", grouping,
                                                  "' exists in the dataset")),
                            soft = FALSE)
@@ -3778,7 +3778,7 @@ plot_grouped_bar_multiple <- function(survey_design,
       )
 
       if (is.null(calc_res) || nrow(calc_res) == 0 || all(is.na(calc_res$point.estimate))) {
-        phr_warning(origin, paste0("No valid results returned for variable '", var_name, "'."))
+        phrutils::phr_warning(origin, paste0("No valid results returned for variable '", var_name, "'."))
         return(invisible(NULL))
       }
 
@@ -3814,7 +3814,7 @@ plot_grouped_bar_multiple <- function(survey_design,
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
       # Single-color palette
-      colors <- get_color_palette(type = color_palette, n = 1)
+      colors <- phrutils::get_color_palette(type = color_palette, n = 1)
 
       g <- ggplot2::ggplot(df_plot,
                            ggplot2::aes(x = stats::reorder(.data$response, value), y = value)) +
@@ -3844,7 +3844,7 @@ plot_grouped_bar_multiple <- function(survey_design,
         subset_design <- tryCatch(
           subset(survey_design, survey_design$variables[[grouping]] == g_val),
           error = function(e) {
-            phr_warning(origin, paste("Subset failed for", grouping, "=", g_val))
+            phrutils::phr_warning(origin, paste("Subset failed for", grouping, "=", g_val))
             NULL
           }
         )
@@ -3864,7 +3864,7 @@ plot_grouped_bar_multiple <- function(survey_design,
       calc_res <- dplyr::bind_rows(calc_res_list)
 
       if (is.null(calc_res) || nrow(calc_res) == 0 || all(is.na(calc_res$point.estimate))) {
-        phr_warning(origin, paste0("No valid grouped results returned for variable '", var_name, "'."))
+        phrutils::phr_warning(origin, paste0("No valid grouped results returned for variable '", var_name, "'."))
         return(invisible(NULL))
       }
 
@@ -3901,7 +3901,7 @@ plot_grouped_bar_multiple <- function(survey_design,
       final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
       n_colors <- length(group_levels)
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
 
       if (is.null(legend_label)) legend_label <- grouping
 
@@ -4059,32 +4059,32 @@ plot_boxplot <- function(survey_design,
                          legend_position = "bottom") {
   origin <- "plot_boxplot"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Validate inputs
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_overall, origin = origin, soft = FALSE)
 
-    phr_validate_columns(df, numeric_var, origin = origin,
+    phrutils::phr_validate_columns(df, numeric_var, origin = origin,
                            hint = phr_txt(paste0("Ensure the numeric column '", numeric_var, "' exists in the dataset")),
                            soft = FALSE)
 
     # Check if numeric_var is actually numeric
-    phr_validate_all_numeric(df[[numeric_var]], origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(df[[numeric_var]], origin = origin, soft = FALSE)
 
     # Validate weights if requested
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
 
       # Validate weights column is numeric
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
 
       # Coerce to numeric
       df <- df |>
@@ -4178,7 +4178,7 @@ plot_boxplot <- function(survey_design,
             fill = fill_color[1]
           )
         } else {
-          colors <- get_color_palette(type = color_palette, n = 1)
+          colors <- phrutils::get_color_palette(type = color_palette, n = 1)
           g <- g + ggplot2::geom_boxplot(
             stat = "identity",
             ggplot2::aes(ymin = ymin, lower = .data$lower, middle = .data$middle, upper = .data$upper, ymax = ymax),
@@ -4192,7 +4192,7 @@ plot_boxplot <- function(survey_design,
         if (!is.null(fill_color)) {
           g <- g + ggplot2::geom_boxplot(outlier.shape = outlier_shape, fill = fill_color[1])
         } else {
-          colors <- get_color_palette(type = color_palette, n = 1)
+          colors <- phrutils::get_color_palette(type = color_palette, n = 1)
           g <- g + ggplot2::geom_boxplot(outlier.shape = outlier_shape, fill = colors[1])
         }
       }
@@ -4203,7 +4203,7 @@ plot_boxplot <- function(survey_design,
 
     } else {
       # Grouped plot
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt(paste0("Ensure the grouping column '", grouping, "' exists in the dataset")),
                              soft = FALSE)
 
@@ -4259,7 +4259,7 @@ plot_boxplot <- function(survey_design,
             ggplot2::scale_fill_manual(values = fill_color, name = legend_label)
         } else {
           n_colors <- nrow(weighted_stats)
-          colors <- get_color_palette(type = color_palette, n = n_colors)
+          colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
           g <- g + ggplot2::geom_boxplot(
             stat = "identity",
             ggplot2::aes(ymin = ymin, lower = .data$lower, middle = .data$middle, upper = .data$upper, ymax = ymax,
@@ -4278,7 +4278,7 @@ plot_boxplot <- function(survey_design,
             ggplot2::scale_fill_manual(values = fill_color, name = legend_label)
         } else {
           n_colors <- length(unique(df_plot[[grouping]]))
-          colors <- get_color_palette(type = color_palette, n = n_colors)
+          colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
           g <- g + ggplot2::geom_boxplot(outlier.shape = outlier_shape,
                                          ggplot2::aes(fill = as.factor(!!rlang::sym(grouping)))) +
             ggplot2::scale_fill_manual(values = colors, name = legend_label)
@@ -4394,7 +4394,7 @@ plot_treemap <- function(survey_design,
                          legend_label = NULL) {
   origin <- "plot_treemap"
 
-  phr_try({
+  phrutils::phr_try({
 
     if (!requireNamespace("treemapify", quietly = TRUE)) {
       phr_error(phr_txt("Package 'treemapify' is required for plot_treemap(). Install it with: install.packages('treemapify')"),
@@ -4419,12 +4419,12 @@ plot_treemap <- function(survey_design,
     weights_col <- ensure_value(weights_col, NA_character_)
 
     # Standard validation block
-    phr_validate_not_null(category_var, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(label_size, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(category_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(label_size, origin = origin, soft = FALSE)
 
-    phr_validate_columns(df, category_var, origin = origin,
+    phrutils::phr_validate_columns(df, category_var, origin = origin,
                            hint = phr_txt(paste0("Category column '", category_var, "' must exist in the dataset")),
                            soft = FALSE)
 
@@ -4438,17 +4438,17 @@ plot_treemap <- function(survey_design,
 
     # Validate subcategory if provided
     if (!is.null(subcategory_var)) {
-      phr_validate_columns(df, subcategory_var, origin = origin,
+      phrutils::phr_validate_columns(df, subcategory_var, origin = origin,
                              hint = phr_txt(paste0("Subcategory column '", subcategory_var, "' must exist in the dataset")),
                              soft = FALSE)
     }
 
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -4478,10 +4478,10 @@ plot_treemap <- function(survey_design,
       subcategory_sym <- rlang::sym(subcategory_var)
 
       if (!is.null(size_var)) {
-        phr_validate_columns(df, size_var, origin = origin,
+        phrutils::phr_validate_columns(df, size_var, origin = origin,
                                hint = phr_txt(paste0("Size column '", size_var, "' must exist")),
                                soft = FALSE)
-        phr_validate_all_numeric(df[[size_var]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_all_numeric(df[[size_var]], origin = origin, soft = FALSE)
 
         size_sym <- rlang::sym(size_var)
 
@@ -4544,10 +4544,10 @@ plot_treemap <- function(survey_design,
     } else {
       # Single-level treemap (original logic)
       if (!is.null(size_var)) {
-        phr_validate_columns(df, size_var, origin = origin,
+        phrutils::phr_validate_columns(df, size_var, origin = origin,
                                hint = phr_txt(paste0("Size column '", size_var, "' must exist")),
                                soft = FALSE)
-        phr_validate_all_numeric(df[[size_var]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_all_numeric(df[[size_var]], origin = origin, soft = FALSE)
 
         size_sym <- rlang::sym(size_var)
 
@@ -4607,12 +4607,12 @@ plot_treemap <- function(survey_design,
     if (has_subcategory) {
       # Color by main category
       n_cats <- length(unique(df_plot$category))
-      colors <- get_color_palette(type = color_palette, n = n_cats)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_cats)
       # Create named color vector
       color_map <- setNames(colors, unique(df_plot$category))
     } else {
       n_cats <- nrow(df_plot)
-      colors <- get_color_palette(type = color_palette, n = n_cats)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_cats)
     }
 
     # Sort by value descending for layout
@@ -4715,7 +4715,7 @@ plot_sankey <- function(survey_design,
                         flip_coordinates = FALSE) {
   origin <- "plot_sankey"
 
-  phr_try({
+  phrutils::phr_try({
 
     if (!requireNamespace("ggalluvial", quietly = TRUE)) {
       phr_error(phr_txt("Package 'ggalluvial' is required for plot_sankey(). Install it with: install.packages('ggalluvial')"),
@@ -4743,12 +4743,12 @@ plot_sankey <- function(survey_design,
     axis_labels <- ensure_value(axis_labels, NULL)
 
     # Standard validation block
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(show_percentage, origin = origin, soft = FALSE)
-    phr_validate_logical(show_stratum_labels, origin = origin, soft = FALSE)
-    phr_validate_logical(show_stratum_stats, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_percentage, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_stratum_labels, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_stratum_stats, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
 
     # Convert back to NULL for logical checks
     if (is.na(weights_col)) weights_col <- NULL
@@ -4758,14 +4758,14 @@ plot_sankey <- function(survey_design,
     if (y_lab == "") y_lab <- NULL
 
     # Validate axis_vars
-    phr_validate_not_null(axis_vars, origin = origin, soft = FALSE)
-    phr_validate_vector_length(axis_vars, min_length = 2, origin = origin, soft = FALSE)
-    phr_validate_columns(df, axis_vars, origin = origin,
+    phrutils::phr_validate_not_null(axis_vars, origin = origin, soft = FALSE)
+    phrutils::phr_validate_vector_length(axis_vars, min_length = 2, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, axis_vars, origin = origin,
                            hint = phr_txt("Ensure all axis columns exist in the dataset"), soft = FALSE)
 
     # Validate axis_labels if provided
     if (!is.null(axis_labels)) {
-      phr_validate_character(axis_labels, origin = origin, soft = FALSE)
+      phrutils::phr_validate_character(axis_labels, origin = origin, soft = FALSE)
       if (length(axis_labels) != length(axis_vars)) {
         phr_error(phr_txt(paste0("axis_labels must be same length as axis_vars. Expected ",
                                      length(axis_vars), " labels but got ", length(axis_labels))),
@@ -4779,11 +4779,11 @@ plot_sankey <- function(survey_design,
     }
 
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -4870,7 +4870,7 @@ plot_sankey <- function(survey_design,
     first_axis_col <- axis_vars[1]
     first_axis_vals <- unique(df_agg[[first_axis_col]])
     n_colors <- length(first_axis_vals)
-    colors <- get_color_palette(type = color_palette, n = n_colors)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
     color_map <- setNames(colors, first_axis_vals)
 
     # Set default labels
@@ -5048,7 +5048,7 @@ plot_ci_bar_percentage <- function(survey_design,
                                    flip_coordinates = FALSE) {
   origin <- "plot_ci_bar_percentage"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     is_survey <- inherits(survey_design, c("tbl_svy", "survey.design", "survey.design2", "svyrep.design"))
@@ -5072,11 +5072,11 @@ plot_ci_bar_percentage <- function(survey_design,
     grouping <- ensure_value(grouping, NA_character_)
 
     # Standard validation block — skip for survey design objects
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_logical(show_labels, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(conf_level, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_labels, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(conf_level, origin = origin, soft = FALSE)
 
     # Convert NA_character_ back to NULL for logical checks
     if (is.na(weights_col)) weights_col <- NULL
@@ -5087,14 +5087,14 @@ plot_ci_bar_percentage <- function(survey_design,
     if (legend_label == "") legend_label <- NULL
 
     # Validate category_var
-    phr_validate_not_null(category_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(category_var, origin = origin, soft = FALSE)
     working_df <- df
-    phr_validate_columns(working_df, category_var, origin = origin,
+    phrutils::phr_validate_columns(working_df, category_var, origin = origin,
                            hint = phr_txt(paste0("Category column '", category_var, "' must exist")),
                            soft = FALSE)
 
     if (!is.null(grouping)) {
-      phr_validate_columns(working_df, grouping, origin = origin,
+      phrutils::phr_validate_columns(working_df, grouping, origin = origin,
                              hint = phr_txt(paste0("Grouping column '", grouping, "' must exist")),
                              soft = FALSE)
     }
@@ -5104,7 +5104,7 @@ plot_ci_bar_percentage <- function(survey_design,
 
     # Validate that weights_col is provided when weighted = TRUE (applies to all paths)
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
     }
 
     # SURVEY DESIGN PATH: use phr_calc_survey_categorical_single
@@ -5168,11 +5168,11 @@ plot_ci_bar_percentage <- function(survey_design,
       # DATA FRAME PATH (original logic)
 
       if (weighted) {
-        phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-        phr_validate_columns(df, weights_col, origin = origin,
+        phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+        phrutils::phr_validate_columns(df, weights_col, origin = origin,
                                hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                                soft = FALSE)
-        phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
         df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
       }
 
@@ -5277,7 +5277,7 @@ plot_ci_bar_percentage <- function(survey_design,
 
     # Get colors
     n_cats <- if (has_grouping) length(unique(df_plot$fill_var)) else length(unique(df_plot$x_var))
-    colors <- get_color_palette(type = color_palette, n = n_cats)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_cats)
 
     # Set final labels with defaults
     final_x_lab <- if (is.null(x_lab)) {
@@ -5403,7 +5403,7 @@ plot_ci_point_mean <- function(survey_design,
                                ylim = NULL) {
   origin <- "plot_ci_point_mean"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     is_survey <- inherits(survey_design, c("tbl_svy", "survey.design", "survey.design2", "svyrep.design"))
@@ -5431,16 +5431,16 @@ plot_ci_point_mean <- function(survey_design,
     # ylim stays as NULL if not provided (we'll handle it later)
 
     # Standard validation block — skip for survey design objects
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_logical(show_labels, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(conf_level, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(point_size, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_labels, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(conf_level, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(point_size, origin = origin, soft = FALSE)
 
     # Validate ylim if provided
     if (!is.null(ylim)) {
-      phr_validate_all_numeric(ylim, origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(ylim, origin = origin, soft = FALSE)
       if (length(ylim) != 2) {
         phr_error(phr_txt("ylim must be a numeric vector of length 2 (c(min, max))"), origin = origin)
       }
@@ -5462,33 +5462,33 @@ plot_ci_point_mean <- function(survey_design,
     working_df <- df
 
     # Validate numeric_var
-    phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
-    phr_validate_columns(working_df, numeric_var, origin = origin,
+    phrutils::phr_validate_not_null(numeric_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(working_df, numeric_var, origin = origin,
                            hint = phr_txt(paste0("Numeric column '", numeric_var, "' must exist")),
                            soft = FALSE)
 
     if (!is_survey) {
-      phr_validate_all_numeric(df[[numeric_var]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[numeric_var]], origin = origin, soft = FALSE)
     }
 
     if (!is_survey && weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
     if (!is.null(numeric_var2)) {
-      phr_validate_columns(working_df, numeric_var2, origin = origin,
+      phrutils::phr_validate_columns(working_df, numeric_var2, origin = origin,
                              hint = phr_txt(paste0("Second numeric column '", numeric_var2, "' must exist")),
                              soft = FALSE)
-      if (!is_survey) phr_validate_all_numeric(df[[numeric_var2]], origin = origin, soft = FALSE)
+      if (!is_survey) phrutils::phr_validate_all_numeric(df[[numeric_var2]], origin = origin, soft = FALSE)
     }
 
     if (!is.null(grouping)) {
-      phr_validate_columns(working_df, grouping, origin = origin,
+      phrutils::phr_validate_columns(working_df, grouping, origin = origin,
                              hint = phr_txt(paste0("Grouping column '", grouping, "' must exist")),
                              soft = FALSE)
     }
@@ -5638,7 +5638,7 @@ plot_ci_point_mean <- function(survey_design,
       if (!"x_var" %in% names(stats_df)) stats_df$x_var <- "Overall"
 
       n_colors <- 1
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
       final_x_lab <- if (is.null(x_lab)) "" else x_lab
 
       g <- ggplot2::ggplot(stats_df, ggplot2::aes(x = x_var, y = .data$est)) +
@@ -5649,7 +5649,7 @@ plot_ci_point_mean <- function(survey_design,
         ggplot2::labs(x = final_x_lab, y = y_lab, subtitle = final_subtitle)
     } else {
       n_colors <- length(unique(stats_df$x_var))
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
       final_x_lab <- if (is.null(x_lab)) grouping else x_lab
       final_legend_label <- if (is.null(legend_label)) grouping else legend_label
 
@@ -5767,20 +5767,20 @@ plot_scatter <- function(survey_design,
                         point_alpha = 0.6) {
   origin <- "plot_scatter"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Standard validation block
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(flip_coordinates, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
 
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -5789,18 +5789,18 @@ plot_scatter <- function(survey_design,
     auto_subtitle <- if (weighted) sprintf("n = %d (weighted n = %.0f)", total_n, sum(df[[weights_col]], na.rm = TRUE)) else sprintf("n = %d", total_n)
     final_subtitle <- if (!is.null(subtitle)) paste0(auto_subtitle, "; ", subtitle) else auto_subtitle
 
-    phr_validate_not_null(x_var, origin = origin, soft = FALSE)
-    phr_validate_not_null(y_var, origin = origin, soft = FALSE)
-    phr_validate_columns(df, c(x_var, y_var), origin = origin,
+    phrutils::phr_validate_not_null(x_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(y_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(df, c(x_var, y_var), origin = origin,
                            hint = phr_txt("Ensure both x_var and y_var columns exist"), soft = FALSE)
-    phr_validate_all_numeric(df[[x_var]], origin = origin, soft = FALSE)
-    phr_validate_all_numeric(df[[y_var]], origin = origin, soft = FALSE)
-    phr_validate_logical(add_smooth, origin = origin, soft = FALSE)
-    phr_validate_character(smooth_method, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(point_alpha, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(df[[x_var]], origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(df[[y_var]], origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(add_smooth, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(smooth_method, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(point_alpha, origin = origin, soft = FALSE)
 
     if (!is.null(grouping)) {
-      phr_validate_columns(df, grouping, origin = origin,
+      phrutils::phr_validate_columns(df, grouping, origin = origin,
                              hint = phr_txt(paste0("Grouping column '", grouping, "' must exist")),
                              soft = FALSE)
     }
@@ -5810,7 +5810,7 @@ plot_scatter <- function(survey_design,
 
     if (is.null(grouping)) {
       n_colors <- 1
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
 
       if (weighted) {
         g <- ggplot2::ggplot(df, ggplot2::aes(x = !!rlang::sym(x_var), y = !!rlang::sym(y_var),
@@ -5823,7 +5823,7 @@ plot_scatter <- function(survey_design,
       }
     } else {
       n_colors <- length(unique(df[[grouping]]))
-      colors <- get_color_palette(type = color_palette, n = n_colors)
+      colors <- phrutils::get_color_palette(type = color_palette, n = n_colors)
 
       if (weighted) {
         g <- ggplot2::ggplot(df, ggplot2::aes(x = !!rlang::sym(x_var), y = !!rlang::sym(y_var),
@@ -5916,7 +5916,7 @@ plot_donut <- function(survey_design,
                        legend_position = "right") {
   origin <- "plot_donut"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
@@ -5938,12 +5938,12 @@ plot_donut <- function(survey_design,
     value_var <- ensure_value(value_var, NA_character_)
 
     # Standard validation block
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(show_labels, origin = origin, soft = FALSE)
-    phr_validate_character(legend_position, origin = origin, soft = FALSE)
-    phr_validate_character(label_color, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(hole_size, origin = origin, soft = FALSE)
-    phr_validate_choice(label_type, choices = c("percentage", "count", "both"), origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_labels, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(legend_position, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(label_color, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(hole_size, origin = origin, soft = FALSE)
+    phrutils::phr_validate_choice(label_type, choices = c("percentage", "count", "both"), origin = origin, soft = FALSE)
 
     # Convert back to NULL for logical checks
     if (is.na(weights_col)) weights_col <- NULL
@@ -5953,24 +5953,24 @@ plot_donut <- function(survey_design,
     if (legend_label == "") legend_label <- NULL
 
     # Validate category_var
-    phr_validate_columns(df, category_var, origin = origin,
+    phrutils::phr_validate_columns(df, category_var, origin = origin,
                            hint = phr_txt(paste0("Category column '", category_var, "' must exist")),
                            soft = FALSE)
 
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist in the dataset")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
     if (!is.null(value_var)) {
-      phr_validate_columns(df, value_var, origin = origin,
+      phrutils::phr_validate_columns(df, value_var, origin = origin,
                              hint = phr_txt(paste0("Value column '", value_var, "' must exist")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[value_var]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[value_var]], origin = origin, soft = FALSE)
     }
 
     # Auto-subtitle with n
@@ -6020,10 +6020,10 @@ plot_donut <- function(survey_design,
 
     } else {
       # When value_var is provided, fall back to direct aggregation on extracted df
-      phr_validate_columns(df, value_var, origin = origin,
+      phrutils::phr_validate_columns(df, value_var, origin = origin,
                              hint = phr_txt(paste0("Value column '", value_var, "' must exist")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[value_var]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[value_var]], origin = origin, soft = FALSE)
 
       value_sym <- rlang::sym(value_var)
       df_plot <- df |>
@@ -6070,7 +6070,7 @@ plot_donut <- function(survey_design,
 
     # Get colors
     n_cats <- nrow(df_plot)
-    colors <- get_color_palette(type = color_palette, n = n_cats)
+    colors <- phrutils::get_color_palette(type = color_palette, n = n_cats)
 
     # Set legend label
     final_legend_label <- if (is.null(legend_label)) category_var else legend_label
@@ -6204,7 +6204,7 @@ plot_crosstab <- function(survey_design,
                           text_color = "black") {
   origin <- "plot_crosstab"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
     # Apply ensure_value with non-NULL defaults
@@ -6238,17 +6238,17 @@ plot_crosstab <- function(survey_design,
     highlight_cells_col_val2 <- ensure_value(highlight_cells_col_val2, NULL)
 
     # Validate inputs
-    phr_validate_not_null(row_var, origin = origin, soft = FALSE)
-    phr_validate_not_null(col_var, origin = origin, soft = FALSE)
-    phr_validate_logical(weighted, origin = origin, soft = FALSE)
-    phr_validate_logical(show_counts, origin = origin, soft = FALSE)
-    phr_validate_logical(show_percentages, origin = origin, soft = FALSE)
-    phr_validate_logical(show_margins, origin = origin, soft = FALSE)
-    phr_validate_character(percentage_by, origin = origin, soft = FALSE)
-    phr_validate_character(gradient_by, origin = origin, soft = FALSE)
-    phr_validate_character(margins_label, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(text_size, origin = origin, soft = FALSE)
-    phr_validate_all_numeric(highlight_size, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(row_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(col_var, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_counts, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_percentages, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_margins, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(percentage_by, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(gradient_by, origin = origin, soft = FALSE)
+    phrutils::phr_validate_character(margins_label, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(text_size, origin = origin, soft = FALSE)
+    phrutils::phr_validate_all_numeric(highlight_size, origin = origin, soft = FALSE)
 
     # Convert back to NULL
     if (is.na(weights_col)) weights_col <- NULL
@@ -6269,20 +6269,20 @@ plot_crosstab <- function(survey_design,
     }
 
     # Validate columns exist
-    phr_validate_columns(df, row_var, origin = origin,
+    phrutils::phr_validate_columns(df, row_var, origin = origin,
                            hint = phr_txt(paste0("Row variable '", row_var, "' must exist")),
                            soft = FALSE)
-    phr_validate_columns(df, col_var, origin = origin,
+    phrutils::phr_validate_columns(df, col_var, origin = origin,
                            hint = phr_txt(paste0("Column variable '", col_var, "' must exist")),
                            soft = FALSE)
 
     # Validate weights if weighted = TRUE
     if (weighted) {
-      phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
-      phr_validate_columns(df, weights_col, origin = origin,
+      phrutils::phr_validate_not_null(weights_col, origin = origin, soft = FALSE)
+      phrutils::phr_validate_columns(df, weights_col, origin = origin,
                              hint = phr_txt(paste0("Weights column '", weights_col, "' must exist")),
                              soft = FALSE)
-      phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
+      phrutils::phr_validate_all_numeric(df[[weights_col]], origin = origin, soft = FALSE)
       df <- df |> dplyr::mutate(!!rlang::sym(weights_col) := as.numeric(!!rlang::sym(weights_col)))
     }
 
@@ -6562,7 +6562,7 @@ plot_crosstab <- function(survey_design,
       for (cell in highlight_cells) {
         # Validate cell specification
         if (!"row" %in% names(cell) || !"col" %in% names(cell)) {
-          phr_warning(phr_txt("highlight_cells must include 'row' and 'col' values. Skipping invalid cell."),
+          phrutils::phr_warning(phr_txt("highlight_cells must include 'row' and 'col' values. Skipping invalid cell."),
                         origin = origin)
           next
         }
@@ -6616,7 +6616,7 @@ plot_crosstab <- function(survey_design,
           if (cell_row %in% all_rows && cell_col %in% all_cols) {
             valid_cells[[length(valid_cells) + 1]] <- list(row = cell_row, col = cell_col)
           } else {
-            phr_warning(phr_txt(paste0("highlight_cells references non-existent cell: row='",
+            phrutils::phr_warning(phr_txt(paste0("highlight_cells references non-existent cell: row='",
                                            cell_row, "', col='", cell_col, "'. Skipping.")),
                           origin = origin)
           }
@@ -6739,7 +6739,7 @@ table_frequency <- function(survey_design,
 
   origin <- "table_frequency"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
 
@@ -6750,7 +6750,7 @@ table_frequency <- function(survey_design,
 
     working_df <- df
 
-    phr_validate_not_null(variable, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(variable, origin = origin, soft = FALSE)
 
     # Handle multiple variables
     n_vars <- length(variable)
@@ -6820,14 +6820,14 @@ table_frequency <- function(survey_design,
     }
 
     # Validate show_overall
-    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_overall, origin = origin, soft = FALSE)
 
     # Validate columns exist
-    phr_validate_columns(working_df, variable, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(working_df, variable, origin = origin, soft = FALSE)
 
     for (i in seq_along(variable)) {
       if (!is.null(disaggregation[[i]])) {
-        phr_validate_columns(working_df, disaggregation[[i]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_columns(working_df, disaggregation[[i]], origin = origin, soft = FALSE)
       }
       if (stat_type[i] == "ratio" && is.null(ratio_denominator[[i]])) {
         phr_error(
@@ -6838,7 +6838,7 @@ table_frequency <- function(survey_design,
         )
       }
       if (!is.null(ratio_denominator[[i]])) {
-        phr_validate_columns(working_df, ratio_denominator[[i]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_columns(working_df, ratio_denominator[[i]], origin = origin, soft = FALSE)
       }
     }
 
@@ -7028,7 +7028,7 @@ table_frequency <- function(survey_design,
 
       } else if (weighted_result && !is.null(weights_col)) {
         # --- Weighted via weights column ---
-        phr_validate_columns(working_df, weights_col, origin = origin, soft = FALSE)
+        phrutils::phr_validate_columns(working_df, weights_col, origin = origin, soft = FALSE)
         dsn <- srvyr::as_survey_design(working_df, weights = !!rlang::sym(weights_col))
 
         if (!is.null(disagg)) {
@@ -7963,7 +7963,7 @@ table_frequency_v2 <- function(survey_design,
 
   origin <- "table_frequency_v2"
 
-  phr_try({
+  phrutils::phr_try({
 
     df <- phr_get_data_from_design(survey_design)
 
@@ -7972,7 +7972,7 @@ table_frequency_v2 <- function(survey_design,
     # Validate inputs
     valid_stat_types <- c("percentage", "mean", "median", "ratio")
 
-    phr_validate_not_null(variable, origin = origin, soft = FALSE)
+    phrutils::phr_validate_not_null(variable, origin = origin, soft = FALSE)
 
     # Handle multiple variables
     n_vars <- length(variable)
@@ -8042,14 +8042,14 @@ table_frequency_v2 <- function(survey_design,
     }
 
     # Validate show_overall
-    phr_validate_logical(show_overall, origin = origin, soft = FALSE)
+    phrutils::phr_validate_logical(show_overall, origin = origin, soft = FALSE)
 
     # Validate columns exist
-    phr_validate_columns(working_df, variable, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(working_df, variable, origin = origin, soft = FALSE)
 
     for (i in seq_along(variable)) {
       if (!is.null(disaggregation[[i]])) {
-        phr_validate_columns(working_df, disaggregation[[i]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_columns(working_df, disaggregation[[i]], origin = origin, soft = FALSE)
       }
       if (stat_type[i] == "ratio" && is.null(ratio_denominator[[i]])) {
         phr_error(
@@ -8060,7 +8060,7 @@ table_frequency_v2 <- function(survey_design,
         )
       }
       if (!is.null(ratio_denominator[[i]])) {
-        phr_validate_columns(working_df, ratio_denominator[[i]], origin = origin, soft = FALSE)
+        phrutils::phr_validate_columns(working_df, ratio_denominator[[i]], origin = origin, soft = FALSE)
       }
     }
 
@@ -8204,7 +8204,7 @@ table_frequency_v2 <- function(survey_design,
           design_sub <- tryCatch(
             subset(survey_design, df[[disagg]] == g),
             error = function(e) {
-              phr_warning(origin, paste("Subset failed for", disagg, "=", g))
+              phrutils::phr_warning(origin, paste("Subset failed for", disagg, "=", g))
               NULL
             }
           )
@@ -8616,13 +8616,13 @@ table_quality_penalty_summary <- function(results_df,
 
   origin <- "table_quality_penalty_summary"
 
-  phr_try({
+  phrutils::phr_try({
 
     # Validate inputs
-    phr_validate_dataframe(results_df, origin = origin, soft = FALSE)
+    phrutils::phr_validate_dataframe(results_df, origin = origin, soft = FALSE)
 
     required_cols <- c("check_name", "check_label", "penalty")
-    phr_validate_columns(results_df, required_cols, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(results_df, required_cols, origin = origin, soft = FALSE)
 
     # Track whether check_group was originally provided with real values
     has_check_group <- "check_group" %in% names(results_df) &&
@@ -8802,13 +8802,13 @@ table_quality_penalty_summary_by_group <- function(results_df,
 
   origin <- "table_quality_penalty_summary_by_group"
 
-  phr_try({
+  phrutils::phr_try({
 
     # Validate inputs
-    phr_validate_dataframe(results_df, origin = origin, soft = FALSE)
+    phrutils::phr_validate_dataframe(results_df, origin = origin, soft = FALSE)
 
     required_cols <- c("check_name", "check_label", "penalty", group_col)
-    phr_validate_columns(results_df, required_cols, origin = origin, soft = FALSE)
+    phrutils::phr_validate_columns(results_df, required_cols, origin = origin, soft = FALSE)
 
     # Track whether check_group was originally provided with real values
     has_check_group <- "check_group" %in% names(results_df) &&
