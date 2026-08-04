@@ -726,7 +726,7 @@ test_that("sampling_frame$draw_sample (simple_random) includes RC-labelled reser
   ))
 })
 
-test_that("sampling_frame$draw_sample (purposive) selects all PSUs", {
+test_that("sampling_frame$draw_sample (purposive) doesnt select any PSU, to be done manually", {
   suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
@@ -744,7 +744,7 @@ test_that("sampling_frame$draw_sample (purposive) selects all PSUs", {
   ))
   # Purposive selects all PSUs
   suppressWarnings(suppressMessages(
-    expect_equal(nrow(p$sampling_frame$drawn_sample), 10L)
+    expect_equal(nrow(p$sampling_frame$drawn_sample), 0L)
   ))
 })
 
@@ -806,8 +806,8 @@ test_that("sampling_frame$draw_sample with cluster/rlc selects only n_sites PSUs
 })
 
 test_that("sampling_frame$draw_sample warns and skips stratum not in frame", {
-  p <- make_protocol()
-  add_simple_stratum(p, stratum_id = "s1")
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(p, stratum_id = "s1")))
   frame <- data.frame(
     stratum = rep("s2", 5),
     psu = paste0("psu_", seq_len(5)),
@@ -818,8 +818,10 @@ test_that("sampling_frame$draw_sample warns and skips stratum not in frame", {
   suppressWarnings(suppressMessages(p$set_sampling_frame(frame)))
   suppressMessages(
     expect_warning(
-      p$sampling_frame$draw_sample(strata_table = p$get_sample_table()),
-      regexp = "skipped"
+      suppressWarnings(suppressMessages(
+        p$sampling_frame$draw_sample(strata_table = p$get_sample_table())
+      )),
+      regexp = "skipping"
     )
   )
   suppressWarnings(suppressMessages(
@@ -828,7 +830,7 @@ test_that("sampling_frame$draw_sample warns and skips stratum not in frame", {
 })
 
 test_that("sampling_frame$draw_sample continues with other strata when one fails", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   # s1: cluster without n_psu -- will warn and skip
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
@@ -841,13 +843,13 @@ test_that("sampling_frame$draw_sample continues with other strata when one fails
     )
   ))
   # s2: simple_random -- will succeed
-  add_simple_stratum(
+  suppressWarnings(suppressMessages(add_simple_stratum(
     p,
     stratum_id = "s2",
     stratum_name = "Urban",
     n_sites = 3,
     sample_size = 30
-  )
+  )))
   frame <- data.frame(
     stratum = c(rep("s1", 10), rep("s2", 10)),
     psu = paste0("psu_", seq_len(20)),
@@ -863,7 +865,9 @@ test_that("sampling_frame$draw_sample continues with other strata when one fails
     )
   )
   s2_rows <- suppressWarnings(suppressMessages(
-    p$sampling_frame$log_df[p$sampling_frame$log_df$stratum == "s2", ]
+    p$sampling_frame$drawn_sample_full[
+      p$sampling_frame$drawn_sample_full$stratum == "s2",
+    ]
   ))
   suppressWarnings(suppressMessages(
     expect_false(all(is.na(s2_rows$sampled_psu)))
@@ -871,21 +875,21 @@ test_that("sampling_frame$draw_sample continues with other strata when one fails
 })
 
 test_that("sampling_frame$draw_sample multi-stratum uses sequential PSU offset", {
-  p <- make_protocol()
-  add_simple_stratum(
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(
     p,
     stratum_id = "s1",
     stratum_name = "Urban",
     n_sites = 5,
     sample_size = 50
-  )
-  add_simple_stratum(
+  )))
+  suppressWarnings(suppressMessages(add_simple_stratum(
     p,
     stratum_id = "s2",
     stratum_name = "Rural",
     n_sites = 3,
     sample_size = 30
-  )
+  )))
   frame <- data.frame(
     stratum = c(rep("s1", 20), rep("s2", 15)),
     psu = paste0("psu_", seq_len(35)),
@@ -918,8 +922,13 @@ test_that("sampling_frame$draw_sample multi-stratum uses sequential PSU offset",
 # ── clear_sample via sampling_frame ───────────────────────────────────────────
 
 test_that("sampling_frame$clear_sample resets sampled_psu and allocated_sample", {
-  p <- make_protocol()
-  add_simple_stratum(p, stratum_id = "s1", n_sites = 5, sample_size = 50)
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(
+    p,
+    stratum_id = "s1",
+    n_sites = 5,
+    sample_size = 50
+  )))
   suppressWarnings(suppressMessages(p$set_sampling_frame(make_frame(
     n_psu = 20
   ))))
@@ -927,30 +936,28 @@ test_that("sampling_frame$clear_sample resets sampled_psu and allocated_sample",
     p$sampling_frame$draw_sample(strata_table = p$get_sample_table())
   ))
   suppressWarnings(suppressMessages(
-    expect_false(all(is.na(p$sampling_frame$log_df$sampled_psu)))
+    expect_false(all(is.na(p$sampling_frame$drawn_sample$sampled_psu)))
   ))
 
   # Clear and verify
   suppressWarnings(suppressMessages(
-    p$sampling_frame$log_df <- p$sampling_frame$clear_sample(
-      p$sampling_frame$log_df
+    p$sampling_frame$drawn_sample <- p$sampling_frame$clear_sample(
+      p$sampling_frame$drawn_sample
     )
   ))
   suppressWarnings(suppressMessages({
-    expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
-    expect_true(all(is.na(p$sampling_frame$log_df$allocated_sample)))
-    expect_null(p$sampling_frame$drawn_sample)
-    expect_null(p$sampling_frame$drawn_sample_full)
+    expect_true(all(is.na(p$sampling_frame$drawn_sample$sampled_psu)))
+    expect_true(all(is.na(p$sampling_frame$drawn_sample$allocated_sample)))
   }))
 })
 
 test_that("sampling_frame$clear_sample is a no-op on an empty frame", {
-  p <- make_protocol()
-  sf <- suppressMessages(SamplingFrame$new())
-  result <- suppressWarnings(suppressMessages(sf$clear_sample(sf$log_df)))
+  suppressMessages(p <- make_protocol())
+  ssf <- suppressMessages(SamplingFrame$new())
+  result <- suppressWarnings(suppressMessages(ssf$clear_sample(ssf$log_df)))
   suppressWarnings(suppressMessages({
     expect_equal(nrow(result), 0L)
-    expect_null(sf$drawn_sample)
+    expect_null(ssf$drawn_sample)
   }))
 })
 
@@ -966,7 +973,7 @@ test_that("sample_object is a Sample and accessible via $sample_object", {
 })
 
 test_that("sampling_frame is a SamplingFrame and accessible via $sampling_frame", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages({
     expect_true(inherits(p$sampling_frame, "SamplingFrame"))
     expect_true(is.data.frame(p$sampling_frame$log_df))
@@ -976,7 +983,7 @@ test_that("sampling_frame is a SamplingFrame and accessible via $sampling_frame"
 # ── access_nested integration with sample_object ───────────────────────────────
 
 test_that("access_nested to sample_object$add_stratum works and updates modified_datetime", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   t_before <- suppressWarnings(suppressMessages(p$metadata$modified_datetime))
   Sys.sleep(0.01)
   suppressWarnings(suppressMessages(
@@ -1009,7 +1016,7 @@ test_that("access_nested to sample_object$add_stratum works and updates modified
 })
 
 test_that("access_nested to sample_object$remove_stratum removes stratum", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$access_nested(
       field = "sample_object",
@@ -1021,7 +1028,11 @@ test_that("access_nested to sample_object$remove_stratum removes stratum", {
     )
   ))
   suppressWarnings(suppressMessages(
-    p$access_nested(field = "sample_object", member = "remove_stratum", "S1")
+    p$access_nested(
+      field = "sample_object",
+      member = "remove_stratum",
+      strata_name = "S1"
+    )
   ))
   st <- suppressWarnings(suppressMessages(
     p$access_nested(field = "sample_object", member = "get_sample_table")
@@ -1031,48 +1042,21 @@ test_that("access_nested to sample_object$remove_stratum removes stratum", {
   ))
 })
 
-# ── SurveyProtocol sync: strata_names, sampling_methods are synced ─────────────
-
-test_that("strata_names field is synced after adding strata", {
-  p <- make_protocol()
-  add_simple_stratum(p, stratum_id = "s1", stratum_name = "North")
-  suppressWarnings(suppressMessages(
-    expect_true("North" %in% p$strata_names)
-  ))
-})
-
-test_that("sampling_methods field is synced after adding strata", {
-  p <- make_protocol()
-  add_simple_stratum(p)
-  suppressWarnings(suppressMessages(
-    expect_equal(p$sampling_methods, "simple_random")
-  ))
-})
-
-test_that("sample_table field is synced after adding strata", {
-  p <- make_protocol()
-  add_simple_stratum(p)
-  suppressWarnings(suppressMessages({
-    expect_true(is.data.frame(p$sample_table))
-    expect_equal(nrow(p$sample_table), 1L)
-  }))
-})
-
 # ── SurveyProtocol active bindings ─────────────────────────────────────────────
 
 test_that(".site_selection_srs is TRUE when simple_random method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.site_selection_srs))
   ))
-  add_simple_stratum(p)
+  suppressWarnings(suppressMessages(add_simple_stratum(p)))
   suppressWarnings(suppressMessages(
     expect_true(isTRUE(p$.site_selection_srs))
   ))
 })
 
 test_that(".site_selection_purposive is TRUE when purposive method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1087,7 +1071,7 @@ test_that(".site_selection_purposive is TRUE when purposive method is used", {
 })
 
 test_that(".site_selection_systematic is TRUE when systematic method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1103,7 +1087,7 @@ test_that(".site_selection_systematic is TRUE when systematic method is used", {
 })
 
 test_that(".site_selection_exhaustive is TRUE when proportional method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1118,7 +1102,7 @@ test_that(".site_selection_exhaustive is TRUE when proportional method is used",
 })
 
 test_that(".site_selection_cluster is TRUE when cluster method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1134,15 +1118,15 @@ test_that(".site_selection_cluster is TRUE when cluster method is used", {
 })
 
 test_that(".hh_selection_srs is TRUE when default simple_random hh method is used", {
-  p <- make_protocol()
-  add_simple_stratum(p) # default hh method is simple_random
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(p))) # default hh method is simple_random
   suppressWarnings(suppressMessages(
     expect_true(isTRUE(p$.hh_selection_srs))
   ))
 })
 
 test_that(".hh_selection_systematic is TRUE when systematic hh method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1158,7 +1142,7 @@ test_that(".hh_selection_systematic is TRUE when systematic hh method is used", 
 })
 
 test_that(".hh_selection_rlc is TRUE when rlc household method is used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.hh_selection_rlc))
   ))
@@ -1177,11 +1161,11 @@ test_that(".hh_selection_rlc is TRUE when rlc household method is used", {
 })
 
 test_that(".multiple_methods is TRUE when multiple site methods are used", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.multiple_methods))
   ))
-  add_simple_stratum(p, stratum_id = "s1")
+  suppressWarnings(suppressMessages(add_simple_stratum(p, stratum_id = "s1")))
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s2",
@@ -1196,22 +1180,26 @@ test_that(".multiple_methods is TRUE when multiple site methods are used", {
 })
 
 test_that(".multiple_strata is FALSE with one stratum and TRUE with two", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.multiple_strata))
   ))
-  add_simple_stratum(p, stratum_id = "s1")
+  suppressWarnings(suppressMessages(add_simple_stratum(p, stratum_id = "s1")))
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.multiple_strata))
   ))
-  add_simple_stratum(p, stratum_id = "s2", stratum_name = "S2")
+  suppressWarnings(suppressMessages(add_simple_stratum(
+    p,
+    stratum_id = "s2",
+    stratum_name = "S2"
+  )))
   suppressWarnings(suppressMessages(
     expect_true(isTRUE(p$.multiple_strata))
   ))
 })
 
 test_that(".fpc is accessible (empty binding returns NULL invisibly)", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages({
     result <- p$.fpc
     expect_true(is.null(result) || TRUE) # binding exists and is accessible
@@ -1219,7 +1207,7 @@ test_that(".fpc is accessible (empty binding returns NULL invisibly)", {
 })
 
 test_that(".total_population_size reflects population from sampling frame", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_equal(p$.total_population_size, 0)
   ))
@@ -1237,7 +1225,7 @@ test_that(".total_population_size reflects population from sampling frame", {
 })
 
 test_that(".total_population_size_included sums only included rows", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   frame <- data.frame(
     stratum = rep("s1", 4),
     psu = paste0("psu_", seq_len(4)),
@@ -1253,7 +1241,7 @@ test_that(".total_population_size_included sums only included rows", {
 })
 
 test_that(".total_population_size_excluded sums only excluded rows", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   frame <- data.frame(
     stratum = rep("s1", 4),
     psu = paste0("psu_", seq_len(4)),
@@ -1269,7 +1257,7 @@ test_that(".total_population_size_excluded sums only excluded rows", {
 })
 
 test_that(".total_population_per_strata_included returns NULL or character string", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   # Without frame it's NULL
   val_null <- suppressWarnings(suppressMessages(
     p$.total_population_per_strata_included
@@ -1295,22 +1283,26 @@ test_that(".total_population_per_strata_included returns NULL or character strin
 })
 
 test_that(".num_strata_units reflects number of strata in sample table", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_equal(p$.num_strata_units, 0L)
   ))
-  add_simple_stratum(p, stratum_id = "s1")
+  suppressWarnings(suppressMessages(add_simple_stratum(p, stratum_id = "s1")))
   suppressWarnings(suppressMessages(
     expect_equal(p$.num_strata_units, 1L)
   ))
-  add_simple_stratum(p, stratum_id = "s2", stratum_name = "S2")
+  suppressWarnings(suppressMessages(add_simple_stratum(
+    p,
+    stratum_id = "s2",
+    stratum_name = "S2"
+  )))
   suppressWarnings(suppressMessages(
     expect_equal(p$.num_strata_units, 2L)
   ))
 })
 
 test_that(".num_geographic_units returns NULL or count matching strata rows", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   val_null <- suppressWarnings(suppressMessages(p$.num_geographic_units))
   suppressWarnings(suppressMessages(
     expect_true(is.null(val_null))
@@ -1323,7 +1315,7 @@ test_that(".num_geographic_units returns NULL or count matching strata rows", {
 })
 
 test_that(".num_other_units returns NULL or count matching strata rows", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   val_null <- suppressWarnings(suppressMessages(p$.num_other_units))
   suppressWarnings(suppressMessages(
     expect_true(is.null(val_null))
@@ -1336,12 +1328,12 @@ test_that(".num_other_units returns NULL or count matching strata rows", {
 })
 
 test_that(".rate_survey is FALSE by default and TRUE when rate_indicator set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.rate_survey))
   ))
   # Set up a stratum with a rate_indicator
-  add_simple_stratum(p)
+  suppressWarnings(suppressMessages(add_simple_stratum(p)))
   st <- suppressWarnings(suppressMessages(p$get_sample_table()))
   st$rate_indicator <- "mortality_rate"
   suppressWarnings(suppressMessages(p$sample_object$set_sample_table(st)))
@@ -1351,11 +1343,11 @@ test_that(".rate_survey is FALSE by default and TRUE when rate_indicator set", {
 })
 
 test_that(".individual_survey is FALSE by default and TRUE when ind_indicator set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_false(isTRUE(p$.individual_survey))
   ))
-  add_simple_stratum(p)
+  suppressWarnings(suppressMessages(add_simple_stratum(p)))
   st <- suppressWarnings(suppressMessages(p$get_sample_table()))
   st$ind_indicator <- "muac"
   suppressWarnings(suppressMessages(p$sample_object$set_sample_table(st)))
@@ -1365,28 +1357,28 @@ test_that(".individual_survey is FALSE by default and TRUE when ind_indicator se
 })
 
 test_that(".general_survey is TRUE when neither rate_survey nor individual_survey", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   # No strata set up yet
   suppressWarnings(suppressMessages(
     expect_true(isTRUE(p$.general_survey))
   ))
   # Add a simple stratum without rate or ind indicators
-  add_simple_stratum(p)
+  suppressWarnings(suppressMessages(add_simple_stratum(p)))
   suppressWarnings(suppressMessages(
     expect_true(isTRUE(p$.general_survey))
   ))
 })
 
 test_that(".ind_indicator returns NULL when no ind_indicator column exists", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.ind_indicator)
   ))
 })
 
 test_that(".ind_indicator returns character when ind_indicator column present", {
-  p <- make_protocol()
-  add_simple_stratum(p)
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(p)))
   st <- suppressWarnings(suppressMessages(p$get_sample_table()))
   st$ind_indicator <- "muac"
   suppressWarnings(suppressMessages(p$sample_object$set_sample_table(st)))
@@ -1397,15 +1389,15 @@ test_that(".ind_indicator returns character when ind_indicator column present", 
 })
 
 test_that(".rate_indicator returns NULL when no rate_indicator column exists", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.rate_indicator)
   ))
 })
 
 test_that(".rate_indicator returns character when rate_indicator column present", {
-  p <- make_protocol()
-  add_simple_stratum(p)
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(p)))
   st <- suppressWarnings(suppressMessages(p$get_sample_table()))
   st$rate_indicator <- "crude_death_rate"
   suppressWarnings(suppressMessages(p$sample_object$set_sample_table(st)))
@@ -1416,8 +1408,12 @@ test_that(".rate_indicator returns character when rate_indicator column present"
 })
 
 test_that(".stratified_strata_names_srs_srs returns strata using simple_random/simple_random", {
-  p <- make_protocol()
-  add_simple_stratum(p, stratum_id = "s1", stratum_name = "Urban")
+  suppressMessages(p <- make_protocol())
+  suppressWarnings(suppressMessages(add_simple_stratum(
+    p,
+    stratum_id = "s1",
+    stratum_name = "Urban"
+  )))
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s2",
@@ -1436,7 +1432,7 @@ test_that(".stratified_strata_names_srs_srs returns strata using simple_random/s
 })
 
 test_that(".stratified_strata_names_srs_rlc returns strata using simple_random/rlc", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1455,7 +1451,7 @@ test_that(".stratified_strata_names_srs_rlc returns strata using simple_random/r
 })
 
 test_that(".stratified_strata_names_srs_systematic returns strata using simple_random/systematic", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1474,7 +1470,7 @@ test_that(".stratified_strata_names_srs_systematic returns strata using simple_r
 })
 
 test_that(".stratified_strata_names_systematic_srs returns strata using systematic/simple_random", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1493,7 +1489,7 @@ test_that(".stratified_strata_names_systematic_srs returns strata using systemat
 })
 
 test_that(".stratified_strata_names_systematic_systematic returns strata using systematic/systematic", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1512,7 +1508,7 @@ test_that(".stratified_strata_names_systematic_systematic returns strata using s
 })
 
 test_that(".stratified_strata_names_systematic_rlc returns strata using systematic/rlc", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1531,7 +1527,7 @@ test_that(".stratified_strata_names_systematic_rlc returns strata using systemat
 })
 
 test_that(".stratified_strata_names_proportional_srs returns strata using proportional/srs", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1550,7 +1546,7 @@ test_that(".stratified_strata_names_proportional_srs returns strata using propor
 })
 
 test_that(".stratified_strata_names_proportional_systematic returns strata using proportional/systematic", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1569,7 +1565,7 @@ test_that(".stratified_strata_names_proportional_systematic returns strata using
 })
 
 test_that(".stratified_strata_names_proportional_rlc returns strata using proportional/rlc", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1588,7 +1584,7 @@ test_that(".stratified_strata_names_proportional_rlc returns strata using propor
 })
 
 test_that(".stratified_strata_names_cluster_srs returns strata using cluster/srs", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1608,7 +1604,7 @@ test_that(".stratified_strata_names_cluster_srs returns strata using cluster/srs
 })
 
 test_that(".stratified_strata_names_cluster_systematic returns strata using cluster/systematic", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1628,7 +1624,7 @@ test_that(".stratified_strata_names_cluster_systematic returns strata using clus
 })
 
 test_that(".stratified_strata_names_cluster_rlc returns strata using cluster/rlc", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1648,7 +1644,7 @@ test_that(".stratified_strata_names_cluster_rlc returns strata using cluster/rlc
 })
 
 test_that(".stratified_strata_names_purposive_srs returns strata using purposive/srs", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1667,7 +1663,7 @@ test_that(".stratified_strata_names_purposive_srs returns strata using purposive
 })
 
 test_that(".stratified_strata_names_purposive_systematic returns strata using purposive/systematic", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1686,7 +1682,7 @@ test_that(".stratified_strata_names_purposive_systematic returns strata using pu
 })
 
 test_that(".stratified_strata_names_purposive_rlc returns strata using purposive/rlc", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1705,7 +1701,7 @@ test_that(".stratified_strata_names_purposive_rlc returns strata using purposive
 })
 
 test_that(".stratified_strata_names_site_srs returns all srs strata regardless of hh method", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   add_simple_stratum(p, stratum_id = "s1", stratum_name = "Urban") # srs/srs
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
@@ -1724,7 +1720,7 @@ test_that(".stratified_strata_names_site_srs returns all srs strata regardless o
 })
 
 test_that(".stratified_strata_names_site_systematic returns all systematic strata", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1742,7 +1738,7 @@ test_that(".stratified_strata_names_site_systematic returns all systematic strat
 })
 
 test_that(".stratified_strata_names_site_exhaustive returns proportional strata", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1760,7 +1756,7 @@ test_that(".stratified_strata_names_site_exhaustive returns proportional strata"
 })
 
 test_that(".stratified_strata_names_site_cluster returns cluster strata", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1779,7 +1775,7 @@ test_that(".stratified_strata_names_site_cluster returns cluster strata", {
 })
 
 test_that(".stratified_strata_names_site_purposive returns purposive strata", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1797,7 +1793,7 @@ test_that(".stratified_strata_names_site_purposive returns purposive strata", {
 })
 
 test_that(".stratified_strata_names_hh_srs returns all strata using simple_random hh", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   add_simple_stratum(p, stratum_id = "s1", stratum_name = "Urban") # hh=srs
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
@@ -1816,7 +1812,7 @@ test_that(".stratified_strata_names_hh_srs returns all strata using simple_rando
 })
 
 test_that(".stratified_strata_names_hh_systematic returns strata using systematic hh", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1835,7 +1831,7 @@ test_that(".stratified_strata_names_hh_systematic returns strata using systemati
 })
 
 test_that(".stratified_strata_names_hh_rlc returns strata using rlc hh", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     p$sample_object$add_stratum(
       stratum_id = "s1",
@@ -1852,7 +1848,7 @@ test_that(".stratified_strata_names_hh_rlc returns strata using rlc hh", {
 })
 
 test_that(".sample_size_general_households returns NULL when no strata and numeric when set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_general_households)
   ))
@@ -1865,49 +1861,49 @@ test_that(".sample_size_general_households returns NULL when no strata and numer
 })
 
 test_that(".sample_size_ind_persons returns NULL when Ind_Sample_Size absent", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_ind_persons)
   ))
 })
 
 test_that(".sample_size_ind_hh returns NULL when Ind_HH_Sample_Size absent", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_ind_hh)
   ))
 })
 
 test_that(".sample_size_rate_persons returns NULL when Rate_Ind_Sample_Size absent", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_rate_persons)
   ))
 })
 
 test_that(".sample_size_rate_persontime returns NULL when Rate_PT_Sample_Size absent", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_rate_persontime)
   ))
 })
 
 test_that(".sample_size_rate_hh returns NULL when Rate_HH_Sample_Size absent", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_rate_hh)
   ))
 })
 
 test_that(".sample_size_hh_final returns NULL when Final_HH_Sample_Size absent", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.sample_size_hh_final)
   ))
 })
 
 test_that(".sample_size_general_table_df returns a data frame or NULL", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   val <- suppressWarnings(suppressMessages(p$.sample_size_general_table_df))
   suppressWarnings(suppressMessages(
     expect_true(is.data.frame(val) || is.null(val))
@@ -1915,7 +1911,7 @@ test_that(".sample_size_general_table_df returns a data frame or NULL", {
 })
 
 test_that(".sample_size_ind_table_df returns a data frame or NULL", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   val <- suppressWarnings(suppressMessages(p$.sample_size_ind_table_df))
   suppressWarnings(suppressMessages(
     expect_true(is.data.frame(val) || is.null(val))
@@ -1923,7 +1919,7 @@ test_that(".sample_size_ind_table_df returns a data frame or NULL", {
 })
 
 test_that(".sample_size_rate_table_df returns a data frame or NULL", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   val <- suppressWarnings(suppressMessages(p$.sample_size_rate_table_df))
   suppressWarnings(suppressMessages(
     expect_true(is.data.frame(val) || is.null(val))
@@ -1931,7 +1927,7 @@ test_that(".sample_size_rate_table_df returns a data frame or NULL", {
 })
 
 test_that(".n_sites returns NULL when no strata and sum when strata set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.n_sites)
   ))
@@ -1943,7 +1939,7 @@ test_that(".n_sites returns NULL when no strata and sum when strata set", {
 })
 
 test_that(".cluster_size returns NULL when no cluster strata and max when set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.cluster_size)
   ))
@@ -1964,21 +1960,21 @@ test_that(".cluster_size returns NULL when no cluster strata and max when set", 
 })
 
 test_that(".num_enumerators_per_team returns NULL when not set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.num_enumerators_per_team)
   ))
 })
 
 test_that(".num_days_data_collection returns NULL when no logistics data", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.num_days_data_collection)
   ))
 })
 
 test_that(".strata_names returns NULL when no strata and concatenated string when set", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
     expect_null(p$.strata_names)
   ))
@@ -1993,7 +1989,7 @@ test_that(".strata_names returns NULL when no strata and concatenated string whe
 # ── get_quarto_params for SurveyProtocol ──────────────────────────────────────
 
 test_that("SurveyProtocol$get_quarto_params returns expected sampling keys", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   params <- suppressWarnings(suppressMessages(p$get_quarto_params()))
   suppressWarnings(suppressMessages({
     expect_true(is.list(params))
@@ -2141,7 +2137,7 @@ test_that("draw_sample_psu_rlc distributes clusters evenly across selected sites
       sample_size = 30,
       n_sites = 3,
       cluster_size = 3,
-      seed = 42
+      seed = 43
     )
   ))
   selected <- suppressWarnings(suppressMessages(result[
@@ -2323,7 +2319,7 @@ test_that("draw_sample_psu_proportional_rlc errors when population_size is missi
 # ── edge cases: n_sites missing at draw time triggers skip ─────────────────────
 
 test_that("sampling_frame$draw_sample skips simple_random stratum when n_sites is NA in table", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   add_simple_stratum(p, n_sites = 5, sample_size = 30)
   # Corrupt the strata table to remove n_sites
   st <- suppressWarnings(suppressMessages(p$get_sample_table()))

@@ -730,7 +730,7 @@ SurveyProtocol <- R6::R6Class(
       }
       st <- tryCatch(self$get_sample_table(), error = function(e) NULL)
       if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        return(NULL)
+        return(0L)
       }
       nrow(st)
     },

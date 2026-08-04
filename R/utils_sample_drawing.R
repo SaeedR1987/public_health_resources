@@ -546,9 +546,18 @@ draw_sample_psu_rlc <- function(
         slot_alloc[seq_len(slot_rem)] <- slot_alloc[seq_len(slot_rem)] + 1L
       }
 
+      # Keep first-appearance order, sum slots for repeated site IDs
+      site_totals <- tapply(slot_alloc, selected_sites, sum)
+      selected_sites <- as.integer(names(site_totals))
+      selected_sites <- selected_sites[order(match(
+        selected_sites,
+        unique(selected_sites)
+      ))]
+      slot_alloc <- as.integer(site_totals[as.character(selected_sites)])
+
       # Produce the global label sequence (sequential numbers interleaved with "RC")
       # and distribute them to sites in the order of site selection.
-      labels <- assign_reserve_labels(n_total, n_reserve, seed)
+      labels <- assign_reserve_labels(sum(slot_alloc), n_reserve, seed)
 
       # Step 3: Populate sampled_psu / allocated_sample on the full frame
       assign_slots_to_frame(

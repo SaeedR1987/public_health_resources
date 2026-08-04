@@ -96,7 +96,11 @@ SamplingFrame <- R6::R6Class(
     draw_sample = function(strata_table = NULL, seed = 42) {
       frame <- self$log_df
 
-      phrutils::phr_validate_dataframe(frame, origin = "Sample$draw_sample", soft = FALSE)
+      phrutils::phr_validate_dataframe(
+        frame,
+        origin = "Sample$draw_sample",
+        soft = FALSE
+      )
 
       if (is.null(strata_table)) {
         strata_table <- self$sample_table
@@ -403,9 +407,9 @@ SamplingFrame <- R6::R6Class(
       } else if (method_site == "cluster") {
         if (method_hh == "rlc") {
           phrutils::phr_assert(
-            !is.null(n_sites) && !is.na(n_sites),
+            !is.null(n_psu) && !is.na(n_psu),
             message = phr_txt(
-              "n_sites is required for the 'cluster' method with 'rlc' household sampling — set the 'n_sites' column in the strata table."
+              "n_psu is required for the 'cluster' method_site — set the 'n_psu' column in the strata table."
             ),
             origin = origin
           )
@@ -414,7 +418,11 @@ SamplingFrame <- R6::R6Class(
           } else {
             3L
           }
-          draw_sample_psu_cluster_rlc(frame, n_sites, sample_size, cs, seed)
+          # Ensure cluster size is divisible by 3; round up if needed.
+          if (cs %% 3L != 0L) {
+            cs <- cs + (3L - (cs %% 3L))
+          }
+          draw_sample_psu_pps_cluster(frame, n_psu, cs, seed)
         } else {
           phrutils::phr_assert(
             !is.null(n_psu) && !is.na(n_psu),
