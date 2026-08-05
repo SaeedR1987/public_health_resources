@@ -31,3 +31,4 @@ inst/resources/~$reference_indicator_bank.xlsx
 .gitignore
 tests/manual/test fcs data.xlsx
 Data_standardized.csv
+tests/manual/output/01_basic_zscore_plot.png

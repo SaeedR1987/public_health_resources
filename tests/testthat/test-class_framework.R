@@ -83,8 +83,8 @@ test_that("Framework$modify_adjusted_schema errors without master_schema", {
 test_that("Framework$modify_adjusted_schema filters by objective codes", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001", "10002", "10003"),
-        sector = "Health",
+    objective_code = c("10001", "10002", "10003"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = c("H1", "H2", "H3"),
@@ -100,8 +100,8 @@ test_that("Framework$modify_adjusted_schema filters by objective codes", {
 test_that("Framework$modify_adjusted_schema with NULL uses all objective codes", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001", "10002", "10003"),
-sector = "Health",
+    objective_code = c("10001", "10002", "10003"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = c("H1", "H2", "H3"),
@@ -120,8 +120,8 @@ sector = "Health",
 test_that("Framework$modify_adjusted_schema accepts a list of codes", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001", "10002", "10003"),
-sector = "Health",
+    objective_code = c("10001", "10002", "10003"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = c("H1", "H2", "H3"),
@@ -163,8 +163,8 @@ test_that("Protocol framework data is serialisable", {
   suppressMessages(p <- Protocol$new())
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001"),
-sector = "Health",
+    objective_code = c("10001"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -288,8 +288,8 @@ test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
 test_that("restore_framework reconstructs a Framework from exported data", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001"),
-sector = "Health",
+    objective_code = c("10001"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -333,8 +333,8 @@ test_that("Protocol includes framework when set", {
   suppressMessages(p <- Protocol$new())
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001"),
-sector = "Health",
+    objective_code = c("10001"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -505,8 +505,8 @@ test_that("Protocol$add_tools auto-increments duplicate tool types", {
 test_that("Protocol$validate_objective_schema works as a method", {
   suppressMessages(p <- Protocol$new())
   good <- data.frame(
-        objective_code = c("10001"),
-sector = "Health",
+    objective_code = c("10001"),
+    sector = "Health",
     pillar = "P1",
     sub_pillar = "SP1",
     short_objective = "H1",
@@ -708,8 +708,8 @@ test_that("Framework$render_framework_svg errors when no SVG is set", {
 test_that("Framework$render_framework_svg accepts version='master' and version='adjusted'", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001"),
-sector = "Health",
+    objective_code = c("10001"),
+    sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -738,7 +738,7 @@ test_that("Framework$render_framework_svg version='master' uses master_svg even 
       requireNamespace("grid", quietly = TRUE),
     "rsvg/grid not available"
   )
-  suppressMessages(sfw <- Framework$new())
+  suppressMessages(fw <- Framework$new())
   schema <- data.frame(
     sector = "Health",
     pillar = "P",
@@ -786,7 +786,7 @@ test_that("Protocol framework includes primary and secondary objectives", {
 test_that("restore_framework restores primary_objectives and secondary_objectives", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-        objective_code = c("10001"),
+    objective_code = c("10001"),
     sector = "Health",
     pillar = "P",
     sub_pillar = "SP",
