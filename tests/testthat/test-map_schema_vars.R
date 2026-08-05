@@ -362,7 +362,7 @@ test_that("repair_maps validates column existence and returns warnings", {
     stringsAsFactors = FALSE
   )
 
-  result <- d$repair_maps(variable_map_df = var_map_df, validate_columns = TRUE)
+  suppressWarnings(result <- d$repair_maps(variable_map_df = var_map_df, validate_columns = TRUE))
 
   # Good mapping should work
   expect_equal(d$variable_map$good_mapping, "existing_col")

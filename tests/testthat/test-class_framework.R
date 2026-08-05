@@ -11,6 +11,7 @@ test_that("Framework initializes with NULL fields", {
 test_that("Framework$set_master_schema validates and stores the schema", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
+    objective_code = "10001",
     sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute Illness",
@@ -44,6 +45,7 @@ test_that("Framework$set_master_svg rejects non-character input", {
 test_that("Framework$modify_adjusted_schema filters correctly", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
+    objective_code = c("10001", "10002", "10003"),
     sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
@@ -52,7 +54,7 @@ test_that("Framework$modify_adjusted_schema filters correctly", {
     stringsAsFactors = FALSE
   )
   suppressMessages(fw$set_master_schema(schema))
-  suppressMessages(fw$modify_adjusted_schema(c("H1", "H3")))
+  suppressMessages(fw$modify_adjusted_schema(c("10001", "10003")))
   expect_equal(nrow(fw$modified_objectives_schema), 2)
   expect_setequal(fw$modified_objectives_schema$short_objective, c("H1", "H3"))
 })
@@ -60,6 +62,7 @@ test_that("Framework$modify_adjusted_schema filters correctly", {
 test_that("Framework$modify_adjusted_schema with NULL resets to full schema", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
+    objective_code = c("10001", "10002"),
     sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
@@ -80,7 +83,8 @@ test_that("Framework$modify_adjusted_schema errors without master_schema", {
 test_that("Framework$modify_adjusted_schema filters by objective codes", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001", "10002", "10003"),
+        sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = c("H1", "H2", "H3"),
@@ -88,7 +92,7 @@ test_that("Framework$modify_adjusted_schema filters by objective codes", {
     stringsAsFactors = FALSE
   )
   suppressMessages(fw$set_master_schema(schema))
-  suppressMessages(fw$modify_adjusted_schema(c("H1", "H3")))
+  suppressMessages(fw$modify_adjusted_schema(c("10001", "10003")))
   expect_equal(nrow(fw$modified_objectives_schema), 2)
   expect_setequal(fw$modified_objectives_schema$short_objective, c("H1", "H3"))
 })
@@ -96,7 +100,8 @@ test_that("Framework$modify_adjusted_schema filters by objective codes", {
 test_that("Framework$modify_adjusted_schema with NULL uses all objective codes", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001", "10002", "10003"),
+sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = c("H1", "H2", "H3"),
@@ -115,7 +120,8 @@ test_that("Framework$modify_adjusted_schema with NULL uses all objective codes",
 test_that("Framework$modify_adjusted_schema accepts a list of codes", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001", "10002", "10003"),
+sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = c("H1", "H2", "H3"),
@@ -123,7 +129,7 @@ test_that("Framework$modify_adjusted_schema accepts a list of codes", {
     stringsAsFactors = FALSE
   )
   suppressMessages(fw$set_master_schema(schema))
-  suppressMessages(fw$modify_adjusted_schema(list("H2", "H3")))
+  suppressMessages(fw$modify_adjusted_schema(list("10002", "10003")))
   expect_equal(nrow(fw$modified_objectives_schema), 2)
   expect_setequal(fw$modified_objectives_schema$short_objective, c("H2", "H3"))
 })
@@ -157,7 +163,8 @@ test_that("Protocol framework data is serialisable", {
   suppressMessages(p <- Protocol$new())
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001"),
+sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -281,7 +288,8 @@ test_that("Protocol$new() with framework_type='ana' creates an ANAFramework", {
 test_that("restore_framework reconstructs a Framework from exported data", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001"),
+sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -325,7 +333,8 @@ test_that("Protocol includes framework when set", {
   suppressMessages(p <- Protocol$new())
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001"),
+sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -496,7 +505,8 @@ test_that("Protocol$add_tools auto-increments duplicate tool types", {
 test_that("Protocol$validate_objective_schema works as a method", {
   suppressMessages(p <- Protocol$new())
   good <- data.frame(
-    sector = "Health",
+        objective_code = c("10001"),
+sector = "Health",
     pillar = "P1",
     sub_pillar = "SP1",
     short_objective = "H1",
@@ -698,7 +708,8 @@ test_that("Framework$render_framework_svg errors when no SVG is set", {
 test_that("Framework$render_framework_svg accepts version='master' and version='adjusted'", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
-    sector = "Health",
+        objective_code = c("10001"),
+sector = "Health",
     pillar = "Morbidity",
     sub_pillar = "Acute",
     short_objective = "H1",
@@ -775,6 +786,7 @@ test_that("Protocol framework includes primary and secondary objectives", {
 test_that("restore_framework restores primary_objectives and secondary_objectives", {
   suppressMessages(fw <- Framework$new())
   schema <- data.frame(
+        objective_code = c("10001"),
     sector = "Health",
     pillar = "P",
     sub_pillar = "SP",

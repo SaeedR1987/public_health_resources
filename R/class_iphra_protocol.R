@@ -564,8 +564,15 @@ IPHRAProtocol <- R6::R6Class(
 
       tool_names <- self$get_tool_names()
 
+      table_df <- data.frame(
+          Tool = character(0),
+          `Sampling Method` = character(0),
+          `Sample Size` = numeric(0),
+          check.names = FALSE
+        )
+
       if ("tool_household_iphra_v2" %in% tool_names) {
-        row <- data.frame(
+        table_df <- data.frame(
           Tool = "tool_household_iphra_v2",
 
           `Sampling Method` = if (
@@ -605,8 +612,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_kii_community_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_kii_community_iphra_v2",
             `Sampling Method` = "Purposive / Random Walk",
@@ -624,8 +631,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_kii_fsl_service_provider_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_kii_fsl_service_provider_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -643,8 +650,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_kii_health_service_provider_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_kii_health_service_provider_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -662,8 +669,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_kii_nutrition_service_provider_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_kii_nutrition_service_provider_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -681,8 +688,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_kii_wash_service_provider_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_kii_wash_service_provider_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -700,8 +707,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_obs_community_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_obs_community_iphra_v2",
             `Sampling Method` = "Transect Walk",
@@ -719,8 +726,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_obs_crop_livestock_iphra_v1" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_obs_crop_livestock_iphra_v1",
             `Sampling Method` = "Transect Walk",
@@ -738,8 +745,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_obs_health_facility_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_obs_health_facility_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -757,8 +764,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_obs_latrine_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_obs_latrine_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -776,8 +783,8 @@ IPHRAProtocol <- R6::R6Class(
       }
 
       if ("tool_obs_water_point_iphra_v2" %in% tool_names) {
-        row <- rbind(
-          row,
+        table_df <- rbind(
+          table_df,
           data.frame(
             Tool = "tool_obs_water_point_iphra_v2",
             `Sampling Method` = "Purposive",
@@ -794,18 +801,7 @@ IPHRAProtocol <- R6::R6Class(
         )
       }
 
-      if (!exists("row")) {
-        table <- data.frame(
-          Tool = character(0),
-          `Sampling Method` = character(0),
-          `Sample Size` = numeric(0),
-          check.names = FALSE
-        )
-      } else {
-        table <- row
-      }
-
-      return(table)
+      return(table_df)
     },
 
     .household_pillars_table_df = function(value) {
@@ -1191,7 +1187,7 @@ IPHRAProtocol <- R6::R6Class(
         self$get_dap_table("tool_household_iphra_v2")
       } else {
         data.frame()
-      }
+      } 
     },
     .community_kii_dap_df = function(value) {
       if (!missing(value)) {

@@ -798,7 +798,7 @@ test_that("sampling_frame$draw_sample with cluster/rlc selects only n_sites PSUs
     p$sampling_frame$draw_sample(strata_table = p$get_sample_table())
   ))
   selected <- suppressWarnings(suppressMessages(
-    p$sampling_frame$log_df[!is.na(p$sampling_frame$log_df$sampled_psu), ]
+    p$sampling_frame$drawn_sample[!is.na(p$sampling_frame$drawn_sample$sampled_psu), ]
   ))
   suppressWarnings(suppressMessages(
     expect_lte(nrow(selected), 5L)
@@ -816,11 +816,11 @@ test_that("sampling_frame$draw_sample warns and skips stratum not in frame", {
     stringsAsFactors = FALSE
   )
   suppressWarnings(suppressMessages(p$set_sampling_frame(frame)))
-  suppressMessages(
+  suppressWarnings(
     expect_warning(
-      suppressWarnings(suppressMessages(
+      suppressMessages(
         p$sampling_frame$draw_sample(strata_table = p$get_sample_table())
-      )),
+      ),
       regexp = "skipping"
     )
   )
@@ -964,7 +964,7 @@ test_that("sampling_frame$clear_sample is a no-op on an empty frame", {
 # ── Nested sample_object accessibility (light) ────────────────────────────────
 
 test_that("sample_object is a Sample and accessible via $sample_object", {
-  p <- make_protocol()
+  suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages({
     expect_true(inherits(p$sample_object, "Sample"))
     expect_true(is.function(p$sample_object$add_stratum))
@@ -2338,3 +2338,4 @@ test_that("sampling_frame$draw_sample skips simple_random stratum when n_sites i
     expect_true(all(is.na(p$sampling_frame$log_df$sampled_psu)))
   ))
 })
+

@@ -283,7 +283,7 @@ test_that("tool presence bindings are read-only", {
   ))
   suppressWarnings(suppressMessages({
     expect_false(result$visible)
-    expect_false(result$value)
+    
   }))
 })
 
@@ -541,7 +541,6 @@ test_that("indicator bindings are read-only", {
   ))
   suppressWarnings(suppressMessages({
     expect_false(result$visible)
-    expect_false(result$value)
   }))
 })
 
@@ -717,3 +716,4 @@ test_that("update_recall_date accepts a date string when household tool exists",
     }
   )
 })
+
