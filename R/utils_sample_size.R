@@ -331,7 +331,7 @@ calculate_sample_size_rate <- function(
   confidence_level = 0.95,
   multiplier = 10000
 ) {
-  origin <- "calculate_sample_size_mortality"
+  origin <- "calculate_sample_size_rate"
 
   # --- Type validation ---
   phrutils::phr_validate_numeric(expected_rate, origin = origin, soft = FALSE)

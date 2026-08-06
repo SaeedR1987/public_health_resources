@@ -1,6 +1,42 @@
 library(testthat)
 library(tibble)
 
+# Create a mock add_ function
+add_better_column <- function(.dataset) {
+  # Add a column with different values
+  .dataset$better_col <- c(
+    "new_val_1",
+    "new_val_2",
+    "new_val_1",
+    "new_val_2",
+    "new_val_1"
+  )
+  return(.dataset)
+}
+
+# Create a mock add_ function that adds a column
+add_test_indicator_1 <- function(.dataset) {
+  .dataset$indicator_1 <- rep("value_a", nrow(.dataset))
+  return(.dataset)
+}
+
+# Create a mock add_ function that depends on indicator_1
+add_test_indicator_2 <- function(.dataset, dep_col) {
+  # This function checks if dep_col exists (should be mapped from indicator_1)
+  if (!is.null(dep_col) && dep_col %in% names(.dataset)) {
+    .dataset$indicator_2 <- paste0("depends_on_", .dataset[[dep_col]])
+  } else {
+    .dataset$indicator_2 <- "no_dependency"
+  }
+  return(.dataset)
+}
+
+# Create a mock add_ function that adds a preferred column
+add_preferred_column <- function(.dataset) {
+  # Add a column with the most preferred name
+  .dataset$preferred_name <- .dataset$less_preferred_name
+  return(.dataset)
+}
 
 # Test: map_schema_vars method
 
@@ -1286,23 +1322,6 @@ test_that("map_schema_vars with allowed_values (backward compat) includes ALL fo
 # Test: map_schema_vars is called after each indicator in standardize
 
 test_that("map_schema_vars is called after each add_* function in standardize", {
-  # Create a mock add_ function that adds a column
-  add_test_indicator_1 <- function(.dataset) {
-    .dataset$indicator_1 <- rep("value_a", nrow(.dataset))
-    return(.dataset)
-  }
-
-  # Create a mock add_ function that depends on indicator_1
-  add_test_indicator_2 <- function(.dataset, dep_col) {
-    # This function checks if dep_col exists (should be mapped from indicator_1)
-    if (!is.null(dep_col) && dep_col %in% names(.dataset)) {
-      .dataset$indicator_2 <- paste0("depends_on_", .dataset[[dep_col]])
-    } else {
-      .dataset$indicator_2 <- "no_dependency"
-    }
-    return(.dataset)
-  }
-
   # Create test data
   df <- tibble::tibble(
     id = 1:5,
@@ -1371,13 +1390,6 @@ test_that("map_schema_vars is called after each add_* function in standardize", 
 
 test_that("map_schema_vars updates to more preferred column when available", {
   # Test that if a more preferred column becomes available, the mapping is updated
-
-  # Create a mock add_ function that adds a preferred column
-  add_preferred_column <- function(.dataset) {
-    # Add a column with the most preferred name
-    .dataset$preferred_name <- .dataset$less_preferred_name
-    return(.dataset)
-  }
 
   # Create test data with less preferred column
   df <- tibble::tibble(
@@ -1463,18 +1475,6 @@ test_that("map_schema_vars does not downgrade to less preferred column", {
   expect_equal(d$variable_map$my_var, "preferred_name")
 })
 
-# Create a mock add_ function
-add_better_column <- function(.dataset) {
-  # Add a column with different values
-  .dataset$better_col <- c(
-    "new_val_1",
-    "new_val_2",
-    "new_val_1",
-    "new_val_2",
-    "new_val_1"
-  )
-  return(.dataset)
-}
 
 test_that("map_schema_vars updates value_map when variable_map is updated", {
   # Test that when a more preferred column is found, value_map is also updated
