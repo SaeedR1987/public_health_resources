@@ -181,7 +181,7 @@ SurveyProtocol <- R6::R6Class(
             hint = phr_txt("Provide a data frame with at least one PSU row.")
           )
 
-          # 2. Run validate_sampling_frame — stops on hard issues
+          # 2. Run validate_sampling_frame \u2014 stops on hard issues
           val_result <- validate_sampling_frame(frame)
           if (!val_result$valid) {
             hard_issues <- val_result$issues[setdiff(
@@ -206,7 +206,7 @@ SurveyProtocol <- R6::R6Class(
             frame$inclusion <- TRUE
             phrutils::phr_message(
               phr_txt(
-                "'inclusion' column not found — defaulting all PSUs to TRUE."
+                "'inclusion' column not found \u2014 defaulting all PSUs to TRUE."
               ),
               origin = "SurveyProtocol$set_sampling_frame"
             )
@@ -257,7 +257,7 @@ SurveyProtocol <- R6::R6Class(
       self$sample_object$get_sample_table()
     },
 
-    # ── Sampling helpers ────────────────────────────────────────────────────
+    # 25002500 Sampling helpers 2500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
 
     #' @description Return the unique sampling methods used across all strata.
     #'
@@ -745,7 +745,7 @@ SurveyProtocol <- R6::R6Class(
       nrow(st)
     },
 
-    # ── Stratified strata names active bindings ─────────────────────────────
+    # 25002500 Stratified strata names active bindings 25002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
     # Helper: return TRUE if any strata row has site_method AND hh_method
     # The sample table's sampling_method encodes the combined site+hh method.
     # IPHRA mapping:

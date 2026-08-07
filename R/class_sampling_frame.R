@@ -8,16 +8,16 @@
 #' The default structure is the full extended sampling frame with the following
 #' columns:
 #' \itemize{
-#'   \item \code{stratum} — stratum identifier.
-#'   \item \code{psu} — primary sampling unit identifier.
-#'   \item \code{population_size} — population count for the PSU.
-#'   \item \code{inclusion} — logical flag marking PSUs eligible for sampling.
-#'   \item \code{sampled_psu} — cluster number(s) assigned by \code{draw_sample()};
+#'   \item \code{stratum} \u2014 stratum identifier.
+#'   \item \code{psu} \u2014 primary sampling unit identifier.
+#'   \item \code{population_size} \u2014 population count for the PSU.
+#'   \item \code{inclusion} \u2014 logical flag marking PSUs eligible for sampling.
+#'   \item \code{sampled_psu} \u2014 cluster number(s) assigned by \code{draw_sample()};
 #'     \code{NA} for unselected PSUs.  When a PSU is drawn more than once (as
 #'     can happen with PPS cluster or RLC sampling), this field contains the
 #'     comma-separated consecutive cluster numbers assigned to that PSU
 #'     (e.g. \code{"9, 10, 11"} for a PSU drawn three times).
-#'   \item \code{allocated_sample} — number of households allocated to the PSU
+#'   \item \code{allocated_sample} \u2014 number of households allocated to the PSU
 #'     by \code{draw_sample()}; \code{NA} for unselected PSUs.
 #' }
 #'
@@ -165,7 +165,7 @@ SamplingFrame <- R6::R6Class(
           if (length(st_eligible_rows) == 0L) {
             phrutils::phr_warning(
               message = phr_txt(
-                "Stratum '{st_id}' not found in sampling frame — skipping."
+                "Stratum '{st_id}' not found in sampling frame \u2014 skipping."
               ),
               origin = "Sample$draw_sample"
             )
@@ -363,7 +363,7 @@ SamplingFrame <- R6::R6Class(
       phrutils::phr_assert(
         method_site %in% valid_methods_site,
         message = phr_txt(
-          "Unknown sampling method '{method_site}' — must be one of: {paste(valid_methods_site, collapse=', ')}."
+          "Unknown sampling method '{method_site}' \u2014 must be one of: {paste(valid_methods_site, collapse=', ')}."
         ),
         origin = origin
       )
@@ -373,7 +373,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
-              "n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."
+              "n_sites is required for the 'simple_random_rlc' method \u2014 set the 'n_sites' column in the strata table."
             ),
             origin = origin
           )
@@ -387,7 +387,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
-              "n_sites is required for the 'simple_random' method_site — set the 'n_sites' column in the strata table."
+              "n_sites is required for the 'simple_random' method_site \u2014 set the 'n_sites' column in the strata table."
             ),
             origin = origin
           )
@@ -409,7 +409,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_psu) && !is.na(n_psu),
             message = phr_txt(
-              "n_psu is required for the 'cluster' method_site — set the 'n_psu' column in the strata table."
+              "n_psu is required for the 'cluster' method_site \u2014 set the 'n_psu' column in the strata table."
             ),
             origin = origin
           )
@@ -427,14 +427,14 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_psu) && !is.na(n_psu),
             message = phr_txt(
-              "n_psu is required for the 'cluster' method_site — set the 'n_psu' column in the strata table."
+              "n_psu is required for the 'cluster' method_site \u2014 set the 'n_psu' column in the strata table."
             ),
             origin = origin
           )
           phrutils::phr_assert(
             !is.null(cluster_size) && !is.na(cluster_size),
             message = phr_txt(
-              "cluster_size is required for the 'cluster' method_site — set the 'cluster_size' column in the strata table."
+              "cluster_size is required for the 'cluster' method_site \u2014 set the 'cluster_size' column in the strata table."
             ),
             origin = origin
           )
@@ -445,7 +445,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
-              "n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."
+              "n_sites is required for the 'systematic_rlc' method \u2014 set the 'n_sites' column in the strata table."
             ),
             origin = origin
           )
@@ -459,7 +459,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
-              "n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."
+              "n_sites is required for the 'systematic' method \u2014 set the 'n_sites' column in the strata table."
             ),
             origin = origin
           )
