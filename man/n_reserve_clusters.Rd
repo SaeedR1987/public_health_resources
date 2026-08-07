@@ -6,6 +6,9 @@
 \usage{
 n_reserve_clusters(n_main)
 }
+\arguments{
+\item{n_main}{Integer. Number of main (non-reserve) clusters.}
+}
 \description{
 Functions for drawing samples from sampling frames using various methods.
 PSU-level sampling functions (prefixed \code{draw_sample_psu_}) operate on an
