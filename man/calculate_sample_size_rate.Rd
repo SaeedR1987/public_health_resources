@@ -27,7 +27,7 @@ deaths per 10,000 people per day (must be positive).}
 deaths per 10,000 people per day (must be positive).}
 
 \item{non_response_rate}{Numeric. Anticipated non-response rate in
-percentages (0–100, default = 5).}
+percentages (0\u2013100, default = 5).}
 
 \item{design}{Character. Sampling design: \code{"simple_random"} or
 \code{"cluster"} (default = \code{"cluster"}).}

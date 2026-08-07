@@ -66,7 +66,7 @@ protocol$.tools_table_df
 
 }
 \section{Super classes}{
-\code{Orchestrator} -> \code{Document} -> \code{Protocol} -> \code{SurveyProtocol} -> \code{IPHRAProtocol}
+\code{Orchestrator} -> \code{Document} -> \code{\link[phr:Protocol]{Protocol}} -> \code{\link[phr:SurveyProtocol]{SurveyProtocol}} -> \code{IPHRAProtocol}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -87,19 +87,19 @@ protocol$.tools_table_df
   <li><code>Orchestrator$sync_state()</code></li>
   <li><code>Document$generate_quarto_doc()</code></li>
   <li><code>Document$generate_quarto_ppt()</code></li>
-  <li><code>Protocol$get_dap_table()</code></li>
-  <li><code>Protocol$get_issues()</code></li>
-  <li><code>Protocol$get_tool_names()</code></li>
-  <li><code>Protocol$is_tool_included()</code></li>
-  <li><code>Protocol$validate_objective_schema()</code></li>
-  <li><code>SurveyProtocol$diagnose_coherence()</code></li>
-  <li><code>SurveyProtocol$get_frame_column()</code></li>
-  <li><code>SurveyProtocol$get_sample_table()</code></li>
-  <li><code>SurveyProtocol$get_sampling_methods()</code></li>
-  <li><code>SurveyProtocol$get_strata_names()</code></li>
-  <li><code>SurveyProtocol$post_sync_state()</code></li>
-  <li><code>SurveyProtocol$set_sampling_frame()</code></li>
-  <li><code>SurveyProtocol$validate_strata_table()</code></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_dap_table"><a href='../../phr/html/Protocol.html#method-Protocol-get_dap_table'><code>Protocol$get_dap_table()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_issues"><a href='../../phr/html/Protocol.html#method-Protocol-get_issues'><code>Protocol$get_issues()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_tool_names"><a href='../../phr/html/Protocol.html#method-Protocol-get_tool_names'><code>Protocol$get_tool_names()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="is_tool_included"><a href='../../phr/html/Protocol.html#method-Protocol-is_tool_included'><code>Protocol$is_tool_included()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="validate_objective_schema"><a href='../../phr/html/Protocol.html#method-Protocol-validate_objective_schema'><code>Protocol$validate_objective_schema()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="diagnose_coherence"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-diagnose_coherence'><code>SurveyProtocol$diagnose_coherence()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="get_frame_column"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-get_frame_column'><code>SurveyProtocol$get_frame_column()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="get_sample_table"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-get_sample_table'><code>SurveyProtocol$get_sample_table()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="get_sampling_methods"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-get_sampling_methods'><code>SurveyProtocol$get_sampling_methods()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="get_strata_names"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-get_strata_names'><code>SurveyProtocol$get_strata_names()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="post_sync_state"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-post_sync_state'><code>SurveyProtocol$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="set_sampling_frame"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-set_sampling_frame'><code>SurveyProtocol$set_sampling_frame()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="SurveyProtocol" data-id="validate_strata_table"><a href='../../phr/html/SurveyProtocol.html#method-SurveyProtocol-validate_strata_table'><code>SurveyProtocol$validate_strata_table()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}

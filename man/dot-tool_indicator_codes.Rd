@@ -19,3 +19,4 @@ when available (default = \code{TRUE}).}
 Standalone helpers for generating flextable objects used by schema-driven
 document handlers.
 }
+\keyword{internal}

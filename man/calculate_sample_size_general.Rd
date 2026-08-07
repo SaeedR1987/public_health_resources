@@ -18,13 +18,13 @@ calculate_sample_size_general(
 }
 \arguments{
 \item{expected_proportion}{Numeric. Expected proportion/prevalence in
-percentages (0–100).}
+percentages (0\u2013100).}
 
 \item{desired_precision}{Numeric. Desired half-width of the confidence
-interval in percentage points (0–100, exclusive).}
+interval in percentage points (0\u2013100, exclusive).}
 
 \item{non_response_rate}{Numeric. Anticipated non-response rate in
-percentages (0–100, default = 5).}
+percentages (0\u2013100, default = 5).}
 
 \item{design}{Character. Sampling design: \code{"simple_random"} or
 \code{"cluster"} (default = \code{"simple_random"}).}
