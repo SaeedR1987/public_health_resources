@@ -553,6 +553,8 @@ HouseholdData <- R6::R6Class(
     #' @description
     #' Internal helper to retrieve data from a Data object with automatic fallback to available stages
     #'
+    #' @noRd
+    #'
     #' @param data_obj Data class object to retrieve data from
     #' @param stage Character string specifying preferred stage: "clean", "standardized", or "raw"
     #'
@@ -563,7 +565,6 @@ HouseholdData <- R6::R6Class(
     #' * If "clean": clean -> standardized -> raw
     #' * If "standardized": standardized -> clean -> raw
     #' * If "raw": raw -> clean -> standardized
-    #' @noRd
     ..get_data_with_fallback = function(
       data_obj,
       stage = c("clean", "standardized", "raw")
@@ -1548,6 +1549,8 @@ HouseholdData <- R6::R6Class(
     #' @description
     #' Internal helper that processes linked datasets and adds aggregated columns to household data
     #'
+    #' @noRd
+    #'
     #' @param hh_data Data frame of household data to augment with aggregated columns
     #' @param stage Character string specifying data stage: "clean", "standardized", or "raw"
     #'
@@ -1557,7 +1560,6 @@ HouseholdData <- R6::R6Class(
     #' For each linked dataset, performs type-specific aggregations and adds columns with
     #' naming convention "linked_<name>_<column>". See class documentation for specific
     #' aggregation rules by dataset type.
-    #' @noRd
     ..aggregate_linked_data = function(
       hh_data,
       stage = c("clean", "standardized", "raw")
@@ -1751,6 +1753,8 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
+    #' @noRd
+    #'
     #' @return Modified household data frame with aggregated death columns
     #'
     #' @details
@@ -1758,7 +1762,6 @@ HouseholdData <- R6::R6Class(
     #' death_female, death_non_trauma, death_trauma, death_other, death_current_location,
     #' death_migration, death_last_location, death_birth, person_time, person_time_under5,
     #' person_time_male, person_time_female
-    #' @noRd
     ..aggregate_deaths_data = function(
       hh_data,
       deaths_data,
@@ -1914,11 +1917,12 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
+    #' @noRd
+    #'
     #' @return Modified household data frame with aggregated water container columns
     #'
     #' @details
     #' Sums total liters by household and counts number of containers
-    #' @noRd
     ..aggregate_water_container_data = function(
       hh_data,
       water_data,
@@ -2032,13 +2036,14 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
+    #' @noRd
+    #'
     #' @return Modified household data frame with aggregated roster columns
     #'
     #' @details
     #' Calculates household demographics: household_size, num_children, num_male, num_female,
     #' num_women_15to49, and person_time columns by household. If calc_date_birth_final is
     #' available and recall/survey dates exist, also counts births in recall period.
-    #' @noRd
     ..aggregate_roster_data = function(
       hh_data,
       roster_data,
@@ -2233,11 +2238,12 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
+    #' @noRd
+    #'
     #' @return Modified household data frame with aggregated nutrition columns
     #'
     #' @details
     #' Aggregates by age groups: children_under2, children_2to5, children_under5 based on age in months
-    #' @noRd
     ..aggregate_nutrition_data = function(
       hh_data,
       nutrition_data,
@@ -2385,11 +2391,12 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
+    #' @noRd
+    #'
     #' @return Modified household data frame with aggregated health columns
     #'
     #' @details
     #' Counts total number of people recorded (rows) per household
-    #' @noRd
     ..aggregate_health_data = function(
       hh_data,
       health_data,
@@ -2470,11 +2477,12 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
+    #' @noRd
+    #'
     #' @return Modified household data frame with aggregated women columns
     #'
     #' @details
     #' Counts women aged 15-49 per household (all rows in WomenIndividualData represent eligible women)
-    #' @noRd
     ..aggregate_women_data = function(
       hh_data,
       women_data,
