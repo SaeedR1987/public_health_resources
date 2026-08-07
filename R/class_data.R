@@ -571,11 +571,11 @@ Data <- R6::R6Class(
 
                       # date
                     } else if (want == "date") {
-                      new <- phr_convert_date(col)
+                      new <- phrutils::phr_convert_date(col)
 
                       # datetime
                     } else if (want == "datetime") {
-                      new <- phr_convert_datetime(col)
+                      new <- phrutils::phr_convert_datetime(col)
 
                       # fallback
                     } else {
@@ -599,7 +599,7 @@ Data <- R6::R6Class(
                 # (b) INFERENCE-BASED COERCION (non-schema columns only)
 
                 inferred <- tryCatch(
-                  phr_infer_column_type(col, name = nm),
+                  phrutils::phr_infer_column_type(col, name = nm),
                   error = function(e) "character"
                 )
 
@@ -629,7 +629,7 @@ Data <- R6::R6Class(
                   identical(inferred, "date") &&
                     phrutils::is_safely_coercible(col, "Date")
                 ) {
-                  new <- phr_convert_date(col)
+                  new <- phrutils::phr_convert_date(col)
 
                   # fallback \u2192 clean character
                 } else {
@@ -3507,11 +3507,11 @@ Data <- R6::R6Class(
                   NA
                 }
               },
-              "Date" = tryCatch(phr_convert_date(new_val), error = function(e) {
+              "Date" = tryCatch(phrutils::phr_convert_date(new_val), error = function(e) {
                 as.Date(NA)
               }),
               "POSIXct" = tryCatch(
-                phr_convert_datetime(new_val),
+                phrutils::phr_convert_datetime(new_val),
                 error = function(e) {
                   phrutils::phr_warning(
                     sprintf(
@@ -3528,7 +3528,7 @@ Data <- R6::R6Class(
                 }
               ),
               "POSIXlt" = tryCatch(
-                as.POSIXlt(phr_convert_datetime(new_val)),
+                as.POSIXlt(phrutils::phr_convert_datetime(new_val)),
                 error = function(e) {
                   phrutils::phr_warning(
                     sprintf(
