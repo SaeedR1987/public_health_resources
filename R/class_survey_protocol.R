@@ -166,22 +166,22 @@ SurveyProtocol <- R6::R6Class(
     #'   A \code{stratum} column enables stratified sampling.
     #' @return Invisibly returns \code{self} for method chaining.
     set_sampling_frame = function(frame) {
-      phr_try(
+      phrutils::phr_try(
         {
           # 1. Confirm it is a data frame and not empty
-          phr_validate_dataframe(
+          phrutils::phr_validate_dataframe(
             frame,
             origin = "SurveyProtocol$set_sampling_frame",
             soft = FALSE
           )
-          phr_assert(
+          phrutils::phr_assert(
             nrow(frame) > 0,
             message = phr_txt("Sampling frame is empty."),
             origin = "SurveyProtocol$set_sampling_frame",
             hint = phr_txt("Provide a data frame with at least one PSU row.")
           )
 
-          # 2. Run validate_sampling_frame — stops on hard issues
+          # 2. Run validate_sampling_frame \u2014 stops on hard issues
           val_result <- validate_sampling_frame(frame)
           if (!val_result$valid) {
             hard_issues <- val_result$issues[setdiff(
@@ -204,9 +204,9 @@ SurveyProtocol <- R6::R6Class(
           # 3. Add inclusion column (all TRUE) if absent
           if (!"inclusion" %in% names(frame)) {
             frame$inclusion <- TRUE
-            phr_message(
+            phrutils::phr_message(
               phr_txt(
-                "'inclusion' column not found — defaulting all PSUs to TRUE."
+                "'inclusion' column not found \u2014 defaulting all PSUs to TRUE."
               ),
               origin = "SurveyProtocol$set_sampling_frame"
             )
@@ -220,7 +220,7 @@ SurveyProtocol <- R6::R6Class(
           private$..sync_state()
           private$..touch()
           self$diagnose_coherence()
-          phr_message(
+          phrutils::phr_message(
             phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
             origin = "SurveyProtocol$set_sampling_frame"
           )
@@ -257,7 +257,7 @@ SurveyProtocol <- R6::R6Class(
       self$sample_object$get_sample_table()
     },
 
-    # ── Sampling helpers ────────────────────────────────────────────────────
+    # 25002500 Sampling helpers 2500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
 
     #' @description Return the unique sampling methods used across all strata.
     #'
@@ -730,7 +730,7 @@ SurveyProtocol <- R6::R6Class(
       }
       st <- tryCatch(self$get_sample_table(), error = function(e) NULL)
       if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        return(NULL)
+        return(0L)
       }
       nrow(st)
     },
@@ -745,7 +745,7 @@ SurveyProtocol <- R6::R6Class(
       nrow(st)
     },
 
-    # ── Stratified strata names active bindings ─────────────────────────────
+    # 25002500 Stratified strata names active bindings 25002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
     # Helper: return TRUE if any strata row has site_method AND hh_method
     # The sample table's sampling_method encodes the combined site+hh method.
     # IPHRA mapping:
@@ -1301,9 +1301,7 @@ SurveyProtocol <- R6::R6Class(
       length(intersect(hh_codes, as.character(indicator_codes))) > 0L
     },
 
-    #' @description Guard to prevent recursive calls during state synchronization.
-    #' @keywords internal
-    #' @noRd
+    # Guard to prevent recursive calls during state synchronization.
     ..post_sync_guard = FALSE,
 
     #' @description Synchronize sampling-related state fields.

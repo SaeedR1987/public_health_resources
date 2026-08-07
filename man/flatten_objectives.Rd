@@ -14,7 +14,7 @@ flatten_objectives(objectives)
 Flat list of objective named lists.
 }
 \description{
-Converts the nested \code{sector → pillar → sub_pillar → data_source → [objectives]}
+Converts the nested \code{sector \u2192 pillar \u2192 sub_pillar \u2192 data_source \u2192 [objectives]}
 structure stored on a Protocol to a simple flat list of objective lists,
 suitable for iteration, validation, and conversion to a data frame.
 A flat list of objectives is returned unchanged.

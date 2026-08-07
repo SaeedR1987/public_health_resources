@@ -29,8 +29,7 @@ test_that("Log rejects non-dataframe input on initialize", {
 })
 
 test_that("Log fills missing required columns instead of erroring", {
-
-  df <- tibble(a = 1)   # missing required 'uuid'
+  df <- tibble(a = 1) # missing required 'uuid'
 
   log <- Log$new(
     log_df = df,
@@ -48,12 +47,15 @@ test_that("Log fills missing required columns instead of erroring", {
 })
 
 test_that("Log stores metadata correctly", {
-  log <- Log$new(
-    log_df = NULL,
-    log_name = "MetaTest",
-    required_columns = c("uuid")
+  suppressMessages(
+    log <- Log$new(
+      log_df = NULL,
+      log_name = "MetaTest",
+      required_columns = c("uuid")
+    )
   )
-  expect_true("updated" %in% names(log$metadata))
+  expect_true(c("created_datetime") %in% names(log$metadata))
+  expect_true(c("modified_datetime") %in% names(log$metadata))
 })
 
 # ============================================================
@@ -61,25 +63,25 @@ test_that("Log stores metadata correctly", {
 # ============================================================
 
 test_that("Log attaches schema using set_schema()", {
-  log <- Log$new(NULL, "SchemaLog", required_columns = "uuid")
+  suppressMessages(log <- Log$new(NULL, "SchemaLog", required_columns = "uuid"))
   log$set_schema(list(types = list(uuid = "character")))
   expect_true(is.list(log$schema))
 })
 
 test_that("validate() passes when schema matches types", {
   df <- tibble(uuid = c("A", "B"))
-  log <- Log$new(df, required_columns = "uuid")
+  suppressMessages(log <- Log$new(df, required_columns = "uuid"))
 
-  log$set_schema(list(types = list(uuid = "character")))
+  suppressMessages(log$set_schema(list(types = list(uuid = "character"))))
 
   expect_silent(log$validate())
 })
 
 test_that("validate() coerces safely coercible types", {
-  df <- tibble(uuid = 1:3)   # numeric → character coercible
-  log <- Log$new(df, required_columns = "uuid")
+  df <- tibble(uuid = 1:3) # numeric → character coercible
+  suppressMessages(log <- Log$new(df, required_columns = "uuid"))
 
-  log$set_schema(list(types = list(uuid = "character")))
+  suppressMessages(log$set_schema(list(types = list(uuid = "character"))))
 
   log$validate()
 
@@ -88,9 +90,9 @@ test_that("validate() coerces safely coercible types", {
 
 test_that("validate() flags type mismatches", {
   df <- tibble(uuid = c("A", "B"))
-  log <- Log$new(df, required_columns = "uuid")
+  suppressMessages(log <- Log$new(df, required_columns = "uuid"))
 
-  log$set_schema(list(types = list(uuid = "numeric")))
+  suppressMessages(log$set_schema(list(types = list(uuid = "numeric"))))
 
   issues <- log$validate()
   expect_true("type_mismatch" %in% names(issues))
@@ -98,9 +100,11 @@ test_that("validate() flags type mismatches", {
 
 test_that("validate() flags disallowed values", {
   df <- tibble(uuid = c("A", "BAD"))
-  log <- Log$new(df, required_columns = "uuid")
+  suppressMessages(log <- Log$new(df, required_columns = "uuid"))
 
-  log$set_schema(list(allowed_values = list(uuid = c("A", "B"))))
+  suppressMessages(log$set_schema(list(
+    allowed_values = list(uuid = c("A", "B"))
+  )))
 
   issues <- log$validate()
   expect_true("disallowed_values" %in% names(issues))
@@ -108,7 +112,7 @@ test_that("validate() flags disallowed values", {
 
 test_that("validate() supports schema_override", {
   df <- tibble(uuid = 1:3)
-  log <- Log$new(df, required_columns = "uuid")
+  suppressMessages(log <- Log$new(df, required_columns = "uuid"))
 
   override <- list(types = list(uuid = "character"))
 
@@ -121,31 +125,31 @@ test_that("validate() supports schema_override", {
 # ============================================================
 
 test_that("append_entry() adds a row to the log", {
-  log <- Log$new(NULL, required_columns = c("uuid", "issue"))
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
 
-  log$append_entry(list(uuid = "1", issue = "test"))
+  suppressMessages(log$append_entry(list(uuid = "1", issue = "test")))
 
   expect_equal(nrow(log$log_df), 1)
 })
 
 test_that("append_entry() errors when required fields missing", {
-  log <- Log$new(NULL, required_columns = c("uuid", "issue"))
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
 
   expect_error(
-    log$append_entry(list(uuid = "1")),
+    suppressMessages(log$append_entry(list(uuid = "1"))),
     regexp = "Missing required fields"
   )
 })
 
 test_that("append_entry() updates metadata timestamp", {
-  log <- Log$new(NULL, required_columns = c("uuid", "issue"))
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
 
-  old_time <- log$metadata$updated
+  old_time <- log$metadata$modified_datetime
   Sys.sleep(0.01)
 
-  log$append_entry(list(uuid = "1", issue = "x"))
+  suppressMessages(log$append_entry(list(uuid = "1", issue = "x")))
 
-  expect_true(log$metadata$updated > old_time)
+  expect_true(log$metadata$modified_datetime > old_time)
 })
 
 # ============================================================
@@ -153,12 +157,14 @@ test_that("append_entry() updates metadata timestamp", {
 # ============================================================
 
 test_that("clear() empties the log", {
-  log <- Log$new(
-    log_df = tibble(uuid = "1", issue = "a"),
-    required_columns = c("uuid", "issue")
+  suppressMessages(
+    log <- Log$new(
+      log_df = tibble(uuid = "1", issue = "a"),
+      required_columns = c("uuid", "issue")
+    )
   )
 
-  log$clear()
+  suppressMessages(log$clear())
   expect_equal(nrow(log$log_df), 0)
 })
 
@@ -168,9 +174,9 @@ test_that("clear() empties the log", {
 
 test_that("export() writes CSV", {
   tmp <- tempfile(fileext = ".csv")
-  log <- Log$new(NULL, required_columns = "uuid")
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
 
-  log$append_entry(list(uuid = "x"))
+  suppressMessages(log$append_entry(list(uuid = "x")))
 
   expect_no_error(log$export(tmp, "csv"))
   expect_true(file.exists(tmp))
@@ -178,16 +184,16 @@ test_that("export() writes CSV", {
 
 test_that("export() writes RDS", {
   tmp <- tempfile(fileext = ".rds")
-  log <- Log$new(NULL, required_columns = "uuid")
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
 
-  log$append_entry(list(uuid = "x"))
+  suppressMessages(log$append_entry(list(uuid = "x")))
 
   expect_no_error(log$export(tmp, "rds"))
   expect_true(file.exists(tmp))
 })
 
 test_that("export() errors for invalid format", {
-  log <- Log$new(NULL, required_columns = "uuid")
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
   expect_error(log$export("file.invalid", "badformat"))
 })
 
@@ -196,8 +202,8 @@ test_that("export() errors for invalid format", {
 # ============================================================
 
 test_that("get_hash() returns a hash string", {
-  log <- Log$new(NULL, required_columns = "uuid")
-  log$append_entry(list(uuid = "X"))
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  suppressMessages(log$append_entry(list(uuid = "X")))
 
   h <- log$get_hash()
   expect_true(is.character(h))
@@ -208,9 +214,9 @@ test_that("get_hash() returns a hash string", {
 # ============================================================
 
 test_that("summary() returns expected structure", {
-  log <- Log$new(NULL, required_columns = "uuid")
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
 
-  s <- log$summary()
+  suppressMessages(s <- log$summary())
 
   expect_true(is.list(s))
   expect_true("log_name" %in% names(s))
@@ -223,7 +229,7 @@ test_that("summary() returns expected structure", {
 # ============================================================
 
 test_that("validate() handles empty logs without error", {
-  log <- Log$new(NULL, required_columns = "uuid")
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
   expect_silent(log$validate())
 })
 
@@ -240,4 +246,3 @@ test_that("Log accepts extra non-schema columns", {
   expect_silent(log$validate())
   expect_true("extra" %in% names(log$log_df))
 })
-

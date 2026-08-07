@@ -77,7 +77,7 @@ Log <- R6::R6Class(
       }
 
       # ---- VALIDATION: must be a data.frame
-      phr_validate_dataframe(
+      phrutils::phr_validate_dataframe(
         log_df,
         origin = paste0(log_name, "$initialize"),
         soft = FALSE
@@ -105,7 +105,7 @@ Log <- R6::R6Class(
 
       self$issues <- list()
 
-      phr_message(phr_txt(glue::glue(
+      phrutils::phr_message(phr_txt(glue::glue(
         "{log_name} initialized with {nrow(log_df)} entries."
       )))
     },
@@ -125,7 +125,7 @@ Log <- R6::R6Class(
     #' * allowed_values: named list of column_name = vector of allowed values
     set_schema = function(schema_list) {
       self$schema <- schema_list
-      phr_message(phr_txt(glue::glue("Schema attached to {self$log_name}.")))
+      phrutils::phr_message(phr_txt(glue::glue("Schema attached to {self$log_name}.")))
       invisible(TRUE)
     },
 
@@ -148,14 +148,14 @@ Log <- R6::R6Class(
     #' Sets self$validated to TRUE if no issues found, updates self$issues.
     #' Attempts safe type coercion (e.g., "123" to 123) when possible.
     validate = function(schema_override = NULL) {
-      phr_try(
+      phrutils::phr_try(
         {
           schema_to_use <- schema_override %||% self$schema
           issues <- list()
 
           # 1. BASIC STRUCTURAL VALIDATION
 
-          phr_validate_dataframe(
+          phrutils::phr_validate_dataframe(
             self$log_df,
             origin = self$log_name,
             soft = TRUE
@@ -181,7 +181,7 @@ Log <- R6::R6Class(
                 got <- class(self$log_df[[nm]])[1]
 
                 # Safe coercion classification
-                coercible <- is_safely_coercible(self$log_df[[nm]], want)
+                coercible <- phrutils::is_safely_coercible(self$log_df[[nm]], want)
 
                 # Soft-coercion when safe
                 if (!identical(got, want) && coercible) {
@@ -194,7 +194,7 @@ Log <- R6::R6Class(
                       } else if (want == "logical") {
                         suppressWarnings(as.logical(self$log_df[[nm]]))
                       } else if (want == "date" || want == "Date") {
-                        phr_convert_date(self$log_df[[nm]])
+                        phrutils::phr_convert_date(self$log_df[[nm]])
                       } else {
                         self$log_df[[nm]]
                       }
@@ -204,7 +204,7 @@ Log <- R6::R6Class(
 
                   self$log_df[[nm]] <- new_vec
 
-                  phr_message(
+                  phrutils::phr_message(
                     phr_txt(glue::glue(
                       "Coerced column '{nm}' to type '{want}'."
                     ))
@@ -247,7 +247,7 @@ Log <- R6::R6Class(
           # 3. FINALIZE
 
           if (length(issues) > 0) {
-            phr_warning(
+            phrutils::phr_warning(
               self$log_name,
               phr_txt(glue::glue(
                 "Log validation completed with issues: {paste(names(issues), collapse=', ')}"
@@ -304,7 +304,7 @@ Log <- R6::R6Class(
 
       private$..touch()
 
-      phr_message(phr_txt(glue::glue("Added new entry to {self$log_name}.")))
+      phrutils::phr_message(phr_txt(glue::glue("Added new entry to {self$log_name}.")))
       invisible(TRUE)
     },
 
@@ -321,7 +321,7 @@ Log <- R6::R6Class(
     clear = function() {
       self$log_df <- self$log_df[0, , drop = FALSE]
       private$..touch()
-      phr_message(phr_txt(glue::glue("{self$log_name} cleared.")))
+      phrutils::phr_message(phr_txt(glue::glue("{self$log_name} cleared.")))
       invisible(TRUE)
     },
 
@@ -343,7 +343,7 @@ Log <- R6::R6Class(
     export = function(path, format = c("csv", "rds", "xlsx")) {
       format <- match.arg(format)
 
-      phr_try(
+      phrutils::phr_try(
         {
           if (format == "csv") {
             utils::write.csv(self$log_df, path, row.names = FALSE)
@@ -361,7 +361,7 @@ Log <- R6::R6Class(
             openxlsx::write.xlsx(self$log_df, file = path)
           }
 
-          phr_message(phr_txt(glue::glue(
+          phrutils::phr_message(phr_txt(glue::glue(
             "Exported {self$log_name} to {path}."
           )))
           invisible(path)
