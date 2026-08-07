@@ -468,7 +468,7 @@ Data <- R6::R6Class(
             step = "Check raw data",
             hint = phr_txt("Ensure raw data exists before standardization")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -489,7 +489,7 @@ Data <- R6::R6Class(
             step = "Validation",
             hint = phr_txt("Check data structure and required columns")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -501,7 +501,7 @@ Data <- R6::R6Class(
             step = "Pre-standardize hook",
             hint = phr_txt("Subclass-specific setup before standardization")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -515,7 +515,7 @@ Data <- R6::R6Class(
             step = "Map schema variables",
             hint = phr_txt("Auto-map schema variables to dataset columns")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -687,7 +687,7 @@ Data <- R6::R6Class(
             step = "Type coercion and other column detection",
             hint = phr_txt("Check schema types and column conversion logic")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -760,7 +760,7 @@ Data <- R6::R6Class(
             step = "Process select_multiple columns",
             hint = phr_txt("Check select_multiple schema and expansion logic")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
           # Update data_copy with result from step
@@ -819,7 +819,7 @@ Data <- R6::R6Class(
             step = "Add schema-identified other columns",
             hint = phr_txt("Check schema is_other field")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -1210,7 +1210,7 @@ Data <- R6::R6Class(
             step = "Process indicator schema",
             hint = phr_txt("Check indicator functions and required variables")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
           # Update data_copy with result from step
@@ -1253,7 +1253,7 @@ Data <- R6::R6Class(
             step = "Generate cluster_id_numeric",
             hint = phr_txt("Check variable_map for cluster_id role")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
           data_copy <- result
@@ -1281,7 +1281,7 @@ Data <- R6::R6Class(
             step = "Run quality checks",
             hint = phr_txt("Check dependency schema and type validations")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -1293,7 +1293,7 @@ Data <- R6::R6Class(
             step = "Post-standardize hook",
             hint = phr_txt("Subclass-specific processing after standardization")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -1307,7 +1307,7 @@ Data <- R6::R6Class(
             step = "Update variable and value maps (final)",
             hint = phr_txt("Final map update after post-standardize")
           )
-          if (phr_failed(result)) {
+          if (phrutils::phr_failed(result)) {
             return(result)
           }
 
