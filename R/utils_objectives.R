@@ -327,7 +327,7 @@ print_objectives_summary <- function(objectives) {
   data_sources <- unique(sapply(flat, function(x) x$data_source %||% "unknown"))
 
   phrutils::phr_message(
-    phr_txt("Objectives Summary — {length(flat)} total objective(s). Sectors: {paste(sectors, collapse=', ')}. Data sources: {paste(data_sources, collapse=', ')}."),
+    phr_txt("Objectives Summary \u2014 {length(flat)} total objective(s). Sectors: {paste(sectors, collapse=', ')}. Data sources: {paste(data_sources, collapse=', ')}."),
     origin = origin
   )
 
