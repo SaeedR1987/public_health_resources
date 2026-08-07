@@ -277,7 +277,7 @@ calculate_sample_size_individual <- function(
 #' and household sample sizes as well as the total person-time (in person-days)
 #' and the expected number of deaths that would be observed in the sample.
 #'
-#' @param expected_death_rate Numeric. Expected crude death rate (CDR) in
+#' @param expected_rate Numeric. Expected crude death rate (CDR) in
 #'   deaths per 10,000 people per day (must be positive).
 #' @param desired_precision Numeric. Desired precision as a half-width in
 #'   deaths per 10,000 people per day (must be positive).
@@ -301,6 +301,7 @@ calculate_sample_size_individual <- function(
 #'   be positive) when \code{fpc = TRUE}.
 #' @param confidence_level Numeric. Desired confidence level as a proportion
 #'   (default = 0.95).
+#' @param multiplier Numeric. Scaling multiplier for the rate (default = 10000).
 #' @return A named list with six elements:
 #'   \describe{
 #'     \item{sample_size_households}{Integer. Households required after
