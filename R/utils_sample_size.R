@@ -14,11 +14,11 @@
 #' estimate for small populations.
 #'
 #' @param expected_proportion Numeric. Expected proportion/prevalence in
-#'   percentages (0–100).
+#'   percentages (0\u2013100).
 #' @param desired_precision Numeric. Desired half-width of the confidence
-#'   interval in percentage points (0–100, exclusive).
+#'   interval in percentage points (0\u2013100, exclusive).
 #' @param non_response_rate Numeric. Anticipated non-response rate in
-#'   percentages (0–100, default = 5).
+#'   percentages (0\u2013100, default = 5).
 #' @param design Character. Sampling design: \code{"simple_random"} or
 #'   \code{"cluster"} (default = \code{"simple_random"}).
 #' @param design_effect Numeric. Design effect for cluster sampling; must be
@@ -167,11 +167,11 @@ calculate_sample_size_general <- function(
 #' required.
 #'
 #' @param expected_proportion Numeric. Expected proportion/prevalence in
-#'   percentages (0–100).
+#'   percentages (0\u2013100).
 #' @param desired_precision Numeric. Desired half-width of the confidence
-#'   interval in percentage points (0–100, exclusive).
+#'   interval in percentage points (0\u2013100, exclusive).
 #' @param non_response_rate Numeric. Anticipated non-response rate in
-#'   percentages (0–100, default = 5).
+#'   percentages (0\u2013100, default = 5).
 #' @param design Character. Sampling design: \code{"simple_random"} or
 #'   \code{"cluster"} (default = \code{"simple_random"}).
 #' @param design_effect Numeric. Design effect for cluster sampling; must be
@@ -186,7 +186,7 @@ calculate_sample_size_general <- function(
 #' @param average_household_size Numeric. Average number of individuals per
 #'   household (must be positive).
 #' @param sub_population_percent Numeric. The percentage of the household
-#'   population belonging to the target sub-population (0–100, default = 100).
+#'   population belonging to the target sub-population (0\u2013100, default = 100).
 #'   Values below 100 inflate the individual sample size proportionally.
 #' @param confidence_level Numeric. Desired confidence level as a proportion
 #'   (default = 0.95).
@@ -282,7 +282,7 @@ calculate_sample_size_individual <- function(
 #' @param desired_precision Numeric. Desired precision as a half-width in
 #'   deaths per 10,000 people per day (must be positive).
 #' @param non_response_rate Numeric. Anticipated non-response rate in
-#'   percentages (0–100, default = 5).
+#'   percentages (0\u2013100, default = 5).
 #' @param design Character. Sampling design: \code{"simple_random"} or
 #'   \code{"cluster"} (default = \code{"cluster"}).
 #' @param design_effect Numeric. Design effect for cluster sampling; must be

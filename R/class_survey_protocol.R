@@ -257,7 +257,7 @@ SurveyProtocol <- R6::R6Class(
       self$sample_object$get_sample_table()
     },
 
-    # ── Sampling helpers ────────────────────────────────────────────────────
+    # 25002500 Sampling helpers 2500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
 
     #' @description Return the unique sampling methods used across all strata.
     #'
@@ -745,7 +745,7 @@ SurveyProtocol <- R6::R6Class(
       nrow(st)
     },
 
-    # ── Stratified strata names active bindings ─────────────────────────────
+    # 25002500 Stratified strata names active bindings 25002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500250025002500
     # Helper: return TRUE if any strata row has site_method AND hh_method
     # The sample table's sampling_method encodes the combined site+hh method.
     # IPHRA mapping:
