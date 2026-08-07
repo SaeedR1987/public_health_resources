@@ -1301,9 +1301,7 @@ SurveyProtocol <- R6::R6Class(
       length(intersect(hh_codes, as.character(indicator_codes))) > 0L
     },
 
-    #' @description Guard to prevent recursive calls during state synchronization.
-    #' @keywords internal
-    #' @noRd
+    # Guard to prevent recursive calls during state synchronization.
     ..post_sync_guard = FALSE,
 
     #' @description Synchronize sampling-related state fields.

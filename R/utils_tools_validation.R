@@ -405,9 +405,9 @@ xlsform_check_brackets <- function(cell) {
 #'
 #' @examples
 #' xlsform_orphan_square_brackets("${var}")$valid        # TRUE
-#' xlsform_orphan_square_brackets("{1}")$valid           # FALSE (orphan '{')
-#' xlsform_orphan_square_brackets("}1{")$valid           # FALSE (closing before opening)
-#' xlsform_orphan_square_brackets("{a} + {b}")$valid     # TRUE (properly paired)
+#' xlsform_orphan_square_brackets("\\{1\\}")$valid       # FALSE (orphan curly)
+#' xlsform_orphan_square_brackets("\\}1\\{")$valid       # FALSE (closing before opening)
+#' xlsform_orphan_square_brackets("\\{a\\} + \\{b\\}")$valid # TRUE (properly paired)
 #'
 #' @export
 xlsform_orphan_square_brackets <- function(cell) {
