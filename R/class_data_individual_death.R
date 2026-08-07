@@ -63,7 +63,7 @@ DeathIndividualData <- R6::R6Class(
         }
 
         # Convert recall_date safely
-        recall_date <- phr_convert_date(recall_date)
+        recall_date <- phrutils::phr_convert_date(recall_date)
         self$recall_date <- recall_date
 
         # --- Default mapping for death-related variables
