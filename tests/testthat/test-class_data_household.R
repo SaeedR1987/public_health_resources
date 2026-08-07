@@ -2,7 +2,6 @@ library(testthat)
 library(tibble)
 library(mockery)
 library(phrutils)
-library(phrindicators)
 
 # Household Data Schema Loading ####
 
