@@ -10,7 +10,7 @@ xlsform_extract_variables(cell, pattern = "\\\\$\\\\{([^}]+)\\\\}")
 \item{cell}{A single character string (one XLSForm cell value).}
 
 \item{pattern}{A PCRE-compatible regular expression. The default
-pattern captures XLSForm variable names from `${}` references.}
+pattern captures XLSForm variable names from `$\{\}` references.}
 }
 \value{
 A character vector of extracted values (one per match).
@@ -23,8 +23,8 @@ A general-purpose extraction helper that applies a PCRE regex
 of the **first capture group** for every match.  When the pattern
 contains no capture group the full match is returned instead.
 
-By default the pattern targets XLSForm `${}` variable references
-(e.g. `${my_var}`), so the function extracts the variable name
+By default the pattern targets XLSForm `$\{\}` variable references
+(e.g. `$\{my_var\}`), so the function extracts the variable name
 inside the braces.  Pass a different `pattern` to extract other
 structured tokens.
 

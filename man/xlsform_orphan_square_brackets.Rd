@@ -21,7 +21,7 @@ an empty string.
 }
 \description{
 Checks an XLSForm cell for orphaned curly brackets. A cell is considered
-valid when all `{` and `}` are properly paired (no unmatched opening or
+valid when all `\{` and `\}` are properly paired (no unmatched opening or
 closing brace) and no closing brace appears before a corresponding opening
 brace. Square brackets `[` and `]` are ignored.
 }
