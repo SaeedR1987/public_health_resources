@@ -26,7 +26,7 @@ remotes::install_github("impact-initiatives/public_health_resources")
 
 ```r
 # install.packages("remotes")
-remotes::install_github("impact-initiatives/public_health_resources", ref = "copilot/amend-readme-install-instruction")
+remotes::install_github("impact-initiatives/public_health_resources", ref = "copilot/develop-quant_data_pipeline")
 ```
 
 Then load the package:
