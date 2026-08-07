@@ -184,7 +184,7 @@ Tool <- R6::R6Class(
 
     #' @description
     #' Set the tool name.
-    #' @param name Character string for the tool name.
+    #' @param new_name Character string for the tool name.
     #' @return Invisibly returns self for method chaining.
     set_name = function(new_name) {
       if (
