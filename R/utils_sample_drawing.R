@@ -23,8 +23,13 @@
 # PSU-level sampling utility functions (called from Protocol$draw_sample)
 # ---------------------------------------------------------------------------
 
-# Determine the number of reserve clusters to add based on the main draw size.
-# Returns 3 for n_main <= 10, 4 for n_main <= 20, and 5 for n_main > 20.
+#' Determine the number of reserve clusters
+#'
+#' Determine the number of reserve clusters to add based on the main draw size.
+#' Returns 3 for n_main <= 10, 4 for n_main <= 20, and 5 for n_main > 20.
+#'
+#' @param n_main Integer. Number of main (non-reserve) clusters.
+#' @keywords internal
 n_reserve_clusters <- function(n_main) {
   if (n_main <= 10L) {
     3L

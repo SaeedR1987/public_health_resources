@@ -3,6 +3,13 @@
 #' @description
 #' Standalone helpers for generating flextable objects used by schema-driven
 #' document handlers.
+#'
+#' @param tools List of Tool objects.
+#' @param tool_names Character vector or \code{NULL}. If provided, only Tools
+#'   with names in this vector are included (default = \code{NULL}, include all).
+#' @param prefer_revised Logical. Whether to prefer revised indicator codes
+#'   when available (default = \code{TRUE}).
+#' @keywords internal
 
 .tool_indicator_codes <- function(
   tools,
@@ -244,7 +251,6 @@ table_sample_size_general <- function(sample_table) {
 
 #' Build individual sample-size table.
 #' @param sample_table Sample table data frame.
-#' @param indicator_codes Included indicator codes from tools.
 #' @return A flextable object, or \code{NULL} when unavailable.
 table_sample_size_individual <- function(sample_table) {
   params <- list(
@@ -308,7 +314,6 @@ table_sample_size_individual <- function(sample_table) {
 
 #' Build mortality sample-size table.
 #' @param sample_table Sample table data frame.
-#' @param indicator_codes Included indicator codes from tools.
 #' @return A flextable object, or \code{NULL} when unavailable.
 table_sample_size_rate <- function(sample_table) {
   params <- list(

@@ -34,7 +34,7 @@ to add linked datasets.
 * `health`: HealthIndividualData - health assessments
 
 When `standardize()` is called, the `pre_standardize()` hook will:
-1. Generate survey weights via `generate_weights()` when a `SamplingFrame` is
+1. Generate survey weights via `generate_weights()` when a \link{SamplingFrame} is
    stored in `self$sampling_frame` and a stratum role is mapped in `variable_map`
    (skipped silently if either is unavailable).
 2. Check linked datasets and ensure they are standardized

@@ -6,6 +6,10 @@
 #' \code{sector → pillar → sub_pillar → data_source}, where \code{data_source}
 #' captures whether the objective is "primary" or "secondary" (or any other
 #' value from the objective schema).
+#'
+#' @param data_source Character or \code{NULL}. Data source designation
+#'   (e.g. "primary" or "secondary"); \code{NULL} or \code{NA} defaults to "primary".
+#' @keywords internal
 
 # Internal helper: normalise a data_source value (NULL / NA → "primary").
 .normalize_data_source <- function(data_source) {
