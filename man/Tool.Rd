@@ -150,7 +150,7 @@ construction.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{name}}{Character string for the tool name.}
+      \item{\code{new_name}}{Character string for the tool name.}
     }
     \if{html}{\out{</div>}}
   }
