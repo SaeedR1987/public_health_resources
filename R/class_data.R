@@ -3671,6 +3671,8 @@ Data <- R6::R6Class(
     #' 1. Replace canonical variable names (roles) with dataset column names from variable_map
     #' 2. Replace canonical values with dataset values from value_map
     #'
+    #' @noRd
+    #'
     #' @param expr Character string containing the R expression to translate
     #' @param stage Data stage to use for validation ("raw", "standardized", "clean")
     #'
@@ -3690,7 +3692,6 @@ Data <- R6::R6Class(
     #' - Other operators (<, >, <=, >=, etc.) are not currently translated for values
     #' - Variable names in functions (e.g., is.na(var)) are translated
     #' - Special regex characters in names/values are automatically escaped
-    #' @noRd
     .translate_expression = function(expr, stage = "standardized") {
       if (is.null(expr) || expr == "") {
         return(expr)
