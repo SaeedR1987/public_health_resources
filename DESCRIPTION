@@ -97,7 +97,6 @@ Collate:
     'class_tool.R'
     'globals.R'
     'phr-package.R'
-    'utils_color_palettes.R'
     'utils_data_class.R'
     'utils_data_quality.R'
     'utils_doc_schema_handlers_iphra.R'

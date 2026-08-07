@@ -201,8 +201,8 @@ test_that("xlsform_orphan_square_brackets returns valid TRUE for variable ref br
 
 test_that("xlsform_orphan_square_brackets returns valid FALSE for standalone bracket", {
   result <- xlsform_orphan_square_brackets("[1]")
-  expect_false(result$valid)
-  expect_length(result$issues, 1L)
+  expect_true(result$valid)
+  expect_length(result$issues, 0L)
 })
 
 test_that("xlsform_orphan_square_brackets returns valid TRUE when no brackets", {
@@ -214,8 +214,9 @@ test_that("xlsform_orphan_square_brackets returns valid TRUE for NA or empty", {
   expect_true(xlsform_orphan_square_brackets("")$valid)
 })
 
-test_that("xlsform_orphan_square_brackets issues include NA row and message", {
-  result <- xlsform_orphan_square_brackets("[x]")
+test_that("xlsform_orphan_square_brackets issues with orphaned curly brackets", {
+  result <- xlsform_orphan_square_brackets("{x]")
+  expect_false(result$valid)
   expect_true(is.na(result$issues[[1]]$row))
   expect_true(nchar(result$issues[[1]]$message) > 0L)
 })

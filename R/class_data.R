@@ -122,7 +122,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (is.null(data)) {
-            phr_error(
+            phrutils::phr_error(
               phr_txt("No data provided for initialization."),
               origin = dataset_name
             )
@@ -130,7 +130,7 @@ Data <- R6::R6Class(
 
           # --- NEW: enforce explicit uuid ---
           if (is.null(uuid) || !is.character(uuid) || length(uuid) != 1) {
-            phr_error(
+            phrutils::phr_error(
               dataset_name,
               phr_txt(
                 "You must supply a valid uuid column name when creating a Data object."
@@ -145,7 +145,7 @@ Data <- R6::R6Class(
           )
 
           if (!uuid %in% names(data)) {
-            phr_error(
+            phrutils::phr_error(
               dataset_name,
               phr_txt("UUID column '{uuid}' not found in provided data.")
             )
@@ -253,7 +253,7 @@ Data <- R6::R6Class(
           }
 
           if (!self$uuid %in% names(df)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("UUID column '{self$uuid}' not found in dataset.")
             )
@@ -458,7 +458,7 @@ Data <- R6::R6Class(
           result <- phrutils::phr_try_step(
             {
               if (is.null(self$raw_data)) {
-                phr_error(
+                phrutils::phr_error(
                   "Raw data is NULL; cannot standardize.",
                   origin = paste0(self$dataset_name, "$standardize"),
                   hint = "Raw dataset has been removed or corrupted. Reinitialize the Data object."
@@ -1827,7 +1827,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (!is.list(indicator_schema_list)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("Indicator schema must be a list.")
             )
@@ -1925,7 +1925,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (!is.list(dependency_schema_list)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("Dependency schema must be a list.")
             )
@@ -2113,14 +2113,14 @@ Data <- R6::R6Class(
 
       # --- Basic input validation ---
       if (!is.character(role) || length(role) != 1) {
-        phr_error(
+        phrutils::phr_error(
           self$dataset_name,
           phr_txt("Role must be a single character string.")
         )
       }
 
       if (!is.character(column_name) || length(column_name) != 1) {
-        phr_error(
+        phrutils::phr_error(
           self$dataset_name,
           phr_txt("Column name must be a single character string.")
         )
@@ -2534,7 +2534,7 @@ Data <- R6::R6Class(
           )
 
           if (is.null(df)) {
-            phr_error(
+            phrutils::phr_error(
               message = "No dataset is available at the selected stage.",
               origin = paste0(self$dataset_name, "$run_quality_checks")
             )
@@ -3035,7 +3035,7 @@ Data <- R6::R6Class(
         {
           df <- self$get_data(stage)
           if (is.null(df)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("No data available at stage '{stage}'.")
             )
@@ -4011,7 +4011,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (missing(file_path) || !is.character(file_path)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("A valid file path must be specified.")
             )
@@ -4051,7 +4051,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (missing(file_path) || !file.exists(file_path)) {
-            phr_error(
+            phrutils::phr_error(
               "Data",
               phr_txt("File '{file_path}' not found or inaccessible.")
             )
@@ -4103,7 +4103,7 @@ Data <- R6::R6Class(
         {
           df <- self$get_data(stage)
           if (is.null(df)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("No data available at stage '{stage}' to export.")
             )
@@ -4117,7 +4117,7 @@ Data <- R6::R6Class(
             saveRDS(df, file_path)
           } else if (format == "xlsx") {
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
-              phr_error(
+              phrutils::phr_error(
                 self$dataset_name,
                 phr_txt("Package 'openxlsx' is required for XLSX export.")
               )
@@ -4228,7 +4228,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (!requireNamespace("digest", quietly = TRUE)) {
-            phr_error(
+            phrutils::phr_error(
               self$dataset_name,
               phr_txt("Package 'digest' is required for hashing.")
             )
@@ -4289,7 +4289,7 @@ Data <- R6::R6Class(
       by_other_role
     ) {
       if (missing(name) || !is.character(name) || length(name) != 1) {
-        phr_error(
+        phrutils::phr_error(
           self$dataset_name,
           phr_txt("Link 'name' must be a single character string.")
         )
@@ -4853,7 +4853,7 @@ Data <- R6::R6Class(
           if (!is.null(variable_map_df)) {
             # Validate input structure
             if (!is.data.frame(variable_map_df)) {
-              phr_error(
+              phrutils::phr_error(
                 self$dataset_name,
                 phr_txt("variable_map_df must be a data frame.")
               )
@@ -4862,7 +4862,7 @@ Data <- R6::R6Class(
             required_cols <- c("role", "column_name")
             missing <- setdiff(required_cols, names(variable_map_df))
             if (length(missing) > 0) {
-              phr_error(
+              phrutils::phr_error(
                 self$dataset_name,
                 phr_txt(
                   "variable_map_df missing required columns: {paste(missing, collapse=', ')}"
@@ -4922,7 +4922,7 @@ Data <- R6::R6Class(
           if (!is.null(value_map_df)) {
             # Validate input structure
             if (!is.data.frame(value_map_df)) {
-              phr_error(
+              phrutils::phr_error(
                 self$dataset_name,
                 phr_txt("value_map_df must be a data frame.")
               )
@@ -4931,7 +4931,7 @@ Data <- R6::R6Class(
             required_cols <- c("role", "values")
             missing <- setdiff(required_cols, names(value_map_df))
             if (length(missing) > 0) {
-              phr_error(
+              phrutils::phr_error(
                 self$dataset_name,
                 phr_txt(
                   "value_map_df missing required columns: {paste(missing, collapse=', ')}"

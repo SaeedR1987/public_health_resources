@@ -1,43 +1,7 @@
 library(testthat)
 library(tibble)
 
-# Create a mock add_ function
-add_better_column <- function(.dataset) {
-  # Add a column with different values
-  .dataset$better_col <- c(
-    "new_val_1",
-    "new_val_2",
-    "new_val_1",
-    "new_val_2",
-    "new_val_1"
-  )
-  return(.dataset)
-}
-
-# Create a mock add_ function that adds a column
-add_test_indicator_1 <- function(.dataset) {
-  .dataset$indicator_1 <- rep("value_a", nrow(.dataset))
-  return(.dataset)
-}
-
-# Create a mock add_ function that depends on indicator_1
-add_test_indicator_2 <- function(.dataset, dep_col) {
-  # This function checks if dep_col exists (should be mapped from indicator_1)
-  if (!is.null(dep_col) && dep_col %in% names(.dataset)) {
-    .dataset$indicator_2 <- paste0("depends_on_", .dataset[[dep_col]])
-  } else {
-    .dataset$indicator_2 <- "no_dependency"
-  }
-  return(.dataset)
-}
-
-# Create a mock add_ function that adds a preferred column
-add_preferred_column <- function(.dataset) {
-  # Add a column with the most preferred name
-  .dataset$preferred_name <- .dataset$less_preferred_name
-  return(.dataset)
-}
-
+source(testthat::test_path("map_schema_vars_functions.R")) # Assuming Data class is defined in R/Data.R
 # Test: map_schema_vars method
 
 test_that("map_schema_vars returns invisible self when no schema is defined", {
@@ -1521,7 +1485,7 @@ test_that("map_schema_vars updates value_map when variable_map is updated", {
   expect_true(all(c("old_val_1", "old_val_2") %in% d$value_map$status))
 
   # Run standardize
-  d$standardize()
+  suppressWarnings(d$standardize())
 
   # Should now map to better_col with new values
   expect_equal(d$variable_map$status, "better_col")

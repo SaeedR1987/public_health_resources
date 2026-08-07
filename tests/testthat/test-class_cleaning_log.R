@@ -340,7 +340,7 @@ test_that("CleaningLog validate allows multiple rows", {
     new.value = c("11", "20")
   )
 
-  suppressMessages(slog <- CleaningLog$new(df))
+  suppressMessages(log <- CleaningLog$new(df))
   expect_silent(log$validate())
 })
 
@@ -359,7 +359,7 @@ test_that("CleaningLog ignores enum_id validations if no mapping exists", {
 
   df_data <- tibble(uuid = "u1", age = "10")
 
-  suppressMessages(slog <- CleaningLog$new(df_log))
+  suppressMessages(log <- CleaningLog$new(df_log))
   d <- MockData$new(df_data)
   d$variable_map <- list() # no enum_id mapping
 

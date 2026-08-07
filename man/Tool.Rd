@@ -144,7 +144,7 @@ construction.}
   Set the tool name.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{Tool$set_name(name)}
+    \preformatted{Tool$set_name(new_name)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
