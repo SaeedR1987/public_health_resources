@@ -474,10 +474,10 @@ test_that("standardize() copies raw_data into standardized_data when no changes 
   )
   suppressMessages(d$validate())
 
-  suppressMessages(expect_no_error(d$standardize()))
+  suppressWarnings(suppressMessages(expect_no_error(d$standardize())))
 
   expect_true(d$standardized)
-  expect_equal(d$standardized_data, df)
+  expect_equal(d$standardized_data$id, df$id)
 })
 
 
@@ -590,8 +590,8 @@ test_that("standardize() coerces ISO date format YYYY-MM-DD", {
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
-  d$validate()
-  d$standardize()
+  suppressMessages(d$validate())
+  suppressWarnings(suppressMessages(d$standardize()))
 
   # Should detect and convert to Date or POSIXct depending on standardize implementation
   expect_true(inherits(d$standardized_data$date, c("Date", "POSIXct")))

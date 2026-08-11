@@ -26,8 +26,8 @@
 #' of the **first capture group** for every match.  When the pattern
 #' contains no capture group the full match is returned instead.
 #'
-#' By default the pattern targets XLSForm `${}` variable references
-#' (e.g. `${my_var}`), so the function extracts the variable name
+#' By default the pattern targets XLSForm `$\{\}` variable references
+#' (e.g. `$\{my_var\}`), so the function extracts the variable name
 #' inside the braces.  Pass a different `pattern` to extract other
 #' structured tokens.
 #'
@@ -388,7 +388,7 @@ xlsform_check_brackets <- function(cell) {
 #'
 #' @description
 #' Checks an XLSForm cell for orphaned curly brackets. A cell is considered
-#' valid when all `{` and `}` are properly paired (no unmatched opening or
+#' valid when all `\{` and `\}` are properly paired (no unmatched opening or
 #' closing brace) and no closing brace appears before a corresponding opening
 #' brace. Square brackets `[` and `]` are ignored.
 #'
@@ -405,9 +405,9 @@ xlsform_check_brackets <- function(cell) {
 #'
 #' @examples
 #' xlsform_orphan_square_brackets("${var}")$valid        # TRUE
-#' xlsform_orphan_square_brackets("{1}")$valid           # FALSE (orphan '{')
-#' xlsform_orphan_square_brackets("}1{")$valid           # FALSE (closing before opening)
-#' xlsform_orphan_square_brackets("{a} + {b}")$valid     # TRUE (properly paired)
+#' xlsform_orphan_square_brackets("\\{1\\}")$valid       # FALSE (orphan curly)
+#' xlsform_orphan_square_brackets("\\}1\\{")$valid       # FALSE (closing before opening)
+#' xlsform_orphan_square_brackets("\\{a\\} + \\{b\\}")$valid # TRUE (properly paired)
 #'
 #' @export
 xlsform_orphan_square_brackets <- function(cell) {

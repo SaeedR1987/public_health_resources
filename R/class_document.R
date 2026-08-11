@@ -5,6 +5,7 @@
 #' helpers for protocol/report-like classes.
 #'
 #' @importFrom R6 R6Class
+#' @export
 Document <- R6::R6Class(
   "Document",
   inherit = Orchestrator,

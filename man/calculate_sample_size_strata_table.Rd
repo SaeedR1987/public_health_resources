@@ -28,12 +28,12 @@ After computing sample sizes, also calls \code{\link{estimate_field_plan}}
 for each stratum where the necessary logistics parameters are present.
 The resulting field-plan values are written back into \code{sample_table}:
 \itemize{
-  \item \code{num_interview_per_enum_per_day} — estimated interviews per
+  \item \code{num_interview_per_enum_per_day} \u2014 estimated interviews per
     enumerator per working day.
-  \item \code{num_days} — estimated number of data-collection days needed.
-  \item \code{n_psu} — number of PSUs required (\code{NA} for simple random
+  \item \code{num_days} \u2014 estimated number of data-collection days needed.
+  \item \code{n_psu} \u2014 number of PSUs required (\code{NA} for simple random
     designs); written into the existing \code{n_psu} column.
-  \item \code{cluster_size} — cluster size (\code{NA} for simple random
+  \item \code{cluster_size} \u2014 cluster size (\code{NA} for simple random
     designs); written into the existing \code{cluster_size} column.
 }
 

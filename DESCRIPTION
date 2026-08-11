@@ -21,10 +21,9 @@ Imports:
     flextable,
     ggplot2,
     glue,
-    lubridate,
+    lme4,
     officer,
     openxlsx,
-    phrindicators,
     phrutils,
     pps,
     purrr,
@@ -35,10 +34,8 @@ Imports:
     scales,
     srvyr,
     survey,
-    xml2,
     tibble,
-    tidyr,
-    zscorer
+    tidyr
 Suggests:
     GGally,
     ggalluvial,

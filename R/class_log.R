@@ -194,7 +194,7 @@ Log <- R6::R6Class(
                       } else if (want == "logical") {
                         suppressWarnings(as.logical(self$log_df[[nm]]))
                       } else if (want == "date" || want == "Date") {
-                        phr_convert_date(self$log_df[[nm]])
+                        phrutils::phr_convert_date(self$log_df[[nm]])
                       } else {
                         self$log_df[[nm]]
                       }
