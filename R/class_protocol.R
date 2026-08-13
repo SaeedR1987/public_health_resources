@@ -31,22 +31,23 @@
 #'
 #' @section Key methods:
 #' \describe{
-#'   \item{`initialize()`}{Create a new protocol object.}
-#'   \item{`add_tools()`}{Add a tool object to the protocol.}
-#'   \item{`get_tool_names()`}{Return registered tool names.}
-#'   \item{`is_tool_included()`}{Check whether a tool is registered.}
-#'   \item{`validate_objective_schema()`}{Validate an objective schema.}
-#'   \item{`diagnose_coherence()`}{Check alignment between framework indicators and tool indicators.}
-#'   \item{`get_dap_table()`}{Build a data analysis plan table for a selected tool.}
-#'   \item{`get_quarto_params()`}{Return protocol parameters for Quarto rendering.}
+#'   \item{\code{initialize()}}{Create a new protocol object.}
+#'   \item{\code{add_tools()}}{Add a tool object to the protocol.}
+#'   \item{\code{remove_tools()}}{Remove a tool from the protocol safely.}
+#'   \item{\code{get_tool_names()}}{Return registered tool names.}
+#'   \item{\code{is_tool_included()}}{Check whether a tool is registered.}
+#'   \item{\code{validate_objective_schema()}}{Validate an objective schema.}
+#'   \item{\code{diagnose_coherence()}}{Check alignment between framework indicators and tool indicators.}
+#'   \item{\code{get_dap_table()}}{Build a data analysis plan table for a selected tool.}
+#'   \item{\code{get_quarto_params()}}{Return protocol parameters for Quarto rendering.}
 #' }
 #'
 #' @section Active bindings:
 #' \describe{
-#'   \item{`.release_date`}{Read-only binding returning the current system date.}
-#'   \item{`.objectives_research_questions_df`}{Returns a table of pillars, sub-pillars, objectives, and research questions linked to indicators used across tools.}
-#'   \item{`.secondary_data_sources_df`}{Returns the framework secondary data sources table.}
-#'   \item{`.modified_framework_svg`}{Returns a temporary SVG file path for the adjusted or master framework diagram.}
+#'   \item{\code{.release_date}}{Read-only binding returning the current system date.}
+#'   \item{\code{.objectives_research_questions_df}}{Returns a table of pillars, sub-pillars, objectives, and research questions linked to indicators used across tools.}
+#'   \item{\code{.secondary_data_sources_df}}{Returns the framework secondary data sources table.}
+#'   \item{\code{.modified_framework_svg}}{Returns a temporary SVG file path for the adjusted or master framework diagram.}
 #' }
 #'
 #' @examples

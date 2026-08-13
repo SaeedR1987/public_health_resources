@@ -38,16 +38,16 @@
 #'
 #' @section Key methods:
 #' \describe{
-#'   \item{`initialize()`}{Create a new survey protocol.}
-#'   \item{`set_sampling_frame()`}{Validate and store a sampling frame.}
-#'   \item{`validate_strata_table()`}{Validate the nested sample table.}
-#'   \item{`get_sample_table()`}{Return the sample table from the nested `Sample` object.}
-#'   \item{`get_sampling_methods()`}{Return unique sampling methods.}
-#'   \item{`get_strata_names()`}{Return stratum names from the sample table.}
-#'   \item{`get_frame_column()`}{Extract a column from the sampling frame.}
-#'   \item{`diagnose_coherence()`}{Run protocol coherence checks plus strata consistency checks.}
-#'   \item{`post_sync_state()`}{Synchronize sampling and sampling-frame state after nested updates.}
-#'   \item{`get_quarto_params()`}{Return survey-specific parameters for Quarto rendering.}
+#'   \item{\code{initialize()}}{Create a new survey protocol.}
+#'   \item{\code{set_sampling_frame()}}{Validate and store a sampling frame.}
+#'   \item{\code{validate_strata_table()}}{Validate the nested sample table.}
+#'   \item{\code{get_sample_table()}}{Return the sample table from the nested \code{Sample} object.}
+#'   \item{\code{get_sampling_methods()}}{Return unique sampling methods.}
+#'   \item{\code{get_strata_names()}}{Return stratum names from the sample table.}
+#'   \item{\code{get_frame_column()}}{Extract a column from the sampling frame.}
+#'   \item{\code{diagnose_coherence()}}{Run protocol coherence checks plus strata consistency checks.}
+#'   \item{\code{post_sync_state()}}{Synchronize sampling and sampling-frame state after nested updates.}
+#'   \item{\code{get_quarto_params()}}{Return survey-specific parameters for Quarto rendering.}
 #' }
 #'
 #' @section Active bindings:
