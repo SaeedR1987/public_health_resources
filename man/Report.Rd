@@ -8,7 +8,7 @@ Subclass of \code{\link{Document}} for holding a protocol object, multiple
 data analytics objects, and an integrated analysis object.
 }
 \section{Super classes}{
-\code{phr::Orchestrator} -> \code{phr::Document} -> \code{Report}
+\code{\link[phr:Orchestrator]{phr::Orchestrator}} -> \code{\link[phr:Document]{phr::Document}} -> \code{Report}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

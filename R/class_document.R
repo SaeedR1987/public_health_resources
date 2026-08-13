@@ -18,6 +18,14 @@ Document <- R6::R6Class(
     #'   initialize \code{powerpoint}.
     reference_ppt_filename = NULL,
 
+    #' @description
+    #' Create a new Document object with optional Word and PowerPoint template
+    #' filenames.
+    #'
+    #' @param reference_doc_filename Optional character path or filename of a
+    #'   Word template used to initialize \code{reference_doc_filename}.
+    #' @param reference_ppt_filename Optional character path or filename of a
+    #'   PowerPoint template used to initialize \code{reference_ppt_filename}.
     #' @return A new Document object.
     initialize = function(
       reference_doc_filename = NULL,
@@ -39,8 +47,6 @@ Document <- R6::R6Class(
     #' @param template_file Character path to the Quarto template file. If NULL,
     #'   uses "quarto_doc_template.qmd" from package resources.
     #' @param params Named list of parameters to substitute in the template.
-    #' @param content Character string containing the main document content
-    #'   (Markdown formatted).
     #' @param open Logical indicating whether to open the output in a browser.
     #' @return Invisibly returns \code{self}.
     generate_quarto_doc = function(
@@ -230,21 +236,20 @@ Document <- R6::R6Class(
     }
   ),
   active = list(
-    #' Active binding that returns the R version string.
+    #' @field .r_version Active binding returning the current R version string.
     .r_version = function(value) {
       version$version.string
     }
   ),
 
   private = list(
-    #' @description
-    #' Resolve the default Quarto Word template path.
-    #'
-    #' @return Character scalar giving the resolved path to the default Word
-    #'   Quarto template.
-    #'
-    #' @keywords internal
-    #' @noRd
+    # @description
+    # Resolve the default Quarto Word template path.
+    #
+    # @return Character scalar giving the resolved path to the default Word
+    #   Quarto template.
+    #
+    # @keywords internal
     ..default_word_template_path = function() {
       template_file <- "quarto_doc_revised_template.qmd"
 
@@ -264,18 +269,16 @@ Document <- R6::R6Class(
 
       template_path
     },
-    #' @description Return default template filename candidates.
-    #' @return Character vector of template filenames.
-    #' @keywords internal
-    #' @noRd
+    # @description Return default template filename candidates.
+    # @return Character vector of template filenames.
+    # @keywords internal
     ..default_template_filenames = function() {
       c("reach_tor_template.docx", "protocol_report_template.docx")
     },
 
-    #' @description Return default PowerPoint template filename candidates.
-    #' @return Character vector of template filenames.
-    #' @keywords internal
-    #' @noRd
+    # @description Return default PowerPoint template filename candidates.
+    # @return Character vector of template filenames.
+    # @keywords internal
     ..default_ppt_template_filenames = function() {
       c("protocol_report_template.pptx")
     },

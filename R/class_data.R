@@ -3671,7 +3671,6 @@ Data <- R6::R6Class(
     #' 1. Replace canonical variable names (roles) with dataset column names from variable_map
     #' 2. Replace canonical values with dataset values from value_map
     #'
-    #' @noRd
     #'
     #' @param expr Character string containing the R expression to translate
     #' @param stage Data stage to use for validation ("raw", "standardized", "clean")

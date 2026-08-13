@@ -23,7 +23,7 @@ Required columns:
 }
 \keyword{internal}
 \section{Super class}{
-\code{phr::Log} -> \code{DeletionLog}
+\code{\link[phr:Log]{phr::Log}} -> \code{DeletionLog}
 }
 \section{Methods}{
 \subsection{Public methods}{
