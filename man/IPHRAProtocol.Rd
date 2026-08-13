@@ -109,7 +109,94 @@ protocol$.tools_table_df
 
 }
 \section{Super classes}{
-\code{phr::Orchestrator} -> \code{phr::Document} -> \code{phr::Protocol} -> \code{phr::SurveyProtocol} -> \code{IPHRAProtocol}
+\code{\link[phr:Orchestrator]{phr::Orchestrator}} -> \code{\link[phr:Document]{phr::Document}} -> \code{\link[phr:Protocol]{phr::Protocol}} -> \code{\link[phr:SurveyProtocol]{phr::SurveyProtocol}} -> \code{IPHRAProtocol}
+}
+\section{Active bindings}{
+\if{html}{\out{<div class="r6-active-bindings">}}
+\describe{
+\item{\code{.tool_household_iphra}}{Logical flag indicating if a household IPHRA tool is registered.}
+
+\item{\code{.tool_community_kii}}{Logical flag indicating if a community KII tool is registered.}
+
+\item{\code{.tool_fsl_provider_kii}}{Logical flag indicating if an FSL provider KII tool is registered.}
+
+\item{\code{.tool_market_kii}}{Logical flag indicating if a market KII tool is registered.}
+
+\item{\code{.tool_health_facility_kii}}{Logical flag indicating if a health facility KII tool is registered.}
+
+\item{\code{.tool_nutrition_facility_kii}}{Logical flag indicating if a nutrition facility KII tool is registered.}
+
+\item{\code{.tool_wash_provider_kii}}{Logical flag indicating if a WASH provider KII tool is registered.}
+
+\item{\code{.ind_ecfies}}{Logical flag indicating if ECFIES indicator (10801) is included.}
+
+\item{\code{.ind_iycfe}}{Logical flag indicating if IYCF-E indicator (10802) is included.}
+
+\item{\code{.ind_measles_vaccination}}{Logical flag indicating if measles vaccination indicator (14304) is included.}
+
+\item{\code{.ind_muac_children}}{Logical flag indicating if MUAC children indicator (10701) is included.}
+
+\item{\code{.ind_muac_women}}{Logical flag indicating if MUAC women indicator (10702) is included.}
+
+\item{\code{.ind_vitamin_a_coverage}}{Logical flag indicating if vitamin A coverage indicator (14305) is included.}
+
+\item{\code{.ind_mortality}}{Logical flag indicating if mortality indicators (10501, 10502) are included.}
+
+\item{\code{.ind_fcs}}{Logical flag indicating if FCS indicator (11205) is included.}
+
+\item{\code{.ind_rcsi}}{Logical flag indicating if rCSI indicator (11202) is included.}
+
+\item{\code{.ind_hhs}}{Logical flag indicating if HHS indicator (11201) is included.}
+
+\item{\code{.ind_lcsi}}{Logical flag indicating if LCSI indicator (12301) is included.}
+
+\item{\code{.ind_hwise}}{Logical flag indicating if HWISE indicator (11701) is included.}
+
+\item{\code{.ind_lppd}}{Logical flag indicating if LPPD indicator (10901) is included.}
+
+\item{\code{.tool_community_observation}}{Logical flag indicating if a community observation tool is registered.}
+
+\item{\code{.tool_crops_livestock_observation}}{Logical flag indicating if a crops/livestock observation tool is registered.}
+
+\item{\code{.tool_health_facility_observation}}{Logical flag indicating if a health facility observation tool is registered.}
+
+\item{\code{.tool_latrine_observation}}{Logical flag indicating if a latrine observation tool is registered.}
+
+\item{\code{.tool_water_point_observation}}{Logical flag indicating if a water point observation tool is registered.}
+
+\item{\code{.tools_table_df}}{Data frame summarizing registered tools with sampling methods and sample sizes.}
+
+\item{\code{.household_pillars_table_df}}{Active binding.}
+
+\item{\code{.kii_pillars_table_df}}{Active binding.}
+
+\item{\code{.observation_pillars_table_df}}{Active binding.}
+
+\item{\code{.household_dap_df}}{Data frame containing the household data analysis plan.}
+
+\item{\code{.community_kii_dap_df}}{Data frame containing the community KII data analysis plan.}
+
+\item{\code{.community_observation_dap_df}}{Data frame containing the community observation data analysis plan.}
+
+\item{\code{.health_facility_kii_dap_df}}{Data frame containing the health facility KII data analysis plan.}
+
+\item{\code{.health_facility_observation_dap_df}}{Data frame containing the health facility observation data analysis plan.}
+
+\item{\code{.nutrition_facility_kii_dap_df}}{Data frame containing the nutrition facility KII data analysis plan.}
+
+\item{\code{.fsl_provider_kii_dap_df}}{Data frame containing the FSL provider KII data analysis plan.}
+
+\item{\code{.market_kii_dap_df}}{Data frame containing the market KII data analysis plan.}
+
+\item{\code{.crop_livstock_observation_dap_df}}{Active binding.}
+
+\item{\code{.wash_provider_kii_dap_df}}{Data frame containing the WASH provider KII data analysis plan.}
+
+\item{\code{.water_point_observation_dap_df}}{Data frame containing the water point observation data analysis plan.}
+
+\item{\code{.latrine_observation_dap_df}}{Data frame containing the latrine observation data analysis plan.}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{

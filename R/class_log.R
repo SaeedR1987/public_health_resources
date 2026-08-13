@@ -470,10 +470,9 @@ Log <- R6::R6Class(
       names(df) <- cols
       tibble::as_tibble(df)
     },
-    #' @description Update modified timestamp.
-    #' @return Invisibly returns NULL.
-    #' @keywords internal
-    #' @noRd
+    # @description Update modified timestamp.
+    # @return Invisibly returns NULL.
+    # @keywords internal
     ..touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
