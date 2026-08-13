@@ -322,26 +322,24 @@ SamplingFrame <- R6::R6Class(
     }
   ),
   private = list(
-    #' @description Update modified timestamp.
-    #' @return Invisibly returns NULL.
-    #' @keywords internal
-    #' @noRd
+    # @description Update modified timestamp.
+    # @return Invisibly returns NULL.
+    # @keywords internal
     ..touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
     },
-    #' @description Apply a sampling method to a frame.
-    #' @param frame Data frame sampling frame.
-    #' @param method_site Character scalar site sampling method name.
-    #' @param method_hh Character scalar household sampling method name.
-    #' @param sample_size Integer sample size.
-    #' @param n_psu Integer number of primary sampling units.
-    #' @param n_sites Integer number of sites.
-    #' @param cluster_size Integer cluster size.
-    #' @param seed Integer random seed.
-    #' @return Data frame with sampled PSUs and allocated sample columns.
-    #' @keywords internal
-    #' @noRd
+    # @description Apply a sampling method to a frame.
+    # @param frame Data frame sampling frame.
+    # @param method_site Character scalar site sampling method name.
+    # @param method_hh Character scalar household sampling method name.
+    # @param sample_size Integer sample size.
+    # @param n_psu Integer number of primary sampling units.
+    # @param n_sites Integer number of sites.
+    # @param cluster_size Integer cluster size.
+    # @param seed Integer random seed.
+    # @return Data frame with sampled PSUs and allocated sample columns.
+    # @keywords internal
     ..apply_sampling_method = function(
       frame,
       method_site,
@@ -469,13 +467,12 @@ SamplingFrame <- R6::R6Class(
         draw_sample_psu_purposive(frame, seed)
       }
     },
-    #' @description Extract sampling parameters from a strata row.
-    #' @param st_row Data frame single strata row.
-    #' @param stratum_n_eligible Integer number of eligible units in stratum.
-    #' @param total_n_eligible Integer total number of eligible units.
-    #' @return List with elements: method_site, method_hh, sample_size, n_psu, cluster_size, n_sites.
-    #' @keywords internal
-    #' @noRd
+    # @description Extract sampling parameters from a strata row.
+    # @param st_row Data frame single strata row.
+    # @param stratum_n_eligible Integer number of eligible units in stratum.
+    # @param total_n_eligible Integer total number of eligible units.
+    # @return List with elements: method_site, method_hh, sample_size, n_psu, cluster_size, n_sites.
+    # @keywords internal
     ..params_from_strata_row = function(
       st_row,
       stratum_n_eligible,

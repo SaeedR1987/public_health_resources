@@ -28,7 +28,7 @@ Required columns:
 }
 \keyword{internal}
 \section{Super class}{
-\code{phr::Log} -> \code{CleaningLog}
+\code{\link[phr:Log]{phr::Log}} -> \code{CleaningLog}
 }
 \section{Methods}{
 \subsection{Public methods}{

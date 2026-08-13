@@ -376,8 +376,6 @@ Sample <- R6::R6Class(
     },
 
     #' @description Return unique sampling methods in the sample table.
-
-    #' @description Return unique sampling methods in the sample table.
     #' @param type Character specifying method type: "site" or "household" (default: "site").
     #' @return Character vector of unique sampling methods.
     get_sampling_methods = function(type = c("site", "household")) {
@@ -418,20 +416,18 @@ Sample <- R6::R6Class(
     }
   ),
   private = list(
-    #' @description Update modified timestamp.
-    #' @return Invisibly returns NULL.
-    #' @keywords internal
-    #' @noRd
+    # @description Update modified timestamp.
+    # @return Invisibly returns NULL.
+    # @keywords internal
     ..touch = function() {
       self$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
     },
 
-    #' @description Resolve the stratum name column from a sample table.
-    #' @param st Data frame sample table.
-    #' @return Character scalar naming the column, or NULL if not found.
-    #' @keywords internal
-    #' @noRd
+    # @description Resolve the stratum name column from a sample table.
+    # @param st Data frame sample table.
+    # @return Character scalar naming the column, or NULL if not found.
+    # @keywords internal
     ..resolve_stratum_name_col = function(st) {
       if ("stratum_name" %in% names(st)) {
         "stratum_name"

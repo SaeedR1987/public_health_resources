@@ -553,7 +553,6 @@ HouseholdData <- R6::R6Class(
     #' @description
     #' Internal helper to retrieve data from a Data object with automatic fallback to available stages
     #'
-    #' @noRd
     #'
     #' @param data_obj Data class object to retrieve data from
     #' @param stage Character string specifying preferred stage: "clean", "standardized", or "raw"
@@ -1549,7 +1548,6 @@ HouseholdData <- R6::R6Class(
     #' @description
     #' Internal helper that processes linked datasets and adds aggregated columns to household data
     #'
-    #' @noRd
     #'
     #' @param hh_data Data frame of household data to augment with aggregated columns
     #' @param stage Character string specifying data stage: "clean", "standardized", or "raw"
@@ -1753,7 +1751,6 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
-    #' @noRd
     #'
     #' @return Modified household data frame with aggregated death columns
     #'
@@ -1917,7 +1914,6 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
-    #' @noRd
     #'
     #' @return Modified household data frame with aggregated water container columns
     #'
@@ -2036,7 +2032,6 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
-    #' @noRd
     #'
     #' @return Modified household data frame with aggregated roster columns
     #'
@@ -2238,7 +2233,6 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
-    #' @noRd
     #'
     #' @return Modified household data frame with aggregated nutrition columns
     #'
@@ -2391,7 +2385,6 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
-    #' @noRd
     #'
     #' @return Modified household data frame with aggregated health columns
     #'
@@ -2477,7 +2470,6 @@ HouseholdData <- R6::R6Class(
     #' @param link_name Character name of the link
     #' @param linked_obj The linked Data object
     #'
-    #' @noRd
     #'
     #' @return Modified household data frame with aggregated women columns
     #'

@@ -31,22 +31,23 @@
 #'
 #' @section Key methods:
 #' \describe{
-#'   \item{`initialize()`}{Create a new protocol object.}
-#'   \item{`add_tools()`}{Add a tool object to the protocol.}
-#'   \item{`get_tool_names()`}{Return registered tool names.}
-#'   \item{`is_tool_included()`}{Check whether a tool is registered.}
-#'   \item{`validate_objective_schema()`}{Validate an objective schema.}
-#'   \item{`diagnose_coherence()`}{Check alignment between framework indicators and tool indicators.}
-#'   \item{`get_dap_table()`}{Build a data analysis plan table for a selected tool.}
-#'   \item{`get_quarto_params()`}{Return protocol parameters for Quarto rendering.}
+#'   \item{\code{initialize()}}{Create a new protocol object.}
+#'   \item{\code{add_tools()}}{Add a tool object to the protocol.}
+#'   \item{\code{remove_tools()}}{Remove a tool from the protocol safely.}
+#'   \item{\code{get_tool_names()}}{Return registered tool names.}
+#'   \item{\code{is_tool_included()}}{Check whether a tool is registered.}
+#'   \item{\code{validate_objective_schema()}}{Validate an objective schema.}
+#'   \item{\code{diagnose_coherence()}}{Check alignment between framework indicators and tool indicators.}
+#'   \item{\code{get_dap_table()}}{Build a data analysis plan table for a selected tool.}
+#'   \item{\code{get_quarto_params()}}{Return protocol parameters for Quarto rendering.}
 #' }
 #'
 #' @section Active bindings:
 #' \describe{
-#'   \item{`.release_date`}{Read-only binding returning the current system date.}
-#'   \item{`.objectives_research_questions_df`}{Returns a table of pillars, sub-pillars, objectives, and research questions linked to indicators used across tools.}
-#'   \item{`.secondary_data_sources_df`}{Returns the framework secondary data sources table.}
-#'   \item{`.modified_framework_svg`}{Returns a temporary SVG file path for the adjusted or master framework diagram.}
+#'   \item{\code{.release_date}}{Read-only binding returning the current system date.}
+#'   \item{\code{.objectives_research_questions_df}}{Returns a table of pillars, sub-pillars, objectives, and research questions linked to indicators used across tools.}
+#'   \item{\code{.secondary_data_sources_df}}{Returns the framework secondary data sources table.}
+#'   \item{\code{.modified_framework_svg}}{Returns a temporary SVG file path for the adjusted or master framework diagram.}
 #' }
 #'
 #' @examples
@@ -795,6 +796,7 @@ Protocol <- R6::R6Class(
       Sys.Date()
     },
 
+    #' @field .objectives_research_questions_df Returns a table of pillars, sub-pillars, objectives, and research questions linked to indicators used across tools.
     .objectives_research_questions_df = function(value) {
       all_codes <- character(0)
 
@@ -872,6 +874,7 @@ Protocol <- R6::R6Class(
       table
     },
 
+    #' @field .secondary_data_sources_df Returns the framework secondary data sources table.
     .secondary_data_sources_df = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
@@ -933,14 +936,13 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
-    #' @description Check whether a tool with a specific role exists.
-    #'   Uses \code{access_nested()} to query tools by role and verify that
-    #'   a tool with that role exists and has a valid name.
-    #' @param role Character. Role identifier to check for tool availability.
-    #' @return Logical. \code{TRUE} if a tool with the specified role exists
-    #'   and has a valid name, \code{FALSE} otherwise.
-    #' @keywords internal
-    #' @noRd
+    # @description Check whether a tool with a specific role exists.
+    #   Uses \code{access_nested()} to query tools by role and verify that
+    #   a tool with that role exists and has a valid name.
+    # @param role Character. Role identifier to check for tool availability.
+    # @return Logical. \code{TRUE} if a tool with the specified role exists
+    #   and has a valid name, \code{FALSE} otherwise.
+    # @keywords internal
     ..has_tool_role = function(role) {
       out <- tryCatch(
         self$access_nested(
@@ -954,11 +956,10 @@ Protocol <- R6::R6Class(
       is.character(out) && length(out) == 1L && nzchar(out)
     },
 
-    #' @description Collect unique indicator codes from included revised tools.
-    #' @param tool_names Optional character vector of tool names to query.
-    #' @return Character vector of unique indicator codes.
-    #' @keywords internal
-    #' @noRd
+    # @description Collect unique indicator codes from included revised tools.
+    # @param tool_names Optional character vector of tool names to query.
+    # @return Character vector of unique indicator codes.
+    # @keywords internal
     ..get_tool_indicator_codes = function(
       tool_names = NULL
     ) {
@@ -1027,12 +1028,11 @@ Protocol <- R6::R6Class(
       invisible(NULL)
     },
 
-    #' @description Build a data analysis plan table from framework primary
-    #'   objectives and specified tool survey data.
-    #' @param tool_name Character. Tool name for survey/choices lookup.
-    #' @return Data frame with DAP columns or NULL when missing dependencies.
-    #' @keywords internal
-    #' @noRd
+    # @description Build a data analysis plan table from framework primary
+    #   objectives and specified tool survey data.
+    # @param tool_name Character. Tool name for survey/choices lookup.
+    # @return Data frame with DAP columns or NULL when missing dependencies.
+    # @keywords internal
     ..build_dap_table = function(tool_name, lang = "en") {
       # 1. Check framework availability
       if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
@@ -1186,16 +1186,15 @@ Protocol <- R6::R6Class(
       )
     },
 
-    #' @description Construct DAP table rows from survey and framework data.
-    #' @param survey_df Filtered survey data frame.
-    #' @param choices_df Choices data frame (may be NULL).
-    #' @param indicator_bank Data frame from the master indicator bank, filtered
-    #'   to indicators used in the survey.
-    #' @param lang Language code for label columns (e.g. \code{"en"}, \code{"fr"}).
-    #' @return Data frame with DAP structure, without an indicator_code column,
-    #'   or \code{NULL} when no rows can be constructed.
-    #' @keywords internal
-    #' @noRd
+    # @description Construct DAP table rows from survey and framework data.
+    # @param survey_df Filtered survey data frame.
+    # @param choices_df Choices data frame (may be NULL).
+    # @param indicator_bank Data frame from the master indicator bank, filtered
+    #   to indicators used in the survey.
+    # @param lang Language code for label columns (e.g. \code{"en"}, \code{"fr"}).
+    # @return Data frame with DAP structure, without an indicator_code column,
+    #   or \code{NULL} when no rows can be constructed.
+    # @keywords internal
     ..construct_dap_rows = function(
       survey_df,
       choices_df,
@@ -1328,13 +1327,12 @@ Protocol <- R6::R6Class(
       do.call(rbind, rows)
     },
 
-    #' @description Extract formatted response options for a survey question.
-    #' @param question_row Single-row survey data frame
-    #' @param choices_df Choices data frame (may be NULL)
-    #' @param lang Language code (default: "en")
-    #' @return Character string with responses (newline-separated for select types)
-    #' @keywords internal
-    #' @noRd
+    # @description Extract formatted response options for a survey question.
+    # @param question_row Single-row survey data frame
+    # @param choices_df Choices data frame (may be NULL)
+    # @param lang Language code (default: "en")
+    # @return Character string with responses (newline-separated for select types)
+    # @keywords internal
     ..extract_question_responses = function(
       question_row,
       choices_df,

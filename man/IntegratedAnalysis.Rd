@@ -8,7 +8,7 @@ Subclass of \code{\link{Orchestrator}} for storing multiple
 \code{\link{DataAnalytics}} objects and building unified analysis tables.
 }
 \section{Super class}{
-\code{phr::Orchestrator} -> \code{IntegratedAnalysis}
+\code{\link[phr:Orchestrator]{phr::Orchestrator}} -> \code{IntegratedAnalysis}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

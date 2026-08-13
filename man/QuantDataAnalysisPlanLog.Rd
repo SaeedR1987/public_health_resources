@@ -26,7 +26,7 @@ Required columns (matching phr_analysis_plan_template.csv):
 }
 \keyword{internal}
 \section{Super class}{
-\code{phr::Log} -> \code{QuantDataAnalysisPlanLog}
+\code{\link[phr:Log]{phr::Log}} -> \code{QuantDataAnalysisPlanLog}
 }
 \section{Methods}{
 \subsection{Public methods}{
