@@ -310,6 +310,60 @@ Protocol <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Remove a tool from the protocol safely.
+    #'
+    #' Removes the tool stored under `tool_name` in `self$tools`.
+    #' After removal, the protocol state is synced, timestamps updated,
+    #' and coherence re-diagnosed.
+    #' If the tool does not exist, a warning is issued (soft failure).
+    #'
+    #' @param tool_name Character. Name/key of the tool to remove.
+    #' @return Invisibly returns self for method chaining.
+    remove_tools = function(tool_name) {
+      phrutils::phr_try(
+        {
+          origin <- "Protocol$remove_tools"
+
+          # Validate input
+          phrutils::phr_assert(
+            is.character(tool_name) &&
+              length(tool_name) == 1 &&
+              nzchar(tool_name),
+            message = phr_txt("tool_name must be a non-empty character string."),
+            origin = origin
+          )
+
+          # Check existence
+          if (is.null(self$tools) || !tool_name %in% names(self$tools)) {
+            phrutils::phr_warning(
+              origin = origin,
+              message = phr_txt("Tool '{tool_name}' is not registered; nothing to remove.")
+            )
+            return(invisible(self))
+          }
+
+          # Remove the tool
+          self$tools[[tool_name]] <- NULL
+
+          # Sync protocol state and timestamps
+          private$..sync_state()
+          private$..touch()
+
+          # Re-run coherence diagnostics
+          self$diagnose_coherence()
+
+          phrutils::phr_message(
+            phr_txt("Tool '{tool_name}' removed from protocol."),
+            origin = origin
+          )
+        },
+        on_error = "abort",
+        origin = "Protocol$remove_tools"
+      )
+
+      invisible(self)
+    },
+
     #' @description Get all issues
     #' @return List of validation issues
     get_issues = function() {
