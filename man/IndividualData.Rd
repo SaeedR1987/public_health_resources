@@ -57,7 +57,7 @@ Performs individual-specific checks:
 [Data], [HouseholdData]
 }
 \section{Super class}{
-\code{\link[phr:Data]{phr::Data}} -> \code{IndividualData}
+\code{phr::Data} -> \code{IndividualData}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

@@ -15,7 +15,7 @@ morbidity indicators, care-seeking behavior, treatment received,
 chronic conditions, disability status, and vaccination.
 }
 \section{Super classes}{
-\code{\link[phr:Data]{phr::Data}} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{HealthIndividualData}
+\code{phr::Data} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{HealthIndividualData}
 }
 \section{Methods}{
 \subsection{Public methods}{

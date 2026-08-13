@@ -23,7 +23,7 @@ rates and validating death timing information.
 [IndividualData], [Data]
 }
 \section{Super classes}{
-\code{\link[phr:Data]{phr::Data}} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{DeathIndividualData}
+\code{phr::Data} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{DeathIndividualData}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

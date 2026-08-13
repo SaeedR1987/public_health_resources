@@ -20,7 +20,7 @@ within a household.
 [Data], [HouseholdData]
 }
 \section{Super class}{
-\code{\link[phr:Data]{phr::Data}} -> \code{WaterContainerData}
+\code{phr::Data} -> \code{WaterContainerData}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}

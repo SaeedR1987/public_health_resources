@@ -18,7 +18,7 @@ This class provides data quality checks and visualization capabilities
 specific to maternal health assessments.
 }
 \section{Super classes}{
-\code{\link[phr:Data]{phr::Data}} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{WomenIndividualData}
+\code{phr::Data} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{WomenIndividualData}
 }
 \section{Methods}{
 \subsection{Public methods}{

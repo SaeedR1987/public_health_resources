@@ -18,7 +18,7 @@ This class incorporates MUAC-for-age z-score calculations and
 provides data quality checks and visualization capabilities.
 }
 \section{Super classes}{
-\code{\link[phr:Data]{phr::Data}} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{NutritionIndividualData}
+\code{phr::Data} -> \code{\link[phr:IndividualData]{phr::IndividualData}} -> \code{NutritionIndividualData}
 }
 \section{Methods}{
 \subsection{Public methods}{
