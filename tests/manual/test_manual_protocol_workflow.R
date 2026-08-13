@@ -233,6 +233,10 @@ print(protocol$get_allowable_tools())
 # Household Tool ####
 protocol$add_tools(tool_name = "tool_household_iphra_v2")
 
+protocol$remove_tools(tool_name = "tool_household_iphra_v2")
+
+protocol$add_tools(tool_name = "tool_household_iphra_v2")
+
 # protocol$tools$tool_household_iphra_v2$change_default_language(
 #   language = "Arabic"
 # )
