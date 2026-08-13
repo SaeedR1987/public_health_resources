@@ -47,8 +47,6 @@ Document <- R6::R6Class(
     #' @param template_file Character path to the Quarto template file. If NULL,
     #'   uses "quarto_doc_template.qmd" from package resources.
     #' @param params Named list of parameters to substitute in the template.
-    #' @param content Character string containing the main document content
-    #'   (Markdown formatted).
     #' @param open Logical indicating whether to open the output in a browser.
     #' @return Invisibly returns \code{self}.
     generate_quarto_doc = function(

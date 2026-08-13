@@ -376,8 +376,6 @@ Sample <- R6::R6Class(
     },
 
     #' @description Return unique sampling methods in the sample table.
-
-    #' @description Return unique sampling methods in the sample table.
     #' @param type Character specifying method type: "site" or "household" (default: "site").
     #' @return Character vector of unique sampling methods.
     get_sampling_methods = function(type = c("site", "household")) {

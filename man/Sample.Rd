@@ -296,9 +296,6 @@ Calculate sample sizes for all strata rows.
 \if{latex}{\out{\hypertarget{method-Sample-get_sampling_methods}{}}}
 \subsection{Method \code{get_sampling_methods()}}{
 Return unique sampling methods in the sample table.
-
-
-Return unique sampling methods in the sample table.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{Sample$get_sampling_methods(type = c("site", "household"))}\if{html}{\out{</div>}}
 }

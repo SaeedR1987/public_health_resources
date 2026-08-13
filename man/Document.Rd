@@ -102,9 +102,6 @@ uses "quarto_doc_template.qmd" from package resources.}
 \item{\code{params}}{Named list of parameters to substitute in the template.}
 
 \item{\code{open}}{Logical indicating whether to open the output in a browser.}
-
-\item{\code{content}}{Character string containing the main document content
-(Markdown formatted).}
 }
 \if{html}{\out{</div>}}
 }
