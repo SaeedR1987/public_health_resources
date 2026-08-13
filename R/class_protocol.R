@@ -391,6 +391,7 @@ Protocol <- R6::R6Class(
       if (is.null(self$tools) || length(self$tools) == 0) {
         return(FALSE)
       }
+
       isTRUE(tool_name %in% names(self$tools))
     },
 
