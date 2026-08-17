@@ -13,13 +13,16 @@
 #' * Export to multiple formats (CSV, RDS, XLSX)
 #' * Issue tracking during validation
 #' * Hook methods for customization (pre_validate, post_validate)
+#' * Safe getter and setter methods for accessing private fields
 #'
-#' @field log_df A tibble containing the log entries
-#' @field log_name Character name of the log for display purposes
-#' @field required_columns Character vector of columns that must exist
-#' @field schema List with 'types' and 'allowed_values' for validation
-#' @field validated Logical indicating if log has passed validation
-#' @field metadata List of metadata including update timestamps
+#' Private fields (accessible via get() and set() methods):
+#' * log_df: A tibble containing the log entries
+#' * log_name: Character name of the log for display purposes
+#' * required_columns: Character vector of columns that must exist
+#' * schema: List with 'types' and 'allowed_values' for validation
+#' * validated: Logical indicating if log has passed validation
+#' * metadata: List of metadata including update timestamps
+#'
 #' @field autosave Logical for automatic saving (not yet implemented)
 #' @field issues List of validation issues found
 #'
