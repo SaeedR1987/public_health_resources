@@ -30,9 +30,9 @@ MockData <- R6::R6Class(
 test_that("CleaningLog initializes with required columns", {
   suppressMessages(log <- CleaningLog$new())
 
-  expect_true(is.data.frame(log$log_df))
+  expect_true(is.data.frame(log$get("log_df")))
   expect_setequal(
-    names(log$log_df),
+    names(log$get("log_df")),
     c(
       "uuid",
       "enum_id",
@@ -56,22 +56,22 @@ test_that("CleaningLog fills missing required columns when provided log_df is in
   expect_s3_class(log, "CleaningLog")
 
   # Required columns should all exist
-  expect_true(all(log$required_columns %in% names(log$log_df)))
+  expect_true(all(log$required_columns %in% names(log$get("log_df"))))
 
   # Columns not supplied should be filled with NA
   missing_cols <- setdiff(log$required_columns, names(df))
 
   for (col in missing_cols) {
-    expect_true(all(is.na(log$log_df[[col]])))
+    expect_true(all(is.na(log$get("log_df")[[col]])))
   }
 })
 
 test_that("CleaningLog attaches schema correctly", {
   suppressMessages(log <- CleaningLog$new())
 
-  expect_true("types" %in% names(log$schema))
-  expect_equal(log$schema$types$changed, "character")
-  expect_equal(log$schema$allowed_values$changed, c("yes", "no"))
+  expect_true("types" %in% names(log$get("schema")))
+  expect_equal(log$get("schema")$types$changed, "character")
+  expect_equal(log$get("schema")$allowed_values$changed, c("yes", "no"))
 })
 
 
@@ -162,7 +162,7 @@ test_that("CleaningLog validate coerces safely coercible types", {
 
   suppressMessages(log <- CleaningLog$new(df))
   suppressMessages(expect_no_error(log$validate()))
-  expect_true(is.character(log$log_df$uuid))
+  expect_true(is.character(log$get("log_df")$uuid))
 })
 
 
@@ -183,8 +183,8 @@ test_that("add_change() inserts properly formatted row", {
     new.value = "20"
   ))
 
-  expect_equal(nrow(log$log_df), 1)
-  expect_equal(log$log_df$changed, "yes")
+  expect_equal(nrow(log$get("log_df")), 1)
+  expect_equal(log$get("log_df")$changed, "yes")
 })
 
 

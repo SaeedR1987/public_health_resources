@@ -16,9 +16,9 @@ test_that("Log initializes with empty df when log_df is NULL", {
     required_columns = c("uuid", "issue")
   )
 
-  expect_true(is.data.frame(log$log_df))
-  expect_equal(names(log$log_df), c("uuid", "issue"))
-  expect_equal(nrow(log$log_df), 0)
+  expect_true(is.data.frame(log$get("log_df")))
+  expect_equal(names(log$get("log_df")), c("uuid", "issue"))
+  expect_equal(nrow(log$get("log_df")), 0)
 })
 
 test_that("Log rejects non-dataframe input on initialize", {
@@ -40,10 +40,10 @@ test_that("Log fills missing required columns instead of erroring", {
   expect_s3_class(log, "Log")
 
   # Should now include all required columns
-  expect_true("uuid" %in% names(log$log_df))
+  expect_true("uuid" %in% names(log$get("log_df")))
 
   # Newly added required column should be filled with NA
-  expect_true(all(is.na(log$log_df$uuid)))
+  expect_true(all(is.na(log$get("log_df")$uuid)))
 })
 
 test_that("Log stores metadata correctly", {
@@ -54,8 +54,8 @@ test_that("Log stores metadata correctly", {
       required_columns = c("uuid")
     )
   )
-  expect_true(c("created_datetime") %in% names(log$metadata))
-  expect_true(c("modified_datetime") %in% names(log$metadata))
+  expect_true(c("created_datetime") %in% names(log$get("metadata")))
+  expect_true(c("modified_datetime") %in% names(log$get("metadata")))
 })
 
 # ============================================================
@@ -65,7 +65,7 @@ test_that("Log stores metadata correctly", {
 test_that("Log attaches schema using set_schema()", {
   suppressMessages(log <- Log$new(NULL, "SchemaLog", required_columns = "uuid"))
   log$set_schema(list(types = list(uuid = "character")))
-  expect_true(is.list(log$schema))
+  expect_true(is.list(log$get("schema")))
 })
 
 test_that("validate() passes when schema matches types", {
@@ -85,7 +85,7 @@ test_that("validate() coerces safely coercible types", {
 
   log$validate()
 
-  expect_true(is.character(log$log_df$uuid))
+  expect_true(is.character(log$get("log_df")$uuid))
 })
 
 test_that("validate() flags type mismatches", {
@@ -117,7 +117,7 @@ test_that("validate() supports schema_override", {
   override <- list(types = list(uuid = "character"))
 
   expect_no_error(log$validate(schema_override = override))
-  expect_true(is.character(log$log_df$uuid))
+  expect_true(is.character(log$get("log_df")$uuid))
 })
 
 # ============================================================
@@ -129,7 +129,7 @@ test_that("append_entry() adds a row to the log", {
 
   suppressMessages(log$append_entry(list(uuid = "1", issue = "test")))
 
-  expect_equal(nrow(log$log_df), 1)
+  expect_equal(nrow(log$get("log_df")), 1)
 })
 
 test_that("append_entry() errors when required fields missing", {
@@ -144,12 +144,12 @@ test_that("append_entry() errors when required fields missing", {
 test_that("append_entry() updates metadata timestamp", {
   suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
 
-  old_time <- log$metadata$modified_datetime
+  old_time <- log$get("metadata")$modified_datetime
   Sys.sleep(0.01)
 
   suppressMessages(log$append_entry(list(uuid = "1", issue = "x")))
 
-  expect_true(log$metadata$modified_datetime > old_time)
+  expect_true(log$get("metadata")$modified_datetime > old_time)
 })
 
 # ============================================================
@@ -165,7 +165,7 @@ test_that("clear() empties the log", {
   )
 
   suppressMessages(log$clear())
-  expect_equal(nrow(log$log_df), 0)
+  expect_equal(nrow(log$get("log_df")), 0)
 })
 
 # ============================================================
@@ -244,5 +244,90 @@ test_that("Log accepts extra non-schema columns", {
   log <- Log$new(df, required_columns = "uuid")
 
   expect_silent(log$validate())
-  expect_true("extra" %in% names(log$log_df))
+  expect_true("extra" %in% names(log$get("log_df")))
+})
+
+# ============================================================
+# 9. GET AND SET METHOD TESTS
+# ============================================================
+
+test_that("get() retrieves log_df correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  expect_true(is.data.frame(log$get("log_df")))
+})
+
+test_that("get() retrieves log_name correctly", {
+  suppressMessages(log <- Log$new(NULL, log_name = "MyLog", required_columns = "uuid"))
+  expect_equal(log$get("log_name"), "MyLog")
+})
+
+test_that("get() retrieves required_columns correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
+  expect_equal(log$get("required_columns"), c("uuid", "issue"))
+})
+
+test_that("get() retrieves schema correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  log$set_schema(list(types = list(uuid = "character")))
+  expect_true(is.list(log$get("schema")))
+})
+
+test_that("get() retrieves validated correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  expect_false(log$get("validated"))
+})
+
+test_that("get() retrieves metadata correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  metadata <- log$get("metadata")
+  expect_true(is.list(metadata))
+  expect_true("created_datetime" %in% names(metadata))
+})
+
+test_that("get() errors on invalid field", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  expect_error(log$get("invalid_field"), regexp = "not accessible")
+})
+
+test_that("set() updates log_name correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  suppressMessages(log$set("log_name", "NewName"))
+  expect_equal(log$get("log_name"), "NewName")
+})
+
+test_that("set() updates validated correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  suppressMessages(log$set("validated", TRUE))
+  expect_true(log$get("validated"))
+})
+
+test_that("set() updates metadata correctly", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  new_metadata <- list(custom_field = "value")
+  suppressMessages(log$set("metadata", new_metadata))
+  expect_equal(log$get("metadata")$custom_field, "value")
+})
+
+test_that("set() validates log_df when setting", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  expect_error(
+    suppressMessages(log$set("log_df", "not a dataframe")),
+    regexp = "data frame"
+  )
+})
+
+test_that("set() errors on invalid field", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  expect_error(
+    suppressMessages(log$set("invalid_field", "value")),
+    regexp = "not settable"
+  )
+})
+
+test_that("set() updates modified timestamp", {
+  suppressMessages(log <- Log$new(NULL, required_columns = "uuid"))
+  old_time <- log$get("metadata")$modified_datetime
+  Sys.sleep(0.01)
+  suppressMessages(log$set("log_name", "UpdatedName"))
+  expect_true(log$get("metadata")$modified_datetime > old_time)
 })
