@@ -35,9 +35,9 @@ MockData <- R6::R6Class(
 test_that("DeletionLog initializes with required columns", {
   log <- DeletionLog$new()
 
-  expect_true(is.data.frame(log$log_df))
+  expect_true(is.data.frame(log$get("log_df")))
   expect_setequal(
-    names(log$log_df),
+    names(log$get("log_df")),
     c("uuid", "enum_id", "device_id", "issue", "feedback")
   )
 })
@@ -51,22 +51,22 @@ test_that("DeletionLog fills missing required columns when provided log_df is in
   expect_s3_class(log, "DeletionLog")
 
   # It should contain all required columns
-  expect_true(all(log$required_columns %in% names(log$log_df)))
+  expect_true(all(log$required_columns %in% names(log$get("log_df"))))
 
   # All missing columns should be filled with NA
   missing_cols <- setdiff(log$required_columns, names(df))
 
   for (col in missing_cols) {
-    expect_true(all(is.na(log$log_df[[col]])))
+    expect_true(all(is.na(log$get("log_df")[[col]])))
   }
 })
 
 test_that("DeletionLog initializes with correct schema types", {
   log <- DeletionLog$new()
 
-  expect_equal(log$schema$types$uuid, "character")
-  expect_equal(log$schema$types$issue, "character")
-  expect_equal(log$schema$types$feedback, "character")
+  expect_equal(log$get("schema")$types$uuid, "character")
+  expect_equal(log$get("schema")$types$issue, "character")
+  expect_equal(log$get("schema")$types$feedback, "character")
 })
 
 
@@ -85,9 +85,9 @@ test_that("add_deletion() appends a properly formatted row", {
     feedback = "confirmed"
   )
 
-  expect_equal(nrow(log$log_df), 1)
-  expect_equal(log$log_df$uuid, "u1")
-  expect_equal(log$log_df$issue, "duplicate")
+  expect_equal(nrow(log$get("log_df")), 1)
+  expect_equal(log$get("log_df")$uuid, "u1")
+  expect_equal(log$get("log_df")$issue, "duplicate")
 })
 
 
@@ -96,10 +96,10 @@ test_that("add_deletion() allows NA for optional fields", {
 
   log$add_deletion(uuid = "u1", issue = "bad record")
 
-  expect_equal(nrow(log$log_df), 1)
-  expect_equal(log$log_df$uuid, "u1")
-  expect_equal(log$log_df$issue, "bad record")
-  expect_true(is.na(log$log_df$enum_id))
+  expect_equal(nrow(log$get("log_df")), 1)
+  expect_equal(log$get("log_df")$uuid, "u1")
+  expect_equal(log$get("log_df")$issue, "bad record")
+  expect_true(is.na(log$get("log_df")$enum_id))
 })
 
 
@@ -150,7 +150,7 @@ test_that("DeletionLog validate coerces safely coercible types", {
   log <- DeletionLog$new(df)
 
   expect_no_error(log$validate())
-  expect_true(is.character(log$log_df$uuid))
+  expect_true(is.character(log$get("log_df")$uuid))
 })
 
 
@@ -235,9 +235,9 @@ test_that("DeletionLog validate allows multiple rows", {
 test_that("DeletionLog initialize allows empty log_df and creates proper structure", {
   log <- DeletionLog$new(log_df = NULL)
 
-  expect_equal(nrow(log$log_df), 0)
+  expect_equal(nrow(log$get("log_df")), 0)
   expect_setequal(
-    names(log$log_df),
+    names(log$get("log_df")),
     c("uuid", "enum_id", "device_id", "issue", "feedback")
   )
 })
