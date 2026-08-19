@@ -617,8 +617,8 @@ estimate_field_plan <- function(
   }
 
   if (.is_hhmm(start_time) || .is_hhmm(end_time) || is.numeric(start_time)) {
-    start_min <- phr_parse_hhmm(start_time, origin = origin)
-    end_min <- phr_parse_hhmm(end_time, origin = origin)
+    start_min <- phrutils::phr_parse_hhmm(start_time, origin = origin)
+    end_min <- phrutils::phr_parse_hhmm(end_time, origin = origin)
     total_working_minutes <- end_min - start_min
   } else {
     if (is.character(start_time)) {

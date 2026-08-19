@@ -198,15 +198,15 @@ Sample <- R6::R6Class(
         origin = "Sample$add_stratum"
       )
 
-      if (sampling_method_site %in% site_selection_methods) {
-        phrutils::phr_assert(
-          !is.null(n_sites) && !is.na(n_sites),
-          message = phr_txt(
-            "n_sites is required for sampling_method '{sampling_method_site}'."
-          ),
-          origin = "Sample$add_stratum"
-        )
-      }
+      # if (sampling_method_site %in% site_selection_methods) {
+      #   phrutils::phr_assert(
+      #     !is.null(n_sites) && !is.na(n_sites),
+      #     message = phr_txt(
+      #       "n_sites is required for sampling_method '{sampling_method_site}'."
+      #     ),
+      #     origin = "Sample$add_stratum"
+      #   )
+      # }
 
       # Default household sampling method if NULL or missing
       if (is.null(sampling_method_hh) || is.na(sampling_method_hh)) {

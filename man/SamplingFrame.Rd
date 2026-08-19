@@ -56,9 +56,11 @@ population via \code{\link[=SurveyProtocol]{SurveyProtocol$set_sampling_frame()}
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>phr::Log$append_entry()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>phr::Log$clear()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>phr::Log$export()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get"><a href='../../phr/html/Log.html#method-Log-get'><code>phr::Log$get()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get_hash"><a href='../../phr/html/Log.html#method-Log-get_hash'><code>phr::Log$get_hash()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="post_validate"><a href='../../phr/html/Log.html#method-Log-post_validate'><code>phr::Log$post_validate()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="pre_validate"><a href='../../phr/html/Log.html#method-Log-pre_validate'><code>phr::Log$pre_validate()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set"><a href='../../phr/html/Log.html#method-Log-set'><code>phr::Log$set()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set_schema"><a href='../../phr/html/Log.html#method-Log-set_schema'><code>phr::Log$set_schema()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="summary"><a href='../../phr/html/Log.html#method-Log-summary'><code>phr::Log$summary()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="validate"><a href='../../phr/html/Log.html#method-Log-validate'><code>phr::Log$validate()</code></a></span></li>

@@ -16,27 +16,51 @@ The Log class provides:
 * Export to multiple formats (CSV, RDS, XLSX)
 * Issue tracking during validation
 * Hook methods for customization (pre_validate, post_validate)
+* Safe getter and setter methods for accessing private fields
+
+Private fields (accessible via get() and set() methods):
+* log_df: A tibble containing the log entries
+* log_name: Character name of the log for display purposes
+* required_columns: Character vector of columns that must exist
+* schema: List with 'types' and 'allowed_values' for validation
+* validated: Logical indicating if log has passed validation
+* metadata: List of metadata including update timestamps
 }
 \note{
 Requires digest package
 Get Summary
 }
+\examples{
+
+## ------------------------------------------------
+## Method `Log$get`
+## ------------------------------------------------
+
+\dontrun{
+log <- Log$new()
+log$get("log_df")
+log$get("log_name")
+}
+Set Field Value
+
+
+## ------------------------------------------------
+## Method `Log$set`
+## ------------------------------------------------
+
+\dontrun{
+log <- Log$new()
+log$set("log_name", "My Custom Log")
+log$set("validated", TRUE)
+}
+}
+\keyword{Field}
+\keyword{Get}
+\keyword{Value}
 \keyword{internal}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{log_df}}{A tibble containing the log entries}
-
-\item{\code{log_name}}{Character name of the log for display purposes}
-
-\item{\code{required_columns}}{Character vector of columns that must exist}
-
-\item{\code{schema}}{List with 'types' and 'allowed_values' for validation}
-
-\item{\code{validated}}{Logical indicating if log has passed validation}
-
-\item{\code{metadata}}{List of metadata including update timestamps}
-
 \item{\code{autosave}}{Logical for automatic saving (not yet implemented)}
 
 \item{\code{issues}}{List of validation issues found}
@@ -46,6 +70,8 @@ Get Summary
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
+\item \href{#method-Log-get}{\code{Log$get()}}
+\item \href{#method-Log-set}{\code{Log$set()}}
 \item \href{#method-Log-new}{\code{Log$new()}}
 \item \href{#method-Log-set_schema}{\code{Log$set_schema()}}
 \item \href{#method-Log-validate}{\code{Log$validate()}}
@@ -58,6 +84,76 @@ Get Summary
 \item \href{#method-Log-post_validate}{\code{Log$post_validate()}}
 \item \href{#method-Log-clone}{\code{Log$clone()}}
 }
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-get"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-get}{}}}
+\subsection{Method \code{get()}}{
+Safely retrieves a private field value
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Log$get(field)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{field}}{Character name of the field to retrieve.
+Must be one of: "log_df", "log_name", "required_columns", "schema", "validated", "metadata"}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+The value of the requested field
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{\dontrun{
+log <- Log$new()
+log$get("log_df")
+log$get("log_name")
+}
+Set Field Value
+
+}
+\if{html}{\out{</div>}}
+
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-set"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-set}{}}}
+\subsection{Method \code{set()}}{
+Safely sets a private field value
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Log$set(field, value)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{field}}{Character name of the field to set.
+Must be one of: "log_df", "log_name", "required_columns", "schema", "validated", "metadata"}
+
+\item{\code{value}}{The value to assign to the field}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Invisible TRUE
+}
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{\dontrun{
+log <- Log$new()
+log$set("log_name", "My Custom Log")
+log$set("validated", TRUE)
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Log-new"></a>}}
