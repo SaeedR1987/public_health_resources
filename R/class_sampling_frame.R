@@ -322,13 +322,6 @@ SamplingFrame <- R6::R6Class(
     }
   ),
   private = list(
-    # @description Update modified timestamp.
-    # @return Invisibly returns NULL.
-    # @keywords internal
-    ..touch = function() {
-      self$metadata$modified_datetime <- Sys.time()
-      invisible(NULL)
-    },
     # @description Apply a sampling method to a frame.
     # @param frame Data frame sampling frame.
     # @param method_site Character scalar site sampling method name.

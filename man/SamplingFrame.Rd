@@ -111,7 +111,7 @@ A new SamplingFrame R6 object.
 \subsection{Method \code{draw_sample()}}{
 Draw a sample from a sampling frame.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SamplingFrame$draw_sample(strata_table = NULL, seed = 42)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{SamplingFrame$draw_sample(strata_table = NULL, seed = 43)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
