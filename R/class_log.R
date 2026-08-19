@@ -55,16 +55,16 @@ Log <- R6::R6Class(
     #' }
     get = function(field) {
       allowed_fields <- c("log_df", "log_name", "required_columns", "schema", "validated", "metadata")
-      
+
       if (!field %in% allowed_fields) {
-        phr_error(
+        phrutils::phr_error(
           "Log",
           phr_txt(glue::glue(
             "Field '{field}' is not accessible. Allowed fields: {paste(allowed_fields, collapse=', ')}"
           ))
         )
       }
-      
+
       return(private[[field]])
     },
 
@@ -87,16 +87,16 @@ Log <- R6::R6Class(
     #' }
     set = function(field, value) {
       allowed_fields <- c("log_df", "log_name", "required_columns", "schema", "validated", "metadata")
-      
+
       if (!field %in% allowed_fields) {
-        phr_error(
+        phrutils::phr_error(
           "Log",
           phr_txt(glue::glue(
             "Field '{field}' is not settable. Allowed fields: {paste(allowed_fields, collapse=', ')}"
           ))
         )
       }
-      
+
       # Validation for specific fields
       if (field == "log_df" && !is.null(value)) {
         phrutils::phr_validate_dataframe(
@@ -105,14 +105,14 @@ Log <- R6::R6Class(
           soft = FALSE
         )
       }
-      
+
       private[[field]] <- value
       private$..touch()
-      
+
       phrutils::phr_message(phr_txt(glue::glue(
         "Field '{field}' updated in {private$log_name}."
       )))
-      
+
       invisible(TRUE)
     },
 
@@ -354,7 +354,7 @@ Log <- R6::R6Class(
     #' Updates metadata timestamp.
     append_entry = function(row_list) {
       if (!is.list(row_list)) {
-        phr_error(
+        phrutils::phr_error(
           private$log_name,
           phr_txt("append_entry() requires a named list.")
         )
@@ -362,7 +362,7 @@ Log <- R6::R6Class(
 
       missing_cols <- setdiff(private$required_columns, names(row_list))
       if (length(missing_cols) > 0) {
-        phr_error(
+        phrutils::phr_error(
           private$log_name,
           phr_txt(glue::glue(
             "Missing required fields in new log entry: {paste(missing_cols, collapse=', ')}"
@@ -425,7 +425,7 @@ Log <- R6::R6Class(
           }
           if (format == "xlsx") {
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
-              phr_error(
+              phrutils::phr_error(
                 private$log_name,
                 phr_txt("Package 'openxlsx' is required for XLSX export.")
               )
@@ -457,7 +457,7 @@ Log <- R6::R6Class(
     #' @note Requires digest package
     get_hash = function() {
       if (!requireNamespace("digest", quietly = TRUE)) {
-        phr_error(
+        phrutils::phr_error(
           private$log_name,
           phr_txt("Package 'digest' is required for hashing.")
         )
@@ -518,7 +518,7 @@ Log <- R6::R6Class(
       created_datetime = NULL,
       modified_datetime = NULL
     ),
-    
+
     # Build Empty Log Template
     #
     # Creates an empty tibble with correct column types from schema
