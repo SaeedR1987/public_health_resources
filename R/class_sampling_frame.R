@@ -93,7 +93,7 @@ SamplingFrame <- R6::R6Class(
     #' @param strata_table Optional strata table. Defaults to \code{sample_table}.
     #' @param seed Integer random seed.
     #' @return Invisibly returns \code{self}.
-    draw_sample = function(strata_table = NULL, seed = 42) {
+    draw_sample = function(strata_table = NULL, seed = 43) {
       frame <- self$log_df
 
       phrutils::phr_validate_dataframe(
