@@ -54,7 +54,7 @@ Log <- R6::R6Class(
     #' log$get("log_name")
     #' }
     get = function(field) {
-      allowed_fields <- c("log_df", "log_name", "required_columns", "schema", "validated", "metadata")
+      allowed_fields <- self$allowed_get_fields()
 
       if (!field %in% allowed_fields) {
         phrutils::phr_error(
@@ -66,6 +66,62 @@ Log <- R6::R6Class(
       }
 
       return(private[[field]])
+    },
+    #' Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields accessible via get().
+    #' Subclasses can override to expose additional fields.
+    #'
+    #' @return Character vector of allowed field names
+    allowed_get_fields = function() {
+      c(
+        "log_df",
+        "log_name",
+        "required_columns",
+        "schema",
+        "validated",
+        "metadata",
+        self$additional_get_fields()
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    additional_get_fields = function() {
+      character(0)
+    },
+
+    #' Settable Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    allowed_set_fields = function() {
+      c(
+        "log_df",
+        "log_name",
+        "required_columns",
+        "schema",
+        "validated",
+        "metadata",
+        self$additional_set_fields()
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    additional_set_fields = function() {
+      character(0)
     },
 
     #' Set Field Value
@@ -86,7 +142,7 @@ Log <- R6::R6Class(
     #' log$set("validated", TRUE)
     #' }
     set = function(field, value) {
-      allowed_fields <- c("log_df", "log_name", "required_columns", "schema", "validated", "metadata")
+      allowed_fields <- self$allowed_set_fields()
 
       if (!field %in% allowed_fields) {
         phrutils::phr_error(

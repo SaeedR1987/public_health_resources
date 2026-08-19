@@ -40,6 +40,10 @@ Required columns (matching phr_analysis_plan_template.csv):
 \if{html}{\out{
 <details><summary>Inherited methods</summary>
 <ul>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_get_fields"><a href='../../phr/html/Log.html#method-Log-additional_get_fields'><code>phr::Log$additional_get_fields()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_set_fields"><a href='../../phr/html/Log.html#method-Log-additional_set_fields'><code>phr::Log$additional_set_fields()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_get_fields"><a href='../../phr/html/Log.html#method-Log-allowed_get_fields'><code>phr::Log$allowed_get_fields()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_set_fields"><a href='../../phr/html/Log.html#method-Log-allowed_set_fields'><code>phr::Log$allowed_set_fields()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>phr::Log$append_entry()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>phr::Log$clear()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>phr::Log$export()</code></a></span></li>

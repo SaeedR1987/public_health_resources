@@ -41,7 +41,7 @@ log <- Log$new()
 log$get("log_df")
 log$get("log_name")
 }
-Set Field Value
+Accessible Fields Hook
 
 
 ## ------------------------------------------------
@@ -71,6 +71,10 @@ log$set("validated", TRUE)
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-Log-get}{\code{Log$get()}}
+\item \href{#method-Log-allowed_get_fields}{\code{Log$allowed_get_fields()}}
+\item \href{#method-Log-additional_get_fields}{\code{Log$additional_get_fields()}}
+\item \href{#method-Log-allowed_set_fields}{\code{Log$allowed_set_fields()}}
+\item \href{#method-Log-additional_set_fields}{\code{Log$additional_set_fields()}}
 \item \href{#method-Log-set}{\code{Log$set()}}
 \item \href{#method-Log-new}{\code{Log$new()}}
 \item \href{#method-Log-set_schema}{\code{Log$set_schema()}}
@@ -112,13 +116,70 @@ log <- Log$new()
 log$get("log_df")
 log$get("log_name")
 }
-Set Field Value
+Accessible Fields Hook
 
 }
 \if{html}{\out{</div>}}
 
 }
 
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-allowed_get_fields"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-allowed_get_fields}{}}}
+\subsection{Method \code{allowed_get_fields()}}{
+Returns the list of fields accessible via get().
+Subclasses can override to expose additional fields.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Log$allowed_get_fields()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Character vector of allowed field names
+Additional Accessible Fields Hook
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-additional_get_fields"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-additional_get_fields}{}}}
+\subsection{Method \code{additional_get_fields()}}{
+Returns subclass-specific fields accessible via `get()`.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Log$additional_get_fields()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Character vector of field names.
+Settable Fields Hook
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-allowed_set_fields"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-allowed_set_fields}{}}}
+\subsection{Method \code{allowed_set_fields()}}{
+Returns the list of fields that may be modified via `set()`.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Log$allowed_set_fields()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Character vector of field names.
+Additional Settable Fields Hook
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-additional_set_fields"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-additional_set_fields}{}}}
+\subsection{Method \code{additional_set_fields()}}{
+Returns subclass-specific fields that may be modified via `set()`.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Log$additional_set_fields()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Character vector of field names.
+Set Field Value
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Log-set"></a>}}

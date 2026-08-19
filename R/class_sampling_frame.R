@@ -89,6 +89,19 @@ SamplingFrame <- R6::R6Class(
       )
     },
 
+    #' Get Additional Accessible Fields
+    #'
+    #' @description
+    #' Extends the parent class list of fields accessible via `get()`.
+    #'
+    #' @return Character vector of additional field names.
+    additional_get_fields = function() {
+      c(
+        "drawn_sample",
+        "drawn_sample_full"
+      )
+    },
+
     #' @description Draw a sample from a sampling frame.
     #' @param strata_table Optional strata table. Defaults to \code{sample_table}.
     #' @param seed Integer random seed.

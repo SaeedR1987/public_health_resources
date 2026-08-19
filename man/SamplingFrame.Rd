@@ -44,6 +44,7 @@ population via \code{\link[=SurveyProtocol]{SurveyProtocol$set_sampling_frame()}
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-SamplingFrame-new}{\code{SamplingFrame$new()}}
+\item \href{#method-SamplingFrame-additional_get_fields}{\code{SamplingFrame$additional_get_fields()}}
 \item \href{#method-SamplingFrame-draw_sample}{\code{SamplingFrame$draw_sample()}}
 \item \href{#method-SamplingFrame-clear_sample}{\code{SamplingFrame$clear_sample()}}
 \item \href{#method-SamplingFrame-sort_psu_by_population}{\code{SamplingFrame$sort_psu_by_population()}}
@@ -53,6 +54,9 @@ population via \code{\link[=SurveyProtocol]{SurveyProtocol$set_sampling_frame()}
 \if{html}{\out{
 <details><summary>Inherited methods</summary>
 <ul>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_set_fields"><a href='../../phr/html/Log.html#method-Log-additional_set_fields'><code>phr::Log$additional_set_fields()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_get_fields"><a href='../../phr/html/Log.html#method-Log-allowed_get_fields'><code>phr::Log$allowed_get_fields()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_set_fields"><a href='../../phr/html/Log.html#method-Log-allowed_set_fields'><code>phr::Log$allowed_set_fields()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>phr::Log$append_entry()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>phr::Log$clear()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>phr::Log$export()</code></a></span></li>
@@ -103,6 +107,20 @@ validation.  Defaults to the standard sampling frame schema.}
 }
 \subsection{Returns}{
 A new SamplingFrame R6 object.
+Get Additional Accessible Fields
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SamplingFrame-additional_get_fields"></a>}}
+\if{latex}{\out{\hypertarget{method-SamplingFrame-additional_get_fields}{}}}
+\subsection{Method \code{additional_get_fields()}}{
+Extends the parent class list of fields accessible via `get()`.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{SamplingFrame$additional_get_fields()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+Character vector of additional field names.
 }
 }
 \if{html}{\out{<hr>}}
