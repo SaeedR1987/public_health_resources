@@ -94,7 +94,7 @@ SamplingFrame <- R6::R6Class(
     #' @param seed Integer random seed.
     #' @return Invisibly returns \code{self}.
     draw_sample = function(strata_table = NULL, seed = 43) {
-      frame <- self$log_df
+      frame <- private$log_df
 
       phrutils::phr_validate_dataframe(
         frame,
@@ -103,8 +103,14 @@ SamplingFrame <- R6::R6Class(
       )
 
       if (is.null(strata_table)) {
-        strata_table <- self$sample_table
+        phrutils::phr_warning(
+          origin = "strata_table",
+          message = phr_txt(
+            "No strata table was provided. Strata-based processing will be skipped."
+          )
+        )
       }
+
       phrutils::phr_validate_dataframe(
         strata_table,
         origin = "Sample$draw_sample",
@@ -304,7 +310,7 @@ SamplingFrame <- R6::R6Class(
     #'
     #' @return Invisibly returns \code{self} for method chaining.
     sort_psu_by_population = function() {
-      df <- self$log_df
+      df <- private$log_df
       if (is.null(df) || nrow(df) == 0) {
         return(invisible(self))
       }
@@ -317,7 +323,7 @@ SamplingFrame <- R6::R6Class(
         ,
         drop = FALSE
       ]
-      self$log_df <- df
+      private$log_df <- df
       invisible(self)
     }
   ),
