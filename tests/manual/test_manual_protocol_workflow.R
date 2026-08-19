@@ -214,6 +214,7 @@ protocol$sampling_frame$set("log_df", sampling_frame)
 
 protocol$sampling_frame$get("log_df")
 
+protocol$sampling_frame$draw_sample(strata_table = protocol$sample_object$sample_table)
 
 protocol$sampling_frame$validate()
 protocol$sampling_frame$validated
