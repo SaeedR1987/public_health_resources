@@ -179,10 +179,8 @@ export(xlsform_varname_in_survey)
 importFrom(R6,R6Class)
 importFrom(digest,digest)
 importFrom(openxlsx,write.xlsx)
-importFrom(readr,
-  read_csv,
-  write_csv
-)
+importFrom(readr,read_csv)
+importFrom(readr,write_csv)
 importFrom(readxl,read_excel)
 importFrom(rlang,.data)
 importFrom(stats,density)
