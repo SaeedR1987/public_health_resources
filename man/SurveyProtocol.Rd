@@ -84,212 +84,211 @@ protocol$diagnose_coherence()
 
 }
 \section{Super classes}{
-\code{\link[phr:Orchestrator]{phr::Orchestrator}} -> \code{\link[phr:Document]{phr::Document}} -> \code{\link[phr:Protocol]{phr::Protocol}} -> \code{SurveyProtocol}
+\code{\link[phr:Orchestrator]{Orchestrator}} -> \code{\link[phr:Document]{Document}} -> \code{\link[phr:Protocol]{Protocol}} -> \code{SurveyProtocol}
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{sample_object}}{A \code{\link{Sample}} object that stores the
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{sample_object}}{A \code{\link{Sample}} object that stores the
 strata/sample table and sample-size workflows.}
 
-\item{\code{sample_table}}{Data frame mirror of \code{sample_object$sample_table}.}
+    \item{\code{sample_table}}{Data frame mirror of \code{sample_object$sample_table}.}
 
-\item{\code{strata_names}}{Character vector of strata names synced from
+    \item{\code{strata_names}}{Character vector of strata names synced from
 \code{sample_object}.}
 
-\item{\code{sampling_methods}}{Character vector of unique sampling methods synced
+    \item{\code{sampling_methods}}{Character vector of unique sampling methods synced
 from \code{sample_object}.}
 
-\item{\code{sampling_frame_strata_population}}{Data frame of strata-level
+    \item{\code{sampling_frame_strata_population}}{Data frame of strata-level
 population totals aggregated from \code{sampling_frame$log_df}.}
 
-\item{\code{drawn_sample_from_frame}}{Data-table-style data frame of sampled rows
+    \item{\code{drawn_sample_from_frame}}{Data-table-style data frame of sampled rows
 synced from the nested \code{Sample} object.}
 
-\item{\code{sampling_frame}}{A \code{\link{SamplingFrame}} object holding and
+    \item{\code{sampling_frame}}{A \code{\link{SamplingFrame}} object holding and
 validating the sampling frame data.  Initialised to an empty
 \code{SamplingFrame} on construction; populated via
 \code{set_sampling_frame()} or by passing a data frame on
 initialisation.}
 
-\item{\code{sampling_frame_strata_names}}{Character vector of unique strata names
+    \item{\code{sampling_frame_strata_names}}{Character vector of unique strata names
 currently available in the held \code{SamplingFrame}, when present.}
 
-\item{\code{drawn_sample}}{Data frame with selected PSUs (filtered from drawn_sample_full)}
+    \item{\code{drawn_sample}}{Data frame with selected PSUs (filtered from drawn_sample_full)}
 
-\item{\code{drawn_sample_full}}{Full sampling frame with sampled_psu and allocated_sample columns}
-}
-\if{html}{\out{</div>}}
+    \item{\code{drawn_sample_full}}{Full sampling frame with sampled_psu and allocated_sample columns}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Active bindings}{
-\if{html}{\out{<div class="r6-active-bindings">}}
-\describe{
-\item{\code{.rate_survey}}{Active binding.}
+  \if{html}{\out{<div class="r6-active-bindings">}}
+  \describe{
+    \item{\code{.rate_survey}}{Active binding.}
 
-\item{\code{.individual_survey}}{Active binding.}
+    \item{\code{.individual_survey}}{Active binding.}
 
-\item{\code{.general_survey}}{Active binding.}
+    \item{\code{.general_survey}}{Active binding.}
 
-\item{\code{.ind_indicator}}{Active binding.}
+    \item{\code{.ind_indicator}}{Active binding.}
 
-\item{\code{.rate_indicator}}{Active binding.}
+    \item{\code{.rate_indicator}}{Active binding.}
 
-\item{\code{.site_selection_srs}}{Active binding.}
+    \item{\code{.site_selection_srs}}{Active binding.}
 
-\item{\code{.site_selection_systematic}}{Active binding.}
+    \item{\code{.site_selection_systematic}}{Active binding.}
 
-\item{\code{.site_selection_exhaustive}}{Active binding.}
+    \item{\code{.site_selection_exhaustive}}{Active binding.}
 
-\item{\code{.site_selection_cluster}}{Active binding.}
+    \item{\code{.site_selection_cluster}}{Active binding.}
 
-\item{\code{.site_selection_purposive}}{Active binding.}
+    \item{\code{.site_selection_purposive}}{Active binding.}
 
-\item{\code{.hh_selection_srs}}{Active binding.}
+    \item{\code{.hh_selection_srs}}{Active binding.}
 
-\item{\code{.hh_selection_systematic}}{Active binding.}
+    \item{\code{.hh_selection_systematic}}{Active binding.}
 
-\item{\code{.hh_selection_rlc}}{Active binding.}
+    \item{\code{.hh_selection_rlc}}{Active binding.}
 
-\item{\code{.multiple_methods}}{Active binding.}
+    \item{\code{.multiple_methods}}{Active binding.}
 
-\item{\code{.multiple_strata}}{Active binding.}
+    \item{\code{.multiple_strata}}{Active binding.}
 
-\item{\code{.fpc}}{Active binding.}
+    \item{\code{.fpc}}{Active binding.}
 
-\item{\code{.total_population_size}}{Active binding.}
+    \item{\code{.total_population_size}}{Active binding.}
 
-\item{\code{.total_population_size_included}}{Active binding.}
+    \item{\code{.total_population_size_included}}{Active binding.}
 
-\item{\code{.total_population_size_excluded}}{Active binding.}
+    \item{\code{.total_population_size_excluded}}{Active binding.}
 
-\item{\code{.total_population_per_strata_included}}{Active binding.}
+    \item{\code{.total_population_per_strata_included}}{Active binding.}
 
-\item{\code{.num_geographic_units}}{Active binding.}
+    \item{\code{.num_geographic_units}}{Active binding.}
 
-\item{\code{.num_strata_units}}{Active binding.}
+    \item{\code{.num_strata_units}}{Active binding.}
 
-\item{\code{.num_other_units}}{Active binding.}
+    \item{\code{.num_other_units}}{Active binding.}
 
-\item{\code{.stratified_strata_names_srs_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_srs_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_srs_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_rlc}}{Active binding.}
 
-\item{\code{.stratified_strata_names_systematic_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_systematic_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_systematic_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_systematic_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_systematic_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_systematic_rlc}}{Active binding.}
 
-\item{\code{.stratified_strata_names_proportional_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_proportional_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_proportional_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_proportional_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_proportional_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_proportional_rlc}}{Active binding.}
 
-\item{\code{.stratified_strata_names_cluster_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_cluster_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_cluster_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_cluster_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_cluster_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_cluster_rlc}}{Active binding.}
 
-\item{\code{.stratified_strata_names_purposive_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_purposive_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_purposive_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_purposive_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_purposive_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_purposive_rlc}}{Active binding.}
 
-\item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_site_exhaustive}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_exhaustive}}{Active binding.}
 
-\item{\code{.stratified_strata_names_site_cluster}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_cluster}}{Active binding.}
 
-\item{\code{.stratified_strata_names_site_purposive}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_purposive}}{Active binding.}
 
-\item{\code{.stratified_strata_names_hh_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_hh_srs}}{Active binding.}
 
-\item{\code{.stratified_strata_names_hh_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_hh_systematic}}{Active binding.}
 
-\item{\code{.stratified_strata_names_hh_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_hh_rlc}}{Active binding.}
 
-\item{\code{.sample_size_general_households}}{Active binding.}
+    \item{\code{.sample_size_general_households}}{Active binding.}
 
-\item{\code{.sample_size_ind_persons}}{Active binding.}
+    \item{\code{.sample_size_ind_persons}}{Active binding.}
 
-\item{\code{.sample_size_ind_hh}}{Active binding.}
+    \item{\code{.sample_size_ind_hh}}{Active binding.}
 
-\item{\code{.sample_size_rate_persons}}{Active binding.}
+    \item{\code{.sample_size_rate_persons}}{Active binding.}
 
-\item{\code{.sample_size_rate_persontime}}{Active binding.}
+    \item{\code{.sample_size_rate_persontime}}{Active binding.}
 
-\item{\code{.sample_size_rate_hh}}{Active binding.}
+    \item{\code{.sample_size_rate_hh}}{Active binding.}
 
-\item{\code{.sample_size_hh_final}}{Active binding.}
+    \item{\code{.sample_size_hh_final}}{Active binding.}
 
-\item{\code{.sample_size_general_table_df}}{Active binding.}
+    \item{\code{.sample_size_general_table_df}}{Active binding.}
 
-\item{\code{.sample_size_ind_table_df}}{Active binding.}
+    \item{\code{.sample_size_ind_table_df}}{Active binding.}
 
-\item{\code{.sample_size_rate_table_df}}{Active binding.}
+    \item{\code{.sample_size_rate_table_df}}{Active binding.}
 
-\item{\code{.n_sites}}{Active binding.}
+    \item{\code{.n_sites}}{Active binding.}
 
-\item{\code{.cluster_size}}{Active binding.}
+    \item{\code{.cluster_size}}{Active binding.}
 
-\item{\code{.num_enumerators_per_team}}{Active binding.}
+    \item{\code{.num_enumerators_per_team}}{Active binding.}
 
-\item{\code{.num_days_data_collection}}{Active binding.}
+    \item{\code{.num_days_data_collection}}{Active binding.}
 
-\item{\code{.strata_names}}{Active binding.}
-}
-\if{html}{\out{</div>}}
+    \item{\code{.strata_names}}{Active binding.}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-SurveyProtocol-new}{\code{SurveyProtocol$new()}}
-\item \href{#method-SurveyProtocol-set_sampling_frame}{\code{SurveyProtocol$set_sampling_frame()}}
-\item \href{#method-SurveyProtocol-validate_strata_table}{\code{SurveyProtocol$validate_strata_table()}}
-\item \href{#method-SurveyProtocol-get_sample_table}{\code{SurveyProtocol$get_sample_table()}}
-\item \href{#method-SurveyProtocol-get_sampling_methods}{\code{SurveyProtocol$get_sampling_methods()}}
-\item \href{#method-SurveyProtocol-get_strata_names}{\code{SurveyProtocol$get_strata_names()}}
-\item \href{#method-SurveyProtocol-get_frame_column}{\code{SurveyProtocol$get_frame_column()}}
-\item \href{#method-SurveyProtocol-diagnose_coherence}{\code{SurveyProtocol$diagnose_coherence()}}
-\item \href{#method-SurveyProtocol-post_sync_state}{\code{SurveyProtocol$post_sync_state()}}
-\item \href{#method-SurveyProtocol-get_quarto_params}{\code{SurveyProtocol$get_quarto_params()}}
-\item \href{#method-SurveyProtocol-clone}{\code{SurveyProtocol$clone()}}
+  \itemize{
+    \item \href{#method-SurveyProtocol-initialize}{\code{SurveyProtocol$new()}}
+    \item \href{#method-SurveyProtocol-set_sampling_frame}{\code{SurveyProtocol$set_sampling_frame()}}
+    \item \href{#method-SurveyProtocol-validate_strata_table}{\code{SurveyProtocol$validate_strata_table()}}
+    \item \href{#method-SurveyProtocol-get_sample_table}{\code{SurveyProtocol$get_sample_table()}}
+    \item \href{#method-SurveyProtocol-get_sampling_methods}{\code{SurveyProtocol$get_sampling_methods()}}
+    \item \href{#method-SurveyProtocol-get_strata_names}{\code{SurveyProtocol$get_strata_names()}}
+    \item \href{#method-SurveyProtocol-get_frame_column}{\code{SurveyProtocol$get_frame_column()}}
+    \item \href{#method-SurveyProtocol-diagnose_coherence}{\code{SurveyProtocol$diagnose_coherence()}}
+    \item \href{#method-SurveyProtocol-post_sync_state}{\code{SurveyProtocol$post_sync_state()}}
+    \item \href{#method-SurveyProtocol-get_quarto_params}{\code{SurveyProtocol$get_quarto_params()}}
+    \item \href{#method-SurveyProtocol-clone}{\code{SurveyProtocol$clone()}}
+  }
 }
-}
-\if{html}{\out{
-<details><summary>Inherited methods</summary>
+\if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="access_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-access_nested'><code>phr::Orchestrator$access_nested()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="pre_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-pre_sync_state'><code>phr::Orchestrator$pre_sync_state()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set_nested'><code>phr::Orchestrator$set_nested()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-sync_state'><code>phr::Orchestrator$sync_state()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Document" data-id="generate_quarto_doc"><a href='../../phr/html/Document.html#method-Document-generate_quarto_doc'><code>phr::Document$generate_quarto_doc()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Document" data-id="generate_quarto_ppt"><a href='../../phr/html/Document.html#method-Document-generate_quarto_ppt'><code>phr::Document$generate_quarto_ppt()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="add_tools"><a href='../../phr/html/Protocol.html#method-Protocol-add_tools'><code>phr::Protocol$add_tools()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_dap_table"><a href='../../phr/html/Protocol.html#method-Protocol-get_dap_table'><code>phr::Protocol$get_dap_table()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_issues"><a href='../../phr/html/Protocol.html#method-Protocol-get_issues'><code>phr::Protocol$get_issues()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_tool_names"><a href='../../phr/html/Protocol.html#method-Protocol-get_tool_names'><code>phr::Protocol$get_tool_names()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="is_tool_included"><a href='../../phr/html/Protocol.html#method-Protocol-is_tool_included'><code>phr::Protocol$is_tool_included()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="remove_tools"><a href='../../phr/html/Protocol.html#method-Protocol-remove_tools'><code>phr::Protocol$remove_tools()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="validate_objective_schema"><a href='../../phr/html/Protocol.html#method-Protocol-validate_objective_schema'><code>phr::Protocol$validate_objective_schema()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="access_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-access_nested'><code>Orchestrator$access_nested()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="pre_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-pre_sync_state'><code>Orchestrator$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set_nested'><code>Orchestrator$set_nested()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-sync_state'><code>Orchestrator$sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Document" data-id="generate_quarto_doc"><a href='../../phr/html/Document.html#method-Document-generate_quarto_doc'><code>Document$generate_quarto_doc()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Document" data-id="generate_quarto_ppt"><a href='../../phr/html/Document.html#method-Document-generate_quarto_ppt'><code>Document$generate_quarto_ppt()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="add_tools"><a href='../../phr/html/Protocol.html#method-Protocol-add_tools'><code>Protocol$add_tools()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_dap_table"><a href='../../phr/html/Protocol.html#method-Protocol-get_dap_table'><code>Protocol$get_dap_table()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_issues"><a href='../../phr/html/Protocol.html#method-Protocol-get_issues'><code>Protocol$get_issues()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="get_tool_names"><a href='../../phr/html/Protocol.html#method-Protocol-get_tool_names'><code>Protocol$get_tool_names()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="is_tool_included"><a href='../../phr/html/Protocol.html#method-Protocol-is_tool_included'><code>Protocol$is_tool_included()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="remove_tools"><a href='../../phr/html/Protocol.html#method-Protocol-remove_tools'><code>Protocol$remove_tools()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Protocol" data-id="validate_objective_schema"><a href='../../phr/html/Protocol.html#method-Protocol-validate_objective_schema'><code>Protocol$validate_objective_schema()</code></a></span></li>
 </ul>
-</details>
-}}
+</details>}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-SurveyProtocol-new"></a>}}
-\if{latex}{\out{\hypertarget{method-SurveyProtocol-new}{}}}
-\subsection{Method \code{new()}}{
-Creates a new SurveyProtocol object
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$new(
+\if{html}{\out{<a id="method-SurveyProtocol-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-SurveyProtocol-initialize}{}}}
+\subsection{\code{SurveyProtocol$new()}}{
+  Creates a new SurveyProtocol object
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$new(
   assessment_title = NULL,
   country_name = NULL,
   month_year = NULL,
@@ -297,232 +296,241 @@ Creates a new SurveyProtocol object
   sampling_frame = NULL,
   reference_doc_filename = NULL,
   reference_ppt_filename = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{assessment_title}}{Character. Title of the assessment}
-
-\item{\code{country_name}}{Character. Country where assessment takes place}
-
-\item{\code{month_year}}{Character. Month and year of data collection (e.g., "January 2024")}
-
-\item{\code{framework_type}}{Character. Type of framework to initialise.  One of
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{assessment_title}}{Character. Title of the assessment}
+      \item{\code{country_name}}{Character. Country where assessment takes place}
+      \item{\code{month_year}}{Character. Month and year of data collection (e.g., "January 2024")}
+      \item{\code{framework_type}}{Character. Type of framework to initialise.  One of
 \code{"none"} or \code{"ana"}.  Defaults to \code{"none"}.}
-
-\item{\code{sampling_frame}}{Optional data frame to initialise the
+      \item{\code{sampling_frame}}{Optional data frame to initialise the
 \code{\link{SamplingFrame}} with.  When \code{NULL} (default), an empty
 \code{SamplingFrame} is created.}
+      \item{\code{reference_doc_filename}}{Optional document template filename/path.}
+      \item{\code{reference_ppt_filename}}{Optional PowerPoint template filename/path.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new SurveyProtocol object
+  }
+}
 
-\item{\code{reference_doc_filename}}{Optional document template filename/path.}
-
-\item{\code{reference_ppt_filename}}{Optional PowerPoint template filename/path.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new SurveyProtocol object
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-set_sampling_frame"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-set_sampling_frame}{}}}
-\subsection{Method \code{set_sampling_frame()}}{
-Set the sampling frame
+\subsection{\code{SurveyProtocol$set_sampling_frame()}}{
+  Set the sampling frame
 
 Validates the frame using existing \pkg{phr} validators and
 \code{validate_sampling_frame()}, then stores it.  If the frame does
 not have an \code{inclusion} column, one is added with all \code{TRUE}
 values.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$set_sampling_frame(frame)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{frame}}{Data frame. Must contain at minimum a \code{psu} column
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$set_sampling_frame(frame)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{frame}}{Data frame. Must contain at minimum a \code{psu} column
 (primary sampling unit identifier).  A \code{population_size} column
 is required for proportional, pps_cluster, and rlc sampling methods.
 A \code{stratum} column enables stratified sampling.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns \code{self} for method chaining.
+  }
 }
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisibly returns \code{self} for method chaining.
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-validate_strata_table"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-validate_strata_table}{}}}
-\subsection{Method \code{validate_strata_table()}}{
-Validate the structure of the master sample table
+\subsection{\code{SurveyProtocol$validate_strata_table()}}{
+  Validate the structure of the master sample table
 
 Checks that \code{sample_table} exists and contains all required master
 table columns.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$validate_strata_table()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$validate_strata_table()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    \code{TRUE} if valid, \code{FALSE} otherwise.
+  }
 }
 
-\subsection{Returns}{
-\code{TRUE} if valid, \code{FALSE} otherwise.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-get_sample_table"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-get_sample_table}{}}}
-\subsection{Method \code{get_sample_table()}}{
-Get the sample table
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$get_sample_table()}\if{html}{\out{</div>}}
+\subsection{\code{SurveyProtocol$get_sample_table()}}{
+  Get the sample table
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$get_sample_table()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Data frame containing the sample table
+  }
 }
 
-\subsection{Returns}{
-Data frame containing the sample table
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-get_sampling_methods"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-get_sampling_methods}{}}}
-\subsection{Method \code{get_sampling_methods()}}{
-Return the unique sampling methods used across all strata.
+\subsection{\code{SurveyProtocol$get_sampling_methods()}}{
+  Return the unique sampling methods used across all strata.
 
 Reads the \code{sampling_method} column of \code{self$get_sample_table()}.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$get_sampling_methods()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$get_sampling_methods()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Character vector of unique, non-NA sampling method values.
+  Empty character vector when no sample table is set.
+  }
 }
 
-\subsection{Returns}{
-Character vector of unique, non-NA sampling method values.
-  Empty character vector when no sample table is set.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-get_strata_names"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-get_strata_names}{}}}
-\subsection{Method \code{get_strata_names()}}{
-Return the stratum names from the sample table.
+\subsection{\code{SurveyProtocol$get_strata_names()}}{
+  Return the stratum names from the sample table.
 
 Uses \code{Population_Name} when available, falling back to
 \code{stratum_id}.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$get_strata_names()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$get_strata_names()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Character vector of stratum names.  Empty character vector
+  when no sample table is set.
+  }
 }
 
-\subsection{Returns}{
-Character vector of stratum names.  Empty character vector
-  when no sample table is set.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-get_frame_column"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-get_frame_column}{}}}
-\subsection{Method \code{get_frame_column()}}{
-Extract a column vector from the sampling frame, optionally
+\subsection{\code{SurveyProtocol$get_frame_column()}}{
+  Extract a column vector from the sampling frame, optionally
   filtered to a specific stratum and/or to included PSUs only.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$get_frame_column(col_name, strata = NULL, included_only = TRUE)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{col_name}}{Character. Column to extract.}
-
-\item{\code{strata}}{Optional character vector of stratum names to filter to.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$get_frame_column(col_name, strata = NULL, included_only = TRUE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{col_name}}{Character. Column to extract.}
+      \item{\code{strata}}{Optional character vector of stratum names to filter to.
 \code{NULL} (default) returns all strata.}
-
-\item{\code{included_only}}{Logical. When \code{TRUE} (default) only return
+      \item{\code{included_only}}{Logical. When \code{TRUE} (default) only return
 rows where the \code{inclusion} column is \code{TRUE}.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Vector of values from the requested column.  \code{NULL} when
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Vector of values from the requested column.  \code{NULL} when
   the sampling frame is not set or the column does not exist.
+  }
 }
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-diagnose_coherence"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-diagnose_coherence}{}}}
-\subsection{Method \code{diagnose_coherence()}}{
-Override \code{diagnose_coherence} to additionally check
+\subsection{\code{SurveyProtocol$diagnose_coherence()}}{
+  Override \code{diagnose_coherence} to additionally check
   strata consistency between the sampling frame and the sample table.
 
 Calls the base \code{Protocol$diagnose_coherence()} and then appends
 strata consistency checks to \code{self$issues_coherence}.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$diagnose_coherence()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$diagnose_coherence()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns \code{self} for method chaining.
+  }
 }
 
-\subsection{Returns}{
-Invisibly returns \code{self} for method chaining.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-post_sync_state"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-post_sync_state}{}}}
-\subsection{Method \code{post_sync_state()}}{
-Post-sync hook for sampling-related state.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$post_sync_state(
+\subsection{\code{SurveyProtocol$post_sync_state()}}{
+  Post-sync hook for sampling-related state.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$post_sync_state(
   field = NULL,
   member = NULL,
   target_field = NULL,
   name = NULL,
   role = NULL
-)}\if{html}{\out{</div>}}
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{field}}{Optional top-level field name.}
+      \item{\code{member}}{Optional nested member name.}
+      \item{\code{target_field}}{Optional destination field path.}
+      \item{\code{name}}{Optional named list entry inside \code{field}.}
+      \item{\code{role}}{Optional role-based list resolution key.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns \code{NULL}.
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{field}}{Optional top-level field name.}
-
-\item{\code{member}}{Optional nested member name.}
-
-\item{\code{target_field}}{Optional destination field path.}
-
-\item{\code{name}}{Optional named list entry inside \code{field}.}
-
-\item{\code{role}}{Optional role-based list resolution key.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisibly returns \code{NULL}.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-get_quarto_params"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-get_quarto_params}{}}}
-\subsection{Method \code{get_quarto_params()}}{
-Get Quarto parameters for rendering.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$get_quarto_params()}\if{html}{\out{</div>}}
+\subsection{\code{SurveyProtocol$get_quarto_params()}}{
+  Get Quarto parameters for rendering.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$get_quarto_params()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named list of parameters to pass to Quarto rendering.
+  }
 }
 
-\subsection{Returns}{
-A named list of parameters to pass to Quarto rendering.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SurveyProtocol-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-SurveyProtocol-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{SurveyProtocol$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{SurveyProtocol$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SurveyProtocol$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

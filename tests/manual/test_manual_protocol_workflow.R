@@ -87,6 +87,20 @@ protocol$access_nested(
 
 protocol$access_nested(
   field = "sample_object",
+  member = "get_sample_table"
+)
+
+protocol$access_nested(
+  field = "sample_object",
+  member = "add_stratum",
+  stratum_id = "strata_A",
+  stratum_name = "strata_A",
+  sampling_method_site = "systematic"
+
+)
+
+protocol$access_nested(
+  field = "sample_object",
   member = "add_stratum",
   stratum_id = "strata_A",
   stratum_name = "Urban North",
@@ -98,26 +112,26 @@ protocol$access_nested(
   pop_nonresponse = 10,
   ind_indicator = "wasting_prevalence",
   ind_expected_prevalence = 15,
-  ind_precision = 5,
-  ind_nonresponse = 10,
-  ind_design_effect = 1.5,
-  ind_avg_hh_size = 5.2,
-  ind_subpop_prop = 20,
-  rate_indicator = "crude_death_rate",
-  rate_expected_rate = 0.5,
-  rate_precision = 0.5,
-  rate_avg_hh_size = 5.2,
-  rate_design_effect = 2,
-  rate_fpc = FALSE,
-  rate_nonresponse = 10,
-  teams = 5,
-  enumerators_per_team = 1,
-  start_time = "10:00",
-  end_time = "18:00",
-  clusters_per_day = 2,
-  avg_interview_time = 30,
-  avg_rest_time = 30,
-  avg_travel_time = 60,
+  # ind_precision = 5,
+  # ind_nonresponse = 10,
+  # ind_design_effect = 1.5,
+  # ind_avg_hh_size = 5.2,
+  # ind_subpop_prop = 20,
+  # rate_indicator = "crude_death_rate",
+  # rate_expected_rate = 0.5,
+  # rate_precision = 0.5,
+  # rate_avg_hh_size = 5.2,
+  # rate_design_effect = 2,
+  # rate_fpc = FALSE,
+  # rate_nonresponse = 10,
+  # teams = 5,
+  # enumerators_per_team = 1,
+  # start_time = "10:00",
+  # end_time = "18:00",
+  # clusters_per_day = 2,
+  # avg_interview_time = 30,
+  # avg_rest_time = 30,
+  # avg_travel_time = 60,
   sampling_method_site = "systematic",
   sampling_method_hh = "systematic",
   n_sites = 10
@@ -129,23 +143,24 @@ protocol$access_nested(
   member = "add_stratum",
   stratum_id = "strata_B",
   stratum_name = "Peri-Urban East",
+  sampling_method_site = "simple_random",
   population_size = 28000,
   pop_indicator = "Food Consumption Score",
   pop_design_effect = 1.8,
-  pop_precision = 5,
-  pop_expected_prevalence = 50,
-  pop_nonresponse = 10,
-  ind_indicator = "wasting_prevalence",
-  rate_indicator = "crude_death_rate",
-  rate_expected_rate = 0.2,
-  rate_precision = 0.5,
-  rate_avg_hh_size = 5.2,
-  rate_design_effect = 2,
-  rate_fpc = FALSE,
-  rate_nonresponse = 10,
-  sampling_method_site = "proportional",
-  sampling_method_hh = "systematic",
-  n_sites = 30
+  pop_precision = 5
+  # pop_expected_prevalence = 50,
+  # pop_nonresponse = 10,
+  # ind_indicator = "wasting_prevalence",
+  # rate_indicator = "crude_death_rate",
+  # rate_expected_rate = 0.2,
+  # rate_precision = 0.5,
+  # rate_avg_hh_size = 5.2,
+  # rate_design_effect = 2,
+  # rate_fpc = FALSE,
+  # rate_nonresponse = 10,
+  # sampling_method_site = "proportional",
+  # sampling_method_hh = "systematic",
+  # n_sites = 30
 )
 
 protocol$access_nested(
