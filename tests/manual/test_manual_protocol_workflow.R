@@ -112,26 +112,26 @@ protocol$access_nested(
   pop_nonresponse = 10,
   ind_indicator = "wasting_prevalence",
   ind_expected_prevalence = 15,
-  # ind_precision = 5,
-  # ind_nonresponse = 10,
-  # ind_design_effect = 1.5,
-  # ind_avg_hh_size = 5.2,
-  # ind_subpop_prop = 20,
-  # rate_indicator = "crude_death_rate",
-  # rate_expected_rate = 0.5,
-  # rate_precision = 0.5,
-  # rate_avg_hh_size = 5.2,
-  # rate_design_effect = 2,
-  # rate_fpc = FALSE,
-  # rate_nonresponse = 10,
-  # teams = 5,
-  # enumerators_per_team = 1,
-  # start_time = "10:00",
-  # end_time = "18:00",
-  # clusters_per_day = 2,
-  # avg_interview_time = 30,
-  # avg_rest_time = 30,
-  # avg_travel_time = 60,
+  ind_precision = 5,
+  ind_nonresponse = 10,
+  ind_design_effect = 1.5,
+  ind_avg_hh_size = 5.2,
+  ind_subpop_prop = 20,
+  rate_indicator = "crude_death_rate",
+  rate_expected_rate = 0.5,
+  rate_precision = 0.5,
+  rate_avg_hh_size = 5.2,
+  rate_design_effect = 2,
+  rate_fpc = FALSE,
+  rate_nonresponse = 10,
+  teams = 5,
+  enumerators_per_team = 1,
+  start_time = "10:00",
+  end_time = "18:00",
+  clusters_per_day = 2,
+  avg_interview_time = 30,
+  avg_rest_time = 30,
+  avg_travel_time = 60,
   sampling_method_site = "systematic",
   sampling_method_hh = "systematic",
   n_sites = 10
@@ -210,7 +210,10 @@ frame_C <- make_psu_frame("strata_C", n_psu = 30, pop_range = c(100, 500))
 
 sampling_frame <- dplyr::bind_rows(frame_A, frame_B, frame_C)
 
-protocol$set_sampling_frame(sampling_frame)
+protocol$sampling_frame$set("log_df", sampling_frame)
+
+protocol$sampling_frame$get("log_df")
+
 
 protocol$sampling_frame$validate()
 protocol$sampling_frame$validated
