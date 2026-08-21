@@ -23,6 +23,7 @@ synchronization hooks.
 \item \href{#method-Orchestrator-sync_state}{\code{Orchestrator$sync_state()}}
 \item \href{#method-Orchestrator-access_nested}{\code{Orchestrator$access_nested()}}
 \item \href{#method-Orchestrator-set_nested}{\code{Orchestrator$set_nested()}}
+\item \href{#method-Orchestrator-set}{\code{Orchestrator$set()}}
 \item \href{#method-Orchestrator-clone}{\code{Orchestrator$clone()}}
 }
 }
@@ -218,6 +219,62 @@ nested object.}
 
 \item{\code{role}}{Optional character scalar used to resolve a list element in
 \code{field} by role-like name.}
+}
+\if{html}{\out{</div>}}
+}
+\subsection{Returns}{
+Invisibly returns \code{self}.
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Orchestrator-set"></a>}}
+\if{latex}{\out{\hypertarget{method-Orchestrator-set}{}}}
+\subsection{Method \code{set()}}{
+Generalized, scope-safe field setter.
+
+Mirrors \code{access_nested()}'s \code{field}/\code{name}/\code{role}/
+\code{member} arguments, but safely writes \code{value} instead of
+reading. Unlike \code{set_nested()}, \code{field} may resolve to either
+a public or a private field, and \code{member} is optional: when
+omitted, \code{value} replaces the resolved top-level (or
+name/role-resolved) target directly. Writing to a resolved member or
+target that currently holds a function is rejected, to avoid
+accidentally clobbering methods.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{Orchestrator$set(
+  field,
+  value,
+  member = NULL,
+  name = NULL,
+  role = NULL,
+  update_sync = FALSE,
+  update_modified = TRUE
+)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{field}}{Character scalar naming a public or private top-level
+field on this object.}
+
+\item{\code{value}}{Value to assign.}
+
+\item{\code{member}}{Optional character scalar naming a writable field on the
+resolved target. When \code{NULL}, \code{value} is assigned directly
+to the resolved target.}
+
+\item{\code{name}}{Optional character scalar naming a list element in
+\code{field}.}
+
+\item{\code{role}}{Optional character scalar used to resolve a list element in
+\code{field} by role-like name.}
+
+\item{\code{update_sync}}{Logical indicating whether to synchronize state
+after the assignment.}
+
+\item{\code{update_modified}}{Logical indicating whether to update the
+modified timestamp.}
 }
 \if{html}{\out{</div>}}
 }
