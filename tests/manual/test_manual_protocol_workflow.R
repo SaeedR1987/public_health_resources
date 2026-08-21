@@ -361,6 +361,10 @@ protocol$add_tools(tool_name = "tool_kii_nutrition_service_provider_iphra_v2")
 
 # -- 3a: Generate report with no tools (tools section shows placeholder text) --
 
+protocol$access_nested(field = "metadata", role = "research_cycle_id")
+
+protocol$set(field = "metadata", role = "research_cycle_id", value = "RC-2025-001")
+
 protocol$metadata$research_cycle_id <- "RC-2025-001"
 protocol$metadata$country <- "Switzerland"
 protocol$metadata$release_date <- Sys.Date()
