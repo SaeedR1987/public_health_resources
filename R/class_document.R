@@ -282,6 +282,11 @@ Document <- R6::R6Class(
     ..default_ppt_template_filenames = function() {
       c("protocol_report_template.pptx")
     },
+    # @description Sanitize a data frame for Quarto rendering by replacing
+    # missing values with type-appropriate defaults.
+    # @param df A data frame to sanitize.
+    # @return A sanitized data frame, or the input unchanged if it is not a data frame.
+    # @keywords internal
     ..sanitize_quarto_df = function(df) {
       if (!is.data.frame(df)) {
         return(df)

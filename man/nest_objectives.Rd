@@ -15,5 +15,5 @@ Nested list suitable for assignment to \code{protocol$objectives}.
 }
 \description{
 Converts a flat list of objective lists into the nested
-\code{sector \u2192 pillar \u2192 sub_pillar \u2192 data_source \u2192 [objectives]} structure.
+\code{sector → pillar → sub_pillar → data_source → [objectives]} structure.
 }

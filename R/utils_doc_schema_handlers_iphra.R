@@ -160,12 +160,29 @@ table_secondary_data_sources <- function(master_schema, secondary_data) {
 }
 
 .table_sample_size_builder <- function(sample_table, param_rows, total_labels) {
+
   if (
     is.null(sample_table) ||
-      !is.data.frame(sample_table) ||
-      nrow(sample_table) == 0L
+    !is.data.frame(sample_table) ||
+    nrow(sample_table) == 0L
   ) {
-    return(NULL)
+
+    col_names <- c("Parameter", "Value", "Justification")
+
+    rows_list <- lapply(param_rows, function(pr) {
+      as.list(c(pr$label, "", ""))
+    })
+
+    mat <- do.call(
+      rbind,
+      lapply(rows_list, function(r) {
+        as.data.frame(r, stringsAsFactors = FALSE, col.names = col_names)
+      })
+    )
+
+    names(mat) <- col_names
+
+    return(mat)
   }
 
   strata_names <- if ("stratum_name" %in% names(sample_table)) {
@@ -173,8 +190,10 @@ table_secondary_data_sources <- function(master_schema, secondary_data) {
   } else {
     as.character(sample_table$stratum_id)
   }
+
   n_strata <- length(strata_names)
   col_names <- c("Parameter", strata_names, "Justification")
+
   rows_list <- lapply(param_rows, function(pr) {
     vals <- vapply(
       seq_len(n_strata),
@@ -188,16 +207,19 @@ table_secondary_data_sources <- function(master_schema, secondary_data) {
     )
     as.list(c(pr$label, vals, ""))
   })
+
   mat <- do.call(
     rbind,
     lapply(rows_list, function(r) {
       as.data.frame(r, stringsAsFactors = FALSE, col.names = col_names)
     })
   )
+
   names(mat) <- col_names
 
-  return(mat)
+  mat
 }
+
 
 #' Build general sample-size table.
 #' @param sample_table Sample table data frame.

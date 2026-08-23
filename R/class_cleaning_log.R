@@ -123,7 +123,7 @@ CleaningLog <- R6::R6Class(
 
           # 2. Cleaning-log specific completeness
           #    Always require uuid, question.name, and changed to be present.
-          #    Require old.value only for rows where changed == "yes" \u2014 we need to
+          #    Require old.value only for rows where changed == "yes" — we need to
           #    know the current value to apply a correction.
           #    Do NOT require new.value: it is legitimately blank/NA at log-generation
           #    time while awaiting human review.
@@ -216,7 +216,7 @@ CleaningLog <- R6::R6Class(
       # catastrophic error only
       if (is.null(df)) {
         phrutils::phr_error(
-          "Dataset is NULL \u2014 cannot validate CleaningLog against dataset.",
+          "Dataset is NULL — cannot validate CleaningLog against dataset.",
           origin = "CleaningLog$post_validate"
         )
       }

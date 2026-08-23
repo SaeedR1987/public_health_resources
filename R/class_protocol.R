@@ -696,20 +696,14 @@ Protocol <- R6::R6Class(
           population = self$metadata$population %||% "",
           rationale = self$metadata$rationale %||% "",
           date_pilot_training = self$metadata$date_pilot_training %||% "",
-          date_data_collection_start = self$metadata$date_data_collection_start %||%
-            "",
-          date_data_collection_end = self$metadata$date_data_collection_end %||%
-            "",
+          date_data_collection_start = self$metadata$date_data_collection_start %||% "",
+          date_data_collection_end = self$metadata$date_data_collection_end %||% "",
           date_data_analysis = self$metadata$date_data_analysis %||% "",
           date_data_validation = self$metadata$date_data_validation %||% "",
-          date_preliminary_presentation = self$metadata$date_preliminary_presentation %||%
-            "",
-          date_outputs_validation = self$metadata$date_outputs_validation %||%
-            "",
-          date_outputs_publication = self$metadata$date_outputs_publication %||%
-            "",
-          date_final_presentation = self$metadata$date_final_presentation %||%
-            "",
+          date_preliminary_presentation = self$metadata$date_preliminary_presentation %||% "",
+          date_outputs_validation = self$metadata$date_outputs_validation %||% "",
+          date_outputs_publication = self$metadata$date_outputs_publication %||% "",
+          date_final_presentation = self$metadata$date_final_presentation %||% "",
           audience_type_cluster = self$metadata$audience_type_cluster %||% "",
           expected_output_cluster = self$metadata$expected_output_cluster %||%
             "",
@@ -737,36 +731,11 @@ Protocol <- R6::R6Class(
           visibility_other = self$metadata$visibility_other %||% "",
           created_date = self$metadata$created_date %||% NULL,
           modified_datetime = self$metadata$modified_datetime %||% NULL,
-          month_year = self$metadata$month_year %||% NULL,
-          country_name = self$metadata$country_name %||% NULL,
-          assessment_title = self$metadata$assessment_title %||% NULL,
           target_strata = self$metadata$target_strata %||% list(),
-          protocol_version = self$metadata$protocol_version %||% "1.0",
-          version = self$metadata$version %||% 1L,
+
           mandating_body = self$metadata$mandating_body %||% NULL,
-          project_code = self$metadata$project_code %||% NULL,
           overall_timeframe = self$metadata$overall_timeframe %||% NULL,
-          pilot_date = self$metadata$pilot_date %||% NULL,
-          data_start_date = self$metadata$data_start_date %||% NULL,
-          data_end_date = self$metadata$data_end_date %||% NULL,
-          analysis_date = self$metadata$analysis_date %||% NULL,
-          data_validation_date = self$metadata$data_validation_date %||% NULL,
-          prelim_presentation_date = self$metadata$prelim_presentation_date %||%
-            NULL,
-          output_validation_date = self$metadata$output_validation_date %||%
-            NULL,
-          output_published_date = self$metadata$output_published_date %||% NULL,
-          final_presentation_date = self$metadata$final_presentation_date %||%
-            NULL,
-          date_milestone_donor = self$metadata$date_milestone_donor %||% NULL,
-          date_milestone_intercluster = self$metadata$date_milestone_intercluster %||%
-            NULL,
-          date_milestone_cluster = self$metadata$date_milestone_cluster %||%
-            NULL,
-          date_milestone_ngo_platform = self$metadata$date_milestone_ngo_platform %||%
-            NULL,
-          date_milestone_other = self$metadata$date_milestone_other %||% NULL,
-          geographic_coverage = self$metadata$geographic_coverage %||% NULL,
+
           stratification = self$metadata$stratification %||% NULL,
           num_report = self$metadata$num_report %||% NULL,
           num_profile = self$metadata$num_profile %||% NULL,
@@ -779,8 +748,8 @@ Protocol <- R6::R6Class(
           num_webmap = self$metadata$num_webmap %||% NULL,
           num_map = self$metadata$num_map %||% NULL,
           num_output_other = self$metadata$num_output_other %||% NULL,
-          objectives_research_questions_df = self$.objectives_research_questions_df,
-          secondary_data_sources_df = self$.secondary_data_sources_df,
+          objectives_research_questions_df = private$..sanitize_quarto_df(self$.objectives_research_questions_df),
+          secondary_data_sources_df = private$..sanitize_quarto_df(self$.secondary_data_sources_df),
           modified_framework_svg = self$.modified_framework_svg
         )
       )
@@ -841,10 +810,10 @@ Protocol <- R6::R6Class(
 
       if (is.null(ob) || is.null(ib) || length(all_codes) == 0) {
         table <- data.frame(
-          Pillar = character(0),
-          `Sub-Pillar` = character(0),
-          Objective = character(0),
-          `Research Question` = character(0),
+          Pillar = NA_character_,
+          `Sub-Pillar` = NA_character_,
+          Objective = NA_character_,
+          `Research Question` = NA_character_,
           check.names = FALSE,
           stringsAsFactors = FALSE
         )
@@ -860,6 +829,8 @@ Protocol <- R6::R6Class(
 
       ob_sub <- ob[ob$objective_code %in% objective_codes, , drop = FALSE]
 
+
+
       table <- unique(
         data.frame(
           Pillar = ob_sub$pillar,
@@ -870,6 +841,21 @@ Protocol <- R6::R6Class(
           stringsAsFactors = FALSE
         )
       )
+
+      print(paste0("num row 1: ", nrow(table)))
+
+      if(nrow(table) == 0) {
+        table <- data.frame(
+          Pillar = NA_character_,
+          `Sub-Pillar` = NA_character_,
+          Objective = NA_character_,
+          `Research Question` = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+      }
+
+      print(paste0("num row 2: ", nrow(table)))
 
       table
     },
@@ -888,6 +874,17 @@ Protocol <- R6::R6Class(
         ),
         error = function(e) NULL
       )
+
+      if(is.null(table)) {
+        table <- data.frame(
+          objective = NA_character_,
+          source = NA_character_,
+          purpose = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+
+      }
 
       return(table)
     },
