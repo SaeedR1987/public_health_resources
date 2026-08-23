@@ -3,7 +3,7 @@
 #' @description
 #' Functions for creating and managing research objectives in the protocol pipeline.
 #' Objectives are stored on a Protocol as a nested list keyed by
-#' \code{sector \u2192 pillar \u2192 sub_pillar \u2192 data_source}, where \code{data_source}
+#' \code{sector → pillar → sub_pillar → data_source}, where \code{data_source}
 #' captures whether the objective is "primary" or "secondary" (or any other
 #' value from the objective schema).
 #'
@@ -11,7 +11,7 @@
 #'   (e.g. "primary" or "secondary"); \code{NULL} or \code{NA} defaults to "primary".
 #' @keywords internal
 
-# Internal helper: normalise a data_source value (NULL / NA \u2192 "primary").
+# Internal helper: normalise a data_source value (NULL / NA → "primary").
 .normalize_data_source <- function(data_source) {
   if (is.null(data_source) || (length(data_source) == 1L && is.na(data_source)) || !nzchar(as.character(data_source))) {
     "primary"
@@ -78,7 +78,7 @@ create_objectives_from_df <- function(objectives_df) {
 
 #' Flatten a nested objectives list to a flat list of objectives
 #'
-#' Converts the nested \code{sector \u2192 pillar \u2192 sub_pillar \u2192 data_source \u2192 [objectives]}
+#' Converts the nested \code{sector → pillar → sub_pillar → data_source → [objectives]}
 #' structure stored on a Protocol to a simple flat list of objective lists,
 #' suitable for iteration, validation, and conversion to a data frame.
 #' A flat list of objectives is returned unchanged.
@@ -110,7 +110,7 @@ flatten_objectives <- function(objectives) {
 #' Nest a flat list of objectives into the standard hierarchical structure
 #'
 #' Converts a flat list of objective lists into the nested
-#' \code{sector \u2192 pillar \u2192 sub_pillar \u2192 data_source \u2192 [objectives]} structure.
+#' \code{sector → pillar → sub_pillar → data_source → [objectives]} structure.
 #'
 #' @param objectives_flat List.  Flat list of objective named lists as produced
 #'   by \code{create_objectives_from_df()}.
@@ -331,7 +331,7 @@ print_objectives_summary <- function(objectives) {
   data_sources <- unique(sapply(flat, function(x) x$data_source %||% "unknown"))
 
   phrutils::phr_message(
-    phr_txt("Objectives Summary \u2014 {length(flat)} total objective(s). Sectors: {paste(sectors, collapse=', ')}. Data sources: {paste(data_sources, collapse=', ')}."),
+    phr_txt("Objectives Summary — {length(flat)} total objective(s). Sectors: {paste(sectors, collapse=', ')}. Data sources: {paste(data_sources, collapse=', ')}."),
     origin = origin
   )
 

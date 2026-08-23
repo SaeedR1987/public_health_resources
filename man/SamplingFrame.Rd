@@ -11,16 +11,16 @@ data used in survey sample drawing workflows.
 The default structure is the full extended sampling frame with the following
 columns:
 \itemize{
-  \item \code{stratum} \u2014 stratum identifier.
-  \item \code{psu} \u2014 primary sampling unit identifier.
-  \item \code{population_size} \u2014 population count for the PSU.
-  \item \code{inclusion} \u2014 logical flag marking PSUs eligible for sampling.
-  \item \code{sampled_psu} \u2014 cluster number(s) assigned by \code{draw_sample()};
+  \item \code{stratum} — stratum identifier.
+  \item \code{psu} — primary sampling unit identifier.
+  \item \code{population_size} — population count for the PSU.
+  \item \code{inclusion} — logical flag marking PSUs eligible for sampling.
+  \item \code{sampled_psu} — cluster number(s) assigned by \code{draw_sample()};
     \code{NA} for unselected PSUs.  When a PSU is drawn more than once (as
     can happen with PPS cluster or RLC sampling), this field contains the
     comma-separated consecutive cluster numbers assigned to that PSU
     (e.g. \code{"9, 10, 11"} for a PSU drawn three times).
-  \item \code{allocated_sample} \u2014 number of households allocated to the PSU
+  \item \code{allocated_sample} — number of households allocated to the PSU
     by \code{draw_sample()}; \code{NA} for unselected PSUs.
 }
 
