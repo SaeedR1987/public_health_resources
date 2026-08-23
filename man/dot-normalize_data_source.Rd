@@ -13,7 +13,7 @@
 \description{
 Functions for creating and managing research objectives in the protocol pipeline.
 Objectives are stored on a Protocol as a nested list keyed by
-\code{sector \u2192 pillar \u2192 sub_pillar \u2192 data_source}, where \code{data_source}
+\code{sector → pillar → sub_pillar → data_source}, where \code{data_source}
 captures whether the objective is "primary" or "secondary" (or any other
 value from the objective schema).
 }

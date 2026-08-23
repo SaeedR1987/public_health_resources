@@ -14,11 +14,11 @@
 #' estimate for small populations.
 #'
 #' @param expected_proportion Numeric. Expected proportion/prevalence in
-#'   percentages (0\u2013100).
+#'   percentages (0–100).
 #' @param desired_precision Numeric. Desired half-width of the confidence
-#'   interval in percentage points (0\u2013100, exclusive).
+#'   interval in percentage points (0–100, exclusive).
 #' @param non_response_rate Numeric. Anticipated non-response rate in
-#'   percentages (0\u2013100, default = 5).
+#'   percentages (0–100, default = 5).
 #' @param design Character. Sampling design: \code{"simple_random"} or
 #'   \code{"cluster"} (default = \code{"simple_random"}).
 #' @param design_effect Numeric. Design effect for cluster sampling; must be
@@ -167,11 +167,11 @@ calculate_sample_size_general <- function(
 #' required.
 #'
 #' @param expected_proportion Numeric. Expected proportion/prevalence in
-#'   percentages (0\u2013100).
+#'   percentages (0–100).
 #' @param desired_precision Numeric. Desired half-width of the confidence
-#'   interval in percentage points (0\u2013100, exclusive).
+#'   interval in percentage points (0–100, exclusive).
 #' @param non_response_rate Numeric. Anticipated non-response rate in
-#'   percentages (0\u2013100, default = 5).
+#'   percentages (0–100, default = 5).
 #' @param design Character. Sampling design: \code{"simple_random"} or
 #'   \code{"cluster"} (default = \code{"simple_random"}).
 #' @param design_effect Numeric. Design effect for cluster sampling; must be
@@ -186,7 +186,7 @@ calculate_sample_size_general <- function(
 #' @param average_household_size Numeric. Average number of individuals per
 #'   household (must be positive).
 #' @param sub_population_percent Numeric. The percentage of the household
-#'   population belonging to the target sub-population (0\u2013100, default = 100).
+#'   population belonging to the target sub-population (0–100, default = 100).
 #'   Values below 100 inflate the individual sample size proportionally.
 #' @param confidence_level Numeric. Desired confidence level as a proportion
 #'   (default = 0.95).
@@ -282,7 +282,7 @@ calculate_sample_size_individual <- function(
 #' @param desired_precision Numeric. Desired precision as a half-width in
 #'   deaths per 10,000 people per day (must be positive).
 #' @param non_response_rate Numeric. Anticipated non-response rate in
-#'   percentages (0\u2013100, default = 5).
+#'   percentages (0–100, default = 5).
 #' @param design Character. Sampling design: \code{"simple_random"} or
 #'   \code{"cluster"} (default = \code{"cluster"}).
 #' @param design_effect Numeric. Design effect for cluster sampling; must be
@@ -692,12 +692,12 @@ estimate_field_plan <- function(
 #' for each stratum where the necessary logistics parameters are present.
 #' The resulting field-plan values are written back into \code{sample_table}:
 #' \itemize{
-#'   \item \code{num_interview_per_enum_per_day} \u2014 estimated interviews per
+#'   \item \code{num_interview_per_enum_per_day} — estimated interviews per
 #'     enumerator per working day.
-#'   \item \code{num_days} \u2014 estimated number of data-collection days needed.
-#'   \item \code{n_psu} \u2014 number of PSUs required (\code{NA} for simple random
+#'   \item \code{num_days} — estimated number of data-collection days needed.
+#'   \item \code{n_psu} — number of PSUs required (\code{NA} for simple random
 #'     designs); written into the existing \code{n_psu} column.
-#'   \item \code{cluster_size} \u2014 cluster size (\code{NA} for simple random
+#'   \item \code{cluster_size} — cluster size (\code{NA} for simple random
 #'     designs); written into the existing \code{cluster_size} column.
 #' }
 #'
@@ -757,7 +757,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
       for (i in seq_len(nrow(sample_table))) {
         row <- sample_table[i, ]
 
-        # Read sampling_method_site directly \u2014 it is "cluster" or other method and
+        # Read sampling_method_site directly — it is "cluster" or other method and
         # maps directly to the design parameter accepted by calculate_sample_size_*
         # functions.  Fall back to "simple_random" for robustness if absent.
         design_type <- if (
@@ -805,7 +805,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             ),
             on_error = "return",
             origin = origin,
-            step = phr_txt("General sample size \u2014 stratum {row$stratum_id}")
+            step = phr_txt("General sample size — stratum {row$stratum_id}")
           )
           if (!phrutils::phr_failed(pop_ss)) {
             sample_table$General_HH_Sample_Size[i] <- pop_ss
@@ -859,7 +859,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             ),
             on_error = "return",
             origin = origin,
-            step = phr_txt("Individual sample size \u2014 stratum {row$stratum_id}")
+            step = phr_txt("Individual sample size — stratum {row$stratum_id}")
           )
           if (!phrutils::phr_failed(ind_res) && !is.null(ind_res)) {
             sample_table$Ind_Sample_Size[i] <- ind_res$sample_size_individuals
@@ -916,7 +916,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             ),
             on_error = "return",
             origin = origin,
-            step = phr_txt("Rate sample size \u2014 stratum {row$stratum_id}")
+            step = phr_txt("Rate sample size — stratum {row$stratum_id}")
           )
           if (!phrutils::phr_failed(rate_res) && !is.null(rate_res)) {
             sample_table$Rate_Ind_Sample_Size[
@@ -1009,7 +1009,7 @@ calculate_sample_size_strata_table <- function(sample_table) {
             ),
             on_error = "return",
             origin = origin,
-            step = phr_txt("Field plan \u2014 stratum {row$stratum_id}")
+            step = phr_txt("Field plan — stratum {row$stratum_id}")
           )
           if (!phrutils::phr_failed(fp)) {
             sample_table$num_interview_per_enum_per_day[

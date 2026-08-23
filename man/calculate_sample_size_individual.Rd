@@ -20,13 +20,13 @@ calculate_sample_size_individual(
 }
 \arguments{
 \item{expected_proportion}{Numeric. Expected proportion/prevalence in
-percentages (0\u2013100).}
+percentages (0–100).}
 
 \item{desired_precision}{Numeric. Desired half-width of the confidence
-interval in percentage points (0\u2013100, exclusive).}
+interval in percentage points (0–100, exclusive).}
 
 \item{non_response_rate}{Numeric. Anticipated non-response rate in
-percentages (0\u2013100, default = 5).}
+percentages (0–100, default = 5).}
 
 \item{design}{Character. Sampling design: \code{"simple_random"} or
 \code{"cluster"} (default = \code{"simple_random"}).}
@@ -48,7 +48,7 @@ be positive) when \code{fpc = TRUE}.}
 household (must be positive).}
 
 \item{sub_population_percent}{Numeric. The percentage of the household
-population belonging to the target sub-population (0\u2013100, default = 100).
+population belonging to the target sub-population (0–100, default = 100).
 Values below 100 inflate the individual sample size proportionally.}
 
 \item{confidence_level}{Numeric. Desired confidence level as a proportion

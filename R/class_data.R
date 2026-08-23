@@ -631,7 +631,7 @@ Data <- R6::R6Class(
                 ) {
                   new <- phrutils::phr_convert_date(col)
 
-                  # fallback \u2192 clean character
+                  # fallback → clean character
                 } else {
                   new <- trimws(as.character(col))
                 }
@@ -942,14 +942,14 @@ Data <- R6::R6Class(
                       # Indicator arguments can reference mapped variables and values using
                       # explicit @ syntax:
                       #
-                      # 1. @variable_map$role \u2192 Resolves to dataset column name
-                      #    Example: "@variable_map$fever" \u2192 "q7_fever_column"
+                      # 1. @variable_map$role → Resolves to dataset column name
+                      #    Example: "@variable_map$fever" → "q7_fever_column"
                       #
-                      # 2. @value_map$role$canonical_value \u2192 Resolves to dataset values
-                      #    Example: "@value_map$fever$yes" \u2192 c("yes", "y", "oui")
+                      # 2. @value_map$role$canonical_value → Resolves to dataset values
+                      #    Example: "@value_map$fever$yes" → c("yes", "y", "oui")
                       #
-                      # 3. @value_map$role \u2192 Resolves to entire value mapping
-                      #    Example: "@value_map$fever" \u2192 list(yes = c(...), no = c(...))
+                      # 3. @value_map$role → Resolves to entire value mapping
+                      #    Example: "@value_map$fever" → list(yes = c(...), no = c(...))
                       #
                       # This explicit syntax ensures clarity about which arguments are mapped
                       # vs literal values, which is important for function parameters.
@@ -1613,7 +1613,7 @@ Data <- R6::R6Class(
             soft = FALSE
           )
 
-          # Convert table \u2192 structured schema list
+          # Convert table → structured schema list
           new_schema <- data_table_to_schema(df)
 
           # Assign schema
@@ -1668,7 +1668,7 @@ Data <- R6::R6Class(
             return(NULL)
           }
 
-          # Convert variable schema list \u2192 table
+          # Convert variable schema list → table
           variable_table <- data_schema_to_table(self$variable_schema)
 
           phrutils::phr_message(
@@ -1769,7 +1769,7 @@ Data <- R6::R6Class(
             soft = FALSE
           )
 
-          # Convert table \u2192 structured indicator schema list
+          # Convert table → structured indicator schema list
           new_indicator_schema <- indicator_table_to_schema(df)
 
           # Assign indicator schema
@@ -1803,7 +1803,7 @@ Data <- R6::R6Class(
             return(NULL)
           }
 
-          # Convert indicator schema list \u2192 table
+          # Convert indicator schema list → table
           indicator_table <- indicator_schema_to_table(self$indicator_schema)
 
           phrutils::phr_message(
@@ -1867,7 +1867,7 @@ Data <- R6::R6Class(
             soft = FALSE
           )
 
-          # Convert table \u2192 structured dependency schema list
+          # Convert table → structured dependency schema list
           new_dependency_schema <- dependency_table_to_schema(df)
 
           # Assign dependency schema
@@ -1901,7 +1901,7 @@ Data <- R6::R6Class(
             return(NULL)
           }
 
-          # Convert dependency schema list \u2192 table
+          # Convert dependency schema list → table
           dependency_table <- dependency_schema_to_table(self$dependency_schema)
 
           phrutils::phr_message(
@@ -2041,7 +2041,7 @@ Data <- R6::R6Class(
         )
       }
       self$variable_label[[var]] <- as.character(label)
-      phrutils::phr_message(phr_txt("Set label for '{var}' \u2192 '{label}'."))
+      phrutils::phr_message(phr_txt("Set label for '{var}' → '{label}'."))
     },
 
     #' Set Value Labels for Variable
@@ -2147,7 +2147,7 @@ Data <- R6::R6Class(
       self$variable_map[[role]] <- column_name
 
       phrutils::phr_message(phr_txt(
-        "Mapped role '{role}' \u2192 '{column_name}' (checked on {stage} data)."
+        "Mapped role '{role}' → '{column_name}' (checked on {stage} data)."
       ))
     },
 
@@ -2826,7 +2826,7 @@ Data <- R6::R6Class(
                           # Calculate flag for this rule.
                           # When 'then' is present: flag rows where cond_if is TRUE but cond_then is FALSE.
                           # When 'then' is absent (flag_delete with condition_if only): flag rows where
-                          # cond_if is TRUE \u2014 those rows are the ones to be deleted.
+                          # cond_if is TRUE — those rows are the ones to be deleted.
                           # Note: NA positions in flag_vec are converted to 1 (flagged) since we cannot
                           # confirm the condition is met when the evaluation result is NA.
                           flag_vec <- rep(0, nrow(df))
@@ -4365,7 +4365,7 @@ Data <- R6::R6Class(
             }
           }
 
-          # If no problems \u2192 TRUE
+          # If no problems → TRUE
           if (length(problems) == 0) {
             phrutils::phr_message(phr_txt(
               "All links validated successfully for {self$dataset_name}."

@@ -181,7 +181,7 @@ SurveyProtocol <- R6::R6Class(
             hint = phr_txt("Provide a data frame with at least one PSU row.")
           )
 
-          # 2. Run validate_sampling_frame \u2014 stops on hard issues
+          # 2. Run validate_sampling_frame — stops on hard issues
           val_result <- validate_sampling_frame(frame)
           if (!val_result$valid) {
             hard_issues <- val_result$issues[setdiff(
@@ -206,7 +206,7 @@ SurveyProtocol <- R6::R6Class(
             frame$inclusion <- TRUE
             phrutils::phr_message(
               phr_txt(
-                "'inclusion' column not found \u2014 defaulting all PSUs to TRUE."
+                "'inclusion' column not found — defaulting all PSUs to TRUE."
               ),
               origin = "SurveyProtocol$set_sampling_frame"
             )
