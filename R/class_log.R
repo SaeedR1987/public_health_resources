@@ -26,7 +26,8 @@
 #' @field autosave Logical for automatic saving (not yet implemented)
 #' @field issues List of validation issues found
 #'
-#' @keywords internal
+#' @importFrom R6 R6Class
+#' @export
 Log <- R6::R6Class(
   classname = "Log",
 

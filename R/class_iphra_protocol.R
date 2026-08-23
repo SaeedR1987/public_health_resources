@@ -378,7 +378,7 @@ IPHRAProtocol <- R6::R6Class(
         params,
         list(
           anf_framework_path = self$.modified_framework_svg,
-          tool_household_iphra = self$.tool_household_iphra,
+          tool_household = self$.tool_household_iphra,
           tool_community_kii = self$.tool_community_kii,
           tool_fsl_provider_kii = self$.tool_fsl_provider_kii,
           tool_market_kii = self$.tool_market_kii,
@@ -403,10 +403,10 @@ IPHRAProtocol <- R6::R6Class(
           tool_health_facility_observation = self$.tool_health_facility_observation,
           tool_latrine_observation = self$.tool_latrine_observation,
           tool_water_point_observation = self$.tool_water_point_observation,
-          tools_table_df = self$.tools_table_df,
-          household_pillars_table_df = self$.household_pillars_table_df,
-          kii_pillars_table_df = self$.kii_pillars_table_df,
-          observation_pillars_table_df = self$.observation_pillars_table_df,
+          tools_table_df = private$..sanitize_quarto_df(self$.tools_table_df),
+          household_pillars_table_df = private$..sanitize_quarto_df(self$.household_pillars_table_df),
+          kii_pillars_table_df = private$..sanitize_quarto_df(self$.kii_pillars_table_df),
+          observation_pillars_table_df = private$..sanitize_quarto_df(self$.observation_pillars_table_df),
           household_dap_df = private$..sanitize_quarto_df(
             self$.household_dap_df
           ),
@@ -870,6 +870,15 @@ IPHRAProtocol <- R6::R6Class(
         )
       }
 
+      if(nrow(table_df) == 0) {
+        table_df <- data.frame(
+          Tool = NA_character_,
+          `Sampling Method` = NA_character_,
+          `Sample Size` = NA_real_,
+          check.names = FALSE
+        )
+      }
+
       return(table_df)
     },
 
@@ -877,9 +886,9 @@ IPHRAProtocol <- R6::R6Class(
     .household_pillars_table_df = function(value) {
       if (!private$..has_tool_role("household")) {
         table <- data.frame(
-          Pillar = character(0),
-          `Sub-Pillar` = character(0),
-          Indicator = character(0),
+          Pillar = NA_character_,
+          `Sub-Pillar` = NA_character_,
+          Indicator = NA_character_,
           check.names = FALSE,
           stringsAsFactors = FALSE
         )
@@ -929,9 +938,9 @@ IPHRAProtocol <- R6::R6Class(
 
       if (is.null(ob) || is.null(ib)) {
         table <- data.frame(
-          Pillar = character(0),
-          `Sub-Pillar` = character(0),
-          Indicator = character(0),
+          Pillar = NA_character_,
+          `Sub-Pillar` = NA_character_,
+          Indicator = NA_character_,
           check.names = FALSE,
           stringsAsFactors = FALSE
         )
@@ -1259,8 +1268,17 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_household_iphra) {
         self$get_dap_table("tool_household_iphra_v2")
       } else {
-        data.frame()
-      } 
+        data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        )
+      }
     },
     #' @field .community_kii_dap_df Data frame containing the community KII data analysis plan.
     .community_kii_dap_df = function(value) {
@@ -1273,7 +1291,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_community_kii) {
         self$get_dap_table("tool_kii_community_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .community_observation_dap_df Data frame containing the community observation data analysis plan.
@@ -1287,7 +1314,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_community_observation) {
         self$get_dap_table("tool_obs_community_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .health_facility_kii_dap_df Data frame containing the health facility KII data analysis plan.
@@ -1301,7 +1337,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_health_facility_kii) {
         self$get_dap_table("tool_kii_health_service_provider_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .health_facility_observation_dap_df Data frame containing the health facility observation data analysis plan.
@@ -1317,7 +1362,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_health_facility_observation) {
         self$get_dap_table("tool_obs_health_facility_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .nutrition_facility_kii_dap_df Data frame containing the nutrition facility KII data analysis plan.
@@ -1331,7 +1385,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_nutrition_facility_kii) {
         self$get_dap_table("tool_kii_nutrition_service_provider_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .fsl_provider_kii_dap_df Data frame containing the FSL provider KII data analysis plan.
@@ -1345,7 +1408,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_fsl_provider_kii) {
         self$get_dap_table("tool_kii_fsl_service_provider_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .market_kii_dap_df Data frame containing the market KII data analysis plan.
@@ -1359,7 +1431,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_market_kii) {
         self$get_dap_table("tool_kii_markets_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .crop_livstock_observation_dap_df Active binding.
@@ -1375,7 +1456,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_crops_livestock_observation) {
         self$get_dap_table("tool_obs_crop_livestock_iphra_v1")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .wash_provider_kii_dap_df Data frame containing the WASH provider KII data analysis plan.
@@ -1389,7 +1479,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_wash_provider_kii) {
         self$get_dap_table("tool_kii_wash_service_provider_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .water_point_observation_dap_df Data frame containing the water point observation data analysis plan.
@@ -1403,7 +1502,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_water_point_observation) {
         self$get_dap_table("tool_obs_water_point_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     },
     #' @field .latrine_observation_dap_df Data frame containing the latrine observation data analysis plan.
@@ -1417,7 +1525,16 @@ IPHRAProtocol <- R6::R6Class(
       if (self$.tool_latrine_observation) {
         self$get_dap_table("tool_obs_latrine_iphra_v2")
       } else {
-        return(data.frame())
+        return(data.frame(
+          "Research Question" = NA_character_,
+          "Indicator / Variable" = NA_character_,
+          "Disaggregation" = NA_character_,
+          "Questionnaire Question" = NA_character_,
+          "Questionnaire Responses" = NA_character_,
+          "Data Collection Level" = NA_character_,
+          check.names = FALSE,
+          stringsAsFactors = FALSE
+        ))
       }
     }
   ),

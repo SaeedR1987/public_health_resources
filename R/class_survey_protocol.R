@@ -637,7 +637,23 @@ SurveyProtocol <- R6::R6Class(
     },
 
     #' @field .fpc Active binding.
-    .fpc = function(value) {},
+    .fpc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+
+      if(is.data.frame(st) && nrow(st) >= 1L) {
+        if(any(st$pop_fpc == TRUE) || any(st$ind_fpc) || any(st$rate_fpc)) {
+          return(TRUE)
+        } else {
+          return(FALSE)
+        }
+      } else {
+        return(FALSE)
+      }
+
+    },
 
     #' @field .total_population_size Active binding.
     .total_population_size = function(value) {

@@ -8,175 +8,175 @@ Subclass of \code{\link{Orchestrator}} that provides shared DOCX handling
 helpers for protocol/report-like classes.
 }
 \section{Super class}{
-\code{\link[phr:Orchestrator]{phr::Orchestrator}} -> \code{Document}
+\code{\link[phr:Orchestrator]{Orchestrator}} -> \code{Document}
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{reference_doc_filename}}{Optional template filename/path used to
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{reference_doc_filename}}{Optional template filename/path used to
 initialize \code{document}.}
 
-\item{\code{reference_ppt_filename}}{Optional template filename/path used to
+    \item{\code{reference_ppt_filename}}{Optional template filename/path used to
 initialize \code{powerpoint}.}
-}
-\if{html}{\out{</div>}}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Active bindings}{
-\if{html}{\out{<div class="r6-active-bindings">}}
-\describe{
-\item{\code{.r_version}}{Active binding returning the current R version string.}
-}
-\if{html}{\out{</div>}}
+  \if{html}{\out{<div class="r6-active-bindings">}}
+  \describe{
+    \item{\code{.r_version}}{Active binding returning the current R version string.}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-Document-new}{\code{Document$new()}}
-\item \href{#method-Document-generate_quarto_doc}{\code{Document$generate_quarto_doc()}}
-\item \href{#method-Document-generate_quarto_ppt}{\code{Document$generate_quarto_ppt()}}
-\item \href{#method-Document-get_quarto_params}{\code{Document$get_quarto_params()}}
-\item \href{#method-Document-clone}{\code{Document$clone()}}
+  \itemize{
+    \item \href{#method-Document-initialize}{\code{Document$new()}}
+    \item \href{#method-Document-generate_quarto_doc}{\code{Document$generate_quarto_doc()}}
+    \item \href{#method-Document-generate_quarto_ppt}{\code{Document$generate_quarto_ppt()}}
+    \item \href{#method-Document-get_quarto_params}{\code{Document$get_quarto_params()}}
+    \item \href{#method-Document-clone}{\code{Document$clone()}}
+  }
 }
-}
-\if{html}{\out{
-<details><summary>Inherited methods</summary>
+\if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="access_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-access_nested'><code>phr::Orchestrator$access_nested()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="post_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-post_sync_state'><code>phr::Orchestrator$post_sync_state()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="pre_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-pre_sync_state'><code>phr::Orchestrator$pre_sync_state()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set'><code>phr::Orchestrator$set()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set_nested'><code>phr::Orchestrator$set_nested()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-sync_state'><code>phr::Orchestrator$sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="access_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-access_nested'><code>Orchestrator$access_nested()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="post_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-post_sync_state'><code>Orchestrator$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="pre_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-pre_sync_state'><code>Orchestrator$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set'><code>Orchestrator$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set_nested'><code>Orchestrator$set_nested()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-sync_state'><code>Orchestrator$sync_state()</code></a></span></li>
 </ul>
-</details>
-}}
+</details>}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Document-new"></a>}}
-\if{latex}{\out{\hypertarget{method-Document-new}{}}}
-\subsection{Method \code{new()}}{
-Create a new Document object with optional Word and PowerPoint template
+\if{html}{\out{<a id="method-Document-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-Document-initialize}{}}}
+\subsection{\code{Document$new()}}{
+  Create a new Document object with optional Word and PowerPoint template
 filenames.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Document$new(reference_doc_filename = NULL, reference_ppt_filename = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{reference_doc_filename}}{Optional character path or filename of a
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Document$new(reference_doc_filename = NULL, reference_ppt_filename = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{reference_doc_filename}}{Optional character path or filename of a
 Word template used to initialize \code{reference_doc_filename}.}
-
-\item{\code{reference_ppt_filename}}{Optional character path or filename of a
+      \item{\code{reference_ppt_filename}}{Optional character path or filename of a
 PowerPoint template used to initialize \code{reference_ppt_filename}.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A new Document object.
+  }
 }
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A new Document object.
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Document-generate_quarto_doc"></a>}}
 \if{latex}{\out{\hypertarget{method-Document-generate_quarto_doc}{}}}
-\subsection{Method \code{generate_quarto_doc()}}{
-Generate a Word document using Quarto with template substitution.
+\subsection{\code{Document$generate_quarto_doc()}}{
+  Generate a Word document using Quarto with template substitution.
 
 This method renders a Quarto template with specified parameters to
 produce a Word document output.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Document$generate_quarto_doc(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Document$generate_quarto_doc(
   output_file = "document_report.docx",
   template_file = NULL,
   params = list(),
   open = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{output_file}}{Character output path for the rendered document.}
-
-\item{\code{template_file}}{Character path to the Quarto template file. If NULL,
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{output_file}}{Character output path for the rendered document.}
+      \item{\code{template_file}}{Character path to the Quarto template file. If NULL,
 uses "quarto_doc_template.qmd" from package resources.}
+      \item{\code{params}}{Named list of parameters to substitute in the template.}
+      \item{\code{open}}{Logical indicating whether to open the output in a browser.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns \code{self}.
+  }
+}
 
-\item{\code{params}}{Named list of parameters to substitute in the template.}
-
-\item{\code{open}}{Logical indicating whether to open the output in a browser.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisibly returns \code{self}.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Document-generate_quarto_ppt"></a>}}
 \if{latex}{\out{\hypertarget{method-Document-generate_quarto_ppt}{}}}
-\subsection{Method \code{generate_quarto_ppt()}}{
-Generate a PowerPoint presentation using Quarto with template substitution.
+\subsection{\code{Document$generate_quarto_ppt()}}{
+  Generate a PowerPoint presentation using Quarto with template substitution.
 
 This method renders a Quarto template with specified parameters to
 produce a PowerPoint presentation output.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Document$generate_quarto_ppt(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Document$generate_quarto_ppt(
   output_file = "presentation_report.pptx",
   template_file = NULL,
   params = list(),
   content = "",
   open = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{output_file}}{Character output path for the rendered presentation.}
-
-\item{\code{template_file}}{Character path to the Quarto template file. If NULL,
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{output_file}}{Character output path for the rendered presentation.}
+      \item{\code{template_file}}{Character path to the Quarto template file. If NULL,
 uses "quarto_ppt_template.qmd" from package resources.}
-
-\item{\code{params}}{Named list of parameters to substitute in the template.}
-
-\item{\code{content}}{Character string containing the main presentation content
+      \item{\code{params}}{Named list of parameters to substitute in the template.}
+      \item{\code{content}}{Character string containing the main presentation content
 (Markdown formatted).}
+      \item{\code{open}}{Logical indicating whether to open the output in a browser.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns \code{self}.
+  }
+}
 
-\item{\code{open}}{Logical indicating whether to open the output in a browser.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Invisibly returns \code{self}.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Document-get_quarto_params"></a>}}
 \if{latex}{\out{\hypertarget{method-Document-get_quarto_params}{}}}
-\subsection{Method \code{get_quarto_params()}}{
-Get Quarto parameters for rendering.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Document$get_quarto_params()}\if{html}{\out{</div>}}
+\subsection{\code{Document$get_quarto_params()}}{
+  Get Quarto parameters for rendering.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Document$get_quarto_params()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A named list of parameters to pass to Quarto rendering.
+  }
 }
 
-\subsection{Returns}{
-A named list of parameters to pass to Quarto rendering.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Document-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-Document-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Document$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{Document$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Document$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }
