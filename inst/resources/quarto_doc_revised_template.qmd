@@ -17,7 +17,7 @@ format:
 params:
   r_version: "R version 4.5.1"
   research_cycle_id: "RC-2027-001"
-  country: "Example Country"
+  country_name: "Example Country"
   release_date: "2027-01-15"
   version_number: "1.0"
   type_emergency: "Complex Emergency"
@@ -270,9 +270,9 @@ tbl <- data.frame(
     "Terms of Reference",
     "Integrated Public Health Rapid Assessment (IPHRA)",
     params$research_cycle_id,
-    params$country,
-    params$release_date,
-    params$version_number
+    params$country_name,
+    as.Date(params$release_date),
+    paste0("Version: ", params$version_number)
   )
 )
 
@@ -381,7 +381,7 @@ ft
 library(flextable)
 
 tbl <- data.frame(
-  country = c("Country of intervention", params$country),
+  country = c("Country of intervention", params$country_name),
   emergency = c("Type of Emergency", params$type_emergency),
   crisis = c("Type of Crisis", params$type_crisis),
   agency = c("Mandating Body/ Agency", params$mandating_body),
@@ -642,7 +642,7 @@ timeline_plot <- ggplot(timeline_df, aes(x = date, y = 0)) +
       y = y_text,
       label = label
     ),
-    angle = 90,
+    angle = 270,
     hjust = 0,
     vjust = 0.5,
     family = "Arial Narrow",

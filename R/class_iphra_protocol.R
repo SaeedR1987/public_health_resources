@@ -642,7 +642,7 @@ IPHRAProtocol <- R6::R6Class(
 
       if ("tool_household_iphra_v2" %in% tool_names) {
         table_df <- data.frame(
-          Tool = "tool_household_iphra_v2",
+          Tool = "Household Survey",
 
           `Sampling Method` = if (
             !is.null(st) &&
@@ -650,9 +650,25 @@ IPHRAProtocol <- R6::R6Class(
                 c("sampling_method_site", "sampling_method_hh") %in% names(st)
               )
           ) {
+
+            site_labels <- c(
+              simple_random = "Simple random sampling site selection",
+              systematic = "Systematic sampling site selection",
+              cluster = "Cluster PPS with replacement",
+              proportional = "Proportional allocation all sites",
+              purposive = "Purposive site selection"
+            )
+
+            hh_labels <- c(
+              simple_random = "Simple random household sampling",
+              systematic = "Systematic random household sampling",
+              rlc = "Random Location Cluster (RLC) household sampling"
+            )
+
+
             sampling_methods <- paste(
-              st$sampling_method_site,
-              st$sampling_method_hh,
+              dplyr::recode(st$sampling_method_site, !!!site_labels, .default = st$sampling_method_site),
+              dplyr::recode(st$sampling_method_hh, !!!hh_labels, .default = st$sampling_method_hh),
               sep = " - "
             )
 
@@ -684,7 +700,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_kii_community_iphra_v2",
+            Tool = "Community Key Informant",
             `Sampling Method` = "Purposive / Random Walk",
             `Sample Size` = if (
               !is.null(st) &&
@@ -703,7 +719,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_kii_fsl_service_provider_iphra_v2",
+            Tool = "FSL Provider Key Informant Interview",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
@@ -722,7 +738,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_kii_health_service_provider_iphra_v2",
+            Tool = "Health Service Provider Key Informant Interview",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
@@ -741,7 +757,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_kii_nutrition_service_provider_iphra_v2",
+            Tool = "Nutrition Service Provider Key Informant Interview",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
@@ -760,7 +776,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_kii_wash_service_provider_iphra_v2",
+            Tool = "WASH Service Provider Key Informant Interview",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
@@ -779,7 +795,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_obs_community_iphra_v2",
+            Tool = "Community Observation Tool",
             `Sampling Method` = "Transect Walk",
             `Sample Size` = if (
               !is.null(st) &&
@@ -798,7 +814,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_obs_crop_livestock_iphra_v1",
+            Tool = "Crops and Livestock Observation Tool",
             `Sampling Method` = "Transect Walk",
             `Sample Size` = if (
               !is.null(st) &&
@@ -817,7 +833,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_obs_health_facility_iphra_v2",
+            Tool = "Health Facility Observation Tool",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
@@ -836,7 +852,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_obs_latrine_iphra_v2",
+            Tool = "Latrine Observation Tool",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
@@ -855,7 +871,7 @@ IPHRAProtocol <- R6::R6Class(
         table_df <- rbind(
           table_df,
           data.frame(
-            Tool = "tool_obs_water_point_iphra_v2",
+            Tool = "Water Point Observation Tool",
             `Sampling Method` = "Purposive",
             `Sample Size` = if (
               !is.null(st) &&
