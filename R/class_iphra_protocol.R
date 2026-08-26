@@ -377,6 +377,7 @@ IPHRAProtocol <- R6::R6Class(
       c(
         params,
         list(
+          secondary_goal = self$.secondary_goal,
           anf_framework_path = self$.modified_framework_svg,
           tool_household = self$.tool_household_iphra,
           tool_community_kii = self$.tool_community_kii,
@@ -449,6 +450,17 @@ IPHRAProtocol <- R6::R6Class(
   ),
 
   active = list(
+
+    #' @field .secondary_goal Logical flag indicating if the secondary assessment goal is included.
+    .secondary_goal  = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      self$framework$secondary_ana_goal
+
+    },
+
     #' @field .tool_household_iphra Logical flag indicating if a household IPHRA tool is registered.
     .tool_household_iphra = function(value) {
       if (!missing(value)) {

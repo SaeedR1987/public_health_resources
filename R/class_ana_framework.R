@@ -23,6 +23,11 @@ ANAFramework <- R6::R6Class(
   "ANAFramework",
   inherit = Framework,
   public = list(
+
+    #' @field secondary_ana_goal Logical. Whether this framework represents a
+    #'   secondary ANA goal. Defaults to FALSE.
+    secondary_ana_goal = FALSE,
+
     #' @description
     #' Creates a new ANAFramework object.
     #'
