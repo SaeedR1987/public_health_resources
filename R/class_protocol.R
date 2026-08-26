@@ -170,7 +170,8 @@ Protocol <- R6::R6Class(
       num_dashboard = NULL,
       num_webmap = NULL,
       num_map = NULL,
-      num_output_other = NULL
+      num_output_other = NULL,
+      audience_matrix = NULL
     ),
 
     #' @field secondary_data Named list of secondary data sources keyed by
@@ -679,6 +680,7 @@ Protocol <- R6::R6Class(
       c(
         params,
         list(
+          audience_matrix = ..sanitize_quarto_df(self$.audience_table_df),
           assessment_title = self$metadata$assessment_title %||% "",
           country_name = self$metadata$country_name %||% "",
           month_year = self$metadata$month_year %||% "",
@@ -929,7 +931,34 @@ Protocol <- R6::R6Class(
       writeLines(svg_text[[1L]], con = tmp_svg)
 
       normalizePath(tmp_svg, winslash = "/", mustWork = TRUE)
-    }
+    },
+    #' @field .audience_table_df Logical flag indicating if a household IPHRA tool is registered.
+    .audience_table_df = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      if(is.null(self$audience_matrix)) {
+
+        table <- data.frame(
+          AudienceType = NA_character_,
+          Audience = NA_character_,
+          ExpectedOutputs = NA_character_,
+          OutputCounts = NA_real_,
+          Dissemination = NA_character_,
+          Access = NA_character_,
+          Visibility = NA_character_,
+          stringsAsFactors = FALSE
+        )
+
+      } else {
+        self$audience_matrix
+      }
+
+
+
+    },
+
   ),
 
   private = list(

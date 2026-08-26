@@ -39,6 +39,8 @@ params:
   date_outputs_validation: "2027-05-30"
   date_outputs_publication: "2027-06-01"
   date_final_presentation: "2027-06-05"
+  audience_matrix: 
+    value: []
   audience_type_cluster: "Cluster(s)"
   expected_output_cluster: "Preliminary Presentation, Brief, Technical Report"
   expected_output_donor: "Bilateral Presentation, Brief"
@@ -701,6 +703,8 @@ timeline_plot
 ```{r exec_dissemination}
 library(flextable)
 
+tbl <- as.data.frame(params$audience_matrix)
+
 tbl <- data.frame(
   audience_type = c(
     "Audience Type",
@@ -776,13 +780,27 @@ ft
 # Rationale
 
 ::: {.callout-note}
-**Reviewer Note:** Please take time to complete sections 2.1 and 2.2 to clearly explain the context in which the assessment would be conducted, key information needs, and the intended impact of the assessment.
+**Reviewer Note:** Complete sections 2.1 and 2.2 to clearly explain the context in which the assessment would be conducted, key information needs, and the intended impact of the assessment.
+
+* **Background** This section should minimally include: 
+** What is the type of crisis and type of emergency setting the context for the assessment. 
+** For how long has the population been affected? 
+** What is the size and displacement status of the population? 
+** What information is known about severity and service coverage? This may include most recent current and projected IPC classifications, JIAF severity, sectoral People in Need, or other prioritization frameworks. This may include information on current FSL, WASH, Health, or Nutrition service providers from HERAMS, 4Ws or other available sources.
+** What information gaps on severity or service coverage are not known?
+
+* **Intended Impact** This should should minimally include:
+** 'In order to fill these information gaps, REACH will conduct an IPHRA from XX/XX/XXXX to XX/XX/XXXX...'
+** Describe who the key stakeholders you will inform with the assessment are: Clusters, Operational Partners, etc.and what decisions you aim to inform.
+
+**DELETE THIS NOTE BEFORE SUBMITTING DOCUMENT**
+
 :::
 
 ## Background
 
 * Briefly describe the context, i.e. the crisis within which the IPHRA is planned. 
-* Information gap and needs i.e. what is known so far about the severity of the public health situaiton and coverage of core public health interventions, what remains to be known and why
+* Information gap and needs i.e. what is known so far about the severity of the public health situation and coverage of core public health interventions, what remains to be known and why
 
 ## Intended Impact
 
@@ -792,6 +810,16 @@ ft
 \newpage
 
 # Goals and Objectives
+
+::: {.callout-note}
+**Reviewer Note:** The goal for IPHRAs is standard and should not be changed. If the intention of the IPHRA is to inform an ANA analysis, then the secondary goal should be added as well. 
+
+Review and confirm that the table in section 3.1 2.1 and 2.2 to clearly explain the context in which the assessment would be conducted, key information needs, and the intended impact of the assessment.
+
+
+**DELETE THIS NOTE BEFORE SUBMITTING DOCUMENT**
+
+:::
 
 Goal: To assess the severity of the public health outcomes and identify initial public health priorities for response to mitigate excess morbidity, malnutrition, and mortality.
 
