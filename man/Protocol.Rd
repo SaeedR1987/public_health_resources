@@ -120,6 +120,8 @@ This binding is read-only; attempts to assign return \code{invisible(FALSE)}.}
 file path created from \code{framework$adjusted_svg}; falls back to
 \code{framework$master_svg} when adjusted SVG is unavailable.
 Returns \code{NULL} if no SVG text is available. This binding is read-only.}
+
+    \item{\code{.audience_table_df}}{Logical flag indicating if a household IPHRA tool is registered.}
   }
   \if{html}{\out{</div>}}
 }

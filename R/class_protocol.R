@@ -372,7 +372,7 @@ Protocol <- R6::R6Class(
       return(self$issues)
     },
 
-    # ── Tool helpers ────────────────────────────────────────────────────────
+    # ── Tool helpers
 
     #' @description Return the names of all currently registered tools.
     #' @return Character vector of tool names (keys of \code{self$tools}).
@@ -890,6 +890,7 @@ Protocol <- R6::R6Class(
 
       return(table)
     },
+
     #' @field .modified_framework_svg Active binding returning a temporary SVG
     #'   file path created from \code{framework$adjusted_svg}; falls back to
     #'   \code{framework$master_svg} when adjusted SVG is unavailable.
@@ -932,6 +933,7 @@ Protocol <- R6::R6Class(
 
       normalizePath(tmp_svg, winslash = "/", mustWork = TRUE)
     },
+
     #' @field .audience_table_df Logical flag indicating if a household IPHRA tool is registered.
     .audience_table_df = function(value) {
       if (!missing(value)) {
@@ -957,7 +959,7 @@ Protocol <- R6::R6Class(
 
 
 
-    },
+    }
 
   ),
 

@@ -118,6 +118,14 @@ currently available in the held \code{SamplingFrame}, when present.}
     \item{\code{drawn_sample}}{Data frame with selected PSUs (filtered from drawn_sample_full)}
 
     \item{\code{drawn_sample_full}}{Full sampling frame with sampled_psu and allocated_sample columns}
+
+    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
   }
   \if{html}{\out{</div>}}
 }
@@ -134,9 +142,13 @@ currently available in the held \code{SamplingFrame}, when present.}
 
     \item{\code{.rate_indicator}}{Active binding.}
 
-    \item{\code{.site_selection_srs}}{Active binding.}
+    \item{\code{.site_selection_srs_even}}{Active binding.}
 
-    \item{\code{.site_selection_systematic}}{Active binding.}
+    \item{\code{.site_selection_srs_proportional}}{Active binding.}
+
+    \item{\code{.site_selection_systematic_even}}{Active binding.}
+
+    \item{\code{.site_selection_systematic_proportional}}{Active binding.}
 
     \item{\code{.site_selection_exhaustive}}{Active binding.}
 
@@ -170,17 +182,29 @@ currently available in the held \code{SamplingFrame}, when present.}
 
     \item{\code{.num_other_units}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_srs_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_even_srs}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_srs_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_proportional_srs}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_srs_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_even_systematic}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_systematic_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_proportional_systematic}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_systematic_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_even_rlc}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_systematic_rlc}}{Active binding.}
+    \item{\code{.stratified_strata_names_srs_proportional_rlc}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_systematic_even_srs}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_systematic_proportional_srs}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_systematic_even_systematic}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_systematic_proportional_systematic}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_systematic_even_rlc}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_systematic_proportional_rlc}}{Active binding.}
 
     \item{\code{.stratified_strata_names_proportional_srs}}{Active binding.}
 
@@ -201,6 +225,10 @@ currently available in the held \code{SamplingFrame}, when present.}
     \item{\code{.stratified_strata_names_purposive_rlc}}{Active binding.}
 
     \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+
+    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
 
     \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
 
@@ -235,6 +263,8 @@ currently available in the held \code{SamplingFrame}, when present.}
     \item{\code{.sample_size_ind_table_df}}{Active binding.}
 
     \item{\code{.sample_size_rate_table_df}}{Active binding.}
+
+    \item{\code{.field_planning_table_df}}{Active binding.}
 
     \item{\code{.n_sites}}{Active binding.}
 

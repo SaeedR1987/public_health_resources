@@ -262,8 +262,8 @@ draw_sample_psu_srs_proportional <- function(
       }
 
       alloc <- allocate_slots_to_sites(
-        sizes = sub_sizes,
-        total_slots = sample_size,
+        sub_sizes = sub_sizes,
+        n_total = sample_size,
         n_sites = n_psu
       )
 
@@ -1303,8 +1303,8 @@ draw_sample_psu_systematic_proportional <- function(
       }
 
       alloc <- allocate_slots_to_sites(
-        sizes = sub_sizes,
-        total_slots = sample_size,
+        sub_sizes = sub_sizes,
+        n_total = sample_size,
         n_sites = n_sites
       )
 
