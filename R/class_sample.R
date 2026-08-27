@@ -184,10 +184,12 @@ Sample <- R6::R6Class(
       )
 
       site_selection_methods <- c(
-        "simple_random",
+        "simple_random_even",
+        "simple_random_proportional",
         "proportional",
         "cluster",
-        "systematic",
+        "systematic_even",
+        "systematic_proportional",
         "purposive"
       )
       phrutils::phr_assert(

@@ -23,6 +23,14 @@ Call \code{modify_adjusted_svg()} to produce a highlighted SVG.
 \section{Super class}{
 \code{\link[phr:Framework]{Framework}} -> \code{ANAFramework}
 }
+\section{Public fields}{
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{secondary_ana_goal}}{Logical. Whether this framework represents a
+secondary ANA goal. Defaults to FALSE.}
+  }
+  \if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{

@@ -170,7 +170,8 @@ Protocol <- R6::R6Class(
       num_dashboard = NULL,
       num_webmap = NULL,
       num_map = NULL,
-      num_output_other = NULL
+      num_output_other = NULL,
+      audience_matrix = NULL
     ),
 
     #' @field secondary_data Named list of secondary data sources keyed by
@@ -371,7 +372,7 @@ Protocol <- R6::R6Class(
       return(self$issues)
     },
 
-    # ── Tool helpers ────────────────────────────────────────────────────────
+    # ── Tool helpers
 
     #' @description Return the names of all currently registered tools.
     #' @return Character vector of tool names (keys of \code{self$tools}).
@@ -679,6 +680,7 @@ Protocol <- R6::R6Class(
       c(
         params,
         list(
+          audience_matrix = ..sanitize_quarto_df(self$.audience_table_df),
           assessment_title = self$metadata$assessment_title %||% "",
           country_name = self$metadata$country_name %||% "",
           month_year = self$metadata$month_year %||% "",
@@ -888,6 +890,7 @@ Protocol <- R6::R6Class(
 
       return(table)
     },
+
     #' @field .modified_framework_svg Active binding returning a temporary SVG
     #'   file path created from \code{framework$adjusted_svg}; falls back to
     #'   \code{framework$master_svg} when adjusted SVG is unavailable.
@@ -929,7 +932,35 @@ Protocol <- R6::R6Class(
       writeLines(svg_text[[1L]], con = tmp_svg)
 
       normalizePath(tmp_svg, winslash = "/", mustWork = TRUE)
+    },
+
+    #' @field .audience_table_df Logical flag indicating if a household IPHRA tool is registered.
+    .audience_table_df = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      if(is.null(self$audience_matrix)) {
+
+        table <- data.frame(
+          AudienceType = NA_character_,
+          Audience = NA_character_,
+          ExpectedOutputs = NA_character_,
+          OutputCounts = NA_real_,
+          Dissemination = NA_character_,
+          Access = NA_character_,
+          Visibility = NA_character_,
+          stringsAsFactors = FALSE
+        )
+
+      } else {
+        self$audience_matrix
+      }
+
+
+
     }
+
   ),
 
   private = list(
@@ -1203,15 +1234,32 @@ Protocol <- R6::R6Class(
       for (i in seq_len(nrow(survey_df))) {
         row <- survey_df[i, , drop = FALSE]
 
-        # Skip calculate question types
+        # Skip non-question XLSForm types
         qtype <- if ("type" %in% names(row)) {
           tolower(trimws(as.character(row$type)))
         } else {
           ""
         }
-        if (qtype == "calculate") {
+
+        skip_types <- c(
+          "begin_repeat",
+          "end_repeat",
+          "begin_group",
+          "end_group",
+          "calculate",
+          "start",
+          "end",
+          "today",
+          "deviceid",
+          "audit",
+          "geopoint",
+          "gps"
+        )
+
+        if (qtype %in% skip_types) {
           next
         }
+
 
         row_ind_codes <- as.character(row$indicator_code)
         if (is.na(row_ind_codes) || !nzchar(row_ind_codes)) {
@@ -1231,11 +1279,6 @@ Protocol <- R6::R6Class(
           matched_code[1L]
         } else {
           row_ind_codes[1L]
-        }
-
-        # Skip rows whose indicator_code ends in "00"
-        if (grepl("00$", ind_code)) {
-          next
         }
 
         # Lookup the matching row in indicator_bank by indicator_code
@@ -1343,6 +1386,14 @@ Protocol <- R6::R6Class(
 
       # For select questions, extract from choices
       if (grepl("^select_one ", qtype) || grepl("^select_multiple ", qtype)) {
+
+        # Administrative and cluster lists should be manually contextualized
+        if (grepl(
+          "^select_one\\s+(admin1|admin2|admin3|admin4|cluster)$",
+          qtype
+        )) {
+          return("[Insert contextualized list of response options here]")
+        }
         list_name <- sub("^select_(one|multiple)\\s+", "", qtype)
         list_name <- gsub("\\s+.*$", "", list_name) # Remove anything after list name
 
@@ -1391,6 +1442,16 @@ Protocol <- R6::R6Class(
       # For integer/decimal, return "Enter number"
       if (qtype %in% c("integer", "decimal")) {
         return("Enter number")
+      }
+
+      # For image type, return "Take image"
+      if (qtype %in% c("image")) {
+        return("Take image")
+      }
+
+      # For note type, return "Read note"
+      if (qtype %in% c("note")) {
+        return("Read note")
       }
 
       # For date types

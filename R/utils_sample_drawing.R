@@ -90,8 +90,8 @@ assign_reserve_labels <- function(n_total, n_reserve, seed) {
 #'   Reserve PSUs receive \code{"RC"} in \code{sampled_psu} and \code{NA} in
 #'   \code{allocated_sample}.
 #' @export
-draw_sample_psu_srs <- function(frame, n_psu, sample_size, seed = 42) {
-  origin <- "draw_sample_psu_srs"
+draw_sample_psu_srs_even <- function(frame, n_psu, sample_size, seed = 42) {
+  origin <- "draw_sample_psu_srs_even"
 
   phrutils::phr_try(
     {
@@ -151,6 +151,123 @@ draw_sample_psu_srs <- function(frame, n_psu, sample_size, seed = 42) {
         frame$allocated_sample[main_idx[1]] <-
           frame$allocated_sample[main_idx[1]] + remainder
       }
+
+      frame
+    },
+    on_error = "abort",
+    origin = origin
+  )
+}
+
+#' Draw PSUs using simple random sampling (SRS) with proportional allocation
+#'
+#' Randomly selects \code{n_psu} primary sampling units with equal probability
+#' (without replacement). Household sample is then allocated across the
+#' selected main PSUs proportional to \code{population_size} when available and
+#' positive; otherwise allocation is distributed evenly.
+#'
+#' In addition to the \code{n_psu} main PSUs, a number of reserve clusters
+#' (RC) are drawn in the same pass and marked \code{"RC"} in
+#' \code{sampled_psu}: 3 RC when \code{n_psu <= 10}, 4 when
+#' \code{10 < n_psu <= 20}, and 5 when \code{n_psu > 20}. Sequential
+#' numbering continues across the RC positions (e.g. \code{1}, \code{2},
+#' \code{"RC"}, \code{3}).
+#'
+#' @param frame Data frame. Eligible PSUs (already filtered for inclusion).
+#'   A \code{population_size} column is optional; if absent or all-zero the
+#'   household sample allocation is evenly distributed across selected PSUs.
+#' @param n_psu Integer. Number of main PSUs to select.
+#' @param sample_size Integer. Total household sample size to allocate.
+#' @param seed Integer. Random seed for reproducibility (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added. Unselected PSUs receive \code{NA} in both columns.
+#'   Reserve PSUs receive \code{"RC"} in \code{sampled_psu} and \code{NA} in
+#'   \code{allocated_sample}.
+#' @export
+draw_sample_psu_srs_proportional <- function(
+    frame,
+    n_psu,
+    sample_size,
+    seed = 42
+) {
+  origin <- "draw_sample_psu_srs_proportional"
+
+  phrutils::phr_try(
+    {
+      phrutils::phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+
+      phrutils::phr_assert(
+        n_psu > 0,
+        message = phr_txt("n_psu must be a positive integer."),
+        origin = origin
+      )
+
+      phrutils::phr_assert(
+        sample_size > 0,
+        message = phr_txt("sample_size must be positive."),
+        origin = origin
+      )
+
+      set.seed(seed)
+
+      n_available <- nrow(frame)
+
+      if (n_psu > n_available) {
+        phrutils::phr_warning(
+          message = phr_txt(
+            "n_psu ({n_psu}) exceeds available PSUs ({n_available}). Using all available PSUs."
+          ),
+          origin = origin
+        )
+        n_psu <- n_available
+      }
+
+      n_reserve <- n_reserve_clusters(n_psu)
+      n_total <- n_psu + n_reserve
+
+      if (n_total > n_available) {
+        n_original_reserve <- n_reserve
+        n_reserve <- max(0L, n_available - n_psu)
+        n_total <- n_psu + n_reserve
+
+        phrutils::phr_warning(
+          message = phr_txt(
+            "Only {n_reserve} reserve cluster(s) can be drawn (wanted {n_original_reserve}); frame has too few PSUs."
+          ),
+          origin = origin
+        )
+      }
+
+      selected_idx <- sample(
+        seq_len(n_available),
+        n_total,
+        replace = FALSE
+      )
+
+      labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+      frame$sampled_psu <- NA_character_
+      frame$allocated_sample <- NA_real_
+
+      frame$sampled_psu[selected_idx] <- labels
+
+      # Allocate households to main (non-RC) PSUs only
+      main_positions <- which(labels != "RC")
+      main_idx <- selected_idx[main_positions]
+
+      sub_sizes <- if ("population_size" %in% names(frame)) {
+        frame$population_size[main_idx]
+      } else {
+        rep(0L, n_psu)
+      }
+
+      alloc <- allocate_slots_to_sites(
+        sub_sizes = sub_sizes,
+        n_total = sample_size,
+        n_sites = n_psu
+      )
+
+      frame$allocated_sample[main_idx] <- alloc
 
       frame
     },
@@ -581,35 +698,35 @@ draw_sample_psu_rlc <- function(
 #' Draw PSUs using simple-random-selection RLC sampling
 #'
 #' First selects \code{n_sites} primary sampling units using simple random
-#' sampling (SRS, without replacement).  Then allocates
+#' sampling (SRS, without replacement). Then allocates
 #' \code{ceiling(sample_size / cluster_size)} cluster slots across those
 #' pre-selected sites \strong{proportional to population size} when a
 #' \code{population_size} column is present and sums to a positive value;
-#' otherwise slots are distributed evenly.  \code{n_sites} must be provided.
+#' otherwise slots are distributed evenly. \code{n_sites} must be provided.
 #'
 #' Reserve clusters (RC) are drawn at the cluster-allocation stage: 3 RC when
 #' \code{n_clusters <= 10}, 4 when \code{10 < n_clusters <= 20}, and 5 when
 #' \code{n_clusters > 20}.
 #'
-#' @param frame Data frame. Eligible PSUs.  A \code{population_size} column
+#' @param frame Data frame. Eligible PSUs. A \code{population_size} column
 #'   is optional; if absent or all-zero the cluster allocation is evenly
 #'   distributed across the selected sites.
 #' @param sample_size Integer. Total household sample size (used to derive
 #'   \code{n_clusters = ceiling(sample_size / cluster_size)}).
-#' @param n_sites Integer. Number of sites (PSUs) to select.  Required.
+#' @param n_sites Integer. Number of sites (PSUs) to select. Required.
 #' @param cluster_size Integer. Households per cluster (default \code{3}).
 #' @param seed Integer. Random seed for reproducibility (default \code{42}).
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
-#'   columns added.  PSUs outside the pre-selected sites receive \code{NA}.
+#'   columns added. PSUs outside the pre-selected sites receive \code{NA}.
 #' @export
-draw_sample_psu_srs_rlc <- function(
-  frame,
-  sample_size,
-  n_sites,
-  cluster_size = 3,
-  seed = 42
+draw_sample_psu_srs_rlc_proportional <- function(
+    frame,
+    sample_size,
+    n_sites,
+    cluster_size = 3,
+    seed = 42
 ) {
-  origin <- "draw_sample_psu_srs_rlc"
+  origin <- "draw_sample_psu_srs_rlc_proportional"
 
   phrutils::phr_try(
     {
@@ -659,10 +776,107 @@ draw_sample_psu_srs_rlc <- function(
       } else {
         rep(0L, n_sites)
       }
+
       n_clusters <- ceiling(sample_size / cluster_size)
       n_reserve <- n_reserve_clusters(n_clusters)
       n_total <- n_clusters + n_reserve
       slot_alloc <- allocate_slots_to_sites(sub_sizes, n_total, n_sites)
+
+      labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+      # Step 3: Populate sampled_psu / allocated_sample on the full frame
+      assign_slots_to_frame(
+        frame,
+        selected_sites,
+        slot_alloc,
+        labels,
+        cluster_size
+      )
+    },
+    on_error = "abort",
+    origin = origin
+  )
+}
+
+#' Draw PSUs using simple-random-selection RLC sampling
+#'
+#' First selects \code{n_sites} primary sampling units using simple random
+#' sampling (SRS, without replacement).  Then allocates
+#' \code{ceiling(sample_size / cluster_size)} cluster slots across those
+#' pre-selected sites evenly. \code{n_sites} must be provided.
+#'
+#' Reserve clusters (RC) are drawn at the cluster-allocation stage: 3 RC when
+#' \code{n_clusters <= 10}, 4 when \code{10 < n_clusters <= 20}, and 5 when
+#' \code{n_clusters > 20}.
+#'
+#' @param frame Data frame. Eligible PSUs.
+#' @param sample_size Integer. Total household sample size (used to derive
+#'   \code{n_clusters = ceiling(sample_size / cluster_size)}).
+#' @param n_sites Integer. Number of sites (PSUs) to select.  Required.
+#' @param cluster_size Integer. Households per cluster (default \code{3}).
+#' @param seed Integer. Random seed for reproducibility (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added.  PSUs outside the pre-selected sites receive \code{NA}.
+#' @export
+draw_sample_psu_srs_rlc_even <- function(
+  frame,
+  sample_size,
+  n_sites,
+  cluster_size = 3,
+  seed = 42
+) {
+  origin <- "draw_sample_psu_srs_rlc_even"
+
+  phrutils::phr_try(
+    {
+      phrutils::phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+      phrutils::phr_assert(
+        sample_size > 0,
+        message = phr_txt("sample_size must be positive."),
+        origin = origin
+      )
+      phrutils::phr_assert(
+        cluster_size > 0,
+        message = phr_txt("cluster_size must be a positive integer."),
+        origin = origin
+      )
+      phrutils::phr_assert(
+        !is.null(n_sites) && !is.na(n_sites) && n_sites > 0,
+        message = phr_txt(
+          "n_sites is required and must be a positive integer for the simple_random_rlc method."
+        ),
+        origin = origin
+      )
+
+      n_available <- nrow(frame)
+      if (n_sites > n_available) {
+        phrutils::phr_warning(
+          message = phr_txt(
+            "n_sites ({n_sites}) exceeds available PSUs ({n_available}). Using all available PSUs."
+          ),
+          origin = origin
+        )
+        n_sites <- n_available
+      }
+
+      # Step 1: Select n_sites PSUs using SRS without replacement
+      set.seed(seed)
+      selected_sites <- sort(sample(
+        seq_len(n_available),
+        n_sites,
+        replace = FALSE
+      ))
+
+      # Step 2: Allocate n_total cluster slots evenly across selected sites
+      n_clusters <- ceiling(sample_size / cluster_size)
+      n_reserve <- n_reserve_clusters(n_clusters)
+      n_total <- n_clusters + n_reserve
+
+      slot_alloc <- rep(floor(n_total / n_sites), n_sites)
+      remainder <- n_total %% n_sites
+      if (remainder > 0) {
+        slot_alloc[seq_len(remainder)] <- slot_alloc[seq_len(remainder)] + 1
+      }
 
       labels <- assign_reserve_labels(n_total, n_reserve, seed)
 
@@ -704,14 +918,14 @@ draw_sample_psu_srs_rlc <- function(
 #' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
 #'   columns added.  PSUs outside the pre-selected sites receive \code{NA}.
 #' @export
-draw_sample_psu_systematic_rlc <- function(
+draw_sample_psu_systematic_rlc_proportional <- function(
   frame,
   sample_size,
   n_sites,
   cluster_size = 3,
   seed = 42
 ) {
-  origin <- "draw_sample_psu_systematic_rlc"
+  origin <- "draw_sample_psu_systematic_rlc_proportional"
 
   phrutils::phr_try(
     {
@@ -785,6 +999,106 @@ draw_sample_psu_systematic_rlc <- function(
   )
 }
 
+#' Draw PSUs using systematic-random-selection RLC sampling
+#'
+#' First selects \code{n_sites} primary sampling units via systematic random
+#' sampling. Then allocates \code{ceiling(sample_size / cluster_size)} cluster
+#' slots evenly across those pre-selected sites. \code{n_sites} must be
+#' provided.
+#'
+#' Reserve clusters (RC) are drawn at the cluster-allocation stage: 3 RC when
+#' \code{n_clusters <= 10}, 4 when \code{10 < n_clusters <= 20}, and 5 when
+#' \code{n_clusters > 20}.
+#'
+#' @param frame Data frame. Eligible PSUs.
+#' @param sample_size Integer. Total household sample size (used to derive
+#'   \code{n_clusters = ceiling(sample_size / cluster_size)}).
+#' @param n_sites Integer. Number of sites (PSUs) to select. Required.
+#' @param cluster_size Integer. Households per cluster (default \code{3}).
+#' @param seed Integer. Random seed for reproducibility (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added. PSUs outside the pre-selected sites receive \code{NA}.
+#' @export
+draw_sample_psu_systematic_rlc_even <- function(
+    frame,
+    sample_size,
+    n_sites,
+    cluster_size = 3,
+    seed = 42
+) {
+  origin <- "draw_sample_psu_systematic_rlc_even"
+
+  phrutils::phr_try(
+    {
+      phrutils::phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+      phrutils::phr_assert(
+        sample_size > 0,
+        message = phr_txt("sample_size must be positive."),
+        origin = origin
+      )
+      phrutils::phr_assert(
+        cluster_size > 0,
+        message = phr_txt("cluster_size must be a positive integer."),
+        origin = origin
+      )
+      phrutils::phr_assert(
+        !is.null(n_sites) && !is.na(n_sites) && n_sites > 0,
+        message = phr_txt(
+          "n_sites is required and must be a positive integer for the systematic_rlc method."
+        ),
+        origin = origin
+      )
+
+      n_available <- nrow(frame)
+      if (n_sites > n_available) {
+        phrutils::phr_warning(
+          message = phr_txt(
+            "n_sites ({n_sites}) exceeds available PSUs ({n_available}). Using all available PSUs."
+          ),
+          origin = origin
+        )
+        n_sites <- n_available
+      }
+
+      # Step 1: Select n_sites PSUs using systematic random sampling
+      set.seed(seed)
+      interval <- n_available / n_sites
+      random_start <- sample(seq_len(max(1L, round(interval))), 1)
+      selected_sites <- round(seq(
+        random_start,
+        by = interval,
+        length.out = n_sites
+      ))
+      selected_sites <- pmin(selected_sites, n_available)
+
+      # Step 2: Allocate n_total cluster slots evenly across selected sites
+      n_clusters <- ceiling(sample_size / cluster_size)
+      n_reserve <- n_reserve_clusters(n_clusters)
+      n_total <- n_clusters + n_reserve
+
+      slot_alloc <- rep(floor(n_total / n_sites), n_sites)
+      remainder <- n_total %% n_sites
+      if (remainder > 0) {
+        slot_alloc[seq_len(remainder)] <-
+          slot_alloc[seq_len(remainder)] + 1
+      }
+
+      labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+      # Step 3: Populate sampled_psu / allocated_sample on the full frame
+      assign_slots_to_frame(
+        frame,
+        selected_sites,
+        slot_alloc,
+        labels,
+        cluster_size
+      )
+    },
+    on_error = "abort",
+    origin = origin
+  )
+}
+
 #' Draw PSUs using systematic random sampling
 #'
 #' Selects \code{n_sites} PSUs systematically (population size is ignored).
@@ -806,8 +1120,8 @@ draw_sample_psu_systematic_rlc <- function(
 #'   \code{"RC"} in \code{sampled_psu} and \code{NA} in
 #'   \code{allocated_sample}.
 #' @export
-draw_sample_psu_systematic <- function(frame, n_sites, sample_size, seed = 42) {
-  origin <- "draw_sample_psu_systematic"
+draw_sample_psu_systematic_even <- function(frame, n_sites, sample_size, seed = 42) {
+  origin <- "draw_sample_psu_systematic_even"
 
   phrutils::phr_try(
     {
@@ -875,6 +1189,126 @@ draw_sample_psu_systematic <- function(frame, n_sites, sample_size, seed = 42) {
         frame$allocated_sample[main_sample_idx[1]] <-
           frame$allocated_sample[main_sample_idx[1]] + remainder
       }
+
+      frame
+    },
+    on_error = "abort",
+    origin = origin
+  )
+}
+
+#' Draw PSUs using systematic random sampling with proportional allocation
+#'
+#' Selects \code{n_sites} PSUs systematically (population size is ignored for
+#' site selection). The household sample is then allocated across selected
+#' main PSUs proportional to \code{population_size} when available and
+#' positive; otherwise allocation is distributed evenly.
+#'
+#' In addition to the \code{n_sites} main PSUs, reserve clusters (RC) are
+#' drawn in the same systematic pass: 3 RC when \code{n_sites <= 10}, 4 when
+#' \code{10 < n_sites <= 20}, and 5 when \code{n_sites > 20}. Sequential
+#' numbering continues across the RC positions.
+#'
+#' @param frame Data frame. Eligible PSUs. A \code{population_size} column
+#'   is optional; if absent or all-zero the household sample allocation is
+#'   evenly distributed across selected PSUs.
+#' @param n_sites Integer. Number of main sites (PSUs) to select.
+#' @param sample_size Integer. Total household sample size to allocate.
+#' @param seed Integer. Random seed for reproducibility (default \code{42}).
+#' @return \code{frame} with \code{sampled_psu} and \code{allocated_sample}
+#'   columns added. Unselected PSUs receive \code{NA}. Reserve PSUs receive
+#'   \code{"RC"} in \code{sampled_psu} and \code{NA} in
+#'   \code{allocated_sample}.
+#' @export
+draw_sample_psu_systematic_proportional <- function(
+    frame,
+    n_sites,
+    sample_size,
+    seed = 42
+) {
+  origin <- "draw_sample_psu_systematic_proportional"
+
+  phrutils::phr_try(
+    {
+      phrutils::phr_validate_dataframe(frame, origin = origin, soft = FALSE)
+
+      phrutils::phr_assert(
+        n_sites > 0,
+        message = phr_txt("n_sites must be a positive integer."),
+        origin = origin
+      )
+
+      phrutils::phr_assert(
+        sample_size > 0,
+        message = phr_txt("sample_size must be positive."),
+        origin = origin
+      )
+
+      set.seed(seed)
+
+      n_available <- nrow(frame)
+
+      if (n_sites > n_available) {
+        phrutils::phr_warning(
+          message = phr_txt(
+            "n_sites ({n_sites}) exceeds available PSUs ({n_available}). Using all available PSUs."
+          ),
+          origin = origin
+        )
+        n_sites <- n_available
+      }
+
+      n_reserve <- n_reserve_clusters(n_sites)
+      n_total <- n_sites + n_reserve
+
+      if (n_total > n_available) {
+        n_original_reserve <- n_reserve
+        n_reserve <- max(0L, n_available - n_sites)
+        n_total <- n_sites + n_reserve
+
+        phrutils::phr_warning(
+          message = phr_txt(
+            "Only {n_reserve} reserve cluster(s) can be drawn (wanted {n_original_reserve}); frame has too few PSUs."
+          ),
+          origin = origin
+        )
+      }
+
+      interval <- n_available / n_total
+      random_start <- sample(seq_len(max(1L, round(interval))), 1)
+
+      sample_idx <- round(seq(
+        random_start,
+        by = interval,
+        length.out = n_total
+      ))
+
+      sample_idx <- pmin(sample_idx, n_available)
+
+      labels <- assign_reserve_labels(n_total, n_reserve, seed)
+
+      frame$sampled_psu <- NA_character_
+      frame$allocated_sample <- NA_real_
+
+      frame$sampled_psu[sample_idx] <- labels
+
+      # Allocate households to main (non-RC) PSUs only
+      main_positions <- which(labels != "RC")
+      main_sample_idx <- sample_idx[main_positions]
+
+      sub_sizes <- if ("population_size" %in% names(frame)) {
+        frame$population_size[main_sample_idx]
+      } else {
+        rep(0L, n_sites)
+      }
+
+      alloc <- allocate_slots_to_sites(
+        sub_sizes = sub_sizes,
+        n_total = sample_size,
+        n_sites = n_sites
+      )
+
+      frame$allocated_sample[main_sample_idx] <- alloc
 
       frame
     },
