@@ -334,6 +334,124 @@ table_sample_size_individual <- function(sample_table) {
   )
 }
 
+#' Build field plan estimation table.
+#'
+#' @param sample_table Sample table data frame.
+#' @return Data frame suitable for downstream flextable rendering.
+table_field_plan_estimate <- function(sample_table) {
+
+  params <- list(
+    list(label = "Total Sample Size", col_fn = function(r) {
+      if (!is.null(r$total_sample_size)) {
+        phr_fmt_n(r$total_sample_size)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Number of Teams", col_fn = function(r) {
+      if (!is.null(r$number_of_teams)) {
+        as.character(r$number_of_teams)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Enumerators per Team", col_fn = function(r) {
+      if (!is.null(r$enumerators_per_team)) {
+        as.character(r$enumerators_per_team)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Clusters per Day", col_fn = function(r) {
+      if (!is.null(r$number_of_psu_per_team_per_day)) {
+        as.character(r$number_of_psu_per_team_per_day)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Interview Time (mins)", col_fn = function(r) {
+      if (!is.null(r$average_interview_time)) {
+        as.character(r$average_interview_time)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Travel Time (mins)", col_fn = function(r) {
+      if (!is.null(r$average_travel_time)) {
+        as.character(r$average_travel_time)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Rest Time (mins)", col_fn = function(r) {
+      if (!is.null(r$average_rest_time)) {
+        as.character(r$average_rest_time)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Start Time", col_fn = function(r) {
+      as.character(r$start_time %||% "")
+    }),
+
+    list(label = "End Time", col_fn = function(r) {
+      as.character(r$end_time %||% "")
+    }),
+
+    # ---- Grey summary rows ----
+
+    list(label = "Interviews / Enumerator / Day", col_fn = function(r) {
+      if (!is.null(r$num_interview_per_enum_per_day)) {
+        phr_fmt_n(r$num_interview_per_enum_per_day)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Estimated Days", col_fn = function(r) {
+      if (!is.null(r$num_days)) {
+        phr_fmt_n(r$num_days)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Recommended Cluster Size", col_fn = function(r) {
+      if (!is.null(r$psu_size) && !is.na(r$psu_size)) {
+        phr_fmt_n(r$psu_size)
+      } else {
+        ""
+      }
+    }),
+
+    list(label = "Recommended Clusters", col_fn = function(r) {
+      if (!is.null(r$num_psu_needed) && !is.na(r$num_psu_needed)) {
+        phr_fmt_n(r$num_psu_needed)
+      } else {
+        ""
+      }
+    })
+  )
+
+  .table_sample_size_builder(
+    sample_table,
+    params,
+    total_labels = c(
+      "Interviews / Enumerator / Day",
+      "Estimated Days",
+      "Recommended Cluster Size",
+      "Recommended Clusters"
+    )
+  )
+}
+
 #' Build mortality sample-size table.
 #' @param sample_table Sample table data frame.
 #' @return A flextable object, or \code{NULL} when unavailable.

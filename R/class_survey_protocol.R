@@ -409,8 +409,10 @@ SurveyProtocol <- R6::R6Class(
           general_survey = self$.general_survey,
           ind_indicator = self$.ind_indicator,
           rate_indicator = self$.rate_indicator,
-          site_selection_srs = self$.site_selection_srs,
-          site_selection_systematic = self$.site_selection_systematic,
+          site_selection_srs_even = self$.site_selection_srs_even,
+          site_selection_srs_proportional = self$.site_selection_srs_proportional,
+          site_selection_systematic_even = self$.site_selection_systematic_even,
+          site_selection_systematic_proportional = self$.site_selection_systematic_proportional,
           site_selection_exhaustive = self$.site_selection_exhaustive,
           site_selection_cluster = self$.site_selection_cluster,
           site_selection_purposive = self$.site_selection_purposive,
@@ -427,12 +429,18 @@ SurveyProtocol <- R6::R6Class(
           num_geographic_units = self$.num_geographic_units,
           num_strata_units = self$.num_strata_units,
           num_other_units = self$.num_other_units,
-          stratified_strata_names_srs_srs = self$.stratified_strata_names_srs_srs,
-          stratified_strata_names_srs_systematic = self$.stratified_strata_names_srs_systematic,
-          stratified_strata_names_srs_rlc = self$.stratified_strata_names_srs_rlc,
-          stratified_strata_names_systematic_srs = self$.stratified_strata_names_systematic_srs,
-          stratified_strata_names_systematic_systematic = self$.stratified_strata_names_systematic_systematic,
-          stratified_strata_names_systematic_rlc = self$.stratified_strata_names_systematic_rlc,
+          stratified_strata_names_srs_even_srs = self$.stratified_strata_names_srs_even_srs,
+          stratified_strata_names_srs_proportional_srs = self$.stratified_strata_names_srs_proportional_srs,
+          stratified_strata_names_srs_even_systematic = self$.stratified_strata_names_srs_even_systematic,
+          stratified_strata_names_srs_proportional_systematic = self$.stratified_strata_names_srs_proportional_systematic,
+          stratified_strata_names_srs_even_rlc = self$.stratified_strata_names_srs_even_rlc,
+          stratified_strata_names_srs_proportional_rlc = self$.stratified_strata_names_srs_proportional_rlc,
+          stratified_strata_names_systematic_even_srs = self$.stratified_strata_names_systematic_even_srs,
+          stratified_strata_names_systematic_proportional_srs = self$.stratified_strata_names_systematic_proportional_srs,
+          stratified_strata_names_systematic_even_systematic = self$.stratified_strata_names_systematic_even_systematic,
+          stratified_strata_names_systematic_proportional_systematic = self$.stratified_strata_names_systematic_proportional_systematic,
+          stratified_strata_names_systematic_even_rlc = self$.stratified_strata_names_systematic_even_rlc,
+          stratified_strata_names_systematic_proportional_rlc = self$.stratified_strata_names_systematic_proportional_rlc,
           stratified_strata_names_proportional_srs = self$.stratified_strata_names_proportional_srs,
           stratified_strata_names_proportional_systematic = self$.stratified_strata_names_proportional_systematic,
           stratified_strata_names_proportional_rlc = self$.stratified_strata_names_proportional_rlc,
@@ -461,6 +469,7 @@ SurveyProtocol <- R6::R6Class(
           sample_size_general_table_df = self$.sample_size_general_table_df,
           sample_size_ind_table_df = self$.sample_size_ind_table_df,
           sample_size_rate_table_df = self$.sample_size_rate_table_df,
+          field_planning_table_df = self$.field_planning_table_df,
           n_sites = self$.n_sites,
           cluster_size = self$.cluster_size,
           num_enumerators_per_team = self$.num_enumerators_per_team,
@@ -547,20 +556,34 @@ SurveyProtocol <- R6::R6Class(
       }
       paste(unique(vals), collapse = " ")
     },
-    #' @field .site_selection_srs Active binding.
-    .site_selection_srs = function(value) {
+    #' @field .site_selection_srs_even Active binding.
+    .site_selection_srs_even = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..sample_has_any_method_site("simple_random")
+      private$..sample_has_any_method_site("simple_random_even")
+    },
+    #' @field .site_selection_srs_proportional Active binding.
+    .site_selection_srs_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..sample_has_any_method_site("simple_random_proportional")
     },
 
-    #' @field .site_selection_systematic Active binding.
-    .site_selection_systematic = function(value) {
+    #' @field .site_selection_systematic_even Active binding.
+    .site_selection_systematic_even = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..sample_has_any_method_site("systematic")
+      private$..sample_has_any_method_site("systematic_even")
+    },
+    #' @field .site_selection_systematic_proportional Active binding.
+    .site_selection_systematic_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..sample_has_any_method_site("systematic_proportional")
     },
 
     #' @field .site_selection_exhaustive Active binding.
@@ -798,66 +821,127 @@ SurveyProtocol <- R6::R6Class(
     #   pps_rlc               -> site=cluster, hh=rlc
     #   purposive             -> site=purposive, hh=srs (default)
 
-    #' @field .stratified_strata_names_srs_srs Active binding.
-    .stratified_strata_names_srs_srs = function(value) {
+    #' @field .stratified_strata_names_srs_even_srs Active binding.
+    .stratified_strata_names_srs_even_srs = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(
-        method_site = "simple_random",
+        method_site = "simple_random_even",
         method_hh = "simple_random"
       )
     },
-    #' @field .stratified_strata_names_srs_systematic Active binding.
-    .stratified_strata_names_srs_systematic = function(value) {
+    #' @field .stratified_strata_names_srs_proportional_srs Active binding.
+    .stratified_strata_names_srs_proportional_srs = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(
-        method_site = "simple_random",
-        method_hh = "systematic"
-      )
-    },
-    #' @field .stratified_strata_names_srs_rlc Active binding.
-    .stratified_strata_names_srs_rlc = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      private$..strata_names_for_method(
-        method_site = "simple_random",
-        method_hh = "rlc"
-      )
-    },
-    #' @field .stratified_strata_names_systematic_srs Active binding.
-    .stratified_strata_names_systematic_srs = function(value) {
-      if (!missing(value)) {
-        return(invisible(FALSE))
-      }
-      private$..strata_names_for_method(
-        method_site = "systematic",
+        method_site = "simple_random_proportional",
         method_hh = "simple_random"
       )
     },
-    #' @field .stratified_strata_names_systematic_systematic Active binding.
-    .stratified_strata_names_systematic_systematic = function(value) {
+    #' @field .stratified_strata_names_srs_even_systematic Active binding.
+    .stratified_strata_names_srs_even_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(
-        method_site = "systematic",
+        method_site = "simple_random_even",
         method_hh = "systematic"
       )
     },
-    #' @field .stratified_strata_names_systematic_rlc Active binding.
-    .stratified_strata_names_systematic_rlc = function(value) {
+    #' @field .stratified_strata_names_srs_proportional_systematic Active binding.
+    .stratified_strata_names_srs_proportional_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(
-        method_site = "systematic",
+        method_site = "simple_random_proportional",
+        method_hh = "systematic"
+      )
+    },
+    #' @field .stratified_strata_names_srs_even_rlc Active binding.
+    .stratified_strata_names_srs_even_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "simple_random_even",
         method_hh = "rlc"
       )
     },
+    #' @field .stratified_strata_names_srs_proportional_rlc Active binding.
+    .stratified_strata_names_srs_proportional_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "simple_random_proportional",
+        method_hh = "rlc"
+      )
+    },
+    #' @field .stratified_strata_names_systematic_even_srs Active binding.
+    .stratified_strata_names_systematic_even_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "systematic_even",
+        method_hh = "simple_random"
+      )
+    },
+    #' @field .stratified_strata_names_systematic_proportional_srs Active binding.
+    .stratified_strata_names_systematic_proportional_srs = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "systematic_proportional",
+        method_hh = "simple_random"
+      )
+    },
+    #' @field .stratified_strata_names_systematic_even_systematic Active binding.
+    .stratified_strata_names_systematic_even_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "systematic_even",
+        method_hh = "systematic"
+      )
+    },
+    #' @field .stratified_strata_names_systematic_proportional_systematic Active binding.
+    .stratified_strata_names_systematic_proportional_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "systematic_proportional",
+        method_hh = "systematic"
+      )
+    },
+    #' @field .stratified_strata_names_systematic_even_rlc Active binding.
+    .stratified_strata_names_systematic_even_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "systematic_even",
+        method_hh = "rlc"
+      )
+    },
+    #' @field .stratified_strata_names_systematic_proportional_rlc Active binding.
+    .stratified_strata_names_systematic_proportional_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(
+        method_site = "systematic_proportional",
+        method_hh = "rlc"
+      )
+    },
+
     #' @field .stratified_strata_names_proportional_srs Active binding.
     .stratified_strata_names_proportional_srs = function(value) {
       if (!missing(value)) {
@@ -949,18 +1033,32 @@ SurveyProtocol <- R6::R6Class(
       )
     },
     #' @field .stratified_strata_names_site_srs Active binding.
-    .stratified_strata_names_site_srs = function(value) {
+    .stratified_strata_names_site_srs_even = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method(method_site = "simple_random")
+      private$..strata_names_for_method(method_site = "simple_random_even")
+    },
+    #' @field .stratified_strata_names_site_srs Active binding.
+    .stratified_strata_names_site_srs_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "simple_random_proportional")
     },
     #' @field .stratified_strata_names_site_systematic Active binding.
-    .stratified_strata_names_site_systematic = function(value) {
+    .stratified_strata_names_site_systematic_even = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      private$..strata_names_for_method(method_site = "systematic")
+      private$..strata_names_for_method(method_site = "systematic_even")
+    },
+    #' @field .stratified_strata_names_site_systematic Active binding.
+    .stratified_strata_names_site_systematic_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      private$..strata_names_for_method(method_site = "systematic_proportional")
     },
     #' @field .stratified_strata_names_site_exhaustive Active binding.
     .stratified_strata_names_site_exhaustive = function(value) {
@@ -1106,6 +1204,15 @@ SurveyProtocol <- R6::R6Class(
       }
       st <- private$..sample_table_from_nested()
       table <- table_sample_size_rate(st)
+      return(table)
+    },
+    #' @field .field_planning_table_df Active binding.
+    .field_planning_table_df = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      table <- table_field_plan_estimate(st)
       return(table)
     },
     #' @field .n_sites Active binding.

@@ -1232,15 +1232,32 @@ Protocol <- R6::R6Class(
       for (i in seq_len(nrow(survey_df))) {
         row <- survey_df[i, , drop = FALSE]
 
-        # Skip calculate question types
+        # Skip non-question XLSForm types
         qtype <- if ("type" %in% names(row)) {
           tolower(trimws(as.character(row$type)))
         } else {
           ""
         }
-        if (qtype == "calculate") {
+
+        skip_types <- c(
+          "begin_repeat",
+          "end_repeat",
+          "begin_group",
+          "end_group",
+          "calculate",
+          "start",
+          "end",
+          "today",
+          "deviceid",
+          "audit",
+          "geopoint",
+          "gps"
+        )
+
+        if (qtype %in% skip_types) {
           next
         }
+
 
         row_ind_codes <- as.character(row$indicator_code)
         if (is.na(row_ind_codes) || !nzchar(row_ind_codes)) {
@@ -1260,11 +1277,6 @@ Protocol <- R6::R6Class(
           matched_code[1L]
         } else {
           row_ind_codes[1L]
-        }
-
-        # Skip rows whose indicator_code ends in "00"
-        if (grepl("00$", ind_code)) {
-          next
         }
 
         # Lookup the matching row in indicator_bank by indicator_code
@@ -1372,6 +1384,14 @@ Protocol <- R6::R6Class(
 
       # For select questions, extract from choices
       if (grepl("^select_one ", qtype) || grepl("^select_multiple ", qtype)) {
+
+        # Administrative and cluster lists should be manually contextualized
+        if (grepl(
+          "^select_one\\s+(admin1|admin2|admin3|admin4|cluster)$",
+          qtype
+        )) {
+          return("[Insert contextualized list of response options here]")
+        }
         list_name <- sub("^select_(one|multiple)\\s+", "", qtype)
         list_name <- gsub("\\s+.*$", "", list_name) # Remove anything after list name
 
@@ -1420,6 +1440,16 @@ Protocol <- R6::R6Class(
       # For integer/decimal, return "Enter number"
       if (qtype %in% c("integer", "decimal")) {
         return("Enter number")
+      }
+
+      # For image type, return "Take image"
+      if (qtype %in% c("image")) {
+        return("Take image")
+      }
+
+      # For note type, return "Read note"
+      if (qtype %in% c("note")) {
+        return("Read note")
       }
 
       # For date types

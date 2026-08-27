@@ -364,10 +364,12 @@ SamplingFrame <- R6::R6Class(
     ) {
       origin <- "Sample$..apply_sampling_method"
       valid_methods_site <- c(
-        "simple_random",
+        "simple_random_even",
+        "simple_random_proportional",
         "proportional",
         "cluster",
-        "systematic",
+        "systematic_even",
+        "systematic_proportional",
         "purposive"
       )
       phrutils::phr_assert(
@@ -378,7 +380,7 @@ SamplingFrame <- R6::R6Class(
         origin = origin
       )
 
-      if (method_site == "simple_random") {
+      if (method_site == "simple_random_even") {
         if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
@@ -392,7 +394,7 @@ SamplingFrame <- R6::R6Class(
           } else {
             3L
           }
-          draw_sample_psu_srs_rlc(frame, sample_size, n_sites, cs, seed)
+          draw_sample_psu_srs_rlc_even(frame, sample_size, n_sites, cs, seed)
         } else {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
@@ -401,7 +403,32 @@ SamplingFrame <- R6::R6Class(
             ),
             origin = origin
           )
-          draw_sample_psu_srs(frame, n_sites, sample_size, seed)
+          draw_sample_psu_srs_even(frame, n_sites, sample_size, seed)
+        }
+      } else if (method_site == "simple_random_proportional") {
+        if (method_hh == "rlc") {
+          phrutils::phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
+            cluster_size
+          } else {
+            3L
+          }
+          draw_sample_psu_srs_rlc_proportional(frame, sample_size, n_sites, cs, seed)
+        } else {
+          phrutils::phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'simple_random' method_site — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          draw_sample_psu_srs_proportional(frame, n_sites, sample_size, seed)
         }
       } else if (method_site == "proportional") {
         if (method_hh == "rlc") {
@@ -450,8 +477,8 @@ SamplingFrame <- R6::R6Class(
           )
           draw_sample_psu_pps_cluster(frame, n_psu, cluster_size, seed)
         }
-      } else if (method_site == "systematic") {
-        if (method_hh == "systematic_rlc") {
+      } else if (method_site == "systematic_even") {
+        if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
@@ -464,7 +491,7 @@ SamplingFrame <- R6::R6Class(
           } else {
             3L
           }
-          draw_sample_psu_systematic_rlc(frame, sample_size, n_sites, cs, seed)
+          draw_sample_psu_systematic_rlc_even(frame, sample_size, n_sites, cs, seed)
         } else {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
@@ -473,7 +500,32 @@ SamplingFrame <- R6::R6Class(
             ),
             origin = origin
           )
-          draw_sample_psu_systematic(frame, n_sites, sample_size, seed)
+          draw_sample_psu_systematic_even(frame, n_sites, sample_size, seed)
+        }
+      } else if (method_site == "systematic_proportional") {
+        if (method_hh == "rlc") {
+          phrutils::phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          cs <- if (!is.null(cluster_size) && !is.na(cluster_size)) {
+            cluster_size
+          } else {
+            3L
+          }
+          draw_sample_psu_systematic_rlc_proportional(frame, sample_size, n_sites, cs, seed)
+        } else {
+          phrutils::phr_assert(
+            !is.null(n_sites) && !is.na(n_sites),
+            message = phr_txt(
+              "n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."
+            ),
+            origin = origin
+          )
+          draw_sample_psu_systematic_proportional(frame, n_sites, sample_size, seed)
         }
       } else {
         draw_sample_psu_purposive(frame, seed)
