@@ -37,6 +37,8 @@ This class provides methods for:
 
     \item{\code{settings}}{Data frame containing the settings sheet of the XLSForm.}
 
+    \item{\code{settings}}{A vector of user selected indicator codes .}
+
     \item{\code{revised_survey}}{Working copy of the survey sheet, updated by filter
 or modification methods.  Initialised as a copy of \code{survey} on
 construction.}
