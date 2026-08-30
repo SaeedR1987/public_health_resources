@@ -661,7 +661,7 @@ Protocol <- R6::R6Class(
             is.character(tool_name) &&
               length(tool_name) == 1 &&
               nzchar(tool_name),
-            message = phr_txt("tool_name must be a non-empty character string"),
+            message = phr_txt("tool_name must be a non-empty character  string"),
             origin = "Protocol$get_dap_table"
           )
 
