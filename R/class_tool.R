@@ -72,6 +72,9 @@ Tool <- R6::R6Class(
     #' @field settings Data frame containing the settings sheet of the XLSForm.
     settings = NULL,
 
+    #' @field settings A vector of user selected indicator codes .
+    selected_indicator_codes = NULL,
+
     #' @field revised_survey Working copy of the survey sheet, updated by filter
     #'   or modification methods.  Initialised as a copy of \code{survey} on
     #'   construction.
