@@ -680,7 +680,7 @@ Protocol <- R6::R6Class(
       c(
         params,
         list(
-          audience_matrix = ..sanitize_quarto_df(self$.audience_table_df),
+          audience_matrix = private$..sanitize_quarto_df(self$.audience_table_df),
           assessment_title = self$metadata$assessment_title %||% "",
           country_name = self$metadata$country_name %||% "",
           month_year = self$metadata$month_year %||% "",
