@@ -470,8 +470,26 @@ SurveyProtocol <- R6::R6Class(
           sample_size_ind_table_df = self$.sample_size_ind_table_df,
           sample_size_rate_table_df = self$.sample_size_rate_table_df,
           field_planning_table_df = self$.field_planning_table_df,
+          n_psu = self$.n_psu,
+          n_psu_cluster = self$.n_psu_cluster,
           n_sites = self$.n_sites,
+          n_sites_srs_even = self$.n_sites_srs_even,
+          n_sites_srs_proportional = self$.n_sites_srs_proportional,
+          n_sites_systematic_even = self$.n_sites_systematic_even,
+          n_sites_systematic_proportional = self$.n_sites_systematic_proportional,
+          n_sites_exhaustive = self$.n_sites_exhaustive,
+          n_sites_cluster = self$.n_sites_cluster,
+          n_sites_purposive = self$.n_sites_purposive,
+
           cluster_size = self$.cluster_size,
+          cluster_size_srs_even = self$.cluster_size_srs_even,
+          cluster_size_srs_proportional = self$.cluster_size_srs_proportional,
+          cluster_size_systematic_even = self$.cluster_size_systematic_even,
+          cluster_size_systematic_proportional = self$.cluster_size_systematic_proportional,
+          cluster_size_exhaustive = self$.cluster_size_exhaustive,
+          cluster_size_cluster = self$.cluster_size_cluster,
+          cluster_size_purposive = self$.cluster_size_purposive,
+
           num_enumerators_per_team = self$.num_enumerators_per_team,
           num_days_data_collection = self$.num_days_data_collection,
           strata_names = self$.strata_names
@@ -683,7 +701,9 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      sf_pop <- self$sampling_frame_strata_population
+
+      sf_pop <- self$sampling_frame$get(field = "log_df")
+
       if (
         !is.null(sf_pop) &&
           is.data.frame(sf_pop) &&
@@ -691,18 +711,8 @@ SurveyProtocol <- R6::R6Class(
       ) {
         return(sum(as.numeric(sf_pop$total_population), na.rm = TRUE))
       }
-      sf_log <- tryCatch(
-        self$access_nested(field = "sampling_frame", member = "log_df"),
-        error = function(e) NULL
-      )
-      if (
-        !is.null(sf_log) &&
-          is.data.frame(sf_log) &&
-          "population_size" %in% names(sf_log)
-      ) {
-        return(sum(as.numeric(sf_log$population_size), na.rm = TRUE))
-      }
-      NULL
+
+      return(0)
     },
 
     #' @field .total_population_size_included Active binding.
@@ -710,23 +720,20 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      sf_log <- tryCatch(
-        self$access_nested(field = "sampling_frame", member = "log_df"),
-        error = function(e) NULL
-      )
+
+      sf_pop <- self$sampling_frame$get(field = "log_df")
+
       if (
-        !is.null(sf_log) &&
-          is.data.frame(sf_log) &&
-          "population_size" %in% names(sf_log) &&
-          "inclusion" %in% names(sf_log)
+        !is.null(sf_pop) &&
+        is.data.frame(sf_pop) &&
+        "total_population" %in% names(sf_pop) &&
+        "inclusion" %in% names(sf_pop)
       ) {
-        included_rows <- !is.na(sf_log$inclusion) & sf_log$inclusion
-        return(sum(
-          as.numeric(sf_log$population_size[included_rows]),
-          na.rm = TRUE
-        ))
+        return(sum(as.numeric(sf_pop$total_population[sf_pop$inclusion == TRUE]), na.rm = TRUE))
       }
-      NULL
+
+      return(0)
+
     },
 
     #' @field .total_population_size_excluded Active binding.
@@ -734,23 +741,18 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      sf_log <- tryCatch(
-        self$access_nested(field = "sampling_frame", member = "log_df"),
-        error = function(e) NULL
-      )
+      sf_pop <- self$sampling_frame$get(field = "log_df")
+
       if (
-        !is.null(sf_log) &&
-          is.data.frame(sf_log) &&
-          "population_size" %in% names(sf_log) &&
-          "inclusion" %in% names(sf_log)
+        !is.null(sf_pop) &&
+        is.data.frame(sf_pop) &&
+        "total_population" %in% names(sf_pop) &&
+        "inclusion" %in% names(sf_pop)
       ) {
-        excluded_rows <- !is.na(sf_log$inclusion) & !sf_log$inclusion
-        return(sum(
-          as.numeric(sf_log$population_size[excluded_rows]),
-          na.rm = TRUE
-        ))
+        return(sum(as.numeric(sf_pop$total_population[sf_pop$inclusion == FALSE]), na.rm = TRUE))
       }
-      NULL
+
+      return(0)
     },
 
     #' @field .total_population_per_strata_included Active binding.
@@ -758,16 +760,37 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      sf_pop <- self$sampling_frame_strata_population
-      if (
-        is.null(sf_pop) ||
+
+      tryCatch({
+
+        sf_pop <- self$sampling_frame$get(field = "log_df")
+
+        if (
+          is.null(sf_pop) ||
           !is.data.frame(sf_pop) ||
           !all(c("stratum", "total_population") %in% names(sf_pop))
-      ) {
-        return(NULL)
-      }
-      parts <- paste0(sf_pop$stratum, " (", sf_pop$total_population, ")")
-      paste(parts, collapse = ", ")
+        ) {
+          return("stratum: XXXX")
+        }
+
+        strata_totals <- aggregate(
+          total_population ~ stratum,
+          data = sf_pop,
+          FUN = function(x) sum(as.numeric(x), na.rm = TRUE)
+        )
+
+        parts <- paste0(
+          strata_totals$stratum,
+          " (",
+          strata_totals$total_population,
+          ")"
+        )
+
+        paste(parts, collapse = ", ")
+
+      }, error = function(e) {
+        "stratum: XXXX"
+      })
     },
 
     #' @field .num_geographic_units Active binding.
@@ -1215,6 +1238,54 @@ SurveyProtocol <- R6::R6Class(
       table <- table_field_plan_estimate(st)
       return(table)
     },
+
+    #' @field .n_psu Active binding.
+    .n_psu = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+      st <- private$..sample_table_from_nested()
+      if (!is.data.frame(st) || !"n_psu" %in% names(st)) {
+        return(0)
+      }
+      vals <- as.numeric(st$n_psu)
+      vals <- vals[!is.na(vals)]
+      if (length(vals) == 0L) {
+        return(0)
+      }
+      sum(vals)
+    },
+
+    #' @field .n_psu_cluster Active binding.
+    .n_psu_cluster = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_psu" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "cluster", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_psu,
+        " PSU/clusters",
+        collapse = "; "
+      )
+    },
+
     #' @field .n_sites Active binding.
     .n_sites = function(value) {
       if (!missing(value)) {
@@ -1231,6 +1302,220 @@ SurveyProtocol <- R6::R6Class(
       }
       sum(vals)
     },
+
+    #' @field .n_sites_srs_even Active binding.
+    .n_sites_srs_even = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "simple_random_even", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+    #' @field .n_sites_srs_proportional Active binding.
+    .n_sites_srs_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "simple_random_proportional", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+    #' @field .n_sites_systematic_even Active binding.
+    .n_sites_systematic_even = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "systematic_even", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+    #' @field .n_sites_systematic_proportional Active binding.
+    .n_sites_systematic_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "systematic_proportional", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+    #' @field .n_sites_exhaustive Active binding.
+    .n_sites_exhaustive = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "proportional", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+    #' @field .n_sites_cluster Active binding.
+    .n_sites_cluster = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "cluster", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+    #' @field .n_sites_purposive Active binding.
+    .n_sites_purposive = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"n_sites" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum_name" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "purposive", ]
+
+      if (nrow(st) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum_name,
+        ": ",
+        st$n_sites,
+        " sites",
+        collapse = "; "
+      )
+    },
+
+
+
+
     #' @field .cluster_size Active binding.
     .cluster_size = function(value) {
       if (!missing(value)) {
@@ -1247,6 +1532,254 @@ SurveyProtocol <- R6::R6Class(
       }
       max(vals)
     },
+
+    #' @field .cluster_size_srs_even Active binding.
+    .cluster_size_srs_even = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "simple_random_even", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+    #' @field .cluster_size_srs_proportional Active binding.
+    .cluster_size_srs_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "simple_random_proportional", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+
+    #' @field .cluster_size_systematic_even Active binding.
+    .cluster_size_systematic_even = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "systematic_even", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+
+    #' @field .cluster_size_systematic_proportional Active binding.
+    .cluster_size_systematic_proportional = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "systematic_proportional", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+
+    #' @field .cluster_size_exhaustive Active binding.
+    .cluster_size_exhaustive = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "proportional", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+
+    #' @field .cluster_size_cluster Active binding.
+    .cluster_size_cluster = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "cluster", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+
+    #' @field .cluster_size_purposive Active binding.
+    .cluster_size_purposive = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      st <- private$..sample_table_from_nested()
+
+      if (!is.data.frame(st) ||
+          !"cluster_size" %in% names(st) ||
+          !"sampling_method_site" %in% names(st) ||
+          !"stratum" %in% names(st)) {
+        return("")
+      }
+
+      st <- st[st$sampling_method_site == "purposive", ]
+
+      vals <- as.numeric(st$cluster_size)
+
+      keep <- !is.na(vals)
+      st <- st[keep, ]
+      vals <- vals[keep]
+
+      if (length(vals) == 0L) {
+        return("")
+      }
+
+      paste0(
+        st$stratum,
+        ": ",
+        vals,
+        collapse = "; "
+      )
+    },
+
+
+
+
     #' @field .num_enumerators_per_team Active binding.
     .num_enumerators_per_team = function(value) {
       if (!missing(value)) {
