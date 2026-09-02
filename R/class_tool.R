@@ -63,7 +63,7 @@ Tool <- R6::R6Class(
   "Tool",
   cloneable = TRUE,
   public = list(
-    #' @field survey Data frame containing the survey sheet of the XLSForm.
+    #' @field survey Data frame containing the survey sheet of the XLSForm .
     survey = NULL,
 
     #' @field choices Data frame containing the choices sheet of the XLSForm.
