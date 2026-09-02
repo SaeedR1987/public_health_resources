@@ -342,16 +342,16 @@ table_field_plan_estimate <- function(sample_table) {
 
   params <- list(
     list(label = "Total Sample Size", col_fn = function(r) {
-      if (!is.null(r$total_sample_size)) {
-        phr_fmt_n(r$total_sample_size)
+      if (!is.null(r$Final_HH_Sample_Size)) {
+        phr_fmt_n(r$Final_HH_Sample_Size)
       } else {
         ""
       }
     }),
 
     list(label = "Number of Teams", col_fn = function(r) {
-      if (!is.null(r$number_of_teams)) {
-        as.character(r$number_of_teams)
+      if (!is.null(r$teams)) {
+        as.character(r$teams)
       } else {
         ""
       }
@@ -366,32 +366,32 @@ table_field_plan_estimate <- function(sample_table) {
     }),
 
     list(label = "Clusters per Day", col_fn = function(r) {
-      if (!is.null(r$number_of_psu_per_team_per_day)) {
-        as.character(r$number_of_psu_per_team_per_day)
+      if (!is.null(r$clusters_per_day)) {
+        as.character(r$clusters_per_day)
       } else {
         ""
       }
     }),
 
     list(label = "Interview Time (mins)", col_fn = function(r) {
-      if (!is.null(r$average_interview_time)) {
-        as.character(r$average_interview_time)
+      if (!is.null(r$avg_interview_time)) {
+        as.character(r$avg_interview_time)
       } else {
         ""
       }
     }),
 
     list(label = "Travel Time (mins)", col_fn = function(r) {
-      if (!is.null(r$average_travel_time)) {
-        as.character(r$average_travel_time)
+      if (!is.null(r$avg_travel_time)) {
+        as.character(r$avg_travel_time)
       } else {
         ""
       }
     }),
 
     list(label = "Rest Time (mins)", col_fn = function(r) {
-      if (!is.null(r$average_rest_time)) {
-        as.character(r$average_rest_time)
+      if (!is.null(r$avg_rest_time)) {
+        as.character(r$avg_rest_time)
       } else {
         ""
       }
@@ -424,16 +424,16 @@ table_field_plan_estimate <- function(sample_table) {
     }),
 
     list(label = "Recommended Cluster Size", col_fn = function(r) {
-      if (!is.null(r$psu_size) && !is.na(r$psu_size)) {
-        phr_fmt_n(r$psu_size)
+      if (!is.null(r$cluster_size) && !is.na(r$cluster_size)) {
+        phr_fmt_n(r$cluster_size)
       } else {
         ""
       }
     }),
 
     list(label = "Recommended Clusters", col_fn = function(r) {
-      if (!is.null(r$num_psu_needed) && !is.na(r$num_psu_needed)) {
-        phr_fmt_n(r$num_psu_needed)
+      if (!is.null(r$n_psu) && !is.na(r$n_psu)) {
+        phr_fmt_n(r$n_psu)
       } else {
         ""
       }
@@ -458,7 +458,7 @@ table_field_plan_estimate <- function(sample_table) {
 table_sample_size_rate <- function(sample_table) {
   params <- list(
     list(label = "Indicator Name", col_fn = function(r) {
-      as.character(r$mort_indicator %||% "")
+      as.character(r$rate_indicator %||% "")
     }),
     list(label = "Sampling Design", col_fn = function(r) {
       phr_fmt_sampling_method(r$sampling_method_site %||% "")

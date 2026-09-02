@@ -266,9 +266,41 @@ currently available in the held \code{SamplingFrame}, when present.}
 
     \item{\code{.field_planning_table_df}}{Active binding.}
 
+    \item{\code{.n_psu}}{Active binding.}
+
+    \item{\code{.n_psu_cluster}}{Active binding.}
+
     \item{\code{.n_sites}}{Active binding.}
 
+    \item{\code{.n_sites_srs_even}}{Active binding.}
+
+    \item{\code{.n_sites_srs_proportional}}{Active binding.}
+
+    \item{\code{.n_sites_systematic_even}}{Active binding.}
+
+    \item{\code{.n_sites_systematic_proportional}}{Active binding.}
+
+    \item{\code{.n_sites_exhaustive}}{Active binding.}
+
+    \item{\code{.n_sites_cluster}}{Active binding.}
+
+    \item{\code{.n_sites_purposive}}{Active binding.}
+
     \item{\code{.cluster_size}}{Active binding.}
+
+    \item{\code{.cluster_size_srs_even}}{Active binding.}
+
+    \item{\code{.cluster_size_srs_proportional}}{Active binding.}
+
+    \item{\code{.cluster_size_systematic_even}}{Active binding.}
+
+    \item{\code{.cluster_size_systematic_proportional}}{Active binding.}
+
+    \item{\code{.cluster_size_exhaustive}}{Active binding.}
+
+    \item{\code{.cluster_size_cluster}}{Active binding.}
+
+    \item{\code{.cluster_size_purposive}}{Active binding.}
 
     \item{\code{.num_enumerators_per_team}}{Active binding.}
 
