@@ -392,8 +392,8 @@ SurveyProtocol <- R6::R6Class(
         },
         add = TRUE
       )
-      private$..sync_sampling_state()
-      private$..sync_sample_frame_state()
+      # private$..sync_sampling_state()
+      # private$..sync_sample_frame_state()
       invisible(NULL)
     },
     #' @description Get Quarto parameters for rendering.

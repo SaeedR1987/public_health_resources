@@ -940,7 +940,7 @@ Protocol <- R6::R6Class(
         return(invisible(FALSE))
       }
 
-      if(is.null(self$audience_matrix)) {
+      if(is.null(self$metadata$audience_matrix)) {
 
         table <- data.frame(
           AudienceType = NA_character_,
@@ -954,7 +954,7 @@ Protocol <- R6::R6Class(
         )
 
       } else {
-        self$audience_matrix
+        self$metadata$audience_matrix
       }
 
 
