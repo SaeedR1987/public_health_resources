@@ -101,7 +101,7 @@ Orchestrator <- R6::R6Class(
     #' @param ... Arguments passed to the nested method when \code{member}
     #'   resolves to a function.
     #' @return The requested nested value, or the nested method result.
-    access_nested = function(
+     access_nested = function(
       field,
       name = NULL,
       member = NULL,
