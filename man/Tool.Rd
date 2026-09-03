@@ -31,7 +31,7 @@ This class provides methods for:
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{survey}}{Data frame containing the survey sheet of the XLSForm.}
+    \item{\code{survey}}{Data frame containing the survey sheet of the XLSForm .}
 
     \item{\code{choices}}{Data frame containing the choices sheet of the XLSForm.}
 
