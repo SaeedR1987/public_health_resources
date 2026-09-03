@@ -934,13 +934,15 @@ Protocol <- R6::R6Class(
       normalizePath(tmp_svg, winslash = "/", mustWork = TRUE)
     },
 
-    #' @field .audience_table_df Logical flag indicating if a household IPHRA tool is registered.
+    #' @field .audience_table_df Returns the protocol's audience matrix table
+    #'   (\code{metadata$audience_matrix}), falling back to a single-row
+    #'   placeholder table of \code{NA} values when it has not been populated.
     .audience_table_df = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
 
-      if(is.null(self$metadata$audience_matrix)) {
+      if (is.null(self$metadata$audience_matrix)) {
 
         table <- data.frame(
           AudienceType = NA_character_,
@@ -954,11 +956,10 @@ Protocol <- R6::R6Class(
         )
 
       } else {
-        self$metadata$audience_matrix
+        table <- self$metadata$audience_matrix
       }
 
-
-
+      return(table)
     }
 
   ),
