@@ -121,7 +121,9 @@ file path created from \code{framework$adjusted_svg}; falls back to
 \code{framework$master_svg} when adjusted SVG is unavailable.
 Returns \code{NULL} if no SVG text is available. This binding is read-only.}
 
-    \item{\code{.audience_table_df}}{Returns the protocol's audience matrix table (\code{metadata$audience_matrix}), falling back to a single-row placeholder table of \code{NA} values when it has not been populated.}
+    \item{\code{.audience_table_df}}{Returns the protocol's audience matrix table
+(\code{metadata$audience_matrix}), falling back to a single-row
+placeholder table of \code{NA} values when it has not been populated.}
   }
   \if{html}{\out{</div>}}
 }
