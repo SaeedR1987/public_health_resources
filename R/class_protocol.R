@@ -97,83 +97,6 @@ Protocol <- R6::R6Class(
     #'   codes.  Populated by \code{diagnose_coherence()}.
     issues_coherence = list(),
 
-    #' @field metadata List containing protocol metadata
-    metadata = list(
-      research_cycle_id = NULL,
-      country = NULL,
-      release_date = NULL,
-      version_number = NULL,
-      type_emergency = NULL,
-      type_crisis = NULL,
-      population = NULL,
-      rationale = NULL,
-      date_pilot_training = NULL,
-      date_data_collection_start = NULL,
-      date_data_collection_end = NULL,
-      date_data_analysis = NULL,
-      date_data_validation = NULL,
-      date_preliminary_presentation = NULL,
-      date_outputs_validation = NULL,
-      date_outputs_publication = NULL,
-      date_final_presentation = NULL,
-      audience_type_cluster = NULL,
-      expected_output_cluster = NULL,
-      expected_output_donor = NULL,
-      expected_output_operational_actor = NULL,
-      expected_output_other = NULL,
-      dissemination_strategy_cluster = NULL,
-      dissemination_strategy_donor = NULL,
-      dissemination_strategy_operational_actor = NULL,
-      dissemination_strategy_other = NULL,
-      access_cluster = NULL,
-      access_donor = NULL,
-      access_operational_actor = NULL,
-      access_other = NULL,
-      visibility_cluster = NULL,
-      visibility_donor = NULL,
-      visibility_operational_actor = NULL,
-      visibility_other = NULL,
-
-      created_date = NULL,
-      modified_datetime = NULL,
-      month_year = NULL,
-      country_name = NULL,
-      assessment_title = NULL,
-      target_strata = list(),
-      protocol_version = "1.0",
-      version = 1L,
-      # Text metadata fields
-      mandating_body = NULL,
-      project_code = NULL,
-      overall_timeframe = NULL,
-      pilot_date = NULL,
-      data_start_date = NULL,
-      data_end_date = NULL,
-      analysis_date = NULL,
-      data_validation_date = NULL,
-      prelim_presentation_date = NULL,
-      output_validation_date = NULL,
-      output_published_date = NULL,
-      final_presentation_date = NULL,
-      date_milestone_donor = NULL,
-      date_milestone_intercluster = NULL,
-      date_milestone_cluster = NULL,
-      date_milestone_ngo_platform = NULL,
-      date_milestone_other = NULL,
-      geographic_coverage = NULL,
-      stratification = NULL,
-      num_report = NULL,
-      num_profile = NULL,
-      num_prelim_presentation = NULL,
-      num_final_presentation = NULL,
-      num_factsheet = NULL,
-      num_dashboard = NULL,
-      num_webmap = NULL,
-      num_map = NULL,
-      num_output_other = NULL,
-      audience_matrix = NULL
-    ),
-
     #' @field secondary_data Named list of secondary data sources keyed by
     #'   objective code.  Each element is a character string naming the source
     #'   or a URL.  Objective codes must match codes available in the
@@ -216,6 +139,83 @@ Protocol <- R6::R6Class(
               "framework_type must be one of: {paste(valid_fw_types, collapse=', ')}."
             ),
             origin = "Protocol$initialize"
+          )
+          self$metadata <- utils::modifyList(
+            self$metadata,
+            list(
+              research_cycle_id = NULL,
+              country = NULL,
+              release_date = NULL,
+              version_number = NULL,
+              type_emergency = NULL,
+              type_crisis = NULL,
+              population = NULL,
+              rationale = NULL,
+              date_pilot_training = NULL,
+              date_data_collection_start = NULL,
+              date_data_collection_end = NULL,
+              date_data_analysis = NULL,
+              date_data_validation = NULL,
+              date_preliminary_presentation = NULL,
+              date_outputs_validation = NULL,
+              date_outputs_publication = NULL,
+              date_final_presentation = NULL,
+              audience_type_cluster = NULL,
+              expected_output_cluster = NULL,
+              expected_output_donor = NULL,
+              expected_output_operational_actor = NULL,
+              expected_output_other = NULL,
+              dissemination_strategy_cluster = NULL,
+              dissemination_strategy_donor = NULL,
+              dissemination_strategy_operational_actor = NULL,
+              dissemination_strategy_other = NULL,
+              access_cluster = NULL,
+              access_donor = NULL,
+              access_operational_actor = NULL,
+              access_other = NULL,
+              visibility_cluster = NULL,
+              visibility_donor = NULL,
+              visibility_operational_actor = NULL,
+              visibility_other = NULL,
+              created_date = NULL,
+              month_year = NULL,
+              country_name = NULL,
+              assessment_title = NULL,
+              target_strata = list(),
+              protocol_version = "1.0",
+              version = 1L,
+              # Text metadata fields
+              mandating_body = NULL,
+              project_code = NULL,
+              overall_timeframe = NULL,
+              pilot_date = NULL,
+              data_start_date = NULL,
+              data_end_date = NULL,
+              analysis_date = NULL,
+              data_validation_date = NULL,
+              prelim_presentation_date = NULL,
+              output_validation_date = NULL,
+              output_published_date = NULL,
+              final_presentation_date = NULL,
+              date_milestone_donor = NULL,
+              date_milestone_intercluster = NULL,
+              date_milestone_cluster = NULL,
+              date_milestone_ngo_platform = NULL,
+              date_milestone_other = NULL,
+              geographic_coverage = NULL,
+              stratification = NULL,
+              num_report = NULL,
+              num_profile = NULL,
+              num_prelim_presentation = NULL,
+              num_final_presentation = NULL,
+              num_factsheet = NULL,
+              num_dashboard = NULL,
+              num_webmap = NULL,
+              num_map = NULL,
+              num_output_other = NULL,
+              audience_matrix = NULL
+            ),
+            keep.null = TRUE
           )
           self$metadata$created_date <- Sys.time()
           self$metadata$modified_datetime <- Sys.time()
@@ -775,7 +775,7 @@ Protocol <- R6::R6Class(
 
       for (role in tool_roles) {
         codes <- tryCatch(
-          self$access_nested(
+          self$call(
             field = "tools",
             role = role,
             member = "get_indicator_codes",
@@ -793,7 +793,7 @@ Protocol <- R6::R6Class(
       all_codes <- unique(all_codes)
 
       ob <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "framework",
           member = "master_objectives_schema",
           update_modified = FALSE
@@ -802,7 +802,7 @@ Protocol <- R6::R6Class(
       )
 
       ib <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "framework",
           member = "master_indicator_bank",
           update_modified = FALSE
@@ -869,7 +869,7 @@ Protocol <- R6::R6Class(
       }
 
       table <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "framework",
           member = "secondary_data_sources",
           update_modified = FALSE
@@ -901,7 +901,7 @@ Protocol <- R6::R6Class(
       }
 
       svg_text <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "framework",
           member = "adjusted_svg",
           update_modified = FALSE
@@ -913,7 +913,7 @@ Protocol <- R6::R6Class(
         is.null(svg_text) || !is.character(svg_text) || !nzchar(svg_text[[1L]])
       ) {
         svg_text <- tryCatch(
-          self$access_nested(
+          self$get(
             field = "framework",
             member = "master_svg",
             update_modified = FALSE
@@ -966,7 +966,7 @@ Protocol <- R6::R6Class(
 
   private = list(
     # @description Check whether a tool with a specific role exists.
-    #   Uses \code{access_nested()} to query tools by role and verify that
+    #   Uses \code{call()} to query tools by role and verify that
     #   a tool with that role exists and has a valid name.
     # @param role Character. Role identifier to check for tool availability.
     # @return Logical. \code{TRUE} if a tool with the specified role exists
@@ -974,7 +974,7 @@ Protocol <- R6::R6Class(
     # @keywords internal
     ..has_tool_role = function(role) {
       out <- tryCatch(
-        self$access_nested(
+        self$call(
           field = "tools",
           role = role,
           member = "get_name",
@@ -1003,7 +1003,7 @@ Protocol <- R6::R6Class(
       out <- character(0)
       for (tn in selected) {
         tool_codes <- tryCatch(
-          self$access_nested(
+          self$call(
             field = "tools",
             name = tn,
             member = "get_indicator_codes",
@@ -1070,10 +1070,11 @@ Protocol <- R6::R6Class(
 
       # 2. Get specified tool's revised survey
       revised_survey <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "tools",
           name = tool_name,
-          member = "revised_survey"
+          member = "revised_survey",
+          update_modified = TRUE
         ),
         error = function(e) NULL
       )
@@ -1091,10 +1092,11 @@ Protocol <- R6::R6Class(
 
       # 3. Get specified tool's revised choices
       revised_choices <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "tools",
           name = tool_name,
-          member = "revised_choices"
+          member = "revised_choices",
+          update_modified = TRUE
         ),
         error = function(e) NULL
       )
@@ -1128,7 +1130,7 @@ Protocol <- R6::R6Class(
       # 4. Get master indicator bank
 
       indicator_bank <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "framework",
           member = "master_indicator_bank",
           update_modified = FALSE

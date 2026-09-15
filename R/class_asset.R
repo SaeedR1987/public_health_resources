@@ -1,26 +1,66 @@
-#' Orchestrator R6 Class
+#' Asset R6 Class
 #'
 #' @description
-#' Base orchestration class that provides generalized nested-object access and
-#' synchronization hooks.
+#' Base class providing core, reusable functionality for R6 classes in this
+#' package: private metadata (including a content-based \code{hash_id}
+#' fingerprint), generalized nested-object access (\code{get()}/\code{call()}),
+#' a generalized field setter (\code{set()}), and synchronization hooks.
+#'
+#' \code{Tool}, \code{Document}, \code{Framework}, and \code{Sample} (and any
+#' of their subclasses) inherit from \code{Asset}.
 #'
 #' @importFrom R6 R6Class
-Orchestrator <- R6::R6Class(
-  "Orchestrator",
+#' @export
+Asset <- R6::R6Class(
+  "Asset",
   public = list(
-    #' @field metadata List containing orchestration metadata.
-    metadata = list(
-      created_datetime = NULL,
-      modified_datetime = NULL
-    ),
+    #' @description
+    #' Creates a new Asset object.
+    #' @return A new Asset object.
+    initialize = function() {
+      timestamp <- Sys.time()
+      private$..metadata <- list(
+        created_datetime = timestamp,
+        modified_datetime = timestamp,
+        hash_id = NA_character_
+      )
+      private$..touch()
+      invisible(self)
+    },
 
     #' @description
-    #' Creates a new Orchestrator object.
-    #' @return A new Orchestrator object.
-    initialize = function() {
-      self$metadata$created_datetime <- Sys.time()
-      self$metadata$modified_datetime <- Sys.time()
-      invisible(self)
+    #' Retrieve metadata, or a single metadata field.
+    #'
+    #' Metadata is stored privately; this method (along with the
+    #' \code{metadata} active binding) is the supported public accessor.
+    #'
+    #' @param field Optional character scalar naming a metadata field to
+    #'   return. When \code{NULL} (default), the full metadata list is
+    #'   returned.
+    #' @return The requested metadata list or field value.
+    get_metadata = function(field = NULL) {
+      if (is.null(field)) {
+        return(private$..metadata)
+      }
+      phrutils::phr_assert(
+        is.character(field) && length(field) == 1L && nzchar(field),
+        message = phr_txt("field must be a non-empty character string."),
+        origin = "Asset$get_metadata"
+      )
+      private$..metadata[[field]]
+    },
+
+    #' @description
+    #' Return the current \code{hash_id} fingerprint from metadata.
+    #'
+    #' The \code{hash_id} is a content-based digest of the object's current
+    #' public state, recomputed whenever the object is touched (for example,
+    #' after \code{set()}, \code{get()}, or \code{call()} with
+    #' \code{update_modified = TRUE}). It provides a unique fingerprint that
+    #' changes whenever the object's state changes.
+    #' @return Character scalar with the current hash fingerprint.
+    get_hash_id = function() {
+      private$..metadata$hash_id
     },
 
     #' @description Hook executed before \code{sync_state()} logic.
@@ -57,7 +97,7 @@ Orchestrator <- R6::R6Class(
       invisible(NULL)
     },
 
-    #' @description Synchronize orchestrator state.
+    #' @description Synchronize asset state.
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
     #' @param target_field Optional destination field path.
@@ -82,26 +122,100 @@ Orchestrator <- R6::R6Class(
     },
 
     #' @description
-    #' Generalized accessor for nested objects stored on the class.
+    #' Generalized accessor for field/member values stored on this object or
+    #' on a nested object.
     #'
-    #' Resolves a top-level field (for example \code{tools} or \code{framework}),
-    #' optionally resolves a named element if the field is a list, and then
-    #' returns a nested field or invokes a nested method.
+    #' Resolves a top-level field (public or private; for example
+    #' \code{tools} or \code{framework}), optionally resolves a named or
+    #' role-matched element if the field is a list, and returns a field or
+    #' list member value. Unlike \code{call()}, \code{get()} refuses to
+    #' return a function; use \code{call()} to invoke nested methods.
     #'
-    #' @param field Character scalar naming the stored top-level field.
+    #' @param field Character scalar naming a public or private top-level
+    #'   field on this object.
     #' @param name Optional character scalar naming a list element in
     #'   \code{field}.
-    #' @param member Optional character scalar naming a field or method on the
-    #'   resolved object.
+    #' @param member Optional character scalar naming a public or private
+    #'   field on the resolved target. When \code{NULL}, the resolved target
+    #'   itself is returned.
     #' @param role Optional character scalar used to resolve a list element in
     #'   \code{field} by role-like name (for example \code{"household"} for
     #'   \code{"tool_household_iphra_v2"}).
     #' @param update_sync Logical indicating whether to synchronize state after access.
     #' @param update_modified Logical indicating whether to update the modified timestamp.
-    #' @param ... Arguments passed to the nested method when \code{member}
-    #'   resolves to a function.
-    #' @return The requested nested value, or the nested method result.
-     access_nested = function(
+    #' @return The requested field or member value.
+    get = function(
+      field,
+      name = NULL,
+      member = NULL,
+      role = NULL,
+      update_sync = FALSE,
+      update_modified = FALSE
+    ) {
+      phrutils::phr_try(
+        {
+          target <- private$..resolve_nested_target(
+            field = field,
+            name = name,
+            role = role
+          )
+
+          out <- if (is.null(member)) {
+            target
+          } else {
+            phrutils::phr_assert(
+              is.character(member) && length(member) == 1L && nzchar(member),
+              message = phr_txt("member must be a non-empty character string."),
+              origin = "Asset$get"
+            )
+            private$..resolve_member_value(target, member)
+          }
+
+          phrutils::phr_assert(
+            !is.function(out),
+            message = phr_txt(
+              "Member '{member}' resolves to a function; use call() instead of get()."
+            ),
+            origin = "Asset$get"
+          )
+
+          if (update_sync) {
+            private$..sync_state()
+          }
+          if (update_modified) {
+            private$..touch()
+          }
+          out
+        },
+        on_error = "abort",
+        origin = "Asset$get"
+      )
+    },
+
+    #' @description
+    #' Generalized invoker for methods stored on this object or on a nested
+    #' object.
+    #'
+    #' Resolves a top-level field (public or private), optionally resolves a
+    #' named or role-matched element if the field is a list, and invokes
+    #' \code{member} as a function on the resolved target. Unlike
+    #' \code{get()}, \code{call()} requires \code{member} to resolve to a
+    #' function.
+    #'
+    #' @param field Character scalar naming a public or private top-level
+    #'   field on this object.
+    #' @param name Optional character scalar naming a list element in
+    #'   \code{field}.
+    #' @param member Optional character scalar naming a method on the
+    #'   resolved target. When \code{NULL}, the resolved target itself is
+    #'   invoked as a function.
+    #' @param role Optional character scalar used to resolve a list element in
+    #'   \code{field} by role-like name.
+    #' @param update_sync Logical indicating whether to synchronize state after the call.
+    #' @param update_modified Logical indicating whether to update the modified timestamp.
+    #' @param ... Arguments passed to the resolved method.
+    #' @return The result of invoking the resolved method.
+    call = function(
       field,
       name = NULL,
       member = NULL,
@@ -118,35 +232,26 @@ Orchestrator <- R6::R6Class(
             role = role
           )
 
-          if (is.null(member)) {
-            if (update_sync) {
-              private$..sync_state()
-            }
-            if (update_modified) {
-              private$..touch()
-            }
-            return(target)
-          }
-
-          phrutils::phr_assert(
-            is.character(member) && length(member) == 1L && nzchar(member),
-            message = phr_txt("member must be a non-empty character string."),
-            origin = "Orchestrator$access_nested"
-          )
-          phrutils::phr_assert(
-            !is.null(target[[member]]),
-            message = phr_txt(
-              "Member '{member}' does not exist on the resolved target."
-            ),
-            origin = "Orchestrator$access_nested"
-          )
-
-          value <- target[[member]]
-          out <- if (is.function(value)) {
-            do.call(value, list(...))
+          value <- if (is.null(member)) {
+            target
           } else {
-            value
+            phrutils::phr_assert(
+              is.character(member) && length(member) == 1L && nzchar(member),
+              message = phr_txt("member must be a non-empty character string."),
+              origin = "Asset$call"
+            )
+            private$..resolve_member_value(target, member)
           }
+
+          phrutils::phr_assert(
+            is.function(value),
+            message = phr_txt(
+              "Member '{member}' does not resolve to a function; use get() instead of call()."
+            ),
+            origin = "Asset$call"
+          )
+
+          out <- do.call(value, list(...))
 
           if (update_sync) {
             private$..sync_state()
@@ -157,60 +262,20 @@ Orchestrator <- R6::R6Class(
           out
         },
         on_error = "abort",
-        origin = "Orchestrator$access_nested"
+        origin = "Asset$call"
       )
-    },
-
-    #' @description
-    #' Generalized nested field setter.
-    #'
-    #' Resolves a top-level field (optionally a named list element), sets
-    #' \code{member} to \code{value}, then calls synchronization hooks and
-    #' updates the modified timestamp.
-    #'
-    #' @param field Character scalar naming the stored top-level field.
-    #' @param member Character scalar naming a writable field in the resolved
-    #'   nested object.
-    #' @param value Value to assign.
-    #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
-    #' @return Invisibly returns \code{self}.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name.
-    set_nested = function(field, member, value, name = NULL, role = NULL) {
-      phrutils::phr_try(
-        {
-          phrutils::phr_assert(
-            is.character(member) && length(member) == 1L && nzchar(member),
-            message = phr_txt("member must be a non-empty character string."),
-            origin = "Orchestrator$set_nested"
-          )
-          target <- private$..resolve_nested_target(
-            field = field,
-            name = name,
-            role = role
-          )
-          target[[member]] <- value
-          private$..sync_state()
-          private$..touch()
-        },
-        on_error = "abort",
-        origin = "Orchestrator$set_nested"
-      )
-      invisible(self)
     },
 
     #' @description
     #' Generalized, scope-safe field setter.
     #'
-    #' Mirrors \code{access_nested()}'s \code{field}/\code{name}/\code{role}/
+    #' Mirrors \code{get()}'s \code{field}/\code{name}/\code{role}/
     #' \code{member} arguments, but safely writes \code{value} instead of
-    #' reading. Unlike \code{set_nested()}, \code{field} may resolve to either
-    #' a public or a private field, and \code{member} is optional: when
-    #' omitted, \code{value} replaces the resolved top-level (or
-    #' name/role-resolved) target directly. Writing to a resolved member or
-    #' target that currently holds a function is rejected, to avoid
-    #' accidentally clobbering methods.
+    #' reading. \code{field} may resolve to either a public or a private
+    #' field, and \code{member} is optional: when omitted, \code{value}
+    #' replaces the resolved top-level (or name/role-resolved) target
+    #' directly. Writing to a resolved member or target that currently holds
+    #' a function is rejected, to avoid accidentally clobbering methods.
     #'
     #' @param field Character scalar naming a public or private top-level
     #'   field on this object.
@@ -240,7 +305,7 @@ Orchestrator <- R6::R6Class(
         {
           resolved <- private$..resolve_field_scope(
             field = field,
-            origin = "Orchestrator$set"
+            origin = "Asset$set"
           )
           container <- resolved$value
 
@@ -249,14 +314,14 @@ Orchestrator <- R6::R6Class(
             phrutils::phr_assert(
               !(!is.null(name) && !is.null(role)),
               message = phr_txt("Provide only one of name or role."),
-              origin = "Orchestrator$set"
+              origin = "Asset$set"
             )
             key <- private$..resolve_list_key(
               container = container,
               field = field,
               name = name,
               role = role,
-              origin = "Orchestrator$set"
+              origin = "Asset$set"
             )
           }
 
@@ -268,28 +333,28 @@ Orchestrator <- R6::R6Class(
               message = phr_txt(
                 "Refusing to overwrite function member '{field}'."
               ),
-              origin = "Orchestrator$set"
+              origin = "Asset$set"
             )
             new_target <- value
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
               message = phr_txt("member must be a non-empty character string."),
-              origin = "Orchestrator$set"
+              origin = "Asset$set"
             )
             phrutils::phr_assert(
               is.list(target) || is.environment(target),
               message = phr_txt(
                 "Resolved target for field '{field}' must be a list or environment to set member '{member}'."
               ),
-              origin = "Orchestrator$set"
+              origin = "Asset$set"
             )
             phrutils::phr_assert(
               !is.function(target[[member]]),
               message = phr_txt(
                 "Refusing to overwrite function member '{member}'."
               ),
-              origin = "Orchestrator$set"
+              origin = "Asset$set"
             )
             target[[member]] <- value
             new_target <- target
@@ -315,25 +380,73 @@ Orchestrator <- R6::R6Class(
           }
         },
         on_error = "abort",
-        origin = "Orchestrator$set"
+        origin = "Asset$set"
       )
       invisible(self)
     }
   ),
 
+  active = list(
+    #' @field metadata Active binding exposing the private metadata list
+    #'   (\code{created_datetime}, \code{modified_datetime}, \code{hash_id},
+    #'   and any additional fields set via \code{set()}). Reading returns the
+    #'   metadata list; assigning replaces it. This is the sole public
+    #'   accessor path, since metadata itself is stored privately.
+    metadata = function(value) {
+      if (missing(value)) {
+        return(private$..metadata)
+      }
+      private$..metadata <- value
+      invisible(NULL)
+    }
+  ),
+
   private = list(
-    # @description Update modified timestamp metadata.
+    # @field ..metadata List containing private asset metadata, including
+    #   `created_datetime`, `modified_datetime`, and `hash_id`.
+    # @keywords internal
+    ..metadata = list(
+      created_datetime = NULL,
+      modified_datetime = NULL,
+      hash_id = NA_character_
+    ),
+
+    # @description Update modified timestamp and hash_id fingerprint metadata.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
     ..touch = function() {
-      if (is.null(self$metadata) || !is.list(self$metadata)) {
-        self$metadata <- list()
+      if (is.null(private$..metadata) || !is.list(private$..metadata)) {
+        private$..metadata <- list()
       }
-      self$metadata$modified_datetime <- Sys.time()
+      private$..metadata$modified_datetime <- Sys.time()
+      private$..metadata$hash_id <- private$..compute_hash_id()
       invisible(NULL)
     },
 
-    # @description Synchronize orchestrator state.
+    # @description Compute a content-based hash fingerprint of the object's
+    #   current public state (excluding functions, environments, and
+    #   metadata itself).
+    # @return Character scalar hash, or NA if the digest package is
+    #   unavailable.
+    # @keywords internal
+    ..compute_hash_id = function() {
+      if (!requireNamespace("digest", quietly = TRUE)) {
+        return(NA_character_)
+      }
+      nms <- setdiff(names(self), c("metadata", "clone"))
+      nms <- Filter(function(nm) !isTRUE(bindingIsActive(nm, self)), nms)
+      snapshot <- list()
+      for (nm in nms) {
+        val <- tryCatch(self[[nm]], error = function(e) NULL)
+        if (is.function(val) || is.environment(val)) {
+          next
+        }
+        snapshot[[nm]] <- val
+      }
+      digest::digest(snapshot, algo = "md5")
+    },
+
+    # @description Synchronize asset state.
     #
     # When \code{field/member} are provided, returns the resolved nested value
     # and optionally assigns it to \code{target_field}. Without arguments, this
@@ -369,12 +482,12 @@ Orchestrator <- R6::R6Class(
         phrutils::phr_assert(
           is.character(field) && length(field) == 1L && nzchar(field),
           message = phr_txt("field must be a non-empty character string."),
-          origin = "Orchestrator$sync_state"
+          origin = "Asset$sync_state"
         )
         phrutils::phr_assert(
           is.character(member) && length(member) == 1L && nzchar(member),
           message = phr_txt("member must be a non-empty character string."),
-          origin = "Orchestrator$sync_state"
+          origin = "Asset$sync_state"
         )
         target <- private$..resolve_nested_target(
           field = field,
@@ -386,7 +499,7 @@ Orchestrator <- R6::R6Class(
           message = phr_txt(
             "Member '{member}' does not exist on the resolved target."
           ),
-          origin = "Orchestrator$sync_state"
+          origin = "Asset$sync_state"
         )
         value <- target[[member]]
         if (is.function(value)) {
@@ -460,22 +573,16 @@ Orchestrator <- R6::R6Class(
     # @return Resolved object.
     # @keywords internal
     ..resolve_nested_target = function(field, name = NULL, role = NULL) {
-      phrutils::phr_assert(
-        is.character(field) && length(field) == 1L && nzchar(field),
-        message = phr_txt("field must be a non-empty character string."),
-        origin = "Orchestrator$.resolve_nested_target"
+      resolved <- private$..resolve_field_scope(
+        field = field,
+        origin = "Asset$.resolve_nested_target"
       )
-      phrutils::phr_assert(
-        !is.null(self[[field]]),
-        message = phr_txt("Field '{field}' is not available on this object."),
-        origin = "Orchestrator$.resolve_nested_target"
-      )
-      container <- self[[field]]
+      container <- resolved$value
 
       phrutils::phr_assert(
         !(!is.null(name) && !is.null(role)),
         message = phr_txt("Provide only one of name or role."),
-        origin = "Orchestrator$.resolve_nested_target"
+        origin = "Asset$.resolve_nested_target"
       )
 
       if (is.null(name) && is.null(role)) {
@@ -487,9 +594,30 @@ Orchestrator <- R6::R6Class(
         field = field,
         name = name,
         role = role,
-        origin = "Orchestrator$.resolve_nested_target"
+        origin = "Asset$.resolve_nested_target"
       )
       container[[key]]
+    },
+
+    # @description Resolve a public or private member value on a resolved
+    #   target, supporting both plain lists and R6 objects (whose private
+    #   fields are reached via `.__enclos_env__$private`).
+    # @param target A list or R6 object to resolve `member` on.
+    # @param member Character scalar naming the field/method to resolve.
+    # @return The resolved value, or \code{NULL} if not found.
+    # @keywords internal
+    ..resolve_member_value = function(target, member) {
+      if (is.environment(target) && !is.null(target$.__enclos_env__)) {
+        value <- target[[member]]
+        if (is.null(value)) {
+          priv <- target$.__enclos_env__$private
+          if (!is.null(priv)) {
+            value <- priv[[member]]
+          }
+        }
+        return(value)
+      }
+      target[[member]]
     },
 
     # @description Resolve the list index/name identifying an element within
@@ -509,7 +637,7 @@ Orchestrator <- R6::R6Class(
       field,
       name = NULL,
       role = NULL,
-      origin = "Orchestrator$.resolve_list_key"
+      origin = "Asset$.resolve_list_key"
     ) {
       phrutils::phr_assert(
         is.list(container),
@@ -580,15 +708,15 @@ Orchestrator <- R6::R6Class(
     },
 
     # @description Resolve which scope ("public" or "private") owns a
-    #   top-level field, so that `set()` can safely read/write fields
-    #   regardless of visibility.
+    #   top-level field, so that `get()`/`call()`/`set()` can safely
+    #   read/write fields regardless of visibility.
     # @param field Character scalar naming the field to resolve.
     # @param origin Character scalar identifying the calling context for
     #   error messages.
     # @return A list with `scope` ("public" or "private") and `value` (the
     #   field's current value).
     # @keywords internal
-    ..resolve_field_scope = function(field, origin = "Orchestrator$set") {
+    ..resolve_field_scope = function(field, origin = "Asset$set") {
       phrutils::phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
         message = phr_txt("field must be a non-empty character string."),
@@ -650,7 +778,7 @@ Orchestrator <- R6::R6Class(
           length(target_field) == 1L &&
           nzchar(target_field),
         message = phr_txt("target_field must be a non-empty character string."),
-        origin = "Orchestrator$.assign_sync_value"
+        origin = "Asset$.assign_sync_value"
       )
 
       path <- strsplit(target_field, "\\$", fixed = FALSE)[[1L]]
@@ -658,7 +786,7 @@ Orchestrator <- R6::R6Class(
       phrutils::phr_assert(
         length(path) >= 1L,
         message = phr_txt("target_field path is invalid."),
-        origin = "Orchestrator$.assign_sync_value"
+        origin = "Asset$.assign_sync_value"
       )
 
       if (length(path) == 1L) {

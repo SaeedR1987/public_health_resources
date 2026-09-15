@@ -20,45 +20,55 @@ filter \code{master_objectives_schema} into \code{modified_objectives_schema},
 and \code{modify_indicator_bank()} to filter the indicator bank.
 Call \code{modify_adjusted_svg()} to produce a highlighted SVG.
 }
-\section{Super class}{
-\code{\link[phr:Framework]{Framework}} -> \code{ANAFramework}
+\section{Super classes}{
+\code{\link[phr:Asset]{phr::Asset}} -> \code{\link[phr:Framework]{phr::Framework}} -> \code{ANAFramework}
 }
 \section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{secondary_ana_goal}}{Logical. Whether this framework represents a
+\if{html}{\out{<div class="r6-fields">}}
+\describe{
+\item{\code{secondary_ana_goal}}{Logical. Whether this framework represents a
 secondary ANA goal. Defaults to FALSE.}
-  }
-  \if{html}{\out{</div>}}
+}
+\if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-  \itemize{
-    \item \href{#method-ANAFramework-initialize}{\code{ANAFramework$new()}}
-    \item \href{#method-ANAFramework-clone}{\code{ANAFramework$clone()}}
-  }
+\itemize{
+\item \href{#method-ANAFramework-new}{\code{ANAFramework$new()}}
+\item \href{#method-ANAFramework-clone}{\code{ANAFramework$clone()}}
 }
-\if{html}{\out{<details><summary>Inherited methods</summary>
+}
+\if{html}{\out{
+<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="add_secondary_data_source"><a href='../../phr/html/Framework.html#method-Framework-add_secondary_data_source'><code>Framework$add_secondary_data_source()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="modify_adjusted_schema"><a href='../../phr/html/Framework.html#method-Framework-modify_adjusted_schema'><code>Framework$modify_adjusted_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="modify_adjusted_svg"><a href='../../phr/html/Framework.html#method-Framework-modify_adjusted_svg'><code>Framework$modify_adjusted_svg()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="modify_indicator_bank"><a href='../../phr/html/Framework.html#method-Framework-modify_indicator_bank'><code>Framework$modify_indicator_bank()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="remove_secondary_data_source"><a href='../../phr/html/Framework.html#method-Framework-remove_secondary_data_source'><code>Framework$remove_secondary_data_source()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="render_framework_svg"><a href='../../phr/html/Framework.html#method-Framework-render_framework_svg'><code>Framework$render_framework_svg()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_master_schema"><a href='../../phr/html/Framework.html#method-Framework-set_master_schema'><code>Framework$set_master_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_master_svg"><a href='../../phr/html/Framework.html#method-Framework-set_master_svg'><code>Framework$set_master_svg()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_primary_indicators"><a href='../../phr/html/Framework.html#method-Framework-set_primary_indicators'><code>Framework$set_primary_indicators()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_primary_objectives"><a href='../../phr/html/Framework.html#method-Framework-set_primary_objectives'><code>Framework$set_primary_objectives()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_secondary_indicators"><a href='../../phr/html/Framework.html#method-Framework-set_secondary_indicators'><code>Framework$set_secondary_indicators()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_secondary_objectives"><a href='../../phr/html/Framework.html#method-Framework-set_secondary_objectives'><code>Framework$set_secondary_objectives()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>phr::Asset$call()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>phr::Asset$get()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get_hash_id"><a href='../../phr/html/Asset.html#method-Asset-get_hash_id'><code>phr::Asset$get_hash_id()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get_metadata"><a href='../../phr/html/Asset.html#method-Asset-get_metadata'><code>phr::Asset$get_metadata()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>phr::Asset$post_sync_state()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>phr::Asset$pre_sync_state()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>phr::Asset$set()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>phr::Asset$sync_state()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="add_secondary_data_source"><a href='../../phr/html/Framework.html#method-Framework-add_secondary_data_source'><code>phr::Framework$add_secondary_data_source()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="modify_adjusted_schema"><a href='../../phr/html/Framework.html#method-Framework-modify_adjusted_schema'><code>phr::Framework$modify_adjusted_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="modify_adjusted_svg"><a href='../../phr/html/Framework.html#method-Framework-modify_adjusted_svg'><code>phr::Framework$modify_adjusted_svg()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="modify_indicator_bank"><a href='../../phr/html/Framework.html#method-Framework-modify_indicator_bank'><code>phr::Framework$modify_indicator_bank()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="remove_secondary_data_source"><a href='../../phr/html/Framework.html#method-Framework-remove_secondary_data_source'><code>phr::Framework$remove_secondary_data_source()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="render_framework_svg"><a href='../../phr/html/Framework.html#method-Framework-render_framework_svg'><code>phr::Framework$render_framework_svg()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_master_schema"><a href='../../phr/html/Framework.html#method-Framework-set_master_schema'><code>phr::Framework$set_master_schema()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_master_svg"><a href='../../phr/html/Framework.html#method-Framework-set_master_svg'><code>phr::Framework$set_master_svg()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_primary_indicators"><a href='../../phr/html/Framework.html#method-Framework-set_primary_indicators'><code>phr::Framework$set_primary_indicators()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_primary_objectives"><a href='../../phr/html/Framework.html#method-Framework-set_primary_objectives'><code>phr::Framework$set_primary_objectives()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_secondary_indicators"><a href='../../phr/html/Framework.html#method-Framework-set_secondary_indicators'><code>phr::Framework$set_secondary_indicators()</code></a></span></li>
+<li><span class="pkg-link" data-pkg="phr" data-topic="Framework" data-id="set_secondary_objectives"><a href='../../phr/html/Framework.html#method-Framework-set_secondary_objectives'><code>phr::Framework$set_secondary_objectives()</code></a></span></li>
 </ul>
-</details>}}
+</details>
+}}
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-ANAFramework-initialize"></a>}}
-\if{latex}{\out{\hypertarget{method-ANAFramework-initialize}{}}}
-\subsection{\code{ANAFramework$new()}}{
-  Creates a new ANAFramework object.
+\if{html}{\out{<a id="method-ANAFramework-new"></a>}}
+\if{latex}{\out{\hypertarget{method-ANAFramework-new}{}}}
+\subsection{Method \code{new()}}{
+Creates a new ANAFramework object.
 
 The bundled \code{reference_objectives.xlsx} is loaded as
 \code{master_objectives_schema} and \code{reference_indicator_bank.xlsx}
@@ -66,33 +76,29 @@ is loaded as both \code{master_indicator_bank} and
 \code{modified_indicator_bank}.  All are stored as separate fields.
 \code{ana_framework.svg} is loaded as \code{master_svg}.  Warnings are
 issued if any file cannot be found or read.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{ANAFramework$new()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A new ANAFramework object.
-  }
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$new()}\if{html}{\out{</div>}}
 }
 
+\subsection{Returns}{
+A new ANAFramework object.
+}
+}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ANAFramework-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-ANAFramework-clone}{}}}
-\subsection{\code{ANAFramework$clone()}}{
-  The objects of this class are cloneable with this method.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{ANAFramework$clone(deep = FALSE)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{deep}}{Whether to make a deep clone.}
-    }
-    \if{html}{\out{</div>}}
-  }
+\subsection{Method \code{clone()}}{
+The objects of this class are cloneable with this method.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ANAFramework$clone(deep = FALSE)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{deep}}{Whether to make a deep clone.}
+}
+\if{html}{\out{</div>}}
+}
+}
 }

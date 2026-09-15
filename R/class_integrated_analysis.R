@@ -1,13 +1,13 @@
 #' IntegratedAnalysis R6 Class
 #'
 #' @description
-#' Subclass of \code{\link{Orchestrator}} for storing multiple
+#' Subclass of \code{\link{Asset}} for storing multiple
 #' \code{\link{DataAnalytics}} objects and building unified analysis tables.
 #'
 #' @importFrom R6 R6Class
 IntegratedAnalysis <- R6::R6Class(
   "IntegratedAnalysis",
-  inherit = Orchestrator,
+  inherit = Asset,
   public = list(
     #' @field data_analytics Named list of \code{\link{DataAnalytics}} objects.
     data_analytics = list(),

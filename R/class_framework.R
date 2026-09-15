@@ -92,6 +92,7 @@
 #' @export
 Framework <- R6::R6Class(
   "Framework",
+  inherit = Asset,
   public = list(
     #' @field master_objectives_schema Data frame containing the full reference
     #'   schema with all available objectives.
@@ -155,18 +156,11 @@ Framework <- R6::R6Class(
     #'   objectives, data sources, and purposes.
     secondary_data_sources = NULL,
 
-    #' @field metadata List containing framework metadata including
-    #'   \code{created_datetime} and \code{modified_datetime}, both initialised
-    #'   to \code{Sys.time()} on construction.
-    metadata = list(
-      created_datetime = NULL,
-      modified_datetime = NULL
-    ),
-
     #' @description
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
+      super$initialize()
       phrutils::phr_try(
         {
           self$master_objectives_schema <- NULL
@@ -181,8 +175,6 @@ Framework <- R6::R6Class(
           self$secondary_indicator_codes <- NULL
           self$modified_primary_indicator_codes <- NULL
           self$modified_secondary_indicator_codes <- NULL
-          self$metadata$created_datetime <- Sys.time()
-          self$metadata$modified_datetime <- Sys.time()
           phrutils::phr_message(
             phr_txt("Framework initialized."),
             origin = "Framework$initialize"
@@ -821,9 +813,9 @@ Framework <- R6::R6Class(
   ),
 
   private = list(
-    # Update modified_datetime timestamp.
+    # Update modified_datetime timestamp and hash_id fingerprint.
     .touch = function() {
-      self$metadata$modified_datetime <- Sys.time()
+      private$..touch()
       invisible(NULL)
     },
 

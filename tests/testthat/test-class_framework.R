@@ -583,54 +583,54 @@ test_that("Protocol generalized nested accessor targets a specific tool", {
   suppressMessages(p <- Protocol$new())
   suppressMessages(p$add_tools("generic", tool_name = "my_tool"))
 
-  expect_equal(p$access_nested("tools", "my_tool", "get_name"), "my_tool")
-  expect_equal(p$access_nested("tools", "my_tool", "get_tool_type"), "generic")
+  expect_equal(p$call("tools", "my_tool", "get_name"), "my_tool")
+  expect_equal(p$call("tools", "my_tool", "get_tool_type"), "generic")
 
-  suppressMessages(p$access_nested(
+  suppressMessages(p$call(
     field = "tools",
     name = "my_tool",
     member = "set_name",
     new_name = "renamed_tool"
   ))
-  expect_equal(p$access_nested("tools", "my_tool", "get_name"), "renamed_tool")
+  expect_equal(p$call("tools", "my_tool", "get_name"), "renamed_tool")
 
-  expect_silent(p$access_nested(
+  expect_silent(p$call(
     field = "tools",
     name = "my_tool",
     member = "change_default_language",
     language = "english"
   ))
   expect_equal(
-    p$access_nested("tools", "my_tool", "survey"),
+    p$get("tools", "my_tool", "survey"),
     p$tools[["my_tool"]]$survey
   )
   expect_equal(
-    p$access_nested("tools", "my_tool", "choices"),
+    p$get("tools", "my_tool", "choices"),
     p$tools[["my_tool"]]$choices
   )
-  expect_true(is.integer(p$access_nested(
+  expect_true(is.integer(p$call(
     "tools",
     "my_tool",
     "get_indicator_codes",
     prefer_revised = FALSE
   )))
   expect_equal(
-    p$access_nested("tools", "my_tool", "get_selected_indicators"),
+    p$call("tools", "my_tool", "get_selected_indicators"),
     character(0)
   )
 
-  p$access_nested(
+  p$call(
     "tools",
     "my_tool",
     "set_selected_indicators",
     indicators = c("a", "b")
   )
   expect_equal(
-    p$access_nested("tools", "my_tool", "get_selected_indicators"),
+    p$call("tools", "my_tool", "get_selected_indicators"),
     c("a", "b")
   )
 
-  p$access_nested(
+  p$call(
     "tools",
     "my_tool",
     "update_settings",
@@ -644,7 +644,7 @@ test_that("Protocol generalized nested accessor targets a specific tool", {
     label = c("A", "B"),
     stringsAsFactors = FALSE
   )
-  p$access_nested(
+  p$call(
     "tools",
     "my_tool",
     "update_choice_list",
@@ -653,13 +653,13 @@ test_that("Protocol generalized nested accessor targets a specific tool", {
   )
   expect_true(any(p$tools[["my_tool"]]$revised_choices$list_name == "my_list"))
 
-  expect_silent(p$access_nested(
+  expect_silent(p$call(
     "tools",
     "my_tool",
     "filter_survey_by_indicator",
     indicator_codes = "10000"
   ))
-  expect_true(is.data.frame(p$access_nested(
+  expect_true(is.data.frame(p$get(
     "tools",
     "my_tool",
     "revised_survey"
@@ -671,16 +671,16 @@ test_that("Protocol nested accessor touches protocol modified_datetime", {
   suppressMessages(p$add_tools("generic", tool_name = "my_tool"))
   before <- p$metadata$modified_datetime
   Sys.sleep(0.01)
-  p$access_nested("tools", "my_tool", "get_name")
+  p$call("tools", "my_tool", "get_name")
   expect_true(p$metadata$modified_datetime >= before)
 })
 
 test_that("Protocol nested accessor tool validation calls return logical/list outputs", {
   suppressMessages(p <- Protocol$new())
   suppressMessages(p$add_tools("generic", tool_name = "my_tool"))
-  expect_type(p$access_nested("tools", "my_tool", "validate"), "logical")
-  expect_type(p$access_nested("tools", "my_tool", "is_valid"), "logical")
-  expect_true(is.list(p$access_nested(
+  expect_type(p$call("tools", "my_tool", "validate"), "logical")
+  expect_type(p$call("tools", "my_tool", "is_valid"), "logical")
+  expect_true(is.list(p$call(
     "tools",
     "my_tool",
     "get_validation_errors"
@@ -695,7 +695,7 @@ test_that("Protocol nested accessor supports role-based lookup for list fields",
   ))
 
   expect_equal(
-    p$access_nested(field = "tools", role = "household", member = "get_name"),
+    p$call(field = "tools", role = "household", member = "get_name"),
     "tool_household_iphra_v2"
   )
 })
