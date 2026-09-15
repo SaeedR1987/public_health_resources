@@ -38,7 +38,7 @@ Log <- R6::R6Class(
 
     issues = NULL, # <- must be declared here
 
-    #' Get Field Value
+    #' @title Get Field Value
     #'
     #' @description
     #' Safely retrieves a private field value
