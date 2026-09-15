@@ -24,7 +24,7 @@
 #' * metadata: List of metadata including update timestamps
 #'
 #' @field autosave Logical for automatic saving (not yet implemented)
-#' @field issues List of validation issues found
+#' @field issues List of validations issues found
 #'
 #' @importFrom R6 R6Class
 #' @export
@@ -38,7 +38,7 @@ Log <- R6::R6Class(
 
     issues = NULL, # <- must be declared here
 
-    #' Get Field Value
+    #' @title Get Field Value
     #'
     #' @description
     #' Safely retrieves a private field value
