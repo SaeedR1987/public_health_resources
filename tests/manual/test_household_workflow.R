@@ -167,6 +167,15 @@ good_hh$validated
 good_hh$standardize()
 good_hh$standardized
 
+good_hh$data_diagnose()
+View(good_hh$data_diagnostics)
+
+good_hh$linked_objects$roster$object$data_diagnose(stage = "standardized")
+View(good_hh$linked_objects$roster$object$data_diagnostics)
+
+good_hh$linked_objects$deaths$object$data_diagnose(stage = "standardized")
+View(good_hh$linked_objects$deaths$object$data_diagnostics)
+
 # Testing Cleaning Logs
 good_hh$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
