@@ -75,17 +75,26 @@ Tool <- R6::R6Class(
     #' @field settings A vector of user selected indicator codes .
     selected_indicator_codes = NULL,
 
+    #' @field settings A vector of user available indicator codes .
+    available_indicator_codes = NULL,
+
     #' @field settings A vector of user selected pillars .
     selected_pillars = NULL,
+
+    #' @field settings A vector of available pillars to the user.
+    available_pillars = NULL,
 
     #' @field settings A vector of user selected sub pillars .
     selected_subpillars = NULL,
 
+    #' @field settings A vector of available sub pillars to the user.
+    available_subpillars = NULL,
+
     #' @field settings A vector of user selected sectors .
     selected_sectors = NULL,
 
-    #' @field settings A vector of user available indicator codes .
-    available_indicator_codes = NULL,
+    #' @field settings A vector of available sectors to the user .
+    available_sectors = NULL,
 
     #' @field revised_survey Working copy of the survey sheet, updated by filter
     #'   or modification methods.  Initialised as a copy of \code{survey} on

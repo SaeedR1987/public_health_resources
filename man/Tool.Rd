@@ -39,13 +39,19 @@ This class provides methods for:
 
     \item{\code{settings}}{A vector of user selected indicator codes .}
 
+    \item{\code{settings}}{A vector of user available indicator codes .}
+
     \item{\code{settings}}{A vector of user selected pillars .}
+
+    \item{\code{settings}}{A vector of available pillars to the user.}
 
     \item{\code{settings}}{A vector of user selected sub pillars .}
 
+    \item{\code{settings}}{A vector of available sub pillars to the user.}
+
     \item{\code{settings}}{A vector of user selected sectors .}
 
-    \item{\code{settings}}{A vector of user available indicator codes .}
+    \item{\code{settings}}{A vector of available sectors to the user .}
 
     \item{\code{revised_survey}}{Working copy of the survey sheet, updated by filter
 or modification methods.  Initialised as a copy of \code{survey} on
