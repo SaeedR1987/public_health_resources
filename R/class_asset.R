@@ -32,19 +32,6 @@ Asset <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Return the current \code{hash_id} fingerprint from metadata.
-    #'
-    #' The \code{hash_id} is a content-based digest of the object's current
-    #' public state, recomputed whenever the object is touched (for example,
-    #' after \code{set()}, \code{get()}, or \code{call()} with
-    #' \code{update_modified = TRUE}). It provides a unique fingerprint that
-    #' changes whenever the object's state changes.
-    #' @return Character scalar with the current hash fingerprint.
-    get_hash_id = function() {
-      private$..metadata$hash_id
-    },
-
     #' @description Hook executed before \code{sync_state()} logic.
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
@@ -368,22 +355,6 @@ Asset <- R6::R6Class(
     }
   ),
 
-  active = list(
-    #' @field metadata Active binding exposing the private metadata list
-    #'   (\code{created_datetime}, \code{modified_datetime}, \code{version},
-    #'   \code{hash_id}, and any additional fields set via \code{set()}).
-    #'   Reading returns the metadata list; assigning replaces it. This (along
-    #'   with \code{get(field = "metadata")}) is the sole public accessor
-    #'   path, since metadata itself is stored privately.
-    metadata = function(value) {
-      if (missing(value)) {
-        return(private$..metadata)
-      }
-      private$..metadata <- value
-      invisible(NULL)
-    }
-  ),
-
   private = list(
     # @field ..metadata List containing private asset metadata, including
     #   `created_datetime`, `modified_datetime`, `version`, and `hash_id`.
@@ -405,7 +376,7 @@ Asset <- R6::R6Class(
       }
       private$..metadata$modified_datetime <- Sys.time()
       private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
-      private$..metadata$hash_id <- private$..compute_hash_id()
+
       invisible(NULL)
     },
 

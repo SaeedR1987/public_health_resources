@@ -111,7 +111,7 @@ SamplingFrame <- R6::R6Class(
 
       phrutils::phr_validate_dataframe(
         frame,
-        origin = "Sample$draw_sample",
+        origin = "SamplingFrame$draw_sample",
         soft = FALSE
       )
 
@@ -126,7 +126,7 @@ SamplingFrame <- R6::R6Class(
 
       phrutils::phr_validate_dataframe(
         strata_table,
-        origin = "Sample$draw_sample",
+        origin = "SamplingFrame$draw_sample",
         soft = FALSE
       )
       phrutils::phr_assert(
@@ -134,14 +134,14 @@ SamplingFrame <- R6::R6Class(
         message = phr_txt(
           "strata_table must contain a 'sampling_method_site' column."
         ),
-        origin = "Sample$draw_sample"
+        origin = "SamplingFrame$draw_sample"
       )
       phrutils::phr_assert(
         "sampling_method_hh" %in% names(strata_table),
         message = phr_txt(
           "strata_table must contain a 'sampling_method_hh' column."
         ),
-        origin = "Sample$draw_sample"
+        origin = "SamplingFrame$draw_sample"
       )
 
       for (col in c(
@@ -186,7 +186,7 @@ SamplingFrame <- R6::R6Class(
               message = phr_txt(
                 "Stratum '{st_id}' not found in sampling frame — skipping."
               ),
-              origin = "Sample$draw_sample"
+              origin = "SamplingFrame$draw_sample"
             )
             next
           }
@@ -212,7 +212,7 @@ SamplingFrame <- R6::R6Class(
                 message = phr_txt(
                   "Sampling for stratum '{st_id}' failed and will be skipped: {conditionMessage(e)}"
                 ),
-                origin = "Sample$draw_sample"
+                origin = "SamplingFrame$draw_sample"
               )
               NULL
             }
@@ -399,7 +399,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
-              "n_sites is required for the 'simple_random' method_site — set the 'n_sites' column in the strata table."
+              "n_sites is required for the 'simple_random_even' method_site — set the 'n_sites' column in the strata table."
             ),
             origin = origin
           )
@@ -424,7 +424,7 @@ SamplingFrame <- R6::R6Class(
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
             message = phr_txt(
-              "n_sites is required for the 'simple_random' method_site — set the 'n_sites' column in the strata table."
+              "n_sites is required for the 'simple_random_proportional' method_site — set the 'n_sites' column in the strata table."
             ),
             origin = origin
           )

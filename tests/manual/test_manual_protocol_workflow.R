@@ -18,19 +18,21 @@ month_year <- "March 2025"
 
 # Test 1: Create an IPHRAProtocol Object ####
 
-protocol <- IPHRAProtocol$new(
+protocol <- SurveyProtocol$new(
   assessment_title = assessment_title,
   country_name = country_name,
   month_year = month_year
 )
 
 # Inspect initial state
-protocol$metadata
+protocol$get(field = "..metadata", member = "created_datetime")
 
 # Validate the objective schema via the protocol method
 # (protocol$validate_objective_schema(protocol$framework$master_schema))
 
 # Test 2: Framework ####
+
+protocol$set(field = "framework", value = ANAFramework$new())
 
 protocol$get(field = "framework", member = "master_objectives_schema")
 
@@ -85,17 +87,17 @@ protocol$call(
 
 # Test 3: Define Strata and Sample Sizes ####
 
-protocol$call(
+(protocol$call(
   field = "sample_object",
   member = "get_sample_table"
-)
+))
 
 protocol$call(
   field = "sample_object",
   member = "add_stratum",
   stratum_id = "strata_A",
   stratum_name = "strata_A",
-  sampling_method_site = "systematic"
+  sampling_method_site = "systematic_even"
 
 )
 
@@ -132,7 +134,7 @@ protocol$call(
   avg_interview_time = 30,
   avg_rest_time = 30,
   avg_travel_time = 60,
-  sampling_method_site = "systematic",
+  sampling_method_site = "systematic_even",
   sampling_method_hh = "systematic",
   n_sites = 10
 )
@@ -143,7 +145,7 @@ protocol$call(
   member = "add_stratum",
   stratum_id = "strata_B",
   stratum_name = "Peri-Urban East",
-  sampling_method_site = "simple_random",
+  sampling_method_site = "simple_random_proportional",
   population_size = 28000,
   pop_indicator = "Food Consumption Score",
   pop_design_effect = 1.8,
@@ -176,7 +178,7 @@ protocol$call(
   pop_nonresponse = 10,
   ind_indicator = "wasting_prevalence",
   rate_indicator = "crude_death_rate",
-  sampling_method_site = "simple_random",
+  sampling_method_site = "simple_random_even",
   sampling_method_hh = "rlc",
   n_sites = 10
 )
@@ -302,7 +304,9 @@ protocol$call(
 
 # Community Obseration Tool ####
 
-protocol$add_tools(tool_name = "tool_obs_community_iphra_v2")
+protocol$add_tools()
+
+protocol$add_tools(tool_type = "household")
 
 protocol$call(
   field = "tools",
