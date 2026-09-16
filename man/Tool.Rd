@@ -28,6 +28,9 @@ This class provides methods for:
 - Validating the revised survey against available revised choices
 - Validating structure according to XLSForm specification
 }
+\section{Super class}{
+\code{\link[phr:Asset]{Asset}} -> \code{Tool}
+}
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
@@ -64,9 +67,6 @@ on construction.}
     \item{\code{revised_settings}}{Working copy of the settings sheet, updated by
 modification methods.  Initialised as a copy of \code{settings} on
 construction.}
-
-    \item{\code{metadata}}{List containing tool metadata including
-\code{created_datetime} and \code{modified_datetime}.}
   }
   \if{html}{\out{</div>}}
 }
@@ -98,6 +98,16 @@ construction.}
     \item \href{#method-Tool-clone}{\code{Tool$clone()}}
   }
 }
+\if{html}{\out{<details><summary>Inherited methods</summary>
+<ul>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
+</ul>
+</details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Tool-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-Tool-initialize}{}}}

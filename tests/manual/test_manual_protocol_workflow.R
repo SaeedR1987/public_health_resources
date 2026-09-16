@@ -18,29 +18,31 @@ month_year <- "March 2025"
 
 # Test 1: Create an IPHRAProtocol Object ####
 
-protocol <- IPHRAProtocol$new(
+protocol <- SurveyProtocol$new(
   assessment_title = assessment_title,
   country_name = country_name,
   month_year = month_year
 )
 
 # Inspect initial state
-protocol$metadata
+protocol$get(field = "..metadata", member = "created_datetime")
 
 # Validate the objective schema via the protocol method
 # (protocol$validate_objective_schema(protocol$framework$master_schema))
 
 # Test 2: Framework ####
 
-protocol$access_nested(field = "framework", member = "master_objectives_schema")
+protocol$set(field = "framework", value = ANAFramework$new())
 
-protocol$access_nested(
+protocol$get(field = "framework", member = "master_objectives_schema")
+
+protocol$call(
   field = "framework",
   member = "render_framework_svg",
   version = "master"
 )
 
-protocol$access_nested(
+protocol$call(
   field = "framework",
   member = "set_primary_objectives",
   objective_codes = c(101, 105, 106, 109, 112)
@@ -48,58 +50,58 @@ protocol$access_nested(
 
 # 108, 112, 113, 114, 115, 118, 147
 
-protocol$access_nested(
+protocol$call(
   "framework",
   member = "set_secondary_objectives",
   objective_codes = c(105, 107, 112)
 )
 
-protocol$access_nested(
+protocol$call(
   "framework",
   member = "modify_adjusted_schema",
   objective_codes = c(101, 105, 106, 109, 112)
 )
 
-protocol$access_nested(
+protocol$call(
   "framework",
   member = "modify_indicator_bank",
   objective_codes = c(101, 105, 106, 109, 112)
 )
 
-(protocol$access_nested(
+(protocol$get(
   field = "framework",
   member = "modified_indicator_bank"
 ))
 
-protocol$access_nested("framework", member = "modify_adjusted_svg")
+protocol$call("framework", member = "modify_adjusted_svg")
 
-protocol$access_nested(
+protocol$call(
   field = "framework",
   member = "render_framework_svg",
   version = "adjusted"
 )
-(protocol$access_nested(
+(protocol$get(
   field = "framework",
   member = "modified_objectives_schema"
 ))
 
 # Test 3: Define Strata and Sample Sizes ####
 
-protocol$access_nested(
+(protocol$call(
   field = "sample_object",
   member = "get_sample_table"
-)
+))
 
-protocol$access_nested(
+protocol$call(
   field = "sample_object",
   member = "add_stratum",
   stratum_id = "strata_A",
   stratum_name = "strata_A",
-  sampling_method_site = "systematic"
+  sampling_method_site = "systematic_even"
 
 )
 
-protocol$access_nested(
+protocol$call(
   field = "sample_object",
   member = "add_stratum",
   stratum_id = "strata_A",
@@ -132,18 +134,18 @@ protocol$access_nested(
   avg_interview_time = 30,
   avg_rest_time = 30,
   avg_travel_time = 60,
-  sampling_method_site = "systematic",
+  sampling_method_site = "systematic_even",
   sampling_method_hh = "systematic",
   n_sites = 10
 )
 
 
-protocol$access_nested(
+protocol$call(
   field = "sample_object",
   member = "add_stratum",
   stratum_id = "strata_B",
   stratum_name = "Peri-Urban East",
-  sampling_method_site = "simple_random",
+  sampling_method_site = "simple_random_proportional",
   population_size = 28000,
   pop_indicator = "Food Consumption Score",
   pop_design_effect = 1.8,
@@ -163,7 +165,7 @@ protocol$access_nested(
   # n_sites = 30
 )
 
-protocol$access_nested(
+protocol$call(
   field = "sample_object",
   member = "add_stratum",
   stratum_id = "strata_C",
@@ -176,16 +178,16 @@ protocol$access_nested(
   pop_nonresponse = 10,
   ind_indicator = "wasting_prevalence",
   rate_indicator = "crude_death_rate",
-  sampling_method_site = "simple_random",
+  sampling_method_site = "simple_random_even",
   sampling_method_hh = "rlc",
   n_sites = 10
 )
 
-protocol$access_nested(
+protocol$call(
   field = "sample_object",
   member = "calculate_sample_sizes"
 )
-(protocol$access_nested(
+(protocol$call(
   field = "sample_object",
   member = "get_sample_table"
 ))
@@ -221,19 +223,19 @@ protocol$sampling_frame$validated
 
 # Test 5: Draw Sample ####
 
-protocol$access_nested(
+protocol$call(
   field = "sampling_frame",
   member = "draw_sample",
   strata_table = protocol$get_sample_table(),
   seed = 788
 )
 
-(protocol$access_nested(
+(protocol$get(
   field = "sampling_frame",
   member = "drawn_sample"
 ))
 
-(protocol$access_nested(
+(protocol$get(
   field = "sampling_frame",
   member = "drawn_sample_full"
 ))
@@ -260,12 +262,12 @@ protocol$add_tools(tool_name = "tool_household_iphra_v2")
 #   language = "Arabic"
 # )
 
-protocol$access_nested(
+protocol$call(
   field = "tools",
   name = "tool_household_iphra_v2",
   member = "filter_survey_by_indicator",
   indicator_codes = unique(as.character(as.integer(
-    protocol$access_nested(
+    protocol$get(
       field = "framework",
       member = "modified_indicator_bank"
     )$indicator_code
@@ -279,19 +281,19 @@ protocol$access_nested(
 # Community KII Tool ####
 protocol$add_tools("tool_kii_community_iphra_v2")
 
-protocol$access_nested(
+protocol$call(
   field = "tools",
   name = "tool_kii_community_iphra_v2",
   member = "filter_survey_by_indicator",
   indicator_codes = unique(as.character(
-    protocol$access_nested(
+    protocol$get(
       field = "framework",
       member = "modified_indicator_bank"
     )$indicator_code
   ))
 )
 
-(protocol$access_nested(
+(protocol$get(
   field = "tools",
   name = "tool_kii_community_iphra_v2",
   member = "revised_survey",
@@ -302,14 +304,16 @@ protocol$access_nested(
 
 # Community Obseration Tool ####
 
-protocol$add_tools(tool_name = "tool_obs_community_iphra_v2")
+protocol$add_tools()
 
-protocol$access_nested(
+protocol$add_tools(tool_type = "household")
+
+protocol$call(
   field = "tools",
   name = "tool_kii_community_iphra_v2",
   member = "filter_survey_by_indicator",
   indicator_codes = unique(as.character(
-    protocol$access_nested(
+    protocol$get(
       field = "framework",
       member = "modified_indicator_bank"
     )$indicator_code
@@ -324,12 +328,12 @@ protocol$access_nested(
 protocol$add_tools(tool_name = "tool_kii_fsl_service_provider_iphra_v2")
 
 
-protocol$access_nested(
+protocol$call(
   field = "tools",
   name = "tool_kii_fsl_service_provider_iphra_v2",
   member = "filter_survey_by_indicator",
   indicator_codes = unique(as.character(
-    protocol$access_nested(
+    protocol$get(
       field = "framework",
       member = "modified_indicator_bank"
     )$indicator_code
@@ -361,7 +365,7 @@ protocol$add_tools(tool_name = "tool_kii_nutrition_service_provider_iphra_v2")
 
 # -- 3a: Generate report with no tools (tools section shows placeholder text) --
 
-protocol$access_nested(field = "metadata", role = "research_cycle_id")
+protocol$get(field = "metadata", role = "research_cycle_id")
 
 protocol$set(field = "metadata", role = "research_cycle_id", value = "RC-2025-001")
 
@@ -410,7 +414,7 @@ protocol$metadata$mandating_body <- "IMPACT Initiatives"
 protocol$metadata$project_code <- "98BSY"
 
 # Secondary data sources
-protocol$access_nested(
+protocol$call(
   field = "framework",
   member = "add_secondary_data_source",
   objective = 105,
@@ -418,7 +422,7 @@ protocol$access_nested(
   purpose = "To provide context on population movements and displacement trends."
 )
 
-protocol$access_nested(
+protocol$call(
   field = "framework",
   member = "add_secondary_data_source",
   objective = "To understand nutritional status of population",

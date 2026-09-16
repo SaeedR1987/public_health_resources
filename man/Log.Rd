@@ -2,12 +2,15 @@
 % Please edit documentation in R/class_log.R
 \name{Log}
 \alias{Log}
-\title{Log: Log Base Class}
+\title{Get Field Value}
 \description{
 A foundational R6 class for managing structured log data with validation, schema enforcement,
 and export capabilities. Used as a base class for specialized logs (CleaningLog, DeletionLog).
 }
 \details{
+Log: Log Base Class
+
+
 The Log class provides:
 * Storage and management of structured log entries in a data.frame
 * Schema definition and validation (column types, allowed values)
@@ -25,6 +28,61 @@ Private fields (accessible via get() and set() methods):
 * schema: List with 'types' and 'allowed_values' for validation
 * validated: Logical indicating if log has passed validation
 * metadata: List of metadata including update timestamps
+
+
+
+Initialization process:
+1. Creates empty log template if log_df is NULL
+2. Validates that log_df is a data.frame
+3. Adds missing required columns (filled with NA)
+4. Reorders columns (required columns first)
+5. Initializes metadata with current timestamp
+Set Schema
+
+
+
+Schema format:
+* types: named list of column_name = "character"/"numeric"/"logical"/"date"
+* allowed_values: named list of column_name = vector of allowed values
+Validate Log
+
+
+
+Validation steps:
+1. Checks log_df is a valid data.frame
+2. Verifies all required columns exist
+3. Type checking and safe coercion for schema types
+4. Allowed values checking for categorical columns
+
+Sets self$validated to TRUE if no issues found, updates self$issues.
+Attempts safe type coercion (e.g., "123" to 123) when possible.
+Append Log Entry
+
+
+
+Validates that all required columns are present in row_list.
+Converts list to data.frame row and appends via dplyr::bind_rows().
+Updates metadata timestamp.
+Clear Log
+
+
+
+Keeps column structure intact but sets row count to 0.
+Updates metadata timestamp.
+Export Log
+
+
+
+Supported formats:
+* csv: Comma-separated values via utils::write.csv
+* rds: R data structure via saveRDS
+* xlsx: Excel workbook via openxlsx (requires openxlsx package)
+Get Hash Fingerprint
+
+
+
+Uses digest package to create a unique fingerprint of the log contents.
+Useful for detecting changes or verifying data integrity.
 }
 \note{
 Requires digest package
@@ -59,7 +117,7 @@ log$set("validated", TRUE)
   \describe{
     \item{\code{autosave}}{Logical for automatic saving (not yet implemented)}
 
-    \item{\code{issues}}{List of validation issues found}
+    \item{\code{issues}}{List of validations issues found}
   }
   \if{html}{\out{</div>}}
 }
@@ -239,15 +297,6 @@ log$set("validated", TRUE)
     }
     \if{html}{\out{</div>}}
   }
-  \subsection{Details}{
-    Initialization process:
-1. Creates empty log template if log_df is NULL
-2. Validates that log_df is a data.frame
-3. Adds missing required columns (filled with NA)
-4. Reorders columns (required columns first)
-5. Initializes metadata with current timestamp
-Set Schema
-  }
   \subsection{Returns}{
     A new Log R6 object
   }
@@ -269,12 +318,6 @@ Set Schema
       \item{\code{schema_list}}{List with 'types' and/or 'allowed_values' elements}
     }
     \if{html}{\out{</div>}}
-  }
-  \subsection{Details}{
-    Schema format:
-* types: named list of column_name = "character"/"numeric"/"logical"/"date"
-* allowed_values: named list of column_name = vector of allowed values
-Validate Log
   }
   \subsection{Returns}{
     Invisible TRUE
@@ -298,17 +341,6 @@ Validate Log
     }
     \if{html}{\out{</div>}}
   }
-  \subsection{Details}{
-    Validation steps:
-1. Checks log_df is a valid data.frame
-2. Verifies all required columns exist
-3. Type checking and safe coercion for schema types
-4. Allowed values checking for categorical columns
-
-Sets self$validated to TRUE if no issues found, updates self$issues.
-Attempts safe type coercion (e.g., "123" to 123) when possible.
-Append Log Entry
-  }
   \subsection{Returns}{
     Invisible list of validation issues (empty list if valid)
   }
@@ -331,12 +363,6 @@ Append Log Entry
     }
     \if{html}{\out{</div>}}
   }
-  \subsection{Details}{
-    Validates that all required columns are present in row_list.
-Converts list to data.frame row and appends via dplyr::bind_rows().
-Updates metadata timestamp.
-Clear Log
-  }
   \subsection{Returns}{
     Invisible TRUE
   }
@@ -351,11 +377,6 @@ Clear Log
     \if{html}{\out{<div class="r">}}
     \preformatted{Log$clear()}
     \if{html}{\out{</div>}}
-  }
-  \subsection{Details}{
-    Keeps column structure intact but sets row count to 0.
-Updates metadata timestamp.
-Export Log
   }
   \subsection{Returns}{
     Invisible TRUE
@@ -380,13 +401,6 @@ Export Log
     }
     \if{html}{\out{</div>}}
   }
-  \subsection{Details}{
-    Supported formats:
-* csv: Comma-separated values via utils::write.csv
-* rds: R data structure via saveRDS
-* xlsx: Excel workbook via openxlsx (requires openxlsx package)
-Get Hash Fingerprint
-  }
   \subsection{Returns}{
     Invisible path to exported file
   }
@@ -401,10 +415,6 @@ Get Hash Fingerprint
     \if{html}{\out{<div class="r">}}
     \preformatted{Log$get_hash()}
     \if{html}{\out{</div>}}
-  }
-  \subsection{Details}{
-    Uses digest package to create a unique fingerprint of the log contents.
-Useful for detecting changes or verifying data integrity.
   }
   \subsection{Returns}{
     Character hash digest of log_df

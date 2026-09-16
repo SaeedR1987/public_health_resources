@@ -16,6 +16,9 @@ Subclasses are responsible for loading domain-specific master schemas and
 master SVG diagrams.  Use \code{\link{ANAFramework}} for the ANA
 (Area-based Needs Assessment) conceptual framework.
 }
+\section{Super class}{
+\code{\link[phr:Asset]{Asset}} -> \code{Framework}
+}
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
@@ -67,10 +70,6 @@ indicator codes derived from \code{modified_objectives_schema}.}
 
     \item{\code{secondary_data_sources}}{Data frame of secondary
 objectives, data sources, and purposes.}
-
-    \item{\code{metadata}}{List containing framework metadata including
-\code{created_datetime} and \code{modified_datetime}, both initialised
-to \code{Sys.time()} on construction.}
   }
   \if{html}{\out{</div>}}
 }
@@ -93,6 +92,16 @@ to \code{Sys.time()} on construction.}
     \item \href{#method-Framework-clone}{\code{Framework$clone()}}
   }
 }
+\if{html}{\out{<details><summary>Inherited methods</summary>
+<ul>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
+</ul>
+</details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Framework-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-Framework-initialize}{}}}

@@ -92,6 +92,7 @@
 #' @export
 Framework <- R6::R6Class(
   "Framework",
+  inherit = Asset,
   public = list(
     #' @field master_objectives_schema Data frame containing the full reference
     #'   schema with all available objectives.
@@ -155,18 +156,11 @@ Framework <- R6::R6Class(
     #'   objectives, data sources, and purposes.
     secondary_data_sources = NULL,
 
-    #' @field metadata List containing framework metadata including
-    #'   \code{created_datetime} and \code{modified_datetime}, both initialised
-    #'   to \code{Sys.time()} on construction.
-    metadata = list(
-      created_datetime = NULL,
-      modified_datetime = NULL
-    ),
-
     #' @description
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
+      super$initialize()
       phrutils::phr_try(
         {
           self$master_objectives_schema <- NULL
@@ -181,8 +175,6 @@ Framework <- R6::R6Class(
           self$secondary_indicator_codes <- NULL
           self$modified_primary_indicator_codes <- NULL
           self$modified_secondary_indicator_codes <- NULL
-          self$metadata$created_datetime <- Sys.time()
-          self$metadata$modified_datetime <- Sys.time()
           phrutils::phr_message(
             phr_txt("Framework initialized."),
             origin = "Framework$initialize"
@@ -206,7 +198,7 @@ Framework <- R6::R6Class(
       phrutils::phr_try(
         {
           self$primary_objectives <- as.numeric(unlist(objective_codes))
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt(
               "Primary objectives set ({length(self$primary_objectives)} code(s))."
@@ -232,7 +224,7 @@ Framework <- R6::R6Class(
       phrutils::phr_try(
         {
           self$secondary_objectives <- as.numeric(unlist(objective_codes))
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt(
               "Secondary objectives set ({length(self$secondary_objectives)} code(s))."
@@ -260,7 +252,7 @@ Framework <- R6::R6Class(
         {
           self$primary_indicator_codes <- as.character(unlist(indicator_codes))
           private$.refresh_modified_indicator_codes()
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt(
               "Primary indicators set ({length(self$primary_indicator_codes)} code(s))."
@@ -290,7 +282,7 @@ Framework <- R6::R6Class(
             indicator_codes
           ))
           private$.refresh_modified_indicator_codes()
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt(
               "Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."
@@ -321,7 +313,7 @@ Framework <- R6::R6Class(
               stringsAsFactors = FALSE
             )
           )
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt("Secondary data source added."),
             origin = "Framework$set_secondary_data_source"
@@ -356,7 +348,7 @@ Framework <- R6::R6Class(
             self$secondary_data_sources,
             !(objective == objective & source == source)
           )
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt("Secondary data source removed."),
             origin = "Framework$remove_secondary_data_source"
@@ -579,7 +571,7 @@ Framework <- R6::R6Class(
           }
 
           self$adjusted_svg <- svg
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
             origin = "Framework$modify_adjusted_svg"
@@ -731,7 +723,7 @@ Framework <- R6::R6Class(
 
           # Update modified indicator code caches from the modified_objectives_schema
           private$.refresh_modified_indicator_codes()
-          private$.touch()
+          private$..touch()
 
           phrutils::phr_message(
             phr_txt(
@@ -805,7 +797,7 @@ Framework <- R6::R6Class(
             ,
             drop = FALSE
           ]
-          private$.touch()
+          private$..touch()
           phrutils::phr_message(
             phr_txt(
               "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
@@ -821,12 +813,6 @@ Framework <- R6::R6Class(
   ),
 
   private = list(
-    # Update modified_datetime timestamp.
-    .touch = function() {
-      self$metadata$modified_datetime <- Sys.time()
-      invisible(NULL)
-    },
-
     # Rebuild modified indicator code fields from the current
     # modified_objectives_schema.
     .refresh_modified_indicator_codes = function() {

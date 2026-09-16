@@ -4,11 +4,11 @@
 \alias{IntegratedAnalysis}
 \title{IntegratedAnalysis R6 Class}
 \description{
-Subclass of \code{\link{Orchestrator}} for storing multiple
+Subclass of \code{\link{Asset}} for storing multiple
 \code{\link{DataAnalytics}} objects and building unified analysis tables.
 }
 \section{Super class}{
-\code{\link[phr:Orchestrator]{Orchestrator}} -> \code{IntegratedAnalysis}
+\code{\link[phr:Asset]{Asset}} -> \code{IntegratedAnalysis}
 }
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
@@ -29,12 +29,12 @@ Subclass of \code{\link{Orchestrator}} for storing multiple
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="access_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-access_nested'><code>Orchestrator$access_nested()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="post_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-post_sync_state'><code>Orchestrator$post_sync_state()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="pre_sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-pre_sync_state'><code>Orchestrator$pre_sync_state()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set'><code>Orchestrator$set()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="set_nested"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-set_nested'><code>Orchestrator$set_nested()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Orchestrator" data-id="sync_state"><a href='../../phr/html/Orchestrator.html#method-Orchestrator-sync_state'><code>Orchestrator$sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}

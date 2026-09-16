@@ -92,7 +92,7 @@ public = list(
                     "Valid types:", paste(valid_types, collapse = ", ")))
     }
     private$.observation_type <- observation_type
-    private$.touch()
+    private$..touch()
     invisible(self)
   },
 

@@ -88,7 +88,7 @@ public = list(
                     "Valid types:", paste(valid_types, collapse = ", ")))
     }
     private$.kii_type <- kii_type
-    private$.touch()
+    private$..touch()
     invisible(self)
   }
 ),

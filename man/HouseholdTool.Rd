@@ -10,8 +10,8 @@ Household surveys typically include:
 - Roster/loop for household members
 - Sectoral questions (FSL, WASH, Health, etc.)
 }
-\section{Super class}{
-\code{\link[phr:Tool]{Tool}} -> \code{HouseholdTool}
+\section{Super classes}{
+\code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Tool]{Tool}} -> \code{HouseholdTool}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -22,6 +22,12 @@ Household surveys typically include:
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Tool" data-id="add_enumerators_to_choices"><a href='../../phr/html/Tool.html#method-Tool-add_enumerators_to_choices'><code>Tool$add_enumerators_to_choices()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Tool" data-id="add_numbered_list"><a href='../../phr/html/Tool.html#method-Tool-add_numbered_list'><code>Tool$add_numbered_list()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Tool" data-id="add_teams_to_choices"><a href='../../phr/html/Tool.html#method-Tool-add_teams_to_choices'><code>Tool$add_teams_to_choices()</code></a></span></li>

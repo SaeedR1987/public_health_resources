@@ -38,16 +38,16 @@ ana_protocol_resources_available <- function() {
 
 # ── Inheritance ────────────────────────────────────────────────────────────────
 
-test_that("Protocol inherits Document and Orchestrator", {
+test_that("Protocol inherits Document and Asset", {
   p <- suppressMessages(Protocol$new())
   suppressWarnings(suppressMessages({
     expect_true(inherits(p, "Protocol"))
     expect_true(inherits(p, "Document"))
-    expect_true(inherits(p, "Orchestrator"))
+    expect_true(inherits(p, "Asset"))
   }))
 })
 
-test_that("Protocol has Orchestrator metadata timestamps", {
+test_that("Protocol has Asset metadata timestamps", {
   p <- suppressMessages(Protocol$new())
   suppressWarnings(suppressMessages({
     expect_s3_class(p$metadata$created_datetime, "POSIXct")
@@ -444,13 +444,13 @@ test_that("get_dap_table returns NULL when tool does not exist", {
   ))
 })
 
-test_that("access_nested on framework returns modified_objectives_schema", {
+test_that("get on framework returns modified_objectives_schema", {
   p <- suppressMessages(Protocol$new())
   suppressWarnings(suppressMessages(
     p$framework$modified_objectives_schema <- make_valid_protocol_objective_schema()
   ))
   schema <- suppressWarnings(suppressMessages(
-    p$access_nested("framework", member = "modified_objectives_schema")
+    p$get("framework", member = "modified_objectives_schema")
   ))
   suppressWarnings(suppressMessages({
     expect_true(is.data.frame(schema))

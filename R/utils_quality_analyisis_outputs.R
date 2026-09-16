@@ -171,12 +171,12 @@ plot_age_pyramid <- function(
         origin = origin
       )
 
-      # Ensure fallback values using ensure_value function for values and labels only
-      sex_male_val <- ensure_value(sex_male_val, "1")
-      sex_female_val <- ensure_value(sex_female_val, "2")
-      sex_male_lab <- ensure_value(sex_male_lab, "Male")
-      sex_female_lab <- ensure_value(sex_female_lab, "Female")
-      y_lab <- ensure_value(y_lab, "Age Group")
+      # Ensure fallback values using phrutils::ensure_value function for values and labels only
+      sex_male_val <- phrutils::ensure_value(sex_male_val, "1")
+      sex_female_val <- phrutils::ensure_value(sex_female_val, "2")
+      sex_male_lab <- phrutils::ensure_value(sex_male_lab, "Male")
+      sex_female_lab <- phrutils::ensure_value(sex_female_lab, "Female")
+      y_lab <- phrutils::ensure_value(y_lab, "Age Group")
 
       # Create a working copy
       plot_data <- df
@@ -696,7 +696,7 @@ plot_age_distribution <- function(
       }
 
       # Ensure fallback value for y_lab
-      y_lab <- ensure_value(y_lab, if (weighted) "Weighted Count" else "Count")
+      y_lab <- phrutils::ensure_value(y_lab, if (weighted) "Weighted Count" else "Count")
 
       # Get color for histogram
       hist_color <- phrutils::get_color_palette(type = color_palette, n = 1)[1]
@@ -1228,8 +1228,8 @@ plot_ridge_distribution <- function(
         ggridges::geom_density_ridges() +
         ggplot2::scale_fill_manual(values = colors) +
         ggridges::theme_ridges() +
-        ggplot2::xlab(ensure_value(x_lab, name_units)) +
-        ggplot2::ylab(ensure_value(y_lab, name_groups)) +
+        ggplot2::xlab(phrutils::ensure_value(x_lab, name_units)) +
+        ggplot2::ylab(phrutils::ensure_value(y_lab, name_groups)) +
         ggplot2::theme(
           legend.position = legend_position,
           legend.title = ggplot2::element_text(name_groups)
@@ -1469,8 +1469,8 @@ plot_ridge_distribution_by_group <- function(
         ggridges::geom_density_ridges() +
         ggplot2::scale_fill_manual(values = colors) +
         ggridges::theme_ridges() +
-        ggplot2::xlab(ensure_value(x_lab, numeric_col)) +
-        ggplot2::ylab(ensure_value(y_lab, grouping)) +
+        ggplot2::xlab(phrutils::ensure_value(x_lab, numeric_col)) +
+        ggplot2::ylab(phrutils::ensure_value(y_lab, grouping)) +
         ggplot2::theme(legend.position = legend_position) +
         ggplot2::labs(subtitle = final_subtitle)
 
@@ -4669,28 +4669,28 @@ plot_stacked_bar_multiple_vars <- function(
   phrutils::phr_try(
     {
       df <- phr_get_data_from_design(survey_design)
-      # Apply ensure_value with non-NULL defaults
-      legend_position <- ensure_value(legend_position, "bottom")
-      weighted <- ensure_value(weighted, FALSE)
-      show_labels <- ensure_value(show_labels, FALSE)
-      flip_coordinates <- ensure_value(flip_coordinates, FALSE)
-      separate_legends <- ensure_value(separate_legends, FALSE)
-      show_overall <- ensure_value(show_overall, FALSE)
-      overall_label <- ensure_value(overall_label, "Overall")
-      y_label <- ensure_value(y_label, "Percentage")
-      bar_spacing <- ensure_value(bar_spacing, 0.5)
-      group_spacing <- ensure_value(group_spacing, 0.1)
+      # Apply phrutils::ensure_value with non-NULL defaults
+      legend_position <- phrutils::ensure_value(legend_position, "bottom")
+      weighted <- phrutils::ensure_value(weighted, FALSE)
+      show_labels <- phrutils::ensure_value(show_labels, FALSE)
+      flip_coordinates <- phrutils::ensure_value(flip_coordinates, FALSE)
+      separate_legends <- phrutils::ensure_value(separate_legends, FALSE)
+      show_overall <- phrutils::ensure_value(show_overall, FALSE)
+      overall_label <- phrutils::ensure_value(overall_label, "Overall")
+      y_label <- phrutils::ensure_value(y_label, "Percentage")
+      bar_spacing <- phrutils::ensure_value(bar_spacing, 0.5)
+      group_spacing <- phrutils::ensure_value(group_spacing, 0.1)
 
       # For optional text fields
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      x_label <- ensure_value(x_label, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      x_label <- phrutils::ensure_value(x_label, "")
 
       # For optional column names
-      weights_col <- ensure_value(weights_col, NA_character_)
-      grouping <- ensure_value(grouping, NA_character_)
-      category_labels <- ensure_value(category_labels, NULL)
-      legend_label <- ensure_value(legend_label, NULL)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
+      grouping <- phrutils::ensure_value(grouping, NA_character_)
+      category_labels <- phrutils::ensure_value(category_labels, NULL)
+      legend_label <- phrutils::ensure_value(legend_label, NULL)
 
       # Validate inputs
       phrutils::phr_validate_not_null(
@@ -6494,21 +6494,21 @@ plot_treemap <- function(
       }
 
       df <- phr_get_data_from_design(survey_design)
-      # Apply ensure_value to all potentially NULL arguments early with appropriate non-NULL defaults
-      color_palette <- ensure_value(color_palette, "reach1")
-      label_size <- ensure_value(label_size, 1)
-      legend_position <- ensure_value(legend_position, "bottom")
-      weighted <- ensure_value(weighted, FALSE)
+      # Apply phrutils::ensure_value to all potentially NULL arguments early with appropriate non-NULL defaults
+      color_palette <- phrutils::ensure_value(color_palette, "reach1")
+      label_size <- phrutils::ensure_value(label_size, 1)
+      legend_position <- phrutils::ensure_value(legend_position, "bottom")
+      weighted <- phrutils::ensure_value(weighted, FALSE)
 
       # For optional text fields, use empty string as default
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      legend_label <- ensure_value(legend_label, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      legend_label <- phrutils::ensure_value(legend_label, "")
 
       # For optional column names that can be NULL, use special marker
-      subcategory_var <- ensure_value(subcategory_var, NA_character_)
-      size_var <- ensure_value(size_var, NA_character_)
-      weights_col <- ensure_value(weights_col, NA_character_)
+      subcategory_var <- phrutils::ensure_value(subcategory_var, NA_character_)
+      size_var <- phrutils::ensure_value(size_var, NA_character_)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
 
       # Standard validation block
       phrutils::phr_validate_not_null(
@@ -6949,24 +6949,24 @@ plot_sankey <- function(
       }
 
       df <- phr_get_data_from_design(survey_design)
-      # Apply ensure_value with non-NULL defaults
-      color_palette <- ensure_value(color_palette, "reach1")
-      legend_position <- ensure_value(legend_position, "bottom")
-      weighted <- ensure_value(weighted, FALSE)
-      show_percentage <- ensure_value(show_percentage, FALSE)
-      show_stratum_labels <- ensure_value(show_stratum_labels, TRUE)
-      show_stratum_stats <- ensure_value(show_stratum_stats, FALSE)
-      flip_coordinates <- ensure_value(flip_coordinates, FALSE)
+      # Apply phrutils::ensure_value with non-NULL defaults
+      color_palette <- phrutils::ensure_value(color_palette, "reach1")
+      legend_position <- phrutils::ensure_value(legend_position, "bottom")
+      weighted <- phrutils::ensure_value(weighted, FALSE)
+      show_percentage <- phrutils::ensure_value(show_percentage, FALSE)
+      show_stratum_labels <- phrutils::ensure_value(show_stratum_labels, TRUE)
+      show_stratum_stats <- phrutils::ensure_value(show_stratum_stats, FALSE)
+      flip_coordinates <- phrutils::ensure_value(flip_coordinates, FALSE)
 
       # For optional text fields
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      x_lab <- ensure_value(x_lab, "")
-      y_lab <- ensure_value(y_lab, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      x_lab <- phrutils::ensure_value(x_lab, "")
+      y_lab <- phrutils::ensure_value(y_lab, "")
 
       # For optional column names and vectors
-      weights_col <- ensure_value(weights_col, NA_character_)
-      axis_labels <- ensure_value(axis_labels, NULL)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
+      axis_labels <- phrutils::ensure_value(axis_labels, NULL)
 
       # Standard validation block
       phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
@@ -7403,24 +7403,24 @@ plot_ci_bar_percentage <- function(
         survey_design,
         c("tbl_svy", "survey.design", "survey.design2", "svyrep.design")
       )
-      # Apply ensure_value with non-NULL defaults
-      color_palette <- ensure_value(color_palette, "reach1")
-      legend_position <- ensure_value(legend_position, "bottom")
-      weighted <- ensure_value(weighted, FALSE)
-      show_labels <- ensure_value(show_labels, FALSE)
-      flip_coordinates <- ensure_value(flip_coordinates, FALSE)
-      conf_level <- ensure_value(conf_level, 0.95)
-      y_lab <- ensure_value(y_lab, "Percentage (%)")
+      # Apply phrutils::ensure_value with non-NULL defaults
+      color_palette <- phrutils::ensure_value(color_palette, "reach1")
+      legend_position <- phrutils::ensure_value(legend_position, "bottom")
+      weighted <- phrutils::ensure_value(weighted, FALSE)
+      show_labels <- phrutils::ensure_value(show_labels, FALSE)
+      flip_coordinates <- phrutils::ensure_value(flip_coordinates, FALSE)
+      conf_level <- phrutils::ensure_value(conf_level, 0.95)
+      y_lab <- phrutils::ensure_value(y_lab, "Percentage (%)")
 
       # For optional text fields, use empty string as default
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      x_lab <- ensure_value(x_lab, "")
-      legend_label <- ensure_value(legend_label, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      x_lab <- phrutils::ensure_value(x_lab, "")
+      legend_label <- phrutils::ensure_value(legend_label, "")
 
       # For optional column names that can be NULL, use special marker
-      weights_col <- ensure_value(weights_col, NA_character_)
-      grouping <- ensure_value(grouping, NA_character_)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
+      grouping <- phrutils::ensure_value(grouping, NA_character_)
 
       # Standard validation block — skip for survey design objects
       phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
@@ -7891,26 +7891,26 @@ plot_ci_point_mean <- function(
         survey_design,
         c("tbl_svy", "survey.design", "survey.design2", "svyrep.design")
       )
-      # Apply ensure_value with non-NULL defaults
-      color_palette <- ensure_value(color_palette, "reach1")
-      legend_position <- ensure_value(legend_position, "bottom")
-      weighted <- ensure_value(weighted, FALSE)
-      show_labels <- ensure_value(show_labels, FALSE)
-      flip_coordinates <- ensure_value(flip_coordinates, FALSE)
-      conf_level <- ensure_value(conf_level, 0.95)
-      point_size <- ensure_value(point_size, 3)
+      # Apply phrutils::ensure_value with non-NULL defaults
+      color_palette <- phrutils::ensure_value(color_palette, "reach1")
+      legend_position <- phrutils::ensure_value(legend_position, "bottom")
+      weighted <- phrutils::ensure_value(weighted, FALSE)
+      show_labels <- phrutils::ensure_value(show_labels, FALSE)
+      flip_coordinates <- phrutils::ensure_value(flip_coordinates, FALSE)
+      conf_level <- phrutils::ensure_value(conf_level, 0.95)
+      point_size <- phrutils::ensure_value(point_size, 3)
 
       # For optional text fields
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      x_lab <- ensure_value(x_lab, "")
-      y_lab <- ensure_value(y_lab, "")
-      legend_label <- ensure_value(legend_label, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      x_lab <- phrutils::ensure_value(x_lab, "")
+      y_lab <- phrutils::ensure_value(y_lab, "")
+      legend_label <- phrutils::ensure_value(legend_label, "")
 
       # For optional column names
-      weights_col <- ensure_value(weights_col, NA_character_)
-      grouping <- ensure_value(grouping, NA_character_)
-      numeric_var2 <- ensure_value(numeric_var2, NA_character_)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
+      grouping <- phrutils::ensure_value(grouping, NA_character_)
+      numeric_var2 <- phrutils::ensure_value(numeric_var2, NA_character_)
 
       # ylim stays as NULL if not provided (we'll handle it later)
 
@@ -8509,7 +8509,7 @@ plot_scatter <- function(
           ) +
             ggplot2::geom_point(color = colors[1], alpha = point_alpha) +
             ggplot2::scale_size_continuous(
-              name = ensure_value(legend_label, weights_col)
+              name = phrutils::ensure_value(legend_label, weights_col)
             )
         } else {
           g <- ggplot2::ggplot(
@@ -8538,7 +8538,7 @@ plot_scatter <- function(
             ggplot2::geom_point(alpha = point_alpha) +
             ggplot2::scale_color_manual(
               values = colors,
-              name = ensure_value(legend_label, grouping)
+              name = phrutils::ensure_value(legend_label, grouping)
             ) +
             ggplot2::scale_size_continuous(name = weights_col)
         } else {
@@ -8553,7 +8553,7 @@ plot_scatter <- function(
             ggplot2::geom_point(alpha = point_alpha) +
             ggplot2::scale_color_manual(
               values = colors,
-              name = ensure_value(legend_label, grouping)
+              name = phrutils::ensure_value(legend_label, grouping)
             )
         }
       }
@@ -8581,8 +8581,8 @@ plot_scatter <- function(
         ggplot2::theme_minimal() +
         ggplot2::theme(legend.position = legend_position) +
         ggplot2::labs(
-          x = ensure_value(x_lab, x_var),
-          y = ensure_value(y_lab, y_var),
+          x = phrutils::ensure_value(x_lab, x_var),
+          y = phrutils::ensure_value(y_lab, y_var),
           subtitle = final_subtitle
         )
 
@@ -8657,23 +8657,23 @@ plot_donut <- function(
   phrutils::phr_try(
     {
       df <- phr_get_data_from_design(survey_design)
-      # Apply ensure_value with non-NULL defaults
-      color_palette <- ensure_value(color_palette, "reach1")
-      legend_position <- ensure_value(legend_position, "right")
-      weighted <- ensure_value(weighted, FALSE)
-      show_labels <- ensure_value(show_labels, TRUE)
-      label_type <- ensure_value(label_type, "percentage")
-      label_color <- ensure_value(label_color, "white")
-      hole_size <- ensure_value(hole_size, 0.4)
+      # Apply phrutils::ensure_value with non-NULL defaults
+      color_palette <- phrutils::ensure_value(color_palette, "reach1")
+      legend_position <- phrutils::ensure_value(legend_position, "right")
+      weighted <- phrutils::ensure_value(weighted, FALSE)
+      show_labels <- phrutils::ensure_value(show_labels, TRUE)
+      label_type <- phrutils::ensure_value(label_type, "percentage")
+      label_color <- phrutils::ensure_value(label_color, "white")
+      hole_size <- phrutils::ensure_value(hole_size, 0.4)
 
       # For optional text fields
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      legend_label <- ensure_value(legend_label, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      legend_label <- phrutils::ensure_value(legend_label, "")
 
       # For optional column names
-      weights_col <- ensure_value(weights_col, NA_character_)
-      value_var <- ensure_value(value_var, NA_character_)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
+      value_var <- phrutils::ensure_value(value_var, NA_character_)
 
       # Standard validation block
       phrutils::phr_validate_logical(weighted, origin = origin, soft = FALSE)
@@ -9065,35 +9065,35 @@ plot_crosstab <- function(
   phrutils::phr_try(
     {
       df <- phr_get_data_from_design(survey_design)
-      # Apply ensure_value with non-NULL defaults
-      weighted <- ensure_value(weighted, FALSE)
-      percentage_by <- ensure_value(percentage_by, "total")
-      gradient_by <- ensure_value(gradient_by, "all")
-      show_margins <- ensure_value(show_margins, FALSE)
-      margins_label <- ensure_value(margins_label, "Total")
-      color_low <- ensure_value(color_low, "#FFFFFF")
-      color_high <- ensure_value(color_high, "#0067A0")
-      show_counts <- ensure_value(show_counts, TRUE)
-      show_percentages <- ensure_value(show_percentages, TRUE)
-      highlight_color <- ensure_value(highlight_color, "red")
-      highlight_size <- ensure_value(highlight_size, 2)
-      legend_label <- ensure_value(legend_label, "Percentage")
-      text_size <- ensure_value(text_size, 3.5)
-      text_color <- ensure_value(text_color, "black")
+      # Apply phrutils::ensure_value with non-NULL defaults
+      weighted <- phrutils::ensure_value(weighted, FALSE)
+      percentage_by <- phrutils::ensure_value(percentage_by, "total")
+      gradient_by <- phrutils::ensure_value(gradient_by, "all")
+      show_margins <- phrutils::ensure_value(show_margins, FALSE)
+      margins_label <- phrutils::ensure_value(margins_label, "Total")
+      color_low <- phrutils::ensure_value(color_low, "#FFFFFF")
+      color_high <- phrutils::ensure_value(color_high, "#0067A0")
+      show_counts <- phrutils::ensure_value(show_counts, TRUE)
+      show_percentages <- phrutils::ensure_value(show_percentages, TRUE)
+      highlight_color <- phrutils::ensure_value(highlight_color, "red")
+      highlight_size <- phrutils::ensure_value(highlight_size, 2)
+      legend_label <- phrutils::ensure_value(legend_label, "Percentage")
+      text_size <- phrutils::ensure_value(text_size, 3.5)
+      text_color <- phrutils::ensure_value(text_color, "black")
 
       # For optional text fields
-      title_name <- ensure_value(title_name, "")
-      subtitle <- ensure_value(subtitle, "")
-      x_label <- ensure_value(x_label, "")
-      y_label <- ensure_value(y_label, "")
+      title_name <- phrutils::ensure_value(title_name, "")
+      subtitle <- phrutils::ensure_value(subtitle, "")
+      x_label <- phrutils::ensure_value(x_label, "")
+      y_label <- phrutils::ensure_value(y_label, "")
 
       # For optional column names
-      weights_col <- ensure_value(weights_col, NA_character_)
-      color_mid <- ensure_value(color_mid, NA_character_)
-      highlight_cells_row_val1 <- ensure_value(highlight_cells_row_val1, NULL)
-      highlight_cells_col_val1 <- ensure_value(highlight_cells_col_val1, NULL)
-      highlight_cells_row_val2 <- ensure_value(highlight_cells_row_val2, NULL)
-      highlight_cells_col_val2 <- ensure_value(highlight_cells_col_val2, NULL)
+      weights_col <- phrutils::ensure_value(weights_col, NA_character_)
+      color_mid <- phrutils::ensure_value(color_mid, NA_character_)
+      highlight_cells_row_val1 <- phrutils::ensure_value(highlight_cells_row_val1, NULL)
+      highlight_cells_col_val1 <- phrutils::ensure_value(highlight_cells_col_val1, NULL)
+      highlight_cells_row_val2 <- phrutils::ensure_value(highlight_cells_row_val2, NULL)
+      highlight_cells_col_val2 <- phrutils::ensure_value(highlight_cells_col_val2, NULL)
 
       # Validate inputs
       phrutils::phr_validate_not_null(row_var, origin = origin, soft = FALSE)

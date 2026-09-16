@@ -7,14 +7,15 @@
 Holds the protocol strata/sample table and related workflows such as adding
 strata rows and calculating sample sizes.
 }
+\section{Super class}{
+\code{\link[phr:Asset]{Asset}} -> \code{Sample}
+}
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
     \item{\code{sample_table}}{Data frame with one row per stratum.}
 
     \item{\code{validated}}{Logical indicating whether the sample table has been validated.}
-
-    \item{\code{metadata}}{List containing sample metadata.}
   }
   \if{html}{\out{</div>}}
 }
@@ -34,6 +35,16 @@ strata rows and calculating sample sizes.
     \item \href{#method-Sample-clone}{\code{Sample$clone()}}
   }
 }
+\if{html}{\out{<details><summary>Inherited methods</summary>
+<ul>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
+</ul>
+</details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Sample-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-Sample-initialize}{}}}

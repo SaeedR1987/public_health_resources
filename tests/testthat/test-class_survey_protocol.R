@@ -1,6 +1,6 @@
 # Tests for SurveyProtocol and related classes (Sample, SamplingFrame).
 #
-# Principle: inherited functionality (Orchestrator, Document, Protocol) is
+# Principle: inherited functionality (Asset, Document, Protocol) is
 # tested in their own test files.  This file covers only what SurveyProtocol
 # adds: sampling-frame management, sample-size calculations, draw_sample /
 # clear_sample integration, active bindings, and SurveyProtocol-specific
@@ -55,7 +55,7 @@ test_that("SurveyProtocol initializes and inherits from Protocol", {
     expect_true(inherits(p, "SurveyProtocol"))
     expect_true(inherits(p, "Protocol"))
     expect_true(inherits(p, "Document"))
-    expect_true(inherits(p, "Orchestrator"))
+    expect_true(inherits(p, "Asset"))
   }))
 })
 
@@ -980,14 +980,14 @@ test_that("sampling_frame is a SamplingFrame and accessible via $sampling_frame"
   }))
 })
 
-# ── access_nested integration with sample_object ───────────────────────────────
+# ── call() integration with sample_object ──────────────────────────────────────
 
-test_that("access_nested to sample_object$add_stratum works and updates modified_datetime", {
+test_that("call() to sample_object$add_stratum works and updates modified_datetime", {
   suppressMessages(p <- make_protocol())
   t_before <- suppressWarnings(suppressMessages(p$metadata$modified_datetime))
   Sys.sleep(0.01)
   suppressWarnings(suppressMessages(
-    p$access_nested(
+    p$call(
       field = "sample_object",
       member = "add_stratum",
       stratum_id = "s1",
@@ -999,26 +999,26 @@ test_that("access_nested to sample_object$add_stratum works and updates modified
   suppressWarnings(suppressMessages({
     expect_true(p$metadata$modified_datetime > t_before)
     expect_equal(
-      p$access_nested(field = "sample_object", member = "get_sampling_methods"),
+      p$call(field = "sample_object", member = "get_sampling_methods"),
       "simple_random"
     )
     expect_equal(
-      p$access_nested(field = "sample_object", member = "get_strata_names"),
+      p$call(field = "sample_object", member = "get_strata_names"),
       "S1"
     )
   }))
   st <- suppressWarnings(suppressMessages(
-    p$access_nested(field = "sample_object", member = "get_sample_table")
+    p$call(field = "sample_object", member = "get_sample_table")
   ))
   suppressWarnings(suppressMessages(
     expect_equal(nrow(st), 1L)
   ))
 })
 
-test_that("access_nested to sample_object$remove_stratum removes stratum", {
+test_that("call() to sample_object$remove_stratum removes stratum", {
   suppressMessages(p <- make_protocol())
   suppressWarnings(suppressMessages(
-    p$access_nested(
+    p$call(
       field = "sample_object",
       member = "add_stratum",
       stratum_id = "s1",
@@ -1028,14 +1028,14 @@ test_that("access_nested to sample_object$remove_stratum removes stratum", {
     )
   ))
   suppressWarnings(suppressMessages(
-    p$access_nested(
+    p$call(
       field = "sample_object",
       member = "remove_stratum",
       strata_name = "S1"
     )
   ))
   st <- suppressWarnings(suppressMessages(
-    p$access_nested(field = "sample_object", member = "get_sample_table")
+    p$call(field = "sample_object", member = "get_sample_table")
   ))
   suppressWarnings(suppressMessages(
     expect_equal(nrow(st), 0L)
