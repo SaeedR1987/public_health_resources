@@ -244,7 +244,13 @@ Asset <- R6::R6Class(
     #' field, and \code{member} is optional: when omitted, \code{value}
     #' replaces the resolved top-level (or name/role-resolved) target
     #' directly. Writing to a resolved member or target that currently holds
-    #' a function is rejected, to avoid accidentally clobbering methods.
+    #' a function is rejected, to avoid accidentally clobbering methods. When
+    #' the resolved target is itself an R6 object exposing its own
+    #' \code{set()} method (for example a nested \code{Asset} or \code{Log}),
+    #' \code{member}/\code{value} are delegated to that object's
+    #' \code{set(field, value)} instead of being written directly into its
+    #' environment, so private members and validation on the nested object
+    #' are respected.
     #'
     #' @param field Character scalar naming a public or private top-level
     #'   field on this object.
@@ -318,14 +324,36 @@ Asset <- R6::R6Class(
               ),
               origin = "Asset$set"
             )
-            phrutils::phr_assert(
-              !is.function(target[[member]]),
-              message = phr_txt(
-                "Refusing to overwrite function member '{member}'."
-              ),
-              origin = "Asset$set"
-            )
-            target[[member]] <- value
+
+            if (
+              is.environment(target) &&
+                !is.null(target$.__enclos_env__) &&
+                is.function(target$set)
+            ) {
+              # `target` is itself an R6 object (e.g. a nested Asset/Log)
+              # exposing its own `set()` API. Delegate to it instead of
+              # writing directly into its environment: `member` may resolve
+              # to a private field, and direct assignment would either
+              # bypass the nested object's own validation or fail outright
+              # by attempting to add a new binding to a locked environment.
+              phrutils::phr_assert(
+                !is.function(private$..resolve_member_value(target, member)),
+                message = phr_txt(
+                  "Refusing to overwrite function member '{member}'."
+                ),
+                origin = "Asset$set"
+              )
+              target$set(field = member, value = value)
+            } else {
+              phrutils::phr_assert(
+                !is.function(target[[member]]),
+                message = phr_txt(
+                  "Refusing to overwrite function member '{member}'."
+                ),
+                origin = "Asset$set"
+              )
+              target[[member]] <- value
+            }
             new_target <- target
           }
 
