@@ -6,8 +6,10 @@
 \description{
 Base class providing core, reusable functionality for R6 classes in this
 package: private metadata (including a content-based \code{hash_id}
-fingerprint), generalized nested-object access (\code{get()}/\code{call()}),
-a generalized field setter (\code{set()}), and synchronization hooks.
+fingerprint and a \code{version} change counter), generalized
+nested-object access (\code{get()}/\code{call()}), a generalized field
+setter (\code{set()}), and synchronization hooks. Metadata is retrieved
+via the \code{metadata} active binding or \code{get(field = "metadata")}.
 
 \code{Tool}, \code{Document}, \code{Framework}, and \code{Sample} (and any
 of their subclasses) inherit from \code{Asset}.
@@ -16,10 +18,11 @@ of their subclasses) inherit from \code{Asset}.
 \if{html}{\out{<div class="r6-active-bindings">}}
 \describe{
 \item{\code{metadata}}{Active binding exposing the private metadata list
-(\code{created_datetime}, \code{modified_datetime}, \code{hash_id},
-and any additional fields set via \code{set()}). Reading returns the
-metadata list; assigning replaces it. This is the sole public
-accessor path, since metadata itself is stored privately.}
+(\code{created_datetime}, \code{modified_datetime}, \code{version},
+\code{hash_id}, and any additional fields set via \code{set()}).
+Reading returns the metadata list; assigning replaces it. This (along
+with \code{get(field = "metadata")}) is the sole public accessor
+path, since metadata itself is stored privately.}
 }
 \if{html}{\out{</div>}}
 }
@@ -27,7 +30,6 @@ accessor path, since metadata itself is stored privately.}
 \subsection{Public methods}{
 \itemize{
 \item \href{#method-Asset-new}{\code{Asset$new()}}
-\item \href{#method-Asset-get_metadata}{\code{Asset$get_metadata()}}
 \item \href{#method-Asset-get_hash_id}{\code{Asset$get_hash_id()}}
 \item \href{#method-Asset-pre_sync_state}{\code{Asset$pre_sync_state()}}
 \item \href{#method-Asset-post_sync_state}{\code{Asset$post_sync_state()}}
@@ -49,31 +51,6 @@ Creates a new Asset object.
 
 \subsection{Returns}{
 A new Asset object.
-}
-}
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Asset-get_metadata"></a>}}
-\if{latex}{\out{\hypertarget{method-Asset-get_metadata}{}}}
-\subsection{Method \code{get_metadata()}}{
-Retrieve metadata, or a single metadata field.
-
-Metadata is stored privately; this method (along with the
-\code{metadata} active binding) is the supported public accessor.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{Asset$get_metadata(field = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{field}}{Optional character scalar naming a metadata field to
-return. When \code{NULL} (default), the full metadata list is
-returned.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-The requested metadata list or field value.
 }
 }
 \if{html}{\out{<hr>}}

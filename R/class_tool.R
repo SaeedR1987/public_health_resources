@@ -130,8 +130,6 @@ Tool <- R6::R6Class(
     ) {
       super$initialize()
       private$.name <- name %||% "Untitled Tool"
-      private$.created_at <- self$metadata$created_datetime
-      private$.modified_at <- self$metadata$modified_datetime
       private$.tool_type <- "generic"
 
       # Initialize data frames with required columns if not provided
@@ -188,7 +186,6 @@ Tool <- R6::R6Class(
     #' @return Invisibly returns \code{self}.
     touch = function() {
       private$..touch()
-      private$.modified_at <- self$metadata$modified_datetime
       invisible(self)
     },
 
@@ -723,8 +720,6 @@ Tool <- R6::R6Class(
   private = list(
     .name = NULL,
     .tool_type = NULL,
-    .created_at = NULL,
-    .modified_at = NULL,
     .selected_indicators = NULL,
     .validation_errors = NULL,
 

@@ -332,7 +332,6 @@ currently available in the held \code{SamplingFrame}, when present.}
 <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>phr::Asset$call()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>phr::Asset$get()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get_hash_id"><a href='../../phr/html/Asset.html#method-Asset-get_hash_id'><code>phr::Asset$get_hash_id()</code></a></span></li>
-<li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get_metadata"><a href='../../phr/html/Asset.html#method-Asset-get_metadata'><code>phr::Asset$get_metadata()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>phr::Asset$pre_sync_state()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>phr::Asset$set()</code></a></span></li>
 <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>phr::Asset$sync_state()</code></a></span></li>

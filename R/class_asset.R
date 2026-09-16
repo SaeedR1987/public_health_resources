@@ -3,8 +3,10 @@
 #' @description
 #' Base class providing core, reusable functionality for R6 classes in this
 #' package: private metadata (including a content-based \code{hash_id}
-#' fingerprint), generalized nested-object access (\code{get()}/\code{call()}),
-#' a generalized field setter (\code{set()}), and synchronization hooks.
+#' fingerprint and a \code{version} change counter), generalized
+#' nested-object access (\code{get()}/\code{call()}), a generalized field
+#' setter (\code{set()}), and synchronization hooks. Metadata is retrieved
+#' via the \code{metadata} active binding or \code{get(field = "metadata")}.
 #'
 #' \code{Tool}, \code{Document}, \code{Framework}, and \code{Sample} (and any
 #' of their subclasses) inherit from \code{Asset}.
@@ -22,32 +24,12 @@ Asset <- R6::R6Class(
       private$..metadata <- list(
         created_datetime = timestamp,
         modified_datetime = timestamp,
+        version = 0L,
         hash_id = NA_character_
       )
+      private$..metadata$hash_id <- private$..compute_hash_id()
       private$..touch()
       invisible(self)
-    },
-
-    #' @description
-    #' Retrieve metadata, or a single metadata field.
-    #'
-    #' Metadata is stored privately; this method (along with the
-    #' \code{metadata} active binding) is the supported public accessor.
-    #'
-    #' @param field Optional character scalar naming a metadata field to
-    #'   return. When \code{NULL} (default), the full metadata list is
-    #'   returned.
-    #' @return The requested metadata list or field value.
-    get_metadata = function(field = NULL) {
-      if (is.null(field)) {
-        return(private$..metadata)
-      }
-      phrutils::phr_assert(
-        is.character(field) && length(field) == 1L && nzchar(field),
-        message = phr_txt("field must be a non-empty character string."),
-        origin = "Asset$get_metadata"
-      )
-      private$..metadata[[field]]
     },
 
     #' @description
@@ -388,10 +370,11 @@ Asset <- R6::R6Class(
 
   active = list(
     #' @field metadata Active binding exposing the private metadata list
-    #'   (\code{created_datetime}, \code{modified_datetime}, \code{hash_id},
-    #'   and any additional fields set via \code{set()}). Reading returns the
-    #'   metadata list; assigning replaces it. This is the sole public
-    #'   accessor path, since metadata itself is stored privately.
+    #'   (\code{created_datetime}, \code{modified_datetime}, \code{version},
+    #'   \code{hash_id}, and any additional fields set via \code{set()}).
+    #'   Reading returns the metadata list; assigning replaces it. This (along
+    #'   with \code{get(field = "metadata")}) is the sole public accessor
+    #'   path, since metadata itself is stored privately.
     metadata = function(value) {
       if (missing(value)) {
         return(private$..metadata)
@@ -403,15 +386,17 @@ Asset <- R6::R6Class(
 
   private = list(
     # @field ..metadata List containing private asset metadata, including
-    #   `created_datetime`, `modified_datetime`, and `hash_id`.
+    #   `created_datetime`, `modified_datetime`, `version`, and `hash_id`.
     # @keywords internal
     ..metadata = list(
       created_datetime = NULL,
       modified_datetime = NULL,
+      version = 0L,
       hash_id = NA_character_
     ),
 
-    # @description Update modified timestamp and hash_id fingerprint metadata.
+    # @description Update modified timestamp, bump the version counter, and
+    #   recompute the hash_id fingerprint metadata.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
     ..touch = function() {
@@ -419,6 +404,7 @@ Asset <- R6::R6Class(
         private$..metadata <- list()
       }
       private$..metadata$modified_datetime <- Sys.time()
+      private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
       private$..metadata$hash_id <- private$..compute_hash_id()
       invisible(NULL)
     },

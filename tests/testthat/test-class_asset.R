@@ -17,9 +17,9 @@ test_that("Asset metadata is private and only accessible via public methods", {
   inst <- Asset$new()
   expect_false("metadata" %in% names(inst$.__enclos_env__$private))
   expect_true("..metadata" %in% names(inst$.__enclos_env__$private))
-  expect_identical(inst$get_metadata(), inst$metadata)
+  expect_identical(inst$get(field = "metadata"), inst$metadata)
   expect_identical(
-    inst$get_metadata("created_datetime"),
+    inst$get(field = "metadata", member = "created_datetime"),
     inst$metadata$created_datetime
   )
 })
@@ -29,6 +29,11 @@ test_that("Asset initialize sets a hash_id fingerprint", {
   expect_true(is.character(inst$get_hash_id()))
   expect_true(!is.na(inst$get_hash_id()))
   expect_identical(inst$get_hash_id(), inst$metadata$hash_id)
+})
+
+test_that("Asset initialize sets version to 1", {
+  inst <- Asset$new()
+  expect_identical(inst$metadata$version, 1L)
 })
 
 # Helper subclass exposing public/private fields for get()/call()/set() tests
@@ -59,6 +64,15 @@ test_that("hash_id changes when public state changes", {
   inst$set(field = "tools", value = list(new_tool = list(name = "new")))
   after <- inst$get_hash_id()
   expect_false(identical(before, after))
+})
+
+test_that("version increments each time the object is touched", {
+  inst <- TestAsset$new()
+  before <- inst$metadata$version
+  inst$set(field = "tools", value = list(new_tool = list(name = "new")))
+  expect_identical(inst$metadata$version, before + 1L)
+  inst$set(field = "tools", value = list(other_tool = list(name = "other")))
+  expect_identical(inst$metadata$version, before + 2L)
 })
 
 test_that("set() replaces a public top-level field directly", {
