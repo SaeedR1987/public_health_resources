@@ -1,14 +1,14 @@
 #' Document R6 Class
 #'
 #' @description
-#' Subclass of \code{\link{Orchestrator}} that provides shared DOCX handling
+#' Subclass of \code{\link{Asset}} that provides shared DOCX handling
 #' helpers for protocol/report-like classes.
 #'
 #' @importFrom R6 R6Class
 #' @export
 Document <- R6::R6Class(
   "Document",
-  inherit = Orchestrator,
+  inherit = Asset,
   public = list(
     #' @field reference_doc_filename Optional template filename/path used to
     #'   initialize \code{document}.

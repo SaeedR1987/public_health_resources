@@ -23,7 +23,7 @@ test_that("IPHRAProtocol$new() creates object with correct class hierarchy", {
     expect_true(inherits(p, "SurveyProtocol"))
     expect_true(inherits(p, "Protocol"))
     expect_true(inherits(p, "Document"))
-    expect_true(inherits(p, "Orchestrator"))
+    expect_true(inherits(p, "Asset"))
   }))
 })
 

@@ -55,7 +55,7 @@ Remotes:
 Encoding: UTF-8
 Config/testthat/edition: 3
 Collate:
-    'class_orchestrator.R'
+    'class_asset.R'
     'class_document.R'
     'class_ana_framework.R'
     'class_cleaning_log.R'

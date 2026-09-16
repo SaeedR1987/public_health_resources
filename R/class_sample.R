@@ -8,6 +8,7 @@
 #' @export
 Sample <- R6::R6Class(
   "Sample",
+  inherit = Asset,
   public = list(
     #' @field sample_table Data frame with one row per stratum.
     sample_table = NULL,
@@ -15,18 +16,10 @@ Sample <- R6::R6Class(
     #' @field validated Logical indicating whether the sample table has been validated.
     validated = NULL,
 
-    #' @field metadata List containing sample metadata.
-    metadata = list(
-      created_datetime = NULL,
-      modified_datetime = NULL
-    ),
-
     #' @description Create a new Sample object.
     #' @param sample_table Optional sample table data frame.
     initialize = function(sample_table = NULL) {
-      timestamp <- Sys.time()
-      self$metadata$created_datetime <- timestamp
-      self$metadata$modified_datetime <- timestamp
+      super$initialize()
       self$validated <- FALSE
       if (is.null(sample_table)) {
         self$sample_table <- NULL
@@ -418,14 +411,6 @@ Sample <- R6::R6Class(
     }
   ),
   private = list(
-    # @description Update modified timestamp.
-    # @return Invisibly returns NULL.
-    # @keywords internal
-    ..touch = function() {
-      self$metadata$modified_datetime <- Sys.time()
-      invisible(NULL)
-    },
-
     # @description Resolve the stratum name column from a sample table.
     # @param st Data frame sample table.
     # @return Character scalar naming the column, or NULL if not found.

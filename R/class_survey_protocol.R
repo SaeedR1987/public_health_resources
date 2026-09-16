@@ -212,7 +212,7 @@ SurveyProtocol <- R6::R6Class(
             )
           }
 
-          self$set_nested(
+          self$set(
             field = "sampling_frame",
             member = "log_df",
             value = tibble::as_tibble(frame)
@@ -1843,7 +1843,7 @@ SurveyProtocol <- R6::R6Class(
   private = list(
     # @description Extract the sample table from the nested Sample object.
     #
-    # Safely accesses the sample table via \code{access_nested()}, returning
+    # Safely accesses the sample table via \code{call()}, returning
     # \code{NULL} on error.
     #
     # @return Data frame containing the sample table, or \code{NULL} if
@@ -1851,7 +1851,7 @@ SurveyProtocol <- R6::R6Class(
     # @keywords internal
     ..sample_table_from_nested = function() {
       tryCatch(
-        self$access_nested(
+        self$call(
           field = "sample_object",
           member = "get_sample_table"
         ),
@@ -1999,7 +1999,7 @@ SurveyProtocol <- R6::R6Class(
         return(FALSE)
       }
       hh_codes <- tryCatch(
-        self$access_nested(
+        self$call(
           field = "tools",
           role = "household",
           member = "get_indicator_codes"
@@ -2032,34 +2032,39 @@ SurveyProtocol <- R6::R6Class(
     # @keywords internal
     ..sync_sampling_state = function() {
       st <- tryCatch(
-        self$access_nested(
+        self$call(
           field = "sample_object",
           member = "get_sample_table"
         ),
         error = function(e) NULL
       )
       strata_names <- tryCatch(
-        self$access_nested(
+        self$call(
           field = "sample_object",
           member = "get_strata_names"
         ),
         error = function(e) character(0)
       )
       methods_used <- tryCatch(
-        self$access_nested(
+        self$call(
           field = "sample_object",
           member = "get_sampling_methods"
         ),
         error = function(e) character(0)
       )
       drawn_sample <- tryCatch(
-        self$access_nested(field = "sample_object", member = "drawn_sample"),
+        self$get(
+          field = "sample_object",
+          member = "drawn_sample",
+          update_modified = TRUE
+        ),
         error = function(e) NULL
       )
       drawn_sample_full <- tryCatch(
-        self$access_nested(
+        self$get(
           field = "sample_object",
-          member = "drawn_sample_full"
+          member = "drawn_sample_full",
+          update_modified = TRUE
         ),
         error = function(e) NULL
       )
@@ -2124,7 +2129,11 @@ SurveyProtocol <- R6::R6Class(
     # @keywords internal
     ..sync_sample_frame_state = function() {
       sf <- tryCatch(
-        self$access_nested(field = "sampling_frame", member = "log_df"),
+        self$get(
+          field = "sampling_frame",
+          member = "log_df",
+          update_modified = TRUE
+        ),
         error = function(e) NULL
       )
       if (

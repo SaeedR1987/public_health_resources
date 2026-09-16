@@ -1,13 +1,13 @@
 #' IntegratedAnalysis R6 Class
 #'
 #' @description
-#' Subclass of \code{\link{Orchestrator}} for storing multiple
+#' Subclass of \code{\link{Asset}} for storing multiple
 #' \code{\link{DataAnalytics}} objects and building unified analysis tables.
 #'
 #' @importFrom R6 R6Class
 IntegratedAnalysis <- R6::R6Class(
   "IntegratedAnalysis",
-  inherit = Orchestrator,
+  inherit = Asset,
   public = list(
     #' @field data_analytics Named list of \code{\link{DataAnalytics}} objects.
     data_analytics = list(),
@@ -38,7 +38,7 @@ IntegratedAnalysis <- R6::R6Class(
         origin = "IntegratedAnalysis$add_data_analytics"
       )
       self$data_analytics[[name]] <- analytics
-      private$.touch()
+      private$..touch()
       invisible(self)
     },
 
@@ -72,7 +72,7 @@ IntegratedAnalysis <- R6::R6Class(
       if (length(parts) == 0L) return(data.frame())
       out <- do.call(rbind, parts)
       rownames(out) <- NULL
-      private$.touch()
+      private$..touch()
       out
     }
   )

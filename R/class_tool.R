@@ -61,6 +61,7 @@ if (!exists("%||%", mode = "function")) {
 #' @export
 Tool <- R6::R6Class(
   "Tool",
+  inherit = Asset,
   cloneable = TRUE,
   public = list(
     #' @field survey Data frame containing the survey sheet of the XLSForm .
@@ -111,13 +112,6 @@ Tool <- R6::R6Class(
     #'   construction.
     revised_settings = NULL,
 
-    #' @field metadata List containing tool metadata including
-    #'   \code{created_datetime} and \code{modified_datetime}.
-    metadata = list(
-      created_datetime = NULL,
-      modified_datetime = NULL
-    ),
-
     # Initialization
 
     #' @description
@@ -134,11 +128,8 @@ Tool <- R6::R6Class(
       choices = NULL,
       settings = NULL
     ) {
+      super$initialize()
       private$.name <- name %||% "Untitled Tool"
-      private$.created_at <- Sys.time()
-      private$.modified_at <- Sys.time()
-      self$metadata$created_datetime <- private$.created_at
-      self$metadata$modified_datetime <- private$.modified_at
       private$.tool_type <- "generic"
 
       # Initialize data frames with required columns if not provided
@@ -194,8 +185,7 @@ Tool <- R6::R6Class(
     #' Update tool modification metadata timestamps.
     #' @return Invisibly returns \code{self}.
     touch = function() {
-      private$.modified_at <- Sys.time()
-      self$metadata$modified_datetime <- private$.modified_at
+      private$..touch()
       invisible(self)
     },
 
@@ -730,8 +720,6 @@ Tool <- R6::R6Class(
   private = list(
     .name = NULL,
     .tool_type = NULL,
-    .created_at = NULL,
-    .modified_at = NULL,
     .selected_indicators = NULL,
     .validation_errors = NULL,
 
