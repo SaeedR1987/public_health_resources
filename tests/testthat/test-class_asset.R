@@ -133,6 +133,26 @@ test_that("set() refuses to overwrite a function member", {
   expect_error(inst$set(field = "initialize", value = 1))
 })
 
+test_that("set() delegates to a nested R6 object's own set() when writing a member", {
+  TestAssetWithLog <- R6::R6Class(
+    "TestAssetWithLog",
+    inherit = Asset,
+    public = list(
+      log = NULL,
+      initialize = function() {
+        super$initialize()
+        self$log <- Log$new(log_name = "Nested Log")
+      }
+    )
+  )
+  inst <- TestAssetWithLog$new()
+  new_df <- data.frame(x = 1:2)
+
+  inst$set(field = "log", member = "log_df", value = new_df)
+
+  expect_equal(as.data.frame(inst$log$get("log_df")), new_df)
+})
+
 test_that("set() errors when both name and role are supplied", {
   inst <- TestAsset$new()
   expect_error(
