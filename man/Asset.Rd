@@ -245,7 +245,13 @@ reading. \code{field} may resolve to either a public or a private
 field, and \code{member} is optional: when omitted, \code{value}
 replaces the resolved top-level (or name/role-resolved) target
 directly. Writing to a resolved member or target that currently holds
-a function is rejected, to avoid accidentally clobbering methods.
+a function is rejected, to avoid accidentally clobbering methods. When
+the resolved target is itself an R6 object exposing its own
+\code{set()} method (for example a nested \code{Asset} or \code{Log}),
+\code{member}/\code{value} are delegated to that object's
+\code{set(field, value)} instead of being written directly into its
+environment, so private members and validation on the nested object
+are respected.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Asset$set(

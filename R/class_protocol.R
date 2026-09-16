@@ -1084,7 +1084,7 @@ Protocol <- R6::R6Class(
           nrow(revised_survey) == 0L
       ) {
         phrutils::phr_warning(
-          phr_txt("Tool '{tool_name}' has no revised_survey data."),
+          phrutils::phr_txt("Tool '{tool_name}' has no revised_survey data."),
           origin = "Protocol$get_dap_table"
         )
         return(NULL)
@@ -1103,7 +1103,7 @@ Protocol <- R6::R6Class(
 
       if (!"indicator_code" %in% names(revised_survey)) {
         phrutils::phr_warning(
-          phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
+          phrutils::phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
           origin = "Protocol$get_dap_table"
         )
         return(NULL)
@@ -1202,7 +1202,7 @@ Protocol <- R6::R6Class(
       lang <- tolower(trimws(as.character(lang)))
       if (!lang %in% c("en", "fr", "es", "ar")) {
         phrutils::phr_warning(
-          phr_txt("Invalid lang '{lang}' specified; defaulting to 'en'."),
+          phrutils::phr_txt("Invalid lang '{lang}' specified; defaulting to 'en'."),
           origin = "Protocol$get_dap_table"
         )
         lang <- "en"
