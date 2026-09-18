@@ -1169,9 +1169,9 @@ SurveyProtocol <- R6::R6Class(
       if (
         !is.null(sf_pop) &&
           is.data.frame(sf_pop) &&
-          "total_population" %in% names(sf_pop)
+          "population_size" %in% names(sf_pop)
       ) {
-        return(sum(as.numeric(sf_pop$total_population), na.rm = TRUE))
+        return(sum(as.numeric(sf_pop$population_size), na.rm = TRUE))
       }
 
       return(0)
@@ -1188,10 +1188,10 @@ SurveyProtocol <- R6::R6Class(
       if (
         !is.null(sf_pop) &&
         is.data.frame(sf_pop) &&
-        "total_population" %in% names(sf_pop) &&
+        "population_size" %in% names(sf_pop) &&
         "inclusion" %in% names(sf_pop)
       ) {
-        return(sum(as.numeric(sf_pop$total_population[sf_pop$inclusion == TRUE]), na.rm = TRUE))
+        return(sum(as.numeric(sf_pop$population_size[sf_pop$inclusion == TRUE]), na.rm = TRUE))
       }
 
       return(0)
@@ -1208,10 +1208,10 @@ SurveyProtocol <- R6::R6Class(
       if (
         !is.null(sf_pop) &&
         is.data.frame(sf_pop) &&
-        "total_population" %in% names(sf_pop) &&
+        "population_size" %in% names(sf_pop) &&
         "inclusion" %in% names(sf_pop)
       ) {
-        return(sum(as.numeric(sf_pop$total_population[sf_pop$inclusion == FALSE]), na.rm = TRUE))
+        return(sum(as.numeric(sf_pop$population_size[sf_pop$inclusion == FALSE]), na.rm = TRUE))
       }
 
       return(0)
@@ -1230,13 +1230,13 @@ SurveyProtocol <- R6::R6Class(
         if (
           is.null(sf_pop) ||
           !is.data.frame(sf_pop) ||
-          !all(c("stratum", "total_population") %in% names(sf_pop))
+          !all(c("stratum", "population_size") %in% names(sf_pop))
         ) {
           return("stratum: XXXX")
         }
 
         strata_totals <- aggregate(
-          total_population ~ stratum,
+          population_size ~ stratum,
           data = sf_pop,
           FUN = function(x) sum(as.numeric(x), na.rm = TRUE)
         )
@@ -1244,7 +1244,7 @@ SurveyProtocol <- R6::R6Class(
         parts <- paste0(
           strata_totals$stratum,
           " (",
-          strata_totals$total_population,
+          strata_totals$population_size,
           ")"
         )
 
