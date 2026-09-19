@@ -1156,15 +1156,15 @@ Protocol <- R6::R6Class(
       ]
 
       # Also include dep_indicator_code if the column exists
-      if ("dep_indicator_code" %in% names(indicator_bank)) {
-        dep_indicator_codes <- unique(as.character(
-          indicator_bank$dep_indicator_code
-        ))
-        dep_indicator_codes <- dep_indicator_codes[
-          !is.na(dep_indicator_codes) & nzchar(dep_indicator_codes)
-        ]
-        indicator_codes <- unique(c(indicator_codes, dep_indicator_codes))
-      }
+      # if ("dep_indicator_code" %in% names(indicator_bank)) {
+      #   dep_indicator_codes <- unique(as.character(
+      #     indicator_bank$dep_indicator_code
+      #   ))
+      #   dep_indicator_codes <- dep_indicator_codes[
+      #     !is.na(dep_indicator_codes) & nzchar(dep_indicator_codes)
+      #   ]
+      #   indicator_codes <- unique(c(indicator_codes, dep_indicator_codes))
+      # }
 
       if (length(indicator_codes) == 0L) {
         return(NULL)
