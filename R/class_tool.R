@@ -73,28 +73,28 @@ Tool <- R6::R6Class(
     #' @field settings Data frame containing the settings sheet of the XLSForm.
     settings = NULL,
 
-    #' @field settings A vector of user selected indicator codes .
+    #' @field selected_indicator_codes A vector of user selected indicator codes .
     selected_indicator_codes = NULL,
 
-    #' @field settings A vector of user available indicator codes .
+    #' @field available_indicator_codes A vector of user available indicator codes .
     available_indicator_codes = NULL,
 
-    #' @field settings A vector of user selected pillars .
+    #' @field selected_pillars A vector of user selected pillars .
     selected_pillars = NULL,
 
-    #' @field settings A vector of available pillars to the user.
+    #' @field available_pillars A vector of available pillars to the user.
     available_pillars = NULL,
 
-    #' @field settings A vector of user selected sub pillars .
+    #' @field selected_subpillars A vector of user selected sub pillars .
     selected_subpillars = NULL,
 
-    #' @field settings A vector of available sub pillars to the user.
+    #' @field available_subpillars A vector of available sub pillars to the user.
     available_subpillars = NULL,
 
-    #' @field settings A vector of user selected sectors .
+    #' @field selected_sectors A vector of user selected sectors .
     selected_sectors = NULL,
 
-    #' @field settings A vector of available sectors to the user .
+    #' @field available_sectors A vector of available sectors to the user .
     available_sectors = NULL,
 
     #' @field revised_survey Working copy of the survey sheet, updated by filter

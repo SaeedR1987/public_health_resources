@@ -118,16 +118,6 @@ currently available in the held \code{SamplingFrame}, when present.}
     \item{\code{drawn_sample}}{Data frame with selected PSUs (filtered from drawn_sample_full)}
 
     \item{\code{drawn_sample_full}}{Full sampling frame with sampled_psu and allocated_sample columns}
-
-    \item{\code{.analysis_simple_random_even_rlc}}{Active binding.}
-
-    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
-
-    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
-
-    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
-
-    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
   }
   \if{html}{\out{</div>}}
 }
@@ -164,45 +154,89 @@ currently available in the held \code{SamplingFrame}, when present.}
 
     \item{\code{.hh_selection_rlc}}{Active binding.}
 
-    \item{\code{.analysis_simple_random_even}}{Active binding.}
+    \item{\code{.design_site_simple_random_even_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_simple_random_even_rlc}}{Active binding.}
+    \item{\code{.design_site_simple_random_even_hh_systematic}}{Active binding.}
 
-    \item{\code{.analysis_simple_random_proportional}}{Active binding.}
+    \item{\code{.design_site_simple_random_even_hh_rlc}}{Active binding.}
 
-    \item{\code{.analysis_simple_random_proportional_rlc}}{Active binding.}
+    \item{\code{.design_site_systematic_even_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_cluster}}{Active binding.}
+    \item{\code{.design_site_systematic_even_hh_systematic}}{Active binding.}
 
-    \item{\code{.analysis_cluster_rlc}}{Active binding.}
+    \item{\code{.design_site_systematic_even_hh_rlc}}{Active binding.}
 
-    \item{\code{.analysis_exhaustive}}{Active binding.}
+    \item{\code{.design_site_simple_random_proportional_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_exhaustive_rlc}}{Active binding.}
+    \item{\code{.design_site_simple_random_proportional_hh_systematic}}{Active binding.}
 
-    \item{\code{.analysis_purposive}}{Active binding.}
+    \item{\code{.design_site_simple_random_proportional_hh_rlc}}{Active binding.}
 
-    \item{\code{.analysis_purposive_rlc}}{Active binding.}
+    \item{\code{.design_site_systematic_proportional_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_simple_random_even}}{Active binding.}
+    \item{\code{.design_site_systematic_proportional_hh_systematic}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_simple_random_even_rlc}}{Active binding.}
+    \item{\code{.design_site_systematic_proportional_hh_rlc}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_simple_random_proportional}}{Active binding.}
+    \item{\code{.design_site_cluster_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_simple_random_proportional_rlc}}{Active binding.}
+    \item{\code{.design_site_cluster_hh_systematic}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_cluster}}{Active binding.}
+    \item{\code{.design_site_cluster_hh_rlc}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_cluster_rlc}}{Active binding.}
+    \item{\code{.design_site_exhaustive_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_exhaustive}}{Active binding.}
+    \item{\code{.design_site_exhaustive_hh_systematic}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_exhaustive_rlc}}{Active binding.}
+    \item{\code{.design_site_exhaustive_hh_rlc}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_purposive}}{Active binding.}
+    \item{\code{.design_site_purposive_hh_simple_random}}{Active binding.}
 
-    \item{\code{.analysis_strata_names_purposive_rlc}}{Active binding.}
+    \item{\code{.design_site_purposive_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_site_purposive_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_simple_random_even_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_simple_random_even_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_simple_random_even_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_systematic_even_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_systematic_even_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_systematic_even_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_simple_random_proportional_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_simple_random_proportional_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_simple_random_proportional_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_systematic_proportional_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_systematic_proportional_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_systematic_proportional_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_cluster_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_cluster_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_cluster_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_exhaustive_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_exhaustive_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_exhaustive_hh_rlc}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_purposive_hh_simple_random}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_purposive_hh_systematic}}{Active binding.}
+
+    \item{\code{.design_strata_names_site_purposive_hh_rlc}}{Active binding.}
 
     \item{\code{.multiple_methods}}{Active binding.}
 
@@ -266,13 +300,13 @@ currently available in the held \code{SamplingFrame}, when present.}
 
     \item{\code{.stratified_strata_names_purposive_rlc}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_srs_even}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_site_srs}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_srs_proportional}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_systematic_even}}{Active binding.}
 
-    \item{\code{.stratified_strata_names_site_systematic}}{Active binding.}
+    \item{\code{.stratified_strata_names_site_systematic_proportional}}{Active binding.}
 
     \item{\code{.stratified_strata_names_site_exhaustive}}{Active binding.}
 

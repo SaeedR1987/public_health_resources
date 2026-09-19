@@ -494,28 +494,61 @@ SurveyProtocol <- R6::R6Class(
           num_days_data_collection = self$.num_days_data_collection,
           strata_names = self$.strata_names,
 
-          analysis_simple_random_even = self$.analysis_simple_random_even,
-          analysis_simple_random_even_rlc = self$.analysis_simple_random_even_rlc,
-          analysis_simple_random_proportional = self$.analysis_simple_random_proportional,
-          analysis_simple_random_proportional_rlc = self$.analysis_simple_random_proportional_rlc,
-          analysis_cluster = self$.analysis_cluster,
-          analysis_cluster_rlc = self$.analysis_cluster_rlc,
-          analysis_exhaustive = self$.analysis_exhaustive,
-          analysis_exhaustive_rlc = self$.analysis_exhaustive_rlc,
-          analysis_purposive = self$.analysis_purposive,
-          analysis_purposive_rlc = self$.analysis_purposive_rlc,
+          design_site_simple_random_even_hh_simple_random = self$.design_simple_random_even_hh_simple_random,
+          design_site_simple_random_even_hh_systematic = self$.design_site_simple_random_even_hh_systematic,
+          design_site_simple_random_even_hh_rlc = self$.design_site_simple_random_even_hh_rlc,
 
-          analysis_strata_names_simple_random_even = self$.analysis_strata_names_random_even,
-          analysis_strata_names_simple_random_even_rlc = self$.analysis_strata_names_random_even_rlc,
-          analysis_strata_names_simple_random_proportional = self$.analysis_strata_names_random_proportional,
-          analysis_strata_names_simple_random_proportional_rlc = self$.analysis_strata_names_random_proportional_rlc,
-          analysis_strata_names_cluster = self$.analysis_strata_names_cluster,
-          analysis_strata_names_cluster_rlc = self$.analysis_strata_names_cluster_rlc,
-          analysis_strata_names_exhaustive = self$.analysis_strata_names_exhaustive,
-          analysis_strata_names_exhaustive_rlc = self$.analysis_strata_names_exhaustive_rlc,
-          analysis_strata_names_purposive = self$.analysis_strata_names_purposive,
-          analysis_strata_names_purposive_rlc = self$.analysis_strata_names_purposive_rlc
+          design_site_systematic_even_hh_simple_random = self$.design_systematic_even_hh_simple_random,
+          design_site_systematiceven_hh_systematic = self$.design_site_systematic_even_hh_systematic,
+          design_site_systematic_even_hh_rlc = self$.design_site_systematic_even_hh_rlc,
 
+          design_site_simple_random_proportional_hh_simple_random = self$.design_simple_random_proportional_hh_simple_random,
+          design_site_simple_random_proportional_hh_systematic = self$.design_site_simple_random_proportional_hh_systematic,
+          design_site_simple_random_proportional_hh_rlc = self$.design_site_simple_random_proportional_hh_rlc,
+
+          design_site_systematic_proportional_hh_simple_random = self$.design_systematic_proportional_hh_simple_random,
+          design_site_systematicproportional_hh_systematic = self$.design_site_systematic_proportional_hh_systematic,
+          design_site_systematic_proportional_hh_rlc = self$.design_site_systematic_proportional_hh_rlc,
+
+          design_site_cluster_hh_simple_random = self$.design_site_cluster_hh_simple_random,
+          design_site_cluster_hh_systematic = self$.design_site_cluster_hh_systematic,
+          design_site_cluster_hh_rlc = self$.design_site_cluster_hh_rlc,
+
+          design_site_exhaustive_hh_simple_random = self$.design_site_exhaustive_hh_simple_random,
+          design_site_exhaustive_hh_systematic = self$.design_site_exhaustive_hh_systematic,
+          design_site_exhaustive_hh_rlc = self$.design_site_exhaustive_hh_rlc,
+
+          design_site_purposive_hh_simple_random = self$.design_site_purposive_hh_simple_random,
+          design_site_purposive_hh_systematic = self$.design_site_purposive_hh_systematic,
+          design_site_purposive_hh_rlc = self$.design_site_purposive_hh_rlc,
+
+          design_strata_names_site_simple_random_even_hh_simple_random = self$.design_strata_names_site_simple_random_even_hh_simple_random,
+          design_strata_names_site_simple_random_even_hh_systematic = self$.design_strata_names_site_simple_random_even_hh_systematic,
+          design_strata_names_site_simple_random_even_hh_rlc = self$.design_strata_names_site_simple_random_even_hh_rlc,
+
+          design_strata_names_site_simple_random_proportional_hh_simple_random = self$.design_strata_names_site_simple_random_proportional_hh_simple_random,
+          design_strata_names_site_simple_random_proportional_hh_systematic = self$.design_strata_names_site_simple_random_proportional_hh_systematic,
+          design_strata_names_site_simple_random_proportional_hh_rlc = self$.design_strata_names_site_simple_random_proportional_hh_rlc,
+
+          design_strata_names_site_systematic_even_hh_simple_random = self$.design_strata_names_site_simple_random_even_hh_simple_random,
+          design_strata_names_site_systematic_even_hh_systematic = self$.design_strata_names_site_simple_random_even_hh_systematic,
+          design_strata_names_site_systematic_even_hh_rlc = self$.design_strata_names_site_simple_random_even_hh_rlc,
+
+          design_strata_names_site_systematic_proportional_hh_simple_random = self$.design_strata_names_site_systematic_proportional_hh_simple_random,
+          design_strata_names_site_systematic_proportional_hh_systematic = self$.design_strata_names_site_systematic_proportional_hh_systematic,
+          design_strata_names_site_systematic_proportional_hh_rlc = self$.design_strata_names_site_systematic_proportional_hh_rlc,
+
+          design_strata_names_site_cluster_hh_simple_random = self$.design_strata_names_site_cluster_hh_simple_random,
+          design_strata_names_site_cluster_hh_systematic = self$.design_strata_names_site_cluster_hh_systematic,
+          design_strata_names_site_cluster_hh_rlc = self$.design_strata_names_site_cluster_hh_rlc,
+
+          design_strata_names_site_exhaustive_hh_simple_random = self$.design_strata_names_site_exhaustive_hh_simple_random,
+          design_strata_names_site_exhaustive_hh_systematic = self$.design_strata_names_site_exhaustive_hh_systematic,
+          design_strata_names_site_exhaustive_hh_rlc = self$.design_strata_names_site_exhaustive_hh_rlc,
+
+          design_strata_names_site_purposive_hh_simple_random = self$.design_strata_names_site_purposive_hh_simple_random,
+          design_strata_names_site_purposive_hh_systematic = self$.design_strata_names_site_purposive_hh_systematic,
+          design_strata_names_site_purposive_hh_rlc = self$.design_strata_names_site_purposive_hh_rlc
         )
       )
     }
@@ -675,8 +708,8 @@ SurveyProtocol <- R6::R6Class(
       private$..sample_has_any_method_household("rlc")
     },
 
-    #' @field .analysis_simple_random_even Active binding.
-    .analysis_simple_random_even = function(value) {
+    #' @field .design_site_simple_random_even_hh_simple_random Active binding.
+    .design_site_simple_random_even_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -685,24 +718,12 @@ SurveyProtocol <- R6::R6Class(
         private$..sample_has_method_combination(
           method_site = "simple_random_even",
           method_hh = "simple_random"
-        ),
-        private$..sample_has_method_combination(
-          method_site = "simple_random_even",
-          method_hh = "systematic"
-        ),
-        private$..sample_has_method_combination(
-          method_site = "systematic_even",
-          method_hh = "simple_random"
-        ),
-        private$..sample_has_method_combination(
-          method_site = "systematic_even",
-          method_hh = "systematic"
         )
       )
     },
 
-    #' @field .analysis_simple_random_even_rlc Active binding.
-    .analysis_simple_random_rlc = function(value) {
+    #' @field .design_site_simple_random_even_hh_systematic Active binding.
+    .design_site_simple_random_even_hh_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -710,17 +731,69 @@ SurveyProtocol <- R6::R6Class(
       any(
         private$..sample_has_method_combination(
           method_site = "simple_random_even",
+          method_hh = "systematic"
+        )
+      )
+    },
+
+    #' @field .design_site_simple_random_even_hh_rlc Active binding.
+    .design_site_simple_random_even_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
+        private$..sample_has_method_combination(
+          method_site = "simple_random_even",
           method_hh = "rlc"
-        ),
+        )
+      )
+    },
+
+    #' @field .design_site_systematic_even_hh_simple_random Active binding.
+    .design_site_systematic_even_hh_simple_random = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
+        private$..sample_has_method_combination(
+          method_site = "systematic_even",
+          method_hh = "simple_random"
+        )
+      )
+    },
+
+    #' @field .design_site_systematic_even_hh_systematic Active binding.
+    .design_site_systematic_even_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
+        private$..sample_has_method_combination(
+          method_site = "systematic_even",
+          method_hh = "systematic"
+        )
+      )
+    },
+
+    #' @field .design_site_systematic_even_hh_rlc Active binding.
+    .design_site_systematic_even_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
         private$..sample_has_method_combination(
           method_site = "systematic_even",
           method_hh = "rlc"
         )
       )
-      },
+    },
 
-    #' @field .analysis_simple_random_proportional Active binding.
-    .analysis_simple_random_proportional = function(value) {
+    #' @field .design_site_simple_random_proportional_hh_simple_random Active binding.
+    .design_site_simple_random_proportional_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -729,25 +802,12 @@ SurveyProtocol <- R6::R6Class(
         private$..sample_has_method_combination(
           method_site = "simple_random_proportional",
           method_hh = "simple_random"
-        ),
-        private$..sample_has_method_combination(
-          method_site = "simple_random_proportional",
-          method_hh = "systematic"
-        ),
-        ,
-        private$..sample_has_method_combination(
-          method_site = "systematic_proportional",
-          method_hh = "simple_random"
-        ),
-        private$..sample_has_method_combination(
-          method_site = "systematic_proportional",
-          method_hh = "systematic"
         )
       )
     },
 
-    #' @field .analysis_simple_random_proportional_rlc Active binding.
-    .analysis_simple_random_proportional_rlc = function(value) {
+    #' @field .design_site_simple_random_proportional_hh_systematic Active binding.
+    .design_site_simple_random_proportional_hh_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -755,8 +815,60 @@ SurveyProtocol <- R6::R6Class(
       any(
         private$..sample_has_method_combination(
           method_site = "simple_random_proportional",
+          method_hh = "systematic"
+        )
+      )
+    },
+
+    #' @field .design_site_simple_random_proportional_hh_rlc Active binding.
+    .design_site_simple_random_proportional_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
+        private$..sample_has_method_combination(
+          method_site = "simple_random_proportional",
           method_hh = "rlc"
-        ),
+        )
+      )
+    },
+
+    #' @field .design_site_systematic_proportional_hh_simple_random Active binding.
+    .design_site_systematic_proportional_hh_simple_random = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
+        private$..sample_has_method_combination(
+          method_site = "systematic_proportional",
+          method_hh = "simple_random"
+        )
+      )
+    },
+
+    #' @field .design_site_systematic_proportional_hh_systematic Active binding.
+    .design_site_systematic_proportional_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
+        private$..sample_has_method_combination(
+          method_site = "systematic_proportional",
+          method_hh = "systematic"
+        )
+      )
+    },
+
+    #' @field .design_site_systematic_proportional_hh_rlc Active binding.
+    .design_site_systematic_proportional_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
         private$..sample_has_method_combination(
           method_site = "systematic_proportional",
           method_hh = "rlc"
@@ -764,8 +876,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_cluster Active binding.
-    .analysis_cluster = function(value) {
+    #' @field .design_site_cluster_hh_simple_random Active binding.
+    .design_site_cluster_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -774,7 +886,17 @@ SurveyProtocol <- R6::R6Class(
         private$..sample_has_method_combination(
           method_site = "cluster",
           method_hh = "simple_random"
-        ),
+        )
+      )
+    },
+
+    #' @field .design_site_cluster_hh_systematic Active binding.
+    .design_site_cluster_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
         private$..sample_has_method_combination(
           method_site = "cluster",
           method_hh = "systematic"
@@ -782,8 +904,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_cluster_rlc Active binding.
-    .analysis_cluster_rlc = function(value) {
+    #' @field .design_site_cluster_hh_rlc Active binding.
+    .design_site_cluster_hh_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -796,8 +918,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_exhaustive Active binding.
-    .analysis_exhaustive = function(value) {
+    #' @field .design_site_exhaustive_hh_simple_random Active binding.
+    .design_site_exhaustive_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -806,7 +928,17 @@ SurveyProtocol <- R6::R6Class(
         private$..sample_has_method_combination(
           method_site = "proportional",
           method_hh = "simple_random"
-        ),
+        )
+      )
+    },
+
+    #' @field .design_site_exhaustive_hh_systematic Active binding.
+    .design_site_exhaustive_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
         private$..sample_has_method_combination(
           method_site = "proportional",
           method_hh = "systematic"
@@ -814,8 +946,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_exhaustive_rlc Active binding.
-    .analysis_exhaustive_rlc = function(value) {
+    #' @field .design_site_exhaustive_hh_rlc Active binding.
+    .design_site_exhaustive_hh_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -828,8 +960,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_purposive Active binding.
-    .analysis_purposive = function(value) {
+    #' @field .design_site_purposive_hh_simple_random Active binding.
+    .design_site_purposive_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -838,7 +970,17 @@ SurveyProtocol <- R6::R6Class(
         private$..sample_has_method_combination(
           method_site = "purposive",
           method_hh = "simple_random"
-        ),
+        )
+      )
+    },
+
+    #' @field .design_site_purposive_hh_systematic Active binding.
+    .design_site_purposive_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      any(
         private$..sample_has_method_combination(
           method_site = "purposive",
           method_hh = "systematic"
@@ -846,8 +988,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_purposive_rlc Active binding.
-    .analysis_purposive_rlc = function(value) {
+    #' @field .design_site_purposive_hh_rlc Active binding.
+    .design_site_purposive_hh_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -860,8 +1002,8 @@ SurveyProtocol <- R6::R6Class(
       )
     },
 
-    #' @field .analysis_strata_names_simple_random_even Active binding.
-    .analysis_strata_names_simple_random_even = function(value) {
+    #' @field .design_strata_names_site_simple_random_even_hh_simple_random Active binding.
+    .design_strata_names_site_simple_random_even_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -870,18 +1012,6 @@ SurveyProtocol <- R6::R6Class(
         private$..strata_names_for_method(
           method_site = "simple_random_even",
           method_hh = "simple_random"
-        ),
-        private$..strata_names_for_method(
-          method_site = "simple_random_even",
-          method_hh = "systematic"
-        ),
-        private$..strata_names_for_method(
-          method_site = "systematic_even",
-          method_hh = "simple_random"
-        ),
-        private$..strata_names_for_method(
-          method_site = "systematic_even",
-          method_hh = "systematic"
         )
       ))
 
@@ -893,8 +1023,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_simple_random_even_rlc Active binding.
-    .analysis_strata_names_simple_random_even_rlc = function(value) {
+    #' @field .design_strata_names_site_simple_random_even_hh_systematic Active binding.
+    .design_strata_names_site_simple_random_even_hh_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -902,8 +1032,88 @@ SurveyProtocol <- R6::R6Class(
       strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "simple_random_even",
+          method_hh = "systematic"
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_simple_random_even_hh_rlc Active binding.
+    .design_strata_names_site_simple_random_even_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
+        private$..strata_names_for_method(
+          method_site = "simple_random_even",
           method_hh = "rlc"
-        ),
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_systematic_even_hh_simple_random Active binding.
+    .design_strata_names_site_systematic_even_hh_simple_random = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
+        private$..strata_names_for_method(
+          method_site = "systematic_even",
+          method_hh = "simple_random"
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_systematic_even_hh_systematic Active binding.
+    .design_strata_names_site_systematic_even_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
+        private$..strata_names_for_method(
+          method_site = "systematic_even",
+          method_hh = "systematic"
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_systematic_even_hh_rlc Active binding.
+    .design_strata_names_site_systematic_even_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "systematic_even",
           method_hh = "rlc"
@@ -918,8 +1128,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_simple_random_proportional Active binding.
-    .analysis_strata_names_simple_random_proportional = function(value) {
+    #' @field .design_strata_names_site_simple_random_proportional_hh_simple_random Active binding.
+    .design_strata_names_site_simple_random_proportional_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -928,18 +1138,6 @@ SurveyProtocol <- R6::R6Class(
         private$..strata_names_for_method(
           method_site = "simple_random_proportional",
           method_hh = "simple_random"
-        ),
-        private$..strata_names_for_method(
-          method_site = "systematic_proportional",
-          method_hh = "simple_random"
-        ),
-        private$..strata_names_for_method(
-          method_site = "simple_random_proportional",
-          method_hh = "systematic"
-        ),
-        private$..strata_names_for_method(
-          method_site = "systematic_proportional",
-          method_hh = "systematic"
         )
       ))
 
@@ -951,8 +1149,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_simple_random_proportional_rlc Active binding.
-    .analysis_strata_names_simple_random_proportional_rlc = function(value) {
+    #' @field .design_strata_names_site_simple_random_proportional_hh_systematic Active binding.
+    .design_strata_names_site_simple_random_proportional_hh_systematic = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -960,8 +1158,88 @@ SurveyProtocol <- R6::R6Class(
       strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "simple_random_proportional",
+          method_hh = "systematic"
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_simple_random_proportional_hh_rlc Active binding.
+    .design_strata_names_site_simple_random_proportional_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
+        private$..strata_names_for_method(
+          method_site = "simple_random_proportional",
           method_hh = "rlc"
-        ),
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_systematic_proportional_hh_simple_random Active binding.
+    .design_strata_names_site_systematic_proportional_hh_simple_random = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
+        private$..strata_names_for_method(
+          method_site = "systematic_proportional",
+          method_hh = "simple_random"
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_systematic_proportional_hh_systematic Active binding.
+    .design_strata_names_site_systematic_proportional_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
+        private$..strata_names_for_method(
+          method_site = "systematic_proportional",
+          method_hh = "systematic"
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_systematic_proportional_hh_rlc Active binding.
+    .design_strata_names_site_systematic_proportional_hh_rlc = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "systematic_proportional",
           method_hh = "rlc"
@@ -976,8 +1254,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_cluster Active binding.
-    .analysis_strata_names_cluster = function(value) {
+    #' @field .design_strata_names_site_cluster_hh_simple_random Active binding.
+    .design_strata_names_site_cluster_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -986,7 +1264,24 @@ SurveyProtocol <- R6::R6Class(
         private$..strata_names_for_method(
           method_site = "cluster",
           method_hh = "simple_random"
-        ),
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_cluster_hh_systematic Active binding.
+    .design_strata_names_site_cluster_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "cluster",
           method_hh = "systematic"
@@ -1001,8 +1296,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_cluster_rlc Active binding.
-    .analysis_strata_names_cluster_rlc = function(value) {
+    #' @field .design_strata_names_site_cluster_hh_rlc Active binding.
+    .design_strata_names_site_cluster_hh_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -1022,8 +1317,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_exhaustive Active binding.
-    .analysis_strata_names_exhaustive = function(value) {
+    #' @field .design_strata_names_site_exhaustive_hh_simple_random Active binding.
+    .design_strata_names_site_exhaustive_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -1032,7 +1327,24 @@ SurveyProtocol <- R6::R6Class(
         private$..strata_names_for_method(
           method_site = "proportional",
           method_hh = "simple_random"
-        ),
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_exhaustive_hh_systematic Active binding.
+    .design_strata_names_site_exhaustive_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "proportional",
           method_hh = "systematic"
@@ -1047,8 +1359,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_exhaustive_rlc Active binding.
-    .analysis_strata_names_exhaustive_rlc = function(value) {
+    #' @field .design_strata_names_site_exhaustive_hh_rlc Active binding.
+    .design_strata_names_site_exhaustive_hh_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -1068,8 +1380,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_purposive Active binding.
-    .analysis_strata_names_purposive = function(value) {
+    #' @field .design_strata_names_site_purposive_hh_simple_random Active binding.
+    .design_strata_names_site_purposive_hh_simple_random = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -1078,7 +1390,24 @@ SurveyProtocol <- R6::R6Class(
         private$..strata_names_for_method(
           method_site = "purposive",
           method_hh = "simple_random"
-        ),
+        )
+      ))
+
+      if (length(strata) == 0L) {
+        return("")
+      }
+
+      paste(unique(strata), collapse = ", ")
+
+    },
+
+    #' @field .design_strata_names_site_purposive_hh_systematic Active binding.
+    .design_strata_names_site_purposive_hh_systematic = function(value) {
+      if (!missing(value)) {
+        return(invisible(FALSE))
+      }
+
+      strata <- unique(c(
         private$..strata_names_for_method(
           method_site = "purposive",
           method_hh = "systematic"
@@ -1093,8 +1422,8 @@ SurveyProtocol <- R6::R6Class(
 
     },
 
-    #' @field .analysis_strata_names_purposive_rlc Active binding.
-    .analysis_strata_names_purposive_rlc = function(value) {
+    #' @field .design_strata_names_site_purposive_hh_rlc Active binding.
+    .design_strata_names_site_purposive_hh_rlc = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
@@ -1517,28 +1846,28 @@ SurveyProtocol <- R6::R6Class(
         method_hh = "rlc"
       )
     },
-    #' @field .stratified_strata_names_site_srs Active binding.
+    #' @field .stratified_strata_names_site_srs_even Active binding.
     .stratified_strata_names_site_srs_even = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(method_site = "simple_random_even")
     },
-    #' @field .stratified_strata_names_site_srs Active binding.
+    #' @field .stratified_strata_names_site_srs_proportional Active binding.
     .stratified_strata_names_site_srs_proportional = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(method_site = "simple_random_proportional")
     },
-    #' @field .stratified_strata_names_site_systematic Active binding.
+    #' @field .stratified_strata_names_site_systematic_even Active binding.
     .stratified_strata_names_site_systematic_even = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
       }
       private$..strata_names_for_method(method_site = "systematic_even")
     },
-    #' @field .stratified_strata_names_site_systematic Active binding.
+    #' @field .stratified_strata_names_site_systematic_proportional Active binding.
     .stratified_strata_names_site_systematic_proportional = function(value) {
       if (!missing(value)) {
         return(invisible(FALSE))
@@ -2012,9 +2341,11 @@ SurveyProtocol <- R6::R6Class(
 
       st <- st[st$sampling_method_site == "simple_random_even", ]
 
-      vals <- as.numeric(st$cluster_size)
+      vals <- suppressWarnings(
+        ceiling(as.numeric(st$Final_HH_Sample_Size) / as.numeric(st$n_sites))
+      )
 
-      keep <- !is.na(vals)
+      keep <- is.finite(vals)
       st <- st[keep, ]
       vals <- vals[keep]
 
@@ -2081,9 +2412,11 @@ SurveyProtocol <- R6::R6Class(
 
       st <- st[st$sampling_method_site == "systematic_even", ]
 
-      vals <- as.numeric(st$cluster_size)
+      vals <- suppressWarnings(
+        ceiling(as.numeric(st$Final_HH_Sample_Size) / as.numeric(st$n_sites))
+      )
 
-      keep <- !is.na(vals)
+      keep <- is.finite(vals)
       st <- st[keep, ]
       vals <- vals[keep]
 
