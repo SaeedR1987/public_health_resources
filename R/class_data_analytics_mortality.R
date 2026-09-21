@@ -760,7 +760,11 @@ MortalityDataAnalytics <- R6::R6Class(
     # @param dap A QuantDataAnalysisPlanLog object (or NULL).
     # @return Integer row count, or 0L when dap or its log_df is NULL.
     .dap_row_count = function(dap) {
-      if (!is.null(dap) && !is.null(dap$log_df)) nrow(dap$log_df) else 0L
+      if (is.null(dap)) {
+        return(0L)
+      }
+      dap_df <- dap$get("log_df")
+      if (is.null(dap_df)) 0L else nrow(dap_df)
     },
 
     # Create a proper survey design for an arbitrary data frame using variable_map.

@@ -1578,7 +1578,7 @@ DataAnalytics <- R6::R6Class(
     #' @description
     #' Diagnose issues in the data analysis plan against the current dataset.
     #'
-    #' For every indicator row in \code{self$data_analysis_plan$log_df}, this
+    #' For every indicator row in \code{self$data_analysis_plan$get("log_df")}, this
     #' method verifies that the primary variable (\code{var_name}), the
     #' denominator variable (\code{denom_var}), and the disaggregation variable
     #' exist in the dataset (or survey design), and that the \code{calculation}
@@ -2020,15 +2020,16 @@ DataAnalytics <- R6::R6Class(
         {
           if (
             is.null(self$data_analysis_plan) ||
-              nrow(self$data_analysis_plan$log_df) == 0
+              nrow(self$data_analysis_plan$get("log_df")) == 0
           ) {
             phrutils::phr_warning(origin, "No data_analysis_plan loaded.")
             return(invisible(self))
           }
-          self$data_analysis_plan$log_df <-
-            self$data_analysis_plan$log_df[
-              self$data_analysis_plan$log_df$indicator_name != indicator_name,
-            ]
+          dap_df <- self$data_analysis_plan$get("log_df")
+          self$data_analysis_plan$set(
+            field = "log_df",
+            value = dap_df[dap_df$indicator_name != indicator_name, ]
+          )
           phrutils::phr_message(origin, paste("Removed indicator:", indicator_name))
         },
         on_error = "warn",
@@ -2389,9 +2390,15 @@ DataAnalytics <- R6::R6Class(
 
       phrutils::phr_try(
         {
+          dap_df <- if (is.null(self$data_analysis_plan)) {
+            NULL
+          } else {
+            self$data_analysis_plan$get("log_df")
+          }
+
           if (
-            is.null(self$data_analysis_plan) ||
-              nrow(self$data_analysis_plan$log_df) == 0
+            is.null(dap_df) ||
+              nrow(dap_df) == 0
           ) {
             issues <- dplyr::bind_rows(
               issues,
@@ -2412,7 +2419,7 @@ DataAnalytics <- R6::R6Class(
             )
             missing_cols <- setdiff(
               required_cols,
-              names(self$data_analysis_plan$log_df)
+              names(dap_df)
             )
 
             if (length(missing_cols) > 0) {
@@ -2428,7 +2435,7 @@ DataAnalytics <- R6::R6Class(
               )
             }
 
-            invalid_calc <- self$data_analysis_plan$log_df |>
+            invalid_calc <- dap_df |>
               dplyr::filter(
                 !.data$calculation %in%
                   c(
@@ -3031,8 +3038,8 @@ DataAnalytics <- R6::R6Class(
       dap <- inputs$data_analysis_plan
       dap_df <- if (is.data.frame(dap)) {
         dap
-      } else if (!is.null(dap) && !is.null(dap[["log_df"]])) {
-        dap[["log_df"]]
+      } else if (!is.null(dap) && !is.null(dap$get("log_df"))) {
+        dap$get("log_df")
       } else {
         NULL
       }
@@ -3747,14 +3754,16 @@ DataAnalytics <- R6::R6Class(
       }
 
       dap_vars <- character(0)
-      if (
-        !is.null(dap) &&
-          !is.null(dap$log_df) &&
-          nrow(dap$log_df) > 0 &&
-          "var_name" %in% names(dap$log_df)
-      ) {
-        dap_vars <- unique(dap$log_df$var_name)
-        dap_vars <- dap_vars[!is.na(dap_vars)]
+      if (!is.null(dap)) {
+        dap_df <- dap$get("log_df")
+        if (
+          !is.null(dap_df) &&
+            nrow(dap_df) > 0 &&
+            "var_name" %in% names(dap_df)
+        ) {
+          dap_vars <- unique(dap_df$var_name)
+          dap_vars <- dap_vars[!is.na(dap_vars)]
+        }
       }
 
       in_map <- all_cols[all_cols %in% names(map_roles)]

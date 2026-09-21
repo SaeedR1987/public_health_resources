@@ -120,14 +120,17 @@ test_that("DataAnalytics add_indicator_dap works", {
   )
 
   # Clear any auto-generated plan rows
-  da$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = character(),
-    calculation = character(),
-    var_name = character(),
-    denom_var = character(),
-    disaggregation = character(),
-    multiplier = numeric(),
-    indicator_unit = character()
+  da$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = character(),
+      calculation = character(),
+      var_name = character(),
+      denom_var = character(),
+      disaggregation = character(),
+      multiplier = numeric(),
+      indicator_unit = character()
+    )
   )
 
   # Suppress expected messages emitted by add_indicator_dap()
@@ -139,8 +142,8 @@ test_that("DataAnalytics add_indicator_dap works", {
     )
   )
 
-  expect_equal(nrow(da$data_analysis_plan$log_df), 1)
-  expect_equal(da$data_analysis_plan$log_df$indicator_name, "Test")
+  expect_equal(nrow(da$data_analysis_plan$get("log_df")), 1)
+  expect_equal(da$data_analysis_plan$get("log_df")$indicator_name, "Test")
 })
 
 test_that("DataAnalytics remove_indicator_dap works", {
@@ -151,14 +154,17 @@ test_that("DataAnalytics remove_indicator_dap works", {
     DataAnalytics$new(data = df, dataset_name = "RemoveIndicatorDA")
   )
 
-  da$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = character(),
-    calculation = character(),
-    var_name = character(),
-    denom_var = character(),
-    disaggregation = character(),
-    multiplier = numeric(),
-    indicator_unit = character()
+  da$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = character(),
+      calculation = character(),
+      var_name = character(),
+      denom_var = character(),
+      disaggregation = character(),
+      multiplier = numeric(),
+      indicator_unit = character()
+    )
   )
 
   # Suppress expected messages emitted by add/remove calls
@@ -166,8 +172,8 @@ test_that("DataAnalytics remove_indicator_dap works", {
   suppressMessages(da$add_indicator_dap("B", "mean", "y"))
   suppressMessages(da$remove_indicator_dap("A"))
 
-  expect_equal(nrow(da$data_analysis_plan$log_df), 1)
-  expect_equal(da$data_analysis_plan$log_df$indicator_name, "B")
+  expect_equal(nrow(da$data_analysis_plan$get("log_df")), 1)
+  expect_equal(da$data_analysis_plan$get("log_df")$indicator_name, "B")
 })
 
 test_that("DataAnalytics validate_plan catches invalid calculation", {
@@ -178,14 +184,17 @@ test_that("DataAnalytics validate_plan catches invalid calculation", {
     DataAnalytics$new(data = df, dataset_name = "ValidatePlanDA")
   )
 
-  da$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = "Bad",
-    calculation = "invalid_type",
-    var_name = "x",
-    denom_var = NA_character_,
-    disaggregation = NA_character_,
-    multiplier = 100,
-    indicator_unit = "%"
+  da$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = "Bad",
+      calculation = "invalid_type",
+      var_name = "x",
+      denom_var = NA_character_,
+      disaggregation = NA_character_,
+      multiplier = 100,
+      indicator_unit = "%"
+    )
   )
 
   # validate_plan() is expected to warn when it finds issues; suppress console output
@@ -1051,14 +1060,17 @@ test_that("NutritionDataAnalytics$post_run_analysis no-ops when muac_age_weights
     )
   ))
 
-  nut$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = "MUAC cat prop",
-    calculation = "prop",
-    var_name = "nut_muac_cat",
-    denom_var = NA_character_,
-    disaggregation = NA_character_,
-    multiplier = 100,
-    indicator_unit = "%"
+  nut$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = "MUAC cat prop",
+      calculation = "prop",
+      var_name = "nut_muac_cat",
+      denom_var = NA_character_,
+      disaggregation = NA_character_,
+      multiplier = 100,
+      indicator_unit = "%"
+    )
   )
 
   suppressMessages(nut$run_analysis())
@@ -1086,14 +1098,17 @@ test_that("NutritionDataAnalytics$post_run_analysis skips when no muac vars in p
     )
   )
 
-  nut$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = "Other prop",
-    calculation = "prop",
-    var_name = "other_var",
-    denom_var = NA_character_,
-    disaggregation = NA_character_,
-    multiplier = 100,
-    indicator_unit = "%"
+  nut$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = "Other prop",
+      calculation = "prop",
+      var_name = "other_var",
+      denom_var = NA_character_,
+      disaggregation = NA_character_,
+      multiplier = 100,
+      indicator_unit = "%"
+    )
   )
 
   suppressMessages(
@@ -1129,14 +1144,17 @@ test_that("NutritionDataAnalytics$post_run_analysis stores muac_weighted results
     )
   )
 
-  nut$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = c("MUAC cat prop", "Other prop"),
-    calculation = c("prop", "prop"),
-    var_name = c("nut_muac_cat", "other_var"),
-    denom_var = c(NA_character_, NA_character_),
-    disaggregation = c(NA_character_, NA_character_),
-    multiplier = c(100, 100),
-    indicator_unit = c("%", "%")
+  nut$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = c("MUAC cat prop", "Other prop"),
+      calculation = c("prop", "prop"),
+      var_name = c("nut_muac_cat", "other_var"),
+      denom_var = c(NA_character_, NA_character_),
+      disaggregation = c(NA_character_, NA_character_),
+      multiplier = c(100, 100),
+      indicator_unit = c("%", "%")
+    )
   )
 
   # Run standard analysis first so analysis_results is populated
@@ -1182,14 +1200,17 @@ test_that("NutritionDataAnalytics$post_run_analysis uses 0-23 vs 24-59 age range
     )
   )
 
-  nut$data_analysis_plan$log_df <- tibble::tibble(
-    indicator_name = "MUAC cat prop",
-    calculation = "prop",
-    var_name = "nut_muac_cat",
-    denom_var = NA_character_,
-    disaggregation = NA_character_,
-    multiplier = 100,
-    indicator_unit = "%"
+  nut$data_analysis_plan$set(
+    field = "log_df",
+    value = tibble::tibble(
+      indicator_name = "MUAC cat prop",
+      calculation = "prop",
+      var_name = "nut_muac_cat",
+      denom_var = NA_character_,
+      disaggregation = NA_character_,
+      multiplier = 100,
+      indicator_unit = "%"
+    )
   )
 
   # Verify the private helper returns correct weight values for boundary ages.
@@ -1245,7 +1266,7 @@ test_that("add_all_to_dap classifies columns and amends the plan", {
   ))
 
   suppressWarnings(suppressMessages(da$add_all_to_dap()))
-  plan <- da$data_analysis_plan$log_df
+  plan <- da$data_analysis_plan$get("log_df")
 
   # Skipped high-cardinality character column
   expect_false("hh_uuid" %in% plan$var_name)
@@ -1290,7 +1311,7 @@ test_that("add_all_to_dap keeps character columns with exactly 20 unique values"
   )))
 
   suppressWarnings(suppressMessages(da$add_all_to_dap()))
-  plan <- da$data_analysis_plan$log_df
+  plan <- da$data_analysis_plan$get("log_df")
 
   expect_equal(plan$calculation[plan$var_name == "cat20"], "cat")
 
@@ -1302,7 +1323,7 @@ test_that("add_all_to_dap keeps character columns with exactly 20 unique values"
   )))
 
   suppressWarnings(suppressMessages(da21$add_all_to_dap()))
-  expect_false("cat21" %in% da21$data_analysis_plan$log_df$var_name)
+  expect_false("cat21" %in% da21$data_analysis_plan$get("log_df")$var_name)
 })
 
 test_that("add_all_to_dap guesses mean for numeric columns beyond 0/1", {
@@ -1313,7 +1334,7 @@ test_that("add_all_to_dap guesses mean for numeric columns beyond 0/1", {
   )))
 
   suppressWarnings(suppressMessages(da$add_all_to_dap()))
-  plan <- da$data_analysis_plan$log_df
+  plan <- da$data_analysis_plan$get("log_df")
 
   expect_equal(plan$calculation[plan$var_name == "score"], "mean")
   expect_equal(plan$multiplier[plan$var_name == "score"], 1)
@@ -1356,11 +1377,11 @@ test_that("add_all_to_dap iterates over multiple field sets from the pre-hook", 
 
   suppressWarnings(suppressMessages(da$add_all_to_dap()))
 
-  expect_equal(da$data_analysis_plan$log_df$var_name, "a_bin")
-  expect_equal(da$data_analysis_plan$log_df$calculation, "prop")
+  expect_equal(da$data_analysis_plan$get("log_df")$var_name, "a_bin")
+  expect_equal(da$data_analysis_plan$get("log_df")$calculation, "prop")
 
   expect_s3_class(da$data_analysis_plan2, "QuantDataAnalysisPlanLog")
-  expect_equal(da$data_analysis_plan2$log_df$var_name, "b_txt")
-  expect_equal(da$data_analysis_plan2$log_df$calculation, "cat")
+  expect_equal(da$data_analysis_plan2$get("log_df")$var_name, "b_txt")
+  expect_equal(da$data_analysis_plan2$get("log_df")$calculation, "cat")
   expect_equal(da$variable_map2[["b_txt"]], "b_txt")
 })

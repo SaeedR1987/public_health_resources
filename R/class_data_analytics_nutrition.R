@@ -133,7 +133,7 @@ NutritionDataAnalytics <- R6::R6Class(
         return(invisible(self))
       }
 
-      if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$log_df) == 0) {
+      if (is.null(self$data_analysis_plan) || nrow(self$data_analysis_plan$get("log_df")) == 0) {
         phrutils::phr_warning(message = "No data_analysis_plan available; skipping MUAC post-analysis.", origin = origin)
         return(invisible(self))
       }
@@ -141,7 +141,7 @@ NutritionDataAnalytics <- R6::R6Class(
       # ------------------------------------------------------------------
       # 2. Filter the analysis plan to rows referencing any 'muac' variable
       # ------------------------------------------------------------------
-      dap_full  <- self$data_analysis_plan$log_df
+      dap_full  <- self$data_analysis_plan$get("log_df")
       muac_rows <- dap_full[grepl("muac", dap_full$var_name, ignore.case = TRUE), , drop = FALSE]
 
       if (nrow(muac_rows) == 0) {
