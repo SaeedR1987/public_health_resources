@@ -384,7 +384,9 @@ Log <- R6::R6Class(
             )
           }
 
-          private$validated <- length(issues) == 0
+          self$set(field = "validated", value = length(issues) == 0)
+
+          # private$validated <- length(issues) == 0
           self$issues <- issues %||% list()
 
           private$..touch()

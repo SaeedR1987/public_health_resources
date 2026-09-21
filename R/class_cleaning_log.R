@@ -119,7 +119,7 @@ CleaningLog <- R6::R6Class(
             super_issues <- list()
           }
 
-          df <- self$log_df
+          df <- private$log_df
 
           # 2. Cleaning-log specific completeness
           #    Always require uuid, question.name, and changed to be present.
@@ -154,8 +154,8 @@ CleaningLog <- R6::R6Class(
             super_issues$missing_or_empty <- bad_cols
 
             phrutils::phr_warning(
-              self$log_name,
-              phr_txt(glue::glue(
+              private$log_name,
+              phrtuils::phr_txt(glue::glue(
                 "Cleaning log contains missing/empty values in: {paste(bad_cols, collapse=', ')}."
               ))
             )
@@ -175,7 +175,7 @@ CleaningLog <- R6::R6Class(
 
           all_issues <- c(super_issues, post_issues)
           self$issues <- all_issues
-          self$validated <- length(self$issues) == 0
+          private$validated <- length(self$issues) == 0
 
           invisible(self$issues)
         },
@@ -210,7 +210,7 @@ CleaningLog <- R6::R6Class(
 
       issues <- list()
 
-      df_log <- self$log_df
+      df_log <- private$log_df
       df <- data_obj$get_data(stage)
 
       # catastrophic error only
@@ -237,7 +237,7 @@ CleaningLog <- R6::R6Class(
         issues$uuid_not_found <- missing_uuid
         phrutils::phr_warning(
           self$log_name,
-          phr_txt(glue::glue(
+          phrtuils::phr_txt(glue::glue(
             "Unknown UUID(s) in cleaning log: {paste(missing_uuid, collapse=', ')}"
           ))
         )
@@ -255,7 +255,7 @@ CleaningLog <- R6::R6Class(
             issues$enum_id_not_found <- missing_enum
             phrutils::phr_warning(
               self$log_name,
-              phr_txt(glue::glue(
+              phrtuils::phr_txt(glue::glue(
                 "Unknown enum_id(s): {paste(missing_enum, collapse=', ')}"
               ))
             )
@@ -270,7 +270,7 @@ CleaningLog <- R6::R6Class(
         issues$unknown_question_names <- missing_q
         phrutils::phr_warning(
           self$log_name,
-          phr_txt(glue::glue(
+          phrtuils::phr_txt(glue::glue(
             "Unknown question.name columns: {paste(missing_q, collapse=', ')}"
           ))
         )
@@ -302,7 +302,7 @@ CleaningLog <- R6::R6Class(
 
             phrutils::phr_warning(
               self$log_name,
-              phr_txt(
+              phrtuils::phr_txt(
                 "old.value mismatch for uuid {uuid_val}, column {col_name}: expected '{old_val}', found '{actual}'."
               )
             )

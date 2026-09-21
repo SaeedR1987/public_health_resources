@@ -112,7 +112,7 @@ IndividualData <- R6::R6Class(
         if (length(default_ind_schema) > 0) {
           self$set_indicator_schema(default_ind_schema)
           phrutils::phr_message(
-            phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+            phrutils::phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
           )
         }
 
@@ -121,11 +121,11 @@ IndividualData <- R6::R6Class(
         if (length(default_dep_schema$dependencies) > 0) {
           self$set_dependency_schema(default_dep_schema)
           phrutils::phr_message(
-            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+            phrutils::phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )
         }
 
-        phrutils::phr_message(phr_txt("{dataset_name} initialized as IndividualData object."))
+        phrutils::phr_message(phrutils::phr_txt("{dataset_name} initialized as IndividualData object."))
 
       }, on_error = "abort", origin = "IndividualData$initialize")
     },
@@ -152,8 +152,8 @@ IndividualData <- R6::R6Class(
       if (!file.exists(file)) {
         phr_error(
           origin  = "IndividualData$default_schema",
-          message = phr_txt("variable_schema_data_individual_roster_template.xlsx not found in package resources."),
-          hint    = phr_txt("Place the schema file under inst/resources/ before building the package.")
+          message = phrutils::phr_txt("variable_schema_data_individual_roster_template.xlsx not found in package resources."),
+          hint    = phrutils::phr_txt("Place the schema file under inst/resources/ before building the package.")
         )
       }
 
@@ -163,7 +163,7 @@ IndividualData <- R6::R6Class(
         error = function(e) {
           phr_error(
             origin  = "IndividualData$default_schema",
-            message = phr_txt("Failed to read variable_schema_data_individual_roster_template.xlsx"),
+            message = phrutils::phr_txt("Failed to read variable_schema_data_individual_roster_template.xlsx"),
             hint    = e$message
           )
         }
@@ -196,7 +196,7 @@ IndividualData <- R6::R6Class(
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "IndividualData$default_indicator_schema",
-          message = phr_txt("indicator_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default indicator schema.")
+          message = phrutils::phr_txt("indicator_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
         return(list())
       }
@@ -207,7 +207,7 @@ IndividualData <- R6::R6Class(
         error = function(e) {
           phrutils::phr_warning(
             origin  = "IndividualData$default_indicator_schema",
-            message = phr_txt("Failed to read indicator_schema_data_individual_roster_template.xlsx: {e$message}")
+            message = phrutils::phr_txt("Failed to read indicator_schema_data_individual_roster_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -242,7 +242,7 @@ IndividualData <- R6::R6Class(
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "IndividualData$default_dependency_schema",
-          message = phr_txt("dependency_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default dependency schema.")
+          message = phrutils::phr_txt("dependency_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
         return(list(dependencies = list()))
       }
@@ -253,7 +253,7 @@ IndividualData <- R6::R6Class(
         error = function(e) {
           phrutils::phr_warning(
             origin  = "IndividualData$default_dependency_schema",
-            message = phr_txt("Failed to read dependency_schema_data_individual_roster_template.xlsx: {e$message}")
+            message = phrutils::phr_txt("Failed to read dependency_schema_data_individual_roster_template.xlsx: {e$message}")
           )
           return(NULL)
         }
@@ -297,7 +297,7 @@ IndividualData <- R6::R6Class(
         if (!is.null(hh_uuid_col) && hh_uuid_col %in% names(df)) {
           dup_hh <- df[[hh_uuid_col]][duplicated(df[[hh_uuid_col]])]
           if (length(dup_hh) > 0) {
-            phrutils::phr_message(nm, phr_txt(
+            phrutils::phr_message(nm, phrutils::phr_txt(
               "Duplicate household linkages detected (expected for multi-member households)."
             ))
           }
@@ -307,17 +307,17 @@ IndividualData <- R6::R6Class(
         age_col <- self$variable_map$age
         if (!is.null(age_col) && age_col %in% names(df)) {
           if (any(df[[age_col]] < 0, na.rm = TRUE)) {
-            phrutils::phr_warning(nm, phr_txt("Negative ages detected."))
+            phrutils::phr_warning(nm, phrutils::phr_txt("Negative ages detected."))
             had_issues <- TRUE
           }
         }
 
         # Optional link integrity check
         if (!is.null(self$household_link)) {
-          phrutils::phr_message(phr_txt("Validating linked HouseholdData (placeholder)."))
+          phrutils::phr_message(phrutils::phr_txt("Validating linked HouseholdData (placeholder)."))
         }
 
-        phrutils::phr_message(phr_txt(glue::glue("Post-validation for {nm} complete.")))
+        phrutils::phr_message(phrutils::phr_txt(glue::glue("Post-validation for {nm} complete.")))
 
       }, on_error = "warn", origin = paste0(self$dataset_name, "$post_validate"))
 
@@ -348,7 +348,7 @@ IndividualData <- R6::R6Class(
         if (is.null(df)) {
           phrutils::phr_warning(
             self$dataset_name,
-            phr_txt("No {stage} data available for DataAnalytics generation.")
+            phrutils::phr_txt("No {stage} data available for DataAnalytics generation.")
           )
           return(NULL)
         }
@@ -373,12 +373,12 @@ IndividualData <- R6::R6Class(
           ),
           phr_error(
             origin  = paste0(self$dataset_name, "$generate_data_analytics"),
-            message = phr_txt("Unknown analytics type '{type}' for IndividualData. Valid types: demographics")
+            message = phrutils::phr_txt("Unknown analytics type '{type}' for IndividualData. Valid types: demographics")
           )
         )
 
         phrutils::phr_message(
-          phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
+          phrutils::phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
         )
 
         return(analytics)

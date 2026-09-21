@@ -567,7 +567,9 @@ MortalityDataAnalytics <- R6::R6Class(
           dataset_label   = "roster"
         )
 
-        self$data_analysis_plan_roster$log_df <- result$dap_df
+        self$data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+
+        # self$data_analysis_plan_roster$log_df <- result$dap_df
 
         if (nrow(result$issues) > 0) {
           self$analysis_plan_issue_log <- dplyr::bind_rows(
@@ -617,7 +619,9 @@ MortalityDataAnalytics <- R6::R6Class(
           dataset_label   = "deaths"
         )
 
-        self$data_analysis_plan_deaths$log_df <- result$dap_df
+        self$data_analysis_plan_deaths$set(field = "log_df", value = result$dap_df)
+
+        # self$data_analysis_plan_deaths$log_df <- result$dap_df
 
         if (nrow(result$issues) > 0) {
           self$analysis_plan_issue_log <- dplyr::bind_rows(

@@ -2650,6 +2650,7 @@ HouseholdData <- R6::R6Class(
             "enum_id",
             "device_id",
             "date_survey",
+            "date_recall",
             "weight",
             "stratum",
             "cluster_id",

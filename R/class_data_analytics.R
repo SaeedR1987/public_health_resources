@@ -2236,7 +2236,7 @@ DataAnalytics <- R6::R6Class(
               indicator_unit = .data$indicator_unit
             )
 
-          self$data_analysis_plan$log_df <- dap_df
+          self$data_analysis_plan$set(field = "log_df", value = dap_df)
 
           if (nrow(issues) > 0) {
             self$analysis_plan_issue_log <- dplyr::bind_rows(
@@ -2817,19 +2817,33 @@ DataAnalytics <- R6::R6Class(
     # @return A named list of resolved objects.
     .resolve_field_set = function(set, keep_as_is = "analysis_results_key") {
       resolved <- list()
+
       for (nm in names(set)) {
         val <- set[[nm]]
+
         if (is.null(val)) {
+
           next
-        }
-        if (nm %in% keep_as_is) {
+
+        } else if (nm %in% keep_as_is) {
+
           resolved[[nm]] <- val
+
         } else if (is.character(val) && length(val) == 1) {
-          resolved[[nm]] <- self[[val]]
+
+          if (!is.null(self[[val]])) {
+            resolved[[nm]] <- self[[val]]
+          } else if (!is.null(private[[val]])) {
+            resolved[[nm]] <- private[[val]]
+          }
+
         } else {
+
           resolved[[nm]] <- val
+
         }
       }
+
       resolved
     },
 
