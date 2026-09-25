@@ -40,14 +40,6 @@ drc_mort$import_variable_schema(df = read.csv(file = "hh_variable_schema.csv"))
 roster <- phr::IndividualData$new(
   data = df_roster,
   dataset_name = "DRC MSNA 2026 Roster"
-  # variable_map = list(
-  #   sex = "ind_gender",
-  #   age_years = "ind_age",
-  #   know_dob = "ind_under5_date_know",
-  #   dob_exact = "ind_under5_date",
-  #   dob_approx = "ind_under5_event",
-  #   dob_final = "ind_dob_final"
-  # )
   )
 
 roster$import_variable_schema(df = read.csv(file = "roster_variable_schema.csv"))
@@ -130,6 +122,8 @@ mortality_analyics$run_quality_checks()
 
 mortality_analyics$tables$plausibility$penalty_summary
 
+mortality_analyics$tables$plausibility$penalty_summary_stratum_aru
+
 mortality_analyics$outputs_diagnose()
 View(mortality_analyics$outputs_issues_log)
 mortality_analyics$run_outputs()
@@ -138,6 +132,9 @@ View(mortality_analyics$analysis_results$household$survey_design)
 View(mortality_analyics$analysis_results$deaths$base)
 
 mortality_analyics$analysis_plan_issue_log
+
+mortality_analyics$tables$plausibility$penalty_summary
+mortality_analyics$visualizations$deaths$weighted
 
 mortality_analyics$tables$roster$mortality_analyics$visualizations$roster$age_pyramid_overall_unweighted
 mortality_analyics$visualizations$roster$age_pyramid_overall_weighted
@@ -152,15 +149,3 @@ mortality_analyics$tables$roster$basic_demo_table_strata_weighted
 (b <- sum(mortality_analyics$data$linked_person_time_female))
 (c <- sum(mortality_analyics$data$linked_person_time_male))
 (d <- sum(mortality_analyics$data$linked_person_time_under5))
-
-fsl_analytics$analysis_diagnose()
-View(fsl_analytics$analysis_plan_issues_log)
-
-fsl_analytics$quality_diagnose()
-View(fsl_analytics$quality_issues_log)
-
-fsl_analytics$outputs_diagnose()
-View(fsl_analytics$outputs_issues_log)
-
-
-
