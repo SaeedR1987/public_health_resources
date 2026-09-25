@@ -1,11 +1,12 @@
 
 rm(list = ls())
 
-devtools::load_all()
+
 library(tibble)
 library(dplyr)
 library(phrutils)
 library(phrindicators)
+devtools::load_all()
 
 #Install and setup
 
@@ -116,7 +117,13 @@ View(mortality_analyics$data_analysis_plan$get(field = "log_df"))
 
 mortality_analyics$run_analysis()
 
-mortality_analyics$quality_diagnose()
+View(mortality_analyics$analysis_results$household$base)
+
+mortality_analyics$variable_map$stratum
+table(mortality_analyics$data$admin3)
+
+
+
 View(mortality_analyics$quality_issues_log)
 mortality_analyics$run_quality_checks()
 

@@ -3025,7 +3025,7 @@ DataAnalytics <- R6::R6Class(
         if (nested) {
           phrutils::phr_warning(
             origin,
-            phr_txt(glue::glue(
+            phrutils::phr_txt(glue::glue(
               "Survey design not set for '{set_role}'. Skipping."
             ))
           )
@@ -3048,12 +3048,12 @@ DataAnalytics <- R6::R6Class(
         if (nested) {
           phrutils::phr_warning(
             origin,
-            phr_txt(glue::glue(
+            phrutils::phr_txt(glue::glue(
               "No data_analysis_plan provided for '{set_role}'. Skipping."
             ))
           )
         } else {
-          phr_error(origin, "No data_analysis_plan provided.")
+          phrutils::phr_error(origin, "No data_analysis_plan provided.")
         }
         return(NULL)
       }
