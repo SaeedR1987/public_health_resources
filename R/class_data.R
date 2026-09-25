@@ -981,80 +981,72 @@ Data <- R6::R6Class(
                               vec_content
                             )
 
-                            # Resolve each element
-                            # TODO: This resolution logic (lines 709-758) is similar to the
-                            # single-argument resolution (lines 765-807). Consider extracting
-                            # a common helper function like .resolve_map_reference(elem, variable_map, value_map)
-                            # to reduce code duplication in a future refactoring.
+                            # Resolve each element using the shared
+                            # private$resolve_variable_map_reference() /
+                            # private$resolve_value_map_reference() helpers.
                             resolved_elements <- character()
                             for (elem in vec_elements) {
                               elem <- trimws(elem)
 
                               # Resolve @variable_map references
-                              if (grepl("^@variable_map\\$", elem)) {
-                                role <- sub("^@variable_map\\$", "", elem)
-                                resolved <- self$variable_map[[role]]
-                                if (!is.null(resolved)) {
+                              var_ref <- private$resolve_variable_map_reference(
+                                elem
+                              )
+                              val_ref <- private$resolve_value_map_reference(
+                                elem
+                              )
+
+                              if (var_ref$is_reference) {
+                                if (!is.null(var_ref$value)) {
                                   resolved_elements <- c(
                                     resolved_elements,
-                                    resolved
+                                    var_ref$value
                                   )
                                 } else {
                                   phrutils::phr_warning(
                                     self$dataset_name,
                                     phrutils::phr_txt(
-                                      "Variable map role '{role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
+                                      "Variable map role '{var_ref$role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
                                     )
                                   )
                                 }
-                              } else if (grepl("^@value_map\\$", elem)) {
+                              } else if (val_ref$is_reference) {
                                 # Resolve @value_map references
-                                parts <- strsplit(
-                                  sub("^@value_map\\$", "", elem),
-                                  "\\$"
-                                )[[1]]
-                                if (length(parts) >= 1) {
-                                  role <- parts[1]
-                                  if (!is.null(self$value_map[[role]])) {
-                                    if (length(parts) == 2) {
-                                      # Specific canonical value requested
-                                      canonical_val <- parts[2]
-                                      resolved <- self$value_map[[role]][[
-                                        canonical_val
-                                      ]]
-                                      if (!is.null(resolved)) {
-                                        # value_map can itself be a vector, flatten it
-                                        resolved_elements <- c(
-                                          resolved_elements,
-                                          resolved
-                                        )
-                                      } else {
-                                        phrutils::phr_warning(
-                                          self$dataset_name,
-                                          phrutils::phr_txt(
-                                            "Value map '{elem}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
-                                          )
-                                        )
-                                      }
-                                    } else {
-                                      # Use entire value map for that role - this returns all values
-                                      resolved <- unlist(
-                                        self$value_map[[role]],
-                                        use.names = FALSE
-                                      )
+                                if (val_ref$role_found) {
+                                  if (!is.null(val_ref$canonical_value)) {
+                                    # Specific canonical value requested
+                                    if (!is.null(val_ref$value)) {
+                                      # value_map can itself be a vector, flatten it
                                       resolved_elements <- c(
                                         resolved_elements,
-                                        resolved
+                                        val_ref$value
+                                      )
+                                    } else {
+                                      phrutils::phr_warning(
+                                        self$dataset_name,
+                                        phrutils::phr_txt(
+                                          "Value map '{elem}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
+                                        )
                                       )
                                     }
                                   } else {
-                                    phrutils::phr_warning(
-                                      self$dataset_name,
-                                      phrutils::phr_txt(
-                                        "Value map role '{role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
-                                      )
+                                    # Use entire value map for that role - this returns all values
+                                    resolved <- unlist(
+                                      val_ref$value,
+                                      use.names = FALSE
+                                    )
+                                    resolved_elements <- c(
+                                      resolved_elements,
+                                      resolved
                                     )
                                   }
+                                } else {
+                                  phrutils::phr_warning(
+                                    self$dataset_name,
+                                    phrutils::phr_txt(
+                                      "Value map role '{val_ref$role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
+                                    )
+                                  )
                                 }
                               } else {
                                 # Literal value - remove quotes if present
@@ -1089,15 +1081,16 @@ Data <- R6::R6Class(
                               grepl("^@variable_map\\$", arg_value)
                           ) {
                             # Resolve variable_map references (e.g., "@variable_map$fsl_fcs_cereal")
-                            role <- sub("^@variable_map\\$", "", arg_value)
-                            resolved_value <- self$variable_map[[role]]
-                            if (!is.null(resolved_value)) {
-                              func_args[[arg_name]] <- resolved_value
+                            var_ref <- private$resolve_variable_map_reference(
+                              arg_value
+                            )
+                            if (!is.null(var_ref$value)) {
+                              func_args[[arg_name]] <- var_ref$value
                             } else {
                               phrutils::phr_warning(
                                 self$dataset_name,
                                 phrutils::phr_txt(
-                                  "Variable map role '{role}' not found for indicator '{ind_name}'. Passing NULL for optional parameter '{arg_name}'."
+                                  "Variable map role '{var_ref$role}' not found for indicator '{ind_name}'. Passing NULL for optional parameter '{arg_name}'."
                                 )
                               )
                               func_args[[arg_name]] <- NULL
@@ -1107,43 +1100,29 @@ Data <- R6::R6Class(
                               grepl("^@value_map\\$", arg_value)
                           ) {
                             # Resolve value_map references (e.g., "@value_map$status$yes")
-                            parts <- strsplit(
-                              sub("^@value_map\\$", "", arg_value),
-                              "\\$"
-                            )[[1]]
-                            if (length(parts) >= 1) {
-                              role <- parts[1]
-                              if (!is.null(self$value_map[[role]])) {
-                                if (length(parts) == 2) {
-                                  # Specific canonical value requested
-                                  canonical_val <- parts[2]
-                                  resolved_value <- self$value_map[[role]][[
-                                    canonical_val
-                                  ]]
-                                } else {
-                                  # Use entire value map for that role
-                                  resolved_value <- self$value_map[[role]]
-                                }
-                                if (!is.null(resolved_value)) {
-                                  func_args[[arg_name]] <- resolved_value
-                                } else {
-                                  phrutils::phr_warning(
-                                    self$dataset_name,
-                                    phrutils::phr_txt(
-                                      "Value map '{arg_value}' not found for indicator '{ind_name}'. Using original value."
-                                    )
-                                  )
-                                  func_args[[arg_name]] <- arg_value
-                                }
+                            val_ref <- private$resolve_value_map_reference(
+                              arg_value
+                            )
+                            if (val_ref$role_found) {
+                              if (!is.null(val_ref$value)) {
+                                func_args[[arg_name]] <- val_ref$value
                               } else {
                                 phrutils::phr_warning(
                                   self$dataset_name,
                                   phrutils::phr_txt(
-                                    "Value map role '{role}' not found for indicator '{ind_name}'. Using original value."
+                                    "Value map '{arg_value}' not found for indicator '{ind_name}'. Using original value."
                                   )
                                 )
                                 func_args[[arg_name]] <- arg_value
                               }
+                            } else {
+                              phrutils::phr_warning(
+                                self$dataset_name,
+                                phrutils::phr_txt(
+                                  "Value map role '{val_ref$role}' not found for indicator '{ind_name}'. Using original value."
+                                )
+                              )
+                              func_args[[arg_name]] <- arg_value
                             }
                           } else {
                             # Use literal value
@@ -5053,6 +5032,113 @@ Data <- R6::R6Class(
       list(
         variable_map_df = variable_map_df,
         value_map_df = value_map_df
+      )
+    }
+  ),
+
+  private = list(
+    #' @description
+    #' Resolve a "@variable_map$role" schema reference to its mapped dataset
+    #' column name.
+    #'
+    #' Centralizes the parsing/lookup logic used when indicator schema
+    #' arguments (single values or elements of a `c(...)` vector) reference
+    #' `variable_map` using the `@variable_map$role` tag syntax.
+    #'
+    #' @param ref Character string to check/resolve (e.g. "@variable_map$fever").
+    #'
+    #' @return A list with:
+    #'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax.
+    #'   * `role` - the extracted role name (NULL if not a reference).
+    #'   * `value` - the resolved column name, or NULL if the role is not
+    #'     mapped (or not a valid/non-empty mapping).
+    resolve_variable_map_reference = function(ref) {
+      if (!is.character(ref) || length(ref) != 1) {
+        return(list(is_reference = FALSE, role = NULL, value = NULL))
+      }
+
+      if (!grepl("^@variable_map\\$", ref)) {
+        return(list(is_reference = FALSE, role = NULL, value = NULL))
+      }
+
+      role <- sub("^@variable_map\\$", "", ref)
+      value <- self$variable_map[[role]]
+
+      if (is.null(value) || identical(value, "")) {
+        value <- NULL
+      }
+
+      list(is_reference = TRUE, role = role, value = value)
+    },
+
+    #' @description
+    #' Resolve a "@value_map$role" or "@value_map$role$canonical_value"
+    #' schema reference to its mapped dataset value(s).
+    #'
+    #' Centralizes the parsing/lookup logic used when indicator schema
+    #' arguments (single values or elements of a `c(...)` vector) reference
+    #' `value_map` using the `@value_map$role` or
+    #' `@value_map$role$canonical_value` tag syntax.
+    #'
+    #' @param ref Character string to check/resolve (e.g. "@value_map$status$yes").
+    #'
+    #' @return A list with:
+    #'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax.
+    #'   * `role` - the extracted role name (NULL if not a reference).
+    #'   * `canonical_value` - the extracted canonical value name, if provided
+    #'     (NULL otherwise).
+    #'   * `role_found` - TRUE if `role` exists in `value_map`.
+    #'   * `value` - the resolved value(s): a single mapping (when
+    #'     `canonical_value` is given), the entire role's value map (when it
+    #'     is not), or NULL if the role/canonical value could not be resolved.
+    resolve_value_map_reference = function(ref) {
+      if (!is.character(ref) || length(ref) != 1) {
+        return(list(
+          is_reference = FALSE,
+          role = NULL,
+          canonical_value = NULL,
+          role_found = FALSE,
+          value = NULL
+        ))
+      }
+
+      if (!grepl("^@value_map\\$", ref)) {
+        return(list(
+          is_reference = FALSE,
+          role = NULL,
+          canonical_value = NULL,
+          role_found = FALSE,
+          value = NULL
+        ))
+      }
+
+      parts <- strsplit(sub("^@value_map\\$", "", ref), "\\$")[[1]]
+      role <- parts[1]
+      canonical_value <- if (length(parts) == 2) parts[2] else NULL
+      role_map <- self$value_map[[role]]
+
+      if (is.null(role_map)) {
+        return(list(
+          is_reference = TRUE,
+          role = role,
+          canonical_value = canonical_value,
+          role_found = FALSE,
+          value = NULL
+        ))
+      }
+
+      value <- if (!is.null(canonical_value)) {
+        role_map[[canonical_value]]
+      } else {
+        role_map
+      }
+
+      list(
+        is_reference = TRUE,
+        role = role,
+        canonical_value = canonical_value,
+        role_found = TRUE,
+        value = value
       )
     }
   )
