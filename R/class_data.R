@@ -982,18 +982,20 @@ Data <- R6::R6Class(
                             )
 
                             # Resolve each element using the shared
-                            # private$resolve_variable_map_reference() /
-                            # private$resolve_value_map_reference() helpers.
+                            # private$..resolve_variable_map_reference() /
+                            # private$..resolve_value_map_reference() helpers.
                             resolved_elements <- character()
                             for (elem in vec_elements) {
                               elem <- trimws(elem)
 
                               # Resolve @variable_map references
-                              var_ref <- private$resolve_variable_map_reference(
-                                elem
+                              var_ref <- private$..resolve_variable_map_reference(
+                                elem,
+                                tags = TRUE
                               )
-                              val_ref <- private$resolve_value_map_reference(
-                                elem
+                              val_ref <- private$..resolve_value_map_reference(
+                                elem,
+                                tags = TRUE
                               )
 
                               if (var_ref$is_reference) {
@@ -1081,8 +1083,9 @@ Data <- R6::R6Class(
                               grepl("^@variable_map\\$", arg_value)
                           ) {
                             # Resolve variable_map references (e.g., "@variable_map$fsl_fcs_cereal")
-                            var_ref <- private$resolve_variable_map_reference(
-                              arg_value
+                            var_ref <- private$..resolve_variable_map_reference(
+                              arg_value,
+                              tags = TRUE
                             )
                             if (!is.null(var_ref$value)) {
                               func_args[[arg_name]] <- var_ref$value
@@ -1100,8 +1103,9 @@ Data <- R6::R6Class(
                               grepl("^@value_map\\$", arg_value)
                           ) {
                             # Resolve value_map references (e.g., "@value_map$status$yes")
-                            val_ref <- private$resolve_value_map_reference(
-                              arg_value
+                            val_ref <- private$..resolve_value_map_reference(
+                              arg_value,
+                              tags = TRUE
                             )
                             if (val_ref$role_found) {
                               if (!is.null(val_ref$value)) {
@@ -5038,30 +5042,40 @@ Data <- R6::R6Class(
 
   private = list(
     #' @description
-    #' Resolve a "@variable_map$role" schema reference to its mapped dataset
-    #' column name.
+    #' Resolve a "@variable_map$role" schema reference (or a bare role name)
+    #' to its mapped dataset column name.
     #'
     #' Centralizes the parsing/lookup logic used when indicator schema
     #' arguments (single values or elements of a `c(...)` vector) reference
     #' `variable_map` using the `@variable_map$role` tag syntax.
     #'
-    #' @param ref Character string to check/resolve (e.g. "@variable_map$fever").
+    #' @param ref Character string to check/resolve. When `tags = TRUE`,
+    #'   this is expected to be a `@variable_map$role` tag (e.g.
+    #'   "@variable_map$fever"). When `tags = FALSE`, `ref` is treated
+    #'   directly as the role name, with no `@` stripping.
+    #' @param tags Logical. If `TRUE`, `ref` is parsed as a `@variable_map$role`
+    #'   tag. If `FALSE` (default), `ref` is resolved directly as a role name.
     #'
     #' @return A list with:
-    #'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax.
+    #'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
+    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
     #'   * `role` - the extracted role name (NULL if not a reference).
     #'   * `value` - the resolved column name, or NULL if the role is not
     #'     mapped (or not a valid/non-empty mapping).
-    resolve_variable_map_reference = function(ref) {
+    ..resolve_variable_map_reference = function(ref, tags = FALSE) {
       if (!is.character(ref) || length(ref) != 1) {
         return(list(is_reference = FALSE, role = NULL, value = NULL))
       }
 
-      if (!grepl("^@variable_map\\$", ref)) {
-        return(list(is_reference = FALSE, role = NULL, value = NULL))
+      if (tags) {
+        if (!grepl("^@variable_map\\$", ref)) {
+          return(list(is_reference = FALSE, role = NULL, value = NULL))
+        }
+        role <- sub("^@variable_map\\$", "", ref)
+      } else {
+        role <- ref
       }
 
-      role <- sub("^@variable_map\\$", "", ref)
       value <- self$variable_map[[role]]
 
       if (is.null(value) || identical(value, "")) {
@@ -5073,17 +5087,25 @@ Data <- R6::R6Class(
 
     #' @description
     #' Resolve a "@value_map$role" or "@value_map$role$canonical_value"
-    #' schema reference to its mapped dataset value(s).
+    #' schema reference (or a bare "role"/"role$canonical_value" string) to
+    #' its mapped dataset value(s).
     #'
     #' Centralizes the parsing/lookup logic used when indicator schema
     #' arguments (single values or elements of a `c(...)` vector) reference
     #' `value_map` using the `@value_map$role` or
     #' `@value_map$role$canonical_value` tag syntax.
     #'
-    #' @param ref Character string to check/resolve (e.g. "@value_map$status$yes").
+    #' @param ref Character string to check/resolve. When `tags = TRUE`,
+    #'   this is expected to be a `@value_map$role` or
+    #'   `@value_map$role$canonical_value` tag (e.g.
+    #'   "@value_map$status$yes"). When `tags = FALSE`, `ref` is treated
+    #'   directly as "role" or "role$canonical_value", with no `@` stripping.
+    #' @param tags Logical. If `TRUE`, `ref` is parsed as a `@value_map$...`
+    #'   tag. If `FALSE` (default), `ref` is resolved directly.
     #'
     #' @return A list with:
-    #'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax.
+    #'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
+    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
     #'   * `role` - the extracted role name (NULL if not a reference).
     #'   * `canonical_value` - the extracted canonical value name, if provided
     #'     (NULL otherwise).
@@ -5091,7 +5113,7 @@ Data <- R6::R6Class(
     #'   * `value` - the resolved value(s): a single mapping (when
     #'     `canonical_value` is given), the entire role's value map (when it
     #'     is not), or NULL if the role/canonical value could not be resolved.
-    resolve_value_map_reference = function(ref) {
+    ..resolve_value_map_reference = function(ref, tags = FALSE) {
       if (!is.character(ref) || length(ref) != 1) {
         return(list(
           is_reference = FALSE,
@@ -5102,17 +5124,20 @@ Data <- R6::R6Class(
         ))
       }
 
-      if (!grepl("^@value_map\\$", ref)) {
-        return(list(
-          is_reference = FALSE,
-          role = NULL,
-          canonical_value = NULL,
-          role_found = FALSE,
-          value = NULL
-        ))
+      if (tags) {
+        if (!grepl("^@value_map\\$", ref)) {
+          return(list(
+            is_reference = FALSE,
+            role = NULL,
+            canonical_value = NULL,
+            role_found = FALSE,
+            value = NULL
+          ))
+        }
+        ref <- sub("^@value_map\\$", "", ref)
       }
 
-      parts <- strsplit(sub("^@value_map\\$", "", ref), "\\$")[[1]]
+      parts <- strsplit(ref, "\\$")[[1]]
       role <- parts[1]
       canonical_value <- if (length(parts) == 2) parts[2] else NULL
       role_map <- self$value_map[[role]]
