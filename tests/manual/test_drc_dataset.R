@@ -116,9 +116,27 @@ View(mortality_analyics$analysis_plan_issues_log)
 View(mortality_analyics$data_analysis_plan$get(field = "log_df"))
 
 mortality_analyics$run_analysis()
+mortality_analyics$run_quality_checks()
+mortality_analyics$run_outputs()
 
+# CHECK RESULTS
 View(mortality_analyics$analysis_results$household$base)
 View(mortality_analyics$analysis_results$household$survey_design)
+
+# CHECK QUALITY REPORTS
+mortality_analyics$tables$plausibility$penalty_summary
+mortality_analyics$tables$plausibility$penalty_summary_stratum_aru
+
+# CHECK OUTPUTS
+
+mortality_analyics$tables$roster$unweighted$sex_age_months_cat_demo_table
+mortality_analyics$tables$roster$unweighted$basic_demo_table_strata
+mortality_analyics$tables$roster$unweighted$basic_demo_table_weighted
+mortality_analyics$tables$roster$unweighted$sex_age_cat_demo_table
+
+mortality_analyics$visualizations$roster$weighted$
+
+mortality_analyics$visualizations$roster$unweighted$age_pyramid_overall_unweighted
 
 mortality_analyics$variable_map$stratum
 table(mortality_analyics$data$admin3)
@@ -126,24 +144,25 @@ table(mortality_analyics$data$admin3)
 
 
 View(mortality_analyics$quality_issues_log)
-mortality_analyics$run_quality_checks()
 
- mortality_analyics$tables$plausibility$penalty_summary
 
-mortality_analyics$tables$plausibility$penalty_summary_stratum_aru
+
 
 mortality_analyics$outputs_diagnose()
 View(mortality_analyics$outputs_issues_log)
-mortality_analyics$run_outputs()
 
-mortality_analyics$tables$roster$unweighted$sex_age_months_cat_demo_table
+
+
+
 mortality_analyics$tables$deaths$weighted
+
+mortality_analyics$tables$deaths
 
 
 mortality_analyics$visualizations$roster$unweighted$age_months_distribution_unweighted
 mortality_analyics$visualizations$roster$unweighted$age_months_cat_donut_unweighted
 
-mortality_analyics$visualizations$deaths$weighted
+mortality_analyics$visualizations$deaths
 
 View(mortality_analyics$analysis_results$household$survey_design)
 View(mortality_analyics$analysis_results$deaths$base)
