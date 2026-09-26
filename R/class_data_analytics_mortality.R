@@ -985,9 +985,10 @@ MortalityDataAnalytics <- R6::R6Class(
         )
 
       survey_results <- phrutils::phr_try(
-        phr_calc_survey_from_plan(
+        private$..phr_calc_survey_from_plan(
           design        = survey_design,
-          analysis_plan = dap_df
+          analysis_plan = dap_df,
+          variable_map  = vm
         ),
         on_error = "warn",
         origin   = origin,

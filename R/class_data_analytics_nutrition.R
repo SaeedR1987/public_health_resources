@@ -203,7 +203,7 @@ NutritionDataAnalytics <- R6::R6Class(
       # 6. Run analysis and store under 'muac_weighted'
       # ------------------------------------------------------------------
       muac_results <- phrutils::phr_try(
-        phr_calc_survey_from_plan(
+        private$..phr_calc_survey_from_plan(
           design        = muac_design,
           analysis_plan = muac_rows
         ),
