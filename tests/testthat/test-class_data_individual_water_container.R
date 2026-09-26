@@ -32,10 +32,16 @@ test_that("WaterContainerData supports multiple schemas and validations", {
     WaterContainerData$new(data = df)
   ))
 
-  # Export schemas
-  type_schema <- suppressWarnings(suppressMessages(container$export_variable_schema()))
-  range_schema <- suppressWarnings(suppressMessages(container$export_dependency_schema()))
-  values_schema <- suppressWarnings(suppressMessages(container$export_indicator_schema()))
+  # Export schemas via inherited call()
+  type_schema <- suppressWarnings(suppressMessages(
+    container$call(field = "..export_schema_to_table", schema_type = "variable")
+  ))
+  range_schema <- suppressWarnings(suppressMessages(
+    container$call(field = "..export_schema_to_table", schema_type = "dependency")
+  ))
+  values_schema <- suppressWarnings(suppressMessages(
+    container$call(field = "..export_schema_to_table", schema_type = "indicator")
+  ))
 
   # Define specific tests for each schema
 

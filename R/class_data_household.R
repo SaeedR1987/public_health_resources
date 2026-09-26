@@ -794,11 +794,11 @@ HouseholdData <- R6::R6Class(
           df[[weight_col]] <- weight_vec
 
           if (stage == "standardized") {
-            self$standardized_data <- df
+            private$..standardized_data <- df
           } else if (stage == "clean") {
-            self$clean_data <- df
+            private$..clean_data <- df
           } else {
-            self$raw_data <- df
+            private$..raw_data <- df
           }
 
           phrutils::phr_message(
@@ -925,11 +925,11 @@ HouseholdData <- R6::R6Class(
 
           # Update the appropriate household data stage
           if (hh_data_stage == "clean") {
-            self$clean_data <- hh_data_updated
+            private$..clean_data <- hh_data_updated
           } else if (hh_data_stage == "standardized") {
-            self$standardized_data <- hh_data_updated
+            private$..standardized_data <- hh_data_updated
           } else {
-            self$raw_data <- hh_data_updated
+            private$..raw_data <- hh_data_updated
           }
 
           phrutils::phr_message(phr_txt(

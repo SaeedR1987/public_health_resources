@@ -34,10 +34,16 @@ test_that("HealthIndividualData supports multiple schemas and validations", {
     HealthIndividualData$new(data = df)
   ))
 
-  # Export schemas
-  var_schema <- suppressWarnings(suppressMessages(health$export_variable_schema()))
-  dep_schema <- suppressWarnings(suppressMessages(health$export_dependency_schema()))
-  ind_schema <- suppressWarnings(suppressMessages(health$export_indicator_schema()))
+  # Export schemas via inherited call()
+  var_schema <- suppressWarnings(suppressMessages(
+    health$call(field = "..export_schema_to_table", schema_type = "variable")
+  ))
+  dep_schema <- suppressWarnings(suppressMessages(
+    health$call(field = "..export_schema_to_table", schema_type = "dependency")
+  ))
+  ind_schema <- suppressWarnings(suppressMessages(
+    health$call(field = "..export_schema_to_table", schema_type = "indicator")
+  ))
 
   # Define specific tests for each schema
 

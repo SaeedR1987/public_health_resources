@@ -56,6 +56,7 @@
 #' @export
 DataAnalytics <- R6::R6Class(
   classname = "DataAnalytics",
+  inherit = Asset,
 
   public = list(
     # Core fields (shared)
@@ -126,6 +127,7 @@ DataAnalytics <- R6::R6Class(
       value_label = NULL,
       quality_schema = NULL
     ) {
+      super$initialize()
       origin <- paste0(dataset_name, "$initialize")
       phrutils::phr_message(origin, "Initializing DataAnalytics class...")
 

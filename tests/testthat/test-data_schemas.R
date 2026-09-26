@@ -1458,9 +1458,9 @@ test_that("generate_cleaning_log uses new list structure correctly", {
 
 # TEST INDICATOR SCHEMA ####
 
-# import_indicator_schema ####
+# indicator schema import via inherited set() ####
 
-test_that("Data$import_indicator_schema imports indicator table", {
+test_that("Data$set() imports indicator schema from indicator table", {
 
   df <- tibble::tibble(id = 1:3, value = c(10, 20, 30))
 
@@ -1477,7 +1477,12 @@ test_that("Data$import_indicator_schema imports indicator table", {
     Data$new(data = df, dataset_name = "Test", uuid = "id")
   )
 
-  expect_no_error(d$import_indicator_schema(indicator_table))
+  expect_no_error(
+    d$set(
+      field = "indicator_schema",
+      value = indicator_table_to_schema(indicator_table)
+    )
+  )
 
   expect_false(is.null(d$indicator_schema))
   expect_equal(length(d$indicator_schema), 1)
@@ -1485,9 +1490,9 @@ test_that("Data$import_indicator_schema imports indicator table", {
 })
 
 
-# export_indicator_schema ####
+# indicator schema export via inherited call() ####
 
-test_that("Data$export_indicator_schema exports indicator schema", {
+test_that("Data$call('..export_schema_to_table') exports indicator schema", {
 
   df <- tibble::tibble(id = 1:3, value = c(10, 20, 30))
 
@@ -1505,14 +1510,16 @@ test_that("Data$export_indicator_schema exports indicator schema", {
   )
   d$indicator_schema <- indicator_schema
 
-  exported <- d$export_indicator_schema()
+  exported <- suppressMessages(
+    d$call(field = "..export_schema_to_table", schema_type = "indicator")
+  )
 
   expect_s3_class(exported, "data.frame")
   expect_equal(nrow(exported), 1)
   expect_equal(exported$indicator_name, "test_ind")
 })
 
-test_that("Data$export_indicator_schema warns when no schema", {
+test_that("Data$call('..export_schema_to_table') warns when no indicator schema", {
 
   df <- tibble::tibble(id = 1:3)
   d <- suppressMessages(
@@ -1520,7 +1527,7 @@ test_that("Data$export_indicator_schema warns when no schema", {
   )
 
   expect_warning(
-    d$export_indicator_schema(),
+    d$call(field = "..export_schema_to_table", schema_type = "indicator"),
     regexp = "No indicator schema"
   )
 })

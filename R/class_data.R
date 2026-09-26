@@ -62,13 +62,18 @@
 #' @export
 Data <- R6::R6Class(
   classname = "Data",
+  inherit = Asset,
 
   public = list(
     # Core data & state
+    #
+    # NOTE: `raw_data`, `standardized_data`, and `clean_data` are now stored
+    # in private fields (`private$..raw_data`, `private$..standardized_data`,
+    # `private$..clean_data`) and exposed via read/write active bindings for
+    # backward compatibility. Prefer the inherited `set()` / `get()` methods
+    # (e.g. `d$get(field = "raw_data")`, `d$set(field = "clean_data", value = df)`)
+    # or the `get_data(stage = ...)` helper for stage-based access.
 
-    raw_data = NULL, # Imported data (never mutated)
-    standardized_data = NULL, # After standardization (names/types/values)
-    clean_data = NULL, # After cleaning
     dataset_name = NULL,
     metadata = NULL, # Free-form list; updated via update_metadata()
     uuid = NULL,
@@ -119,6 +124,7 @@ Data <- R6::R6Class(
       variable_map = NULL,
       value_map = NULL
     ) {
+      super$initialize()
       phrutils::phr_try(
         {
           if (is.null(data)) {
@@ -151,9 +157,9 @@ Data <- R6::R6Class(
             )
           }
 
-          self$raw_data <- data
-          self$standardized_data <- NULL
-          self$clean_data <- NULL
+          private$..raw_data <- data
+          private$..standardized_data <- NULL
+          private$..clean_data <- NULL
 
           self$metadata <- metadata %||% list()
           self$dataset_name <- dataset_name
@@ -457,7 +463,7 @@ Data <- R6::R6Class(
           # Ensure raw_data exists
           result <- phrutils::phr_try_step(
             {
-              if (is.null(self$raw_data)) {
+              if (is.null(private$..raw_data)) {
                 phrutils::phr_error(
                   "Raw data is NULL; cannot standardize.",
                   origin = paste0(self$dataset_name, "$standardize"),
@@ -521,7 +527,7 @@ Data <- R6::R6Class(
 
           phrutils::phr_message(phrutils::phr_txt("Standardizing {self$dataset_name}..."))
 
-          data_copy <- self$raw_data
+          data_copy <- private$..raw_data
           sch <- self$variable_schema %||% list()
 
           # normalize skip vector
@@ -932,7 +938,7 @@ Data <- R6::R6Class(
                         }
                       }
 
-                      # Prepare arguments for the function call (using working_data, not self$standardized_data)
+                      # Prepare arguments for the function call (using working_data, not private$..standardized_data)
                       func_args <- list(.dataset = working_data)
 
                       # Add user-specified arguments
@@ -1141,7 +1147,7 @@ Data <- R6::R6Class(
                       ))
                       ind_result <- do.call(func_name, func_args)
 
-                      # Update working_data with result (not self$standardized_data)
+                      # Update working_data with result (not private$..standardized_data)
                       if (is.data.frame(ind_result)) {
                         working_data <- ind_result
                         phrutils::phr_message(phrutils::phr_txt(
@@ -1150,8 +1156,8 @@ Data <- R6::R6Class(
 
                         # Update variable and value maps after each indicator
                         # Temporarily assign working_data to standardized_data so map_schema_vars can access it
-                        temp_standardized <- self$standardized_data
-                        self$standardized_data <- working_data
+                        temp_standardized <- private$..standardized_data
+                        private$..standardized_data <- working_data
 
                         phrutils::phr_try(
                           {
@@ -1167,7 +1173,7 @@ Data <- R6::R6Class(
                         )
 
                         # Restore original standardized_data (will be set properly at the end)
-                        self$standardized_data <- temp_standardized
+                        private$..standardized_data <- temp_standardized
                       } else {
                         phrutils::phr_warning(
                           self$dataset_name,
@@ -1242,7 +1248,7 @@ Data <- R6::R6Class(
           data_copy <- result
 
           # assign standardized data
-          self$standardized_data <- data_copy
+          private$..standardized_data <- data_copy
           self$standardized <- TRUE
           phrutils::phr_message(phrutils::phr_txt(
             "{self$dataset_name} standardization complete."
@@ -1252,7 +1258,7 @@ Data <- R6::R6Class(
           result <- phrutils::phr_try_step(
             {
               if (
-                !is.null(self$standardized_data) &&
+                !is.null(private$..standardized_data) &&
                   !is.null(self$variable_schema)
               ) {
                 phrutils::phr_message(phrutils::phr_txt(
@@ -1376,10 +1382,10 @@ Data <- R6::R6Class(
           # BASELINE CLEAN DATA (robust fallback)
 
           if (
-            !is.null(self$standardized_data) &&
-              is.data.frame(self$standardized_data)
+            !is.null(private$..standardized_data) &&
+              is.data.frame(private$..standardized_data)
           ) {
-            self$clean_data <- self$standardized_data
+            private$..clean_data <- private$..standardized_data
           } else {
             # Only warn if standardized_data should have existed
             if (!self$standardized) {
@@ -1392,8 +1398,8 @@ Data <- R6::R6Class(
             }
 
             if (
-              !is.null(self$standardized_data) &&
-                !is.data.frame(self$standardized_data)
+              !is.null(private$..standardized_data) &&
+                !is.data.frame(private$..standardized_data)
             ) {
               phrutils::phr_warning(
                 message = phrutils::phr_txt(
@@ -1403,7 +1409,7 @@ Data <- R6::R6Class(
               )
             }
 
-            self$clean_data <- self$raw_data
+            private$..clean_data <- private$..raw_data
           }
 
           # VALIDATE & APPLY CLEANING LOG
@@ -1420,8 +1426,8 @@ Data <- R6::R6Class(
 
             # apply changes (authoritative mode option A)
             if (nrow(self$cleaning_log$log_df) > 0) {
-              self$clean_data <- self$.apply_cleaning_changes(
-                df = self$clean_data,
+              private$..clean_data <- self$.apply_cleaning_changes(
+                df = private$..clean_data,
                 log_df = self$cleaning_log$log_df,
                 uuid_col = self$uuid
               )
@@ -1440,8 +1446,8 @@ Data <- R6::R6Class(
             # apply deletions
             if (nrow(self$deletion_log$log_df) > 0) {
               delete_ids <- as.character(self$deletion_log$log_df$uuid)
-              self$clean_data <- self$clean_data[
-                !as.character(self$clean_data[[self$uuid]]) %in% delete_ids,
+              private$..clean_data <- private$..clean_data[
+                !as.character(private$..clean_data[[self$uuid]]) %in% delete_ids,
               ]
             }
           }
@@ -1457,213 +1463,6 @@ Data <- R6::R6Class(
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$clean")
-      )
-    },
-
-    #' Import Cleaning Log
-    #'
-    #' @description
-    #' Imports cleaning log entries from a data frame
-    #'
-    #' @param df Data frame containing cleaning log entries with required columns
-    #' @param mode Character string: "replace" (default) to replace existing log, "append" to add entries
-    #'
-    #' @return Logical TRUE (invisibly)
-    #'
-    #' @details
-    #' The data frame must contain all required columns defined in the cleaning_log schema.
-    #' After import, the combined log is validated automatically.
-    import_cleaning_log = function(df, mode = c("replace", "append")) {
-      mode <- match.arg(mode)
-
-      phrutils::phr_try(
-        {
-          phrutils::phr_validate_dataframe(
-            df,
-            origin = "import_cleaning_log",
-            soft = FALSE
-          )
-
-          # Must contain CleaningLog required columns:
-          required <- self$cleaning_log$required_columns
-          phrutils::phr_validate_columns(
-            df,
-            required_cols = required,
-            origin = "import_cleaning_log",
-            soft = FALSE
-          )
-
-          if (mode == "replace") {
-            self$cleaning_log$log_df <- df
-          } else {
-            # append
-            self$cleaning_log$log_df <- dplyr::bind_rows(
-              self$cleaning_log$log_df,
-              df
-            )
-          }
-
-          # Revalidate new combined log
-          self$cleaning_log$validate()
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Imported cleaning log ({nrow(df)} rows) into {self$dataset_name}."
-            )
-          )
-
-          invisible(TRUE)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$import_cleaning_log")
-      )
-    },
-
-    #' Import Deletion Log
-    #'
-    #' @description
-    #' Imports deletion log entries from a data frame
-    #'
-    #' @param df Data frame containing deletion log entries with required columns
-    #' @param mode Character string: "replace" (default) to replace existing log, "append" to add entries
-    #'
-    #' @return Logical TRUE (invisibly)
-    #'
-    #' @details
-    #' The data frame must contain all required columns defined in the deletion_log schema.
-    #' After import, the combined log is validated automatically.
-    import_deletion_log = function(df, mode = c("replace", "append")) {
-      mode <- match.arg(mode)
-
-      phrutils::phr_try(
-        {
-          phrutils::phr_validate_dataframe(
-            df,
-            origin = "import_deletion_log",
-            soft = FALSE
-          )
-
-          required <- self$deletion_log$required_columns
-          phrutils::phr_validate_columns(
-            df,
-            required_cols = required,
-            origin = "import_deletion_log",
-            soft = FALSE
-          )
-
-          if (mode == "replace") {
-            self$deletion_log$log_df <- df
-          } else {
-            self$deletion_log$log_df <- dplyr::bind_rows(
-              self$deletion_log$log_df,
-              df
-            )
-          }
-
-          self$deletion_log$validate()
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Imported deletion log ({nrow(df)} rows) into {self$dataset_name}."
-            )
-          )
-
-          invisible(TRUE)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$import_deletion_log")
-      )
-    },
-
-    #' Import Variable Schema from Table
-    #'
-    #' @description
-    #' Imports variable schema from a data frame table and attaches it to the dataset
-    #'
-    #' @param df Data frame containing variable schema in table format (columns: variable, type, allowed_values, etc.)
-    #'
-    #' @return The imported schema list (invisibly)
-    #'
-    #' @details
-    #' The table is converted to a structured schema list using data_table_to_schema().
-    #' After import, diagnostics are run to check for schema-data mismatches.
-    import_variable_schema = function(df) {
-      phrutils::phr_try(
-        {
-          phrutils::phr_validate_dataframe(
-            df,
-            origin = "import_variable_schema",
-            soft = FALSE
-          )
-
-          # Convert table → structured schema list
-          new_schema <- data_table_to_schema(df)
-
-          # Assign schema
-          self$variable_schema <- new_schema
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Variable schema imported and attached to {self$dataset_name} ({length(new_schema$types)} typed variables)."
-            )
-          )
-
-          # Optional: run immediate soft diagnostics
-          diag <- self$data_diagnose(stage = "raw")
-
-          if (!is.null(diag) && nrow(diag) > 0) {
-            # Check if there are any issues (rows where issues != "ok")
-            issues_found <- diag[diag$issues != "ok", ]
-            if (nrow(issues_found) > 0) {
-              phrutils::phr_warning(
-                self$dataset_name,
-                phrutils::phr_txt(
-                  "Schema imported but {nrow(issues_found)} diagnostic issue(s) detected."
-                )
-              )
-            }
-          }
-
-          invisible(new_schema)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$import_variable_schema")
-      )
-    },
-
-    #' Export Variable Schema to Table
-    #'
-    #' @description
-    #' Exports the current variable schema as a data frame table
-    #'
-    #' @return Data frame containing variable schema, or NULL if no schema is defined
-    #'
-    #' @details
-    #' The structured schema list is converted to a table format using data_schema_to_table().
-    export_variable_schema = function() {
-      phrutils::phr_try(
-        {
-          if (is.null(self$variable_schema)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No variable schema available to export.")
-            )
-            return(NULL)
-          }
-
-          # Convert variable schema list → table
-          variable_table <- data_schema_to_table(self$variable_schema)
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Exported variable schema from {self$dataset_name} ({nrow(variable_table)} row(s))."
-            )
-          )
-
-          return(variable_table)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$export_variable_schema")
       )
     },
 
@@ -1688,7 +1487,7 @@ Data <- R6::R6Class(
           )
 
           # 2. Convert to table
-          tbl <- data_schema_to_table(schema_list)
+          tbl <- private$..data_schema_to_table(schema_list)
 
           # 3. Validate the table
           data_validate_table_to_schema(
@@ -1719,88 +1518,6 @@ Data <- R6::R6Class(
     #'
     #' @return List containing variable schema (types, allowed_values, etc.), or NULL if not set
     get_variable_schema = function() self$variable_schema,
-
-    # Backward compatibility wrappers (deprecated)
-    #' @description
-    #' Import variable schema from data frame (deprecated - use import_variable_schema)
-    #'
-    #' @param df Data frame containing variable schema
-    #'
-    #' @return Invisible schema list
-    import_schema = function(df) {
-      phrutils::phr_warning(
-        self$dataset_name,
-        phrutils::phr_txt(
-          "import_schema() is deprecated. Use import_variable_schema() instead."
-        )
-      )
-      self$import_variable_schema(df)
-    },
-
-    #' @description
-    #' Import indicator schema from data frame
-    #'
-    #' @param df Data frame containing indicator schema with indicator definitions
-    #'
-    #' @return Invisible indicator schema list
-    import_indicator_schema = function(df) {
-      phrutils::phr_try(
-        {
-          phrutils::phr_validate_dataframe(
-            df,
-            origin = "import_indicator_schema",
-            soft = FALSE
-          )
-
-          # Convert table → structured indicator schema list
-          new_indicator_schema <- indicator_table_to_schema(df)
-
-          # Assign indicator schema
-          self$indicator_schema <- new_indicator_schema
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Indicator schema imported and attached to {self$dataset_name} ({length(new_indicator_schema)} indicator(s))."
-            )
-          )
-
-          invisible(new_indicator_schema)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$import_indicator_schema")
-      )
-    },
-
-    #' @description
-    #' Export indicator schema to data frame
-    #'
-    #' @return Data frame containing indicator schema, or NULL if no schema exists
-    export_indicator_schema = function() {
-      phrutils::phr_try(
-        {
-          if (is.null(self$indicator_schema)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No indicator schema available to export.")
-            )
-            return(NULL)
-          }
-
-          # Convert indicator schema list → table
-          indicator_table <- indicator_schema_to_table(self$indicator_schema)
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Exported indicator schema from {self$dataset_name} ({nrow(indicator_table)} row(s))."
-            )
-          )
-
-          return(indicator_table)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$export_indicator_schema")
-      )
-    },
 
     #' @description
     #' Set indicator schema from list
@@ -1834,71 +1551,6 @@ Data <- R6::R6Class(
     #'
     #' @return Indicator schema list, or NULL if not set
     get_indicator_schema = function() self$indicator_schema,
-
-    #' @description
-    #' Import dependency schema from data frame
-    #'
-    #' @param df Data frame containing dependency schema with dependency definitions
-    #'
-    #' @return Invisible dependency schema list
-    import_dependency_schema = function(df) {
-      phrutils::phr_try(
-        {
-          phrutils::phr_validate_dataframe(
-            df,
-            origin = "import_dependency_schema",
-            soft = FALSE
-          )
-
-          # Convert table → structured dependency schema list
-          new_dependency_schema <- dependency_table_to_schema(df)
-
-          # Assign dependency schema
-          self$dependency_schema <- new_dependency_schema
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Dependency schema imported and attached to {self$dataset_name} ({length(new_dependency_schema$dependencies)} dependency/ies, {length(new_dependency_schema$soft_dependencies)} soft dependency/ies)."
-            )
-          )
-
-          invisible(new_dependency_schema)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$import_dependency_schema")
-      )
-    },
-
-    #' @description
-    #' Export dependency schema to data frame
-    #'
-    #' @return Data frame containing dependency schema, or NULL if no schema exists
-    export_dependency_schema = function() {
-      phrutils::phr_try(
-        {
-          if (is.null(self$dependency_schema)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No dependency schema available to export.")
-            )
-            return(NULL)
-          }
-
-          # Convert dependency schema list → table
-          dependency_table <- dependency_schema_to_table(self$dependency_schema)
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Exported dependency schema from {self$dataset_name} ({nrow(dependency_table)} row(s))."
-            )
-          )
-
-          return(dependency_table)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$export_dependency_schema")
-      )
-    },
 
     #' @description
     #' Set dependency schema from list
@@ -1948,12 +1600,12 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (stage == "raw") {
-            return(self$raw_data)
+            return(private$..raw_data)
           }
           if (stage == "standardized") {
-            return(self$standardized_data)
+            return(private$..standardized_data)
           }
-          if (stage == "clean") return(self$clean_data)
+          if (stage == "clean") return(private$..clean_data)
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$get_data")
@@ -2860,7 +2512,7 @@ Data <- R6::R6Class(
 
           phrutils::phr_try(
             {
-              std <- self$standardized_data
+              std <- private$..standardized_data
               if (!is.null(std) && self$uuid %in% names(std)) {
                 join_col <- self$uuid
                 if (join_col %in% names(flag_df)) {
@@ -2878,7 +2530,7 @@ Data <- R6::R6Class(
                   }
 
                   std <- dplyr::left_join(std, flag_df, by = join_col)
-                  self$standardized_data <- std
+                  private$..standardized_data <- std
 
                   phrutils::phr_message(
                     phrutils::phr_txt(
@@ -4159,7 +3811,7 @@ Data <- R6::R6Class(
     summary = function() {
       phrutils::phr_try(
         {
-          if (is.null(self$raw_data)) {
+          if (is.null(private$..raw_data)) {
             phrutils::phr_warning(
               self$dataset_name,
               phrutils::phr_txt("No data loaded for summary.")
@@ -4168,8 +3820,8 @@ Data <- R6::R6Class(
           }
           list(
             dataset_name = self$dataset_name,
-            n_records = nrow(self$raw_data),
-            n_columns = ncol(self$raw_data),
+            n_records = nrow(private$..raw_data),
+            n_columns = ncol(private$..raw_data),
             uuid = self$uuid,
             validated = self$validated,
             standardized = self$standardized,
@@ -5041,6 +4693,111 @@ Data <- R6::R6Class(
   ),
 
   private = list(
+    # @field ..raw_data Data frame containing the raw imported data.
+    #   Never mutated after initialization. Access publicly via the
+    #   `raw_data` active binding, `get(field = "raw_data")`, or
+    #   `get_data(stage = "raw")`.
+    # @keywords internal
+    ..raw_data = NULL,
+
+    # @field ..standardized_data Data frame after standardization of
+    #   names, types, and values. Access publicly via the
+    #   `standardized_data` active binding, `get(field = "standardized_data")`,
+    #   or `get_data(stage = "standardized")`.
+    # @keywords internal
+    ..standardized_data = NULL,
+
+    # @field ..clean_data Data frame after cleaning operations. Access
+    #   publicly via the `clean_data` active binding,
+    #   `get(field = "clean_data")`, or `get_data(stage = "clean")`.
+    # @keywords internal
+    ..clean_data = NULL,
+
+    # @description Convert a canonical variable-schema list to a flat
+    #   table. Private wrapper around \code{data_schema_to_table()} so
+    #   the Data class owns its schema-to-table conversion logic.
+    # @param schema_list Variable-schema list (defaults to the object's
+    #   `variable_schema`).
+    # @return A data frame representation of the schema.
+    # @keywords internal
+    ..data_schema_to_table = function(schema_list = self$variable_schema) {
+      data_schema_to_table(schema_list)
+    },
+
+    # @description Convert an indicator-schema list to a flat table.
+    #   Private wrapper around \code{indicator_schema_to_table()}.
+    # @param indicator_schema_list Indicator-schema list (defaults to the
+    #   object's `indicator_schema`).
+    # @return A data frame representation of the indicator schema.
+    # @keywords internal
+    ..indicator_schema_to_table = function(
+      indicator_schema_list = self$indicator_schema
+    ) {
+      indicator_schema_to_table(indicator_schema_list)
+    },
+
+    # @description Convert a dependency-schema list to a flat table.
+    #   Private wrapper around \code{dependency_schema_to_table()}.
+    # @param dependency_schema_list Dependency-schema list (defaults to
+    #   the object's `dependency_schema`).
+    # @return A data frame representation of the dependency schema.
+    # @keywords internal
+    ..dependency_schema_to_table = function(
+      dependency_schema_list = self$dependency_schema
+    ) {
+      dependency_schema_to_table(dependency_schema_list)
+    },
+
+    # @description Private, unified export method that converts one of
+    #   the object's nested-list schemas (variable, indicator, or
+    #   dependency) into a data frame. Intended to be invoked through
+    #   the inherited \code{Asset$call()} API, e.g.
+    #   \code{d$call(field = "..export_schema_to_table", schema_type = "variable")}.
+    # @param schema_type Character scalar identifying the schema to
+    #   export: one of \code{"variable"}, \code{"indicator"}, or
+    #   \code{"dependency"}.
+    # @return Data frame representation of the requested schema, or
+    #   \code{NULL} when the schema is not set (a warning is emitted).
+    # @keywords internal
+    ..export_schema_to_table = function(
+      schema_type = c("variable", "indicator", "dependency")
+    ) {
+      schema_type <- match.arg(schema_type)
+      phrutils::phr_try(
+        {
+          schema <- switch(
+            schema_type,
+            variable   = self$variable_schema,
+            indicator  = self$indicator_schema,
+            dependency = self$dependency_schema
+          )
+          if (is.null(schema)) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt(
+                "No {schema_type} schema available to export."
+              )
+            )
+            return(NULL)
+          }
+          tbl <- switch(
+            schema_type,
+            variable   = private$..data_schema_to_table(schema),
+            indicator  = private$..indicator_schema_to_table(schema),
+            dependency = private$..dependency_schema_to_table(schema)
+          )
+          phrutils::phr_message(
+            phrutils::phr_txt(
+              "Exported {schema_type} schema from {self$dataset_name} ({nrow(tbl)} row(s))."
+            )
+          )
+          tbl
+        },
+        on_error = "abort",
+        origin = paste0(self$dataset_name, "$..export_schema_to_table")
+      )
+    },
+
     #' @description
     #' Resolve a "@variable_map$role" schema reference (or a bare role name)
     #' to its mapped dataset column name.
@@ -5165,6 +4922,50 @@ Data <- R6::R6Class(
         role_found = TRUE,
         value = value
       )
+    }
+  ),
+
+  active = list(
+    #' @field raw_data Active binding exposing the private `..raw_data`
+    #'   field (original imported data frame). Reads return the stored
+    #'   data; assignments write through to the private field. Prefer
+    #'   the inherited `get()` / `set()` API or `get_data(stage = "raw")`
+    #'   in new code.
+    raw_data = function(value) {
+      if (missing(value)) {
+        private$..raw_data
+      } else {
+        private$..raw_data <- value
+        invisible(value)
+      }
+    },
+
+    #' @field standardized_data Active binding exposing the private
+    #'   `..standardized_data` field (data frame after standardization).
+    #'   Reads return the stored data; assignments write through to the
+    #'   private field. Prefer the inherited `get()` / `set()` API or
+    #'   `get_data(stage = "standardized")` in new code.
+    standardized_data = function(value) {
+      if (missing(value)) {
+        private$..standardized_data
+      } else {
+        private$..standardized_data <- value
+        invisible(value)
+      }
+    },
+
+    #' @field clean_data Active binding exposing the private
+    #'   `..clean_data` field (data frame after cleaning). Reads return
+    #'   the stored data; assignments write through to the private
+    #'   field. Prefer the inherited `get()` / `set()` API or
+    #'   `get_data(stage = "clean")` in new code.
+    clean_data = function(value) {
+      if (missing(value)) {
+        private$..clean_data
+      } else {
+        private$..clean_data <- value
+        invisible(value)
+      }
     }
   )
 )
