@@ -1317,15 +1317,6 @@ Data <- R6::R6Class(
     #' @return NULL (default implementation does nothing)
     post_standardize = function() {}, # subclass hook
 
-    #' Domain-specific Post-standardization Hook
-    #'
-    #' @description
-    #' Hook method for domain-specific indicator calculations after standardization.
-    #' Override in subclasses for specialized indicator processing.
-    #'
-    #' @return NULL (default implementation does nothing)
-    post_standardize_domain = function() {}, # subclass hook for domain-specific indicators
-
     # Cleaning
 
     #' Clean Data
