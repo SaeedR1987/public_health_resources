@@ -30,12 +30,12 @@ test_that("condition_if = TRUE creates flags correctly", {
   d$run_quality_checks("raw")
 
   # Check that flags were created
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_status_check" %in% names(d$data_quality_flags))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_status_check" %in% names(d$get(field = "data_quality_flags")))
 
   # Rows where status == 'valid' should NOT be flagged (0)
   # Rows where status != 'valid' should be flagged (1)
-  expect_equal(d$data_quality_flags$flag_status_check, c(0, 0, 1, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_status_check, c(0, 0, 1, 0, 1))
 })
 
 
@@ -64,13 +64,13 @@ test_that("condition_if = TRUE with %in% expression works correctly", {
   d$run_quality_checks("raw")
 
   # Check that flags were created
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_sex_values" %in% names(d$data_quality_flags))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_sex_values" %in% names(d$get(field = "data_quality_flags")))
 
   # Rows where sex %in% c('male', 'female') should NOT be flagged (0)
   # Rows where sex NOT %in% c('male', 'female') should be flagged (1)
   # Expected: 0, 0, 1, 0, 1
-  expect_equal(d$data_quality_flags$flag_sex_values, c(0, 0, 1, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_sex_values, c(0, 0, 1, 0, 1))
 })
 
 
@@ -99,9 +99,9 @@ test_that("condition_if = FALSE does not flag any rows", {
   d$run_quality_checks("raw")
 
   # No flags should be set since condition_if is always FALSE
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_never" %in% names(d$data_quality_flags))
-  expect_equal(d$data_quality_flags$flag_never, c(0, 0, 0, 0))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_never" %in% names(d$get(field = "data_quality_flags")))
+  expect_equal(d$get(field = "data_quality_flags")$flag_never, c(0, 0, 0, 0))
 })
 
 
@@ -130,12 +130,12 @@ test_that("condition_if with scalar TRUE combined with complex then expression",
   d$validate()
   d$run_quality_checks("raw")
 
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_age_consistency" %in% names(d$data_quality_flags))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_age_consistency" %in% names(d$get(field = "data_quality_flags")))
 
   # Rows with both age and age_group non-NA should NOT be flagged
   # Row 6 has both NA, so should be flagged
-  expect_equal(d$data_quality_flags$flag_age_consistency, c(0, 0, 0, 0, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_age_consistency, c(0, 0, 0, 0, 0, 1))
 })
 
 test_that("Dependencies with dep_group use custom flag names", {
@@ -160,11 +160,11 @@ test_that("Dependencies with dep_group use custom flag names", {
   d$run_quality_checks("raw")
 
   # Should have flag_fever_temp_check column (with flag_ prefix added)
-  expect_true("fever_temp_check" %in% names(d$data_quality_flags))
+  expect_true("fever_temp_check" %in% names(d$get(field = "data_quality_flags")))
 
   # Should flag row 2 where fever='yes' but temp is NA
   expect_equal(
-    d$data_quality_flags$fever_temp_check,
+    d$get(field = "data_quality_flags")$fever_temp_check,
     c(0, 1, 0)
   )
 })
@@ -192,8 +192,8 @@ test_that("Dependencies with flag_ prefix in dep_group don't get double prefix",
   d$run_quality_checks("raw")
 
   # Should use flag_custom_check as-is (not flag_flag_custom_check)
-  expect_true("flag_custom_check" %in% names(d$data_quality_flags))
-  expect_false("flag_flag_custom_check" %in% names(d$data_quality_flags))
+  expect_true("flag_custom_check" %in% names(d$get(field = "data_quality_flags")))
+  expect_false("flag_flag_custom_check" %in% names(d$get(field = "data_quality_flags")))
 })
 
 
@@ -225,18 +225,18 @@ test_that("Multiple dependencies with different names work independently", {
   d$run_quality_checks("raw")
 
   # Should have two separate flag columns
-  expect_true("check_a_b" %in% names(d$data_quality_flags))
-  expect_true("check_a_c" %in% names(d$data_quality_flags))
+  expect_true("check_a_b" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("check_a_c" %in% names(d$get(field = "data_quality_flags")))
 
   # Check flag_check_a_b: Row 2 should be flagged (a='yes' but b is NA)
   expect_equal(
-    d$data_quality_flags$check_a_b,
+    d$get(field = "data_quality_flags")$check_a_b,
     c(0, 1, 0, 0)
   )
 
   # Check flag_check_a_c: Row 4 should be flagged (a='yes' but c is NA)
   expect_equal(
-    d$data_quality_flags$check_a_c,
+    d$get(field = "data_quality_flags")$check_a_c,
     c(0, 0, 0, 1)
   )
 })
@@ -264,7 +264,7 @@ test_that("Dependencies without dep_group use default dq_dep_N naming", {
   d$run_quality_checks("raw")
 
   # Should use dq_dep_1 as the key
-  expect_true("dq_dep_1" %in% names(d$data_quality_flags))
+  expect_true("dq_dep_1" %in% names(d$get(field = "data_quality_flags")))
 })
 
 
@@ -299,10 +299,10 @@ test_that("generate_cleaning_log sets changed='yes' for flag_autoclean action", 
   d$generate_cleaning_log()
 
   # Should have entries in cleaning log
-  expect_gt(nrow(d$cleaning_log$log_df), 0)
+  expect_gt(nrow(d$get(field = "cleaning_log")$log_df), 0)
 
   # All entries should have changed='no' because others are never auto cleaned
-  expect_true(all(d$cleaning_log$log_df$changed == "no"))
+  expect_true(all(d$get(field = "cleaning_log")$log_df$changed == "no"))
 })
 
 
@@ -332,10 +332,10 @@ test_that("generate_cleaning_log sets changed='no' for non-autoclean actions", {
   d$generate_cleaning_log()
 
   # Should have entries in cleaning log
-  expect_gt(nrow(d$cleaning_log$log_df), 0)
+  expect_gt(nrow(d$get(field = "cleaning_log")$log_df), 0)
 
   # All entries should have changed='no' because action is flag_warning (not flag_autoclean)
-  expect_true(all(d$cleaning_log$log_df$changed == "no"))
+  expect_true(all(d$get(field = "cleaning_log")$log_df$changed == "no"))
 })
 
 
@@ -369,17 +369,17 @@ test_that("generate_cleaning_log populates enum_id and device_id from variable_m
   d$generate_cleaning_log()
 
   # Should have 2 entries (for age out of range)
-  expect_equal(nrow(d$cleaning_log$log_df), 2)
+  expect_equal(nrow(d$get(field = "cleaning_log")$log_df), 2)
 
   # Check enum_id is populated correctly
-  expect_true(all(!is.na(d$cleaning_log$log_df$enum_id)))
-  expect_true("E002" %in% d$cleaning_log$log_df$enum_id)
-  expect_true("E002" %in% d$cleaning_log$log_df$enum_id)
+  expect_true(all(!is.na(d$get(field = "cleaning_log")$log_df$enum_id)))
+  expect_true("E002" %in% d$get(field = "cleaning_log")$log_df$enum_id)
+  expect_true("E002" %in% d$get(field = "cleaning_log")$log_df$enum_id)
 
   # Check device_id is populated correctly
-  expect_true(all(!is.na(d$cleaning_log$log_df$device_id)))
-  expect_true("D002" %in% d$cleaning_log$log_df$device_id)
-  expect_true("D002" %in% d$cleaning_log$log_df$device_id)
+  expect_true(all(!is.na(d$get(field = "cleaning_log")$log_df$device_id)))
+  expect_true("D002" %in% d$get(field = "cleaning_log")$log_df$device_id)
+  expect_true("D002" %in% d$get(field = "cleaning_log")$log_df$device_id)
 })
 
 
@@ -403,9 +403,9 @@ test_that("generate_cleaning_log handles missing variable_map entries gracefully
   d$generate_cleaning_log()
 
   # Should still work, with NA values for enum_id and device_id
-  expect_equal(nrow(d$cleaning_log$log_df), 1)
-  expect_true(all(is.na(d$cleaning_log$log_df$enum_id)))
-  expect_true(all(is.na(d$cleaning_log$log_df$device_id)))
+  expect_equal(nrow(d$get(field = "cleaning_log")$log_df), 1)
+  expect_true(all(is.na(d$get(field = "cleaning_log")$log_df$enum_id)))
+  expect_true(all(is.na(d$get(field = "cleaning_log")$log_df$device_id)))
 })
 
 
@@ -434,7 +434,7 @@ test_that("generate_cleaning_log recognizes flag_ prefix in quality flags", {
   d$run_quality_checks("standardized")
 
   # Should have flag_test_check in data_quality_flags
-  expect_true("flag_test_check" %in% names(d$data_quality_flags))
+  expect_true("flag_test_check" %in% names(d$get(field = "data_quality_flags")))
 
   d$generate_cleaning_log()
 
@@ -449,7 +449,7 @@ test_that("generate_cleaning_log recognizes flag_ prefix in quality flags", {
   # Row 2: x='b' -> condition not met -> no flag
   # So no entries should be created
 
-  expect_equal(nrow(d$cleaning_log$log_df), 0)
+  expect_equal(nrow(d$get(field = "cleaning_log")$log_df), 0)
 })
 
 # Dependency Error Hints ####
@@ -468,7 +468,7 @@ test_that(".get_expression_parse_hint provides helpful message for missing quote
   expr <- "age_cat %in% c('0-4y','5-9y',10-14y)"
   error_msg <- "unexpected symbol"
 
-  hint <- d$.get_expression_parse_hint(expr, error_msg)
+  hint <- d$call(field = "..get_expression_parse_hint", expr, error_msg)
 
   expect_type(hint, "character")
   expect_match(hint, "Missing quotes")
@@ -487,7 +487,7 @@ test_that(".get_expression_parse_hint detects unbalanced quotes", {
   expr <- "x == 'value"  # Missing closing quote
   error_msg <- "unexpected end of input"
 
-  hint <- d$.get_expression_parse_hint(expr, error_msg)
+  hint <- d$call(field = "..get_expression_parse_hint", expr, error_msg)
 
   expect_type(hint, "character")
   expect_match(hint, "unbalanced quotes")
@@ -561,7 +561,7 @@ test_that("dependency evaluation with valid c() expression works correctly", {
   d$run_quality_checks("raw")
 
   # Check that flag was created
-  flags <- d$data_quality_flags
+  flags <- d$get(field = "data_quality_flags")
   expect_true("flag_values_age_cat" %in% names(flags))
 
   # Check flag values
@@ -838,17 +838,17 @@ test_that("run_quality_checks continues to next dependency when one fails", {
   )
 
   # First dependency should have been processed
-  expect_true("flag_age_check" %in% names(d$data_quality_flags))
+  expect_true("flag_age_check" %in% names(d$get(field = "data_quality_flags")))
 
   # Second dependency should NOT have been processed (variables missing)
-  expect_false("flag_broken_check" %in% names(d$data_quality_flags))
+  expect_false("flag_broken_check" %in% names(d$get(field = "data_quality_flags")))
 
   # Third dependency should have been processed despite second one failing
-  expect_true("flag_income_check" %in% names(d$data_quality_flags))
+  expect_true("flag_income_check" %in% names(d$get(field = "data_quality_flags")))
 
   # Verify the flags are correct
-  expect_equal(d$data_quality_flags$flag_age_check, c(0, 0, 0, 1, 1))
-  expect_equal(d$data_quality_flags$flag_income_check, c(0, 0, 0, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_age_check, c(0, 0, 0, 1, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_income_check, c(0, 0, 0, 0, 1))
 })
 
 
@@ -894,12 +894,12 @@ test_that("run_quality_checks continues when expression evaluation fails", {
   })
 
   # First and third should succeed
-  expect_true("flag_check_1" %in% names(d$data_quality_flags))
-  expect_true("flag_check_3" %in% names(d$data_quality_flags))
+  expect_true("flag_check_1" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("flag_check_3" %in% names(d$get(field = "data_quality_flags")))
 
   # Verify results are correct for successful dependencies
-  expect_equal(d$data_quality_flags$flag_check_1, c(0, 0, 1))
-  expect_equal(d$data_quality_flags$flag_check_3, c(0, 0, 0))
+  expect_equal(d$get(field = "data_quality_flags")$flag_check_1, c(0, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_check_3, c(0, 0, 0))
 })
 
 
@@ -935,7 +935,7 @@ test_that("run_quality_checks provides informative warnings for failed dependenc
   )
 
   # Valid dependency should still run
-  expect_true("flag_valid" %in% names(d$data_quality_flags))
+  expect_true("flag_valid" %in% names(d$get(field = "data_quality_flags")))
 })
 
 
@@ -970,8 +970,8 @@ test_that("run_quality_checks handles all dependencies failing gracefully", {
   )
 
   # No flags should be added since all dependencies failed
-  expect_false("flag_fail_1" %in% names(d$data_quality_flags))
-  expect_false("flag_fail_2" %in% names(d$data_quality_flags))
+  expect_false("flag_fail_1" %in% names(d$get(field = "data_quality_flags")))
+  expect_false("flag_fail_2" %in% names(d$get(field = "data_quality_flags")))
 })
 
 
@@ -1029,16 +1029,16 @@ test_that("run_quality_checks processes type checks even when dependency checks 
   )
 
   # Type check for numeric_col should have been processed
-  expect_true("flag_numeric_col_type" %in% names(d$data_quality_flags))
+  expect_true("flag_numeric_col_type" %in% names(d$get(field = "data_quality_flags")))
 
   # Valid dependency check should have been processed
-  expect_true("flag_value_check" %in% names(d$data_quality_flags))
+  expect_true("flag_value_check" %in% names(d$get(field = "data_quality_flags")))
 
   # Type check should flag row 3 (not_a_number)
-  expect_equal(d$data_quality_flags$flag_numeric_col_type, c(0, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_numeric_col_type, c(0, 0, 1))
 
   # Dependency check should flag rows 2 and 3
-  expect_equal(d$data_quality_flags$flag_value_check, c(1, 0, 0))
+  expect_equal(d$get(field = "data_quality_flags")$flag_value_check, c(1, 0, 0))
 })
 
 
@@ -1071,8 +1071,8 @@ test_that("NA values are properly handled in %in% dependency rules", {
   d$run_quality_checks("standardized")
 
   # Check that flags were created
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_sex_values" %in% names(d$data_quality_flags))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_sex_values" %in% names(d$get(field = "data_quality_flags")))
 
   # Expected behavior:
   # When NA is included in the allowed values list, the expression
@@ -1086,7 +1086,7 @@ test_that("NA values are properly handled in %in% dependency rules", {
   # Row 3: NA - allowed (NA in list), NOT flagged (0)
   # Row 4: "other" - not allowed, flagged (1)
   # Row 5: "male" - allowed, NOT flagged (0)
-  expect_equal(d$data_quality_flags$flag_sex_values, c(0, 0, 0, 1, 0))
+  expect_equal(d$get(field = "data_quality_flags")$flag_sex_values, c(0, 0, 0, 1, 0))
 })
 
 
@@ -1117,8 +1117,8 @@ test_that("NA values without explicit NA in list are flagged", {
   d$run_quality_checks("standardized")
 
   # Check that flags were created
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_sex_values" %in% names(d$data_quality_flags))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_sex_values" %in% names(d$get(field = "data_quality_flags")))
 
   # Expected behavior:
   # When NA is NOT in the allowed list, the expression
@@ -1133,7 +1133,7 @@ test_that("NA values without explicit NA in list are flagged", {
   # Row 3: NA - NOT in list (condition result is NA), flagged (1)
   # Row 4: "other" - not allowed, flagged (1)
   # Row 5: "male" - allowed, NOT flagged (0)
-  expect_equal(d$data_quality_flags$flag_sex_values, c(0, 0, 1, 1, 0))
+  expect_equal(d$get(field = "data_quality_flags")$flag_sex_values, c(0, 0, 1, 1, 0))
 })
 
 
@@ -1163,7 +1163,7 @@ test_that("is.na() check works with NA-containing %in% expressions", {
   d$run_quality_checks("standardized")
 
   # Expected: only "other" is flagged
-  expect_equal(d$data_quality_flags$flag_sex_values, c(0, 0, 0, 1, 0))
+  expect_equal(d$get(field = "data_quality_flags")$flag_sex_values, c(0, 0, 0, 1, 0))
 })
 
 
@@ -1193,8 +1193,8 @@ test_that("height_sticks check with NA handling works correctly", {
   d$run_quality_checks("standardized")
 
   # Check that flags were created
-  expect_false(is.null(d$data_quality_flags))
-  expect_true("flag_values_height_sticks" %in% names(d$data_quality_flags))
+  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_true("flag_values_height_sticks" %in% names(d$get(field = "data_quality_flags")))
 
   # Expected behavior:
   # Row 1: "under6m" - allowed, NOT flagged (0)
@@ -1203,7 +1203,7 @@ test_that("height_sticks check with NA handling works correctly", {
   # Row 4: "60m_plus" - allowed, NOT flagged (0)
   # Row 5: NA - allowed (NA in list), NOT flagged (0)
   # Row 6: "invalid_value" - not allowed, flagged (1)
-  expect_equal(d$data_quality_flags$flag_values_height_sticks, c(0, 0, 0, 0, 0, 1))
+  expect_equal(d$get(field = "data_quality_flags")$flag_values_height_sticks, c(0, 0, 0, 0, 0, 1))
 })
 
 

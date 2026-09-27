@@ -33,9 +33,9 @@ test_that("NutritionIndividualData initializes with nutrition-specific columns r
     NutritionIndividualData$new(data = df)
   ))
 
-  expect_true("nut_muac_mm" %in% names(nutr$variable_map))
-  expect_true("ecfies_s01" %in% names(nutr$variable_map))
-  expect_true("nut_bf_yesterday" %in% names(nutr$variable_map))
+  expect_true("nut_muac_mm" %in% names(nutr$get(field = "variable_map")))
+  expect_true("ecfies_s01" %in% names(nutr$get(field = "variable_map")))
+  expect_true("nut_bf_yesterday" %in% names(nutr$get(field = "variable_map")))
 })
 
 
@@ -70,7 +70,7 @@ test_that("NutritionIndividualData completes full pipeline", {
 test_that("NutritionIndividualData can link to HouseholdData", {
 
   hh_df <- generate_household_dataset(n = 10)
-  nutr_df <- generate_child_nutrition_dataset(roster_data_or_n = 30, hh_uuids = hh_df$uuid)
+  nutr_df <- generate_child_nutrition_dataset(roster_data_or_n = 30, hh_uuids = hh_df$get(field = "uuid"))
 
   hh <- suppressWarnings(suppressMessages(
     HouseholdData$new(data = hh_df)

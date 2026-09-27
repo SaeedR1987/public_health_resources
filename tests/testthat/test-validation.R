@@ -42,15 +42,15 @@ test_that("validate() correctly validates select_multiple mapped values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Verify that value map was built correctly
-  expect_true("livelihood" %in% names(d$value_map))
-  expect_true("agriculture" %in% names(d$value_map$livelihood))
-  expect_true("farming" %in% d$value_map$livelihood$agriculture)
-  expect_true("fishing" %in% d$value_map$livelihood$fishing)
-  expect_true("trading" %in% d$value_map$livelihood$business)
-  expect_true("other" %in% d$value_map$livelihood$other)
+  expect_true("livelihood" %in% names(d$get(field = "value_map")))
+  expect_true("agriculture" %in% names(d$get(field = "value_map")$livelihood))
+  expect_true("farming" %in% d$get(field = "value_map")$livelihood$agriculture)
+  expect_true("fishing" %in% d$get(field = "value_map")$livelihood$fishing)
+  expect_true("trading" %in% d$get(field = "value_map")$livelihood$business)
+  expect_true("other" %in% d$get(field = "value_map")$livelihood$other)
 
   # Run validate - should NOT produce warnings about missing values
   # since the mapped values ARE present (as tokens in space-separated strings)
@@ -97,7 +97,7 @@ test_that("data_diagnose() correctly diagnoses select_multiple mapped values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Run data_diagnose
   diag <- d$data_diagnose()
@@ -127,7 +127,7 @@ test_that("data_diagnose() correctly diagnoses select_multiple mapped values", {
 
   # Should still report if a value is not in the data at all
   # "mathematics" is not in the data, so numeracy should have only "math"
-  expect_false("mathematics" %in% d$value_map$skills$numeracy)
+  expect_false("mathematics" %in% d$get(field = "value_map")$skills$numeracy)
 })
 
 test_that("validate() correctly handles select_multiple with old allowed_values format", {
@@ -157,7 +157,7 @@ test_that("validate() correctly handles select_multiple with old allowed_values 
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Run validate - should work correctly
   d$validate()
@@ -178,14 +178,14 @@ test_that("validate() still catches truly missing values in select_multiple", {
   )
 
   # Manually set up a value_map with a value that doesn't exist
-  d$variable_map$food <- "food"
-  d$value_map$food <- list(
+  d$get(field = "variable_map")$food <- "food"
+  d$get(field = "value_map")$food <- list(
     cereals = c("rice", "wheat"),  # "wheat" is NOT in the data
     legumes = c("beans", "lentils")  # "lentils" is NOT in the data
   )
 
   # Set minimal schema for the helper method to work
-  d$variable_schema <- list(
+  d$set(field = "variable_schema", value = list()
     types = list(food = "character"),
     question_types = list(food = "select_multiple")
   )
@@ -204,19 +204,19 @@ test_that(".extract_select_multiple_tokens helper works correctly", {
   )
 
   # Test normal space-separated values
-  tokens <- d$.extract_select_multiple_tokens(c("a b", "c d", "a"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a b", "c d", "a"))
   expect_equal(sort(tokens), sort(c("a", "b", "c", "d")))
 
   # Test with extra spaces
-  tokens <- d$.extract_select_multiple_tokens(c("a  b", " c ", "d"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a  b", " c ", "d"))
   expect_equal(sort(tokens), sort(c("a", "b", "c", "d")))
 
   # Test with NA and empty strings
-  tokens <- d$.extract_select_multiple_tokens(c("a b", NA, "", "c"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a b", NA, "", "c"))
   expect_equal(sort(tokens), sort(c("a", "b", "c")))
 
   # Test uniqueness
-  tokens <- d$.extract_select_multiple_tokens(c("a b", "b c", "a"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a b", "b c", "a"))
   expect_equal(sort(tokens), sort(c("a", "b", "c")))
 })
 
@@ -227,16 +227,16 @@ test_that(".is_select_multiple helper works correctly", {
   )
 
   # Without schema
-  expect_false(d$.is_select_multiple("any_var"))
+  expect_false(d$call(field = "..is_select_multiple", "any_var"))
 
   # With schema but no question_types
-  d$variable_schema <- list(
+  d$set(field = "variable_schema", value = list()
     types = list(var1 = "character")
   )
-  expect_false(d$.is_select_multiple("var1"))
+  expect_false(d$call(field = "..is_select_multiple", "var1"))
 
   # With schema and select_multiple question type
-  d$variable_schema <- list(
+  d$set(field = "variable_schema", value = list()
     types = list(
       var1 = "character",
       var2 = "character"
@@ -246,9 +246,9 @@ test_that(".is_select_multiple helper works correctly", {
       var2 = "select_one"
     )
   )
-  expect_true(d$.is_select_multiple("var1"))
-  expect_false(d$.is_select_multiple("var2"))
-  expect_false(d$.is_select_multiple("var3"))
+  expect_true(d$call(field = "..is_select_multiple", "var1"))
+  expect_false(d$call(field = "..is_select_multiple", "var2"))
+  expect_false(d$call(field = "..is_select_multiple", "var3"))
 })
 
 # Tests for automatic stage selection in validate() method ####

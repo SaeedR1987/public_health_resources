@@ -83,8 +83,8 @@ DeathIndividualData <- R6::R6Class(
         )
 
         # --- Required and optional columns ---------------------------
-        self$required_columns <- unique(c(
-          self$required_columns  # keep inherited ones (uuid, hh_uuid)
+        private$required_columns <- unique(c(
+          private$required_columns  # keep inherited ones (uuid, hh_uuid)
         ))
 
         # --- Schema merge --------------------------------------------
@@ -266,8 +266,8 @@ DeathIndividualData <- R6::R6Class(
         }
 
         data_hash    <- self$get_hash(stage)
-        variable_map <- self$variable_map
-        value_map    <- self$value_map
+        variable_map <- private$variable_map
+        value_map    <- private$value_map
 
         analytics <- DataAnalytics$new(
           data               = df,
@@ -278,8 +278,8 @@ DeathIndividualData <- R6::R6Class(
           data_hash          = data_hash,
           variable_map       = variable_map,
           value_map          = value_map,
-          variable_label     = self$variable_label,
-          value_label        = self$value_label
+          variable_label     = private$variable_label,
+          value_label        = private$value_label
         )
 
         phrutils::phr_message(

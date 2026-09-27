@@ -18,7 +18,7 @@ MockData <- R6::R6Class(
 
     initialize = function(df) {
       self$data <- df
-      self$variable_map <- list()
+      self$set(field = "variable_map", value = list())
     },
 
     get_data = function(stage = "clean") {
@@ -51,10 +51,10 @@ test_that("DeletionLog fills missing required columns when provided log_df is in
   expect_s3_class(log, "DeletionLog")
 
   # It should contain all required columns
-  expect_true(all(log$required_columns %in% names(log$get("log_df"))))
+  expect_true(all(log$get(field = "required_columns") %in% names(log$get("log_df"))))
 
   # All missing columns should be filled with NA
-  missing_cols <- setdiff(log$required_columns, names(df))
+  missing_cols <- setdiff(log$get(field = "required_columns"), names(df))
 
   for (col in missing_cols) {
     expect_true(all(is.na(log$get("log_df")[[col]])))
@@ -64,7 +64,7 @@ test_that("DeletionLog fills missing required columns when provided log_df is in
 test_that("DeletionLog initializes with correct schema types", {
   log <- DeletionLog$new()
 
-  expect_equal(log$get("schema")$types$uuid, "character")
+  expect_equal(log$get("schema")$types$get(field = "uuid"), "character")
   expect_equal(log$get("schema")$types$issue, "character")
   expect_equal(log$get("schema")$types$feedback, "character")
 })

@@ -33,10 +33,10 @@ test_that("IndividualData sets required columns correctly", {
   )
 
   # Should have individual-specific required columns
-  expect_true(length(ind_data$required_columns) > 0)
+  expect_true(length(ind_data$get(field = "required_columns")) > 0)
 
   # UUID should be in required columns
-  expect_true(ind_data$uuid %in% ind_data$required_columns)
+  expect_true(ind_data$get(field = "uuid") %in% ind_data$get(field = "required_columns"))
 })
 
 test_that("IndividualData handles custom variable mapping", {
@@ -61,10 +61,10 @@ test_that("IndividualData handles custom variable mapping", {
     )
   )
 
-  expect_equal(ind_data$variable_map$uuid, "my_person_id")
-  expect_equal(ind_data$variable_map$hh_uuid, "my_hh_id")
-  expect_equal(ind_data$variable_map$sex, "gender")
-  expect_equal(ind_data$variable_map$age, "age_yrs")
+  expect_equal(ind_data$get(field = "variable_map")$get(field = "uuid"), "my_person_id")
+  expect_equal(ind_data$get(field = "variable_map")$hh_uuid, "my_hh_id")
+  expect_equal(ind_data$get(field = "variable_map")$sex, "gender")
+  expect_equal(ind_data$get(field = "variable_map")$age, "age_yrs")
 })
 
 test_that("IndividualData does not initialize optional columns if not passed", {
@@ -104,8 +104,8 @@ test_that("IndividualData merges schema with parent", {
   )
 
   # Variable schema should be set and merged
-  expect_true(!is.null(ind_data$variable_schema))
-  expect_true(is.list(ind_data$variable_schema))
+  expect_true(!is.null(ind_data$get(field = "variable_schema")))
+  expect_true(is.list(ind_data$get(field = "variable_schema")))
 })
 
 test_that("IndividualData loads indicator schema", {
@@ -340,16 +340,16 @@ test_that("IndividualData populates variable_map on initialization", {
   )
 
   # Check that variable_map is populated beyond just uuid and hh_uuid
-  expect_true("person_id" %in% names(ind$variable_map))
-  expect_true("hh_uuid" %in% names(ind$variable_map))
-  expect_true("sex" %in% names(ind$variable_map))
-  expect_true("age_years" %in% names(ind$variable_map))
+  expect_true("person_id" %in% names(ind$get(field = "variable_map")))
+  expect_true("hh_uuid" %in% names(ind$get(field = "variable_map")))
+  expect_true("sex" %in% names(ind$get(field = "variable_map")))
+  expect_true("age_years" %in% names(ind$get(field = "variable_map")))
 
   # Check that the mappings are correct
-  expect_equal(ind$variable_map$person_id, "person_id")
-  expect_equal(ind$variable_map$hh_uuid, "hh_uuid")
-  expect_equal(ind$variable_map$sex, "sex")
-  expect_equal(ind$variable_map$age_years, "age")
+  expect_equal(ind$get(field = "variable_map")$person_id, "person_id")
+  expect_equal(ind$get(field = "variable_map")$hh_uuid, "hh_uuid")
+  expect_equal(ind$get(field = "variable_map")$sex, "sex")
+  expect_equal(ind$get(field = "variable_map")$age_years, "age")
 })
 
 test_that("IndividualData populates value_map for non-numeric types", {
@@ -366,11 +366,11 @@ test_that("IndividualData populates value_map for non-numeric types", {
   )
 
   # Check that value_map is populated for sex (character type with allowed_values)
-  expect_true("sex" %in% names(ind$value_map))
-  expect_true(all(c("male", "female") %in% ind$value_map$sex))
+  expect_true("sex" %in% names(ind$get(field = "value_map")))
+  expect_true(all(c("male", "female") %in% ind$get(field = "value_map")$sex))
 
   # Check that value_map is NOT populated for age (numeric type)
-  expect_false("age_years" %in% names(ind$value_map))
+  expect_false("age_years" %in% names(ind$get(field = "value_map")))
 })
 
 test_that("IndividualData maps alternative column names", {
@@ -387,14 +387,14 @@ test_that("IndividualData maps alternative column names", {
   )
 
   # Check that alternative column names are mapped
-  expect_equal(ind$variable_map$uuid, "person_id")
-  expect_equal(ind$variable_map$hh_uuid, "household_id")
-  expect_equal(ind$variable_map$sex, "gender")
-  expect_equal(ind$variable_map$age, "age_years")
+  expect_equal(ind$get(field = "variable_map")$get(field = "uuid"), "person_id")
+  expect_equal(ind$get(field = "variable_map")$hh_uuid, "household_id")
+  expect_equal(ind$get(field = "variable_map")$sex, "gender")
+  expect_equal(ind$get(field = "variable_map")$age, "age_years")
 
   # Check that value_map is populated with found values
-  expect_true("sex" %in% names(ind$value_map))
-  expect_true(all(c("m", "f") %in% ind$value_map$sex))
+  expect_true("sex" %in% names(ind$get(field = "value_map")))
+  expect_true(all(c("m", "f") %in% ind$get(field = "value_map")$sex))
 })
 
 test_that("IndividualData does not overwrite explicit variable_map", {
@@ -421,10 +421,10 @@ test_that("IndividualData does not overwrite explicit variable_map", {
   )
 
   # Check that explicit mappings are preserved
-  expect_equal(ind$variable_map$uuid, "my_id")
-  expect_equal(ind$variable_map$hh_uuid, "my_hh")
-  expect_equal(ind$variable_map$sex, "person_sex")
-  expect_equal(ind$variable_map$age, "person_age")
+  expect_equal(ind$get(field = "variable_map")$get(field = "uuid"), "my_id")
+  expect_equal(ind$get(field = "variable_map")$hh_uuid, "my_hh")
+  expect_equal(ind$get(field = "variable_map")$sex, "person_sex")
+  expect_equal(ind$get(field = "variable_map")$age, "person_age")
 })
 
 test_that("IndividualData handles missing optional columns gracefully", {
@@ -444,11 +444,11 @@ test_that("IndividualData handles missing optional columns gracefully", {
   )
 
   # Optional columns should not be in variable_map if not present
-  expect_null(ind$variable_map$estimated_dob)
-  expect_null(ind$variable_map$exact_dob)
-  expect_null(ind$variable_map$age_months)
-  expect_null(ind$variable_map$age_days)
-  expect_null(ind$variable_map$joined_household)
+  expect_null(ind$get(field = "variable_map")$estimated_dob)
+  expect_null(ind$get(field = "variable_map")$exact_dob)
+  expect_null(ind$get(field = "variable_map")$age_months)
+  expect_null(ind$get(field = "variable_map")$age_days)
+  expect_null(ind$get(field = "variable_map")$joined_household)
 })
 
 test_that("IndividualData maps optional columns when present", {
@@ -467,8 +467,8 @@ test_that("IndividualData maps optional columns when present", {
   )
 
   # Check that optional columns are mapped when present
-  expect_equal(ind$variable_map$dob_exact, "dob_exact")
-  expect_equal(ind$variable_map$age_months, "age_months")
+  expect_equal(ind$get(field = "variable_map")$dob_exact, "dob_exact")
+  expect_equal(ind$get(field = "variable_map")$age_months, "age_months")
 })
 
 test_that("IndividualData variable_map works like HouseholdData", {
@@ -499,14 +499,14 @@ test_that("IndividualData variable_map works like HouseholdData", {
   )
 
   # Both should have variable_map populated beyond the default uuid
-  expect_true(length(ind$variable_map) > 2)  # More than just uuid and hh_uuid
-  expect_true(length(hh$variable_map) > 1)   # More than just uuid
+  expect_true(length(ind$get(field = "variable_map")) > 2)  # More than just uuid and hh_uuid
+  expect_true(length(hh$get(field = "variable_map")) > 1)   # More than just uuid
 
   # Both should have schemas with col_names
-  expect_true(!is.null(ind$variable_schema$col_names))
-  expect_true(!is.null(hh$variable_schema$col_names))
+  expect_true(!is.null(ind$get(field = "variable_schema")$col_names))
+  expect_true(!is.null(hh$get(field = "variable_schema")$col_names))
 
   # Both should have auto-mapped at least one variable
-  expect_true("sex" %in% names(ind$variable_map))
-  expect_true("uuid" %in% names(hh$variable_map))
+  expect_true("sex" %in% names(ind$get(field = "variable_map")))
+  expect_true("uuid" %in% names(hh$get(field = "variable_map")))
 })

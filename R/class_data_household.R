@@ -123,7 +123,7 @@ HouseholdData <- R6::R6Class(
 
           # 2) Build and merge household schema into any existing schema
           hh_schema <- self$default_schema()
-          parent_schema <- self$variable_schema %||% list()
+          parent_schema <- private$variable_schema %||% list()
           merged_schema <- utils::modifyList(parent_schema, hh_schema)
           self$set_variable_schema(merged_schema)
 
@@ -153,28 +153,28 @@ HouseholdData <- R6::R6Class(
           #    (ensure we store *column names*, not roles)
 
           hh_required <- c(
-            self$variable_map$uuid,
-            self$variable_map$consent,
-            self$variable_map$date_survey,
-            self$variable_map$enum_id
+            private$variable_map$uuid,
+            private$variable_map$consent,
+            private$variable_map$date_survey,
+            private$variable_map$enum_id
           )
           hh_required <- unique(hh_required[
             !is.na(hh_required) & hh_required != ""
           ])
 
-          # Data$initialize already set self$required_columns <- uuid
+          # Data$initialize already set private$required_columns <- uuid
           # We extend that with the household-specific requirements
-          self$required_columns <- unique(c(self$required_columns, hh_required))
+          private$required_columns <- unique(c(private$required_columns, hh_required))
 
           # Optional (mapped) columns
           self$optional_columns <- c(
-            self$variable_map$cluster_id,
-            self$variable_map$stratum,
-            self$variable_map$weight,
-            self$variable_map$admin1,
-            self$variable_map$admin2,
-            self$variable_map$gps_lat,
-            self$variable_map$gps_lon
+            private$variable_map$cluster_id,
+            private$variable_map$stratum,
+            private$variable_map$weight,
+            private$variable_map$admin1,
+            private$variable_map$admin2,
+            private$variable_map$gps_lat,
+            private$variable_map$gps_lon
           )
 
           phrutils::phr_message(phr_txt(
@@ -350,8 +350,8 @@ HouseholdData <- R6::R6Class(
 
       # GPS validity check
 
-      lat_col <- self$variable_map$gps_lat
-      lon_col <- self$variable_map$gps_lon
+      lat_col <- private$variable_map$gps_lat
+      lon_col <- private$variable_map$gps_lon
 
       if (
         !is.null(lat_col) &&
@@ -382,10 +382,10 @@ HouseholdData <- R6::R6Class(
       # Weight checks
 
       if (
-        !is.null(self$variable_map$weight) &&
-          self$variable_map$weight %in% names(df)
+        !is.null(private$variable_map$weight) &&
+          private$variable_map$weight %in% names(df)
       ) {
-        wts <- suppressWarnings(as.numeric(df[[self$variable_map$weight]]))
+        wts <- suppressWarnings(as.numeric(df[[private$variable_map$weight]]))
 
         if (any(is.na(wts))) {
           phrutils::phr_warning(
@@ -404,10 +404,10 @@ HouseholdData <- R6::R6Class(
       # Strata checks
 
       if (
-        !is.null(self$variable_map$strata) &&
-          self$variable_map$strata %in% names(df)
+        !is.null(private$variable_map$strata) &&
+          private$variable_map$strata %in% names(df)
       ) {
-        strata_vals <- df[[self$variable_map$strata]]
+        strata_vals <- df[[private$variable_map$strata]]
 
         if (any(is.na(strata_vals))) {
           phrutils::phr_warning(nm, phr_txt("Missing strata values detected."))
@@ -682,7 +682,7 @@ HouseholdData <- R6::R6Class(
 
           # 2. Resolve stratum column
 
-          stratum_col <- self$variable_map$stratum
+          stratum_col <- private$variable_map$stratum
 
           if (is.null(stratum_col) || stratum_col == "" || is.na(stratum_col)) {
             phrutils::phr_message(phr_txt(
@@ -770,7 +770,7 @@ HouseholdData <- R6::R6Class(
 
           # 7. Determine weight column name and update variable_map if needed
 
-          existing_weight_col <- self$variable_map$weight
+          existing_weight_col <- private$variable_map$weight
           if (
             !is.null(existing_weight_col) &&
               !is.na(existing_weight_col) &&
@@ -783,7 +783,7 @@ HouseholdData <- R6::R6Class(
             ))
           } else {
             weight_col <- "survey_weight"
-            self$variable_map[["weight"]] <- weight_col
+            private$variable_map[["weight"]] <- weight_col
             phrutils::phr_message(phr_txt(
               "No existing weight column mapped. Writing weights to '{weight_col}' and updating variable_map."
             ))
@@ -1090,10 +1090,10 @@ HouseholdData <- R6::R6Class(
             return(NULL)
           }
 
-          ids_col <- self$variable_map$cluster_id
-          strata_col <- self$variable_map$strata
-          weight_col <- self$variable_map$weight
-          fpc_col <- self$variable_map$fpc %||% NULL
+          ids_col <- private$variable_map$cluster_id
+          strata_col <- private$variable_map$strata
+          weight_col <- private$variable_map$weight
+          fpc_col <- private$variable_map$fpc %||% NULL
 
           missing_fields <- c()
           if (is.null(ids_col) || ids_col == "" || !ids_col %in% names(df)) {
@@ -1196,8 +1196,8 @@ HouseholdData <- R6::R6Class(
           }
 
           data_hash <- self$get_hash(stage)
-          variable_map <- self$variable_map
-          value_map <- self$value_map
+          variable_map <- private$variable_map
+          value_map <- private$value_map
 
           # Helper to extract linked data info
           # self$linked_objects stores wrapper lists: list(object = <Data obj>, by_self_role, by_other_role)
@@ -1219,10 +1219,10 @@ HouseholdData <- R6::R6Class(
               data = obj$get_data(stage),
               stage_name = stage,
               hash = obj$get_hash(stage),
-              variable_map = obj$variable_map,
-              value_map = obj$value_map,
-              variable_label = obj$variable_label,
-              value_label = obj$value_label
+              variable_map = obj$get(field = "variable_map"),
+              value_map = obj$get(field = "value_map"),
+              variable_label = obj$get(field = "variable_label"),
+              value_label = obj$get(field = "value_label")
             )
           }
 
@@ -1291,8 +1291,8 @@ HouseholdData <- R6::R6Class(
               data_hash = data_hash,
               variable_map = variable_map,
               value_map = value_map,
-              variable_label = self$variable_label,
-              value_label = self$value_label
+              variable_label = private$variable_label,
+              value_label = private$value_label
             ),
             "wash" = WASHDataAnalytics$new(
               data = df,
@@ -1303,8 +1303,8 @@ HouseholdData <- R6::R6Class(
               data_hash = data_hash,
               variable_map = variable_map,
               value_map = value_map,
-              variable_label = self$variable_label,
-              value_label = self$value_label,
+              variable_label = private$variable_label,
+              value_label = private$value_label,
               linked_containers_data = if (!is.null(linked_info_containers)) {
                 linked_info_containers$data
               } else {
@@ -1351,8 +1351,8 @@ HouseholdData <- R6::R6Class(
               data_hash = data_hash,
               variable_map = variable_map,
               value_map = value_map,
-              variable_label = self$variable_label,
-              value_label = self$value_label,
+              variable_label = private$variable_label,
+              value_label = private$value_label,
               linked_ind_roster_data = if (!is.null(linked_info_roster)) {
                 linked_info_roster$data
               } else {
@@ -1449,8 +1449,8 @@ HouseholdData <- R6::R6Class(
               data_hash = data_hash,
               variable_map = variable_map,
               value_map = value_map,
-              variable_label = self$variable_label,
-              value_label = self$value_label,
+              variable_label = private$variable_label,
+              value_label = private$value_label,
               linked_ind_roster_data = if (!is.null(linked_info_roster)) {
                 linked_info_roster$data
               } else {
@@ -1519,8 +1519,8 @@ HouseholdData <- R6::R6Class(
               data_hash = data_hash,
               variable_map = variable_map,
               value_map = value_map,
-              variable_label = self$variable_label,
-              value_label = self$value_label
+              variable_label = private$variable_label,
+              value_label = private$value_label
             ),
             phr_error(
               origin = paste0(self$dataset_name, "$generate_data_analytics"),
@@ -1575,7 +1575,7 @@ HouseholdData <- R6::R6Class(
           }
 
           # Get household UUID column
-          hh_uuid_col <- self$uuid
+          hh_uuid_col <- private$uuid
 
           if (!hh_uuid_col %in% names(hh_data)) {
             phrutils::phr_warning(
@@ -1620,8 +1620,8 @@ HouseholdData <- R6::R6Class(
 
             # Determine the household linkage column in the linked dataset
             # Try to find hh_uuid in variable_map first
-            linked_hh_col <- linked_obj$variable_map$hh_uuid %||%
-              linked_obj$variable_map$household_uuid %||%
+            linked_hh_col <- linked_obj$get(field = "variable_map")$hh_uuid %||%
+              linked_obj$get(field = "variable_map")$household_uuid %||%
               "hh_uuid"
 
             if (!linked_hh_col %in% names(linked_data)) {
@@ -1771,7 +1771,7 @@ HouseholdData <- R6::R6Class(
         {
           # Use variable_map to identify canonical death and person_time columns
           # These are the standardized output column names from death data processing
-          vm <- linked_obj$variable_map
+          vm <- linked_obj$get(field = "variable_map")
 
           # Build list of canonical column names
           # These are standardized output columns created by add_standardized_deaths and add_persontime
@@ -1930,8 +1930,8 @@ HouseholdData <- R6::R6Class(
       phrutils::phr_try(
         {
           # Look for total liters column - try variable_map first, then fallback to known names
-          water_col <- linked_obj$variable_map$container_capacity_liters %||%
-            linked_obj$variable_map$wash_container_total_liters %||%
+          water_col <- linked_obj$get(field = "variable_map")$container_capacity_liters %||%
+            linked_obj$get(field = "variable_map")$wash_container_total_liters %||%
             intersect(
               names(water_data),
               c(
@@ -2280,8 +2280,8 @@ HouseholdData <- R6::R6Class(
             ) {
               "calc_age_months"
             } else {
-              linked_obj$variable_map$age_months %||%
-                linked_obj$variable_map$nutr_age_months %||%
+              linked_obj$get(field = "variable_map")$age_months %||%
+                linked_obj$get(field = "variable_map")$nutr_age_months %||%
                 intersect(
                   names(nutrition_data),
                   c("age_months", "nutr_age_months")
@@ -2617,7 +2617,7 @@ HouseholdData <- R6::R6Class(
           ))
 
           # Get household UUID column
-          hh_uuid_col <- self$uuid
+          hh_uuid_col <- private$uuid
 
           if (!hh_uuid_col %in% names(hh_data)) {
             phrutils::phr_warning(
@@ -2630,8 +2630,8 @@ HouseholdData <- R6::R6Class(
           }
 
           # Determine the household linkage column in the linked dataset
-          linked_hh_col <- linked_obj$variable_map$hh_uuid %||%
-            linked_obj$variable_map$household_uuid %||%
+          linked_hh_col <- linked_obj$get(field = "variable_map")$hh_uuid %||%
+            linked_obj$get(field = "variable_map")$household_uuid %||%
             "hh_uuid"
 
           if (!linked_hh_col %in% names(linked_data)) {
@@ -2665,7 +2665,7 @@ HouseholdData <- R6::R6Class(
           vars_to_merge <- list()
           for (var_name in hh_vars_to_merge) {
             # Get the column name from variable_map
-            col_name <- self$variable_map[[var_name]]
+            col_name <- private$variable_map[[var_name]]
 
             # Check if it's mapped and exists in household data
             if (
