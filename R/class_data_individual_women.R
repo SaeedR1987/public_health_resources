@@ -231,8 +231,8 @@ WomenIndividualData <- R6::R6Class(
         }
 
         data_hash    <- self$get_hash(stage)
-        variable_map <- private$variable_map
-        value_map    <- private$value_map
+        variable_map <- self$.variable_map
+        value_map    <- self$.value_map
 
         analytics <- DataAnalytics$new(
           data               = df,
@@ -243,8 +243,8 @@ WomenIndividualData <- R6::R6Class(
           data_hash          = data_hash,
           variable_map       = variable_map,
           value_map          = value_map,
-          variable_label     = private$variable_label,
-          value_label        = private$value_label
+          variable_label     = self$.variable_label,
+          value_label        = self$.value_label
         )
 
         phrutils::phr_message(

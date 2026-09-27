@@ -95,7 +95,7 @@ test_that("HealthIndividualData completes full pipeline", {
 test_that("HealthIndividualData can link to HouseholdData", {
 
   hh_df <- generate_household_dataset(n = 10)
-  ind_df <- generate_health_ind_dataset(roster_data_or_n = 30, hh_uuids = hh_df$get(field = "uuid"))
+  ind_df <- generate_health_ind_dataset(roster_data_or_n = 30, hh_uuids = hh_df$get(field = "..uuid"))
 
   hh <- suppressWarnings(suppressMessages(
     HouseholdData$new(data = hh_df)

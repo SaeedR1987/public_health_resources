@@ -17,7 +17,7 @@ test_that("Data class has indicator_schema field", {
   )
 
   expect_true("indicator_schema" %in% names(d))
-  expect_null(d$get(field = "indicator_schema"))
+  expect_null(d$get(field = "..indicator_schema"))
 })
 
 
@@ -338,7 +338,7 @@ test_that("Multiple indicators are executed in order with proper variable mappin
   expect_equal(d$standardized_data$step2_result, c(20, 30, 40))
 
   # Verify that step1_output was mapped after first indicator
-  expect_equal(d$get(field = "variable_map")$step1_output, "step1_result")
+  expect_equal(d$get(field = ".variable_map")$step1_output, "step1_result")
 })
 
 test_that("indicator_schema_to_table converts basic indicator schema", {
@@ -1030,12 +1030,12 @@ test_that("Data$standardize identifies schema-defined other columns", {
   d$standardize()
 
   # Check that water_source_other was added to other_columns
-  expect_true("water_source_other" %in% names(d$get(field = "other_columns")))
+  expect_true("water_source_other" %in% names(d$get(field = "..other_columns")))
 
   # Check the structure of the other_columns entry
-  expect_true(is.list(d$get(field = "other_columns")$water_source_other))
-  expect_equal(d$get(field = "other_columns")$water_source_other$other_column, "water_source_other")
-  expect_true("water_source" %in% d$get(field = "other_columns")$water_source_other$other_linked_columns)
+  expect_true(is.list(d$get(field = "..other_columns")$water_source_other))
+  expect_equal(d$get(field = "..other_columns")$water_source_other$other_column, "water_source_other")
+  expect_true("water_source" %in% d$get(field = "..other_columns")$water_source_other$other_linked_columns)
 })
 
 
@@ -1069,17 +1069,17 @@ test_that("generate_cleaning_log creates entries for other columns", {
   d$standardize()
 
   # Generate cleaning log (without quality flags, only other columns)
-  d$set(field = "data_quality_flags", value = data.frame(uuid = test_df$get(field = "uuid"))  # Empty flags)
+  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$get(field = "..uuid"))  # Empty flags)
   d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
-  log_df <- d$get(field = "cleaning_log")$log_df
+  log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have entries for row 2 (where water_source_other has value)
   # Two entries: one for water_source_other, one for water_source
   expect_gte(nrow(log_df), 2)
 
   # Check that entries exist for the row with "other" text
-  id2_entries <- log_df[log_df$get(field = "uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
   expect_gte(nrow(id2_entries), 2)
 
   # One entry should be for water_source_other column
@@ -1146,16 +1146,16 @@ test_that("Data$standardize detects both inferred and schema-identified other co
 
   # Assertions
 
-  expect_true("free_text_other" %in% names(d$get(field = "other_columns")))
-  expect_true("declared_other" %in% names(d$get(field = "other_columns")))
+  expect_true("free_text_other" %in% names(d$get(field = "..other_columns")))
+  expect_true("declared_other" %in% names(d$get(field = "..other_columns")))
 
   # Ensure no false positives
-  expect_false("age" %in% names(d$get(field = "other_columns")))
+  expect_false("age" %in% names(d$get(field = "..other_columns")))
 
   # Ensure uniqueness (no duplicate names)
   expect_equal(
-    length(names(d$get(field = "other_columns"))),
-    length(unique(names(d$get(field = "other_columns"))))
+    length(names(d$get(field = "..other_columns"))),
+    length(unique(names(d$get(field = "..other_columns"))))
   )
 })
 
@@ -1182,13 +1182,13 @@ test_that("generate_cleaning_log handles detected other columns", {
   d$standardize()
 
   # Check if detected
-  expect_true("detected_other" %in% names(d$get(field = "other_columns")))
+  expect_true("detected_other" %in% names(d$get(field = "..other_columns")))
 
   # Generate cleaning log
-  d$set(field = "data_quality_flags", value = data.frame(uuid = test_df$get(field = "uuid")))
+  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$get(field = "..uuid")))
   d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
-  log_df <- d$get(field = "cleaning_log")$log_df
+  log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have entries for rows 16-20 (with unique responses)
   expect_gte(nrow(log_df), 5)
@@ -1314,13 +1314,13 @@ test_that("other_columns uses list structure with other_column and other_linked_
   d$standardize()
 
   # Check that other_columns is a list
-  expect_true(is.list(d$get(field = "other_columns")))
+  expect_true(is.list(d$get(field = "..other_columns")))
 
   # Check that water_source_other entry exists
-  expect_true("water_source_other" %in% names(d$get(field = "other_columns")))
+  expect_true("water_source_other" %in% names(d$get(field = "..other_columns")))
 
   # Check structure of the entry
-  entry <- d$get(field = "other_columns")$water_source_other
+  entry <- d$get(field = "..other_columns")$water_source_other
   expect_true(is.list(entry))
   expect_true("other_column" %in% names(entry))
   expect_true("other_linked_columns" %in% names(entry))
@@ -1356,10 +1356,10 @@ test_that("select_multiple with other creates proper list structure", {
   d$standardize()
 
   # Check that skills_other_text entry exists
-  expect_true("skills_other_text" %in% names(d$get(field = "other_columns")))
+  expect_true("skills_other_text" %in% names(d$get(field = "..other_columns")))
 
   # Check structure
-  entry <- d$get(field = "other_columns")$skills_other_text
+  entry <- d$get(field = "..other_columns")$skills_other_text
   expect_equal(entry$other_column, "skills_other_text")
 
   # Should have skills and skills.other as linked columns
@@ -1387,10 +1387,10 @@ test_that("inferred other columns have proper list structure", {
   d$standardize()
 
   # Should be detected
-  expect_true("detected_other" %in% names(d$get(field = "other_columns")))
+  expect_true("detected_other" %in% names(d$get(field = "..other_columns")))
 
   # Check structure
-  entry <- d$get(field = "other_columns")$detected_other
+  entry <- d$get(field = "..other_columns")$detected_other
   expect_true(is.list(entry))
   expect_equal(entry$other_column, "detected_other")
 
@@ -1425,18 +1425,18 @@ test_that("generate_cleaning_log uses new list structure correctly", {
   d$standardize()
 
   # Verify other_columns structure
-  expect_true("water_source_other" %in% names(d$get(field = "other_columns")))
-  expect_equal(d$get(field = "other_columns")$water_source_other$other_column, "water_source_other")
-  expect_equal(d$get(field = "other_columns")$water_source_other$other_linked_columns, "water_source")
+  expect_true("water_source_other" %in% names(d$get(field = "..other_columns")))
+  expect_equal(d$get(field = "..other_columns")$water_source_other$other_column, "water_source_other")
+  expect_equal(d$get(field = "..other_columns")$water_source_other$other_linked_columns, "water_source")
 
   # Generate cleaning log
-  d$set(field = "data_quality_flags", value = data.frame(uuid = test_df$get(field = "uuid")))
+  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$get(field = "..uuid")))
   d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
-  log_df <- d$get(field = "cleaning_log")$log_df
+  log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have 2 entries for id_2 (one for water_source_other, one for water_source)
-  id2_entries <- log_df[log_df$get(field = "uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
   expect_equal(nrow(id2_entries), 2)
 
   # Check question names
@@ -1478,15 +1478,14 @@ test_that("Data$set() imports indicator schema from indicator table", {
   )
 
   expect_no_error(
-    d$set(
-      field = "indicator_schema",
+    d$set(field = "..indicator_schema",
       value = indicator_table_to_schema(indicator_table)
     )
   )
 
-  expect_false(is.null(d$get(field = "indicator_schema")))
-  expect_equal(length(d$get(field = "indicator_schema")), 1)
-  expect_true("test_ind" %in% names(d$get(field = "indicator_schema")))
+  expect_false(is.null(d$get(field = "..indicator_schema")))
+  expect_equal(length(d$get(field = "..indicator_schema")), 1)
+  expect_true("test_ind" %in% names(d$get(field = "..indicator_schema")))
 })
 
 
@@ -1508,7 +1507,7 @@ test_that("Data$call('..export_schema_to_table') exports indicator schema", {
   d <- suppressMessages(
     Data$new(data = df, dataset_name = "Test", uuid = "id")
   )
-  d$set(field = "indicator_schema", value = indicator_schema)
+  d$set(field = "..indicator_schema", value = indicator_schema)
 
   exported <- suppressMessages(
     d$call(field = "..export_schema_to_table", schema_type = "indicator")
@@ -1554,8 +1553,8 @@ test_that("Data$set_indicator_schema sets indicator schema", {
 
   expect_no_error(d$set_indicator_schema(indicator_schema))
 
-  expect_false(is.null(d$get(field = "indicator_schema")))
-  expect_equal(length(d$get(field = "indicator_schema")), 1)
+  expect_false(is.null(d$get(field = "..indicator_schema")))
+  expect_equal(length(d$get(field = "..indicator_schema")), 1)
 })
 
 # Test for variable_map resolution in indicator functions
@@ -1576,13 +1575,13 @@ test_that("indicator with unresolved @variable_map$ reference passes NULL", {
   )
 
   # Set variable map (only map 'age', not 'age_months')
-  test_data$set(field = "variable_map", value = list()
+  test_data$set(field = ".variable_map", value = list()
     uuid = "uuid",
     age_years = "age"
   )
 
   # Set indicator schema that references a non-existent variable map role
-  test_data$set(field = "indicator_schema", value = list()
+  test_data$set(field = "..indicator_schema", value = list()
     test_indicator = list(
       indicator_name = "test_indicator",
       function_name = "add_standardized_age",
@@ -1622,14 +1621,14 @@ test_that("indicator with all resolved @variable_map$ references works", {
   )
 
   # Set variable map with both roles
-  test_data$set(field = "variable_map", value = list()
+  test_data$set(field = ".variable_map", value = list()
     uuid = "uuid",
     age_years = "age",
     age_months = "months"
   )
 
   # Set indicator schema that references existing variable map roles
-  test_data$set(field = "indicator_schema", value = list()
+  test_data$set(field = "..indicator_schema", value = list()
     test_indicator = list(
       indicator_name = "test_indicator",
       function_name = "add_standardized_age",
@@ -1794,10 +1793,10 @@ test_that("data_table_to_schema builds value_map from value column", {
 
   # Check that value_map is built correctly
   expect_true("value_map" %in% names(schema))
-  expect_true("status" %in% names(schema$get(field = "value_map")))
+  expect_true("status" %in% names(schema$get(field = ".value_map")))
 
   # Check the nested structure
-  status_map <- schema$get(field = "value_map")$status
+  status_map <- schema$get(field = ".value_map")$status
   expect_setequal(names(status_map), c("yes", "no", "unknown"))
 
   # Check each canonical value's allowed dataset values
@@ -1827,11 +1826,11 @@ test_that("data_table_to_schema handles variables without value column (backward
   schema <- data_table_to_schema(df)
 
   # These variables should not have value_map entries
-  expect_false("uuid" %in% names(schema$get(field = "value_map")))
-  expect_false("age" %in% names(schema$get(field = "value_map")))
+  expect_false("uuid" %in% names(schema$get(field = ".value_map")))
+  expect_false("age" %in% names(schema$get(field = ".value_map")))
 
   # Old fields should still work
-  expect_equal(schema$types$get(field = "uuid"), "character")
+  expect_equal(schema$types$get(field = "..uuid"), "character")
   expect_equal(schema$types$age, "numeric")
 })
 
@@ -1905,8 +1904,8 @@ test_that("data_schema_to_table and data_table_to_schema round-trip with value_m
 
   # Check value_map is preserved
   expect_equal(
-    schema2$get(field = "value_map")$priority,
-    original_schema$get(field = "value_map")$priority
+    schema2$get(field = ".value_map")$priority,
+    original_schema$get(field = ".value_map")$priority
   )
 
   # Check types are preserved
@@ -2451,7 +2450,7 @@ test_that("data_table_to_schema converts a normal schema table correctly", {
 
   expect_equal(sch$required, c("id", "sex"))
   expect_equal(sch$types, list(id = "character", age = "numeric"))
-  expect_equal(sch$get(field = "value_map")$sex, list(sex = c("M", "F")))
+  expect_equal(sch$get(field = ".value_map")$sex, list(sex = c("M", "F")))
 })
 
 # EDGE CASES
@@ -2480,7 +2479,7 @@ test_that("data_table_to_schema handles empty tables", {
 
   expect_equal(sch$required, character(0))
   expect_identical(sch$types, list())
-  expect_identical(sch$get(field = "value_map"), list())
+  expect_identical(sch$get(field = ".value_map"), list())
 })
 
 
@@ -2513,7 +2512,7 @@ test_that("data_table_to_schema handles NA values in optional columns", {
   expect_identical(sch$types, list())
 
   # no allowed values
-  expect_identical(sch$get(field = "value_map"), list())
+  expect_identical(sch$get(field = ".value_map"), list())
 
 })
 
@@ -2539,7 +2538,7 @@ test_that("data_table_to_schema trims allowed-values and splits correctly", {
 
   sch <- data_table_to_schema(df)
 
-  expect_equal(sch$get(field = "value_map")$sex, list(sex = c("M", "F", "G")))
+  expect_equal(sch$get(field = ".value_map")$sex, list(sex = c("M", "F", "G")))
 })
 
 
@@ -2599,7 +2598,7 @@ test_that("data_table_to_schema handles duplicated variables (last row wins)", {
   expect_equal(sch$types, list(id = "character"))
 
   # allowed_values→ last non-NA allowed row ("A,B,C")
-  expect_equal(sch$get(field = "value_map")$id, list(id=c("A", "B", "C")) )
+  expect_equal(sch$get(field = ".value_map")$id, list(id=c("A", "B", "C")) )
 
   # required: TRUE or FALSE taken from df$required logic ("id" is required)
   expect_equal(sch$required, "id")
@@ -2688,7 +2687,7 @@ test_that("data_table_to_schema round-trips with data_schema_to_table", {
   # --- CORE schema fields ---
   expect_equal(schema2$required, schema1$required)
   expect_equal(schema2$types, schema1$types)
-  expect_equal(schema2$get(field = "value_map"), schema1$get(field = "value_map"))
+  expect_equal(schema2$get(field = ".value_map"), schema1$get(field = ".value_map"))
 
   # --- Extended schema fields ---
   expect_equal(schema2$unique, schema1$unique)

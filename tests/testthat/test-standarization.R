@@ -55,29 +55,29 @@ test_that("Full pipeline: schema with is_other populates other_columns correctly
   )
 
   # Step 4: Attach the schema
-  data_obj$set(field = "variable_schema", value = schema)
+  data_obj$set(field = "..variable_schema", value = schema)
 
   # Step 5: Run standardize
   data_obj$standardize()
 
   # Step 6: Verify other_columns is populated
-  expect_true(length(data_obj$get(field = "other_columns")) > 0)
+  expect_true(length(data_obj$get(field = "..other_columns")) > 0)
 
   # Check that water_source_other is in other_columns
-  expect_true("water_source_other" %in% names(data_obj$get(field = "other_columns")))
+  expect_true("water_source_other" %in% names(data_obj$get(field = "..other_columns")))
 
   # Verify structure of other_columns entry
-  water_other_entry <- data_obj$get(field = "other_columns")$water_source_other
+  water_other_entry <- data_obj$get(field = "..other_columns")$water_source_other
   expect_true("other_column" %in% names(water_other_entry))
   expect_true("other_linked_columns" %in% names(water_other_entry))
   expect_equal(water_other_entry$other_column, "water_source_other")
   expect_equal(water_other_entry$other_linked_columns, "water_source")
 
   # Check that food_source_other_text is in other_columns
-  expect_true("food_source_other_text" %in% names(data_obj$get(field = "other_columns")))
+  expect_true("food_source_other_text" %in% names(data_obj$get(field = "..other_columns")))
 
   # Verify structure of food_source_other_text entry
-  food_other_entry <- data_obj$get(field = "other_columns")$food_source_other_text
+  food_other_entry <- data_obj$get(field = "..other_columns")$food_source_other_text
   expect_equal(food_other_entry$other_column, "food_source_other_text")
   expect_equal(food_other_entry$other_linked_columns, "food_source")
 })
@@ -126,30 +126,30 @@ test_that("other_columns used in generate_cleaning_log correctly", {
     )
   )
 
-  data_obj$set(field = "variable_schema", value = schema)
+  data_obj$set(field = "..variable_schema", value = schema)
   data_obj$standardize()
 
   # Verify other_columns is populated
-  expect_true("water_source_other" %in% names(data_obj$get(field = "other_columns")))
+  expect_true("water_source_other" %in% names(data_obj$get(field = "..other_columns")))
 
   # Generate cleaning log (this should use other_columns)
   data_obj$generate_cleaning_log(stage = "standardized")
 
   # Check that cleaning log has entries for the "other" response
-  log_df <- data_obj$get(field = "cleaning_log")$log_df
+  log_df <- data_obj$get(field = "..cleaning_log")$log_df
 
   # Should have entries for water_source_other where it has a value
   other_entries <- log_df[log_df$question.name == "water_source_other", ]
   expect_true(nrow(other_entries) > 0)
 
   # Should specifically have an entry for HH002 which has "Spring water from mountain"
-  hh002_entries <- other_entries[other_entries$get(field = "uuid") == "HH002", ]
+  hh002_entries <- other_entries[other_entries$get(field = "..uuid") == "HH002", ]
   expect_true(nrow(hh002_entries) > 0)
   expect_equal(hh002_entries$issue[1], "other_response")
   expect_true(grepl("Spring water", hh002_entries$old.value[1]))
 
   # Should also have linked column entries
-  water_source_entries <- log_df[log_df$question.name == "water_source" & log_df$get(field = "uuid") == "HH002", ]
+  water_source_entries <- log_df[log_df$question.name == "water_source" & log_df$get(field = "..uuid") == "HH002", ]
   expect_true(nrow(water_source_entries) > 0)
   expect_equal(water_source_entries$issue[1], "has_other_response")
 })
@@ -202,11 +202,11 @@ test_that("Backward compatibility: string TRUE/FALSE still works", {
     )
   )
 
-  data_obj$set(field = "variable_schema", value = schema)
+  data_obj$set(field = "..variable_schema", value = schema)
   data_obj$standardize()
 
   # Verify other_columns populated
-  expect_true("water_source_other" %in% names(data_obj$get(field = "other_columns")))
+  expect_true("water_source_other" %in% names(data_obj$get(field = "..other_columns")))
 })
 
 
@@ -265,34 +265,34 @@ test_that("Numeric and non-pattern columns are NOT added to other_columns", {
     )
   )
 
-  data_obj$set(field = "variable_schema", value = schema)
+  data_obj$set(field = "..variable_schema", value = schema)
   data_obj$standardize()
 
   # POSITIVE TEST: Valid "other" column should be included
-  expect_true("water_source_other" %in% names(data_obj$get(field = "other_columns")),
+  expect_true("water_source_other" %in% names(data_obj$get(field = "..other_columns")),
               info = "Valid other column should be in other_columns")
 
   # NEGATIVE TESTS: These columns should NOT be in other_columns
-  expect_false("num_died" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("num_died" %in% names(data_obj$get(field = "..other_columns")),
                info = "Numeric column num_died should NOT be in other_columns")
 
-  expect_false("health_healthcare_travel_time_int" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("health_healthcare_travel_time_int" %in% names(data_obj$get(field = "..other_columns")),
                info = "Numeric conditional column should NOT be in other_columns")
 
-  expect_false("household_geopoint" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("household_geopoint" %in% names(data_obj$get(field = "..other_columns")),
                info = "Empty column without 'other' pattern should NOT be in other_columns")
 
-  expect_false("death_any" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("death_any" %in% names(data_obj$get(field = "..other_columns")),
                info = "Regular categorical column should NOT be in other_columns")
 
-  expect_false("health_type" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("health_type" %in% names(data_obj$get(field = "..other_columns")),
                info = "Regular categorical column should NOT be in other_columns")
 
   # Verify only the valid other column is present
-  expect_equal(length(data_obj$get(field = "other_columns")), 1,
+  expect_equal(length(data_obj$get(field = "..other_columns")), 1,
                info = "Should have exactly 1 entry in other_columns")
 
-  expect_equal(names(data_obj$get(field = "other_columns")), "water_source_other",
+  expect_equal(names(data_obj$get(field = "..other_columns")), "water_source_other",
                info = "Only water_source_other should be in other_columns")
 })
 
@@ -323,21 +323,21 @@ test_that("Inference-based detection requires 'other' pattern in column name", {
   data_obj$standardize()
 
   # Columns with "other" pattern should be included
-  expect_true("status_other" %in% names(data_obj$get(field = "other_columns")),
+  expect_true("status_other" %in% names(data_obj$get(field = "..other_columns")),
               info = "Column with '_other' pattern should be detected")
 
-  expect_true("food_other_text" %in% names(data_obj$get(field = "other_columns")),
+  expect_true("food_other_text" %in% names(data_obj$get(field = "..other_columns")),
               info = "Column with '_other_text' pattern should be detected")
 
   # Columns without "other" pattern should NOT be included
-  expect_false("survey_notes" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("survey_notes" %in% names(data_obj$get(field = "..other_columns")),
                info = "Column without 'other' pattern should NOT be detected")
 
-  expect_false("num_people" %in% names(data_obj$get(field = "other_columns")),
+  expect_false("num_people" %in% names(data_obj$get(field = "..other_columns")),
                info = "Numeric column should NOT be detected as other")
 
   # Should have exactly 2 entries
-  expect_equal(length(data_obj$get(field = "other_columns")), 2,
+  expect_equal(length(data_obj$get(field = "..other_columns")), 2,
                info = "Should have exactly 2 entries in other_columns")
 })
 
@@ -374,8 +374,8 @@ test_that("run_quality_checks skips dependencies when variables are missing", {
   )
 
   # Should not have flag for missing variable
-  if (!is.null(d$get(field = "data_quality_flags"))) {
-    expect_false("flag_gender_check" %in% names(d$get(field = "data_quality_flags")))
+  if (!is.null(d$get(field = "..data_quality_flags"))) {
+    expect_false("flag_gender_check" %in% names(d$get(field = "..data_quality_flags")))
   }
 })
 
@@ -418,9 +418,9 @@ test_that("run_quality_checks resolves canonical variable names from variable_ma
   d$run_quality_checks("raw")
 
   # Row 3 should be flagged: age=35 (>30) but hh_size=2 (not >2)
-  expect_true("flag_age_hh_check" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("flag_age_hh_check" %in% names(d$get(field = "..data_quality_flags")))
   expect_equal(
-    d$get(field = "data_quality_flags")$flag_age_hh_check,
+    d$get(field = "..data_quality_flags")$flag_age_hh_check,
     c(0, 0, 1)  # Only row 3 is flagged
   )
 })
@@ -583,12 +583,12 @@ test_that("run_quality_checks translates canonical values to dataset values", {
   d$run_quality_checks("raw")
 
   # Should have the flag
-  expect_true("flag_status_check" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("flag_status_check" %in% names(d$get(field = "..data_quality_flags")))
 
   # Rows 1 and 2 have 'yes' or 'y' which map to canonical 'yes'
   # The condition should be TRUE for both, so no flags (condition always TRUE)
   expect_equal(
-    d$get(field = "data_quality_flags")$flag_status_check,
+    d$get(field = "..data_quality_flags")$flag_status_check,
     c(0, 0, 0, 0)  # All pass because 'then' is always TRUE
   )
 })
@@ -636,14 +636,14 @@ test_that("run_quality_checks handles complex expressions with variable and valu
 
   d$run_quality_checks("raw")
 
-  expect_true("flag_fever_temp" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("flag_fever_temp" %in% names(d$get(field = "..data_quality_flags")))
 
   # Row 1: fever='yes' (matches), temp=38 (not NA) -> OK
   # Row 2: fever='y' (matches 'yes'), temp=37 (not NA) -> OK
   # Row 3: fever='no' (doesn't match), condition_if FALSE -> OK
   # Row 4: fever='yes' (matches), temp=NA -> FLAGGED
   expect_equal(
-    d$get(field = "data_quality_flags")$flag_fever_temp,
+    d$get(field = "..data_quality_flags")$flag_fever_temp,
     c(0, 0, 0, 1)
   )
 })
@@ -686,7 +686,7 @@ test_that("run_quality_checks skips when canonical variable is not in variable_m
   # Should work because resolve_column falls back to direct column name
   d$run_quality_checks("raw")
 
-  expect_true("flag_age_check" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("flag_age_check" %in% names(d$get(field = "..data_quality_flags")))
 })
 
 
@@ -730,9 +730,9 @@ test_that("run_quality_checks handles multiple canonical values in expression", 
 
   d$run_quality_checks("raw")
 
-  expect_true("flag_status_active" %in% names(d$get(field = "data_quality_flags")))
+  expect_true("flag_status_active" %in% names(d$get(field = "..data_quality_flags")))
   expect_equal(
-    d$get(field = "data_quality_flags")$flag_status_active,
+    d$get(field = "..data_quality_flags")$flag_status_active,
     c(0, 0, 0)  # All pass because 'then' is always TRUE
   )
 })
@@ -866,8 +866,8 @@ test_that("%in% expressions expand canonical values using value_map", {
   )
 
   # Set variable_map and value_map
-  d$get(field = "variable_map")$sex <- "gender_col"
-  d$get(field = "value_map")$sex <- list(
+  d$get(field = ".variable_map")$sex <- "gender_col"
+  d$get(field = ".value_map")$sex <- list(
     male = c("m", "male", "homme"),
     female = c("f", "female", "femme")
   )
@@ -889,8 +889,8 @@ test_that("%in% expressions expand canonical values using value_map", {
   d$run_quality_checks("standardized")
 
   # Check that flags were created
-  expect_false(is.null(d$get(field = "data_quality_flags")))
-  expect_true("flag_sex_values" %in% names(d$get(field = "data_quality_flags")))
+  expect_false(is.null(d$get(field = "..data_quality_flags")))
+  expect_true("flag_sex_values" %in% names(d$get(field = "..data_quality_flags")))
 
   # Rows with values in allowed set (mapped) should NOT be flagged
   # Rows with values outside allowed set should be flagged
@@ -900,7 +900,7 @@ test_that("%in% expressions expand canonical values using value_map", {
   # 4: "female" → maps to female → NOT flagged (0)
   # 5: "other" → not mapped → flagged (1)
   # 6: "non-binary" → not mapped → flagged (1)
-  expect_equal(d$get(field = "data_quality_flags")$flag_sex_values, c(0, 0, 0, 0, 1, 1))
+  expect_equal(d$get(field = "..data_quality_flags")$flag_sex_values, c(0, 0, 0, 0, 1, 1))
 })
 
 
@@ -919,8 +919,8 @@ test_that("%in% expressions work with roster dependency schema", {
   )
 
   # The default schema should have flag_values_sex dependency
-  expect_false(is.null(d$get(field = "dependency_schema")))
-  expect_true("flag_values_sex" %in% names(d$get(field = "dependency_schema")$dependencies))
+  expect_false(is.null(d$get(field = "..dependency_schema")))
+  expect_true("flag_values_sex" %in% names(d$get(field = "..dependency_schema")$dependencies))
 
   # Run the pipeline
   d$validate()
@@ -928,12 +928,12 @@ test_that("%in% expressions work with roster dependency schema", {
   d$run_quality_checks("standardized")
 
   # Check flags
-  expect_false(is.null(d$get(field = "data_quality_flags")))
+  expect_false(is.null(d$get(field = "..data_quality_flags")))
 
   # If value_map is set up correctly, should flag rows with values
   # outside the mapped values for 'male' and 'female'
-  if ("flag_values_sex" %in% names(d$get(field = "data_quality_flags"))) {
-    flags <- d$get(field = "data_quality_flags")$flag_values_sex
+  if ("flag_values_sex" %in% names(d$get(field = "..data_quality_flags"))) {
+    flags <- d$get(field = "..data_quality_flags")$flag_values_sex
 
     # At minimum, should flag 'other' and 'non-binary' rows
     # The exact flags depend on whether value_map includes all variations
@@ -960,8 +960,8 @@ test_that("%in% expressions with multiple canonical values expand correctly", {
   )
 
   # Set mappings
-  d$get(field = "variable_map")$status <- "status_col"
-  d$get(field = "value_map")$status <- list(
+  d$get(field = ".variable_map")$status <- "status_col"
+  d$get(field = ".value_map")$status <- list(
     active = c("active", "live", "1"),
     inactive = c("inactive", "disabled", "0")
   )
@@ -986,7 +986,7 @@ test_that("%in% expressions with multiple canonical values expand correctly", {
   # Row 2: "pending" → not mapped → flagged (1)
   # Row 3: "inactive" → mapped → NOT flagged (0)
   # Row 4: "archived" → not mapped → flagged (1)
-  expect_equal(d$get(field = "data_quality_flags")$flag_valid_status, c(0, 1, 0, 1))
+  expect_equal(d$get(field = "..data_quality_flags")$flag_valid_status, c(0, 1, 0, 1))
 })
 
 
@@ -1019,7 +1019,7 @@ test_that("%in% expressions without value_map work as before", {
   d$run_quality_checks("standardized")
 
   # Literal matching: 'A' and 'B' match, 'C' and 'D' don't
-  expect_equal(d$get(field = "data_quality_flags")$flag_valid_category, c(0, 0, 1, 1))
+  expect_equal(d$get(field = "..data_quality_flags")$flag_valid_category, c(0, 0, 1, 1))
 })
 
 
@@ -1034,8 +1034,8 @@ test_that("== operator still works with value_map expansion", {
     Data$new(data = df, dataset_name = "TestEquals", uuid = "id")
   )
 
-  d$get(field = "variable_map")$consent <- "consent_col"
-  d$get(field = "value_map")$consent <- list(
+  d$get(field = ".variable_map")$consent <- "consent_col"
+  d$get(field = ".value_map")$consent <- list(
     yes = c("yes", "y", "oui"),
     no = c("no", "n", "non")
   )
@@ -1056,7 +1056,7 @@ test_that("== operator still works with value_map expansion", {
   d$run_quality_checks("standardized")
 
   # All rows where consent is "yes" or "y" (mapped) should pass
-  expect_equal(d$get(field = "data_quality_flags")$flag_consent_yes, c(0, 0, 0))
+  expect_equal(d$get(field = "..data_quality_flags")$flag_consent_yes, c(0, 0, 0))
 })
 
 
@@ -1094,7 +1094,7 @@ test_that("process_select_multiple_columns detects 'other' in responses", {
 })
 
 
-test_that("standardize() adds 'other' columns to self$get(field = "other_columns") as list structure", {
+test_that("standardize() adds 'other' columns to self$get(field = "..other_columns") as list structure", {
 
   test_df <- tibble::tibble(
     uuid = c("id_1", "id_2", "id_3"),
@@ -1122,10 +1122,10 @@ test_that("standardize() adds 'other' columns to self$get(field = "other_columns
   d$standardize()
 
   # Check that skills_other_text is in other_columns with proper structure
-  expect_true("skills_other_text" %in% names(d$get(field = "other_columns")))
+  expect_true("skills_other_text" %in% names(d$get(field = "..other_columns")))
 
   # Check structure
-  entry <- d$get(field = "other_columns")$skills_other_text
+  entry <- d$get(field = "..other_columns")$skills_other_text
   expect_equal(entry$other_column, "skills_other_text")
   expect_true("skills" %in% entry$other_linked_columns)
   expect_true("skills.other" %in% entry$other_linked_columns)
@@ -1160,14 +1160,14 @@ test_that("generate_cleaning_log creates entries for 'other' columns and linked 
   d$standardize()
 
   # Generate cleaning log
-  d$set(field = "data_quality_flags", value = data.frame(uuid = test_df$get(field = "uuid")))
+  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$get(field = "..uuid")))
   d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
-  log_df <- d$get(field = "cleaning_log")$log_df
+  log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have entries for id_2 (row with "other" text)
   # One for text column, plus one each for linked columns
-  id2_entries <- log_df[log_df$get(field = "uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
   expect_gte(nrow(id2_entries), 3)  # At least 3 entries
 
   # Check that entries exist for each column
@@ -1226,19 +1226,19 @@ test_that("generate_cleaning_log handles missing text column with dummy column",
 
   # Manually modify other_columns to simulate scenario without text column
   d$standardize()
-  d$get(field = "other_columns")[["income.other"]] <- list(
+  d$get(field = "..other_columns")[["income.other"]] <- list(
     other_column = "income.other",
     other_linked_columns = c("income")
   )
 
   # Generate cleaning log
-  d$set(field = "data_quality_flags", value = data.frame(uuid = test_df$get(field = "uuid")))
+  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$get(field = "..uuid")))
   d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
-  log_df <- d$get(field = "cleaning_log")$log_df
+  log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have entries for id_2 where dummy column = 1
-  id2_entries <- log_df[log_df$get(field = "uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
   expect_gte(nrow(id2_entries), 2)  # At least 2 (dummy + original)
 })
 
@@ -1346,11 +1346,11 @@ test_that("standardize() creates cluster_id_numeric when cluster_id is mapped", 
   obj <- suppressMessages(
     Data$new(data = test_data, uuid = "hh_id")
   )
-  obj$get(field = "variable_map")$cluster_id <- "cluster"
+  obj$get(field = ".variable_map")$cluster_id <- "cluster"
   obj$standardize()
 
   expect_true("cluster_id_numeric" %in% names(obj$standardized_data))
-  expect_equal(obj$get(field = "variable_map")[["cluster_id_numeric"]], "cluster_id_numeric")
+  expect_equal(obj$get(field = ".variable_map")[["cluster_id_numeric"]], "cluster_id_numeric")
   # Clusters A, B, C → 1, 2, 3 (alphabetical order from sort())
   expect_equal(sort(unique(obj$standardized_data$cluster_id_numeric)), 1L:3L)
   expect_true(is.integer(obj$standardized_data$cluster_id_numeric))
@@ -1376,7 +1376,7 @@ test_that("standardize() does NOT create cluster_id_numeric when cluster_id not 
   obj$standardize()
 
   expect_false("cluster_id_numeric" %in% names(obj$standardized_data))
-  expect_null(obj$get(field = "variable_map")[["cluster_id_numeric"]])
+  expect_null(obj$get(field = ".variable_map")[["cluster_id_numeric"]])
 })
 
 test_that("cluster_id_numeric numbers clusters starting at 1 sequentially", {
@@ -1389,7 +1389,7 @@ test_that("cluster_id_numeric numbers clusters starting at 1 sequentially", {
   obj <- suppressMessages(
     Data$new(data = test_data, uuid = "uuid")
   )
-  obj$get(field = "variable_map")$cluster_id <- "cluster"
+  obj$get(field = ".variable_map")$cluster_id <- "cluster"
   obj$standardize()
 
   vals <- obj$standardized_data$cluster_id_numeric
@@ -1442,7 +1442,7 @@ test_that("standardize() coerces character datetime columns to POSIXct when sche
   obj <- suppressMessages(
     Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
   )
-  obj$set(field = "variable_schema", value = make_datetime_schema())
+  obj$set(field = "..variable_schema", value = make_datetime_schema())
   obj$standardize()
 
   expect_true(inherits(obj$standardized_data$interview_start, c("POSIXct", "POSIXlt")))
@@ -1460,7 +1460,7 @@ test_that("standardize() preserves time information when schema type is 'datetim
   obj <- suppressMessages(
     Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
   )
-  obj$set(field = "variable_schema", value = make_datetime_schema())
+  obj$set(field = "..variable_schema", value = make_datetime_schema())
   obj$standardize()
 
   start_val <- obj$standardized_data$interview_start[[1]]
@@ -1482,7 +1482,7 @@ test_that("standardize() retains POSIXct columns unchanged when schema type is '
   obj <- suppressMessages(
     Data$new(data = test_data, dataset_name = "TestHH", uuid = "hh_id")
   )
-  obj$set(field = "variable_schema", value = make_datetime_schema())
+  obj$set(field = "..variable_schema", value = make_datetime_schema())
   obj$standardize()
 
   expect_true(inherits(obj$standardized_data$interview_start, c("POSIXct", "POSIXlt")))

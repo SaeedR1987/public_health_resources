@@ -45,12 +45,12 @@ test_that("validate() correctly validates select_multiple mapped values", {
   d$call(field = "..map_schema_vars")
 
   # Verify that value map was built correctly
-  expect_true("livelihood" %in% names(d$get(field = "value_map")))
-  expect_true("agriculture" %in% names(d$get(field = "value_map")$livelihood))
-  expect_true("farming" %in% d$get(field = "value_map")$livelihood$agriculture)
-  expect_true("fishing" %in% d$get(field = "value_map")$livelihood$fishing)
-  expect_true("trading" %in% d$get(field = "value_map")$livelihood$business)
-  expect_true("other" %in% d$get(field = "value_map")$livelihood$other)
+  expect_true("livelihood" %in% names(d$get(field = ".value_map")))
+  expect_true("agriculture" %in% names(d$get(field = ".value_map")$livelihood))
+  expect_true("farming" %in% d$get(field = ".value_map")$livelihood$agriculture)
+  expect_true("fishing" %in% d$get(field = ".value_map")$livelihood$fishing)
+  expect_true("trading" %in% d$get(field = ".value_map")$livelihood$business)
+  expect_true("other" %in% d$get(field = ".value_map")$livelihood$other)
 
   # Run validate - should NOT produce warnings about missing values
   # since the mapped values ARE present (as tokens in space-separated strings)
@@ -127,7 +127,7 @@ test_that("data_diagnose() correctly diagnoses select_multiple mapped values", {
 
   # Should still report if a value is not in the data at all
   # "mathematics" is not in the data, so numeracy should have only "math"
-  expect_false("mathematics" %in% d$get(field = "value_map")$skills$numeracy)
+  expect_false("mathematics" %in% d$get(field = ".value_map")$skills$numeracy)
 })
 
 test_that("validate() correctly handles select_multiple with old allowed_values format", {
@@ -178,14 +178,14 @@ test_that("validate() still catches truly missing values in select_multiple", {
   )
 
   # Manually set up a value_map with a value that doesn't exist
-  d$get(field = "variable_map")$food <- "food"
-  d$get(field = "value_map")$food <- list(
+  d$get(field = ".variable_map")$food <- "food"
+  d$get(field = ".value_map")$food <- list(
     cereals = c("rice", "wheat"),  # "wheat" is NOT in the data
     legumes = c("beans", "lentils")  # "lentils" is NOT in the data
   )
 
   # Set minimal schema for the helper method to work
-  d$set(field = "variable_schema", value = list()
+  d$set(field = "..variable_schema", value = list()
     types = list(food = "character"),
     question_types = list(food = "select_multiple")
   )
@@ -230,13 +230,13 @@ test_that(".is_select_multiple helper works correctly", {
   expect_false(d$call(field = "..is_select_multiple", "any_var"))
 
   # With schema but no question_types
-  d$set(field = "variable_schema", value = list()
+  d$set(field = "..variable_schema", value = list()
     types = list(var1 = "character")
   )
   expect_false(d$call(field = "..is_select_multiple", "var1"))
 
   # With schema and select_multiple question type
-  d$set(field = "variable_schema", value = list()
+  d$set(field = "..variable_schema", value = list()
     types = list(
       var1 = "character",
       var2 = "character"

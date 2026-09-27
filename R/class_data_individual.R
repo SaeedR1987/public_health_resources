@@ -87,9 +87,9 @@ IndividualData <- R6::R6Class(
         )
         ind_required <- unique(ind_required[!is.na(ind_required) & ind_required != ""])
 
-        # Data$initialize already set private$required_columns <- uuid
+        # Data$initialize already set private$..required_columns <- uuid
         # We extend that with the individual-specific requirements
-        private$required_columns <- unique(c(private$required_columns, ind_required))
+        private$..required_columns <- unique(c(private$..required_columns, ind_required))
 
         # Optional (mapped) columns
         self$optional_columns <- c(
@@ -102,7 +102,7 @@ IndividualData <- R6::R6Class(
 
         # ---- Build and merge individual schema into any existing schema ----
         ind_schema    <- self$default_schema()
-        parent_schema <- private$variable_schema %||% list()
+        parent_schema <- private$..variable_schema %||% list()
         merged_schema <- utils::modifyList(parent_schema, ind_schema)
 
         self$set_variable_schema(merged_schema)
@@ -293,7 +293,7 @@ IndividualData <- R6::R6Class(
         if (is.null(df)) df <- self$get_data("raw")
 
         # Household linkage may duplicate — informational only
-        hh_uuid_col <- private$variable_map$hh_uuid
+        hh_uuid_col <- self$.variable_map$hh_uuid
         if (!is.null(hh_uuid_col) && hh_uuid_col %in% names(df)) {
           dup_hh <- df[[hh_uuid_col]][duplicated(df[[hh_uuid_col]])]
           if (length(dup_hh) > 0) {
@@ -304,7 +304,7 @@ IndividualData <- R6::R6Class(
         }
 
         # Check that age is non-negative
-        age_col <- private$variable_map$age
+        age_col <- self$.variable_map$age
         if (!is.null(age_col) && age_col %in% names(df)) {
           if (any(df[[age_col]] < 0, na.rm = TRUE)) {
             phrutils::phr_warning(nm, phrutils::phr_txt("Negative ages detected."))
@@ -354,8 +354,8 @@ IndividualData <- R6::R6Class(
         }
 
         data_hash    <- self$get_hash(stage)
-        variable_map <- private$variable_map
-        value_map    <- private$value_map
+        variable_map <- self$.variable_map
+        value_map    <- self$.value_map
 
         analytics <- switch(
           type,
@@ -368,8 +368,8 @@ IndividualData <- R6::R6Class(
             data_hash          = data_hash,
             variable_map       = variable_map,
             value_map          = value_map,
-            variable_label     = private$variable_label,
-            value_label        = private$value_label
+            variable_label     = self$.variable_label,
+            value_label        = self$.value_label
           ),
           phr_error(
             origin  = paste0(self$dataset_name, "$generate_data_analytics"),

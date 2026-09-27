@@ -223,7 +223,7 @@ CleaningLog <- R6::R6Class(
 
       # UUID checks
 
-      uuid_col <- data_obj$get(field = "uuid")
+      uuid_col <- data_obj$get(field = "..uuid")
 
       if (!uuid_col %in% names(df)) {
         phrutils::phr_error(
@@ -245,7 +245,7 @@ CleaningLog <- R6::R6Class(
 
       # enum_id checks (if mapped)
 
-      data_variable_map <- data_obj$get(field = "variable_map")
+      data_variable_map <- data_obj$get(field = ".variable_map")
       if ("enum_id" %in% names(data_variable_map)) {
         enum_col <- data_variable_map$enum_id
 

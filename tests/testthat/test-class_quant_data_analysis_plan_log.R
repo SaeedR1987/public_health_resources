@@ -33,10 +33,10 @@ test_that("QuantDataAnalysisPlanLog fills missing required columns when provided
   expect_s3_class(log, "QuantDataAnalysisPlanLog")
 
   # Required columns should all exist
-  expect_true(all(log$get(field = "required_columns") %in% names(log$get("log_df"))))
+  expect_true(all(log$get(field = "..required_columns") %in% names(log$get("log_df"))))
 
   # Columns not supplied should be filled with NA
-  missing_cols <- setdiff(log$get(field = "required_columns"), names(df))
+  missing_cols <- setdiff(log$get(field = "..required_columns"), names(df))
 
   for (col in missing_cols) {
     expect_true(all(is.na(log$get("log_df")[[col]])))

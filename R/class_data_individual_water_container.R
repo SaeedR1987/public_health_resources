@@ -80,7 +80,7 @@ WaterContainerData <- R6::R6Class(
 
         # Build and merge container schema into any existing schema
         container_schema <- self$default_schema()
-        parent_schema    <- private$variable_schema %||% list()
+        parent_schema    <- private$..variable_schema %||% list()
         merged_schema    <- utils::modifyList(parent_schema, container_schema)
 
         self$set_variable_schema(merged_schema)
@@ -258,7 +258,7 @@ WaterContainerData <- R6::R6Class(
 
         if (is.null(df)) df <- self$get_data("raw")
 
-        vm <- private$variable_map
+        vm <- self$.variable_map
         schema <- self$default_schema()
 
         # Range checks
@@ -349,8 +349,8 @@ WaterContainerData <- R6::R6Class(
         }
 
         data_hash    <- self$get_hash(stage)
-        variable_map <- private$variable_map
-        value_map    <- private$value_map
+        variable_map <- self$.variable_map
+        value_map    <- self$.value_map
 
         analytics <- WaterContainerDataAnalytics$new(
           data               = df,
@@ -361,8 +361,8 @@ WaterContainerData <- R6::R6Class(
           data_hash          = data_hash,
           variable_map       = variable_map,
           value_map          = value_map,
-          variable_label     = private$variable_label,
-          value_label        = private$value_label
+          variable_label     = self$.variable_label,
+          value_label        = self$.value_label
         )
 
         phrutils::phr_message(

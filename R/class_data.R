@@ -85,8 +85,8 @@ Data <- R6::R6Class(
     #     mappings and labels.
     #
     # Access these through:
-    #   d$get(field = "variable_map")
-    #   d$set(field = "variable_map", value = list(...))
+    #   d$get(field = ".variable_map")
+    #   d$set(field = ".variable_map", value = list(...))
     #   d$call(field = "cleaning_log", member = "add_row", ...)
 
     dataset_name = NULL,
@@ -158,23 +158,23 @@ Data <- R6::R6Class(
 
           self$metadata <- metadata %||% list()
           self$dataset_name <- dataset_name
-          private$uuid <- uuid
-          private$required_columns <- uuid
-          private$other_columns <- list()
-          private$variable_map <- if (!is.null(variable_map)) {
+          private$..uuid <- uuid
+          private$..required_columns <- uuid
+          private$..other_columns <- list()
+          self$.variable_map <- if (!is.null(variable_map)) {
             variable_map
           } else {
             list(uuid = uuid)
           }
 
           # NEW: initialize value_map
-          private$value_map <- if (!is.null(value_map)) value_map else list()
+          self$.value_map <- if (!is.null(value_map)) value_map else list()
 
-          private$cleaning_log <- CleaningLog$new(
+          private$..cleaning_log <- CleaningLog$new(
             log_name = paste0(dataset_name, "_CleaningLog")
           )
 
-          private$deletion_log <- DeletionLog$new(
+          private$..deletion_log <- DeletionLog$new(
             log_name = paste0(dataset_name, "_DeletionLog")
           )
 
@@ -244,7 +244,7 @@ Data <- R6::R6Class(
           # Soft validations - warnings only, capture return status
           cols_valid <- phrutils::phr_validate_columns(
             df,
-            required_cols = private$required_columns,
+            required_cols = private$..required_columns,
             origin = self$dataset_name,
             soft = TRUE
           )
@@ -252,16 +252,16 @@ Data <- R6::R6Class(
             had_warnings <- TRUE
           }
 
-          if (!private$uuid %in% names(df)) {
+          if (!private$..uuid %in% names(df)) {
             phrutils::phr_error(
               self$dataset_name,
-              phrutils::phr_txt("UUID column '{private$uuid}' not found in dataset.")
+              phrutils::phr_txt("UUID column '{private$..uuid}' not found in dataset.")
             )
           }
 
           no_missing_valid <- phrutils::phr_validate_no_missing(
             df,
-            cols = private$uuid,
+            cols = private$..uuid,
             origin = self$dataset_name,
             soft = TRUE
           )
@@ -271,7 +271,7 @@ Data <- R6::R6Class(
 
           unique_valid <- phrutils::phr_validate_unique(
             df,
-            cols = private$uuid,
+            cols = private$..uuid,
             origin = self$dataset_name,
             soft = TRUE
           )
@@ -281,7 +281,7 @@ Data <- R6::R6Class(
 
           # VARIABLE MAP CHECKS
 
-          mapped <- unlist(private$variable_map, use.names = FALSE)
+          mapped <- unlist(self$.variable_map, use.names = FALSE)
           missing_mapped <- setdiff(mapped, names(df))
 
           if (length(missing_mapped) > 0) {
@@ -296,12 +296,12 @@ Data <- R6::R6Class(
 
           # VALUE MAP CHECKS
 
-          if (length(private$value_map) > 0) {
-            for (var in names(private$value_map)) {
-              mapped_values <- private$value_map[[var]]
+          if (length(self$.value_map) > 0) {
+            for (var in names(self$.value_map)) {
+              mapped_values <- self$.value_map[[var]]
 
               # Missing role in variable_map
-              if (!var %in% names(private$variable_map)) {
+              if (!var %in% names(self$.variable_map)) {
                 phrutils::phr_warning(
                   self$dataset_name,
                   phrutils::phr_txt(
@@ -312,7 +312,7 @@ Data <- R6::R6Class(
                 next
               }
 
-              dataset_col <- private$variable_map[[var]]
+              dataset_col <- self$.variable_map[[var]]
 
               if (!dataset_col %in% names(df)) {
                 phrutils::phr_warning(
@@ -521,13 +521,13 @@ Data <- R6::R6Class(
           phrutils::phr_message(phrutils::phr_txt("Standardizing {self$dataset_name}..."))
 
           data_copy <- private$..raw_data
-          sch <- private$variable_schema %||% list()
+          sch <- private$..variable_schema %||% list()
 
           # normalize skip vector
           skip <- intersect(skip, names(data_copy))
 
           # reset other-columns tracker
-          private$other_columns <- list()
+          private$..other_columns <- list()
 
           schema_cols <- names(sch$types %||% list())
 
@@ -674,7 +674,7 @@ Data <- R6::R6Class(
 
                     # Add to other_columns if not numeric and has at least one unique value
                     if (!is_numeric_col && uniq_n > 0) {
-                      private$other_columns[[nm]] <- list(
+                      private$..other_columns[[nm]] <- list(
                         other_column = nm,
                         other_linked_columns = inferred_links
                       )
@@ -726,7 +726,7 @@ Data <- R6::R6Class(
                         )
                       }
 
-                      private$other_columns[[text_col]] <- list(
+                      private$..other_columns[[text_col]] <- list(
                         other_column = text_col,
                         other_linked_columns = linked_cols
                       )
@@ -734,7 +734,7 @@ Data <- R6::R6Class(
                       # If no text column, use dummy column as main with original as linked
                       dummy_col <- var_info$dummy_other_column
                       if (!is.null(dummy_col)) {
-                        private$other_columns[[dummy_col]] <- list(
+                        private$..other_columns[[dummy_col]] <- list(
                           other_column = dummy_col,
                           other_linked_columns = c(var_info$original_column)
                         )
@@ -766,7 +766,7 @@ Data <- R6::R6Class(
           data_copy <- result
 
           # (f) ADD SCHEMA-IDENTIFIED "OTHER" COLUMNS
-          # If schema has is_other field, add those to private$other_columns
+          # If schema has is_other field, add those to private$..other_columns
 
           result <- phrutils::phr_try_step(
             {
@@ -784,7 +784,7 @@ Data <- R6::R6Class(
                 if (length(schema_other_cols) > 0) {
                   for (col in schema_other_cols) {
                     # Skip if already added by inference or select_multiple processing
-                    if (col %in% names(private$other_columns)) {
+                    if (col %in% names(private$..other_columns)) {
                       next
                     }
 
@@ -802,7 +802,7 @@ Data <- R6::R6Class(
                     }
 
                     # Add as list entry
-                    private$other_columns[[col]] <- list(
+                    private$..other_columns[[col]] <- list(
                       other_column = col,
                       other_linked_columns = linked_cols
                     )
@@ -829,15 +829,15 @@ Data <- R6::R6Class(
               working_data <- data_copy
 
               if (
-                !is.null(private$indicator_schema) &&
-                  length(private$indicator_schema) > 0
+                !is.null(private$..indicator_schema) &&
+                  length(private$..indicator_schema) > 0
               ) {
                 phrutils::phr_message(phrutils::phr_txt(
-                  "Processing {length(private$indicator_schema)} indicator(s) from indicator schema..."
+                  "Processing {length(private$..indicator_schema)} indicator(s) from indicator schema..."
                 ))
 
-                for (ind_name in names(private$indicator_schema)) {
-                  ind <- private$indicator_schema[[ind_name]]
+                for (ind_name in names(private$..indicator_schema)) {
+                  ind <- private$..indicator_schema[[ind_name]]
 
                   phrutils::phr_try(
                     {
@@ -879,13 +879,13 @@ Data <- R6::R6Class(
 
                         # Check which variables have valid mappings
                         has_mapping <- required_vars %in%
-                          names(private$variable_map)
+                          names(self$.variable_map)
 
                         # Get mapped values for variables that have mappings
                         mapped_values <- lapply(
                           required_vars[has_mapping],
                           function(var) {
-                            val <- private$variable_map[[var]]
+                            val <- self$.variable_map[[var]]
                             if (!is.null(val) && val != "") val else NULL
                           }
                         )
@@ -1205,7 +1205,7 @@ Data <- R6::R6Class(
           # DataAnalytics$create_survey_design() for reliable survey design creation.
           result <- phrutils::phr_try_step(
             {
-              cluster_col <- private$variable_map[["cluster_id"]]
+              cluster_col <- self$.variable_map[["cluster_id"]]
               if (!is.null(cluster_col) && cluster_col %in% names(data_copy)) {
                 cluster_vals <- data_copy[[cluster_col]]
                 # Build a lookup: each unique (non-NA) cluster gets a sequential integer
@@ -1221,7 +1221,7 @@ Data <- R6::R6Class(
                   NA_integer_,
                   as.integer(numeric_map[as.character(cluster_vals)])
                 )
-                private$variable_map[[
+                self$.variable_map[[
                   "cluster_id_numeric"
                 ]] <- "cluster_id_numeric"
                 phrutils::phr_message(
@@ -1252,7 +1252,7 @@ Data <- R6::R6Class(
             {
               if (
                 !is.null(private$..standardized_data) &&
-                  !is.null(private$variable_schema)
+                  !is.null(private$..variable_schema)
               ) {
                 phrutils::phr_message(phrutils::phr_txt(
                   "Running quality checks on {self$dataset_name}..."
@@ -1407,21 +1407,21 @@ Data <- R6::R6Class(
           # VALIDATE & APPLY CLEANING LOG
 
           if (
-            !is.null(private$cleaning_log) &&
-              inherits(private$cleaning_log, "CleaningLog")
+            !is.null(private$..cleaning_log) &&
+              inherits(private$..cleaning_log, "CleaningLog")
           ) {
             # validation (internal + schema)
-            private$cleaning_log$validate()
+            private$..cleaning_log$validate()
 
             # post-validate: check cleaning log against dataset
-            private$cleaning_log$post_validate(self, stage = "clean")
+            private$..cleaning_log$post_validate(self, stage = "clean")
 
             # apply changes (authoritative mode option A)
-            if (nrow(private$cleaning_log$log_df) > 0) {
+            if (nrow(private$..cleaning_log$log_df) > 0) {
               private$..clean_data <- private$..apply_cleaning_changes(
                 df = private$..clean_data,
-                log_df = private$cleaning_log$log_df,
-                uuid_col = private$uuid
+                log_df = private$..cleaning_log$log_df,
+                uuid_col = private$..uuid
               )
             }
           }
@@ -1429,17 +1429,17 @@ Data <- R6::R6Class(
           # VALIDATE & APPLY DELETION LOG
 
           if (
-            !is.null(private$deletion_log) &&
-              inherits(private$deletion_log, "DeletionLog")
+            !is.null(private$..deletion_log) &&
+              inherits(private$..deletion_log, "DeletionLog")
           ) {
-            private$deletion_log$validate()
-            private$deletion_log$post_validate(self, stage = "clean")
+            private$..deletion_log$validate()
+            private$..deletion_log$post_validate(self, stage = "clean")
 
             # apply deletions
-            if (nrow(private$deletion_log$log_df) > 0) {
-              delete_ids <- as.character(private$deletion_log$log_df$uuid)
+            if (nrow(private$..deletion_log$log_df) > 0) {
+              delete_ids <- as.character(private$..deletion_log$log_df$uuid)
               private$..clean_data <- private$..clean_data[
-                !as.character(private$..clean_data[[private$uuid]]) %in% delete_ids,
+                !as.character(private$..clean_data[[private$..uuid]]) %in% delete_ids,
               ]
             }
           }
@@ -1489,7 +1489,7 @@ Data <- R6::R6Class(
           )
 
           # 4. Store
-          private$variable_schema <- schema_list
+          private$..variable_schema <- schema_list
 
           phrutils::phr_message(
             phrutils::phr_txt("Variable schema attached to {self$dataset_name}.")
@@ -1511,7 +1511,7 @@ Data <- R6::R6Class(
     #' Returns the current variable schema list
     #'
     #' @return List containing variable schema (types, allowed_values, etc.), or NULL if not set
-    get_variable_schema = function() private$variable_schema,
+    get_variable_schema = function() private$..variable_schema,
 
     #' @description
     #' Set indicator schema from list
@@ -1527,7 +1527,7 @@ Data <- R6::R6Class(
             )
           }
 
-          private$indicator_schema <- indicator_schema_list
+          private$..indicator_schema <- indicator_schema_list
 
           phrutils::phr_message(
             phrutils::phr_txt(
@@ -1544,7 +1544,7 @@ Data <- R6::R6Class(
     #' Get indicator schema
     #'
     #' @return Indicator schema list, or NULL if not set
-    get_indicator_schema = function() private$indicator_schema,
+    get_indicator_schema = function() private$..indicator_schema,
 
     #' @description
     #' Set dependency schema from list
@@ -1560,7 +1560,7 @@ Data <- R6::R6Class(
             )
           }
 
-          private$dependency_schema <- dependency_schema_list
+          private$..dependency_schema <- dependency_schema_list
 
           phrutils::phr_message(
             phrutils::phr_txt(
@@ -1577,7 +1577,7 @@ Data <- R6::R6Class(
     #' Get dependency schema
     #'
     #' @return Dependency schema list, or NULL if not set
-    get_dependency_schema = function() private$dependency_schema,
+    get_dependency_schema = function() private$..dependency_schema,
 
     # Data access
 
@@ -1661,7 +1661,7 @@ Data <- R6::R6Class(
       }
 
       # --- Set the variable map ---
-      private$variable_map[[role]] <- column_name
+      self$.variable_map[[role]] <- column_name
 
       phrutils::phr_message(phrutils::phr_txt(
         "Mapped role '{role}' → '{column_name}' (checked on {stage} data)."
@@ -1676,7 +1676,7 @@ Data <- R6::R6Class(
     #' @param role Character string with semantic role
     #'
     #' @return Character string with column name, or NULL if role not mapped
-    get_variable = function(role) private$variable_map[[role]],
+    get_variable = function(role) self$.variable_map[[role]],
 
     #' Resolve Column from Role
     #'
@@ -1704,8 +1704,8 @@ Data <- R6::R6Class(
       }
 
       # Determine column name from variable_map
-      if (!is.null(private$variable_map) && role %in% names(private$variable_map)) {
-        col <- private$variable_map[[role]]
+      if (!is.null(self$.variable_map) && role %in% names(self$.variable_map)) {
+        col <- self$.variable_map[[role]]
       } else {
         col <- role # fallback assume direct column name
       }
@@ -1723,8 +1723,8 @@ Data <- R6::R6Class(
 
       # ---- VALUE MAP AWARENESS
       mapped_vals <- NULL
-      if (!is.null(private$value_map) && role %in% names(private$value_map)) {
-        mapped_vals <- private$value_map[[role]]
+      if (!is.null(self$.value_map) && role %in% names(self$.value_map)) {
+        mapped_vals <- self$.value_map[[role]]
       }
 
       # Return column name only (current behaviour)
@@ -1788,7 +1788,7 @@ Data <- R6::R6Class(
           }
 
           # 2. Check if schema exists
-          sch <- private$variable_schema
+          sch <- private$..variable_schema
           if (is.null(sch) || (is.list(sch) && length(sch) == 0)) {
             phrutils::phr_warning(
               self$dataset_name,
@@ -1809,8 +1809,8 @@ Data <- R6::R6Class(
           comments <- sch$comments %||% list()
 
           # Get current mappings
-          vm <- private$variable_map %||% list()
-          vmap <- private$value_map %||% list()
+          vm <- self$.variable_map %||% list()
+          vmap <- self$.value_map %||% list()
 
           # Iterate over all variables in the schema
           for (var_role in names(types)) {
@@ -2008,7 +2008,7 @@ Data <- R6::R6Class(
           }
 
           # Store in data_diagnostics field
-          private$data_diagnostics <- result
+          private$..data_diagnostics <- result
 
           phrutils::phr_message(
             phrutils::phr_txt(
@@ -2038,7 +2038,7 @@ Data <- R6::R6Class(
     #' * Dependency validations (e.g., if A is answered, B must be answered)
     #' * Range checks and logical consistency
     #' * Custom validation rules from dependency_schema
-    #' Results are stored in private$data_quality_flags for later use.
+    #' Results are stored in private$..data_quality_flags for later use.
     run_quality_checks = function(stage = "standardized") {
       phrutils::phr_try(
         {
@@ -2059,13 +2059,13 @@ Data <- R6::R6Class(
 
           # Load dependency_schema (primary) and variable_schema (for types only)
           dep_schema <- phrutils::phr_try(
-            private$dependency_schema,
+            private$..dependency_schema,
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_dep_schema_load")
           )
 
           var_schema <- phrutils::phr_try(
-            private$variable_schema,
+            private$..variable_schema,
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_var_schema_load")
           )
@@ -2084,7 +2084,7 @@ Data <- R6::R6Class(
               self$dataset_name,
               "No dependency schema or type information available; skipping data quality checks."
             )
-            private$data_quality_flags <- NULL
+            private$..data_quality_flags <- NULL
             return(invisible(NULL))
           }
 
@@ -2378,25 +2378,25 @@ Data <- R6::R6Class(
               self$dataset_name,
               "No data quality issues detected."
             )
-            private$data_quality_flags <- NULL
+            private$..data_quality_flags <- NULL
             return(invisible(NULL))
           }
 
           flag_df <- as.data.frame(flags, stringsAsFactors = FALSE)
 
-          if (private$uuid %in% names(df)) {
-            flag_df[[private$uuid]] <- df[[private$uuid]]
+          if (private$..uuid %in% names(df)) {
+            flag_df[[private$..uuid]] <- df[[private$..uuid]]
           }
 
-          private$data_quality_flags <- flag_df
+          private$..data_quality_flags <- flag_df
 
           # Append to standardized data
 
           phrutils::phr_try(
             {
               std <- private$..standardized_data
-              if (!is.null(std) && private$uuid %in% names(std)) {
-                join_col <- private$uuid
+              if (!is.null(std) && private$..uuid %in% names(std)) {
+                join_col <- private$..uuid
                 if (join_col %in% names(flag_df)) {
                   # Remove columns from std that already exist in flag_df (excluding
                   # the join key) to prevent dplyr from creating .x/.y duplicates.
@@ -2453,7 +2453,7 @@ Data <- R6::R6Class(
     #'
     #' @param stage Data stage to use ("standardized" or "clean")
     #' @param overwrite If TRUE, clears existing log before adding new entries
-    #' @return Invisible private$cleaning_log
+    #' @return Invisible private$..cleaning_log
     generate_cleaning_log = function(
       stage = "standardized",
       overwrite = FALSE
@@ -2469,28 +2469,28 @@ Data <- R6::R6Class(
           }
 
           # Warns on no quality flags
-          if (is.null(private$data_quality_flags)) {
+          if (is.null(private$..data_quality_flags)) {
             phrutils::phr_warning(
               self$dataset_name,
               "No data quality flags available. Run run_quality_checks() first."
             )
-            # return(invisible(private$cleaning_log))
+            # return(invisible(private$..cleaning_log))
           }
 
           # Clear log if requested
           if (overwrite) {
-            private$cleaning_log$clear()
+            private$..cleaning_log$clear()
           }
 
           # Extract flag_* columns (excluding UUID)
           # Note: All quality check flags now use "flag_" prefix
-          flag_df <- private$data_quality_flags
+          flag_df <- private$..data_quality_flags
           flag_cols <- grep("^flag_", names(flag_df), value = TRUE)
-          flag_cols <- setdiff(flag_cols, private$uuid)
+          flag_cols <- setdiff(flag_cols, private$..uuid)
 
           # Get enum_id and device_id from variable_map if available
-          enum_id_col <- private$variable_map$enum_id %||% NA_character_
-          device_id_col <- private$variable_map$device_id %||% NA_character_
+          enum_id_col <- self$.variable_map$enum_id %||% NA_character_
+          device_id_col <- self$.variable_map$device_id %||% NA_character_
 
           entries_added <- 0
           deletions_added <- 0
@@ -2529,7 +2529,7 @@ Data <- R6::R6Class(
                 !is.null(action) && !is.na(action) && action == "flag_delete"
               ) {
                 for (idx in bad_rows) {
-                  uuid_val <- df[[private$uuid]][idx]
+                  uuid_val <- df[[private$..uuid]][idx]
 
                   enum_id_val <- NA_character_
                   device_id_val <- NA_character_
@@ -2542,7 +2542,7 @@ Data <- R6::R6Class(
                     device_id_val <- as.character(df[[device_id_col]][idx])
                   }
 
-                  private$deletion_log$add_deletion(
+                  private$..deletion_log$add_deletion(
                     uuid = uuid_val,
                     enum_id = enum_id_val,
                     device_id = device_id_val,
@@ -2621,7 +2621,7 @@ Data <- R6::R6Class(
 
               # Add entries to cleaning log for each affected variable
               for (idx in bad_rows) {
-                uuid_val <- df[[private$uuid]][idx]
+                uuid_val <- df[[private$..uuid]][idx]
 
                 # Get enum_id and device_id values for this row
                 enum_id_val <- NA_character_
@@ -2640,7 +2640,7 @@ Data <- R6::R6Class(
                   # Get old value from dataset using the actual column name
                   old_val <- as.character(df[[var_actual_col]][idx])
 
-                  private$cleaning_log$add_change(
+                  private$..cleaning_log$add_change(
                     uuid = uuid_val,
                     enum_id = enum_id_val,
                     device_id = device_id_val,
@@ -2666,16 +2666,16 @@ Data <- R6::R6Class(
 
           # PROCESS "OTHER" COLUMNS
 
-          # Read from private$other_columns which is now a list where each entry has:
+          # Read from private$..other_columns which is now a list where each entry has:
           # - other_column: main open text response column name
           # - other_linked_columns: vector of related column names
           # Generate one row for each relevant column
 
           other_entries_added <- 0
 
-          if (length(private$other_columns) > 0) {
-            for (entry_name in names(private$other_columns)) {
-              entry <- private$other_columns[[entry_name]]
+          if (length(private$..other_columns) > 0) {
+            for (entry_name in names(private$..other_columns)) {
+              entry <- private$..other_columns[[entry_name]]
 
               # Extract other_column and linked columns
               other_col <- entry$other_column
@@ -2693,7 +2693,7 @@ Data <- R6::R6Class(
 
               if (length(has_value_idx) > 0) {
                 for (idx in has_value_idx) {
-                  uuid_val <- df[[private$uuid]][idx]
+                  uuid_val <- df[[private$..uuid]][idx]
                   other_val <- as.character(df[[other_col]][idx])
 
                   # Get enum_id and device_id values for this row
@@ -2709,7 +2709,7 @@ Data <- R6::R6Class(
                   }
 
                   # Entry 1: The main "other" column itself
-                  private$cleaning_log$add_change(
+                  private$..cleaning_log$add_change(
                     uuid = uuid_val,
                     enum_id = enum_id_val,
                     device_id = device_id_val,
@@ -2729,7 +2729,7 @@ Data <- R6::R6Class(
                       if (linked_col %in% names(df)) {
                         linked_val <- as.character(df[[linked_col]][idx])
 
-                        private$cleaning_log$add_change(
+                        private$..cleaning_log$add_change(
                           uuid = uuid_val,
                           enum_id = enum_id_val,
                           device_id = device_id_val,
@@ -2770,11 +2770,11 @@ Data <- R6::R6Class(
           unique_deletions_added <- 0
 
           if (
-            !is.null(private$variable_schema) &&
-              !is.null(private$variable_schema$unique) &&
-              length(private$variable_schema$unique) > 0
+            !is.null(private$..variable_schema) &&
+              !is.null(private$..variable_schema$unique) &&
+              length(private$..variable_schema$unique) > 0
           ) {
-            for (var_canonical in private$variable_schema$unique) {
+            for (var_canonical in private$..variable_schema$unique) {
               # Resolve canonical variable name to the actual dataset column name
               # using the variable_map (same approach as the rest of generate_cleaning_log)
               var_col <- suppressWarnings(self$resolve_column(
@@ -2794,7 +2794,7 @@ Data <- R6::R6Class(
 
               if (length(dup_idx) > 0) {
                 for (idx in dup_idx) {
-                  uuid_val <- df[[private$uuid]][idx]
+                  uuid_val <- df[[private$..uuid]][idx]
 
                   dup_enum_id_val <- NA_character_
                   dup_device_id_val <- NA_character_
@@ -2807,7 +2807,7 @@ Data <- R6::R6Class(
                     dup_device_id_val <- as.character(df[[device_id_col]][idx])
                   }
 
-                  private$deletion_log$add_deletion(
+                  private$..deletion_log$add_deletion(
                     uuid = uuid_val,
                     enum_id = dup_enum_id_val,
                     device_id = dup_device_id_val,
@@ -2834,7 +2834,7 @@ Data <- R6::R6Class(
             }
           }
 
-          invisible(private$cleaning_log)
+          invisible(private$..cleaning_log)
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$generate_cleaning_log")
@@ -2928,19 +2928,19 @@ Data <- R6::R6Class(
             dataset_name = self$dataset_name,
             n_records = nrow(private$..raw_data),
             n_columns = ncol(private$..raw_data),
-            uuid = private$uuid,
+            uuid = private$..uuid,
             validated = self$validated,
             standardized = self$standardized,
             cleaned = self$cleaned,
-            required_columns = private$required_columns,
-            variable_map = private$variable_map,
+            required_columns = private$..required_columns,
+            variable_map = self$.variable_map,
             labels_defined = list(
-              vars = names(private$variable_label),
-              value_labelled_vars = names(private$value_label)
+              vars = names(self$.variable_label),
+              value_labelled_vars = names(self$.value_label)
             ),
-            variable_schema_attached = !is.null(private$variable_schema),
-            indicator_schema_attached = !is.null(private$indicator_schema),
-            dependency_schema_attached = !is.null(private$dependency_schema)
+            variable_schema_attached = !is.null(private$..variable_schema),
+            indicator_schema_attached = !is.null(private$..indicator_schema),
+            dependency_schema_attached = !is.null(private$..dependency_schema)
           )
         },
         on_error = "warn",
@@ -3019,8 +3019,8 @@ Data <- R6::R6Class(
           }
 
           data_hash <- self$get(field = "..metadata", role = "hash_id")
-          variable_map <- private$variable_map
-          value_map <- private$value_map
+          variable_map <- self$.variable_map
+          value_map <- self$.value_map
 
           analytics <- DataAnalytics$new(
             data = df,
@@ -3031,8 +3031,8 @@ Data <- R6::R6Class(
             data_hash = data_hash,
             variable_map = variable_map,
             value_map = value_map,
-            variable_label = private$variable_label,
-            value_label = private$value_label
+            variable_label = self$.variable_label,
+            value_label = self$.value_label
           )
 
           phrutils::phr_message(
@@ -3125,8 +3125,8 @@ Data <- R6::R6Class(
             # Start with empty map if replacing
             if (mode == "replace") {
               # Keep uuid mapping as it's critical
-              uuid_mapping <- private$variable_map$uuid
-              private$variable_map <- list(uuid = uuid_mapping)
+              uuid_mapping <- self$.variable_map$uuid
+              self$.variable_map <- list(uuid = uuid_mapping)
             }
 
             # Process each row
@@ -3143,7 +3143,7 @@ Data <- R6::R6Class(
               if (is.na(col_name) || col_name == "") {
                 if (role != "uuid") {
                   # Never remove uuid mapping
-                  private$variable_map[[role]] <- NULL
+                  self$.variable_map[[role]] <- NULL
                   result$variables_updated <- result$variables_updated + 1
                 }
                 next
@@ -3164,7 +3164,7 @@ Data <- R6::R6Class(
               }
 
               # Set the mapping
-              private$variable_map[[role]] <- col_name
+              self$.variable_map[[role]] <- col_name
               result$variables_updated <- result$variables_updated + 1
             }
           }
@@ -3193,7 +3193,7 @@ Data <- R6::R6Class(
 
             # Start with empty map if replacing
             if (mode == "replace") {
-              private$value_map <- list()
+              self$.value_map <- list()
             }
 
             # Process each row
@@ -3208,7 +3208,7 @@ Data <- R6::R6Class(
 
               # Remove mapping if values is NA
               if (is.na(values_str) || values_str == "") {
-                private$value_map[[role]] <- NULL
+                self$.value_map[[role]] <- NULL
                 result$values_updated <- result$values_updated + 1
                 next
               }
@@ -3218,9 +3218,9 @@ Data <- R6::R6Class(
               parsed_values <- parsed_values[parsed_values != ""]
 
               if (length(parsed_values) == 0) {
-                private$value_map[[role]] <- NULL
+                self$.value_map[[role]] <- NULL
               } else {
-                private$value_map[[role]] <- parsed_values
+                self$.value_map[[role]] <- parsed_values
               }
               result$values_updated <- result$values_updated + 1
             }
@@ -3270,10 +3270,10 @@ Data <- R6::R6Class(
     #' @return A list with 'variable_map_df' and 'value_map_df' dataframes
     get_maps_as_df = function() {
       # Variable map dataframe
-      if (length(private$variable_map) > 0) {
+      if (length(self$.variable_map) > 0) {
         variable_map_df <- data.frame(
-          role = names(private$variable_map),
-          column_name = unlist(private$variable_map, use.names = FALSE),
+          role = names(self$.variable_map),
+          column_name = unlist(self$.variable_map, use.names = FALSE),
           stringsAsFactors = FALSE
         )
       } else {
@@ -3285,11 +3285,11 @@ Data <- R6::R6Class(
       }
 
       # Value map dataframe
-      if (length(private$value_map) > 0) {
+      if (length(self$.value_map) > 0) {
         value_map_df <- data.frame(
-          role = names(private$value_map),
+          role = names(self$.value_map),
           values = vapply(
-            private$value_map,
+            self$.value_map,
             function(v) paste(v, collapse = ","),
             character(1)
           ),
@@ -3333,78 +3333,84 @@ Data <- R6::R6Class(
 
     # -- Structural metadata (moved from public in comment 5853431834) --
 
-    # @field uuid Character name of the UUID column.
+    # @field ..uuid Character name of the UUID column. Access via
+    #   `get(field = "..uuid")` / `set(field = "..uuid", value = …)`.
     # @keywords internal
-    uuid = NULL,
+    ..uuid = NULL,
 
-    # @field required_columns Character vector of required column names.
+    # @field ..required_columns Character vector of required column names.
     # @keywords internal
-    required_columns = NULL,
+    ..required_columns = NULL,
 
-    # @field other_columns List of other (non-required) column names.
+    # @field ..other_columns List of other (non-required) column names.
     # @keywords internal
-    other_columns = list(),
+    ..other_columns = list(),
 
     # -- Maps and labels (moved from public) --
+    #
+    # These four fields are exposed via the read/write active bindings
+    # `.variable_map`, `.value_map`, `.variable_label`, and `.value_label`
+    # (single-dot prefix) so both `d$.variable_map` and the inherited
+    # `d$get(field = ".variable_map")` API resolve them.
 
-    # @field variable_map List mapping variable roles to column names.
+    # @field ..variable_map List mapping variable roles to column names.
     # @keywords internal
-    variable_map = list(),
+    ..variable_map = list(),
 
-    # @field value_map List mapping canonical values to dataset values.
+    # @field ..value_map List mapping canonical values to dataset values.
     # @keywords internal
-    value_map = list(),
+    ..value_map = list(),
 
-    # @field variable_label Named list of presentation-ready variable
+    # @field ..variable_label Named list of presentation-ready variable
     #   labels (populated by ..map_schema_labels()).
     # @keywords internal
-    variable_label = list(),
+    ..variable_label = list(),
 
-    # @field value_label Named list of presentation-ready value labels
+    # @field ..value_label Named list of presentation-ready value labels
     #   for categorical variables (populated by ..map_schema_labels()).
     # @keywords internal
-    value_label = list(),
+    ..value_label = list(),
 
     # -- Schemas (moved from public) --
 
-    # @field variable_schema Variable schema with types and allowed values.
+    # @field ..variable_schema Variable schema with types and allowed values.
     # @keywords internal
-    variable_schema = NULL,
+    ..variable_schema = NULL,
 
-    # @field indicator_schema Schema for indicator calculations.
+    # @field ..indicator_schema Schema for indicator calculations.
     # @keywords internal
-    indicator_schema = NULL,
+    ..indicator_schema = NULL,
 
-    # @field dependency_schema Schema for variable dependencies.
+    # @field ..dependency_schema Schema for variable dependencies.
     # @keywords internal
-    dependency_schema = NULL,
+    ..dependency_schema = NULL,
 
     # -- Log objects and diagnostic data (moved from public) --
 
-    # @field cleaning_log CleaningLog R6 object for tracking data
-    #   corrections. Invoke its methods via `call(field = "cleaning_log",
+    # @field ..cleaning_log CleaningLog R6 object for tracking data
+    #   corrections. Invoke its methods via
+    #   `call(field = "..cleaning_log", member = "...")`.
+    # @keywords internal
+    ..cleaning_log = NULL,
+
+    # @field ..deletion_log DeletionLog R6 object for tracking deletions.
+    #   Invoke its methods via `call(field = "..deletion_log",
     #   member = "...")`.
     # @keywords internal
-    cleaning_log = NULL,
+    ..deletion_log = NULL,
 
-    # @field deletion_log DeletionLog R6 object for tracking deletions.
-    #   Invoke its methods via `call(field = "deletion_log",
-    #   member = "...")`.
+    # @field ..data_quality_flags Data frame storing quality flags per row.
     # @keywords internal
-    deletion_log = NULL,
+    ..data_quality_flags = NULL,
 
-    # @field data_quality_flags Data frame storing quality flags per row.
+    # @field ..data_diagnostics List of diagnostic results.
     # @keywords internal
-    data_quality_flags = NULL,
+    ..data_diagnostics = NULL,
 
-    # @field data_diagnostics List of diagnostic results.
-    # @keywords internal
-    data_diagnostics = NULL,
-
-    # @field cleaning_log_issues Data frame of cleaning-log rows that
+    # @field ..cleaning_log_issues Data frame of cleaning-log rows that
     #   could not be applied (e.g. coercion failures).
     # @keywords internal
-    cleaning_log_issues = NULL,
+    ..cleaning_log_issues = NULL,
 
     # @description Convert one of the class's nested-list schemas
     #   (variable, indicator, or dependency) to a flat data-frame form.
@@ -3432,9 +3438,9 @@ Data <- R6::R6Class(
       if (is.null(schema_list)) {
         schema_list <- switch(
           schema_type,
-          variable   = private$variable_schema,
-          indicator  = private$indicator_schema,
-          dependency = private$dependency_schema
+          variable   = private$..variable_schema,
+          indicator  = private$..indicator_schema,
+          dependency = private$..dependency_schema
         )
       }
 
@@ -3839,9 +3845,9 @@ Data <- R6::R6Class(
         {
           schema <- switch(
             schema_type,
-            variable   = private$variable_schema,
-            indicator  = private$indicator_schema,
-            dependency = private$dependency_schema
+            variable   = private$..variable_schema,
+            indicator  = private$..indicator_schema,
+            dependency = private$..dependency_schema
           )
           if (is.null(schema)) {
             phrutils::phr_warning(
@@ -3902,7 +3908,7 @@ Data <- R6::R6Class(
         role <- ref
       }
 
-      value <- private$variable_map[[role]]
+      value <- self$.variable_map[[role]]
 
       if (is.null(value) || identical(value, "")) {
         value <- NULL
@@ -3966,7 +3972,7 @@ Data <- R6::R6Class(
       parts <- strsplit(ref, "\\$")[[1]]
       role <- parts[1]
       canonical_value <- if (length(parts) == 2) parts[2] else NULL
-      role_map <- private$value_map[[role]]
+      role_map <- self$.value_map[[role]]
 
       if (is.null(role_map)) {
         return(list(
@@ -4002,18 +4008,18 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           # Check separate dependency_schema first
-          if (!is.null(private$dependency_schema)) {
+          if (!is.null(private$..dependency_schema)) {
             # Check hard dependencies
-            if (flag_name %in% names(private$dependency_schema$dependencies)) {
-              dep <- private$dependency_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(private$..dependency_schema$dependencies)) {
+              dep <- private$..dependency_schema$dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
             # Check soft dependencies
             if (
-              flag_name %in% names(private$dependency_schema$soft_dependencies)
+              flag_name %in% names(private$..dependency_schema$soft_dependencies)
             ) {
-              dep <- private$dependency_schema$soft_dependencies[[flag_name]]
+              dep <- private$..dependency_schema$soft_dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
@@ -4021,11 +4027,11 @@ Data <- R6::R6Class(
 
           # Fall back to variable_schema dependencies for backward compatibility
           if (
-            !is.null(private$variable_schema) &&
-              !is.null(private$variable_schema$dependencies)
+            !is.null(private$..variable_schema) &&
+              !is.null(private$..variable_schema$dependencies)
           ) {
-            if (flag_name %in% names(private$variable_schema$dependencies)) {
-              dep <- private$variable_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(private$..variable_schema$dependencies)) {
+              dep <- private$..variable_schema$dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
@@ -4047,18 +4053,18 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           # Check separate dependency_schema first
-          if (!is.null(private$dependency_schema)) {
+          if (!is.null(private$..dependency_schema)) {
             # Check hard dependencies
-            if (flag_name %in% names(private$dependency_schema$dependencies)) {
-              dep <- private$dependency_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(private$..dependency_schema$dependencies)) {
+              dep <- private$..dependency_schema$dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }
             # Check soft dependencies
             if (
-              flag_name %in% names(private$dependency_schema$soft_dependencies)
+              flag_name %in% names(private$..dependency_schema$soft_dependencies)
             ) {
-              dep <- private$dependency_schema$soft_dependencies[[flag_name]]
+              dep <- private$..dependency_schema$soft_dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }
@@ -4066,11 +4072,11 @@ Data <- R6::R6Class(
 
           # Fall back to variable_schema dependencies for backward compatibility
           if (
-            !is.null(private$variable_schema) &&
-              !is.null(private$variable_schema$dependencies)
+            !is.null(private$..variable_schema) &&
+              !is.null(private$..variable_schema$dependencies)
           ) {
-            if (flag_name %in% names(private$variable_schema$dependencies)) {
-              dep <- private$variable_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(private$..variable_schema$dependencies)) {
+              dep <- private$..variable_schema$dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }
@@ -4223,7 +4229,7 @@ Data <- R6::R6Class(
 
       # Store any issues for user follow-up
       if (length(issues) > 0) {
-        private$cleaning_log_issues <- do.call(rbind, issues)
+        private$..cleaning_log_issues <- do.call(rbind, issues)
       }
 
       df
@@ -4260,10 +4266,10 @@ Data <- R6::R6Class(
     #'
     #' @return Logical indicating if variable is select_multiple
     ..is_select_multiple = function(var_role) {
-      if (is.null(private$variable_schema)) {
+      if (is.null(private$..variable_schema)) {
         return(FALSE)
       }
-      question_types <- private$variable_schema$question_types %||% list()
+      question_types <- private$..variable_schema$question_types %||% list()
       return(
         !is.null(question_types[[var_role]]) &&
           question_types[[var_role]] == "select_multiple"
@@ -4369,9 +4375,9 @@ Data <- R6::R6Class(
       }
 
       # Step 1: Replace canonical variable names with mapped dataset column names
-      if (!is.null(private$variable_map) && length(private$variable_map) > 0) {
-        for (role in names(private$variable_map)) {
-          dataset_col <- private$variable_map[[role]]
+      if (!is.null(self$.variable_map) && length(self$.variable_map) > 0) {
+        for (role in names(self$.variable_map)) {
+          dataset_col <- self$.variable_map[[role]]
           if (!is.null(dataset_col) && dataset_col != "") {
             # Use word boundaries to avoid partial replacements
             # Pattern: match role as a whole word (not part of another identifier)
@@ -4384,9 +4390,9 @@ Data <- R6::R6Class(
       # Step 2: Replace canonical values with dataset values using value_map
       # This is more complex because we need to handle nested value_map structure
       # Supports ==, !=, and %in% operators for value translation
-      if (!is.null(private$value_map) && length(private$value_map) > 0) {
-        for (role in names(private$value_map)) {
-          value_mapping <- private$value_map[[role]]
+      if (!is.null(self$.value_map) && length(self$.value_map) > 0) {
+        for (role in names(self$.value_map)) {
+          value_mapping <- self$.value_map[[role]]
 
           # Check if it's nested format (canonical -> dataset values)
           is_nested <- is.list(value_mapping) &&
@@ -4396,7 +4402,7 @@ Data <- R6::R6Class(
 
           if (is_nested) {
             # Get the dataset column name for this role
-            dataset_col <- private$variable_map[[role]]
+            dataset_col <- self$.variable_map[[role]]
 
             if (!is.null(dataset_col)) {
               dataset_col_escaped <- escape_regex(dataset_col)
@@ -4756,7 +4762,7 @@ Data <- R6::R6Class(
     ..map_schema_vars = function(stage = "raw") {
       phrutils::phr_try(
         {
-          sch <- private$variable_schema
+          sch <- private$..variable_schema
 
           # Early exit if no schema is defined
           if (is.null(sch) || length(sch) == 0) {
@@ -4806,9 +4812,9 @@ Data <- R6::R6Class(
             if (is.null(matched_col)) {
               # No match found, skip this role
               next
-            } else if (var_role %in% names(private$variable_map)) {
+            } else if (var_role %in% names(self$.variable_map)) {
               # Role is already mapped - check if new match is more preferred
-              existing_col <- private$variable_map[[var_role]]
+              existing_col <- self$.variable_map[[var_role]]
 
               if (is.null(existing_col) || !(existing_col %in% data_cols)) {
                 # Existing mapping is invalid, update with new match
@@ -4835,7 +4841,7 @@ Data <- R6::R6Class(
 
             # Update variable_map if needed
             if (should_update) {
-              private$variable_map[[var_role]] <- matched_col
+              self$.variable_map[[var_role]] <- matched_col
               vars_mapped <- vars_mapped + 1
 
               # Now check for value mapping (only for non-numeric types)
@@ -4915,7 +4921,7 @@ Data <- R6::R6Class(
                     }
 
                     if (length(matched_canonical) > 0) {
-                      private$value_map[[var_role]] <- matched_canonical
+                      self$.value_map[[var_role]] <- matched_canonical
                       vals_mapped <- vals_mapped + 1
                     }
                   } else {
@@ -4941,7 +4947,7 @@ Data <- R6::R6Class(
                     }
 
                     if (length(matched_canonical) > 0) {
-                      private$value_map[[var_role]] <- matched_canonical
+                      self$.value_map[[var_role]] <- matched_canonical
                       vals_mapped <- vals_mapped + 1
                     }
                   }
@@ -4964,7 +4970,7 @@ Data <- R6::R6Class(
 
                     if (length(found_values) > 0) {
                       # Store as flat list for backward compatibility
-                      private$value_map[[var_role]] <- found_values
+                      self$.value_map[[var_role]] <- found_values
                       vals_mapped <- vals_mapped + 1
                     }
                   } else {
@@ -4974,7 +4980,7 @@ Data <- R6::R6Class(
 
                     if (length(found_values) > 0) {
                       # Store as flat list for backward compatibility
-                      private$value_map[[var_role]] <- found_values
+                      self$.value_map[[var_role]] <- found_values
                       vals_mapped <- vals_mapped + 1
                     }
                   }
@@ -5024,7 +5030,7 @@ Data <- R6::R6Class(
     ..map_schema_labels = function(language = "english") {
       phrutils::phr_try(
         {
-          sch <- private$variable_schema
+          sch <- private$..variable_schema
 
           if (is.null(sch) || length(sch) == 0) {
             return(invisible(self))
@@ -5056,18 +5062,18 @@ Data <- R6::R6Class(
           vals_labelled <- 0
 
           # Populate variable_label for each role present in variable_map
-          for (var_role in names(private$variable_map)) {
+          for (var_role in names(self$.variable_map)) {
             if (!is.null(schema_var_labels[[var_role]])) {
-              private$variable_label[[var_role]] <- schema_var_labels[[var_role]]
+              self$.variable_label[[var_role]] <- schema_var_labels[[var_role]]
               vars_labelled <- vars_labelled + 1
             }
           }
 
           # Populate value_label for each role present in value_map
-          for (var_role in names(private$value_map)) {
+          for (var_role in names(self$.value_map)) {
             val_label_entry <- schema_val_labels[[var_role]]
             if (!is.null(val_label_entry) && length(val_label_entry) > 0) {
-              private$value_label[[var_role]] <- val_label_entry
+              self$.value_label[[var_role]] <- val_label_entry
               vals_labelled <- vals_labelled + 1
             }
           }
@@ -5127,6 +5133,62 @@ Data <- R6::R6Class(
         private$..clean_data
       } else {
         private$..clean_data <- value
+        invisible(value)
+      }
+    },
+
+    #' @field .variable_map Active binding exposing the private
+    #'   `..variable_map` field. Reads return the stored list;
+    #'   assignments write through to the private field. Also resolvable
+    #'   via the inherited `get(field = ".variable_map")` /
+    #'   `set(field = ".variable_map", value = …)` API.
+    .variable_map = function(value) {
+      if (missing(value)) {
+        private$..variable_map
+      } else {
+        private$..variable_map <- value
+        invisible(value)
+      }
+    },
+
+    #' @field .value_map Active binding exposing the private
+    #'   `..value_map` field. Reads return the stored list; assignments
+    #'   write through to the private field. Also resolvable via the
+    #'   inherited `get(field = ".value_map")` /
+    #'   `set(field = ".value_map", value = …)` API.
+    .value_map = function(value) {
+      if (missing(value)) {
+        private$..value_map
+      } else {
+        private$..value_map <- value
+        invisible(value)
+      }
+    },
+
+    #' @field .variable_label Active binding exposing the private
+    #'   `..variable_label` field. Reads return the stored list;
+    #'   assignments write through to the private field. Also resolvable
+    #'   via the inherited `get(field = ".variable_label")` /
+    #'   `set(field = ".variable_label", value = …)` API.
+    .variable_label = function(value) {
+      if (missing(value)) {
+        private$..variable_label
+      } else {
+        private$..variable_label <- value
+        invisible(value)
+      }
+    },
+
+    #' @field .value_label Active binding exposing the private
+    #'   `..value_label` field. Reads return the stored list;
+    #'   assignments write through to the private field. Also resolvable
+    #'   via the inherited `get(field = ".value_label")` /
+    #'   `set(field = ".value_label", value = …)` API.
+    .value_label = function(value) {
+      if (missing(value)) {
+        private$..value_label
+      } else {
+        private$..value_label <- value
         invisible(value)
       }
     }

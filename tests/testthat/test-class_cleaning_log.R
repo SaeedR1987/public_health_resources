@@ -15,7 +15,7 @@ MockData <- R6::R6Class(
 
     initialize = function(df) {
       self$data <- df
-      self$set(field = "variable_map", value = list())
+      self$set(field = ".variable_map", value = list())
     },
 
     get_data = function(stage = "clean") {
@@ -56,10 +56,10 @@ test_that("CleaningLog fills missing required columns when provided log_df is in
   expect_s3_class(log, "CleaningLog")
 
   # Required columns should all exist
-  expect_true(all(log$get(field = "required_columns") %in% names(log$get("log_df"))))
+  expect_true(all(log$get(field = "..required_columns") %in% names(log$get("log_df"))))
 
   # Columns not supplied should be filled with NA
-  missing_cols <- setdiff(log$get(field = "required_columns"), names(df))
+  missing_cols <- setdiff(log$get(field = "..required_columns"), names(df))
 
   for (col in missing_cols) {
     expect_true(all(is.na(log$get("log_df")[[col]])))
@@ -361,7 +361,7 @@ test_that("CleaningLog ignores enum_id validations if no mapping exists", {
 
   suppressMessages(log <- CleaningLog$new(df_log))
   d <- MockData$new(df_data)
-  d$set(field = "variable_map", value = list() # no enum_id mapping)
+  d$set(field = ".variable_map", value = list() # no enum_id mapping)
 
   expect_silent(log$post_validate(d))
 })
