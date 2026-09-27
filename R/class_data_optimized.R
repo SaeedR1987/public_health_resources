@@ -1,10 +1,38 @@
-#' IPHRA Base Data Class
+#' IPHRA Base Data Class (Performance-Optimized Benchmark Copy)
+#'
+#' @description
+#' `DataOptimized` is a benchmark copy of the [Data] class used to compare
+#' performance before/after applying a set of targeted optimizations to the
+#' `standardize()`/`clean()` workflow (see `R/class_data.R` for the
+#' original). It is functionally identical to `Data`, except for the
+#' following internal implementation changes:
+#' 1. Uses `expand_select_multiple_optimized()` /
+#'    `process_select_multiple_columns_optimized()` (vectorized dummy-column
+#'    construction; dummy columns are `cbind()`-ed once instead of per column).
+#' 2. `private$..apply_cleaning_changes()` uses a single precomputed
+#'    `match()`-based uuid lookup instead of an O(n) `which()` scan per
+#'    cleaning log row, and batches the final column writes.
+#' 3. Loop-invariant constants (e.g. "other column" name patterns) are
+#'    hoisted out of the per-column `standardize()` loop.
+#' 4. `private$..map_schema_vars()` accumulates into local
+#'    `variable_map`/`value_map` lists and writes back to the
+#'    `.variable_map`/`.value_map` active bindings once, instead of once per
+#'    matched variable/value; the `escape_regex()`/`extract_tokens()`
+#'    helpers are hoisted out of the loop.
+#' 5. `private$..map_schema_labels()` uses the same local-accumulation
+#'    pattern for `variable_label`/`value_label`.
+#'
+#' See `tests/manual/benchmark_standardize_clean.R` for a script that runs
+#' both `HouseholdData` (original) and `HouseholdDataOptimized` (this class,
+#' via its subclass) on identical dummy data and compares timings.
+#'
+#' The original class-level documentation for `Data` follows, since the
+#' public API and behavior are unchanged:
 #'
 #' The `Data` R6 class is the foundational structure for all IPHRA datasets.
 #' It provides a standardized interface for loading, validating, standardizing,
 #' cleaning, labeling, schema-checking, linking, and serializing survey data.
 #'
-#' @description
 #' This class defines the full data lifecycle within the IPHRA toolkit:
 #' * `raw_data` -- immutable imported data
 #' * `standardized_data` -- after standardization (names, types, values)
@@ -60,8 +88,8 @@
 #'
 #' @seealso [HouseholdData], [MortalityHouseholdData], [RosterData]
 #' @export
-Data <- R6::R6Class(
-  classname = "Data",
+DataOptimized <- R6::R6Class(
+  classname = "DataOptimized",
   inherit = Asset,
 
   public = list(
@@ -531,6 +559,18 @@ Data <- R6::R6Class(
 
           schema_cols <- names(sch$types %||% list())
 
+          # OPTIMIZATION (#3): Hoist loop-invariant constants out of the
+          # per-column loop below. `other_col_patterns` was previously
+          # re-created as a new vector on every single loop iteration even
+          # though its value never changes.
+          other_col_patterns <- c(
+            "_other_text$",
+            "_other_specify$",
+            "_other_value$",
+            "_autre$",
+            "_other$"
+          )
+
           # ---- iterate over each column with type coercion
           result <- phrutils::phr_try_step(
             {
@@ -642,17 +682,10 @@ Data <- R6::R6Class(
                 if (!(nm %in% schema_cols)) {
                   # Check if column name matches "other" patterns
                   # Common patterns: var_other_text -> var, var_other -> var
-                  base_patterns <- c(
-                    "_other_text$",
-                    "_other_specify$",
-                    "_other_value$",
-                    "_autre$",
-                    "_other$"
-                  )
                   matches_other_pattern <- FALSE
                   inferred_links <- character(0)
 
-                  for (pattern in base_patterns) {
+                  for (pattern in other_col_patterns) {
                     if (grepl(pattern, nm)) {
                       matches_other_pattern <- TRUE
                       base_name <- sub(pattern, "", nm)
@@ -698,7 +731,7 @@ Data <- R6::R6Class(
               if (
                 !is.null(sch$question_types) && length(sch$question_types) > 0
               ) {
-                sm_result <- process_select_multiple_columns(data_copy, sch)
+                sm_result <- process_select_multiple_columns_optimized(data_copy, sch)
 
                 if (length(sm_result$expanded_columns) > 0) {
                   phrutils::phr_message(
@@ -4093,17 +4126,40 @@ Data <- R6::R6Class(
     ..apply_cleaning_changes = function(df, log_df, uuid_col) {
       issues <- list()
 
-      for (i in seq_len(nrow(log_df))) {
+      n_log <- nrow(log_df)
+      if (n_log == 0) {
+        return(df)
+      }
+
+      # OPTIMIZATION (#2): Precompute a single hash-based lookup from log
+      # row uuid -> df row index (via match()) once, instead of doing an
+      # O(nrow(df)) linear `which(... == ...)` scan for every cleaning log
+      # row (which made this O(nrow(log_df) * nrow(df)) overall). Rows
+      # whose uuid is duplicated in `df` are flagged so that behavior
+      # matches the original `length(idx) == 1` guard exactly.
+      df_uuid_chr <- as.character(df[[uuid_col]])
+      dup_uuid <- duplicated(df_uuid_chr) | duplicated(df_uuid_chr, fromLast = TRUE)
+      match_idx <- match(as.character(log_df$uuid), df_uuid_chr)
+
+      # OPTIMIZATION (#2): Accumulate the (position, value) pairs to write
+      # per target column, then apply one vectorized assignment per column
+      # after the loop instead of writing `df[[col]][idx] <- typed_val`
+      # (a full-column copy-on-write) on every single log row.
+      pending_positions <- list()
+      pending_values <- list()
+
+      for (i in seq_len(n_log)) {
         row <- log_df[i, ]
 
         u <- row$uuid
         col <- row$question.name
         new_val <- row$new.value
 
-        idx <- which(as.character(df[[uuid_col]]) == as.character(u))
+        idx <- match_idx[i]
+        idx_valid <- !is.na(idx) && !dup_uuid[idx]
 
         if (
-          length(idx) == 1 && col %in% names(df) && isTRUE(row$changed == "yes")
+          idx_valid && col %in% names(df) && isTRUE(row$changed == "yes")
         ) {
           # Coerce new_val to the target column type before assignment
           target_class <- class(df[[col]])[1]
@@ -4214,8 +4270,22 @@ Data <- R6::R6Class(
             )
           }
 
-          df[[col]][idx] <- typed_val
+          pending_positions[[col]] <- c(pending_positions[[col]], idx)
+          pending_values[[col]] <- c(pending_values[[col]], list(typed_val))
         }
+      }
+
+      # OPTIMIZATION (#2): Apply all accumulated edits for each column in a
+      # single vectorized assignment. `do.call(c, ...)` (rather than
+      # `unlist()`) is used so that Date/POSIXct/POSIXlt classes are
+      # preserved when combining the per-row typed values. Positions are
+      # written in original log-row order, so if the same df row/column
+      # pair was edited more than once, the last edit wins -- identical to
+      # the original sequential row-by-row assignment.
+      for (col in names(pending_positions)) {
+        pos <- pending_positions[[col]]
+        vals <- do.call(c, pending_values[[col]])
+        df[[col]][pos] <- vals
       }
 
       # Store any issues for user follow-up
@@ -4784,6 +4854,48 @@ Data <- R6::R6Class(
           vars_mapped <- 0
           vals_mapped <- 0
 
+          # OPTIMIZATION (#4): `.variable_map`/`.value_map` are active
+          # bindings that read back the *entire* stored list on access and
+          # write back the *entire* list on assignment (see the active
+          # bindings at the bottom of this class). Writing
+          # `self$.variable_map[[var_role]] <- ...` once per matched
+          # variable therefore copies the whole map on every iteration,
+          # making the loop O(n_vars^2) for schemas with many variables.
+          # Accumulate into plain local lists instead, and write back to
+          # the active bindings exactly once, after the loop.
+          local_variable_map <- self$.variable_map
+          local_value_map <- self$.value_map
+
+          # OPTIMIZATION (#4): Hoist the `escape_regex()`/`extract_tokens()`
+          # closures out of the `for (var_role in ...)` loop -- they don't
+          # depend on any loop-local state, so they were being needlessly
+          # re-created on every iteration.
+
+          # Helper function to escape regex special characters
+          # Escapes: . | ( ) \ ^ { } + $ * ? [ ]
+          escape_regex <- function(str) {
+            gsub("([.|()\\\\^{}+$*?\\[\\]])", "\\\\\\1", str)
+          }
+
+          # Helper function to extract tokens from select_multiple values
+          extract_tokens <- function(values) {
+            # Use lapply for efficient token collection
+            token_list <- lapply(values, function(val) {
+              if (!is.na(val) && nchar(val) > 0) {
+                tokens <- trimws(strsplit(
+                  as.character(val),
+                  " ",
+                  fixed = TRUE
+                )[[1]])
+                tokens[tokens != ""]
+              } else {
+                character(0)
+              }
+            })
+            # Flatten and return unique tokens
+            unique(unlist(token_list, use.names = FALSE))
+          }
+
           # Iterate over schema variables that have col_names defined
           for (var_role in names(col_names_map)) {
             possible_cols <- col_names_map[[var_role]]
@@ -4803,9 +4915,9 @@ Data <- R6::R6Class(
             if (is.null(matched_col)) {
               # No match found, skip this role
               next
-            } else if (var_role %in% names(self$.variable_map)) {
+            } else if (var_role %in% names(local_variable_map)) {
               # Role is already mapped - check if new match is more preferred
-              existing_col <- self$.variable_map[[var_role]]
+              existing_col <- local_variable_map[[var_role]]
 
               if (is.null(existing_col) || !(existing_col %in% data_cols)) {
                 # Existing mapping is invalid, update with new match
@@ -4832,7 +4944,7 @@ Data <- R6::R6Class(
 
             # Update variable_map if needed
             if (should_update) {
-              self$.variable_map[[var_role]] <- matched_col
+              local_variable_map[[var_role]] <- matched_col
               vars_mapped <- vars_mapped + 1
 
               # Now check for value mapping (only for non-numeric types)
@@ -4848,31 +4960,6 @@ Data <- R6::R6Class(
                 question_types <- sch$question_types %||% list()
                 is_select_multiple <- !is.null(question_types[[var_role]]) &&
                   question_types[[var_role]] == "select_multiple"
-
-                # Helper function to escape regex special characters
-                # Escapes: . | ( ) \ ^ { } + $ * ? [ ]
-                escape_regex <- function(str) {
-                  gsub("([.|()\\\\^{}+$*?\\[\\]])", "\\\\\\1", str)
-                }
-
-                # Helper function to extract tokens from select_multiple values
-                extract_tokens <- function(values) {
-                  # Use lapply for efficient token collection
-                  token_list <- lapply(values, function(val) {
-                    if (!is.na(val) && nchar(val) > 0) {
-                      tokens <- trimws(strsplit(
-                        as.character(val),
-                        " ",
-                        fixed = TRUE
-                      )[[1]])
-                      tokens[tokens != ""]
-                    } else {
-                      character(0)
-                    }
-                  })
-                  # Flatten and return unique tokens
-                  unique(unlist(token_list, use.names = FALSE))
-                }
 
                 # Check if schema has value_map for this variable
                 if (var_role %in% names(schema_value_map)) {
@@ -4912,7 +4999,7 @@ Data <- R6::R6Class(
                     }
 
                     if (length(matched_canonical) > 0) {
-                      self$.value_map[[var_role]] <- matched_canonical
+                      local_value_map[[var_role]] <- matched_canonical
                       vals_mapped <- vals_mapped + 1
                     }
                   } else {
@@ -4938,7 +5025,7 @@ Data <- R6::R6Class(
                     }
 
                     if (length(matched_canonical) > 0) {
-                      self$.value_map[[var_role]] <- matched_canonical
+                      local_value_map[[var_role]] <- matched_canonical
                       vals_mapped <- vals_mapped + 1
                     }
                   }
@@ -4961,7 +5048,7 @@ Data <- R6::R6Class(
 
                     if (length(found_values) > 0) {
                       # Store as flat list for backward compatibility
-                      self$.value_map[[var_role]] <- found_values
+                      local_value_map[[var_role]] <- found_values
                       vals_mapped <- vals_mapped + 1
                     }
                   } else {
@@ -4971,7 +5058,7 @@ Data <- R6::R6Class(
 
                     if (length(found_values) > 0) {
                       # Store as flat list for backward compatibility
-                      self$.value_map[[var_role]] <- found_values
+                      local_value_map[[var_role]] <- found_values
                       vals_mapped <- vals_mapped + 1
                     }
                   }
@@ -4979,6 +5066,12 @@ Data <- R6::R6Class(
               }
             }
           }
+
+          # OPTIMIZATION (#4): Write the accumulated maps back to the
+          # active bindings exactly once, instead of once per mapped
+          # variable/value inside the loop above.
+          self$.variable_map <- local_variable_map
+          self$.value_map <- local_value_map
 
           if (vars_mapped > 0 || vals_mapped > 0) {
             phrutils::phr_message(
@@ -5052,10 +5145,17 @@ Data <- R6::R6Class(
           vars_labelled <- 0
           vals_labelled <- 0
 
+          # OPTIMIZATION (#5): As in `..map_schema_vars()`, avoid repeated
+          # full-list read/write-back through the `.variable_label` /
+          # `.value_label` active bindings inside the loops below by
+          # accumulating into local lists and writing back once.
+          local_variable_label <- self$.variable_label
+          local_value_label <- self$.value_label
+
           # Populate variable_label for each role present in variable_map
           for (var_role in names(self$.variable_map)) {
             if (!is.null(schema_var_labels[[var_role]])) {
-              self$.variable_label[[var_role]] <- schema_var_labels[[var_role]]
+              local_variable_label[[var_role]] <- schema_var_labels[[var_role]]
               vars_labelled <- vars_labelled + 1
             }
           }
@@ -5064,10 +5164,13 @@ Data <- R6::R6Class(
           for (var_role in names(self$.value_map)) {
             val_label_entry <- schema_val_labels[[var_role]]
             if (!is.null(val_label_entry) && length(val_label_entry) > 0) {
-              self$.value_label[[var_role]] <- val_label_entry
+              local_value_label[[var_role]] <- val_label_entry
               vals_labelled <- vals_labelled + 1
             }
           }
+
+          self$.variable_label <- local_variable_label
+          self$.value_label <- local_value_label
 
           if (vars_labelled > 0 || vals_labelled > 0) {
             phrutils::phr_message(
