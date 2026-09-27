@@ -213,15 +213,16 @@ DeletionLog <- R6::R6Class(
         data_df <- data_obj$get_data(stage)
 
         # ---- Dataset must have UUID column
-        if (!data_obj$uuid %in% names(data_df)) {
+        uuid_col <- data_obj$get(field = "..uuid")
+        if (!uuid_col %in% names(data_df)) {
           phr_error(
-            message = paste0("UUID column '", data_obj$uuid, "' not found in dataset."),
+            message = paste0("UUID column '", uuid_col, "' not found in dataset."),
             origin = "DeletionLog$post_validate"
           )
         }
 
         # ---- Check missing UUIDs
-        missing_uuid <- setdiff(df$uuid, unique(as.character(data_df[[data_obj$uuid]])))
+        missing_uuid <- setdiff(df$uuid, unique(as.character(data_df[[uuid_col]])))
         if (length(missing_uuid) > 0) {
           out$missing_uuid <- missing_uuid
 

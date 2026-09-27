@@ -12,7 +12,7 @@ test_that("map_schema_vars returns invisible self when no schema is defined", {
 
   # Should not error and return self
 
-  result <- d$map_schema_vars()
+  result <- d$call(field = "..map_schema_vars")
   expect_s3_class(result, "Data")
 })
 
@@ -47,16 +47,16 @@ test_that("map_schema_vars maps columns based on col_names in schema", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Check that variables were mapped
-  expect_equal(d$variable_map$uuid, "id") # Already set at init
-  expect_equal(d$variable_map$sex, "person_sex")
-  expect_equal(d$variable_map$age, "individual_age")
+  expect_equal(d$get(field = ".variable_map")$get(field = "..uuid"), "id") # Already set at init
+  expect_equal(d$get(field = ".variable_map")$sex, "person_sex")
+  expect_equal(d$get(field = ".variable_map")$age, "individual_age")
 
   # Check that values were mapped for non-numeric type with allowed_values
-  expect_true("sex" %in% names(d$value_map))
-  expect_true(all(d$value_map$sex %in% c("male", "female")))
+  expect_true("sex" %in% names(d$get(field = ".value_map")))
+  expect_true(all(d$get(field = ".value_map")$sex %in% c("male", "female")))
 })
 
 test_that("map_schema_vars does not map values for numeric types", {
@@ -83,10 +83,10 @@ test_that("map_schema_vars does not map values for numeric types", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
-  expect_equal(d$variable_map$score, "my_score")
-  expect_false("score" %in% names(d$value_map)) # Should NOT map values for numeric
+  expect_equal(d$get(field = ".variable_map")$score, "my_score")
+  expect_false("score" %in% names(d$get(field = ".value_map"))) # Should NOT map values for numeric
 })
 
 test_that("map_schema_vars does not overwrite existing mappings", {
@@ -101,7 +101,7 @@ test_that("map_schema_vars does not overwrite existing mappings", {
   )
 
   # Pre-set a mapping
-  d$variable_map$sex <- "custom_sex"
+  d$get(field = ".variable_map")$sex <- "custom_sex"
 
   schema <- list(
     types = list(sex = "character"),
@@ -109,10 +109,10 @@ test_that("map_schema_vars does not overwrite existing mappings", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should NOT overwrite existing mapping
-  expect_equal(d$variable_map$sex, "custom_sex")
+  expect_equal(d$get(field = ".variable_map")$sex, "custom_sex")
 })
 
 test_that("map_schema_vars handles missing columns gracefully", {
@@ -137,10 +137,10 @@ test_that("map_schema_vars handles missing columns gracefully", {
   d$set_variable_schema(schema)
 
   # Should not error
-  expect_no_error(d$map_schema_vars())
+  expect_no_error(d$call(field = "..map_schema_vars"))
 
   # Should not have added the mapping
-  expect_null(d$variable_map$missing_var)
+  expect_null(d$get(field = ".variable_map")$missing_var)
 })
 
 test_that("map_schema_vars only maps found allowed values", {
@@ -166,12 +166,12 @@ test_that("map_schema_vars only maps found allowed values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should only contain values found in the data
-  expect_true(all(d$value_map$category %in% c("cat_a", "cat_b", "cat_c")))
-  expect_false("cat_d" %in% d$value_map$category)
-  expect_false("cat_e" %in% d$value_map$category)
+  expect_true(all(d$get(field = ".value_map")$category %in% c("cat_a", "cat_b", "cat_c")))
+  expect_false("cat_d" %in% d$get(field = ".value_map")$category)
+  expect_false("cat_e" %in% d$get(field = ".value_map")$category)
 })
 
 
@@ -198,8 +198,8 @@ test_that("repair_maps updates variable_map from dataframe", {
 
   expect_true(result$success)
   expect_equal(result$variables_updated, 2)
-  expect_equal(d$variable_map$category, "col_a")
-  expect_equal(d$variable_map$score, "col_b")
+  expect_equal(d$get(field = ".variable_map")$category, "col_a")
+  expect_equal(d$get(field = ".variable_map")$score, "col_b")
 })
 
 test_that("repair_maps updates value_map from dataframe", {
@@ -219,8 +219,8 @@ test_that("repair_maps updates value_map from dataframe", {
 
   expect_true(result$success)
   expect_equal(result$values_updated, 2)
-  expect_equal(d$value_map$status, c("active", "inactive", "pending"))
-  expect_equal(d$value_map$category, c("cat1", "cat2", "cat3"))
+  expect_equal(d$get(field = ".value_map")$status, c("active", "inactive", "pending"))
+  expect_equal(d$get(field = ".value_map")$category, c("cat1", "cat2", "cat3"))
 })
 
 
@@ -235,8 +235,8 @@ test_that("repair_maps with mode='replace' clears existing mappings", {
   )
 
   # Set initial mappings
-  d$variable_map$old_role <- "some_col"
-  d$value_map$old_values <- c("val1", "val2")
+  d$get(field = ".variable_map")$old_role <- "some_col"
+  d$get(field = ".value_map")$old_values <- c("val1", "val2")
 
   var_map_df <- data.frame(
     role = c("new_role"),
@@ -257,15 +257,15 @@ test_that("repair_maps with mode='replace' clears existing mappings", {
   )
 
   # Old mappings should be gone (except uuid)
-  expect_null(d$variable_map$old_role)
-  expect_null(d$value_map$old_values)
+  expect_null(d$get(field = ".variable_map")$old_role)
+  expect_null(d$get(field = ".value_map")$old_values)
 
   # New mappings should exist
-  expect_equal(d$variable_map$new_role, "new_col")
-  expect_equal(d$value_map$new_vals, c("x", "y", "z"))
+  expect_equal(d$get(field = ".variable_map")$new_role, "new_col")
+  expect_equal(d$get(field = ".value_map")$new_vals, c("x", "y", "z"))
 
   # UUID should still be preserved
-  expect_equal(d$variable_map$uuid, "id")
+  expect_equal(d$get(field = ".variable_map")$get(field = "..uuid"), "id")
 })
 
 test_that("repair_maps with mode='merge' keeps existing mappings", {
@@ -280,8 +280,8 @@ test_that("repair_maps with mode='merge' keeps existing mappings", {
   )
 
   # Set initial mappings
-  d$variable_map$old_role <- "col_a"
-  d$value_map$old_values <- c("val1", "val2")
+  d$get(field = ".variable_map")$old_role <- "col_a"
+  d$get(field = ".value_map")$old_values <- c("val1", "val2")
 
   var_map_df <- data.frame(
     role = c("new_role"),
@@ -295,11 +295,11 @@ test_that("repair_maps with mode='merge' keeps existing mappings", {
   )
 
   # Old mappings should still exist
-  expect_equal(d$variable_map$old_role, "col_a")
-  expect_equal(d$value_map$old_values, c("val1", "val2"))
+  expect_equal(d$get(field = ".variable_map")$old_role, "col_a")
+  expect_equal(d$get(field = ".value_map")$old_values, c("val1", "val2"))
 
   # New mappings should also exist
-  expect_equal(d$variable_map$new_role, "col_b")
+  expect_equal(d$get(field = ".variable_map")$new_role, "col_b")
 })
 
 test_that("repair_maps removes mapping when column_name is NA", {
@@ -311,7 +311,7 @@ test_that("repair_maps removes mapping when column_name is NA", {
   d <- suppressMessages(
     Data$new(data = df, dataset_name = "TestData", uuid = "id")
   )
-  d$variable_map$to_remove <- "col_a"
+  d$get(field = ".variable_map")$to_remove <- "col_a"
 
   var_map_df <- data.frame(
     role = c("to_remove"),
@@ -321,7 +321,7 @@ test_that("repair_maps removes mapping when column_name is NA", {
 
   result <- d$repair_maps(variable_map_df = var_map_df)
 
-  expect_null(d$variable_map$to_remove)
+  expect_null(d$get(field = ".variable_map")$to_remove)
 })
 
 test_that("repair_maps never removes uuid mapping", {
@@ -340,7 +340,7 @@ test_that("repair_maps never removes uuid mapping", {
   result <- d$repair_maps(variable_map_df = var_map_df)
 
   # UUID should still be there
-  expect_equal(d$variable_map$uuid, "id")
+  expect_equal(d$get(field = ".variable_map")$get(field = "..uuid"), "id")
 })
 
 test_that("repair_maps validates column existence and returns warnings", {
@@ -367,14 +367,14 @@ test_that("repair_maps validates column existence and returns warnings", {
   )
 
   # Good mapping should work
-  expect_equal(d$variable_map$good_mapping, "existing_col")
+  expect_equal(d$get(field = ".variable_map")$good_mapping, "existing_col")
 
   # Bad mapping should generate warning
   expect_false(result$success)
   expect_true(length(result$warnings) > 0)
 
   # Bad mapping should NOT be added
-  expect_null(d$variable_map$bad_mapping)
+  expect_null(d$get(field = ".variable_map")$bad_mapping)
 })
 
 test_that("repair_maps skips validation when validate_columns=FALSE", {
@@ -396,7 +396,7 @@ test_that("repair_maps skips validation when validate_columns=FALSE", {
   )
 
   # Should add mapping without validation
-  expect_equal(d$variable_map$some_role, "nonexistent_col")
+  expect_equal(d$get(field = ".variable_map")$some_role, "nonexistent_col")
   expect_true(result$success)
 })
 
@@ -427,9 +427,9 @@ test_that("get_maps_as_df returns correct dataframes", {
   d <- suppressMessages(
     Data$new(data = df, dataset_name = "TestData", uuid = "id")
   )
-  d$variable_map$category <- "some_col"
-  d$variable_map$score <- "other_col"
-  d$value_map$category <- c("a", "b", "c")
+  d$get(field = ".variable_map")$category <- "some_col"
+  d$get(field = ".variable_map")$score <- "other_col"
+  d$get(field = ".value_map")$category <- c("a", "b", "c")
 
   maps <- d$get_maps_as_df()
 
@@ -457,7 +457,7 @@ test_that("get_maps_as_df returns empty dataframes when maps are empty", {
   d <- suppressMessages(
     Data$new(data = df, dataset_name = "TestData", uuid = "id")
   )
-  d$value_map <- list() # Empty value map
+  d$set(field = ".value_map", value = list() # Empty value map)
 
   maps <- d$get_maps_as_df()
 
@@ -489,11 +489,11 @@ test_that("HouseholdData calls map_schema_vars on initialize", {
   )
 
   # The HouseholdData should have schema set
-  expect_true(!is.null(hh$variable_schema))
+  expect_true(!is.null(hh$get(field = "..variable_schema")))
 
   # Variables that match col_names in the schema should be auto-mapped
   # (the exact mappings depend on the schema template content)
-  expect_true("uuid" %in% names(hh$variable_map))
+  expect_true("uuid" %in% names(hh$get(field = ".variable_map")))
 })
 
 
@@ -538,16 +538,16 @@ test_that("map_schema_vars handles select_multiple with value_map", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Variable should be mapped
-  expect_equal(d$variable_map$livelihood, "livelihood")
+  expect_equal(d$get(field = ".variable_map")$livelihood, "livelihood")
 
   # Value map should be built with found values only
-  expect_true("livelihood" %in% names(d$value_map))
+  expect_true("livelihood" %in% names(d$get(field = ".value_map")))
 
   # Check that canonical values are mapped correctly
-  value_map <- d$value_map$livelihood
+  value_map <- d$get(field = ".value_map")$livelihood
 
   # Should find "farming" for agriculture
   expect_true("agriculture" %in% names(value_map))
@@ -602,20 +602,20 @@ test_that("map_schema_vars select_multiple handles unordered values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should find both literacy skills regardless of order
-  expect_true("literacy" %in% names(d$value_map$skills))
-  expect_true(all(c("reading", "writing") %in% d$value_map$skills$literacy))
+  expect_true("literacy" %in% names(d$get(field = ".value_map")$skills))
+  expect_true(all(c("reading", "writing") %in% d$get(field = ".value_map")$skills$literacy))
 
   # Should find numeracy skill
-  expect_true("numeracy" %in% names(d$value_map$skills))
-  expect_true("math" %in% d$value_map$skills$numeracy)
+  expect_true("numeracy" %in% names(d$get(field = ".value_map")$skills))
+  expect_true("math" %in% d$get(field = ".value_map")$skills$numeracy)
 
   # Should NOT find French translations as they're not in data
-  expect_false("lecture" %in% d$value_map$skills$literacy)
-  expect_false("ecriture" %in% d$value_map$skills$literacy)
-  expect_false("calcul" %in% d$value_map$skills$numeracy)
+  expect_false("lecture" %in% d$get(field = ".value_map")$skills$literacy)
+  expect_false("ecriture" %in% d$get(field = ".value_map")$skills$literacy)
+  expect_false("calcul" %in% d$get(field = ".value_map")$skills$numeracy)
 })
 
 test_that("map_schema_vars select_multiple with allowed_values (backward compat)", {
@@ -639,15 +639,15 @@ test_that("map_schema_vars select_multiple with allowed_values (backward compat)
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should find values that exist in data
-  expect_true("transport" %in% names(d$value_map))
-  expect_true(all(c("car", "bus", "bike") %in% d$value_map$transport))
+  expect_true("transport" %in% names(d$get(field = ".value_map")))
+  expect_true(all(c("car", "bus", "bike") %in% d$get(field = ".value_map")$transport))
 
   # Should NOT include values not in data
-  expect_false("walk" %in% d$value_map$transport)
-  expect_false("taxi" %in% d$value_map$transport)
+  expect_false("walk" %in% d$get(field = ".value_map")$transport)
+  expect_false("taxi" %in% d$get(field = ".value_map")$transport)
 })
 
 test_that("map_schema_vars select_multiple handles empty and NA values", {
@@ -673,17 +673,17 @@ test_that("map_schema_vars select_multiple handles empty and NA values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should handle NA and empty gracefully and still find other values
-  expect_true("food" %in% names(d$value_map))
-  expect_true("rice" %in% d$value_map$food$cereals)
-  expect_true("maize" %in% d$value_map$food$cereals)
-  expect_true("beans" %in% d$value_map$food$legumes)
+  expect_true("food" %in% names(d$get(field = ".value_map")))
+  expect_true("rice" %in% d$get(field = ".value_map")$food$cereals)
+  expect_true("maize" %in% d$get(field = ".value_map")$food$cereals)
+  expect_true("beans" %in% d$get(field = ".value_map")$food$legumes)
 
   # Should not include values not in data
-  expect_false("wheat" %in% d$value_map$food$cereals)
-  expect_false("lentils" %in% d$value_map$food$legumes)
+  expect_false("wheat" %in% d$get(field = ".value_map")$food$cereals)
+  expect_false("lentils" %in% d$get(field = ".value_map")$food$legumes)
 })
 
 test_that("map_schema_vars select_multiple only maps canonical values with found data", {
@@ -712,14 +712,14 @@ test_that("map_schema_vars select_multiple only maps canonical values with found
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should include cereals and legumes
-  expect_true("cereals" %in% names(d$value_map$food))
-  expect_true("legumes" %in% names(d$value_map$food))
+  expect_true("cereals" %in% names(d$get(field = ".value_map")$food))
+  expect_true("legumes" %in% names(d$get(field = ".value_map")$food))
 
   # Should NOT include vegetables since none found in data
-  expect_false("vegetables" %in% names(d$value_map$food))
+  expect_false("vegetables" %in% names(d$get(field = ".value_map")$food))
 })
 
 test_that("map_schema_vars select_multiple uses word boundaries for matching", {
@@ -746,19 +746,19 @@ test_that("map_schema_vars select_multiple uses word boundaries for matching", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should find "farm" (exact word boundary match)
-  expect_true("agriculture" %in% names(d$value_map$activity))
-  expect_true("farm" %in% d$value_map$activity$agriculture)
+  expect_true("agriculture" %in% names(d$get(field = ".value_map")$activity))
+  expect_true("farm" %in% d$get(field = ".value_map")$activity$agriculture)
 
   # Should find "fishing"
-  expect_true("fishing" %in% names(d$value_map$activity))
-  expect_true("fishing" %in% d$value_map$activity$fishing)
+  expect_true("fishing" %in% names(d$get(field = ".value_map")$activity))
+  expect_true("fishing" %in% d$get(field = ".value_map")$activity$fishing)
 
   # Should NOT find "farming" or "fish" as they're not in data
-  expect_false("farming" %in% d$value_map$activity$agriculture)
-  expect_false("fish" %in% d$value_map$activity$fishing)
+  expect_false("farming" %in% d$get(field = ".value_map")$activity$agriculture)
+  expect_false("fish" %in% d$get(field = ".value_map")$activity$fishing)
 
   # Note: "farmer" in data should NOT match "farm" because of word boundaries
 })
@@ -788,18 +788,18 @@ test_that("map_schema_vars select_multiple handles special regex characters", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should find values with special regex characters
-  expect_true("code" %in% names(d$value_map))
-  expect_true("positive" %in% names(d$value_map$code))
-  expect_true("A+" %in% d$value_map$code$positive)
+  expect_true("code" %in% names(d$get(field = ".value_map")))
+  expect_true("positive" %in% names(d$get(field = ".value_map")$code))
+  expect_true("A+" %in% d$get(field = ".value_map")$code$positive)
 
-  expect_true("negative" %in% names(d$value_map$code))
-  expect_true("B-" %in% d$value_map$code$negative)
+  expect_true("negative" %in% names(d$get(field = ".value_map")$code))
+  expect_true("B-" %in% d$get(field = ".value_map")$code$negative)
 
-  expect_true("special" %in% names(d$value_map$code))
-  expect_true("C*" %in% d$value_map$code$special)
+  expect_true("special" %in% names(d$get(field = ".value_map")$code))
+  expect_true("C*" %in% d$get(field = ".value_map")$code$special)
 })
 
 # Test: map_schema_vars column priority (preferential mapping) ####
@@ -827,10 +827,10 @@ test_that("map_schema_vars maps first matching column when multiple exist", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should map to linked_num_deaths since it's listed first
-  expect_equal(d$variable_map$deaths, "linked_num_deaths")
+  expect_equal(d$get(field = ".variable_map")$deaths, "linked_num_deaths")
 })
 
 test_that("map_schema_vars maps second column if first not present", {
@@ -855,10 +855,10 @@ test_that("map_schema_vars maps second column if first not present", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should map to num_deaths since linked_num_deaths is not available
-  expect_equal(d$variable_map$deaths, "num_deaths")
+  expect_equal(d$get(field = ".variable_map")$deaths, "num_deaths")
 })
 
 test_that("map_schema_vars respects column order priority with three options", {
@@ -890,10 +890,10 @@ test_that("map_schema_vars respects column order priority with three options", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should map to num_deaths (second in list) since linked_num_deaths is missing
-  expect_equal(d$variable_map$deaths, "num_deaths")
+  expect_equal(d$get(field = ".variable_map")$deaths, "num_deaths")
 })
 
 test_that("map_schema_vars with reversed order maps correctly", {
@@ -919,10 +919,10 @@ test_that("map_schema_vars with reversed order maps correctly", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should map to num_deaths since it's listed first now
-  expect_equal(d$variable_map$deaths, "num_deaths")
+  expect_equal(d$get(field = ".variable_map")$deaths, "num_deaths")
 })
 
 test_that("map_schema_vars remaps if existing mapping points to non-existent column", {
@@ -937,7 +937,7 @@ test_that("map_schema_vars remaps if existing mapping points to non-existent col
   )
 
   # Pre-map to a column that doesn't exist in data
-  d$variable_map$deaths <- "nonexistent_column"
+  d$get(field = ".variable_map")$deaths <- "nonexistent_column"
 
   # Schema where linked_num_deaths is available
   schema <- list(
@@ -950,10 +950,10 @@ test_that("map_schema_vars remaps if existing mapping points to non-existent col
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Should remap to linked_num_deaths since existing mapping is invalid
-  expect_equal(d$variable_map$deaths, "linked_num_deaths")
+  expect_equal(d$get(field = ".variable_map")$deaths, "linked_num_deaths")
 })
 
 
@@ -1044,61 +1044,61 @@ test_that("map_schema_vars adds ALL allowable values found in data to value_map"
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars(stage = "raw")
+  d$call(field = "..map_schema_vars", stage = "raw")
 
   # ===== VERIFY VARIABLE MAPPINGS
-  expect_equal(d$variable_map$consent, "consent_status")
-  expect_equal(d$variable_map$education, "education")
+  expect_equal(d$get(field = ".variable_map")$consent, "consent_status")
+  expect_equal(d$get(field = ".variable_map")$education, "education")
 
   # ===== VERIFY VALUE MAPPINGS FOR CONSENT
 
   # Canonical value "yes" should include ALL found allowable values
-  expect_true("yes" %in% names(d$value_map$consent))
-  expect_true(all(c("yes", "oui", "si") %in% d$value_map$consent$yes))
-  expect_length(d$value_map$consent$yes, 3) # Exactly 3 values
+  expect_true("yes" %in% names(d$get(field = ".value_map")$consent))
+  expect_true(all(c("yes", "oui", "si") %in% d$get(field = ".value_map")$consent$yes))
+  expect_length(d$get(field = ".value_map")$consent$yes, 3) # Exactly 3 values
   # Should NOT include values not in data
-  expect_false("ja" %in% d$value_map$consent$yes)
-  expect_false("sí" %in% d$value_map$consent$yes)
+  expect_false("ja" %in% d$get(field = ".value_map")$consent$yes)
+  expect_false("sí" %in% d$get(field = ".value_map")$consent$yes)
 
   # Canonical value "no" should include ALL found allowable values
-  expect_true("no" %in% names(d$value_map$consent))
-  expect_true(all(c("no", "non", "nein") %in% d$value_map$consent$no))
-  expect_length(d$value_map$consent$no, 3) # Exactly 3 values
+  expect_true("no" %in% names(d$get(field = ".value_map")$consent))
+  expect_true(all(c("no", "non", "nein") %in% d$get(field = ".value_map")$consent$no))
+  expect_length(d$get(field = ".value_map")$consent$no, 3) # Exactly 3 values
   # Should NOT include values not in data
-  expect_false("nee" %in% d$value_map$consent$no)
+  expect_false("nee" %in% d$get(field = ".value_map")$consent$no)
 
   # Canonical value "maybe" should include ALL found allowable values
-  expect_true("maybe" %in% names(d$value_map$consent))
-  expect_true(all(c("maybe", "perhaps") %in% d$value_map$consent$maybe))
-  expect_length(d$value_map$consent$maybe, 2) # Exactly 2 values
+  expect_true("maybe" %in% names(d$get(field = ".value_map")$consent))
+  expect_true(all(c("maybe", "perhaps") %in% d$get(field = ".value_map")$consent$maybe))
+  expect_length(d$get(field = ".value_map")$consent$maybe, 2) # Exactly 2 values
   # Should NOT include values not in data
-  expect_false("possibly" %in% d$value_map$consent$maybe)
+  expect_false("possibly" %in% d$get(field = ".value_map")$consent$maybe)
 
   # Canonical value "declined" should NOT be in value_map at all
   # because NONE of its allowable values are in the data
-  expect_false("declined" %in% names(d$value_map$consent))
+  expect_false("declined" %in% names(d$get(field = ".value_map")$consent))
 
   # ===== VERIFY VALUE MAPPINGS FOR EDUCATION
 
   # Canonical value "basic" should include ALL found values
-  expect_true("basic" %in% names(d$value_map$education))
-  expect_true(all(c("none", "primary") %in% d$value_map$education$basic))
-  expect_length(d$value_map$education$basic, 2)
+  expect_true("basic" %in% names(d$get(field = ".value_map")$education))
+  expect_true(all(c("none", "primary") %in% d$get(field = ".value_map")$education$basic))
+  expect_length(d$get(field = ".value_map")$education$basic, 2)
 
   # Canonical value "secondary" should include only found value
-  expect_true("secondary" %in% names(d$value_map$education))
-  expect_true("secondary" %in% d$value_map$education$secondary)
-  expect_false("high" %in% d$value_map$education$secondary)
-  expect_length(d$value_map$education$secondary, 1)
+  expect_true("secondary" %in% names(d$get(field = ".value_map")$education))
+  expect_true("secondary" %in% d$get(field = ".value_map")$education$secondary)
+  expect_false("high" %in% d$get(field = ".value_map")$education$secondary)
+  expect_length(d$get(field = ".value_map")$education$secondary, 1)
 
   # Canonical value "tertiary" should include only found value
-  expect_true("tertiary" %in% names(d$value_map$education))
-  expect_true("university" %in% d$value_map$education$tertiary)
-  expect_false("college" %in% d$value_map$education$tertiary)
-  expect_length(d$value_map$education$tertiary, 1)
+  expect_true("tertiary" %in% names(d$get(field = ".value_map")$education))
+  expect_true("university" %in% d$get(field = ".value_map")$education$tertiary)
+  expect_false("college" %in% d$get(field = ".value_map")$education$tertiary)
+  expect_length(d$get(field = ".value_map")$education$tertiary, 1)
 
   # Canonical value "vocational" should NOT be in value_map
-  expect_false("vocational" %in% names(d$value_map$education))
+  expect_false("vocational" %in% names(d$get(field = ".value_map")$education))
 
   # ===== VERIFY COMPLETENESS
   # Ensure ALL data values that are listed as allowable are captured
@@ -1108,13 +1108,13 @@ test_that("map_schema_vars adds ALL allowable values found in data to value_map"
   data_education_values <- unique(df$education)
 
   # Flatten all values in value_map
-  all_mapped_consent <- unlist(d$value_map$consent, use.names = FALSE)
-  all_mapped_education <- unlist(d$value_map$education, use.names = FALSE)
+  all_mapped_consent <- unlist(d$get(field = ".value_map")$consent, use.names = FALSE)
+  all_mapped_education <- unlist(d$get(field = ".value_map")$education, use.names = FALSE)
 
   # Every data value that's in the schema should be in value_map
   # (This is the KEY requirement being tested)
-  schema_consent_all <- unlist(schema$value_map$consent, use.names = FALSE)
-  schema_education_all <- unlist(schema$value_map$education, use.names = FALSE)
+  schema_consent_all <- unlist(schema$get(field = ".value_map")$consent, use.names = FALSE)
+  schema_education_all <- unlist(schema$get(field = ".value_map")$education, use.names = FALSE)
 
   data_values_in_schema_consent <- intersect(
     data_consent_values,
@@ -1191,39 +1191,39 @@ test_that("map_schema_vars handles select_multiple with ALL allowable values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars(stage = "raw")
+  d$call(field = "..map_schema_vars", stage = "raw")
 
   # Check agriculture - should have "farming" but not other synonyms
-  expect_true("agriculture" %in% names(d$value_map$income))
-  expect_true("farming" %in% d$value_map$income$agriculture)
-  expect_false("agriculture" %in% d$value_map$income$agriculture)
-  expect_false("cultivation" %in% d$value_map$income$agriculture)
-  expect_false("crop_growing" %in% d$value_map$income$agriculture)
+  expect_true("agriculture" %in% names(d$get(field = ".value_map")$income))
+  expect_true("farming" %in% d$get(field = ".value_map")$income$agriculture)
+  expect_false("agriculture" %in% d$get(field = ".value_map")$income$agriculture)
+  expect_false("cultivation" %in% d$get(field = ".value_map")$income$agriculture)
+  expect_false("crop_growing" %in% d$get(field = ".value_map")$income$agriculture)
 
   # Check aquatic - should have "fishing" but not other synonyms
-  expect_true("aquatic" %in% names(d$value_map$income))
-  expect_true("fishing" %in% d$value_map$income$aquatic)
-  expect_false("fishery" %in% d$value_map$income$aquatic)
-  expect_false("aquaculture" %in% d$value_map$income$aquatic)
+  expect_true("aquatic" %in% names(d$get(field = ".value_map")$income))
+  expect_true("fishing" %in% d$get(field = ".value_map")$income$aquatic)
+  expect_false("fishery" %in% d$get(field = ".value_map")$income$aquatic)
+  expect_false("aquaculture" %in% d$get(field = ".value_map")$income$aquatic)
 
   # Check hunting - should have "hunting" but not other synonyms
-  expect_true("hunting" %in% names(d$value_map$income))
-  expect_true("hunting" %in% d$value_map$income$hunting)
-  expect_false("trapping" %in% d$value_map$income$hunting)
-  expect_false("game" %in% d$value_map$income$hunting)
+  expect_true("hunting" %in% names(d$get(field = ".value_map")$income))
+  expect_true("hunting" %in% d$get(field = ".value_map")$income$hunting)
+  expect_false("trapping" %in% d$get(field = ".value_map")$income$hunting)
+  expect_false("game" %in% d$get(field = ".value_map")$income$hunting)
 
   # Check commerce - should have ALL THREE values found in data
-  expect_true("commerce" %in% names(d$value_map$income))
-  expect_true("trading" %in% d$value_map$income$commerce)
-  expect_true("selling" %in% d$value_map$income$commerce)
-  expect_true("business" %in% d$value_map$income$commerce)
-  expect_length(d$value_map$income$commerce, 3) # Exactly 3 found
+  expect_true("commerce" %in% names(d$get(field = ".value_map")$income))
+  expect_true("trading" %in% d$get(field = ".value_map")$income$commerce)
+  expect_true("selling" %in% d$get(field = ".value_map")$income$commerce)
+  expect_true("business" %in% d$get(field = ".value_map")$income$commerce)
+  expect_length(d$get(field = ".value_map")$income$commerce, 3) # Exactly 3 found
   # But not the ones not in data
-  expect_false("commerce" %in% d$value_map$income$commerce)
-  expect_false("merchant" %in% d$value_map$income$commerce)
+  expect_false("commerce" %in% d$get(field = ".value_map")$income$commerce)
+  expect_false("merchant" %in% d$get(field = ".value_map")$income$commerce)
 
   # Check livestock - should NOT be in value_map at all
-  expect_false("livestock" %in% names(d$value_map$income))
+  expect_false("livestock" %in% names(d$get(field = ".value_map")$income))
 })
 
 
@@ -1266,20 +1266,20 @@ test_that("map_schema_vars with allowed_values (backward compat) includes ALL fo
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars(stage = "raw")
+  d$call(field = "..map_schema_vars", stage = "raw")
 
   # Should include ALL four values found in data
-  expect_true("account_status" %in% names(d$value_map))
+  expect_true("account_status" %in% names(d$get(field = ".value_map")))
   expect_true(all(
     c("active", "inactive", "pending", "suspended") %in%
-      d$value_map$account_status
+      d$get(field = ".value_map")$account_status
   ))
-  expect_length(d$value_map$account_status, 4)
+  expect_length(d$get(field = ".value_map")$account_status, 4)
 
   # Should NOT include values not in data
-  expect_false("deleted" %in% d$value_map$account_status)
-  expect_false("archived" %in% d$value_map$account_status)
-  expect_false("banned" %in% d$value_map$account_status)
+  expect_false("deleted" %in% d$get(field = ".value_map")$account_status)
+  expect_false("archived" %in% d$get(field = ".value_map")$account_status)
+  expect_false("banned" %in% d$get(field = ".value_map")$account_status)
 })
 
 
@@ -1339,12 +1339,12 @@ test_that("map_schema_vars is called after each add_* function in standardize", 
   expect_true("indicator_2" %in% names(d$standardized_data))
 
   # Check that variable mappings were created
-  expect_equal(d$variable_map$test_indicator_1, "indicator_1")
-  expect_equal(d$variable_map$test_indicator_2, "indicator_2")
+  expect_equal(d$get(field = ".variable_map")$test_indicator_1, "indicator_1")
+  expect_equal(d$get(field = ".variable_map")$test_indicator_2, "indicator_2")
 
   # Check that value mapping was created for indicator_1
-  expect_true("test_indicator_1" %in% names(d$value_map))
-  expect_true("value_a" %in% d$value_map$test_indicator_1)
+  expect_true("test_indicator_1" %in% names(d$get(field = ".value_map")))
+  expect_true("value_a" %in% d$get(field = ".value_map")$test_indicator_1)
 
   # Most importantly: check that indicator_2 successfully used the dependency
   # If map_schema_vars was not called after indicator_1, this would fail
@@ -1389,14 +1389,14 @@ test_that("map_schema_vars updates to more preferred column when available", {
   d$set_indicator_schema(indicator_schema)
 
   # Initially, should map to less_preferred_name
-  d$map_schema_vars(stage = "raw")
-  expect_equal(d$variable_map$my_var, "less_preferred_name")
+  d$call(field = "..map_schema_vars", stage = "raw")
+  expect_equal(d$get(field = ".variable_map")$my_var, "less_preferred_name")
 
   # Run standardize (which adds preferred_name column via indicator)
   d$standardize()
 
   # After standardize, should have updated to preferred_name
-  expect_equal(d$variable_map$my_var, "preferred_name")
+  expect_equal(d$get(field = ".variable_map")$my_var, "preferred_name")
 
   # Check that the preferred column exists
   expect_true("preferred_name" %in% names(d$standardized_data))
@@ -1431,12 +1431,12 @@ test_that("map_schema_vars does not downgrade to less preferred column", {
   d$set_variable_schema(variable_schema)
 
   # Should map to preferred_name initially
-  d$map_schema_vars(stage = "raw")
-  expect_equal(d$variable_map$my_var, "preferred_name")
+  d$call(field = "..map_schema_vars", stage = "raw")
+  expect_equal(d$get(field = ".variable_map")$my_var, "preferred_name")
 
   # Run map_schema_vars again - should stay on preferred_name
-  d$map_schema_vars(stage = "raw")
-  expect_equal(d$variable_map$my_var, "preferred_name")
+  d$call(field = "..map_schema_vars", stage = "raw")
+  expect_equal(d$get(field = ".variable_map")$my_var, "preferred_name")
 })
 
 
@@ -1480,17 +1480,17 @@ test_that("map_schema_vars updates value_map when variable_map is updated", {
   d$set_indicator_schema(indicator_schema)
 
   # Initially should map to old_col with old values
-  d$map_schema_vars(stage = "raw")
-  expect_equal(d$variable_map$status, "old_col")
-  expect_true(all(c("old_val_1", "old_val_2") %in% d$value_map$status))
+  d$call(field = "..map_schema_vars", stage = "raw")
+  expect_equal(d$get(field = ".variable_map")$status, "old_col")
+  expect_true(all(c("old_val_1", "old_val_2") %in% d$get(field = ".value_map")$status))
 
   # Run standardize
   suppressWarnings(d$standardize())
 
   # Should now map to better_col with new values
-  expect_equal(d$variable_map$status, "better_col")
-  expect_true(all(c("new_val_1", "new_val_2") %in% d$value_map$status))
-  expect_false("old_val_1" %in% d$value_map$status)
+  expect_equal(d$get(field = ".variable_map")$status, "better_col")
+  expect_true(all(c("new_val_1", "new_val_2") %in% d$get(field = ".value_map")$status))
+  expect_false("old_val_1" %in% d$get(field = ".value_map")$status)
 })
 
 
@@ -1502,10 +1502,10 @@ test_that("map_schema_labels returns invisible self when no schema is defined", 
     Data$new(data = df, dataset_name = "TestData", uuid = "id")
   )
 
-  result <- d$map_schema_labels()
+  result <- d$call(field = "..map_schema_labels")
   expect_s3_class(result, "Data")
-  expect_length(d$variable_label, 0)
-  expect_length(d$value_label, 0)
+  expect_length(d$get(field = ".variable_label"), 0)
+  expect_length(d$get(field = ".value_label"), 0)
 })
 
 test_that("map_schema_labels populates variable_label and value_label from schema (english)", {
@@ -1534,13 +1534,13 @@ test_that("map_schema_labels populates variable_label and value_label from schem
     )
   )
   d$set_variable_schema(schema)
-  d$map_schema_vars()
-  d$map_schema_labels()
+  d$call(field = "..map_schema_vars")
+  d$call(field = "..map_schema_labels")
 
-  expect_equal(d$variable_label$sex, "Sex of Respondent")
-  expect_equal(d$variable_label$age, "Age in Years")
-  expect_equal(d$value_label$sex[["male"]], "Male")
-  expect_equal(d$value_label$sex[["female"]], "Female")
+  expect_equal(d$get(field = ".variable_label")$sex, "Sex of Respondent")
+  expect_equal(d$get(field = ".variable_label")$age, "Age in Years")
+  expect_equal(d$get(field = ".value_label")$sex[["male"]], "Male")
+  expect_equal(d$get(field = ".value_label")$sex[["female"]], "Female")
 })
 
 test_that("map_schema_labels respects language argument", {
@@ -1565,15 +1565,15 @@ test_that("map_schema_labels respects language argument", {
     )
   )
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
-  d$map_schema_labels(language = "french")
-  expect_equal(d$variable_label$sex, "Sexe")
-  expect_equal(d$value_label$sex[["male"]], "Homme")
+  d$call(field = "..map_schema_labels", language = "french")
+  expect_equal(d$get(field = ".variable_label")$sex, "Sexe")
+  expect_equal(d$get(field = ".value_label")$sex[["male"]], "Homme")
 
-  d$map_schema_labels(language = "arabic")
-  expect_equal(d$variable_label$sex, "جنس")
-  expect_equal(d$value_label$sex[["male"]], "ذكر")
+  d$call(field = "..map_schema_labels", language = "arabic")
+  expect_equal(d$get(field = ".variable_label")$sex, "جنس")
+  expect_equal(d$get(field = ".value_label")$sex[["male"]], "ذكر")
 })
 
 test_that("map_schema_labels defaults to english for unknown language", {
@@ -1588,10 +1588,10 @@ test_that("map_schema_labels defaults to english for unknown language", {
     variable_labels = list(en = list(sex = "Sex"), fr = list(sex = "Sexe"))
   )
   d$set_variable_schema(schema)
-  d$map_schema_vars()
-  d$map_schema_labels(language = "spanish")
+  d$call(field = "..map_schema_vars")
+  d$call(field = "..map_schema_labels", language = "spanish")
 
-  expect_equal(d$variable_label$sex, "Sex")
+  expect_equal(d$get(field = ".variable_label")$sex, "Sex")
 })
 
 test_that("map_schema_labels only labels variables present in variable_map", {
@@ -1608,12 +1608,12 @@ test_that("map_schema_labels only labels variables present in variable_map", {
     )
   )
   d$set_variable_schema(schema)
-  d$map_schema_vars()
-  d$map_schema_labels()
+  d$call(field = "..map_schema_vars")
+  d$call(field = "..map_schema_labels")
 
   # sex is in variable_map (gender column matched), age is NOT (no age column)
-  expect_true("sex" %in% names(d$variable_label))
-  expect_false("age" %in% names(d$variable_label))
+  expect_true("sex" %in% names(d$get(field = ".variable_label")))
+  expect_false("age" %in% names(d$get(field = ".variable_label")))
 })
 
 test_that("map_schema_labels is called automatically after map_schema_vars in standardize", {
@@ -1632,6 +1632,6 @@ test_that("map_schema_labels is called automatically after map_schema_vars in st
   d$set_variable_schema(schema)
   d$standardize()
 
-  expect_equal(d$variable_label$sex, "Sex")
-  expect_equal(d$value_label$sex[["male"]], "Male")
+  expect_equal(d$get(field = ".variable_label")$sex, "Sex")
+  expect_equal(d$get(field = ".value_label")$sex[["male"]], "Male")
 })

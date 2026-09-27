@@ -87,7 +87,7 @@ test_that("HouseholdData initializes with expected required columns", {
 
   expect_true(all(
     c("uuid", "consent", "interview_date", "enumerator_id") %in%
-      hh$required_columns
+      hh$get(field = "..required_columns")
   ))
 })
 
@@ -152,7 +152,7 @@ test_that("variable_map overrides default household field names", {
   ))
 
   expect_true(all(
-    c("id_col", "cns", "date_int", "enumid") %in% hh$required_columns
+    c("id_col", "cns", "date_int", "enumid") %in% hh$get(field = "..required_columns")
   ))
 })
 
@@ -348,19 +348,19 @@ test_that("NutritionIndividualData aggregates children by age groups", {
   expect_true("linked_nutrition_children_under5" %in% names(std_data))
 
   # Check values for hh1: 1 under 2 years (10 months), 1 2to5 (30 months), 2 <5
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_nutrition_children_under2, 1)
   expect_equal(hh1_row$linked_nutrition_children_2to5, 1)
   expect_equal(hh1_row$linked_nutrition_children_under5, 2)
 
   # Check values for hh2: 0 under 2 (48, 72 months -> 1 24-59, 1 >=60), 1 2to5, 1 <5
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_nutrition_children_under2, 0)
   expect_equal(hh2_row$linked_nutrition_children_2to5, 1)
   expect_equal(hh2_row$linked_nutrition_children_under5, 1)
 
   # Check values for hh3: 2 under 2 years (15, 20 months), 0 2to5, 2 <5
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_nutrition_children_under2, 2)
   expect_equal(hh3_row$linked_nutrition_children_2to5, 0)
   expect_equal(hh3_row$linked_nutrition_children_under5, 2)
@@ -408,13 +408,13 @@ test_that("HealthIndividualData aggregates number of people recorded", {
   expect_true("linked_health_num_people_recorded" %in% names(std_data))
 
   # Check values
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_health_num_people_recorded, 3)
 
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_health_num_people_recorded, 1)
 
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_health_num_people_recorded, 1)
 })
 
@@ -455,10 +455,10 @@ test_that("IndividualData (roster) still uses aggregate_roster_data method", {
   std_data <- hh_data$standardized_data
   expect_true("linked_roster_household_size" %in% names(std_data))
 
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_roster_household_size, 2)
 
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_roster_household_size, 1)
 })
 
@@ -498,14 +498,14 @@ test_that("aggregate_roster_data adds linked_roster_birth_months from calc_month
   std_data <- hh_data$standardized_data
   expect_true("linked_roster_birth_months" %in% names(std_data))
 
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_roster_birth_months, "2001-01, 1996-05")
 
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_roster_birth_months, "1986-03")
 
   # hh3 has NA calc_month_birth, so should be empty string
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_roster_birth_months, "")
 })
 
@@ -546,14 +546,14 @@ test_that("aggregate_deaths_data adds linked_deaths_death_month from calc_month_
   std_data <- hh_data$standardized_data
   expect_true("linked_deaths_death_month" %in% names(std_data))
 
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_deaths_death_month, "2024-03, 2024-06")
 
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_deaths_death_month, "2024-01")
 
   # hh3 has no deaths, should be empty string
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_deaths_death_month, "")
 })
 
@@ -783,15 +783,15 @@ test_that("WaterContainerData aggregates total litres correctly with British spe
   )
 
   # Check values for hh1: 20 + 30 = 50
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_water_containers_wash_container_total_liters, 50)
 
   # Check values for hh2: 15 + 25 = 40
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_water_containers_wash_container_total_liters, 40)
 
   # Check values for hh3: 50
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_water_containers_wash_container_total_liters, 50)
 })
 
@@ -839,11 +839,11 @@ test_that("WaterContainerData aggregates total liters correctly with American sp
   )
 
   # Check values for hh1: 10 + 20 = 30
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_water_containers_wash_container_total_liters, 30)
 
   # Check values for hh2: 30
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_water_containers_wash_container_total_liters, 30)
 })
 
@@ -885,15 +885,15 @@ test_that("WaterContainerData aggregates container counts correctly", {
   expect_true("linked_water_containers_num_containers" %in% names(std_data))
 
   # Check values for hh1: 2 containers
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_water_containers_num_containers, 2)
 
   # Check values for hh2: 2 containers
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_water_containers_num_containers, 2)
 
   # Check values for hh3: 1 container
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_water_containers_num_containers, 1)
 })
 
@@ -938,17 +938,17 @@ test_that("WaterContainerData aggregates both liters and counts with British spe
   expect_true("linked_water_containers_num_containers" %in% names(std_data))
 
   # Check values for hh1: 50 liters, 2 containers
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_water_containers_wash_container_total_liters, 50)
   expect_equal(hh1_row$linked_water_containers_num_containers, 2)
 
   # Check values for hh2: 40 liters, 2 containers
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_water_containers_wash_container_total_liters, 40)
   expect_equal(hh2_row$linked_water_containers_num_containers, 2)
 
   # Check values for hh3: 50 liters, 1 container
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_water_containers_wash_container_total_liters, 50)
   expect_equal(hh3_row$linked_water_containers_num_containers, 1)
 })
@@ -1052,10 +1052,10 @@ test_that("Household standardization succeeds with valid linked datasets", {
 
   # Verify aggregation worked correctly
   std_data <- hh_data$standardized_data
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_roster_household_size, 2)
 
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_roster_household_size, 2)
 })
 
@@ -1115,11 +1115,11 @@ test_that("Deaths data aggregates births in recall period when calc_date_birth_f
   expect_true("linked_deaths_death_birth" %in% names(std_data))
 
   # Check values for hh1: 2 births in recall period
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_deaths_death_birth, 2)
 
   # Check values for hh2: 0 births in recall period
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_deaths_death_birth, 0)
 })
 
@@ -1183,11 +1183,11 @@ test_that("Roster data aggregates births in recall period when recall_date colum
   expect_true("linked_roster_birth" %in% names(std_data))
 
   # Check values for hh1: 1 birth in recall period
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_roster_birth, 1)
 
   # Check values for hh2: 0 births in recall period
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_roster_birth, 0)
 })
 
@@ -1243,7 +1243,7 @@ test_that("Roster data aggregates canonical columns when they exist", {
   expect_true("linked_roster_woman_15to49" %in% names(std_data))
 
   # Check values for hh1: 2 people, 1 child <2, 1 child <5, 1 male, 1 female, 1 woman 15-49
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_roster_household_size, 2)
   expect_equal(hh1_row$linked_roster_child_under2, 1)
   expect_equal(hh1_row$linked_roster_child_under5, 1)
@@ -1252,7 +1252,7 @@ test_that("Roster data aggregates canonical columns when they exist", {
   expect_equal(hh1_row$linked_roster_woman_15to49, 1)
 
   # Check values for hh2: 2 people, 0 child <2, 1 child <5, 1 male, 1 female, 0 women 15-49
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_roster_household_size, 2)
   expect_equal(hh2_row$linked_roster_child_under2, 0)
   expect_equal(hh2_row$linked_roster_child_under5, 1)
@@ -1261,7 +1261,7 @@ test_that("Roster data aggregates canonical columns when they exist", {
   expect_equal(hh2_row$linked_roster_woman_15to49, 0)
 
   # Check values for hh3: 2 people, 0 child <2, 0 child <5, 0 male, 2 female, 1 woman 15-49
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_roster_household_size, 2)
   expect_equal(hh3_row$linked_roster_child_under2, 0)
   expect_equal(hh3_row$linked_roster_child_under5, 0)
@@ -1316,19 +1316,19 @@ test_that("Nutrition data aggregates canonical columns when they exist", {
   expect_true("linked_nutrition_nutrition_child_under5" %in% names(std_data))
 
   # Check values for hh1
-  hh1_row <- std_data[std_data$uuid == "hh1", ]
+  hh1_row <- std_data[std_data$get(field = "..uuid") == "hh1", ]
   expect_equal(hh1_row$linked_nutrition_nutrition_child_under2, 1)
   expect_equal(hh1_row$linked_nutrition_nutrition_child_2to5, 1)
   expect_equal(hh1_row$linked_nutrition_nutrition_child_under5, 2)
 
   # Check values for hh2
-  hh2_row <- std_data[std_data$uuid == "hh2", ]
+  hh2_row <- std_data[std_data$get(field = "..uuid") == "hh2", ]
   expect_equal(hh2_row$linked_nutrition_nutrition_child_under2, 0)
   expect_equal(hh2_row$linked_nutrition_nutrition_child_2to5, 1)
   expect_equal(hh2_row$linked_nutrition_nutrition_child_under5, 1)
 
   # Check values for hh3
-  hh3_row <- std_data[std_data$uuid == "hh3", ]
+  hh3_row <- std_data[std_data$get(field = "..uuid") == "hh3", ]
   expect_equal(hh3_row$linked_nutrition_nutrition_child_under2, 2)
   expect_equal(hh3_row$linked_nutrition_nutrition_child_2to5, 0)
   expect_equal(hh3_row$linked_nutrition_nutrition_child_under5, 2)
@@ -1372,7 +1372,7 @@ test_that("generate_cleaning_log propagates to linked data objects", {
   # The linked dataset's generate_cleaning_log should have been called, which
   # means its cleaning_log field should now be a CleaningLog object (initialised
   # as part of the Data class construction, so it should still be a CleaningLog)
-  expect_true(inherits(roster_data$cleaning_log, "CleaningLog"))
+  expect_true(inherits(roster_data$get(field = "..cleaning_log"), "CleaningLog"))
 })
 
 test_that("clean propagates to linked data objects", {
@@ -1596,7 +1596,7 @@ test_that("generate_weights computes correct weights and writes to 'survey_weigh
   # Rural: (3000/4000) / (2/4) = 0.75 / 0.5 = 1.5
   expect_equal(df$survey_weight[df$stratum == "Rural"], c(1.5, 1.5))
   # variable_map should be updated
-  expect_equal(hh$variable_map$weight, "survey_weight")
+  expect_equal(hh$get(field = ".variable_map")$weight, "survey_weight")
 })
 
 test_that("generate_weights uses existing mapped weight column when available", {
@@ -1631,7 +1631,7 @@ test_that("generate_weights uses existing mapped weight column when available", 
   df <- suppressMessages(suppressWarnings(hh$raw_data))
   # Should have written into 'wt', not created 'survey_weight'
   expect_false("survey_weight" %in% names(df))
-  expect_equal(hh$variable_map$weight, "wt")
+  expect_equal(hh$get(field = ".variable_map")$weight, "wt")
   # N=2800, n=3
   # Urban: (800/2800) / (1/3) = (2/7) / (1/3) = 6/7
   expect_equal(df$wt[df$stratum == "Urban"], 6 / 7)
