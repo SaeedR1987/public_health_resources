@@ -35,15 +35,14 @@ drc_mort <- phr::HouseholdData$new(data = df_hh, dataset_name = "DRC MSNA 2026 H
 
 # write.csv(x = drc_mort$export_variable_schema(), file = "hh_variable_schema.csv")
 
-drc_mort$import_variable_schema(df = read.csv(file = "hh_variable_schema.csv"))
-
+drc_mort$set(field = "..variable_schema", value = read.csv(file = "hh_variable_schema.csv"))
 
 roster <- phr::IndividualData$new(
   data = df_roster,
   dataset_name = "DRC MSNA 2026 Roster"
   )
 
-roster$import_variable_schema(df = read.csv(file = "roster_variable_schema.csv"))
+roster$set(field = "..variable_schema", value = read.csv(file = "roster_variable_schema.csv"))
 
 deaths <- DeathIndividualData$new(
   data = df_death,

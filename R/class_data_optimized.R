@@ -5185,7 +5185,7 @@ DataOptimized <- R6::R6Class(
         on_error = "warn",
         origin = paste0(self$dataset_name, "$map_schema_labels")
       )
-    },
+    }
   ),
 
   active = list(
