@@ -75,7 +75,6 @@ Data <- R6::R6Class(
     # or the `get_data(stage = ...)` helper for stage-based access.
 
     dataset_name = NULL,
-    metadata = NULL, # Free-form list; updated via update_metadata()
     uuid = NULL,
 
     validated = FALSE,
@@ -186,8 +185,7 @@ Data <- R6::R6Class(
           phrutils::phr_message(phrutils::phr_txt(
             "{dataset_name} initialized with {nrow(data)} records."
           ))
-          self$update_metadata()
-          # self$..autosave_checkpoint("initialize")
+
         },
         on_error = "abort",
         origin = paste0(dataset_name, "$initialize")
@@ -399,7 +397,6 @@ Data <- R6::R6Class(
             "{self$dataset_name} validation complete."
           ))
 
-          self$update_metadata()
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$validate")
@@ -1300,7 +1297,6 @@ Data <- R6::R6Class(
             return(result)
           }
 
-          self$update_metadata()
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$standardize")
@@ -1459,7 +1455,6 @@ Data <- R6::R6Class(
             "{self$dataset_name} cleaning complete."
           ))
 
-          self$update_metadata()
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$clean")
@@ -1611,118 +1606,6 @@ Data <- R6::R6Class(
         origin = paste0(self$dataset_name, "$get_data")
       )
     },
-
-    # Column info / inspection
-
-    #' Get Column Information
-    #'
-    #' @description
-    #' Generates summary information about all columns at the specified stage
-    #'
-    #' @param stage Character string: "raw", "standardized", or "clean"
-    #'
-    #' @return Data frame with columns: name, class, missing_pct, unique_n, example_values
-    #'
-    #' @details
-    #' Provides a quick overview of column characteristics including data types,
-    #' missingness, cardinality, and sample values.
-    get_column_info = function(stage = c("raw", "standardized", "clean")) {
-      stage <- match.arg(stage)
-      phrutils::phr_try(
-        {
-          df <- self$get_data(stage)
-          if (is.null(df)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No {stage} data available for column inspection.")
-            )
-            return(NULL)
-          }
-          cols <- names(df)
-          res <- lapply(cols, function(nm) {
-            v <- df[[nm]]
-            n <- length(v)
-            list(
-              name = nm,
-              class = paste(class(v), collapse = "|"),
-              missing_pct = round(sum(is.na(v)) / n * 100, 2),
-              unique_n = length(unique(v)),
-              example_values = paste(utils::head(unique(v), 3), collapse = ", ")
-            )
-          })
-          as.data.frame(do.call(rbind, res), stringsAsFactors = FALSE)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$get_column_info")
-      )
-    },
-
-    # Labels (variables and values)
-
-    #' Set Variable Label
-    #'
-    #' @description
-    #' Sets a human-readable label for a variable
-    #'
-    #' @param var Character string with variable name
-    #' @param label Character string with label text
-    #'
-    #' @return Invisible NULL (updates variable_label internally)
-    set_label = function(var, label) {
-      if (!var %in% names(self$data)) {
-        phrutils::phr_warning(
-          self$dataset_name,
-          phrutils::phr_txt("Variable '{var}' not found when setting label.")
-        )
-      }
-      self$variable_label[[var]] <- as.character(label)
-      phrutils::phr_message(phrutils::phr_txt("Set label for '{var}' → '{label}'."))
-    },
-
-    #' Set Value Labels for Variable
-    #'
-    #' @description
-    #' Sets value labels (code-to-label mappings) for a variable
-    #'
-    #' @param var Character string with variable name
-    #' @param labels_named_vector Named character vector where names are codes and values are labels
-    #'
-    #' @return Invisible NULL (updates value_label internally)
-    set_value_labels = function(var, labels_named_vector) {
-      if (
-        !is.character(names(labels_named_vector)) ||
-          any(names(labels_named_vector) == "")
-      ) {
-        phrutils::phr_warning(
-          self$dataset_name,
-          phrutils::phr_txt("Value labels should be a named character vector.")
-        )
-      }
-      self$value_label[[var]] <- labels_named_vector
-      phrutils::phr_message(phrutils::phr_txt(
-        "Set value labels for '{var}' ({length(labels_named_vector)} levels)."
-      ))
-    },
-
-    #' Get Variable Label
-    #'
-    #' @description
-    #' Retrieves the label for a variable
-    #'
-    #' @param var Character string with variable name
-    #'
-    #' @return Character string with label, or NULL if not set
-    get_label = function(var) self$variable_label[[var]],
-
-    #' Get Value Labels for Variable
-    #'
-    #' @description
-    #' Retrieves the value labels for a variable
-    #'
-    #' @param var Character string with variable name
-    #'
-    #' @return Named character vector of value labels, or NULL if not set
-    get_value_labels = function(var) self$value_label[[var]],
 
     # Variable map helpers
 
@@ -3627,92 +3510,6 @@ Data <- R6::R6Class(
       return(translated)
     },
 
-    # Autosave & export
-
-    #' Save Data Object to File
-    #'
-    #' @description
-    #' Serializes the entire Data object to an RDS file
-    #'
-    #' @param file_path Character string with file path (.rds extension added if missing)
-    #'
-    #' @return Logical TRUE (invisibly)
-    #'
-    #' @details
-    #' Saves the complete R6 object including all data stages, logs, schemas, and metadata.
-    #' Can be restored later with load_object().
-    save_object = function(file_path) {
-      phrutils::phr_try(
-        {
-          if (missing(file_path) || !is.character(file_path)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt("A valid file path must be specified.")
-            )
-          }
-          if (!grepl("\\.rds$", file_path, ignore.case = TRUE)) {
-            file_path <- paste0(file_path, ".rds")
-          }
-          saveRDS(self, file = file_path)
-
-          # ---- DUMMY SESSION SAVE HOOK
-          # if (exists("session") && !is.null(session$userData)) {
-          #   session$userData$last_saved_object <- file_path
-          # }
-
-          phrutils::phr_message(phrutils::phr_txt(
-            "Saved {self$dataset_name} object to '{file_path}'."
-          ))
-          invisible(TRUE)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$save_object")
-      )
-    },
-
-    #' Load Data Object from File
-    #'
-    #' @description
-    #' Deserializes a Data object from an RDS file
-    #'
-    #' @param file_path Character string with file path to RDS file
-    #'
-    #' @return Loaded Data object
-    #'
-    #' @details
-    #' Restores a complete Data object that was saved with save_object().
-    load_object = function(file_path) {
-      phrutils::phr_try(
-        {
-          if (missing(file_path) || !file.exists(file_path)) {
-            phrutils::phr_error(
-              "Data",
-              phrutils::phr_txt("File '{file_path}' not found or inaccessible.")
-            )
-          }
-          loaded <- readRDS(file_path)
-          if (!inherits(loaded, "Data")) {
-            phrutils::phr_warning(
-              "Data",
-              phrutils::phr_txt("Loaded object is not a 'Data' class instance.")
-            )
-          }
-
-          # ---- DUMMY SESSION LOAD HOOK
-          # if (exists("session") && !is.null(session$userData)) {
-          #   session$userData$last_loaded_object <- loaded$dataset_name
-          # }
-
-          phrutils::phr_message(phrutils::phr_txt(
-            "Loaded Data object '{loaded$dataset_name}' from '{file_path}'."
-          ))
-          return(loaded)
-        },
-        on_error = "abort",
-        origin = "Data$load_object"
-      )
-    },
-
     #' Export Data to File
     #'
     #' @description
@@ -3774,33 +3571,6 @@ Data <- R6::R6Class(
       )
     },
 
-    # Metadata & diagnostics
-
-    #' Update Metadata
-    #'
-    #' @description
-    #' Synchronizes metadata with current object state
-    #'
-    #' @return Logical TRUE (invisibly)
-    #'
-    #' @details
-    #' Updates metadata fields including dataset_name, uuid, validation/standardization/cleaning status,
-    #' log counts, and timestamps.
-    update_metadata = function() {
-      # Minimal sync; extend as needed
-      self$metadata$dataset_name <- self$dataset_name
-      self$metadata$uuid <- self$uuid
-      self$metadata$validated <- self$validated
-      self$metadata$standardized <- self$standardized
-      self$metadata$cleaned <- self$cleaned
-      self$metadata$cleaning_log_n <- nrow(self$cleaning_log$log_df)
-      self$metadata$deletion_log_n <- nrow(self$deletion_log$log_df)
-      self$metadata$dq_flags <- !is.null(self$data_quality_flags)
-      self$metadata$timestamps <- self$metadata$timestamps %||% list()
-      self$metadata$timestamps$updated <- Sys.time()
-      invisible(TRUE)
-    },
-
     #' Summarize Data Object
     #'
     #' @description
@@ -3839,64 +3609,6 @@ Data <- R6::R6Class(
         },
         on_error = "warn",
         origin = paste0(self$dataset_name, "$summary")
-      )
-    },
-
-    # Hash fingerprinting
-
-    #' Get Data Hash
-    #'
-    #' @description
-    #' Computes a hash fingerprint of the data at the specified stage
-    #'
-    #' @param stage Character string: "clean", "standardized", or "raw"
-    #'
-    #' @return Character string with MD5 hash, or NA if data not available
-    #'
-    #' @details
-    #' Uses digest package to compute MD5 hash of the entire data frame.
-    #' Useful for data integrity verification and change detection.
-    get_hash = function(stage = c("clean", "standardized", "raw")) {
-      stage <- match.arg(stage)
-
-      phrutils::phr_try(
-        {
-          if (!requireNamespace("digest", quietly = TRUE)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt("Package 'digest' is required for hashing.")
-            )
-          }
-
-          df <- self$get_data(stage)
-          if (is.null(df)) {
-            return(NA_character_)
-          }
-
-          # --- Minimal extension: include logs + schema + mappings ---
-          components <- list(
-            data = df,
-            cleaning_log = if (!is.null(self$cleaning_log)) {
-              self$cleaning_log$log_df
-            } else {
-              NULL
-            },
-            deletion_log = if (!is.null(self$deletion_log)) {
-              self$deletion_log$log_df
-            } else {
-              NULL
-            },
-            variable_schema = self$variable_schema,
-            indicator_schema = self$indicator_schema,
-            dependency_schema = self$dependency_schema,
-            variable_map = self$variable_map,
-            value_map = self$value_map
-          )
-
-          digest::digest(components)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$get_hash")
       )
     },
 
@@ -4053,7 +3765,7 @@ Data <- R6::R6Class(
             return(NULL)
           }
 
-          data_hash <- self$get_hash(stage)
+          data_hash <- self$get(field = "..metadata", role = "hash_id")
           variable_map <- self$variable_map
           value_map <- self$value_map
 
