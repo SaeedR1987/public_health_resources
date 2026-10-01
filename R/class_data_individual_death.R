@@ -40,14 +40,11 @@ DeathIndividualData <- R6::R6Class(
     #' @param dataset_name A name for this dataset
     #' @param variable_map Optional named list mapping standard variable names to data columns
     #' @param recall_date Reference date for mortality recall period (required, e.g., '2025-01-01')
-    #' @param cause_map Optional mapping for cause of death categories
-    #' @param location_map Optional mapping for location of death categories
     #' @return A new DeathIndividualData object
     initialize = function(data,
                           dataset_name = "DeathIndividualData",
                           recall_date = NULL,
-                          cause_map = NULL,
-                          location_map = NULL) {
+                          uuid = NULL) {
 
       phrutils::phr_try({
 
@@ -71,10 +68,13 @@ DeathIndividualData <- R6::R6Class(
 
         # variable_map <- modifyList(default_death_map, variable_map %||% list())
 
+        if(is.null(uuid)) {uuid <- default_death_map$uuid}
+
         # Direct super call (inherits uuid, hh_uuid, sex, age, etc.)
         super$initialize(
           data         = data,
-          dataset_name = dataset_name
+          dataset_name = dataset_name,
+          uuid = uuid
         )
 
         # --- Required and optional columns ---------------------------

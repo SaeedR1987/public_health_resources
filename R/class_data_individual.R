@@ -52,7 +52,8 @@ IndividualData <- R6::R6Class(
     #' 6. Loads default indicator and dependency schemas
     #' 7. Auto-maps schema variables based on column names
     initialize = function(data,
-                          dataset_name = "IndividualData") {
+                          dataset_name = "IndividualData",
+                          uuid = NULL) {
 
       phrutils::phr_try({
         # Default mapping for individual-level data
@@ -65,11 +66,13 @@ IndividualData <- R6::R6Class(
         # Merge user-specified map over defaults
         # variable_map <- modifyList(default_map, variable_map %||% list())
 
+        if(is.null(uuid)) {uuid <- default_map$uuid}
+
         # Call parent (Data) initializer — uuid now refers to individual identifier
         super$initialize(
           data         = data,
           dataset_name = dataset_name,
-          uuid         = default_map$uuid
+          uuid         = uuid
         )
 
         # ---- Required & optional columns ----------------------------
