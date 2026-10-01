@@ -82,7 +82,6 @@ HouseholdData <- R6::R6Class(
     #'
     #' @param data Data frame containing household-level survey data
     #' @param dataset_name Character name for the dataset (default: "HouseholdData")
-    #' @param metadata Optional list of metadata attributes
     #' @param variable_map Optional named list mapping variable roles to column names.
     #'   Common roles: uuid, consent, date_survey, enum_id, cluster_id, stratum, weight, admin1, admin2, gps_lat, gps_lon
     #'
@@ -98,9 +97,7 @@ HouseholdData <- R6::R6Class(
     #' 6. Establishes required and optional columns
     initialize = function(
       data,
-      dataset_name = "HouseholdData",
-      metadata = NULL,
-      variable_map = NULL
+      dataset_name = "HouseholdData"
     ) {
       phrutils::phr_try(
         {
@@ -110,15 +107,13 @@ HouseholdData <- R6::R6Class(
           )
 
           # Merge user-specified map over defaults
-          variable_map <- modifyList(default_map, variable_map %||% list())
+          # variable_map <- modifyList(default_map, variable_map %||% list())
 
           # Call parent initializer first
           super$initialize(
             data = data,
             dataset_name = dataset_name,
-            metadata = metadata,
-            uuid = variable_map$uuid,
-            variable_map = variable_map
+            uuid = default_map$uuid
           )
 
           # 2) Build and merge household schema into any existing schema
@@ -130,7 +125,9 @@ HouseholdData <- R6::R6Class(
           # 3) Load default indicator schema
           default_ind_schema <- self$default_indicator_schema()
           if (length(default_ind_schema) > 0) {
-            self$set_indicator_schema(default_ind_schema)
+
+            self$set(field = "..indicator_schema", value = default_ind_schema)
+
             phrutils::phr_message(
               phrutils::phr_txt(glue::glue(
                 "Loaded default indicator schema with {length(default_ind_schema)} indicator(s)."
@@ -146,7 +143,7 @@ HouseholdData <- R6::R6Class(
 
             # self$set_dependency_schema(default_dep_schema)
             phrutils::phr_message(
-              phr_txt(
+              phrutils::phr_txt(
                 "Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies."
               )
             )
@@ -184,7 +181,9 @@ HouseholdData <- R6::R6Class(
             private$..variable_map$gps_lon
           ))
 
-          phrutils::phr_message(phr_txt(
+          private$..map_schema_vars(stage = "raw")
+
+          phrutils::phr_message(phrutils::phr_txt(
             "{dataset_name} initialized as HouseholdData object."
           ))
         },

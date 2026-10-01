@@ -25,9 +25,8 @@ Asset <- R6::R6Class(
         created_datetime = timestamp,
         modified_datetime = timestamp,
         version = 0L,
-        hash_id = NA_character_
+        hash_id = private$..compute_hash_id()
       )
-      private$..metadata$hash_id <- private$..compute_hash_id()
       private$..touch()
       invisible(self)
     },
@@ -258,10 +257,10 @@ Asset <- R6::R6Class(
     #' @param member Optional character scalar naming a writable field on the
     #'   resolved target. When \code{NULL}, \code{value} is assigned directly
     #'   to the resolved target.
-    #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
     #' @param role Optional character scalar used to resolve a list element in
     #'   \code{field} by role-like name.
+    #' @param role2 Optional character scalar naming a 2nd level list element in
+    #'   \code{field} and 1st level list element \code{role}.
     #' @param update_sync Logical indicating whether to synchronize state
     #'   after the assignment.
     #' @param update_modified Logical indicating whether to update the
@@ -271,13 +270,14 @@ Asset <- R6::R6Class(
       field,
       value,
       member = NULL,
-      name = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = TRUE
     ) {
       phrutils::phr_try(
         {
+          # Handles whether field is a public or private and returns the field.
           resolved <- private$..resolve_field_scope(
             field = field,
             origin = "Asset$set"
@@ -285,17 +285,13 @@ Asset <- R6::R6Class(
           container <- resolved$value
 
           key <- NULL
-          if (!is.null(name) || !is.null(role)) {
-            phrutils::phr_assert(
-              !(!is.null(name) && !is.null(role)),
-              message = phr_txt("Provide only one of name or role."),
-              origin = "Asset$set"
-            )
+          if (!is.null(role)) {
+
             key <- private$..resolve_list_key(
               container = container,
               field = field,
-              name = name,
               role = role,
+              create_if_missing = TRUE,
               origin = "Asset$set"
             )
           }
@@ -357,10 +353,17 @@ Asset <- R6::R6Class(
             new_target <- target
           }
 
-          if (is.null(key)) {
+          if (is.null(role)) {
+
             container <- new_target
-          } else {
+
+          } else if (is.null(role2)) {
+
             container[[key]] <- new_target
+
+          } else {
+
+            container[[key]][[role2]] <- new_target
           }
 
           private$..assign_field_scope(
@@ -553,35 +556,50 @@ Asset <- R6::R6Class(
 
     # @description Resolve a top-level or nested target object.
     # @param field Top-level field name.
-    # @param name Optional exact list element name.
-    # @param role Optional role-style key for list lookup.
+    # @param role Optional exact list element name.
+    # @param role2 Optional role-style key for list lookup.
     # @return Resolved object.
     # @keywords internal
-    ..resolve_nested_target = function(field, name = NULL, role = NULL) {
+    ..resolve_nested_target = function(field, role = NULL, role2 = NULL) {
       resolved <- private$..resolve_field_scope(
         field = field,
-        origin = "Asset$.resolve_nested_target"
+        origin = "Asset$..resolve_nested_target"
       )
-      container <- resolved$value
+      target <- resolved$value
 
       phrutils::phr_assert(
-        !(!is.null(name) && !is.null(role)),
-        message = phr_txt("Provide only one of name or role."),
+        !(is.null(role) && !is.null(role2)),
+        message = phrutils::phr_txt("Cannot provide 2nd level list element (role2) without a 1st level list element (role)."),
         origin = "Asset$.resolve_nested_target"
       )
 
-      if (is.null(name) && is.null(role)) {
-        return(container)
+      if (is.null(role) && is.null(role2)) {
+        return(target)
       }
 
-      key <- private$..resolve_list_key(
-        container = container,
-        field = field,
-        name = name,
-        role = role,
-        origin = "Asset$.resolve_nested_target"
-      )
-      container[[key]]
+      if (!is.null(role)) {
+        key <- private$..resolve_list_key(
+          container = target,
+          field = field,
+          role = role,
+          origin = "Asset$.resolve_nested_target"
+        )
+        target <- target[[key]]
+      }
+
+      if (!is.null(role2)) {
+        phrutils::phr_assert(
+          is.list(target),
+          message = phrutils::phr_txt(
+            "role2 can only be resolved from a list returned by role."
+          ),
+          origin = "Asset$..resolve_nested_target"
+        )
+        target <- target[[role2]]
+      }
+
+      target
+
     },
 
     # @description Resolve a public or private member value on a resolved
@@ -620,52 +638,38 @@ Asset <- R6::R6Class(
     ..resolve_list_key = function(
       container,
       field,
-      name = NULL,
       role = NULL,
-      origin = "Asset$.resolve_list_key"
+      create_if_missing = FALSE,
+      origin = "Asset$..resolve_list_key"
     ) {
       phrutils::phr_assert(
         is.list(container),
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "Field '{field}' must be a list when resolving name/role."
         ),
         origin = origin
       )
 
-      if (!is.null(name)) {
-        phrutils::phr_assert(
-          is.character(name) && length(name) == 1L && nzchar(name),
-          message = phr_txt(
-            "name must be a non-empty character string when provided."
-          ),
-          origin = origin
-        )
-        phrutils::phr_assert(
-          !is.null(container[[name]]),
-          message = phr_txt("Name '{name}' was not found in field '{field}'."),
-          origin = origin
-        )
-        return(name)
-      }
-
       phrutils::phr_assert(
         is.character(role) && length(role) == 1L && nzchar(role),
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "role must be a non-empty character string when provided."
         ),
         origin = origin
       )
 
       nms <- names(container)
+
       phrutils::phr_assert(
         !is.null(nms) && length(nms) > 0L,
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "Field '{field}' has no named elements for role-based lookup."
         ),
         origin = origin
       )
 
       role_key <- private$..normalize_role_name(role)
+
       normalized_names <- vapply(
         nms,
         private$..normalize_role_name,
@@ -680,16 +684,30 @@ Asset <- R6::R6Class(
         )
       }
 
+      if (length(idx) == 1L) {
+        return(idx)
+      }
+
       phrutils::phr_assert(
-        length(idx) == 1L,
-        message = if (length(idx) == 0L) {
-          phr_txt("Role '{role}' was not found in field '{field}'.")
-        } else {
-          phr_txt("Role '{role}' matched multiple elements in field '{field}'.")
-        },
+        !(length(idx) > 1L),
+        message = phr_txt(
+          "Role '{role}' matched multiple elements in field '{field}'."
+        ),
         origin = origin
       )
-      idx
+
+      if (isTRUE(create_if_missing)) {
+        return(role)
+      }
+
+      phrutils::phr_assert(
+        FALSE,
+        message = phrutils::phr_txt(
+          "Role '{role}' was not found in field '{field}'."
+        ),
+        origin = origin
+      )
+
     },
 
     # @description Resolve which scope ("public" or "private") owns a
@@ -704,7 +722,7 @@ Asset <- R6::R6Class(
     ..resolve_field_scope = function(field, origin = "Asset$set") {
       phrutils::phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
-        message = phr_txt("field must be a non-empty character string."),
+        message = phrutils::phr_txt("field must be a non-empty character string."),
         origin = origin
       )
 
@@ -717,7 +735,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         FALSE,
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "Field '{field}' is not available on this object."
         ),
         origin = origin

@@ -113,11 +113,8 @@ Data <- R6::R6Class(
     #' @return A new Data R6 object
     initialize = function(
       data = NULL,
-      metadata = NULL,
       dataset_name = "Data",
-      uuid = NULL,
-      variable_map = NULL,
-      value_map = NULL
+      uuid = NULL
     ) {
       super$initialize()
       phrutils::phr_try(
@@ -155,19 +152,18 @@ Data <- R6::R6Class(
           self$set(field = "..raw_data", value = data)
           self$set(field = "..standardized_data", value = NULL)
           self$set(field = "..clean_data", value = NULL)
-          self$set(field = "..metadata", value = metadata %||% list())
           self$set(field = "dataset_name", value = dataset_name)
           self$set(field = "..uuid", value = uuid)
           self$set(field = "..required_columns", value = uuid)
           self$set(field = "..other_columns", value = list())
           self$set(field = "..variable_map",
-                   value = if (!is.null(variable_map)) {
-                     variable_map
+                   value = if (!is.null(private$..variable_map)) {
+                     private$..variable_map
                    } else {
                      list(uuid = uuid)
                    })
           self$set(field = "..value_map",
-                   value = if (!is.null(value_map)) value_map else list())
+                   value = if (!is.null(private$..value_map)) private$..value_map else list())
           self$set(field = "..cleaning_log",
                    value = CleaningLog$new(
                      log_name = paste0(dataset_name, "_CleaningLog")
@@ -177,6 +173,8 @@ Data <- R6::R6Class(
                      log_name = paste0(dataset_name, "_DeletionLog")
                    ))
 
+          private$..map_schema_vars(stage = "raw")
+
           phrutils::phr_message(phrutils::phr_txt(
             "{dataset_name} initialized with {nrow(data)} records."
           ))
@@ -184,6 +182,47 @@ Data <- R6::R6Class(
         },
         on_error = "abort",
         origin = paste0(dataset_name, "$initialize")
+      )
+    },
+
+    #' Summarize Data Object
+    #'
+    #' @description
+    #' Generates a summary of the dataset and its current state
+    #'
+    #' @return List with summary information including dataset name, record/column counts,
+    #'   validation status, schemas, and labels
+    summary = function() {
+      phrutils::phr_try(
+        {
+          if (is.null(private$..raw_data)) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt("No data loaded for summary.")
+            )
+            return(NULL)
+          }
+          list(
+            dataset_name = self$dataset_name,
+            n_records = nrow(private$..raw_data),
+            n_columns = ncol(private$..raw_data),
+            uuid = private$..uuid,
+            validated = self$validated,
+            standardized = self$standardized,
+            cleaned = self$cleaned,
+            required_columns = private$..required_columns,
+            variable_map = private$..variable_map,
+            labels_defined = list(
+              vars = names(private$..variable_label),
+              value_labelled_vars = names(private$..value_label)
+            ),
+            variable_schema_attached = !is.null(private$..variable_schema),
+            indicator_schema_attached = !is.null(private$..indicator_schema),
+            dependency_schema_attached = !is.null(private$..dependency_schema)
+          )
+        },
+        on_error = "warn",
+        origin = paste0(self$dataset_name, "$summary")
       )
     },
 
@@ -813,7 +852,7 @@ Data <- R6::R6Class(
                     # Add as list entry
 
                     self$set(field = "..other_columns",
-                             role = col,
+                             # role = col,
                              value = list(
                                other_column = col,
                                other_linked_columns = linked_cols
@@ -1416,6 +1455,9 @@ Data <- R6::R6Class(
 
           }
 
+          # Run any specified sub class pre cleaning
+          self$pre_clean()
+
           # VALIDATE & APPLY CLEANING LOG
 
           if (
@@ -1463,6 +1505,8 @@ Data <- R6::R6Class(
 
           # FINALIZE
 
+          self$post_clean()
+
           self$cleaned <- TRUE
           phrutils::phr_message(phrutils::phr_txt(
             "{self$dataset_name} cleaning complete."
@@ -1474,128 +1518,23 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Set Variable Schema from List
+    #' Pre-clean Hook
     #'
     #' @description
-    #' Sets the variable schema directly from a structured list
+    #' Hook method called before clean begins. Override in subclasses for custom pre-processing.
     #'
-    #' @param schema_list List with named elements for types, allowed_values, etc.
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
     #'
-    #' @return Invisible self for method chaining
-    #'
-    #' @details
-    #' The schema list is validated for structure before assignment.
-    #' Use this method when programmatically building schemas.
-    set_variable_schema = function(schema_list) {
-      phrutils::phr_try(
-        {
-          # 1. Validate nested schema structure
-          data_validate_schema_to_table(
-            schema_list = schema_list
-          )
+    #' @return NULL (default implementation does nothing)
+    pre_clean = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
 
-          # 2. Convert to table
-          tbl <- private$..schema_to_table(
-            schema_type = "variable",
-            schema_list = schema_list
-          )
-
-          # 3. Validate the table
-          data_validate_table_to_schema(
-            df = tbl
-          )
-
-          # 4. Store
-
-          self$set(field = "..variable_schema", value = schema_list)
-
-          phrutils::phr_message(
-            phrutils::phr_txt("Variable schema attached to {self$dataset_name}.")
-          )
-
-          # 5. Auto-update variable and value maps now that schema is available.
-          #    map_schema_vars handles NULL/empty raw_data gracefully (returns early).
-          private$..map_schema_vars(stage = "raw")
-          private$..map_schema_labels()
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$set_variable_schema")
-      )
-    },
-
-    #' Get Variable Schema
+    #' Post-clean Hook
     #'
     #' @description
-    #' Returns the current variable schema list
+    #' Hook method called after clean completes. Override in subclasses for custom post-processing.
     #'
-    #' @return List containing variable schema (types, allowed_values, etc.), or NULL if not set
-    get_variable_schema = function() private$..variable_schema,
-
-    #' @description
-    #' Set indicator schema from list
-    #'
-    #' @param indicator_schema_list List containing indicator definitions
-    set_indicator_schema = function(indicator_schema_list) {
-      phrutils::phr_try(
-        {
-          if (!is.list(indicator_schema_list)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt("Indicator schema must be a list.")
-            )
-          }
-
-          self$set(field = "..indicator_schema", value = indicator_schema_list)
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Indicator schema set for {self$dataset_name} ({length(indicator_schema_list)} indicator(s))."
-            )
-          )
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$set_indicator_schema")
-      )
-    },
-
-    #' @description
-    #' Get indicator schema
-    #'
-    #' @return Indicator schema list, or NULL if not set
-    get_indicator_schema = function() private$..indicator_schema,
-
-    #' @description
-    #' Set dependency schema from list
-    #'
-    #' @param dependency_schema_list List containing dependency definitions
-    set_dependency_schema = function(dependency_schema_list) {
-      phrutils::phr_try(
-        {
-          if (!is.list(dependency_schema_list)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt("Dependency schema must be a list.")
-            )
-          }
-
-          self$set(field = "..dependency_schema", value = dependency_schema_list)
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Dependency schema set for {self$dataset_name} ({length(dependency_schema_list$dependencies %||% list())} dependency/ies, {length(dependency_schema_list$soft_dependencies %||% list())} soft dependency/ies)."
-            )
-          )
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$set_dependency_schema")
-      )
-    },
-
-    #' @description
-    #' Get dependency schema
-    #'
-    #' @return Dependency schema list, or NULL if not set
-    get_dependency_schema = function() private$..dependency_schema,
+    #' @return NULL (default implementation does nothing)
+    post_clean = function() {}, # subclass hook
 
     # Data access
 
@@ -1623,79 +1562,6 @@ Data <- R6::R6Class(
         origin = paste0(self$dataset_name, "$get_data")
       )
     },
-
-    # Variable map helpers
-
-    #' Set Variable Mapping
-    #'
-    #' @description
-    #' Maps a semantic role to a column name in the dataset
-    #'
-    #' @param role Character string with semantic role (e.g., "uuid", "cluster_id")
-    #' @param column_name Character string with actual column name in the data
-    #' @param stage Character string specifying stage to validate against: "raw", "standardized", or "clean"
-    #'
-    #' @return Invisible NULL (updates variable_map internally)
-    #'
-    #' @details
-    #' The column name is validated to ensure it exists in the specified data stage.
-    set_variable = function(
-      role,
-      column_name,
-      stage = c("raw", "standardized", "clean")
-    ) {
-      stage <- match.arg(stage)
-
-      # --- Basic input validation ---
-      if (!is.character(role) || length(role) != 1) {
-        phrutils::phr_error(
-          self$dataset_name,
-          phrutils::phr_txt("Role must be a single character string.")
-        )
-      }
-
-      if (!is.character(column_name) || length(column_name) != 1) {
-        phrutils::phr_error(
-          self$dataset_name,
-          phrutils::phr_txt("Column name must be a single character string.")
-        )
-      }
-
-      # --- Use unified accessor for correct stage ---
-      df <- self$get_data(stage)
-
-      if (is.null(df)) {
-        phrutils::phr_warning(
-          self$dataset_name,
-          phrutils::phr_txt(
-            "No {stage} dataset available when setting variable '{role}'."
-          )
-        )
-      } else if (!column_name %in% names(df)) {
-        phrutils::phr_warning(
-          self$dataset_name,
-          phrutils::phr_txt("Column '{column_name}' not found in {stage} dataset.")
-        )
-      }
-
-      # --- Set the variable map ---
-
-      self$set(field = "..variable_map", role = role, value = column_name)
-
-      phrutils::phr_message(phrutils::phr_txt(
-        "Mapped role '{role}' → '{column_name}' (checked on {stage} data)."
-      ))
-    },
-
-    #' Get Variable Column Name by Role
-    #'
-    #' @description
-    #' Returns the column name mapped to a semantic role
-    #'
-    #' @param role Character string with semantic role
-    #'
-    #' @return Character string with column name, or NULL if role not mapped
-    get_variable = function(role) private$..variable_map[[role]],
 
     #' Resolve Column from Role
     #'
@@ -2027,7 +1893,7 @@ Data <- R6::R6Class(
           }
 
           # Store in data_diagnostics field
-          self$set(field = "..data_diagnostics", value = results)
+          self$set(field = "..data_diagnostics", value = result)
 
           phrutils::phr_message(
             phrutils::phr_txt(
@@ -2921,47 +2787,6 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Summarize Data Object
-    #'
-    #' @description
-    #' Generates a summary of the dataset and its current state
-    #'
-    #' @return List with summary information including dataset name, record/column counts,
-    #'   validation status, schemas, and labels
-    summary = function() {
-      phrutils::phr_try(
-        {
-          if (is.null(private$..raw_data)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No data loaded for summary.")
-            )
-            return(NULL)
-          }
-          list(
-            dataset_name = self$dataset_name,
-            n_records = nrow(private$..raw_data),
-            n_columns = ncol(private$..raw_data),
-            uuid = private$..uuid,
-            validated = self$validated,
-            standardized = self$standardized,
-            cleaned = self$cleaned,
-            required_columns = private$..required_columns,
-            variable_map = private$..variable_map,
-            labels_defined = list(
-              vars = names(private$..variable_label),
-              value_labelled_vars = names(private$..value_label)
-            ),
-            variable_schema_attached = !is.null(private$..variable_schema),
-            indicator_schema_attached = !is.null(private$..indicator_schema),
-            dependency_schema_attached = !is.null(private$..dependency_schema)
-          )
-        },
-        on_error = "warn",
-        origin = paste0(self$dataset_name, "$summary")
-      )
-    },
-
     # Linking & cross-object validation
 
     #' Add Linked Dataset
@@ -3461,7 +3286,7 @@ Data <- R6::R6Class(
       switch(
         schema_type,
         variable = {
-          # ---- Inlined body of data_schema_to_table() ----
+          # ---- Inlined body of data_schema_to_table()
           data_validate_schema_to_table(
             schema_list = schema_list,
             origin      = "..schema_to_table(variable)"
@@ -3692,7 +3517,7 @@ Data <- R6::R6Class(
           ))
         },
         indicator = {
-          # ---- Inlined body of indicator_schema_to_table() ----
+          # ---- Inlined body of indicator_schema_to_table()
           if (is.null(schema_list) || !is.list(schema_list)) {
             phrutils::phr_error("..schema_to_table(indicator)", "Indicator schema must be a list object.")
           }
@@ -3757,7 +3582,7 @@ Data <- R6::R6Class(
           ))
         },
         dependency = {
-          # ---- Inlined body of dependency_schema_to_table() ----
+          # ---- Inlined body of dependency_schema_to_table()
           dependency_validate_schema_to_table(
             dependency_schema_list = schema_list,
             origin = "..schema_to_table(dependency)"
@@ -4826,9 +4651,9 @@ Data <- R6::R6Class(
             if (is.null(matched_col)) {
               # No match found, skip this role
               next
-            } else if (var_role %in% names(self$.variable_map)) {
+            } else if (var_role %in% names(private$..variable_map)) {
               # Role is already mapped - check if new match is more preferred
-              existing_col <- self$.variable_map[[var_role]]
+              existing_col <- private$..variable_map[[var_role]]
 
               if (is.null(existing_col) || !(existing_col %in% data_cols)) {
                 # Existing mapping is invalid, update with new match
@@ -5076,7 +4901,7 @@ Data <- R6::R6Class(
           vals_labelled <- 0
 
           # Populate variable_label for each role present in variable_map
-          for (var_role in names(self$.variable_map)) {
+          for (var_role in names(private$..variable_map)) {
             if (!is.null(schema_var_labels[[var_role]])) {
               self$set(field = "..variable_map", role = var_role, value = schema_var_labels[[var_role]])
               vars_labelled <- vars_labelled + 1

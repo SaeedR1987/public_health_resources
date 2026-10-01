@@ -38,7 +38,6 @@ DeathIndividualData <- R6::R6Class(
     #'
     #' @param data A data frame containing individual death records
     #' @param dataset_name A name for this dataset
-    #' @param metadata Optional list of metadata
     #' @param variable_map Optional named list mapping standard variable names to data columns
     #' @param recall_date Reference date for mortality recall period (required, e.g., '2025-01-01')
     #' @param cause_map Optional mapping for cause of death categories
@@ -46,8 +45,6 @@ DeathIndividualData <- R6::R6Class(
     #' @return A new DeathIndividualData object
     initialize = function(data,
                           dataset_name = "DeathIndividualData",
-                          metadata = NULL,
-                          variable_map = NULL,
                           recall_date = NULL,
                           cause_map = NULL,
                           location_map = NULL) {
@@ -72,14 +69,12 @@ DeathIndividualData <- R6::R6Class(
           hh_uuid    = "hh_uuid"
         )
 
-        variable_map <- modifyList(default_death_map, variable_map %||% list())
+        # variable_map <- modifyList(default_death_map, variable_map %||% list())
 
         # Direct super call (inherits uuid, hh_uuid, sex, age, etc.)
         super$initialize(
           data         = data,
-          dataset_name = dataset_name,
-          metadata     = metadata,
-          variable_map = variable_map
+          dataset_name = dataset_name
         )
 
         # --- Required and optional columns ---------------------------
@@ -102,7 +97,9 @@ DeathIndividualData <- R6::R6Class(
         # Load default dependency schema
         default_dep_schema <- self$default_dependency_schema()
         if (length(default_dep_schema$dependencies) > 0) {
-          self$set_dependency_schema(default_dep_schema)
+
+          self$set(field = "..dependency_schema", value = default_dep_schema)
+
           phrutils::phr_message(
             phrutils::phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )
