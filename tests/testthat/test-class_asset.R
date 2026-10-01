@@ -87,11 +87,11 @@ test_that("set() writes a member on a resolved public field", {
   expect_true(inst$metadata$custom_flag)
 })
 
-test_that("set() writes a member on a name-resolved list element", {
+test_that("set() writes a member on a role-resolved (exact-name-matching) list element", {
   inst <- TestAsset$new()
   inst$set(
     field = "tools",
-    name = "tool_household_iphra_v2",
+    role = "tool_household_iphra_v2",
     member = "name",
     value = "renamed"
   )
@@ -153,17 +153,49 @@ test_that("set() delegates to a nested R6 object's own set() when writing a memb
   expect_equal(as.data.frame(inst$log$get("log_df")), new_df)
 })
 
-test_that("set() errors when both name and role are supplied", {
+test_that("set() errors when role2 is supplied without role", {
   inst <- TestAsset$new()
   expect_error(
     inst$set(
       field = "tools",
-      name = "tool_household_iphra_v2",
-      role = "health",
-      member = "name",
+      role2 = "name",
       value = "x"
     )
   )
+})
+
+test_that("set() creates a new role-keyed list element with a member when it does not yet exist", {
+  inst <- TestAsset$new()
+  inst$set(
+    field = "tools",
+    role = "brand_new_tool",
+    member = "name",
+    value = "created"
+  )
+  expect_equal(inst$tools$brand_new_tool$name, "created")
+})
+
+test_that("set() creates a new 2nd level (role2) list element when it does not yet exist", {
+  inst <- TestAsset$new()
+  inst$set(
+    field = "tools",
+    role = "health",
+    role2 = "settings",
+    value = list(enabled = TRUE)
+  )
+  expect_equal(inst$tools$tool_health_iphra_v2$settings, list(enabled = TRUE))
+})
+
+test_that("set() creates a new 2nd level (role2) list element with a member when both are new", {
+  inst <- TestAsset$new()
+  inst$set(
+    field = "tools",
+    role = "brand_new_tool",
+    role2 = "settings",
+    member = "enabled",
+    value = TRUE
+  )
+  expect_true(inst$tools$brand_new_tool$settings$enabled)
 })
 
 # get()
