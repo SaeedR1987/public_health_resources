@@ -1366,7 +1366,7 @@ test_that("variable_map handles NULL or empty maps safely during validate", {
     Data$new(data = df, uuid = "id")
   )
 
-  d$set(field = ".variable_map", value = list() # clear map)
+  d$set(field = ".variable_map", value = list()) # clear map
 
   suppressMessages(expect_no_error(d$validate()))
 })
@@ -1916,24 +1916,39 @@ test_that("data_diagnose returns NULL when stage data is NULL", {
   expect_null(result)
 })
 
+# Helper: build a flat variable_schema data frame (the current storage
+# format for private$..variable_schema) directly, one row per
+# variable/canonical-value combination, for use in data_diagnose() tests.
+.make_variable_schema_df <- function(rows) {
+  do.call(rbind, lapply(rows, function(r) {
+    data.frame(
+      rule_type = "variable",
+      variable = r$variable,
+      value = if (is.null(r$value)) NA_character_ else r$value,
+      required = isTRUE(r$required),
+      type = if (is.null(r$type)) NA_character_ else r$type,
+      question_type = if (is.null(r$question_type)) NA_character_ else r$question_type,
+      allowed = if (is.null(r$allowed)) NA_character_ else r$allowed,
+      col_names = if (is.null(r$col_names)) r$variable else r$col_names,
+      unique = isTRUE(r$unique),
+      comment = if (is.null(r$comment)) NA_character_ else r$comment,
+      stringsAsFactors = FALSE
+    )
+  }))
+}
+
 test_that("data_diagnose generates basic diagnostic table with types only", {
   df <- tibble(id = 1:3, age = c("20", "25", "30"))
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      id = "numeric",
-      age = "numeric"
-    ),
-    col_names = list(
-      id = c("id"),
-      age = c("age")
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "id", type = "numeric"),
+    list(variable = "age", type = "numeric")
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
+  d$set(field = "..variable_schema", value = schema)
   d$set(field = ".variable_map", value = list(id = "id", age = "age"))
 
   suppressWarnings(suppressMessages(result <- d$data_diagnose(stage = "raw")))
@@ -1967,15 +1982,13 @@ test_that("data_diagnose detects unmapped variables", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      id = "numeric",
-      age = "numeric"
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "id", type = "numeric"),
+    list(variable = "age", type = "numeric")
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
-  d$set(field = ".variable_map", value = list(id = "id") # age not mapped)
+  d$set(field = "..variable_schema", value = schema)
+  d$set(field = ".variable_map", value = list(id = "id")) # age not mapped
 
   suppressWarnings(suppressMessages(result <- d$data_diagnose(stage = "raw")))
 
@@ -1989,15 +2002,13 @@ test_that("data_diagnose detects mapped variables not in dataset", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      id = "numeric",
-      age = "numeric"
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "id", type = "numeric"),
+    list(variable = "age", type = "numeric")
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
-  d$set(field = ".variable_map", value = list(id = "id", age = "age_col") # age_col doesn't exist)
+  d$set(field = "..variable_schema", value = schema)
+  d$set(field = ".variable_map", value = list(id = "id", age = "age_col")) # age_col doesn't exist
 
   suppressWarnings(suppressMessages(result <- d$data_diagnose(stage = "raw")))
 
@@ -2011,14 +2022,12 @@ test_that("data_diagnose detects type coercion issues", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      id = "numeric",
-      status = "numeric" # Can't coerce text to numeric
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "id", type = "numeric"),
+    list(variable = "status", type = "numeric") # Can't coerce text to numeric
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
+  d$set(field = "..variable_schema", value = schema)
   d$set(field = ".variable_map", value = list(id = "id", status = "status"))
 
   suppressWarnings(suppressMessages(result <- d$data_diagnose(stage = "raw")))
@@ -2034,20 +2043,13 @@ test_that("data_diagnose handles value maps with nested format", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      id = "numeric",
-      status = "character"
-    ),
-    value_map = list(
-      status = list(
-        active = c("A", "active", "yes"),
-        inactive = c("I", "inactive", "no")
-      )
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "id", type = "numeric"),
+    list(variable = "status", value = "active", type = "character", allowed = "A, active, yes"),
+    list(variable = "status", value = "inactive", type = "character", allowed = "I, inactive, no")
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
+  d$set(field = "..variable_schema", value = schema)
   d$set(field = ".variable_map", value = list(id = "id", status = "status"))
   d$set(field = ".value_map", value = list(status = list(active = c("A"), inactive = c("I"))))
 
@@ -2066,19 +2068,12 @@ test_that("data_diagnose detects unmapped values", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      status = "character"
-    ),
-    value_map = list(
-      status = list(
-        active = c("A"),
-        inactive = c("I")
-      )
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "status", value = "active", type = "character", allowed = "A"),
+    list(variable = "status", value = "inactive", type = "character", allowed = "I")
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
+  d$set(field = "..variable_schema", value = schema)
   d$set(field = ".variable_map", value = list(id = "id", status = "status"))
   # Don't set value_map - values are not mapped
 
@@ -2095,19 +2090,12 @@ test_that("data_diagnose detects mapped values not in dataset", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(
-      status = "character"
-    ),
-    value_map = list(
-      status = list(
-        active = c("A"),
-        inactive = c("I", "X") # X not in data
-      )
-    )
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "status", value = "active", type = "character", allowed = "A"),
+    list(variable = "status", value = "inactive", type = "character", allowed = "I, X") # X not in data
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
+  d$set(field = "..variable_schema", value = schema)
   d$set(field = ".variable_map", value = list(id = "id", status = "status"))
   d$set(field = ".value_map", value = list(status = list(active = c("A"), inactive = c("I", "X"))))
 
@@ -2124,11 +2112,12 @@ test_that("data_diagnose stores result in data_diagnostics field", {
     Data$new(data = df, uuid = "id")
   )
 
-  schema <- list(
-    types = list(id = "numeric", age = "numeric")
-  )
+  schema <- .make_variable_schema_df(list(
+    list(variable = "id", type = "numeric"),
+    list(variable = "age", type = "numeric")
+  ))
 
-  suppressMessages(d$set_variable_schema(schema))
+  d$set(field = "..variable_schema", value = schema)
   d$set(field = ".variable_map", value = list(id = "id", age = "age"))
 
   suppressWarnings(suppressMessages(result <- d$data_diagnose(stage = "raw")))
@@ -2226,10 +2215,10 @@ test_that("generate_cleaning_log respects overwrite parameter", {
   expect_equal(nrow(d$get(field = "..cleaning_log")$log_df), 1)
 
   # Generate with overwrite = FALSE (default)
-  d$set(field = "..data_quality_flags", value = data.frame()
+  d$set(field = "..data_quality_flags", value = data.frame(
     id = 1:3,
     flag_test = c(0, 0, 0)
-  )
+  ))
   suppressWarnings(suppressMessages(d$generate_cleaning_log(
     stage = "standardized",
     overwrite = FALSE

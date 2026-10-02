@@ -1674,7 +1674,8 @@ Data <- R6::R6Class(
 
           # 2. Check if schema exists
           sch <- private$..variable_schema
-          if (is.null(sch) || (is.list(sch) && length(sch) == 0)) {
+          if (is.null(sch) || (is.list(sch) && length(sch) == 0) ||
+                (is.data.frame(sch) && nrow(sch) == 0)) {
             phrutils::phr_warning(
               self$dataset_name,
               phrutils::phr_txt("No variable schema defined.")
@@ -1683,33 +1684,55 @@ Data <- R6::R6Class(
           }
 
           # 3. Build diagnostic table
-          # Each row represents a canonical variable/value pair from the schema
+          # The variable schema is a flat data frame where each row describes
+          # either a canonical variable's rule (rule_type == "variable") or a
+          # dependency check (ignored here; see run_quality_checks()). A
+          # variable with a value_map has one row per canonical value (the
+          # `value` column holds the canonical value name and `allowed` holds
+          # the comma-separated dataset values for that value), plus the
+          # variable-level columns (`type`, `required`, `comment`, etc.)
+          # repeated on each row.
 
           diagnostic_rows <- list()
 
-          # Get schema components
-          types <- sch$type %||% list()
-          value_map_schema <- sch$value %||% list()
-          col_names_schema <- sch$col_names %||% list()
-          comments <- sch$comments %||% list()
+          # Helper: return the first non-missing/non-empty value in a vector
+          first_non_empty <- function(x) {
+            x <- x[!is.na(x) & x != ""]
+            if (length(x) == 0) NA_character_ else as.character(x[[1]])
+          }
 
-          print(paste0("Types: ",head(types)))
-          print(paste0("Val Map: ",unique(value_map_schema)))
-          print(paste0("Col Names: ",head(col_names_schema)))
-          print(paste0("Comments: ",head(comments)))
+          sch_vars <- sch
+          if ("rule_type" %in% names(sch_vars)) {
+            sch_vars <- sch_vars[sch_vars$rule_type == "variable", , drop = FALSE]
+          }
+
+          if (nrow(sch_vars) == 0 || !"variable" %in% names(sch_vars)) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt("No variable schema defined.")
+            )
+            return(NULL)
+          }
 
           # Get current mappings
           vm <- private$..variable_map %||% list()
           vmap <- private$..value_map %||% list()
 
-          # Iterate over all variables in the schema
-          for (var_role in names(types)) {
+          # Iterate over each distinct variable referenced in the schema
+          schema_vars <- unique(sch_vars$variable[
+            !is.na(sch_vars$variable) & sch_vars$variable != ""
+          ])
 
-            required_type <- types[[var_role]]
-            comment <- comments[[var_role]] %||% NA_character_
+          for (var_role in schema_vars) {
 
-            print(paste0("Var Role: ", var_role))
-            print(required_type)
+            var_rows <- sch_vars[sch_vars$variable == var_role, , drop = FALSE]
+
+            required_type <- first_non_empty(var_rows$type)
+            comment <- if ("comment" %in% names(var_rows)) {
+              first_non_empty(var_rows$comment)
+            } else {
+              NA_character_
+            }
 
             # Get mapped variable name from variable_map
             mapped_variable <- vm[[var_role]] %||% NA_character_
@@ -1727,114 +1750,96 @@ Data <- R6::R6Class(
               )
             }
 
-            # Check if this variable has value mappings in schema
-            has_value_map <- var_role %in% names(value_map_schema)
+            # Rows that map a canonical value for this variable
+            value_rows <- if ("value" %in% names(var_rows)) {
+              var_rows[!is.na(var_rows$value) & var_rows$value != "", , drop = FALSE]
+            } else {
+              var_rows[0, , drop = FALSE]
+            }
 
-            if (has_value_map) {
+            # Is this variable a select_multiple question (values space-separated)?
+            is_select_multiple <- "question_type" %in% names(var_rows) &&
+              any(var_rows$question_type %in% "select_multiple", na.rm = TRUE)
+
+            if (nrow(value_rows) > 0) {
               # This variable has canonical values defined in schema
-              canonical_values <- value_map_schema[[var_role]]
+              for (i in seq_len(nrow(value_rows))) {
+                value_row <- value_rows[i, ]
+                canonical_val <- value_row$value
 
-              # canonical_values is a list: canonical_value_name -> c(dataset_values)
-              if (is.list(canonical_values) && length(canonical_values) > 0) {
-                for (canonical_val in names(canonical_values)) {
-                  # Get the mapped values from value_map for this canonical value
-                  mapped_values <- NA_character_
-                  if (var_role %in% names(vmap) && is.list(vmap[[var_role]])) {
-                    if (canonical_val %in% names(vmap[[var_role]])) {
-                      dataset_vals <- vmap[[var_role]][[canonical_val]]
-                      if (length(dataset_vals) > 0) {
-                        # Store as string, but we'll use the actual vector for validation
-                        mapped_values <- paste(dataset_vals, collapse = ", ")
-                        mapped_vals_vector <- dataset_vals # Keep the actual vector for validation
-                      }
+                # Get the mapped values from value_map for this canonical value
+                mapped_values <- NA_character_
+                mapped_vals_vector <- character(0)
+                if (var_role %in% names(vmap) && is.list(vmap[[var_role]])) {
+                  if (canonical_val %in% names(vmap[[var_role]])) {
+                    dataset_vals <- vmap[[var_role]][[canonical_val]]
+                    if (length(dataset_vals) > 0) {
+                      # Store as string, but we'll use the actual vector for validation
+                      mapped_values <- paste(dataset_vals, collapse = ", ")
+                      mapped_vals_vector <- dataset_vals # Keep the actual vector for validation
                     }
                   }
-
-                  # Determine issues for this variable/value pair
-                  issues <- character(0)
-
-                  # Check if variable is not mapped
-                  if (is.na(mapped_variable)) {
-                    issues <- c(issues, "variable not mapped")
-                  } else if (!var_exists) {
-                    issues <- c(issues, "mapped variable not in dataset")
-                  }
-
-                  # Check if value is not mapped
-                  if (is.na(mapped_values)) {
-                    issues <- c(issues, "value not mapped")
-                    mapped_vals_vector <- character(0) # Empty vector for unmapped
-                  } else {
-                    # Check if mapped values exist in data
-                    if (var_exists && exists("mapped_vals_vector")) {
-                      data_vals <- unique(df[[mapped_variable]])
-
-                      # Check if this is a select_multiple variable
-                      # For select_multiple, values are space-separated, so we need to extract tokens
-                      is_select_multiple <- private$..is_select_multiple(var_role)
-                      if (is_select_multiple) {
-                        # Extract individual tokens from space-separated values
-                        data_vals <- private$..extract_select_multiple_tokens(
-                          data_vals
-                        )
-                      }
-
-                      missing_vals <- setdiff(mapped_vals_vector, data_vals)
-                      if (length(missing_vals) > 0) {
-                        issues <- c(
-                          issues,
-                          paste0(
-                            "mapped values not in dataset: ",
-                            paste(missing_vals, collapse = ", ")
-                          )
-                        )
-                      }
-                    }
-                  }
-
-                  # Check type coercion issues
-                  if (var_exists && isFALSE(safely_coercible)) {
-                    issues <- c(issues, "not safely coercible to required type")
-                  }
-
-                  # Create issues string
-                  issues_str <- if (length(issues) == 0) {
-                    "ok"
-                  } else {
-                    paste(issues, collapse = "; ")
-                  }
-
-                  # Add row
-                  diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
-                    required_variable = var_role,
-                    required_value = canonical_val,
-                    required_type = required_type,
-                    mapped_variable = mapped_variable,
-                    mapped_value = mapped_values,
-                    safely_coercible = safely_coercible,
-                    comment = comment,
-                    issues = issues_str
-                  )
                 }
-              } else {
-                # Value map exists but is empty or not in list format - add single row for variable
+
+                # Determine issues for this variable/value pair
+                issues <- character(0)
+
+                # Check if variable is not mapped
+                if (is.na(mapped_variable)) {
+                  issues <- c(issues, "variable not mapped")
+                } else if (!var_exists) {
+                  issues <- c(issues, "mapped variable not in dataset")
+                }
+
+                # Check if value is not mapped
+                if (is.na(mapped_values)) {
+                  issues <- c(issues, "value not mapped")
+                } else if (var_exists && length(mapped_vals_vector) > 0) {
+                  # Check if mapped values exist in data
+                  data_vals <- unique(df[[mapped_variable]])
+
+                  # For select_multiple, values are space-separated, so we
+                  # need to extract tokens before comparing
+                  if (is_select_multiple) {
+                    data_vals <- private$..extract_select_multiple_tokens(
+                      data_vals
+                    )
+                  }
+
+                  missing_vals <- setdiff(mapped_vals_vector, data_vals)
+                  if (length(missing_vals) > 0) {
+                    issues <- c(
+                      issues,
+                      paste0(
+                        "mapped values not in dataset: ",
+                        paste(missing_vals, collapse = ", ")
+                      )
+                    )
+                  }
+                }
+
+                # Check type coercion issues
+                if (var_exists && isFALSE(safely_coercible)) {
+                  issues <- c(issues, "not safely coercible to required type")
+                }
+
+                # Create issues string
+                issues_str <- if (length(issues) == 0) {
+                  "ok"
+                } else {
+                  paste(issues, collapse = "; ")
+                }
+
+                # Add row
                 diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
                   required_variable = var_role,
-                  required_value = NA_character_,
+                  required_value = canonical_val,
                   required_type = required_type,
                   mapped_variable = mapped_variable,
-                  mapped_value = NA_character_,
+                  mapped_value = mapped_values,
                   safely_coercible = safely_coercible,
                   comment = comment,
-                  issues = if (is.na(mapped_variable)) {
-                    "variable not mapped"
-                  } else if (!var_exists) {
-                    "mapped variable not in dataset"
-                  } else if (isFALSE(safely_coercible)) {
-                    "not safely coercible to required type"
-                  } else {
-                    "ok"
-                  }
+                  issues = issues_str
                 )
               }
             } else {
@@ -1866,11 +1871,7 @@ Data <- R6::R6Class(
                 issues = issues_str
               )
             }
-            print(paste0("Length Diagnostic Rows: ", length(diagnostic_rows)))
           }
-
-          print(paste0("Length Diagnostic Rows: ", length(diagnostic_rows)))
-          print(paste0("Head Diagnostic Rows: ", head(diagnostic_rows)))
 
           # Convert to data frame
           if (length(diagnostic_rows) == 0) {
@@ -4118,10 +4119,27 @@ Data <- R6::R6Class(
     #'
     #' @return Logical indicating if variable is select_multiple
     ..is_select_multiple = function(var_role) {
-      if (is.null(private$..variable_schema)) {
+      sch <- private$..variable_schema
+      if (is.null(sch)) {
         return(FALSE)
       }
-      question_types <- private$..variable_schema$question_types %||% list()
+
+      # Flat variable schema data frame (current format): one or more rows
+      # per variable, with a `question_type` column.
+      if (is.data.frame(sch)) {
+        if (!"variable" %in% names(sch) || !"question_type" %in% names(sch)) {
+          return(FALSE)
+        }
+        rows <- sch
+        if ("rule_type" %in% names(rows)) {
+          rows <- rows[rows$rule_type == "variable", , drop = FALSE]
+        }
+        qt <- rows$question_type[rows$variable == var_role]
+        return(any(qt %in% "select_multiple", na.rm = TRUE))
+      }
+
+      # Legacy nested-list schema format.
+      question_types <- sch$question_types %||% list()
       return(
         !is.null(question_types[[var_role]]) &&
           question_types[[var_role]] == "select_multiple"
