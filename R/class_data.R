@@ -1688,10 +1688,15 @@ Data <- R6::R6Class(
           diagnostic_rows <- list()
 
           # Get schema components
-          types <- sch$types %||% list()
-          value_map_schema <- sch$value_map %||% list()
+          types <- sch$type %||% list()
+          value_map_schema <- sch$value %||% list()
           col_names_schema <- sch$col_names %||% list()
           comments <- sch$comments %||% list()
+
+          print(paste0("Types: ",head(types)))
+          print(paste0("Val Map: ",unique(value_map_schema)))
+          print(paste0("Col Names: ",head(col_names_schema)))
+          print(paste0("Comments: ",head(comments)))
 
           # Get current mappings
           vm <- private$..variable_map %||% list()
@@ -1699,8 +1704,12 @@ Data <- R6::R6Class(
 
           # Iterate over all variables in the schema
           for (var_role in names(types)) {
+
             required_type <- types[[var_role]]
             comment <- comments[[var_role]] %||% NA_character_
+
+            print(paste0("Var Role: ", var_role))
+            print(required_type)
 
             # Get mapped variable name from variable_map
             mapped_variable <- vm[[var_role]] %||% NA_character_
@@ -1857,7 +1866,11 @@ Data <- R6::R6Class(
                 issues = issues_str
               )
             }
+            print(paste0("Length Diagnostic Rows: ", length(diagnostic_rows)))
           }
+
+          print(paste0("Length Diagnostic Rows: ", length(diagnostic_rows)))
+          print(paste0("Head Diagnostic Rows: ", head(diagnostic_rows)))
 
           # Convert to data frame
           if (length(diagnostic_rows) == 0) {

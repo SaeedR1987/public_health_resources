@@ -47,7 +47,8 @@ roster$set(field = "..variable_schema", value = read.csv(file = "roster_variable
 deaths <- DeathIndividualData$new(
   data = df_death,
   recall_date = "2026-01-01",
-  dataset_name = "DRC MSNA 2026 Deaths"
+  dataset_name = "DRC MSNA 2026 Deaths",
+  uuid = "index"
 )
 
 
