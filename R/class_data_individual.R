@@ -53,8 +53,7 @@ IndividualData <- R6::R6Class(
     #' 7. Auto-maps schema variables based on column names
     initialize = function(data,
                           dataset_name = "IndividualData",
-                          metadata = NULL,
-                          variable_map = NULL) {
+                          uuid = NULL) {
 
       phrutils::phr_try({
         # Default mapping for individual-level data
@@ -65,25 +64,25 @@ IndividualData <- R6::R6Class(
         )
 
         # Merge user-specified map over defaults
-        variable_map <- modifyList(default_map, variable_map %||% list())
+        # variable_map <- modifyList(default_map, variable_map %||% list())
+
+        if(is.null(uuid)) {uuid <- default_map$uuid}
 
         # Call parent (Data) initializer — uuid now refers to individual identifier
         super$initialize(
           data         = data,
           dataset_name = dataset_name,
-          metadata     = metadata,
-          uuid         = variable_map$uuid,
-          variable_map = variable_map
+          uuid         = uuid
         )
 
         # ---- Required & optional columns ----------------------------
         # Merge individual-required columns into Data$required_columns
         # (ensure we store *column names*, not roles)
         ind_required <- c(
-          variable_map$uuid,     # unique person identifier
-          variable_map$hh_uuid,  # household linkage (duplicates allowed)
-          variable_map$sex,
-          variable_map$age
+          private$..variable_map$uuid,     # unique person identifier
+          private$..variable_map$hh_uuid,  # household linkage (duplicates allowed)
+          private$..variable_map$sex,
+          private$..variable_map$age
         )
         ind_required <- unique(ind_required[!is.na(ind_required) & ind_required != ""])
 
@@ -93,11 +92,11 @@ IndividualData <- R6::R6Class(
 
         # Optional (mapped) columns
         self$optional_columns <- c(
-          variable_map$est_dob,
-          variable_map$exact_dob,
-          variable_map$age_months,
-          variable_map$age_days,
-          variable_map$joined_hh
+          private$..variable_map$est_dob,
+          private$..variable_map$exact_dob,
+          private$..variable_map$age_months,
+          private$..variable_map$age_days,
+          private$..variable_map$joined_hh
         )
 
         # ---- Build and merge individual schema into any existing schema ----
@@ -105,12 +104,14 @@ IndividualData <- R6::R6Class(
         parent_schema <- private$..variable_schema %||% list()
         merged_schema <- utils::modifyList(parent_schema, ind_schema)
 
-        self$set_variable_schema(merged_schema)
+        self$set(field = "..variable_schema", value = merged_schema)
 
         # ---- Load default indicator schema
         default_ind_schema <- self$default_indicator_schema()
         if (length(default_ind_schema) > 0) {
-          self$set_indicator_schema(default_ind_schema)
+
+          self$set(field = "..indicator_schema", value = default_ind_schema)
+
           phrutils::phr_message(
             phrutils::phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
           )
@@ -119,7 +120,7 @@ IndividualData <- R6::R6Class(
         # ---- Load default dependency schema
         default_dep_schema <- self$default_dependency_schema()
         if (length(default_dep_schema$dependencies) > 0) {
-          self$set_dependency_schema(default_dep_schema)
+          self$set(field = "..dependency_schema", value = default_dep_schema)
           phrutils::phr_message(
             phrutils::phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
           )

@@ -1,10 +1,20 @@
-#' IPHRA Household Data Class
+#' IPHRA Household Data Class (Performance-Optimized Benchmark Copy)
 #'
-#' The `HouseholdData` R6 class extends the base [Data] class to represent
+#' @description
+#' `HouseholdDataOptimized` is a benchmark copy of [HouseholdData] that
+#' inherits from [DataOptimized] instead of [Data], so the optimized
+#' `standardize()`/`clean()` workflow can be exercised (and timed) through
+#' the same realistic household-schema code path as `HouseholdData`. See
+#' [DataOptimized] for the list of internal optimizations applied, and
+#' `tests/manual/benchmark_standardize_clean.R` for the comparison script.
+#'
+#' The original class-level documentation for `HouseholdData` follows, since
+#' the public API and behavior are unchanged:
+#'
+#' The `HouseholdDataOptimized` R6 class extends the base [Data] class to represent
 #' household-level survey data. Each record corresponds to one household,
 #' providing essential metadata for enumeration, sampling, and linkage.
 #'
-#' @description
 #' This subclass enforces domain-specific validation and schema rules for
 #' household data, including:
 #' * Required fields for `uuid`, `consent`, `interview_date`, `enumerator_id`
@@ -65,9 +75,9 @@
 #' @seealso [Data], [IndividualData], [DeathIndividualData], [WaterContainerData],
 #'   [NutritionIndividualData], [HealthIndividualData]
 #' @export
-HouseholdData <- R6::R6Class(
-  classname = "HouseholdData",
-  inherit = Data,
+HouseholdDataOptimized <- R6::R6Class(
+  classname = "HouseholdDataOptimized",
+  inherit = DataOptimized,
 
   public = list(
     # Additional fields
@@ -78,14 +88,15 @@ HouseholdData <- R6::R6Class(
     sampling_frame = NULL, # optional SamplingFrame for generate_weights()
 
     #' @description
-    #' Creates a new HouseholdData object with household-level survey data
+    #' Creates a new HouseholdDataOptimized object with household-level survey data
     #'
     #' @param data Data frame containing household-level survey data
-    #' @param dataset_name Character name for the dataset (default: "HouseholdData")
+    #' @param dataset_name Character name for the dataset (default: "HouseholdDataOptimized")
+    #' @param metadata Optional list of metadata attributes
     #' @param variable_map Optional named list mapping variable roles to column names.
     #'   Common roles: uuid, consent, date_survey, enum_id, cluster_id, stratum, weight, admin1, admin2, gps_lat, gps_lon
     #'
-    #' @return A new HouseholdData R6 object
+    #' @return A new HouseholdDataOptimized R6 object
     #'
     #' @details
     #' Initialization process:
@@ -97,7 +108,9 @@ HouseholdData <- R6::R6Class(
     #' 6. Establishes required and optional columns
     initialize = function(
       data,
-      dataset_name = "HouseholdData"
+      dataset_name = "HouseholdDataOptimized",
+      metadata = NULL,
+      variable_map = NULL
     ) {
       phrutils::phr_try(
         {
@@ -107,29 +120,29 @@ HouseholdData <- R6::R6Class(
           )
 
           # Merge user-specified map over defaults
-          # variable_map <- modifyList(default_map, variable_map %||% list())
+          variable_map <- modifyList(default_map, variable_map %||% list())
 
           # Call parent initializer first
           super$initialize(
             data = data,
             dataset_name = dataset_name,
-            uuid = default_map$uuid
+            metadata = metadata,
+            uuid = variable_map$uuid,
+            variable_map = variable_map
           )
 
           # 2) Build and merge household schema into any existing schema
           hh_schema <- self$default_schema()
           parent_schema <- private$..variable_schema %||% list()
           merged_schema <- utils::modifyList(parent_schema, hh_schema)
-          self$set(field = "..variable_schema", value = merged_schema)
+          self$set_variable_schema(merged_schema)
 
           # 3) Load default indicator schema
           default_ind_schema <- self$default_indicator_schema()
           if (length(default_ind_schema) > 0) {
-
-            self$set(field = "..indicator_schema", value = default_ind_schema)
-
+            self$set_indicator_schema(default_ind_schema)
             phrutils::phr_message(
-              phrutils::phr_txt(glue::glue(
+              phr_txt(glue::glue(
                 "Loaded default indicator schema with {length(default_ind_schema)} indicator(s)."
               ))
             )
@@ -138,12 +151,9 @@ HouseholdData <- R6::R6Class(
           # 4) Load default dependency schema
           default_dep_schema <- self$default_dependency_schema()
           if (length(default_dep_schema$dependencies) > 0) {
-
-            self$set(field = "..dependency_schema", value = default_dep_schema)
-
-            # self$set_dependency_schema(default_dep_schema)
+            self$set_dependency_schema(default_dep_schema)
             phrutils::phr_message(
-              phrutils::phr_txt(
+              phr_txt(
                 "Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies."
               )
             )
@@ -153,10 +163,10 @@ HouseholdData <- R6::R6Class(
           #    (ensure we store *column names*, not roles)
 
           hh_required <- c(
-            private$..variable_map$uuid,
-            private$..variable_map$consent,
-            private$..variable_map$date_survey,
-            private$..variable_map$enum_id
+            self$.variable_map$uuid,
+            self$.variable_map$consent,
+            self$.variable_map$date_survey,
+            self$.variable_map$enum_id
           )
           hh_required <- unique(hh_required[
             !is.na(hh_required) & hh_required != ""
@@ -164,31 +174,25 @@ HouseholdData <- R6::R6Class(
 
           # Data$initialize already set private$..required_columns <- uuid
           # We extend that with the household-specific requirements
-
-          self$set(field = "..required_columns", value = unique(c(private$..required_columns, hh_required)))
-
-          # private$..required_columns <- unique(c(private$..required_columns, hh_required))
+          private$..required_columns <- unique(c(private$..required_columns, hh_required))
 
           # Optional (mapped) columns
+          self$optional_columns <- c(
+            self$.variable_map$cluster_id,
+            self$.variable_map$stratum,
+            self$.variable_map$weight,
+            self$.variable_map$admin1,
+            self$.variable_map$admin2,
+            self$.variable_map$gps_lat,
+            self$.variable_map$gps_lon
+          )
 
-          self$set(field = "optional_columns", value = c(
-            private$..variable_map$cluster_id,
-            private$..variable_map$stratum,
-            private$..variable_map$weight,
-            private$..variable_map$admin1,
-            private$..variable_map$admin2,
-            private$..variable_map$gps_lat,
-            private$..variable_map$gps_lon
-          ))
-
-          private$..map_schema_vars(stage = "raw")
-
-          phrutils::phr_message(phrutils::phr_txt(
-            "{dataset_name} initialized as HouseholdData object."
+          phrutils::phr_message(phr_txt(
+            "{dataset_name} initialized as HouseholdDataOptimized object."
           ))
         },
         on_error = "abort",
-        origin = "HouseholdData$initialize"
+        origin = "HouseholdDataOptimized$initialize"
       )
     },
 
@@ -210,8 +214,8 @@ HouseholdData <- R6::R6Class(
       )
 
       if (!file.exists(file)) {
-        phrutils::phr_error(
-          origin = "HouseholdData$default_schema",
+        phr_error(
+          origin = "HouseholdDataOptimized$default_schema",
           message = "variable_schema_data_household_template.xlsx not found in package resources.",
           hint = "Place the schema file under inst/resources/ before building the package."
         )
@@ -221,8 +225,8 @@ HouseholdData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          phrutils::phr_error(
-            origin = "HouseholdData$default_schema",
+          phr_error(
+            origin = "HouseholdDataOptimized$default_schema",
             message = "Failed to read variable_schema_data_household_template.xlsx",
             hint = e$message
           )
@@ -254,7 +258,7 @@ HouseholdData <- R6::R6Class(
 
       if (!file.exists(file)) {
         phrutils::phr_warning(
-          origin = "HouseholdData$default_indicator_schema",
+          origin = "HouseholdDataOptimized$default_indicator_schema",
           message = "indicator_schema_data_household_template.xlsx not found in package resources. Continuing without default indicator schema."
         )
         return(list())
@@ -265,7 +269,7 @@ HouseholdData <- R6::R6Class(
         readxl::read_xlsx(file),
         error = function(e) {
           phrutils::phr_warning(
-            origin = "HouseholdData$default_indicator_schema",
+            origin = "HouseholdDataOptimized$default_indicator_schema",
             message = phr_txt(glue::glue(
               "Failed to read indicator_schema_data_household_template.xlsx: {e$message}"
             ))
@@ -303,7 +307,7 @@ HouseholdData <- R6::R6Class(
 
       if (!file.exists(file)) {
         phrutils::phr_warning(
-          origin = "HouseholdData$default_dependency_schema",
+          origin = "HouseholdDataOptimized$default_dependency_schema",
           message = "dependency_schema_data_household_template.xlsx not found in package resources. Continuing without default dependency schema."
         )
         return(list(dependencies = list()))
@@ -314,7 +318,7 @@ HouseholdData <- R6::R6Class(
         readxl::read_xlsx(file),
         error = function(e) {
           phrutils::phr_warning(
-            origin = "HouseholdData$default_dependency_schema",
+            origin = "HouseholdDataOptimized$default_dependency_schema",
             message = phr_txt(
               "Failed to read dependency_schema_data_household_template.xlsx: {e$message}"
             )
@@ -356,8 +360,8 @@ HouseholdData <- R6::R6Class(
 
       # GPS validity check
 
-      lat_col <- private$..variable_map$gps_lat
-      lon_col <- private$..variable_map$gps_lon
+      lat_col <- self$.variable_map$gps_lat
+      lon_col <- self$.variable_map$gps_lon
 
       if (
         !is.null(lat_col) &&
@@ -388,21 +392,21 @@ HouseholdData <- R6::R6Class(
       # Weight checks
 
       if (
-        !is.null(private$..variable_map$weight) &&
-          private$..variable_map$weight %in% names(df)
+        !is.null(self$.variable_map$weight) &&
+          self$.variable_map$weight %in% names(df)
       ) {
-        wts <- suppressWarnings(as.numeric(df[[private$..variable_map$weight]]))
+        wts <- suppressWarnings(as.numeric(df[[self$.variable_map$weight]]))
 
         if (any(is.na(wts))) {
           phrutils::phr_warning(
             nm,
-            phrutils::phr_txt("Missing values found in weight variable.")
+            phr_txt("Missing values found in weight variable.")
           )
           had_issues <- TRUE
         }
 
         if (any(wts < 0, na.rm = TRUE)) {
-          phrutils::phr_warning(nm, phrutils::phr_txt("Negative weights detected."))
+          phrutils::phr_warning(nm, phr_txt("Negative weights detected."))
           had_issues <- TRUE
         }
       }
@@ -410,13 +414,13 @@ HouseholdData <- R6::R6Class(
       # Strata checks
 
       if (
-        !is.null(private$..variable_map$strata) &&
-          private$..variable_map$strata %in% names(df)
+        !is.null(self$.variable_map$strata) &&
+          self$.variable_map$strata %in% names(df)
       ) {
-        strata_vals <- df[[private$..variable_map$strata]]
+        strata_vals <- df[[self$.variable_map$strata]]
 
         if (any(is.na(strata_vals))) {
-          phrutils::phr_warning(nm, phrutils::phr_txt("Missing strata values detected."))
+          phrutils::phr_warning(nm, phr_txt("Missing strata values detected."))
           had_issues <- TRUE
         }
       }
@@ -466,7 +470,7 @@ HouseholdData <- R6::R6Class(
     #' * health: HealthIndividualData
     #'
     #' Links are stored with foreign key relationship information (by_self_role="uuid", by_other_role="hh_uuid").
-    #' For HouseholdData, these roles are always fixed. If you need custom roles, use a base Data object instead.
+    #' For HouseholdDataOptimized, these roles are always fixed. If you need custom roles, use a base Data object instead.
     add_linked_dataset = function(
       name,
       data_object,
@@ -480,7 +484,7 @@ HouseholdData <- R6::R6Class(
             phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
-                "by_self_role and by_other_role are not used for HouseholdData. They are automatically set to 'uuid' and 'hh_uuid' respectively."
+                "by_self_role and by_other_role are not used for HouseholdDataOptimized. They are automatically set to 'uuid' and 'hh_uuid' respectively."
               )
             )
           }
@@ -497,35 +501,35 @@ HouseholdData <- R6::R6Class(
 
           # Validate inputs
           if (missing(name) || !is.character(name) || length(name) != 1) {
-            phrutils::phr_error(
+            phr_error(
               self$dataset_name,
-              phrutils::phr_txt("Link name must be a single character string.")
+              phr_txt("Link name must be a single character string.")
             )
           }
 
           # Check if name is in the allowed list
           if (!name %in% names(allowed_links)) {
-            phrutils::phr_error(
+            phr_error(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Link name '{name}' is not allowed. Allowed names are: {paste(names(allowed_links), collapse=', ')}."
               )
             )
           }
 
           if (!inherits(data_object, "Data")) {
-            phrutils::phr_error(
+            phr_error(
               self$dataset_name,
-              phrutils::phr_txt("Linked object must be a Data class or subclass object.")
+              phr_txt("Linked object must be a Data class or subclass object.")
             )
           }
 
           # Check if the data object is of the correct type for this link name
           expected_class <- allowed_links[[name]]
           if (!inherits(data_object, expected_class)) {
-            phrutils::phr_error(
+            phr_error(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Link name '{name}' expects a {expected_class} object, but received {class(data_object)[1]}."
               )
             )
@@ -542,7 +546,7 @@ HouseholdData <- R6::R6Class(
           )
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added linked dataset '{name}' ({class(data_object)[1]}) to {self$dataset_name}."
             )
           )
@@ -662,7 +666,7 @@ HouseholdData <- R6::R6Class(
           sf <- sampling_frame %||% self$sampling_frame
 
           if (is.null(sf)) {
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "No SamplingFrame available for {self$dataset_name}. Skipping generate_weights."
             ))
             return(invisible(self))
@@ -671,7 +675,7 @@ HouseholdData <- R6::R6Class(
           if (!inherits(sf, "SamplingFrame")) {
             phrutils::phr_warning(
               origin,
-              phrutils::phr_txt(
+              phr_txt(
                 "sampling_frame is not a SamplingFrame object. Skipping generate_weights."
               )
             )
@@ -688,7 +692,7 @@ HouseholdData <- R6::R6Class(
 
           # 2. Resolve stratum column
 
-          stratum_col <- private$..variable_map$stratum
+          stratum_col <- self$.variable_map$stratum
 
           if (is.null(stratum_col) || stratum_col == "" || is.na(stratum_col)) {
             phrutils::phr_message(phr_txt(
@@ -704,7 +708,7 @@ HouseholdData <- R6::R6Class(
           if (is.null(df) || nrow(df) == 0) {
             phrutils::phr_warning(
               origin,
-              phrutils::phr_txt(
+              phr_txt(
                 "No {stage} data available in {self$dataset_name}. Skipping generate_weights."
               )
             )
@@ -713,7 +717,7 @@ HouseholdData <- R6::R6Class(
 
           if (!stratum_col %in% names(df)) {
             phrutils::phr_message(
-              phrutils::phr_txt(
+              phr_txt(
                 "Stratum column '{stratum_col}' not found in {stage} data for {self$dataset_name}. Skipping generate_weights."
               )
             )
@@ -751,7 +755,7 @@ HouseholdData <- R6::R6Class(
           if (length(unmatched) > 0) {
             phrutils::phr_warning(
               origin,
-              phrutils::phr_txt(
+              phr_txt(
                 "The following strata in the dataset were not found in the SamplingFrame and received NA weights: {paste(unmatched, collapse=', ')}"
               )
             )
@@ -784,13 +788,13 @@ HouseholdData <- R6::R6Class(
               existing_weight_col %in% names(df)
           ) {
             weight_col <- existing_weight_col
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "Using existing weight column '{weight_col}' from variable_map."
             ))
           } else {
             weight_col <- "survey_weight"
             self$.variable_map[["weight"]] <- weight_col
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "No existing weight column mapped. Writing weights to '{weight_col}' and updating variable_map."
             ))
           }
@@ -808,7 +812,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Survey weights generated and added to '{weight_col}' column in {stage} data for {self$dataset_name}."
             )
           )
@@ -853,7 +857,7 @@ HouseholdData <- R6::R6Class(
 
           # Check if any linked objects exist (using inherited linked_objects from Data class)
           if (length(self$linked_objects) == 0) {
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "No linked datasets found in {self$dataset_name}."
             ))
             return(invisible(NULL))
@@ -872,7 +876,7 @@ HouseholdData <- R6::R6Class(
             if (!inherits(linked_obj, "Data")) {
               phrutils::phr_warning(
                 self$dataset_name,
-                phrutils::phr_txt(
+                phr_txt(
                   "Linked object '{link_name}' is not a Data class object. Skipping."
                 )
               )
@@ -1025,7 +1029,7 @@ HouseholdData <- R6::R6Class(
             return(invisible(NULL))
           }
 
-          phrutils::phr_message(phrutils::phr_txt(
+          phrutils::phr_message(phr_txt(
             "Cleaning {length(self$linked_objects)} linked dataset(s) in {self$dataset_name}..."
           ))
 
@@ -1036,14 +1040,14 @@ HouseholdData <- R6::R6Class(
             if (!inherits(linked_obj, "Data")) {
               phrutils::phr_warning(
                 self$dataset_name,
-                phrutils::phr_txt(
+                phr_txt(
                   "Linked object '{link_name}' is not a Data class object. Skipping."
                 )
               )
               next
             }
 
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "Cleaning linked dataset '{link_name}'..."
             ))
             linked_obj$clean()
@@ -1077,9 +1081,9 @@ HouseholdData <- R6::R6Class(
       phrutils::phr_try(
         {
           if (!requireNamespace("srvyr", quietly = TRUE)) {
-            phrutils::phr_error(
+            phr_error(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Package 'srvyr' must be installed to create survey design objects."
               )
             )
@@ -1089,7 +1093,7 @@ HouseholdData <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(glue::glue(
+              phr_txt(glue::glue(
                 "No {stage} data available to create survey design."
               ))
             )
@@ -1116,7 +1120,7 @@ HouseholdData <- R6::R6Class(
           if (length(missing_fields) > 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Survey design creation incomplete: missing required fields ({paste(missing_fields, collapse=', ')})."
               )
             )
@@ -1160,8 +1164,8 @@ HouseholdData <- R6::R6Class(
           )
 
           self$survey_design <- design
-          phrutils::phr_message(phrutils::phr_txt(
-            "Survey design object created and stored in HouseholdData."
+          phrutils::phr_message(phr_txt(
+            "Survey design object created and stored in HouseholdDataOptimized."
           ))
 
           invisible(design)
@@ -1196,14 +1200,14 @@ HouseholdData <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt("No {stage} data available for DataAnalytics generation.")
+              phr_txt("No {stage} data available for DataAnalytics generation.")
             )
             return(NULL)
           }
 
-          data_hash <- self$get(field = "..metadata", role = "hash_id")
-          variable_map <- private$..variable_map
-          value_map <- private$..value_map
+          data_hash <- self$get_hash(stage)
+          variable_map <- self$.variable_map
+          value_map <- self$.value_map
 
           # Helper to extract linked data info
           # self$linked_objects stores wrapper lists: list(object = <Data obj>, by_self_role, by_other_role)
@@ -1224,7 +1228,7 @@ HouseholdData <- R6::R6Class(
             list(
               data = obj$get_data(stage),
               stage_name = stage,
-              hash = obj$get(field = "..metadata", role = "hash_id"),
+              hash = obj$get_hash(stage),
               variable_map = obj$get(field = ".variable_map"),
               value_map = obj$get(field = ".value_map"),
               variable_label = obj$get(field = ".variable_label"),
@@ -1253,7 +1257,7 @@ HouseholdData <- R6::R6Class(
             } else {
               phrutils::phr_warning(
                 origin = paste0(self$dataset_name, "$generate_data_analytics"),
-                message = phrutils::phr_txt(
+                message = phr_txt(
                   "No linked roster data found. Mortality analytics will use only household data."
                 )
               )
@@ -1266,7 +1270,7 @@ HouseholdData <- R6::R6Class(
             } else {
               phrutils::phr_warning(
                 origin = paste0(self$dataset_name, "$generate_data_analytics"),
-                message = phrutils::phr_txt(
+                message = phr_txt(
                   "No linked deaths data found. Mortality analytics will use only household data."
                 )
               )
@@ -1530,14 +1534,14 @@ HouseholdData <- R6::R6Class(
             ),
             phr_error(
               origin = paste0(self$dataset_name, "$generate_data_analytics"),
-              message = phrutils::phr_txt(
-                "Unknown analytics type '{type}' for HouseholdData. Valid types: fsl, wash, health, mortality, general"
+              message = phr_txt(
+                "Unknown analytics type '{type}' for HouseholdDataOptimized. Valid types: fsl, wash, health, mortality, general"
               )
             )
           )
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Generated {type} DataAnalytics object for {self$dataset_name}."
             )
           )
@@ -1620,7 +1624,7 @@ HouseholdData <- R6::R6Class(
 
             linked_data <- linked_data_result$data
             linked_data_stage <- linked_data_result$stage
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "Using linked dataset '{link_name}' from stage: {linked_data_stage}"
             ))
 
@@ -1633,14 +1637,14 @@ HouseholdData <- R6::R6Class(
             if (!linked_hh_col %in% names(linked_data)) {
               phrutils::phr_warning(
                 self$dataset_name,
-                phrutils::phr_txt(
+                phr_txt(
                   "Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'."
                 )
               )
               next
             }
 
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "Aggregating data from linked dataset '{link_name}'..."
             ))
 
@@ -1706,7 +1710,7 @@ HouseholdData <- R6::R6Class(
                 linked_obj
               )
             } else {
-              phrutils::phr_message(phrutils::phr_txt(
+              phrutils::phr_message(phr_txt(
                 "No specific aggregation defined for linked dataset '{link_name}' of class {class(linked_obj)[1]}."
               ))
               agg_result <- hh_data # No aggregation, keep existing data
@@ -1718,7 +1722,7 @@ HouseholdData <- R6::R6Class(
             } else {
               phrutils::phr_warning(
                 self$dataset_name,
-                phrutils::phr_txt(
+                phr_txt(
                   "Aggregation of linked dataset '{link_name}' failed. Skipping this dataset."
                 )
               )
@@ -1735,7 +1739,7 @@ HouseholdData <- R6::R6Class(
       if (is.null(result)) {
         phrutils::phr_warning(
           self$dataset_name,
-          phrutils::phr_txt(
+          phr_txt(
             "Aggregation encountered an error. Returning original household data without aggregated columns."
           )
         )
@@ -1806,7 +1810,7 @@ HouseholdData <- R6::R6Class(
           if (length(available_cols) == 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "No canonical death or person_time columns found in linked dataset '{link_name}'."
               )
             )
@@ -1896,7 +1900,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added {ncol(agg_data) - 1} aggregated column(s) from deaths data"
             )
           )
@@ -1986,7 +1990,7 @@ HouseholdData <- R6::R6Class(
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
             )
@@ -2014,7 +2018,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added aggregated water container data: wash_container_total_liters, num_containers"
             )
           )
@@ -2118,7 +2122,7 @@ HouseholdData <- R6::R6Class(
           if (length(available_cols) == 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "No canonical roster columns found in linked dataset '{link_name}'. Falling back to basic household_size calculation."
               )
             )
@@ -2174,7 +2178,7 @@ HouseholdData <- R6::R6Class(
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
             )
@@ -2215,7 +2219,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added {ncol(agg_data) - 1} aggregated column(s) from roster data"
             )
           )
@@ -2367,7 +2371,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added {ncol(agg_data) - 1} aggregated column(s) from nutrition data"
             )
           )
@@ -2426,7 +2430,7 @@ HouseholdData <- R6::R6Class(
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
             )
@@ -2452,7 +2456,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added {ncol(agg_data) - 1} aggregated column(s) from health data"
             )
           )
@@ -2538,7 +2542,7 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Added {ncol(agg_data) - 1} aggregated column(s) from women data"
             )
           )
@@ -2591,7 +2595,7 @@ HouseholdData <- R6::R6Class(
           if (is.null(linked_data_result)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Linked dataset '{link_name}' has no data at any stage to merge variables to."
               )
             )
@@ -2609,7 +2613,7 @@ HouseholdData <- R6::R6Class(
           if (is.null(hh_data_result)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Household data not available at any stage; cannot merge variables to linked dataset '{link_name}'."
               )
             )
@@ -2618,7 +2622,7 @@ HouseholdData <- R6::R6Class(
 
           hh_data <- hh_data_result$data
           hh_data_stage <- hh_data_result$stage
-          phrutils::phr_message(phrutils::phr_txt(
+          phrutils::phr_message(phr_txt(
             "Using household data from stage: {hh_data_stage}"
           ))
 
@@ -2628,7 +2632,7 @@ HouseholdData <- R6::R6Class(
           if (!hh_uuid_col %in% names(hh_data)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Household UUID column '{hh_uuid_col}' not found. Cannot merge variables to linked dataset '{link_name}'."
               )
             )
@@ -2636,14 +2640,14 @@ HouseholdData <- R6::R6Class(
           }
 
           # Determine the household linkage column in the linked dataset
-          linked_hh_col <- linked_obj$get(field = "..variable_map")$hh_uuid %||%
-            linked_obj$get(field = "..variable_map")$household_uuid %||%
+          linked_hh_col <- linked_obj$get(field = ".variable_map")$hh_uuid %||%
+            linked_obj$get(field = ".variable_map")$household_uuid %||%
             "hh_uuid"
 
           if (!linked_hh_col %in% names(linked_data)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt(
+              phr_txt(
                 "Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'."
               )
             )
@@ -2671,7 +2675,7 @@ HouseholdData <- R6::R6Class(
           vars_to_merge <- list()
           for (var_name in hh_vars_to_merge) {
             # Get the column name from variable_map
-            col_name <- private$..variable_map[[var_name]]
+            col_name <- self$.variable_map[[var_name]]
 
             # Check if it's mapped and exists in household data
             if (
@@ -2685,13 +2689,13 @@ HouseholdData <- R6::R6Class(
           }
 
           if (length(vars_to_merge) == 0) {
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(phr_txt(
               "No household variables found to merge to linked dataset '{link_name}'."
             ))
             return(invisible(NULL))
           }
 
-          phrutils::phr_message(phrutils::phr_txt(
+          phrutils::phr_message(phr_txt(
             "Merging {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'..."
           ))
 
@@ -2723,16 +2727,15 @@ HouseholdData <- R6::R6Class(
 
           # Update the appropriate linked data stage
           if (linked_data_stage == "clean") {
-            linked_obj$set(field = "..clean_data", value = linked_data_merge)
+            linked_obj$clean_data <- linked_data_merged
           } else if (linked_data_stage == "standardized") {
-            linked_obj$set(field = "..standardized_data", value = linked_data_merge)
+            linked_obj$standardized_data <- linked_data_merged
           } else {
-            linked_obj$set(field = "..raw_data", value = linked_data_merge)
             linked_obj$raw_data <- linked_data_merged
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            phr_txt(
               "Successfully merged {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'."
             )
           )

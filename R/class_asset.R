@@ -25,9 +25,8 @@ Asset <- R6::R6Class(
         created_datetime = timestamp,
         modified_datetime = timestamp,
         version = 0L,
-        hash_id = NA_character_
+        hash_id = private$..compute_hash_id()
       )
-      private$..metadata$hash_id <- private$..compute_hash_id()
       private$..touch()
       invisible(self)
     },
@@ -96,20 +95,24 @@ Asset <- R6::R6Class(
     #'
     #' Resolves a top-level field (public or private; for example
     #' \code{tools} or \code{framework}), optionally resolves a named or
-    #' role-matched element if the field is a list, and returns a field or
+    #' role-matched 1st level list element (and, with \code{role2}, a 2nd
+    #' level role-matched element nested within it), and returns a field or
     #' list member value. Unlike \code{call()}, \code{get()} refuses to
     #' return a function; use \code{call()} to invoke nested methods.
     #'
     #' @param field Character scalar naming a public or private top-level
     #'   field on this object.
     #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
+    #'   \code{field} by exact name. Cannot be combined with \code{role}.
     #' @param member Optional character scalar naming a public or private
     #'   field on the resolved target. When \code{NULL}, the resolved target
     #'   itself is returned.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name (for example \code{"household"} for
-    #'   \code{"tool_household_iphra_v2"}).
+    #' @param role Optional character scalar used to resolve a 1st level list
+    #'   element in \code{field} by role-like name (for example
+    #'   \code{"household"} for \code{"tool_household_iphra_v2"}). Cannot be
+    #'   combined with \code{name}.
+    #' @param role2 Optional character scalar used to resolve a 2nd level list
+    #'   element nested within the \code{name}/\code{role}-resolved element.
     #' @param update_sync Logical indicating whether to synchronize state after access.
     #' @param update_modified Logical indicating whether to update the modified timestamp.
     #' @return The requested field or member value.
@@ -118,6 +121,7 @@ Asset <- R6::R6Class(
       name = NULL,
       member = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = FALSE
     ) {
@@ -126,7 +130,8 @@ Asset <- R6::R6Class(
           target <- private$..resolve_nested_target(
             field = field,
             name = name,
-            role = role
+            role = role,
+            role2 = role2
           )
 
           out <- if (is.null(member)) {
@@ -166,7 +171,8 @@ Asset <- R6::R6Class(
     #' object.
     #'
     #' Resolves a top-level field (public or private), optionally resolves a
-    #' named or role-matched element if the field is a list, and invokes
+    #' named or role-matched 1st level list element (and, with \code{role2},
+    #' a 2nd level role-matched element nested within it), and invokes
     #' \code{member} as a function on the resolved target. Unlike
     #' \code{get()}, \code{call()} requires \code{member} to resolve to a
     #' function.
@@ -174,12 +180,15 @@ Asset <- R6::R6Class(
     #' @param field Character scalar naming a public or private top-level
     #'   field on this object.
     #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
+    #'   \code{field} by exact name. Cannot be combined with \code{role}.
     #' @param member Optional character scalar naming a method on the
     #'   resolved target. When \code{NULL}, the resolved target itself is
     #'   invoked as a function.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name.
+    #' @param role Optional character scalar used to resolve a 1st level list
+    #'   element in \code{field} by role-like name. Cannot be combined with
+    #'   \code{name}.
+    #' @param role2 Optional character scalar used to resolve a 2nd level list
+    #'   element nested within the \code{name}/\code{role}-resolved element.
     #' @param update_sync Logical indicating whether to synchronize state after the call.
     #' @param update_modified Logical indicating whether to update the modified timestamp.
     #' @param ... Arguments passed to the resolved method.
@@ -189,6 +198,7 @@ Asset <- R6::R6Class(
       name = NULL,
       member = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = TRUE,
       ...
@@ -198,7 +208,8 @@ Asset <- R6::R6Class(
           target <- private$..resolve_nested_target(
             field = field,
             name = name,
-            role = role
+            role = role,
+            role2 = role2
           )
 
           value <- if (is.null(member)) {
@@ -238,12 +249,16 @@ Asset <- R6::R6Class(
     #' @description
     #' Generalized, scope-safe field setter.
     #'
-    #' Mirrors \code{get()}'s \code{field}/\code{name}/\code{role}/
+    #' Mirrors \code{get()}'s \code{field}/\code{role}/\code{role2}/
     #' \code{member} arguments, but safely writes \code{value} instead of
     #' reading. \code{field} may resolve to either a public or a private
     #' field, and \code{member} is optional: when omitted, \code{value}
-    #' replaces the resolved top-level (or name/role-resolved) target
-    #' directly. Writing to a resolved member or target that currently holds
+    #' replaces the resolved top-level (or role/role2-resolved) target
+    #' directly. If the \code{role} (and/or \code{role2}) list element does
+    #' not yet exist, it is created (using \code{role}/\code{role2} as the
+    #' literal new element name) rather than raising an error, so that
+    #' \code{set()} can be used to populate a new list or nested list
+    #' element. Writing to a resolved member or target that currently holds
     #' a function is rejected, to avoid accidentally clobbering methods. When
     #' the resolved target is itself an R6 object exposing its own
     #' \code{set()} method (for example a nested \code{Asset} or \code{Log}),
@@ -258,10 +273,11 @@ Asset <- R6::R6Class(
     #' @param member Optional character scalar naming a writable field on the
     #'   resolved target. When \code{NULL}, \code{value} is assigned directly
     #'   to the resolved target.
-    #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name.
+    #' @param role Optional character scalar used to resolve (or create) a
+    #'   1st level list element in \code{field} by role-like name.
+    #' @param role2 Optional character scalar used to resolve (or create) a
+    #'   2nd level list element nested within the \code{role}-resolved
+    #'   element. Cannot be supplied without \code{role}.
     #' @param update_sync Logical indicating whether to synchronize state
     #'   after the assignment.
     #' @param update_modified Logical indicating whether to update the
@@ -271,13 +287,22 @@ Asset <- R6::R6Class(
       field,
       value,
       member = NULL,
-      name = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = TRUE
     ) {
       phrutils::phr_try(
         {
+          phrutils::phr_assert(
+            !(is.null(role) && !is.null(role2)),
+            message = phrutils::phr_txt(
+              "Cannot provide 2nd level list element (role2) without a 1st level list element (role)."
+            ),
+            origin = "Asset$set"
+          )
+
+          # Handles whether field is a public or private and returns the field.
           resolved <- private$..resolve_field_scope(
             field = field,
             origin = "Asset$set"
@@ -285,22 +310,49 @@ Asset <- R6::R6Class(
           container <- resolved$value
 
           key <- NULL
-          if (!is.null(name) || !is.null(role)) {
-            phrutils::phr_assert(
-              !(!is.null(name) && !is.null(role)),
-              message = phr_txt("Provide only one of name or role."),
-              origin = "Asset$set"
-            )
+          key2 <- NULL
+          # `level1` holds the (possibly newly created) 1st level list
+          # element resolved by `role`, before any `role2` resolution.
+          level1 <- NULL
+
+          if (!is.null(role)) {
+
             key <- private$..resolve_list_key(
               container = container,
               field = field,
-              name = name,
               role = role,
+              create_if_missing = TRUE,
               origin = "Asset$set"
             )
+
+            level1 <- if (is.null(container)) NULL else container[[key]]
+
+            if (!is.null(role2)) {
+              phrutils::phr_assert(
+                is.null(level1) || is.list(level1),
+                message = phr_txt(
+                  "role2 can only be resolved from a list returned by role."
+                ),
+                origin = "Asset$set"
+              )
+
+              key2 <- private$..resolve_list_key(
+                container = level1,
+                field = field,
+                role = role2,
+                create_if_missing = TRUE,
+                origin = "Asset$set"
+              )
+            }
           }
 
-          target <- if (is.null(key)) container else container[[key]]
+          target <- if (!is.null(role) && !is.null(role2)) {
+            if (is.null(level1)) NULL else level1[[key2]]
+          } else if (!is.null(role)) {
+            level1
+          } else {
+            container
+          }
 
           if (is.null(member)) {
             phrutils::phr_assert(
@@ -317,6 +369,14 @@ Asset <- R6::R6Class(
               message = phr_txt("member must be a non-empty character string."),
               origin = "Asset$set"
             )
+
+            # Auto-vivify: a `role`/`role2`-resolved target that does not
+            # yet exist is NULL; treat it as a new, empty list so that a
+            # member can be set on it instead of erroring.
+            if (is.null(target)) {
+              target <- list()
+            }
+
             phrutils::phr_assert(
               is.list(target) || is.environment(target),
               message = phr_txt(
@@ -357,10 +417,18 @@ Asset <- R6::R6Class(
             new_target <- target
           }
 
-          if (is.null(key)) {
+          if (is.null(role)) {
+
             container <- new_target
-          } else {
+
+          } else if (is.null(role2)) {
+
             container[[key]] <- new_target
+
+          } else {
+
+            level1[[key2]] <- new_target
+            container[[key]] <- level1
           }
 
           private$..assign_field_scope(
@@ -553,35 +621,68 @@ Asset <- R6::R6Class(
 
     # @description Resolve a top-level or nested target object.
     # @param field Top-level field name.
-    # @param name Optional exact list element name.
-    # @param role Optional role-style key for list lookup.
+    # @param name Optional exact list element name. Cannot be combined with
+    #   `role`.
+    # @param role Optional role-style key for fuzzy list lookup. Cannot be
+    #   combined with `name`.
+    # @param role2 Optional role-style key for a 2nd level list lookup,
+    #   nested within the `name`/`role`-resolved element.
     # @return Resolved object.
     # @keywords internal
-    ..resolve_nested_target = function(field, name = NULL, role = NULL) {
+    ..resolve_nested_target = function(
+      field,
+      name = NULL,
+      role = NULL,
+      role2 = NULL
+    ) {
       resolved <- private$..resolve_field_scope(
         field = field,
-        origin = "Asset$.resolve_nested_target"
+        origin = "Asset$..resolve_nested_target"
       )
-      container <- resolved$value
+      target <- resolved$value
 
       phrutils::phr_assert(
         !(!is.null(name) && !is.null(role)),
-        message = phr_txt("Provide only one of name or role."),
+        message = phrutils::phr_txt(
+          "Cannot provide both name and role; they are alternative ways to resolve a 1st level list element."
+        ),
+        origin = "Asset$..resolve_nested_target"
+      )
+
+      phrutils::phr_assert(
+        !(is.null(name) && is.null(role) && !is.null(role2)),
+        message = phrutils::phr_txt("Cannot provide 2nd level list element (role2) without a 1st level list element (name or role)."),
         origin = "Asset$.resolve_nested_target"
       )
 
-      if (is.null(name) && is.null(role)) {
-        return(container)
+      if (is.null(name) && is.null(role) && is.null(role2)) {
+        return(target)
       }
 
-      key <- private$..resolve_list_key(
-        container = container,
-        field = field,
-        name = name,
-        role = role,
-        origin = "Asset$.resolve_nested_target"
-      )
-      container[[key]]
+      if (!is.null(name) || !is.null(role)) {
+        key <- private$..resolve_list_key(
+          container = target,
+          field = field,
+          name = name,
+          role = role,
+          origin = "Asset$.resolve_nested_target"
+        )
+        target <- target[[key]]
+      }
+
+      if (!is.null(role2)) {
+        phrutils::phr_assert(
+          is.list(target),
+          message = phrutils::phr_txt(
+            "role2 can only be resolved from a list returned by name/role."
+          ),
+          origin = "Asset$..resolve_nested_target"
+        )
+        target <- target[[role2]]
+      }
+
+      target
+
     },
 
     # @description Resolve a public or private member value on a resolved
@@ -608,11 +709,22 @@ Asset <- R6::R6Class(
     # @description Resolve the list index/name identifying an element within
     #   \code{container}, using either an exact \code{name} or a role-like
     #   \code{role} lookup. Shared by \code{..resolve_nested_target()} and
-    #   \code{set()}.
-    # @param container A list to search within.
+    #   \code{set()}. When \code{create_if_missing} is \code{TRUE},
+    #   \code{container} may be \code{NULL} or an empty/unnamed list (e.g.
+    #   when creating the very first element of a new list field), and a
+    #   missing \code{name}/\code{role} returns the literal \code{name}/
+    #   \code{role} string as the new element's key instead of raising an
+    #   error.
+    # @param container A list to search within (or \code{NULL} when the
+    #   field has not yet been initialized as a list).
     # @param field Top-level field name (used only for error messages).
-    # @param name Optional exact list element name.
-    # @param role Optional role-style key for list lookup.
+    # @param name Optional exact list element name. Cannot be combined with
+    #   \code{role}.
+    # @param role Optional role-style key for list lookup. Cannot be
+    #   combined with \code{name}.
+    # @param create_if_missing Logical; when \code{TRUE}, an unresolved
+    #   \code{name}/\code{role} returns the literal key to create instead of
+    #   raising an error.
     # @param origin Character scalar identifying the calling context for
     #   error messages.
     # @return The resolved list key (character name or integer index).
@@ -622,50 +734,76 @@ Asset <- R6::R6Class(
       field,
       name = NULL,
       role = NULL,
-      origin = "Asset$.resolve_list_key"
+      create_if_missing = FALSE,
+      origin = "Asset$..resolve_list_key"
     ) {
       phrutils::phr_assert(
-        is.list(container),
-        message = phr_txt(
+        !(is.null(name) && is.null(role)) && !(!is.null(name) && !is.null(role)),
+        message = phrutils::phr_txt(
+          "Exactly one of name or role must be provided."
+        ),
+        origin = origin
+      )
+
+      phrutils::phr_assert(
+        is.null(container) || is.list(container),
+        message = phrutils::phr_txt(
           "Field '{field}' must be a list when resolving name/role."
         ),
         origin = origin
       )
 
+      nms <- if (is.null(container)) NULL else names(container)
+
       if (!is.null(name)) {
         phrutils::phr_assert(
           is.character(name) && length(name) == 1L && nzchar(name),
-          message = phr_txt(
+          message = phrutils::phr_txt(
             "name must be a non-empty character string when provided."
           ),
           origin = origin
         )
+
+        if (!is.null(nms) && name %in% nms) {
+          return(name)
+        }
+
+        if (isTRUE(create_if_missing)) {
+          return(name)
+        }
+
         phrutils::phr_assert(
-          !is.null(container[[name]]),
-          message = phr_txt("Name '{name}' was not found in field '{field}'."),
+          FALSE,
+          message = phrutils::phr_txt(
+            "Name '{name}' was not found in field '{field}'."
+          ),
           origin = origin
         )
-        return(name)
       }
 
       phrutils::phr_assert(
         is.character(role) && length(role) == 1L && nzchar(role),
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "role must be a non-empty character string when provided."
         ),
         origin = origin
       )
 
-      nms <- names(container)
-      phrutils::phr_assert(
-        !is.null(nms) && length(nms) > 0L,
-        message = phr_txt(
-          "Field '{field}' has no named elements for role-based lookup."
-        ),
-        origin = origin
-      )
+      if (is.null(nms) || length(nms) == 0L) {
+        if (isTRUE(create_if_missing)) {
+          return(role)
+        }
+        phrutils::phr_assert(
+          FALSE,
+          message = phrutils::phr_txt(
+            "Field '{field}' has no named elements for role-based lookup."
+          ),
+          origin = origin
+        )
+      }
 
       role_key <- private$..normalize_role_name(role)
+
       normalized_names <- vapply(
         nms,
         private$..normalize_role_name,
@@ -680,16 +818,30 @@ Asset <- R6::R6Class(
         )
       }
 
+      if (length(idx) == 1L) {
+        return(idx)
+      }
+
       phrutils::phr_assert(
-        length(idx) == 1L,
-        message = if (length(idx) == 0L) {
-          phr_txt("Role '{role}' was not found in field '{field}'.")
-        } else {
-          phr_txt("Role '{role}' matched multiple elements in field '{field}'.")
-        },
+        !(length(idx) > 1L),
+        message = phr_txt(
+          "Role '{role}' matched multiple elements in field '{field}'."
+        ),
         origin = origin
       )
-      idx
+
+      if (isTRUE(create_if_missing)) {
+        return(role)
+      }
+
+      phrutils::phr_assert(
+        FALSE,
+        message = phrutils::phr_txt(
+          "Role '{role}' was not found in field '{field}'."
+        ),
+        origin = origin
+      )
+
     },
 
     # @description Resolve which scope ("public" or "private") owns a
@@ -704,7 +856,7 @@ Asset <- R6::R6Class(
     ..resolve_field_scope = function(field, origin = "Asset$set") {
       phrutils::phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
-        message = phr_txt("field must be a non-empty character string."),
+        message = phrutils::phr_txt("field must be a non-empty character string."),
         origin = origin
       )
 
@@ -717,7 +869,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         FALSE,
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "Field '{field}' is not available on this object."
         ),
         origin = origin
