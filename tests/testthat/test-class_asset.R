@@ -212,10 +212,10 @@ test_that("get() retrieves a private top-level field", {
   expect_equal(inst$get(field = "secret"), "init_secret")
 })
 
-test_that("get() retrieves a member on a name-resolved list element", {
+test_that("get() retrieves a member on a role-resolved list element using the literal key", {
   inst <- TestAsset$new()
   expect_equal(
-    inst$get(field = "tools", name = "tool_household_iphra_v2", member = "name"),
+    inst$get(field = "tools", role = "tool_household_iphra_v2", member = "name"),
     "household"
   )
 })
@@ -255,13 +255,13 @@ test_that("call() invokes a public top-level method directly", {
   expect_equal(inst$call(field = "greet"), "hello world")
 })
 
-test_that("call() invokes a nested method resolved by name", {
+test_that("call() invokes a nested method resolved by role", {
   inst <- TestAsset$new()
   inst$tools$tool_household_iphra_v2$get_name <- function() "household"
   expect_equal(
     inst$call(
       field = "tools",
-      name = "tool_household_iphra_v2",
+      role = "tool_household_iphra_v2",
       member = "get_name"
     ),
     "household"
@@ -280,8 +280,64 @@ test_that("call() updates the modified timestamp by default", {
   Sys.sleep(0.01)
   inst$call(
     field = "tools",
-    name = "tool_household_iphra_v2",
+    role = "tool_household_iphra_v2",
     member = "get_name"
   )
   expect_true(inst$metadata$modified_datetime > before)
+})
+
+# change_log / ..track() / ..touch(log = ...)
+test_that("change_log is NULL until the first logged change", {
+  inst <- TestAsset$new()
+  expect_null(inst$.__enclos_env__$private$..change_log)
+})
+
+test_that("..touch() does not log by default", {
+  inst <- TestAsset$new()
+  inst$.__enclos_env__$private$..touch()
+  expect_null(inst$.__enclos_env__$private$..change_log)
+})
+
+test_that("..touch(log = TRUE) appends a row to change_log via ..track()", {
+  inst <- TestAsset$new()
+  priv <- inst$.__enclos_env__$private
+  priv$..touch(log = TRUE, name = "field_updated", message = "Updated a field.")
+
+  log <- priv$..change_log
+  expect_s3_class(log, "data.frame")
+  expect_identical(
+    names(log),
+    c("id", "version", "name", "datetime", "log_message")
+  )
+  expect_equal(nrow(log), 1L)
+  expect_identical(log$id[[1]], priv$..metadata$hash_id)
+  expect_identical(log$version[[1]], priv$..metadata$version)
+  expect_identical(log$name[[1]], "field_updated")
+  expect_s3_class(log$datetime, "POSIXct")
+  expect_identical(log$log_message[[1]], "Updated a field.")
+})
+
+test_that("..touch(log = TRUE) accumulates multiple change_log rows", {
+  inst <- TestAsset$new()
+  priv <- inst$.__enclos_env__$private
+  priv$..touch(log = TRUE, name = "first_change", message = "First.")
+  priv$..touch(log = TRUE, name = "second_change", message = "Second.")
+
+  log <- priv$..change_log
+  expect_equal(nrow(log), 2L)
+  expect_identical(log$name, c("first_change", "second_change"))
+  expect_identical(log$version, c(2L, 3L))
+})
+
+test_that("..track() can be called directly to append a change_log row", {
+  inst <- TestAsset$new()
+  priv <- inst$.__enclos_env__$private
+  priv$..track(name = "manual_entry", message = "Manually tracked.")
+
+  log <- priv$..change_log
+  expect_equal(nrow(log), 1L)
+  expect_identical(log$id[[1]], priv$..metadata$hash_id)
+  expect_identical(log$version[[1]], priv$..metadata$version)
+  expect_identical(log$name[[1]], "manual_entry")
+  expect_identical(log$log_message[[1]], "Manually tracked.")
 })
