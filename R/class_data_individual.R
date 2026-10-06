@@ -174,7 +174,7 @@ IndividualData <- R6::R6Class(
       df <- tryCatch(
         readxl::read_xlsx(file),
         error = function(e) {
-          phr_error(
+          phrutils::phr_error(
             origin  = "IndividualData$default_schema",
             message = phrutils::phr_txt("Failed to read variable_schema_data_individual_roster_template.xlsx"),
             hint    = e$message

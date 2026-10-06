@@ -139,7 +139,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phr_txt("member must be a non-empty character string."),
+              message = phrutils::phr_txt("member must be a non-empty character string."),
               origin = "Asset$get"
             )
             private$..resolve_member_value(target, member)
@@ -147,7 +147,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             !is.function(out),
-            message = phr_txt(
+            message = phrutils::phr_txt(
               "Member '{member}' resolves to a function; use call() instead of get()."
             ),
             origin = "Asset$get"
@@ -217,7 +217,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phr_txt("member must be a non-empty character string."),
+              message = phrutils::phr_txt("member must be a non-empty character string."),
               origin = "Asset$call"
             )
             private$..resolve_member_value(target, member)
@@ -225,7 +225,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             is.function(value),
-            message = phr_txt(
+            message = phrutils::phr_txt(
               "Member '{member}' does not resolve to a function; use get() instead of call()."
             ),
             origin = "Asset$call"
@@ -330,7 +330,7 @@ Asset <- R6::R6Class(
             if (!is.null(role2)) {
               phrutils::phr_assert(
                 is.null(level1) || is.list(level1),
-                message = phr_txt(
+                message = phrutils::phr_txt(
                   "role2 can only be resolved from a list returned by role."
                 ),
                 origin = "Asset$set"
@@ -357,7 +357,7 @@ Asset <- R6::R6Class(
           if (is.null(member)) {
             phrutils::phr_assert(
               !is.function(target),
-              message = phr_txt(
+              message = phrutils::phr_txt(
                 "Refusing to overwrite function member '{field}'."
               ),
               origin = "Asset$set"
@@ -366,7 +366,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phr_txt("member must be a non-empty character string."),
+              message = phrutils::phr_txt("member must be a non-empty character string."),
               origin = "Asset$set"
             )
 
@@ -379,7 +379,7 @@ Asset <- R6::R6Class(
 
             phrutils::phr_assert(
               is.list(target) || is.environment(target),
-              message = phr_txt(
+              message = phrutils::phr_txt(
                 "Resolved target for field '{field}' must be a list or environment to set member '{member}'."
               ),
               origin = "Asset$set"
@@ -398,7 +398,7 @@ Asset <- R6::R6Class(
               # by attempting to add a new binding to a locked environment.
               phrutils::phr_assert(
                 !is.function(private$..resolve_member_value(target, member)),
-                message = phr_txt(
+                message = phrutils::phr_txt(
                   "Refusing to overwrite function member '{member}'."
                 ),
                 origin = "Asset$set"
@@ -407,7 +407,7 @@ Asset <- R6::R6Class(
             } else {
               phrutils::phr_assert(
                 !is.function(target[[member]]),
-                message = phr_txt(
+                message = phrutils::phr_txt(
                   "Refusing to overwrite function member '{member}'."
                 ),
                 origin = "Asset$set"
@@ -534,12 +534,12 @@ Asset <- R6::R6Class(
       ) {
         phrutils::phr_assert(
           is.character(field) && length(field) == 1L && nzchar(field),
-          message = phr_txt("field must be a non-empty character string."),
+          message = phrutils::phr_txt("field must be a non-empty character string."),
           origin = "Asset$sync_state"
         )
         phrutils::phr_assert(
           is.character(member) && length(member) == 1L && nzchar(member),
-          message = phr_txt("member must be a non-empty character string."),
+          message = phrutils::phr_txt("member must be a non-empty character string."),
           origin = "Asset$sync_state"
         )
         target <- private$..resolve_nested_target(
@@ -549,7 +549,7 @@ Asset <- R6::R6Class(
         )
         phrutils::phr_assert(
           !is.null(target[[member]]),
-          message = phr_txt(
+          message = phrutils::phr_txt(
             "Member '{member}' does not exist on the resolved target."
           ),
           origin = "Asset$sync_state"
@@ -824,7 +824,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         !(length(idx) > 1L),
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "Role '{role}' matched multiple elements in field '{field}'."
         ),
         origin = origin
