@@ -61,9 +61,6 @@ data_table_to_schema <- function(df) {
 
   phrutils::phr_validate_dataframe(df, origin = "data_table_to_schema", soft = FALSE)
 
-  # Validate the table format
-  data_validate_table_to_schema(df)
-
   # Canonical schema object
   schema <- list(
     required          = character(0),
@@ -191,68 +188,6 @@ data_table_to_schema <- function(df) {
   schema
 }
 
-#' Validate whether a schema table is safe to convert
-#' @param df A data frame or tibble in the flat schema table format to validate.
-#' @param data_obj Optional data object used for additional contextual validation. Default: NULL.
-#' @export
-data_validate_table_to_schema <- function(df, data_obj = NULL) {
-
-  phrutils::phr_try({
-
-    # Validate dataframe
-    phrutils::phr_validate_dataframe(df, origin = "data_validate_table_to_schema", soft = FALSE)
-
-    # Fixed required columns - now includes "value" column
-    required_cols <- c(
-      "rule_type","variable","value","required","type","allowed",
-      "col_names","unique",
-      "label","comment",
-      "question_type","is_other","other_column_link"
-    )
-
-    phrutils::phr_validate_columns(
-      df,
-      required_cols = required_cols,
-      origin = "data_validate_table_to_schema",
-      hint   = "Schema table missing required columns.",
-      soft   = FALSE
-    )
-
-    # rule_type check
-    valid_rules <- c("variable","dependency","soft_dependency")
-    bad <- setdiff(unique(df$rule_type), valid_rules)
-    if (length(bad) > 0) {
-      phr_error("data_validate_table_to_schema",
-                  phr_txt("Invalid rule_type values: {paste(bad, collapse=', ')}."))
-    }
-
-    # duplicate (variable, value) pairs should warn
-    # Note: duplicate variables are now OK if they have different values
-    vars_only <- df[df$rule_type == "variable", ]
-
-    # Create a key combining variable and value
-    # Handle cases where value might be NA (for variables without value mappings)
-    # Use a separator unlikely to appear in variable names or values
-    var_value_key <- paste0(
-      vars_only$variable,
-      "|||",  # Triple pipe as separator to avoid conflicts
-      ifelse(is.na(vars_only$value) | vars_only$value == "", "NA", vars_only$value)
-    )
-
-    dups <- var_value_key[duplicated(var_value_key)]
-    if (length(dups) > 0) {
-      phrutils::phr_warning(
-        origin  = "data_validate_table_to_schema",
-        message = phr_txt("Duplicate (variable, value) rows detected: {paste(unique(dups), collapse=', ')}."),
-        hint    = "Only the last row per (variable, value) pair will be retained."
-      )
-    }
-
-    TRUE
-  },
-  on_error = "abort",
-  origin   = "data_validate_table_to_schema")
-}
 
 #' Validate schema_list structure for data_schema_to_table()
 #' @keywords internal
@@ -765,9 +700,6 @@ indicator_table_to_schema <- function(df) {
 
   phrutils::phr_validate_dataframe(df, origin = "indicator_table_to_schema", soft = FALSE)
 
-  # Validate the table format
-  indicator_validate_table_to_schema(df)
-
   # Canonical indicator schema object
   indicator_schema <- list()
 
@@ -835,52 +767,6 @@ indicator_table_to_schema <- function(df) {
 }
 
 
-#' Validate whether an indicator schema table is safe to convert
-#' @param df A data frame or tibble in the flat indicator schema table format to validate.
-#' @export
-indicator_validate_table_to_schema <- function(df) {
-
-  phrutils::phr_try({
-
-    # Validate dataframe
-    phrutils::phr_validate_dataframe(df, origin = "indicator_validate_table_to_schema", soft = FALSE)
-
-    # Required columns
-    required_cols <- c(
-      "indicator_name",
-      "function_name",
-      "variables",
-      "arguments",
-      "label",
-      "comment"
-    )
-
-    phrutils::phr_validate_columns(
-      df,
-      required_cols = required_cols,
-      origin = "indicator_validate_table_to_schema",
-      hint   = "Indicator schema table missing required columns.",
-      soft   = FALSE
-    )
-
-    # Check for duplicate indicator names
-    ind_names <- df$indicator_name[!is.na(df$indicator_name) & df$indicator_name != ""]
-    dups <- ind_names[duplicated(ind_names)]
-    if (length(dups) > 0) {
-      phrutils::phr_warning(
-        origin  = "indicator_validate_table_to_schema",
-        message = phr_txt("Duplicate indicator names detected: {paste(unique(dups), collapse=', ')}."),
-        hint    = "Only the last row per indicator name will be retained."
-      )
-    }
-
-    TRUE
-  },
-  on_error = "abort",
-  origin   = "indicator_validate_table_to_schema")
-}
-
-
 # DEPENDENCY SCHEMA FUNCTIONS ####
 
 #' Convert a dependency schema table into a canonical nested list
@@ -890,9 +776,6 @@ indicator_validate_table_to_schema <- function(df) {
 dependency_table_to_schema <- function(df) {
 
   phrutils::phr_validate_dataframe(df, origin = "dependency_table_to_schema", soft = FALSE)
-
-  # Validate the table format
-  dependency_validate_table_to_schema(df)
 
   # Canonical dependency schema object
   dependency_schema <- list(
@@ -955,67 +838,6 @@ dependency_table_to_schema <- function(df) {
   }
 
   dependency_schema
-}
-
-
-#' Validate whether a dependency schema table is safe to convert
-#' @param df A data frame or tibble in the flat dependency schema table format to validate.
-#' @export
-dependency_validate_table_to_schema <- function(df) {
-
-  phrutils::phr_try({
-
-    # Validate dataframe
-    phrutils::phr_validate_dataframe(df, origin = "dependency_validate_table_to_schema", soft = FALSE)
-
-    # Required columns
-    required_cols <- c(
-      "rule_type",
-      "dep_name",
-      "variables",
-      "condition_if",
-      "then",
-      "action",
-      "label",
-      "comment"
-    )
-
-    phrutils::phr_validate_columns(
-      df,
-      required_cols = required_cols,
-      origin = "dependency_validate_table_to_schema",
-      hint   = "Dependency schema table missing required columns.",
-      soft   = FALSE
-    )
-
-    # rule_type check
-    valid_rules <- c("dependency", "soft_dependency")
-    bad <- setdiff(unique(df$rule_type), valid_rules)
-    if (length(bad) > 0) {
-      phr_error("dependency_validate_table_to_schema",
-                  phr_txt("Invalid rule_type values: {paste(bad, collapse=', ')}. Expected: dependency or soft_dependency."))
-    }
-
-    # Check for duplicate dependency names within each rule type
-    for (rule_type in c("dependency", "soft_dependency")) {
-      rule_rows <- df[df$rule_type == rule_type, ]
-      if (nrow(rule_rows) > 0) {
-        dep_names <- rule_rows$dep_name[!is.na(rule_rows$dep_name) & rule_rows$dep_name != ""]
-        dups <- dep_names[duplicated(dep_names)]
-        if (length(dups) > 0) {
-          phrutils::phr_warning(
-            origin  = "dependency_validate_table_to_schema",
-            message = phr_txt("Duplicate {rule_type} names detected: {paste(unique(dups), collapse=', ')}."),
-            hint    = "Only the last row per dependency name will be retained."
-          )
-        }
-      }
-    }
-
-    TRUE
-  },
-  on_error = "abort",
-  origin   = "dependency_validate_table_to_schema")
 }
 
 

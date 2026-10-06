@@ -101,28 +101,40 @@ IndividualData <- R6::R6Class(
 
         # ---- Build and merge individual schema into any existing schema ----
         ind_schema    <- self$default_schema()
-        parent_schema <- private$..variable_schema %||% list()
-        merged_schema <- utils::modifyList(parent_schema, ind_schema)
+        parent_schema <- private$..variable_schema
+
+        if (is.data.frame(ind_schema)) {
+          # Current flat-data-frame schema format: combine any existing
+          # rows with the default roster rows (existing variables win on
+          # duplicate rule_type/variable/value).
+          if (is.data.frame(parent_schema) && nrow(parent_schema) > 0) {
+            merged_schema <- unique(rbind(parent_schema, ind_schema))
+          } else {
+            merged_schema <- ind_schema
+          }
+        } else {
+          merged_schema <- utils::modifyList(parent_schema %||% list(), ind_schema)
+        }
 
         self$set(field = "..variable_schema", value = merged_schema)
 
         # ---- Load default indicator schema
         default_ind_schema <- self$default_indicator_schema()
-        if (length(default_ind_schema) > 0) {
+        if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
 
           self$set(field = "..indicator_schema", value = default_ind_schema)
 
           phrutils::phr_message(
-            phrutils::phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+            phrutils::phr_txt("Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s).")
           )
         }
 
         # ---- Load default dependency schema
         default_dep_schema <- self$default_dependency_schema()
-        if (length(default_dep_schema$dependencies) > 0) {
+        if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
           self$set(field = "..dependency_schema", value = default_dep_schema)
           phrutils::phr_message(
-            phrutils::phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+            phrutils::phr_txt("Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies.")
           )
         }
 
@@ -170,10 +182,22 @@ IndividualData <- R6::R6Class(
         }
       )
 
-      # Convert table → canonical nested schema list
-      schema <- data_table_to_schema(df)
+      # The xlsx template is already in the canonical flat variable-schema
+      # table format (the format expected by `data_diagnose()` and other
+      # schema consumers), so validate and store it directly rather than
+      # round-tripping it through the nested-list representation.
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "rule_type", "variable", "value", "required", "type", "allowed",
+          "col_names", "unique",
+          "label", "comment",
+          "question_type", "is_other", "other_column_link"
+        ),
+        origin = "IndividualData$default_schema"
+      )
 
-      return(schema)
+      return(df)
     },
 
     #' Load Default Indicator Schema
@@ -194,12 +218,23 @@ IndividualData <- R6::R6Class(
         package = "phr"
       )
 
+      empty_indicator_schema <- function() {
+        tibble::tibble(
+          indicator_name = character(0),
+          function_name = character(0),
+          variables = character(0),
+          arguments = character(0),
+          label = character(0),
+          comment = character(0)
+        )
+      }
+
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "IndividualData$default_indicator_schema",
           message = phrutils::phr_txt("indicator_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
-        return(list())
+        return(empty_indicator_schema())
       }
 
       # Read the Excel table (first sheet)
@@ -214,12 +249,25 @@ IndividualData <- R6::R6Class(
         }
       )
 
-      if (is.null(df)) return(list())
+      if (is.null(df)) return(empty_indicator_schema())
 
-      # Convert table → canonical nested indicator schema list
-      indicator_schema <- indicator_table_to_schema(df)
+      # The xlsx template is already in the canonical flat indicator-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "indicator_name",
+          "function_name",
+          "variables",
+          "arguments",
+          "label",
+          "comment"
+        ),
+        origin = "IndividualData$default_indicator_schema"
+      )
 
-      return(indicator_schema)
+      return(df)
     },
 
     #' Load Default Dependency Schema
@@ -240,12 +288,25 @@ IndividualData <- R6::R6Class(
         package = "phr"
       )
 
+      empty_dependency_schema <- function() {
+        tibble::tibble(
+          rule_type = character(0),
+          dep_name = character(0),
+          variables = character(0),
+          condition_if = character(0),
+          then = character(0),
+          action = character(0),
+          label = character(0),
+          comment = character(0)
+        )
+      }
+
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "IndividualData$default_dependency_schema",
           message = phrutils::phr_txt("dependency_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
-        return(list(dependencies = list()))
+        return(empty_dependency_schema())
       }
 
       # Read the Excel table (first sheet)
@@ -260,12 +321,27 @@ IndividualData <- R6::R6Class(
         }
       )
 
-      if (is.null(df)) return(list(dependencies = list()))
+      if (is.null(df)) return(empty_dependency_schema())
 
-      # Convert table → canonical nested dependency schema list
-      dependency_schema <- dependency_table_to_schema(df)
+      # The xlsx template is already in the canonical flat dependency-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "rule_type",
+          "dep_name",
+          "variables",
+          "condition_if",
+          "then",
+          "action",
+          "label",
+          "comment"
+        ),
+        origin = "IndividualData$default_dependency_schema"
+      )
 
-      return(dependency_schema)
+      return(df)
     },
 
     #' Post-Validation Hook for Individual Data

@@ -203,7 +203,7 @@ outputs_table_to_schema <- function(df) {
 #' Validate outputs schema table before conversion
 #'
 #' Validates table structure before converting to nested list.
-#' This follows the same pattern as data_validate_table_to_schema().
+#' This follows the same pattern as `Data`'s private `..validate_table_schema()` method.
 #'
 #' @param df Data frame with outputs definitions
 #' @return TRUE if valid, otherwise throws error

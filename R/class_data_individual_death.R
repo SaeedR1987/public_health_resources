@@ -87,21 +87,21 @@ DeathIndividualData <- R6::R6Class(
 
         # Load default indicator schema
         default_ind_schema <- self$default_indicator_schema()
-        if (length(default_ind_schema) > 0) {
+        if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
           self$set(field = "..indicator_schema", value = default_ind_schema)
           phrutils::phr_message(
-            phrutils::phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+            phrutils::phr_txt("Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s).")
           )
         }
 
         # Load default dependency schema
         default_dep_schema <- self$default_dependency_schema()
-        if (length(default_dep_schema$dependencies) > 0) {
+        if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
 
           self$set(field = "..dependency_schema", value = default_dep_schema)
 
           phrutils::phr_message(
-            phrutils::phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+            phrutils::phr_txt("Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies.")
           )
         }
 
@@ -114,9 +114,9 @@ DeathIndividualData <- R6::R6Class(
     #' Load the default variable schema for death data
     #'
     #' Reads the variable_schema_data_individual_death_template.xlsx file from package resources
-    #' and converts it to a nested list of variable definitions.
+    #' and converts it to the canonical flat variable-schema data frame.
     #'
-    #' @return A list containing the death data variable schema
+    #' @return A data frame containing the death data variable schema
     default_schema = function() {
 
       file <- system.file(
@@ -145,10 +145,22 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      # Convert table → canonical nested schema list
-      schema <- data_table_to_schema(df)
+      # The xlsx template is already in the canonical flat variable-schema
+      # table format (the format expected by `data_diagnose()` and other
+      # schema consumers), so validate and store it directly rather than
+      # round-tripping it through the nested-list representation.
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "rule_type", "variable", "value", "required", "type", "allowed",
+          "col_names", "unique",
+          "label", "comment",
+          "question_type", "is_other", "other_column_link"
+        ),
+        origin = "DeathIndividualData$default_schema"
+      )
 
-      return(schema)
+      return(df)
     },
 
     #' @description
@@ -166,12 +178,23 @@ DeathIndividualData <- R6::R6Class(
         package = "phr"
       )
 
+      empty_indicator_schema <- function() {
+        tibble::tibble(
+          indicator_name = character(0),
+          function_name = character(0),
+          variables = character(0),
+          arguments = character(0),
+          label = character(0),
+          comment = character(0)
+        )
+      }
+
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "DeathIndividualData$default_indicator_schema",
           message = phrutils::phr_txt("indicator_schema_data_individual_death_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
-        return(list())
+        return(empty_indicator_schema())
       }
 
       # Read the Excel table (first sheet)
@@ -186,12 +209,25 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      if (is.null(df)) return(list())
+      if (is.null(df)) return(empty_indicator_schema())
 
-      # Convert table → canonical nested indicator schema list
-      indicator_schema <- indicator_table_to_schema(df)
+      # The xlsx template is already in the canonical flat indicator-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "indicator_name",
+          "function_name",
+          "variables",
+          "arguments",
+          "label",
+          "comment"
+        ),
+        origin = "DeathIndividualData$default_indicator_schema"
+      )
 
-      return(indicator_schema)
+      return(df)
     },
 
     #' @description
@@ -209,12 +245,25 @@ DeathIndividualData <- R6::R6Class(
         package = "phr"
       )
 
+      empty_dependency_schema <- function() {
+        tibble::tibble(
+          rule_type = character(0),
+          dep_name = character(0),
+          variables = character(0),
+          condition_if = character(0),
+          then = character(0),
+          action = character(0),
+          label = character(0),
+          comment = character(0)
+        )
+      }
+
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "DeathIndividualData$default_dependency_schema",
           message = phr_txt("dependency_schema_data_individual_death_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
-        return(list(dependencies = list()))
+        return(empty_dependency_schema())
       }
 
       # Read the Excel table (first sheet)
@@ -229,12 +278,27 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      if (is.null(df)) return(list(dependencies = list()))
+      if (is.null(df)) return(empty_dependency_schema())
 
-      # Convert table → canonical nested dependency schema list
-      dependency_schema <- dependency_table_to_schema(df)
+      # The xlsx template is already in the canonical flat dependency-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "rule_type",
+          "dep_name",
+          "variables",
+          "condition_if",
+          "then",
+          "action",
+          "label",
+          "comment"
+        ),
+        origin = "DeathIndividualData$default_dependency_schema"
+      )
 
-      return(dependency_schema)
+      return(df)
     },
 
 

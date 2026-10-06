@@ -758,7 +758,13 @@ test_that("dependency_table_to_schema round-trips correctly", {
 
 # VALIDATION TESTS ####
 
-test_that("dependency_validate_table_to_schema validates required columns", {
+test_that("..validate_table_schema validates required columns", {
+
+  df <- tibble(
+    id = 1:3,
+    a = c(1, 2, 3)
+  )
+  obj <- Data$new(data = df, dataset_name = "TestData", uuid = "id")
 
   # Missing required column
   bad_tab <- tibble(
@@ -768,27 +774,14 @@ test_that("dependency_validate_table_to_schema validates required columns", {
   )
 
   expect_error(
-    dependency_validate_table_to_schema(bad_tab),
-    "missing required columns"
-  )
-})
-
-test_that("dependency_validate_table_to_schema validates rule_type values", {
-
-  bad_tab <- tibble(
-    rule_type = "invalid_type",
-    dep_name = "flag_test",
-    variables = "a",
-    condition_if = "TRUE",
-    then = "!is.na(a)",
-    action = "",
-    label = NA,
-    comment = NA
-  )
-
-  expect_error(
-    dependency_validate_table_to_schema(bad_tab),
-    "Invalid rule_type"
+    obj$.__enclos_env__$private$..validate_table_schema(
+      bad_tab,
+      required_cols = c(
+        "rule_type", "dep_name", "variables", "condition_if",
+        "then", "action", "label", "comment"
+      )
+    ),
+    "Missing required columns"
   )
 })
 

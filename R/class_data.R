@@ -559,7 +559,7 @@ Data <- R6::R6Class(
           phrutils::phr_message(phrutils::phr_txt("Standardizing {self$dataset_name}..."))
 
           data_copy <- private$..raw_data
-          sch <- private$..variable_schema %||% list()
+          sch <- private$..as_variable_schema_list() %||% list()
 
           # normalize skip vector
           skip <- intersect(skip, names(data_copy))
@@ -880,16 +880,17 @@ Data <- R6::R6Class(
               # Start with current data
               working_data <- data_copy
 
-              if (
-                !is.null(private$..indicator_schema) &&
-                  length(private$..indicator_schema) > 0
-              ) {
+              # `..indicator_schema` is stored as a flat data frame; convert
+              # to the nested list view on demand for this processing step.
+              indicator_schema_list <- private$..as_indicator_schema_list()
+
+              if (length(indicator_schema_list) > 0) {
                 phrutils::phr_message(phrutils::phr_txt(
-                  "Processing {length(private$..indicator_schema)} indicator(s) from indicator schema..."
+                  "Processing {length(indicator_schema_list)} indicator(s) from indicator schema..."
                 ))
 
-                for (ind_name in names(private$..indicator_schema)) {
-                  ind <- private$..indicator_schema[[ind_name]]
+                for (ind_name in names(indicator_schema_list)) {
+                  ind <- indicator_schema_list[[ind_name]]
 
                   phrutils::phr_try(
                     {
@@ -1674,7 +1675,8 @@ Data <- R6::R6Class(
 
           # 2. Check if schema exists
           sch <- private$..variable_schema
-          if (is.null(sch) || (is.list(sch) && length(sch) == 0)) {
+          if (is.null(sch) || (is.list(sch) && length(sch) == 0) ||
+                (is.data.frame(sch) && nrow(sch) == 0)) {
             phrutils::phr_warning(
               self$dataset_name,
               phrutils::phr_txt("No variable schema defined.")
@@ -1683,33 +1685,55 @@ Data <- R6::R6Class(
           }
 
           # 3. Build diagnostic table
-          # Each row represents a canonical variable/value pair from the schema
+          # The variable schema is a flat data frame where each row describes
+          # either a canonical variable's rule (rule_type == "variable") or a
+          # dependency check (ignored here; see run_quality_checks()). A
+          # variable with a value_map has one row per canonical value (the
+          # `value` column holds the canonical value name and `allowed` holds
+          # the comma-separated dataset values for that value), plus the
+          # variable-level columns (`type`, `required`, `comment`, etc.)
+          # repeated on each row.
 
           diagnostic_rows <- list()
 
-          # Get schema components
-          types <- sch$type %||% list()
-          value_map_schema <- sch$value %||% list()
-          col_names_schema <- sch$col_names %||% list()
-          comments <- sch$comments %||% list()
+          # Helper: return the first non-missing/non-empty value in a vector
+          first_non_empty <- function(x) {
+            x <- x[!is.na(x) & x != ""]
+            if (length(x) == 0) NA_character_ else as.character(x[[1]])
+          }
 
-          print(paste0("Types: ",head(types)))
-          print(paste0("Val Map: ",unique(value_map_schema)))
-          print(paste0("Col Names: ",head(col_names_schema)))
-          print(paste0("Comments: ",head(comments)))
+          sch_vars <- sch
+          if ("rule_type" %in% names(sch_vars)) {
+            sch_vars <- sch_vars[sch_vars$rule_type == "variable", , drop = FALSE]
+          }
+
+          if (nrow(sch_vars) == 0 || !"variable" %in% names(sch_vars)) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt("No variable schema defined.")
+            )
+            return(NULL)
+          }
 
           # Get current mappings
           vm <- private$..variable_map %||% list()
           vmap <- private$..value_map %||% list()
 
-          # Iterate over all variables in the schema
-          for (var_role in names(types)) {
+          # Iterate over each distinct variable referenced in the schema
+          schema_vars <- unique(sch_vars$variable[
+            !is.na(sch_vars$variable) & sch_vars$variable != ""
+          ])
 
-            required_type <- types[[var_role]]
-            comment <- comments[[var_role]] %||% NA_character_
+          for (var_role in schema_vars) {
 
-            print(paste0("Var Role: ", var_role))
-            print(required_type)
+            var_rows <- sch_vars[sch_vars$variable == var_role, , drop = FALSE]
+
+            required_type <- first_non_empty(var_rows$type)
+            comment <- if ("comment" %in% names(var_rows)) {
+              first_non_empty(var_rows$comment)
+            } else {
+              NA_character_
+            }
 
             # Get mapped variable name from variable_map
             mapped_variable <- vm[[var_role]] %||% NA_character_
@@ -1727,114 +1751,96 @@ Data <- R6::R6Class(
               )
             }
 
-            # Check if this variable has value mappings in schema
-            has_value_map <- var_role %in% names(value_map_schema)
+            # Rows that map a canonical value for this variable
+            value_rows <- if ("value" %in% names(var_rows)) {
+              var_rows[!is.na(var_rows$value) & var_rows$value != "", , drop = FALSE]
+            } else {
+              var_rows[0, , drop = FALSE]
+            }
 
-            if (has_value_map) {
+            # Is this variable a select_multiple question (values space-separated)?
+            is_select_multiple <- "question_type" %in% names(var_rows) &&
+              any(var_rows$question_type %in% "select_multiple", na.rm = TRUE)
+
+            if (nrow(value_rows) > 0) {
               # This variable has canonical values defined in schema
-              canonical_values <- value_map_schema[[var_role]]
+              for (i in seq_len(nrow(value_rows))) {
+                value_row <- value_rows[i, ]
+                canonical_val <- value_row$value
 
-              # canonical_values is a list: canonical_value_name -> c(dataset_values)
-              if (is.list(canonical_values) && length(canonical_values) > 0) {
-                for (canonical_val in names(canonical_values)) {
-                  # Get the mapped values from value_map for this canonical value
-                  mapped_values <- NA_character_
-                  if (var_role %in% names(vmap) && is.list(vmap[[var_role]])) {
-                    if (canonical_val %in% names(vmap[[var_role]])) {
-                      dataset_vals <- vmap[[var_role]][[canonical_val]]
-                      if (length(dataset_vals) > 0) {
-                        # Store as string, but we'll use the actual vector for validation
-                        mapped_values <- paste(dataset_vals, collapse = ", ")
-                        mapped_vals_vector <- dataset_vals # Keep the actual vector for validation
-                      }
+                # Get the mapped values from value_map for this canonical value
+                mapped_values <- NA_character_
+                mapped_vals_vector <- character(0)
+                if (var_role %in% names(vmap) && is.list(vmap[[var_role]])) {
+                  if (canonical_val %in% names(vmap[[var_role]])) {
+                    dataset_vals <- vmap[[var_role]][[canonical_val]]
+                    if (length(dataset_vals) > 0) {
+                      # Store as string, but we'll use the actual vector for validation
+                      mapped_values <- paste(dataset_vals, collapse = ", ")
+                      mapped_vals_vector <- dataset_vals # Keep the actual vector for validation
                     }
                   }
-
-                  # Determine issues for this variable/value pair
-                  issues <- character(0)
-
-                  # Check if variable is not mapped
-                  if (is.na(mapped_variable)) {
-                    issues <- c(issues, "variable not mapped")
-                  } else if (!var_exists) {
-                    issues <- c(issues, "mapped variable not in dataset")
-                  }
-
-                  # Check if value is not mapped
-                  if (is.na(mapped_values)) {
-                    issues <- c(issues, "value not mapped")
-                    mapped_vals_vector <- character(0) # Empty vector for unmapped
-                  } else {
-                    # Check if mapped values exist in data
-                    if (var_exists && exists("mapped_vals_vector")) {
-                      data_vals <- unique(df[[mapped_variable]])
-
-                      # Check if this is a select_multiple variable
-                      # For select_multiple, values are space-separated, so we need to extract tokens
-                      is_select_multiple <- private$..is_select_multiple(var_role)
-                      if (is_select_multiple) {
-                        # Extract individual tokens from space-separated values
-                        data_vals <- private$..extract_select_multiple_tokens(
-                          data_vals
-                        )
-                      }
-
-                      missing_vals <- setdiff(mapped_vals_vector, data_vals)
-                      if (length(missing_vals) > 0) {
-                        issues <- c(
-                          issues,
-                          paste0(
-                            "mapped values not in dataset: ",
-                            paste(missing_vals, collapse = ", ")
-                          )
-                        )
-                      }
-                    }
-                  }
-
-                  # Check type coercion issues
-                  if (var_exists && isFALSE(safely_coercible)) {
-                    issues <- c(issues, "not safely coercible to required type")
-                  }
-
-                  # Create issues string
-                  issues_str <- if (length(issues) == 0) {
-                    "ok"
-                  } else {
-                    paste(issues, collapse = "; ")
-                  }
-
-                  # Add row
-                  diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
-                    required_variable = var_role,
-                    required_value = canonical_val,
-                    required_type = required_type,
-                    mapped_variable = mapped_variable,
-                    mapped_value = mapped_values,
-                    safely_coercible = safely_coercible,
-                    comment = comment,
-                    issues = issues_str
-                  )
                 }
-              } else {
-                # Value map exists but is empty or not in list format - add single row for variable
+
+                # Determine issues for this variable/value pair
+                issues <- character(0)
+
+                # Check if variable is not mapped
+                if (is.na(mapped_variable)) {
+                  issues <- c(issues, "variable not mapped")
+                } else if (!var_exists) {
+                  issues <- c(issues, "mapped variable not in dataset")
+                }
+
+                # Check if value is not mapped
+                if (is.na(mapped_values)) {
+                  issues <- c(issues, "value not mapped")
+                } else if (var_exists && length(mapped_vals_vector) > 0) {
+                  # Check if mapped values exist in data
+                  data_vals <- unique(df[[mapped_variable]])
+
+                  # For select_multiple, values are space-separated, so we
+                  # need to extract tokens before comparing
+                  if (is_select_multiple) {
+                    data_vals <- private$..extract_select_multiple_tokens(
+                      data_vals
+                    )
+                  }
+
+                  missing_vals <- setdiff(mapped_vals_vector, data_vals)
+                  if (length(missing_vals) > 0) {
+                    issues <- c(
+                      issues,
+                      paste0(
+                        "mapped values not in dataset: ",
+                        paste(missing_vals, collapse = ", ")
+                      )
+                    )
+                  }
+                }
+
+                # Check type coercion issues
+                if (var_exists && isFALSE(safely_coercible)) {
+                  issues <- c(issues, "not safely coercible to required type")
+                }
+
+                # Create issues string
+                issues_str <- if (length(issues) == 0) {
+                  "ok"
+                } else {
+                  paste(issues, collapse = "; ")
+                }
+
+                # Add row
                 diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
                   required_variable = var_role,
-                  required_value = NA_character_,
+                  required_value = canonical_val,
                   required_type = required_type,
                   mapped_variable = mapped_variable,
-                  mapped_value = NA_character_,
+                  mapped_value = mapped_values,
                   safely_coercible = safely_coercible,
                   comment = comment,
-                  issues = if (is.na(mapped_variable)) {
-                    "variable not mapped"
-                  } else if (!var_exists) {
-                    "mapped variable not in dataset"
-                  } else if (isFALSE(safely_coercible)) {
-                    "not safely coercible to required type"
-                  } else {
-                    "ok"
-                  }
+                  issues = issues_str
                 )
               }
             } else {
@@ -1866,11 +1872,7 @@ Data <- R6::R6Class(
                 issues = issues_str
               )
             }
-            print(paste0("Length Diagnostic Rows: ", length(diagnostic_rows)))
           }
-
-          print(paste0("Length Diagnostic Rows: ", length(diagnostic_rows)))
-          print(paste0("Head Diagnostic Rows: ", head(diagnostic_rows)))
 
           # Convert to data frame
           if (length(diagnostic_rows) == 0) {
@@ -1956,14 +1958,16 @@ Data <- R6::R6Class(
           }
 
           # Load dependency_schema (primary) and variable_schema (for types only)
+          # `..dependency_schema` is stored as a flat data frame; convert to
+          # the nested list view on demand for this processing step.
           dep_schema <- phrutils::phr_try(
-            private$..dependency_schema,
+            private$..as_dependency_schema_list(),
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_dep_schema_load")
           )
 
           var_schema <- phrutils::phr_try(
-            private$..variable_schema,
+            private$..as_variable_schema_list(),
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_var_schema_load")
           )
@@ -2667,12 +2671,14 @@ Data <- R6::R6Class(
 
           unique_deletions_added <- 0
 
+          var_schema_list_for_unique <- private$..as_variable_schema_list()
+
           if (
-            !is.null(private$..variable_schema) &&
-              !is.null(private$..variable_schema$unique) &&
-              length(private$..variable_schema$unique) > 0
+            !is.null(var_schema_list_for_unique) &&
+              !is.null(var_schema_list_for_unique$unique) &&
+              length(var_schema_list_for_unique$unique) > 0
           ) {
-            for (var_canonical in private$..variable_schema$unique) {
+            for (var_canonical in var_schema_list_for_unique$unique) {
               # Resolve canonical variable name to the actual dataset column name
               # using the variable_map (same approach as the rest of generate_cleaning_log)
               var_col <- suppressWarnings(self$resolve_column(
@@ -3264,6 +3270,161 @@ Data <- R6::R6Class(
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
+    # @description Generalized validation for the flat schema tables (one
+    #   row per variable/indicator/dependency rule) read from the variable,
+    #   indicator, and dependency xlsx templates. Consolidates the previous
+    #   standalone `data_validate_table_to_schema()` /
+    #   `indicator_validate_table_to_schema()` /
+    #   `dependency_validate_table_to_schema()` utility functions into a
+    #   single private method: validates that `df` is a non-empty data
+    #   frame/tibble, then checks that all `required_cols` are present.
+    # @param df A data frame or tibble to validate.
+    # @param required_cols Character vector of column names that must be
+    #   present in `df` (e.g. the variable, indicator, or dependency schema
+    #   table columns).
+    # @param origin Character scalar used as the error/warning origin label.
+    # @return `TRUE` (invisibly, via `phrutils::phr_try`) if validation
+    #   passes; aborts with a descriptive error otherwise.
+    # @keywords internal
+    ..validate_table_schema = function(
+      df,
+      required_cols,
+      origin = "..validate_table_schema"
+    ) {
+      phrutils::phr_try(
+        {
+          phrutils::phr_validate_dataframe(df, origin = origin, soft = FALSE)
+
+          phrutils::phr_validate_columns(
+            df,
+            required_cols = required_cols,
+            origin = origin,
+            hint   = "Schema table missing required columns.",
+            soft   = FALSE
+          )
+
+          TRUE
+        },
+        on_error = "abort",
+        origin = origin
+      )
+    },
+
+    # @description Private entry point used by subclasses' `default_schema()`
+    #   methods to convert a flat variable-schema table (as read from an xlsx
+    #   template) into the canonical nested variable schema list. Thin
+    #   delegating wrapper around the exported `data_table_to_schema()`
+    #   utility, kept here so all subclasses funnel through a single private
+    #   call site instead of calling the exported function directly.
+    # @param df A data frame or tibble in the flat schema table format.
+    # @return A nested-list representation of the variable schema.
+    # @keywords internal
+    ..data_table_to_schema = function(df) {
+      data_table_to_schema(df)
+    },
+
+    # @description Private entry point used by subclasses' default indicator
+    #   schema loaders to convert a flat indicator-schema table into the
+    #   canonical nested indicator schema list. Thin delegating wrapper
+    #   around the exported `indicator_table_to_schema()` utility.
+    # @param df A data frame or tibble in the flat indicator schema table format.
+    # @return A nested list representation of the indicator schema.
+    # @keywords internal
+    ..indicator_table_to_schema = function(df) {
+      indicator_table_to_schema(df)
+    },
+
+    # @description Private entry point used by subclasses' default dependency
+    #   schema loaders to convert a flat dependency-schema table into the
+    #   canonical nested dependency schema list. Thin delegating wrapper
+    #   around the exported `dependency_table_to_schema()` utility.
+    # @param df A data frame or tibble in the flat dependency schema table format.
+    # @return A nested list representation of the dependency schema.
+    # @keywords internal
+    ..dependency_table_to_schema = function(df) {
+      dependency_table_to_schema(df)
+    },
+
+    # @description Normalize `..variable_schema` to the canonical nested-list
+    #   shape for internal consumers (auto-mapping, type coercion, dependency
+    #   lookups) that still operate on the list form. `..variable_schema` is
+    #   now stored as a flat data frame for all subclasses; this helper
+    #   converts it back to the nested list on demand via
+    #   `data_table_to_schema()`, while passing through unchanged when the
+    #   legacy nested-list shape is already in use (backward compatibility).
+    # @param sch Optional schema to normalize. Defaults to
+    #   `private$..variable_schema`.
+    # @return A nested-list schema, or `NULL`/`list()` when no schema is set.
+    # @keywords internal
+    ..as_variable_schema_list = function(sch = NULL) {
+      if (missing(sch) || is.null(sch)) {
+        sch <- private$..variable_schema
+      }
+      if (is.data.frame(sch)) {
+        if (nrow(sch) == 0) {
+          return(list())
+        }
+        return(data_table_to_schema(sch))
+      }
+      sch
+    },
+
+    # @description Normalize `..indicator_schema` to the canonical
+    #   nested-list shape (one named entry per indicator, with
+    #   `function_name`/`variables`/`arguments`) for internal consumers
+    #   (e.g. `standardize()`'s indicator-processing step) that still
+    #   operate on the list form. `..indicator_schema` is stored as a flat
+    #   data frame (one row per indicator); this helper converts it to the
+    #   nested list on demand via `indicator_table_to_schema()`, while
+    #   passing through unchanged when the legacy nested-list shape is
+    #   already in use (backward compatibility).
+    # @param sch Optional schema to normalize. Defaults to
+    #   `private$..indicator_schema`.
+    # @return A nested-list schema, or `list()` when no schema is set.
+    # @keywords internal
+    ..as_indicator_schema_list = function(sch = NULL) {
+      if (missing(sch) || is.null(sch)) {
+        sch <- private$..indicator_schema
+      }
+      if (is.data.frame(sch)) {
+        if (nrow(sch) == 0) {
+          return(list())
+        }
+        return(indicator_table_to_schema(sch))
+      }
+      sch %||% list()
+    },
+
+    # @description Normalize `..dependency_schema` to the canonical
+    #   nested-list shape (`list(dependencies = ..., soft_dependencies = ...)`)
+    #   for internal consumers (e.g. `run_quality_checks()`,
+    #   `..get_flag_action_from_schema()`, `..get_flag_variables_from_schema()`)
+    #   that still operate on the list form. `..dependency_schema` is stored
+    #   as a flat data frame (one row per dependency rule); this helper
+    #   converts it to the nested list on demand via
+    #   `dependency_table_to_schema()`, while passing through unchanged when
+    #   the legacy nested-list shape is already in use (backward
+    #   compatibility).
+    # @param sch Optional schema to normalize. Defaults to
+    #   `private$..dependency_schema`.
+    # @return A nested-list schema with `dependencies`/`soft_dependencies`
+    #   elements, or `list(dependencies = list(), soft_dependencies = list())`
+    #   when no schema is set.
+    # @keywords internal
+    ..as_dependency_schema_list = function(sch = NULL) {
+      empty <- list(dependencies = list(), soft_dependencies = list())
+      if (missing(sch) || is.null(sch)) {
+        sch <- private$..dependency_schema
+      }
+      if (is.data.frame(sch)) {
+        if (nrow(sch) == 0) {
+          return(empty)
+        }
+        return(dependency_table_to_schema(sch))
+      }
+      sch %||% empty
+    },
+
     # @description Convert one of the class's nested-list schemas
     #   (variable, indicator, or dependency) to a flat data-frame form.
     #   Consolidates the previous private wrappers
@@ -3294,6 +3455,15 @@ Data <- R6::R6Class(
           indicator  = private$..indicator_schema,
           dependency = private$..dependency_schema
         )
+      }
+
+      # Variable, indicator and dependency schemas are now all stored as a
+      # flat data frame (one row per variable value / indicator / dependency
+      # rule); if we were handed one already (either explicitly or via
+      # private$..variable_schema / ..indicator_schema / ..dependency_schema),
+      # it's already in the desired output shape, so pass it through as-is.
+      if (is.data.frame(schema_list)) {
+        return(schema_list)
       }
 
       switch(
@@ -3859,19 +4029,21 @@ Data <- R6::R6Class(
     ..get_flag_action_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
-          # Check separate dependency_schema first
-          if (!is.null(private$..dependency_schema)) {
+          # Check separate dependency_schema first (stored as a flat data
+          # frame; convert to the nested list view on demand).
+          dep_schema_list <- private$..as_dependency_schema_list()
+          if (length(dep_schema_list) > 0) {
             # Check hard dependencies
-            if (flag_name %in% names(private$..dependency_schema$dependencies)) {
-              dep <- private$..dependency_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(dep_schema_list$dependencies)) {
+              dep <- dep_schema_list$dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
             # Check soft dependencies
             if (
-              flag_name %in% names(private$..dependency_schema$soft_dependencies)
+              flag_name %in% names(dep_schema_list$soft_dependencies)
             ) {
-              dep <- private$..dependency_schema$soft_dependencies[[flag_name]]
+              dep <- dep_schema_list$soft_dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
@@ -3904,19 +4076,21 @@ Data <- R6::R6Class(
     ..get_flag_variables_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
-          # Check separate dependency_schema first
-          if (!is.null(private$..dependency_schema)) {
+          # Check separate dependency_schema first (stored as a flat data
+          # frame; convert to the nested list view on demand).
+          dep_schema_list <- private$..as_dependency_schema_list()
+          if (length(dep_schema_list) > 0) {
             # Check hard dependencies
-            if (flag_name %in% names(private$..dependency_schema$dependencies)) {
-              dep <- private$..dependency_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(dep_schema_list$dependencies)) {
+              dep <- dep_schema_list$dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }
             # Check soft dependencies
             if (
-              flag_name %in% names(private$..dependency_schema$soft_dependencies)
+              flag_name %in% names(dep_schema_list$soft_dependencies)
             ) {
-              dep <- private$..dependency_schema$soft_dependencies[[flag_name]]
+              dep <- dep_schema_list$soft_dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }
@@ -4118,10 +4292,27 @@ Data <- R6::R6Class(
     #'
     #' @return Logical indicating if variable is select_multiple
     ..is_select_multiple = function(var_role) {
-      if (is.null(private$..variable_schema)) {
+      sch <- private$..variable_schema
+      if (is.null(sch)) {
         return(FALSE)
       }
-      question_types <- private$..variable_schema$question_types %||% list()
+
+      # Flat variable schema data frame (current format): one or more rows
+      # per variable, with a `question_type` column.
+      if (is.data.frame(sch)) {
+        if (!"variable" %in% names(sch) || !"question_type" %in% names(sch)) {
+          return(FALSE)
+        }
+        rows <- sch
+        if ("rule_type" %in% names(rows)) {
+          rows <- rows[rows$rule_type == "variable", , drop = FALSE]
+        }
+        qt <- rows$question_type[rows$variable == var_role]
+        return(any(qt %in% "select_multiple", na.rm = TRUE))
+      }
+
+      # Legacy nested-list schema format.
+      question_types <- sch$question_types %||% list()
       return(
         !is.null(question_types[[var_role]]) &&
           question_types[[var_role]] == "select_multiple"
@@ -4614,7 +4805,7 @@ Data <- R6::R6Class(
     ..map_schema_vars = function(stage = "raw") {
       phrutils::phr_try(
         {
-          sch <- private$..variable_schema
+          sch <- private$..as_variable_schema_list()
 
           # Early exit if no schema is defined
           if (is.null(sch) || length(sch) == 0) {
@@ -4882,7 +5073,7 @@ Data <- R6::R6Class(
     ..map_schema_labels = function(language = "english") {
       phrutils::phr_try(
         {
-          sch <- private$..variable_schema
+          sch <- private$..as_variable_schema_list()
 
           if (is.null(sch) || length(sch) == 0) {
             return(invisible(self))
