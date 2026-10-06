@@ -114,9 +114,9 @@ DeathIndividualData <- R6::R6Class(
     #' Load the default variable schema for death data
     #'
     #' Reads the variable_schema_data_individual_death_template.xlsx file from package resources
-    #' and converts it to a nested list of variable definitions.
+    #' and converts it to the canonical flat variable-schema data frame.
     #'
-    #' @return A list containing the death data variable schema
+    #' @return A data frame containing the death data variable schema
     default_schema = function() {
 
       file <- system.file(
@@ -145,8 +145,11 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      # Convert table → canonical nested schema list
-      schema <- data_table_to_schema(df)
+      # Convert table -> canonical nested schema list, then flatten to the
+      # canonical flat variable-schema data frame (the format expected by
+      # `data_diagnose()` and other schema consumers).
+      schema_list <- private$..data_table_to_schema(df)
+      schema <- private$..schema_to_table(schema_type = "variable", schema_list = schema_list)
 
       return(schema)
     },
@@ -189,7 +192,7 @@ DeathIndividualData <- R6::R6Class(
       if (is.null(df)) return(list())
 
       # Convert table → canonical nested indicator schema list
-      indicator_schema <- indicator_table_to_schema(df)
+      indicator_schema <- private$..indicator_table_to_schema(df)
 
       return(indicator_schema)
     },
@@ -232,7 +235,7 @@ DeathIndividualData <- R6::R6Class(
       if (is.null(df)) return(list(dependencies = list()))
 
       # Convert table → canonical nested dependency schema list
-      dependency_schema <- dependency_table_to_schema(df)
+      dependency_schema <- private$..dependency_table_to_schema(df)
 
       return(dependency_schema)
     },

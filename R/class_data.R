@@ -559,7 +559,7 @@ Data <- R6::R6Class(
           phrutils::phr_message(phrutils::phr_txt("Standardizing {self$dataset_name}..."))
 
           data_copy <- private$..raw_data
-          sch <- private$..variable_schema %||% list()
+          sch <- private$..as_variable_schema_list() %||% list()
 
           # normalize skip vector
           skip <- intersect(skip, names(data_copy))
@@ -1964,7 +1964,7 @@ Data <- R6::R6Class(
           )
 
           var_schema <- phrutils::phr_try(
-            private$..variable_schema,
+            private$..as_variable_schema_list(),
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_var_schema_load")
           )
@@ -2668,12 +2668,14 @@ Data <- R6::R6Class(
 
           unique_deletions_added <- 0
 
+          var_schema_list_for_unique <- private$..as_variable_schema_list()
+
           if (
-            !is.null(private$..variable_schema) &&
-              !is.null(private$..variable_schema$unique) &&
-              length(private$..variable_schema$unique) > 0
+            !is.null(var_schema_list_for_unique) &&
+              !is.null(var_schema_list_for_unique$unique) &&
+              length(var_schema_list_for_unique$unique) > 0
           ) {
-            for (var_canonical in private$..variable_schema$unique) {
+            for (var_canonical in var_schema_list_for_unique$unique) {
               # Resolve canonical variable name to the actual dataset column name
               # using the variable_map (same approach as the rest of generate_cleaning_log)
               var_col <- suppressWarnings(self$resolve_column(
@@ -3265,6 +3267,65 @@ Data <- R6::R6Class(
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
+    # @description Private entry point used by subclasses' `default_schema()`
+    #   methods to convert a flat variable-schema table (as read from an xlsx
+    #   template) into the canonical nested variable schema list. Thin
+    #   delegating wrapper around the exported `data_table_to_schema()`
+    #   utility, kept here so all subclasses funnel through a single private
+    #   call site instead of calling the exported function directly.
+    # @param df A data frame or tibble in the flat schema table format.
+    # @return A nested-list representation of the variable schema.
+    # @keywords internal
+    ..data_table_to_schema = function(df) {
+      data_table_to_schema(df)
+    },
+
+    # @description Private entry point used by subclasses' default indicator
+    #   schema loaders to convert a flat indicator-schema table into the
+    #   canonical nested indicator schema list. Thin delegating wrapper
+    #   around the exported `indicator_table_to_schema()` utility.
+    # @param df A data frame or tibble in the flat indicator schema table format.
+    # @return A nested list representation of the indicator schema.
+    # @keywords internal
+    ..indicator_table_to_schema = function(df) {
+      indicator_table_to_schema(df)
+    },
+
+    # @description Private entry point used by subclasses' default dependency
+    #   schema loaders to convert a flat dependency-schema table into the
+    #   canonical nested dependency schema list. Thin delegating wrapper
+    #   around the exported `dependency_table_to_schema()` utility.
+    # @param df A data frame or tibble in the flat dependency schema table format.
+    # @return A nested list representation of the dependency schema.
+    # @keywords internal
+    ..dependency_table_to_schema = function(df) {
+      dependency_table_to_schema(df)
+    },
+
+    # @description Normalize `..variable_schema` to the canonical nested-list
+    #   shape for internal consumers (auto-mapping, type coercion, dependency
+    #   lookups) that still operate on the list form. `..variable_schema` is
+    #   now stored as a flat data frame for all subclasses; this helper
+    #   converts it back to the nested list on demand via
+    #   `data_table_to_schema()`, while passing through unchanged when the
+    #   legacy nested-list shape is already in use (backward compatibility).
+    # @param sch Optional schema to normalize. Defaults to
+    #   `private$..variable_schema`.
+    # @return A nested-list schema, or `NULL`/`list()` when no schema is set.
+    # @keywords internal
+    ..as_variable_schema_list = function(sch = NULL) {
+      if (missing(sch) || is.null(sch)) {
+        sch <- private$..variable_schema
+      }
+      if (is.data.frame(sch)) {
+        if (nrow(sch) == 0) {
+          return(list())
+        }
+        return(data_table_to_schema(sch))
+      }
+      sch
+    },
+
     # @description Convert one of the class's nested-list schemas
     #   (variable, indicator, or dependency) to a flat data-frame form.
     #   Consolidates the previous private wrappers
@@ -3295,6 +3356,13 @@ Data <- R6::R6Class(
           indicator  = private$..indicator_schema,
           dependency = private$..dependency_schema
         )
+      }
+
+      # `variable` schemas are now stored as a flat data frame; if we were
+      # handed one already (either explicitly or via private$..variable_schema),
+      # it's already in the desired output shape, so pass it through as-is.
+      if (schema_type == "variable" && is.data.frame(schema_list)) {
+        return(schema_list)
       }
 
       switch(
@@ -4632,7 +4700,7 @@ Data <- R6::R6Class(
     ..map_schema_vars = function(stage = "raw") {
       phrutils::phr_try(
         {
-          sch <- private$..variable_schema
+          sch <- private$..as_variable_schema_list()
 
           # Early exit if no schema is defined
           if (is.null(sch) || length(sch) == 0) {
@@ -4900,7 +4968,7 @@ Data <- R6::R6Class(
     ..map_schema_labels = function(language = "english") {
       phrutils::phr_try(
         {
-          sch <- private$..variable_schema
+          sch <- private$..as_variable_schema_list()
 
           if (is.null(sch) || length(sch) == 0) {
             return(invisible(self))

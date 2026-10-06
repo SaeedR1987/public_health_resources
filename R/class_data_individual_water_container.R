@@ -147,7 +147,7 @@ WaterContainerData <- R6::R6Class(
       )
 
       # Convert table → canonical nested schema list
-      schema <- data_table_to_schema(df)
+      schema <- private$..data_table_to_schema(df)
 
       return(schema)
     },
@@ -190,7 +190,7 @@ WaterContainerData <- R6::R6Class(
       if (is.null(df)) return(list())
 
       # Convert table → canonical nested indicator schema list
-      indicator_schema <- indicator_table_to_schema(df)
+      indicator_schema <- private$..indicator_table_to_schema(df)
 
       return(indicator_schema)
     },
@@ -233,7 +233,7 @@ WaterContainerData <- R6::R6Class(
       if (is.null(df)) return(list(dependencies = list()))
 
       # Convert table → canonical nested dependency schema list
-      dependency_schema <- dependency_table_to_schema(df)
+      dependency_schema <- private$..dependency_table_to_schema(df)
 
       return(dependency_schema)
     },

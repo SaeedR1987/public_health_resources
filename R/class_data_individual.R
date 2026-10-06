@@ -101,8 +101,20 @@ IndividualData <- R6::R6Class(
 
         # ---- Build and merge individual schema into any existing schema ----
         ind_schema    <- self$default_schema()
-        parent_schema <- private$..variable_schema %||% list()
-        merged_schema <- utils::modifyList(parent_schema, ind_schema)
+        parent_schema <- private$..variable_schema
+
+        if (is.data.frame(ind_schema)) {
+          # Current flat-data-frame schema format: combine any existing
+          # rows with the default roster rows (existing variables win on
+          # duplicate rule_type/variable/value).
+          if (is.data.frame(parent_schema) && nrow(parent_schema) > 0) {
+            merged_schema <- unique(rbind(parent_schema, ind_schema))
+          } else {
+            merged_schema <- ind_schema
+          }
+        } else {
+          merged_schema <- utils::modifyList(parent_schema %||% list(), ind_schema)
+        }
 
         self$set(field = "..variable_schema", value = merged_schema)
 
@@ -170,8 +182,11 @@ IndividualData <- R6::R6Class(
         }
       )
 
-      # Convert table → canonical nested schema list
-      schema <- data_table_to_schema(df)
+      # Convert table -> canonical nested schema list, then flatten to the
+      # canonical flat variable-schema data frame (the format expected by
+      # `data_diagnose()` and other schema consumers).
+      schema_list <- private$..data_table_to_schema(df)
+      schema <- private$..schema_to_table(schema_type = "variable", schema_list = schema_list)
 
       return(schema)
     },
@@ -217,7 +232,7 @@ IndividualData <- R6::R6Class(
       if (is.null(df)) return(list())
 
       # Convert table → canonical nested indicator schema list
-      indicator_schema <- indicator_table_to_schema(df)
+      indicator_schema <- private$..indicator_table_to_schema(df)
 
       return(indicator_schema)
     },
@@ -263,7 +278,7 @@ IndividualData <- R6::R6Class(
       if (is.null(df)) return(list(dependencies = list()))
 
       # Convert table → canonical nested dependency schema list
-      dependency_schema <- dependency_table_to_schema(df)
+      dependency_schema <- private$..dependency_table_to_schema(df)
 
       return(dependency_schema)
     },
