@@ -1961,28 +1961,110 @@ Data <- R6::R6Class(
           }
 
           # Load dependency_schema (primary) and variable_schema (for types only)
-          # `..dependency_schema` is stored as a flat data frame; convert to
-          # the nested list view on demand for this processing step.
+          # Both are stored as flat data frames and are iterated over directly
+          # in that form here (one row per dependency rule / variable value).
           dep_schema <- phrutils::phr_try(
-            private$..as_dependency_schema_list(),
+            {
+              sch <- private$..dependency_schema
+              if (!is.null(sch) && !is.data.frame(sch)) {
+                sch <- private$..schema_to_table(
+                  schema_type = "dependency",
+                  schema_list = sch
+                )
+              }
+              sch
+            },
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_dep_schema_load")
           )
 
           var_schema <- phrutils::phr_try(
-            private$..as_variable_schema_list(),
+            {
+              sch <- private$..variable_schema
+              if (!is.null(sch) && !is.data.frame(sch)) {
+                sch <- private$..schema_to_table(
+                  schema_type = "variable",
+                  schema_list = sch
+                )
+              }
+              sch
+            },
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_var_schema_load")
           )
 
-          # Check if we have any schema to work with
-          has_dep_schema <- !is.null(dep_schema) &&
-            (length(dep_schema$dependencies) > 0 ||
-              length(dep_schema$soft_dependencies) > 0)
+          # Read a single schema cell as a character scalar, normalizing
+          # NA/"NA"/missing columns to an empty string.
+          schema_value <- function(row, cols) {
+            for (col in cols) {
+              if (!col %in% names(row)) {
+                next
+              }
+              val <- row[[col]][1]
+              if (is.null(val) || is.na(val)) {
+                next
+              }
+              val <- trimws(as.character(val))
+              if (val == "" || val == "NA") {
+                next
+              }
+              return(val)
+            }
+            ""
+          }
 
-          has_types <- !is.null(var_schema) &&
-            !is.null(var_schema$types) &&
-            length(var_schema$types) > 0
+          # Dependency rows: keep only "dependency" rules with a usable name
+          dep_rows <- NULL
+          if (is.data.frame(dep_schema) && nrow(dep_schema) > 0) {
+            rule_types <- if ("rule_type" %in% names(dep_schema)) {
+              as.character(dep_schema$rule_type)
+            } else {
+              rep("dependency", nrow(dep_schema))
+            }
+            dep_names <- if ("dep_name" %in% names(dep_schema)) {
+              as.character(dep_schema$dep_name)
+            } else {
+              rep(NA_character_, nrow(dep_schema))
+            }
+            keep <- !is.na(rule_types) &
+              rule_types == "dependency" &
+              !is.na(dep_names) &
+              dep_names != "" &
+              dep_names != "NA"
+            dep_rows <- dep_schema[keep, , drop = FALSE]
+          }
+
+          # Variable rows carrying a declared type (one row per variable)
+          type_rows <- NULL
+          if (
+            is.data.frame(var_schema) &&
+              nrow(var_schema) > 0 &&
+              all(c("variable", "type") %in% names(var_schema))
+          ) {
+            rule_types <- if ("rule_type" %in% names(var_schema)) {
+              as.character(var_schema$rule_type)
+            } else {
+              rep("variable", nrow(var_schema))
+            }
+            variables <- as.character(var_schema$variable)
+            types <- as.character(var_schema$type)
+            keep <- !is.na(rule_types) &
+              rule_types == "variable" &
+              !is.na(variables) &
+              variables != "" &
+              !is.na(types) &
+              types != ""
+            type_rows <- var_schema[keep, , drop = FALSE]
+            type_rows <- type_rows[
+              !duplicated(as.character(type_rows$variable)), ,
+              drop = FALSE
+            ]
+          }
+
+          # Check if we have any schema to work with
+          has_dep_schema <- !is.null(dep_rows) && nrow(dep_rows) > 0
+
+          has_types <- !is.null(type_rows) && nrow(type_rows) > 0
 
           if (!has_dep_schema && !has_types) {
             phrutils::phr_warning(
@@ -2010,17 +2092,19 @@ Data <- R6::R6Class(
           }
 
           # 1. Type coercion checks (row-level flags)
-          # Use var_schema$types to determine intended types
+          # Iterate the variable schema rows to determine intended types
           # This check identifies specific rows that cannot be coerced
 
           phrutils::phr_try(
             {
               if (has_types) {
-                for (col in names(var_schema$types)) {
-                  if (!col %in% names(df)) {
+                for (type_i in seq_len(nrow(type_rows))) {
+                  type_row <- type_rows[type_i, , drop = FALSE]
+                  col <- schema_value(type_row, "variable")
+                  if (col == "" || !col %in% names(df)) {
                     next
                   }
-                  want <- var_schema$types[[col]]
+                  want <- schema_value(type_row, "type")
                   x <- df[[col]]
 
                   # Column-level coercibility
@@ -2049,17 +2133,23 @@ Data <- R6::R6Class(
           phrutils::phr_try(
             {
               if (has_dep_schema) {
-                # Process all dependencies (action field determines treatment)
-                if (length(dep_schema$dependencies) > 0) {
-                  for (flag_name in names(dep_schema$dependencies)) {
-                    # Wrap each dependency processing in phr_try to continue on errors
-                    phrutils::phr_try(
-                      {
-                        rule <- dep_schema$dependencies[[flag_name]]
+                # Process all dependency rows (action field determines treatment)
+                for (dep_i in seq_len(nrow(dep_rows))) {
+                  dep_row <- dep_rows[dep_i, , drop = FALSE]
+                  flag_name <- schema_value(dep_row, "dep_name")
 
+                  # Wrap each dependency processing in phr_try to continue on errors
+                  phrutils::phr_try(
+                    {
                         # CHANGE 1: Check if required variables are present in dataset
-                        # Variables in dependency schema use canonical names from variable_map
-                        required_vars <- rule[["variables"]]
+                        # Variables in dependency schema use canonical names from
+                        # variable_map, stored as a comma-separated string.
+                        required_vars <- character(0)
+                        vars_raw <- schema_value(dep_row, "variables")
+                        if (vars_raw != "") {
+                          required_vars <- trimws(strsplit(vars_raw, ",")[[1]])
+                          required_vars <- required_vars[required_vars != ""]
+                        }
 
                         skip_dependency <- FALSE
 
@@ -2100,16 +2190,19 @@ Data <- R6::R6Class(
                         if (!skip_dependency) {
                           # Read the action field before checking required fields, since
                           # flag_delete dependencies may omit the 'then' clause
-                          rule_action <- rule[["action"]] %||% ""
+                          rule_action <- schema_value(dep_row, "action")
 
-                          rule_if <- rule[["if"]] %||%
-                            rule[["condition_if"]] %||%
-                            rule[["condition"]]
+                          rule_if <- schema_value(
+                            dep_row,
+                            c("condition_if", "if", "condition")
+                          )
 
-                          rule_then <- rule[["then"]] %||%
-                            rule[["require"]]
+                          rule_then <- schema_value(
+                            dep_row,
+                            c("then", "require")
+                          )
 
-                          if (is.null(rule_if)) {
+                          if (rule_if == "") {
                             phrutils::phr_warning(
                               self$dataset_name,
                               phrutils::phr_txt(
@@ -2118,7 +2211,7 @@ Data <- R6::R6Class(
                             )
                             skip_dependency <- TRUE
                           } else if (
-                            is.null(rule_then) && rule_action != "flag_delete"
+                            rule_then == "" && rule_action != "flag_delete"
                           ) {
                             # 'then' is required for all actions except flag_delete,
                             # which may use condition_if alone to identify rows for deletion
@@ -2199,7 +2292,7 @@ Data <- R6::R6Class(
 
                           # Evaluate 'then' only when present
                           cond_then <- NULL
-                          if (!is.null(rule_then)) {
+                          if (rule_then != "") {
                             rule_then_translated <- private$..translate_expression(
                               rule_then,
                               stage = stage
@@ -2262,11 +2355,10 @@ Data <- R6::R6Class(
                           # Add flag with consistent "flag_" prefix
                           add_flag(flag_name, flag_vec)
                         }
-                      },
-                      on_error = "warn",
-                      origin = paste0(self$dataset_name, "_DQ_dep_", flag_name)
-                    )
-                  }
+                    },
+                    on_error = "warn",
+                    origin = paste0(self$dataset_name, "_DQ_dep_", flag_name)
+                  )
                 }
 
                 # Note: soft_dependencies removed - use action field to determine treatment
