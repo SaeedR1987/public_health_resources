@@ -5202,7 +5202,7 @@ Data <- R6::R6Class(
           # Populate variable_label for each role present in variable_map
           for (var_role in names(private$..variable_map)) {
             if (!is.null(schema_var_labels[[var_role]])) {
-              self$set(field = "..variable_map", role = var_role, value = schema_var_labels[[var_role]])
+              self$set(field = "..variable_label", role = var_role, value = schema_var_labels[[var_role]])
               vars_labelled <- vars_labelled + 1
             }
           }
