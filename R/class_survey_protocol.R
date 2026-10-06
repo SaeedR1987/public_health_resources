@@ -365,21 +365,18 @@ SurveyProtocol <- R6::R6Class(
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
     #' @param target_field Optional destination field path.
-    #' @param name Optional named list entry inside \code{field}.
     #' @param role Optional role-based list resolution key.
     #' @return Invisibly returns \code{NULL}.
     post_sync_state = function(
       field = NULL,
       member = NULL,
       target_field = NULL,
-      name = NULL,
       role = NULL
     ) {
       super$post_sync_state(
         field = field,
         member = member,
         target_field = target_field,
-        name = name,
         role = role
       )
       if (isTRUE(private$..post_sync_guard)) {
