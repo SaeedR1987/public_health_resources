@@ -212,10 +212,10 @@ test_that("get() retrieves a private top-level field", {
   expect_equal(inst$get(field = "secret"), "init_secret")
 })
 
-test_that("get() retrieves a member on a name-resolved list element", {
+test_that("get() retrieves a member on a role-resolved list element using the literal key", {
   inst <- TestAsset$new()
   expect_equal(
-    inst$get(field = "tools", name = "tool_household_iphra_v2", member = "name"),
+    inst$get(field = "tools", role = "tool_household_iphra_v2", member = "name"),
     "household"
   )
 })
@@ -255,13 +255,13 @@ test_that("call() invokes a public top-level method directly", {
   expect_equal(inst$call(field = "greet"), "hello world")
 })
 
-test_that("call() invokes a nested method resolved by name", {
+test_that("call() invokes a nested method resolved by role", {
   inst <- TestAsset$new()
   inst$tools$tool_household_iphra_v2$get_name <- function() "household"
   expect_equal(
     inst$call(
       field = "tools",
-      name = "tool_household_iphra_v2",
+      role = "tool_household_iphra_v2",
       member = "get_name"
     ),
     "household"
@@ -280,7 +280,7 @@ test_that("call() updates the modified timestamp by default", {
   Sys.sleep(0.01)
   inst$call(
     field = "tools",
-    name = "tool_household_iphra_v2",
+    role = "tool_household_iphra_v2",
     member = "get_name"
   )
   expect_true(inst$metadata$modified_datetime > before)
