@@ -880,16 +880,17 @@ Data <- R6::R6Class(
               # Start with current data
               working_data <- data_copy
 
-              if (
-                !is.null(private$..indicator_schema) &&
-                  length(private$..indicator_schema) > 0
-              ) {
+              # `..indicator_schema` is stored as a flat data frame; convert
+              # to the nested list view on demand for this processing step.
+              indicator_schema_list <- private$..as_indicator_schema_list()
+
+              if (length(indicator_schema_list) > 0) {
                 phrutils::phr_message(phrutils::phr_txt(
-                  "Processing {length(private$..indicator_schema)} indicator(s) from indicator schema..."
+                  "Processing {length(indicator_schema_list)} indicator(s) from indicator schema..."
                 ))
 
-                for (ind_name in names(private$..indicator_schema)) {
-                  ind <- private$..indicator_schema[[ind_name]]
+                for (ind_name in names(indicator_schema_list)) {
+                  ind <- indicator_schema_list[[ind_name]]
 
                   phrutils::phr_try(
                     {
@@ -1957,8 +1958,10 @@ Data <- R6::R6Class(
           }
 
           # Load dependency_schema (primary) and variable_schema (for types only)
+          # `..dependency_schema` is stored as a flat data frame; convert to
+          # the nested list view on demand for this processing step.
           dep_schema <- phrutils::phr_try(
-            private$..dependency_schema,
+            private$..as_dependency_schema_list(),
             on_error = "abort",
             origin = paste0(self$dataset_name, "_DQ_dep_schema_load")
           )
@@ -3326,6 +3329,62 @@ Data <- R6::R6Class(
       sch
     },
 
+    # @description Normalize `..indicator_schema` to the canonical
+    #   nested-list shape (one named entry per indicator, with
+    #   `function_name`/`variables`/`arguments`) for internal consumers
+    #   (e.g. `standardize()`'s indicator-processing step) that still
+    #   operate on the list form. `..indicator_schema` is stored as a flat
+    #   data frame (one row per indicator); this helper converts it to the
+    #   nested list on demand via `indicator_table_to_schema()`, while
+    #   passing through unchanged when the legacy nested-list shape is
+    #   already in use (backward compatibility).
+    # @param sch Optional schema to normalize. Defaults to
+    #   `private$..indicator_schema`.
+    # @return A nested-list schema, or `list()` when no schema is set.
+    # @keywords internal
+    ..as_indicator_schema_list = function(sch = NULL) {
+      if (missing(sch) || is.null(sch)) {
+        sch <- private$..indicator_schema
+      }
+      if (is.data.frame(sch)) {
+        if (nrow(sch) == 0) {
+          return(list())
+        }
+        return(indicator_table_to_schema(sch))
+      }
+      sch %||% list()
+    },
+
+    # @description Normalize `..dependency_schema` to the canonical
+    #   nested-list shape (`list(dependencies = ..., soft_dependencies = ...)`)
+    #   for internal consumers (e.g. `run_quality_checks()`,
+    #   `..get_flag_action_from_schema()`, `..get_flag_variables_from_schema()`)
+    #   that still operate on the list form. `..dependency_schema` is stored
+    #   as a flat data frame (one row per dependency rule); this helper
+    #   converts it to the nested list on demand via
+    #   `dependency_table_to_schema()`, while passing through unchanged when
+    #   the legacy nested-list shape is already in use (backward
+    #   compatibility).
+    # @param sch Optional schema to normalize. Defaults to
+    #   `private$..dependency_schema`.
+    # @return A nested-list schema with `dependencies`/`soft_dependencies`
+    #   elements, or `list(dependencies = list(), soft_dependencies = list())`
+    #   when no schema is set.
+    # @keywords internal
+    ..as_dependency_schema_list = function(sch = NULL) {
+      empty <- list(dependencies = list(), soft_dependencies = list())
+      if (missing(sch) || is.null(sch)) {
+        sch <- private$..dependency_schema
+      }
+      if (is.data.frame(sch)) {
+        if (nrow(sch) == 0) {
+          return(empty)
+        }
+        return(dependency_table_to_schema(sch))
+      }
+      sch %||% empty
+    },
+
     # @description Convert one of the class's nested-list schemas
     #   (variable, indicator, or dependency) to a flat data-frame form.
     #   Consolidates the previous private wrappers
@@ -3358,10 +3417,12 @@ Data <- R6::R6Class(
         )
       }
 
-      # `variable` schemas are now stored as a flat data frame; if we were
-      # handed one already (either explicitly or via private$..variable_schema),
+      # Variable, indicator and dependency schemas are now all stored as a
+      # flat data frame (one row per variable value / indicator / dependency
+      # rule); if we were handed one already (either explicitly or via
+      # private$..variable_schema / ..indicator_schema / ..dependency_schema),
       # it's already in the desired output shape, so pass it through as-is.
-      if (schema_type == "variable" && is.data.frame(schema_list)) {
+      if (is.data.frame(schema_list)) {
         return(schema_list)
       }
 
@@ -3928,19 +3989,21 @@ Data <- R6::R6Class(
     ..get_flag_action_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
-          # Check separate dependency_schema first
-          if (!is.null(private$..dependency_schema)) {
+          # Check separate dependency_schema first (stored as a flat data
+          # frame; convert to the nested list view on demand).
+          dep_schema_list <- private$..as_dependency_schema_list()
+          if (length(dep_schema_list) > 0) {
             # Check hard dependencies
-            if (flag_name %in% names(private$..dependency_schema$dependencies)) {
-              dep <- private$..dependency_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(dep_schema_list$dependencies)) {
+              dep <- dep_schema_list$dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
             # Check soft dependencies
             if (
-              flag_name %in% names(private$..dependency_schema$soft_dependencies)
+              flag_name %in% names(dep_schema_list$soft_dependencies)
             ) {
-              dep <- private$..dependency_schema$soft_dependencies[[flag_name]]
+              dep <- dep_schema_list$soft_dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
             }
@@ -3973,19 +4036,21 @@ Data <- R6::R6Class(
     ..get_flag_variables_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
-          # Check separate dependency_schema first
-          if (!is.null(private$..dependency_schema)) {
+          # Check separate dependency_schema first (stored as a flat data
+          # frame; convert to the nested list view on demand).
+          dep_schema_list <- private$..as_dependency_schema_list()
+          if (length(dep_schema_list) > 0) {
             # Check hard dependencies
-            if (flag_name %in% names(private$..dependency_schema$dependencies)) {
-              dep <- private$..dependency_schema$dependencies[[flag_name]]
+            if (flag_name %in% names(dep_schema_list$dependencies)) {
+              dep <- dep_schema_list$dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }
             # Check soft dependencies
             if (
-              flag_name %in% names(private$..dependency_schema$soft_dependencies)
+              flag_name %in% names(dep_schema_list$soft_dependencies)
             ) {
-              dep <- private$..dependency_schema$soft_dependencies[[flag_name]]
+              dep <- dep_schema_list$soft_dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
             }

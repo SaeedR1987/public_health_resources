@@ -87,21 +87,21 @@ DeathIndividualData <- R6::R6Class(
 
         # Load default indicator schema
         default_ind_schema <- self$default_indicator_schema()
-        if (length(default_ind_schema) > 0) {
+        if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
           self$set(field = "..indicator_schema", value = default_ind_schema)
           phrutils::phr_message(
-            phrutils::phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
+            phrutils::phr_txt("Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s).")
           )
         }
 
         # Load default dependency schema
         default_dep_schema <- self$default_dependency_schema()
-        if (length(default_dep_schema$dependencies) > 0) {
+        if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
 
           self$set(field = "..dependency_schema", value = default_dep_schema)
 
           phrutils::phr_message(
-            phrutils::phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+            phrutils::phr_txt("Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies.")
           )
         }
 
@@ -145,13 +145,13 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      # Convert table -> canonical nested schema list, then flatten to the
-      # canonical flat variable-schema data frame (the format expected by
-      # `data_diagnose()` and other schema consumers).
-      schema_list <- private$..data_table_to_schema(df)
-      schema <- private$..schema_to_table(schema_type = "variable", schema_list = schema_list)
+      # The xlsx template is already in the canonical flat variable-schema
+      # table format (the format expected by `data_diagnose()` and other
+      # schema consumers), so validate and store it directly rather than
+      # round-tripping it through the nested-list representation.
+      data_validate_table_to_schema(df)
 
-      return(schema)
+      return(df)
     },
 
     #' @description
@@ -169,12 +169,23 @@ DeathIndividualData <- R6::R6Class(
         package = "phr"
       )
 
+      empty_indicator_schema <- function() {
+        tibble::tibble(
+          indicator_name = character(0),
+          function_name = character(0),
+          variables = character(0),
+          arguments = character(0),
+          label = character(0),
+          comment = character(0)
+        )
+      }
+
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "DeathIndividualData$default_indicator_schema",
           message = phrutils::phr_txt("indicator_schema_data_individual_death_template.xlsx not found in package resources. Continuing without default indicator schema.")
         )
-        return(list())
+        return(empty_indicator_schema())
       }
 
       # Read the Excel table (first sheet)
@@ -189,12 +200,14 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      if (is.null(df)) return(list())
+      if (is.null(df)) return(empty_indicator_schema())
 
-      # Convert table → canonical nested indicator schema list
-      indicator_schema <- private$..indicator_table_to_schema(df)
+      # The xlsx template is already in the canonical flat indicator-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      indicator_validate_table_to_schema(df)
 
-      return(indicator_schema)
+      return(df)
     },
 
     #' @description
@@ -212,12 +225,25 @@ DeathIndividualData <- R6::R6Class(
         package = "phr"
       )
 
+      empty_dependency_schema <- function() {
+        tibble::tibble(
+          rule_type = character(0),
+          dep_name = character(0),
+          variables = character(0),
+          condition_if = character(0),
+          then = character(0),
+          action = character(0),
+          label = character(0),
+          comment = character(0)
+        )
+      }
+
       if (!file.exists(file)) {
         phrutils::phr_warning(
           origin  = "DeathIndividualData$default_dependency_schema",
           message = phr_txt("dependency_schema_data_individual_death_template.xlsx not found in package resources. Continuing without default dependency schema.")
         )
-        return(list(dependencies = list()))
+        return(empty_dependency_schema())
       }
 
       # Read the Excel table (first sheet)
@@ -232,12 +258,14 @@ DeathIndividualData <- R6::R6Class(
         }
       )
 
-      if (is.null(df)) return(list(dependencies = list()))
+      if (is.null(df)) return(empty_dependency_schema())
 
-      # Convert table → canonical nested dependency schema list
-      dependency_schema <- private$..dependency_table_to_schema(df)
+      # The xlsx template is already in the canonical flat dependency-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      dependency_validate_table_to_schema(df)
 
-      return(dependency_schema)
+      return(df)
     },
 
 

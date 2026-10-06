@@ -136,27 +136,27 @@ HouseholdData <- R6::R6Class(
 
           # 3) Load default indicator schema
           default_ind_schema <- self$default_indicator_schema()
-          if (length(default_ind_schema) > 0) {
+          if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
 
             self$set(field = "..indicator_schema", value = default_ind_schema)
 
             phrutils::phr_message(
               phrutils::phr_txt(glue::glue(
-                "Loaded default indicator schema with {length(default_ind_schema)} indicator(s)."
+                "Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s)."
               ))
             )
           }
 
           # 4) Load default dependency schema
           default_dep_schema <- self$default_dependency_schema()
-          if (length(default_dep_schema$dependencies) > 0) {
+          if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
 
             self$set(field = "..dependency_schema", value = default_dep_schema)
 
             # self$set_dependency_schema(default_dep_schema)
             phrutils::phr_message(
               phrutils::phr_txt(
-                "Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies."
+                "Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies."
               )
             )
           }
@@ -241,13 +241,13 @@ HouseholdData <- R6::R6Class(
         }
       )
 
-      # Convert table -> canonical nested schema list, then flatten to the
-      # canonical flat variable-schema data frame (the format expected by
-      # `data_diagnose()` and other schema consumers).
-      schema_list <- private$..data_table_to_schema(df)
-      schema <- private$..schema_to_table(schema_type = "variable", schema_list = schema_list)
+      # The xlsx template is already in the canonical flat variable-schema
+      # table format (the format expected by `data_diagnose()` and other
+      # schema consumers), so validate and store it directly rather than
+      # round-tripping it through the nested-list representation.
+      data_validate_table_to_schema(df)
 
-      return(schema)
+      return(df)
     },
 
     #' Load Default Indicator Schema
@@ -255,11 +255,11 @@ HouseholdData <- R6::R6Class(
     #' @description
     #' Loads the default indicator schema from the household indicator schema template Excel file
     #'
-    #' @return Named list with indicator schema definitions, or empty list if template not found
+    #' @return A flat data frame with one row per indicator, or an empty data frame if template not found
     #'
     #' @details
-    #' Reads indicator_schema_data_household_template.xlsx from package resources and converts
-    #' to canonical nested indicator schema structure. Issues warning if file not found.
+    #' Reads indicator_schema_data_household_template.xlsx from package resources and returns
+    #' it as the flat indicator-schema table. Issues warning if file not found.
     default_indicator_schema = function() {
       file <- system.file(
         "resources",
@@ -272,7 +272,14 @@ HouseholdData <- R6::R6Class(
           origin = "HouseholdData$default_indicator_schema",
           message = "indicator_schema_data_household_template.xlsx not found in package resources. Continuing without default indicator schema."
         )
-        return(list())
+        return(tibble::tibble(
+          indicator_name = character(0),
+          function_name = character(0),
+          variables = character(0),
+          arguments = character(0),
+          label = character(0),
+          comment = character(0)
+        ))
       }
 
       # Read the Excel table (first sheet)
@@ -290,13 +297,22 @@ HouseholdData <- R6::R6Class(
       )
 
       if (is.null(df)) {
-        return(list())
+        return(tibble::tibble(
+          indicator_name = character(0),
+          function_name = character(0),
+          variables = character(0),
+          arguments = character(0),
+          label = character(0),
+          comment = character(0)
+        ))
       }
 
-      # Convert table → canonical nested indicator schema list
-      indicator_schema <- private$..indicator_table_to_schema(df)
+      # The xlsx template is already in the canonical flat indicator-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      indicator_validate_table_to_schema(df)
 
-      return(indicator_schema)
+      return(df)
     },
 
     #' Load Default Dependency Schema
@@ -304,11 +320,11 @@ HouseholdData <- R6::R6Class(
     #' @description
     #' Loads the default dependency schema from the household dependency schema template Excel file
     #'
-    #' @return List with 'dependencies' element containing dependency definitions, or empty dependencies list if template not found
+    #' @return A flat data frame with one row per dependency rule, or an empty data frame if template not found
     #'
     #' @details
-    #' Reads dependency_schema_data_household_template.xlsx from package resources and converts
-    #' to canonical nested dependency schema structure. Issues warning if file not found.
+    #' Reads dependency_schema_data_household_template.xlsx from package resources and returns
+    #' it as the flat dependency-schema table. Issues warning if file not found.
     default_dependency_schema = function() {
       file <- system.file(
         "resources",
@@ -321,7 +337,16 @@ HouseholdData <- R6::R6Class(
           origin = "HouseholdData$default_dependency_schema",
           message = "dependency_schema_data_household_template.xlsx not found in package resources. Continuing without default dependency schema."
         )
-        return(list(dependencies = list()))
+        return(tibble::tibble(
+          rule_type = character(0),
+          dep_name = character(0),
+          variables = character(0),
+          condition_if = character(0),
+          then = character(0),
+          action = character(0),
+          label = character(0),
+          comment = character(0)
+        ))
       }
 
       # Read the Excel table (first sheet)
@@ -339,13 +364,24 @@ HouseholdData <- R6::R6Class(
       )
 
       if (is.null(df)) {
-        return(list(dependencies = list()))
+        return(tibble::tibble(
+          rule_type = character(0),
+          dep_name = character(0),
+          variables = character(0),
+          condition_if = character(0),
+          then = character(0),
+          action = character(0),
+          label = character(0),
+          comment = character(0)
+        ))
       }
 
-      # Convert table → canonical nested dependency schema list
-      dependency_schema <- private$..dependency_table_to_schema(df)
+      # The xlsx template is already in the canonical flat dependency-schema
+      # table format; validate and store it directly rather than converting
+      # to the nested-list representation.
+      dependency_validate_table_to_schema(df)
 
-      return(dependency_schema)
+      return(df)
     },
 
     #' Post-Validation Hook for Household Data
