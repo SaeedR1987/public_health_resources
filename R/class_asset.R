@@ -494,7 +494,7 @@ Asset <- R6::R6Class(
       private$..change_log <- if (is.null(private$..change_log)) {
         entry
       } else {
-        dplyr::bind_rows(private$..change_log, entry)
+        dplyr::bind_rows(entry, private$..change_log)
       }
 
       invisible(NULL)
