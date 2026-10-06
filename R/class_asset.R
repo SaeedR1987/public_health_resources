@@ -462,16 +462,57 @@ Asset <- R6::R6Class(
       hash_id = NA_character_
     ),
 
+    # @field ..change_log Data frame log of changes made to this object, with
+    #   columns `id`, `version`, `name`, `datetime`, and `log_message`.
+    # @keywords internal
+    ..change_log = NULL,
+
     # @description Update modified timestamp, bump the version counter, and
     #   recompute the hash_id fingerprint metadata.
+    # @param log Logical indicating whether to also append a row to the
+    #   change log via \code{..track()}. Defaults to \code{FALSE}.
+    # @param name Optional character scalar identifying the change, passed
+    #   through to \code{..track()} when \code{log} is \code{TRUE}.
+    # @param message Optional character scalar describing the change, passed
+    #   through to \code{..track()} when \code{log} is \code{TRUE}.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
-    ..touch = function() {
+    ..touch = function(log = FALSE, name = NULL, message = NULL) {
       if (is.null(private$..metadata) || !is.list(private$..metadata)) {
         private$..metadata <- list()
       }
       private$..metadata$modified_datetime <- Sys.time()
       private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
+
+      if (isTRUE(log)) {
+        private$..track(name = name, message = message)
+      }
+
+      invisible(NULL)
+    },
+
+    # @description Append a row to the private change log, recording the
+    #   current `hash_id`/`version` metadata alongside a name and message
+    #   describing the change.
+    # @param name Character scalar identifying the change (for example, the
+    #   field or method that was updated).
+    # @param message Character scalar describing the change in more detail.
+    # @return Invisibly returns \code{NULL}.
+    # @keywords internal
+    ..track = function(name = NULL, message = NULL) {
+      entry <- tibble::tibble(
+        id = private$..metadata$hash_id %||% NA_character_,
+        version = private$..metadata$version %||% NA_integer_,
+        name = name %||% NA_character_,
+        datetime = Sys.time(),
+        log_message = message %||% NA_character_
+      )
+
+      private$..change_log <- if (is.null(private$..change_log)) {
+        entry
+      } else {
+        dplyr::bind_rows(private$..change_log, entry)
+      }
 
       invisible(NULL)
     },
