@@ -1090,18 +1090,15 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Clean Household and Linked Datasets
+    #' Post clean for HouseholdData object
     #'
     #' @description
-    #' Cleans the household dataset by calling the parent implementation, then
-    #' propagates the call to all linked data objects so that each linked dataset
-    #' is cleaned using its own cleaning and deletion logs.
+    #' Runs clean on all linked Data Objects in the Household Data object.
     #'
-    #' @return NULL (invisibly). Side effect: sets \code{clean_data} on the
-    #'   household object and on every linked data object.
-    clean = function() {
+    #' @return NULL (invisibly). Side effect: sets \code{clean_data}
+    #'   on every linked data object.
+    post_clean = function() {
       # Run parent implementation for the household dataset itself
-      super$clean()
 
       phrutils::phr_try(
         {

@@ -1509,6 +1509,9 @@ Data <- R6::R6Class(
           self$post_clean()
 
           self$cleaned <- TRUE
+
+          private$..touch(log = TRUE, name = self$dataset_name, message = phrutils::phr_txt("Data cleaning Complete."))
+
           phrutils::phr_message(phrutils::phr_txt(
             "{self$dataset_name} cleaning complete."
           ))
@@ -1952,7 +1955,7 @@ Data <- R6::R6Class(
 
           if (is.null(df)) {
             phrutils::phr_error(
-              message = "No dataset is available at the selected stage.",
+              message = phrutils::phr_txt("No dataset is available at the selected stage."),
               origin = paste0(self$dataset_name, "$run_quality_checks")
             )
           }
