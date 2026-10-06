@@ -90,6 +90,8 @@ View(drc_mort$data_diagnose(stage = "standardized"))
 View(drc_mort$linked_objects$roster$object$data_diagnose(stage = "standardized"))
 View(drc_mort$linked_objects$deaths$object$data_diagnose(stage = "standardized"))
 
+View(drc_mort$linked_objects$deaths$object$standardized_data)
+
 # Cleaning
 
 drc_mort$generate_cleaning_log()
