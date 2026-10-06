@@ -245,7 +245,16 @@ HouseholdData <- R6::R6Class(
       # table format (the format expected by `data_diagnose()` and other
       # schema consumers), so validate and store it directly rather than
       # round-tripping it through the nested-list representation.
-      data_validate_table_to_schema(df)
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "rule_type", "variable", "value", "required", "type", "allowed",
+          "col_names", "unique",
+          "label", "comment",
+          "question_type", "is_other", "other_column_link"
+        ),
+        origin = "HouseholdData$default_schema"
+      )
 
       return(df)
     },
@@ -310,7 +319,18 @@ HouseholdData <- R6::R6Class(
       # The xlsx template is already in the canonical flat indicator-schema
       # table format; validate and store it directly rather than converting
       # to the nested-list representation.
-      indicator_validate_table_to_schema(df)
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "indicator_name",
+          "function_name",
+          "variables",
+          "arguments",
+          "label",
+          "comment"
+        ),
+        origin = "HouseholdData$default_indicator_schema"
+      )
 
       return(df)
     },
@@ -379,7 +399,20 @@ HouseholdData <- R6::R6Class(
       # The xlsx template is already in the canonical flat dependency-schema
       # table format; validate and store it directly rather than converting
       # to the nested-list representation.
-      dependency_validate_table_to_schema(df)
+      private$..validate_table_schema(
+        df,
+        required_cols = c(
+          "rule_type",
+          "dep_name",
+          "variables",
+          "condition_if",
+          "then",
+          "action",
+          "label",
+          "comment"
+        ),
+        origin = "HouseholdData$default_dependency_schema"
+      )
 
       return(df)
     },

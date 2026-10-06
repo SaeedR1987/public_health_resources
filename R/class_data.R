@@ -3270,6 +3270,46 @@ Data <- R6::R6Class(
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
+    # @description Generalized validation for the flat schema tables (one
+    #   row per variable/indicator/dependency rule) read from the variable,
+    #   indicator, and dependency xlsx templates. Consolidates the previous
+    #   standalone `data_validate_table_to_schema()` /
+    #   `indicator_validate_table_to_schema()` /
+    #   `dependency_validate_table_to_schema()` utility functions into a
+    #   single private method: validates that `df` is a non-empty data
+    #   frame/tibble, then checks that all `required_cols` are present.
+    # @param df A data frame or tibble to validate.
+    # @param required_cols Character vector of column names that must be
+    #   present in `df` (e.g. the variable, indicator, or dependency schema
+    #   table columns).
+    # @param origin Character scalar used as the error/warning origin label.
+    # @return `TRUE` (invisibly, via `phrutils::phr_try`) if validation
+    #   passes; aborts with a descriptive error otherwise.
+    # @keywords internal
+    ..validate_table_schema = function(
+      df,
+      required_cols,
+      origin = "..validate_table_schema"
+    ) {
+      phrutils::phr_try(
+        {
+          phrutils::phr_validate_dataframe(df, origin = origin, soft = FALSE)
+
+          phrutils::phr_validate_columns(
+            df,
+            required_cols = required_cols,
+            origin = origin,
+            hint   = "Schema table missing required columns.",
+            soft   = FALSE
+          )
+
+          TRUE
+        },
+        on_error = "abort",
+        origin = origin
+      )
+    },
+
     # @description Private entry point used by subclasses' `default_schema()`
     #   methods to convert a flat variable-schema table (as read from an xlsx
     #   template) into the canonical nested variable schema list. Thin

@@ -1508,8 +1508,22 @@ DataOptimized <- R6::R6Class(
           )
 
           # 3. Validate the table
-          data_validate_table_to_schema(
-            df = tbl
+          phrutils::phr_validate_dataframe(
+            tbl,
+            origin = paste0(self$dataset_name, "$set_variable_schema"),
+            soft = FALSE
+          )
+          phrutils::phr_validate_columns(
+            tbl,
+            required_cols = c(
+              "rule_type", "variable", "value", "required", "type", "allowed",
+              "col_names", "unique",
+              "label", "comment",
+              "question_type", "is_other", "other_column_link"
+            ),
+            origin = paste0(self$dataset_name, "$set_variable_schema"),
+            hint   = "Schema table missing required columns.",
+            soft   = FALSE
           )
 
           # 4. Store
