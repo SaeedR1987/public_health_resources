@@ -714,7 +714,7 @@ Data <- R6::R6Class(
                     if (!is_numeric_col && uniq_n > 0) {
 
                       self$set(field = "..other_columns",
-                               # role = nm,
+                               role = nm,
                                value = list(
                                  other_column = nm,
                                  other_linked_columns = inferred_links
@@ -852,7 +852,7 @@ Data <- R6::R6Class(
                     # Add as list entry
 
                     self$set(field = "..other_columns",
-                             # role = col,
+                             role = col,
                              value = list(
                                other_column = col,
                                other_linked_columns = linked_cols
@@ -1471,8 +1471,12 @@ Data <- R6::R6Class(
             # post-validate: check cleaning log against dataset
             private$..cleaning_log$post_validate(self, stage = "clean")
 
+            print("I am here 1")
+
             # apply changes (authoritative mode option A)
             if (nrow(private$..cleaning_log$log_df) > 0) {
+
+              print("I am here 2")
 
               self$set(field = "..clean_data",
                        value = private$..apply_cleaning_changes(
@@ -1480,6 +1484,8 @@ Data <- R6::R6Class(
                          log_df = private$..cleaning_log$log_df,
                          uuid_col = private$..uuid
                        ))
+
+              print("I am here 3")
 
             }
           }
@@ -1490,8 +1496,13 @@ Data <- R6::R6Class(
             !is.null(private$..deletion_log) &&
               inherits(private$..deletion_log, "DeletionLog")
           ) {
+
+            print("I am here 4")
+
             private$..deletion_log$validate()
             private$..deletion_log$post_validate(self, stage = "clean")
+
+            print("I am here 5")
 
             # apply deletions
             if (nrow(private$..deletion_log$log_df) > 0) {

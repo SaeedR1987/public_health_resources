@@ -155,7 +155,7 @@ CleaningLog <- R6::R6Class(
 
             phrutils::phr_warning(
               private$log_name,
-              phrtuils::phr_txt(glue::glue(
+              phrutils::phr_txt(glue::glue(
                 "Cleaning log contains missing/empty values in: {paste(bad_cols, collapse=', ')}."
               ))
             )
