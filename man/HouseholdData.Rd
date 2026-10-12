@@ -37,11 +37,14 @@ When `standardize()` is called, the `pre_standardize()` hook will:
 1. Generate survey weights via `generate_weights()` when a `SamplingFrame` is
    stored in `self$sampling_frame` and a stratum role is mapped in `variable_map`
    (skipped silently if either is unavailable).
-2. Check linked datasets and ensure they are standardized
-3. Merge household-level variables to all linked datasets (if available):
-   `enum_id`, `device_id`, `date_survey`, `weight`, `stratum`, `cluster_id`,
-   `site`, `admin1`, `admin2`, `admin3`, `admin4`. Existing variables in
-   linked datasets are overwritten with household values.
+2. Merge household-level variables to all linked datasets (if available):
+   `enum_id`, `device_id`, `date_survey`, `date_recall`, `weight`, `stratum`,
+   `cluster_id`, `site`, `admin1`, `admin2`, `admin3`, `admin4`. Columns are
+   added to the linked dataset under their canonical role names and registered
+   in the linked object's `variable_map`; existing variables with those names
+   are overwritten with household values.
+3. Standardize the linked datasets, re-standardizing any that were already
+   standardized when household variables were merged into them
 4. Aggregate data from linked datasets and add columns to household data with
    a naming convention like `linked_<name>_<column>` to show the source
 
@@ -142,8 +145,14 @@ This hook performs four key operations:
 1. Generates survey weights via \code{generate_weights()} when a
    \code{SamplingFrame} is stored in \code{self$sampling_frame} and a
    stratum role is mapped in \code{variable_map}; skipped silently otherwise.
-2. Validates that linked datasets are standardized
-3. Merges household-level variables to linked datasets (enum_id, device_id, date_survey, weight, stratum, cluster_id, etc.)
+2. Merges household-level variables to linked datasets using their canonical
+   role names (enum_id, device_id, date_survey, date_recall, weight, stratum,
+   cluster_id, site, admin1-admin4) and registers those roles in each linked
+   object's \code{variable_map}
+3. Standardizes each linked dataset. Datasets that were already standardized
+   are standardized again when household variables were merged into them, so
+   that indicators depending on the merged columns (e.g. person-time, which
+   needs \code{date_survey} and \code{date_recall}) are recalculated
 4. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
 
 Supported aggregations vary by dataset type (see class documentation for details)
@@ -202,9 +211,21 @@ Merge Household Variables to Linked Datasets
 
 
 
-Merges household variables to linked datasets: enum_id, device_id, date_survey, weight,
-stratum, cluster_id, site, admin1, admin2, admin3, admin4. Existing variables in linked
-datasets are overwritten with household values. Uses fallback logic to find available data stages.
+Merges household variables to linked datasets: enum_id, device_id, date_survey,
+date_recall, weight, stratum, cluster_id, site, admin1, admin2, admin3, admin4.
+
+Merged columns are written to the linked dataset using their \emph{canonical role
+names} (for example the household column \code{today} is merged as \code{date_survey}),
+and the role is registered in the linked object's \code{variable_map} so that
+indicator functions such as \code{add_persontime()} can resolve
+\verb{@variable_map$date_survey} / \verb{@variable_map$date_recall} afterwards.
+Any existing column of the same name in the linked dataset is overwritten.
+
+The merge is applied to every populated stage of the linked dataset (raw,
+standardized and clean) rather than a single fallback stage, because
+\code{standardize()} always rebuilds its output from \code{raw_data}; merging into
+\code{clean_data} or \code{standardized_data} alone would be discarded on the next
+standardization pass.
 }
 \seealso{
 [Data], [IndividualData], [DeathIndividualData], [WaterContainerData],
