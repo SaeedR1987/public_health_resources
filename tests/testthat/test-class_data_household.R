@@ -1713,3 +1713,100 @@ test_that("generate_weights is called automatically inside pre_standardize when 
   # B: (900/1500) / (2/3) = 0.6 / (2/3) = 0.9
   expect_equal(df$survey_weight[df$stratum == "B"], c(0.9, 0.9))
 })
+
+# ..merge_household_vars_to_linked ####
+
+test_that("household date_survey and date_recall are merged into linked datasets under canonical names", {
+  hh <- suppressMessages(suppressWarnings(HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes"),
+      # household column is an alias, not the canonical name
+      today = as.Date(c("2025-02-01", "2025-02-02")),
+      date_recall = as.Date(c("2024-11-01", "2024-11-01")),
+      enum_id = c("e1", "e2")
+    )
+  )))
+
+  roster <- suppressMessages(suppressWarnings(IndividualData$new(
+    data = tibble::tibble(
+      person_id = c("p1", "p2", "p3"),
+      hh_uuid = c("hh1", "hh1", "hh2"),
+      age_years = c(10, 25, 4)
+    )
+  )))
+
+  deaths <- suppressMessages(suppressWarnings(DeathIndividualData$new(
+    data = tibble::tibble(
+      death_id = c("d1"),
+      hh_uuid = c("hh1"),
+      age_years = c(70)
+    ),
+    recall_date = "2024-11-01"
+  )))
+
+  suppressMessages(suppressWarnings({
+    hh$add_linked_dataset("roster", roster)
+    hh$add_linked_dataset("deaths", deaths)
+    hh$standardize()
+  }))
+
+  for (linked in list(roster, deaths)) {
+    # Canonical columns are present in raw data (the stage standardize() reads)
+    expect_true("date_survey" %in% names(linked$raw_data))
+    expect_true("date_recall" %in% names(linked$raw_data))
+
+    # ... and survive standardization
+    expect_true("date_survey" %in% names(linked$standardized_data))
+    expect_true("date_recall" %in% names(linked$standardized_data))
+
+    # ... and are resolvable through the linked object's variable_map
+    linked_map <- linked$get(field = "..variable_map")
+    expect_equal(linked_map$date_survey, "date_survey")
+    expect_equal(linked_map$date_recall, "date_recall")
+  }
+
+  # Values are joined on the household uuid
+  roster_df <- roster$standardized_data
+  expect_equal(
+    as.character(roster_df$date_survey),
+    c("2025-02-01", "2025-02-01", "2025-02-02")
+  )
+  expect_equal(
+    as.character(roster_df$date_recall),
+    rep("2024-11-01", 3)
+  )
+})
+
+test_that("household variables are merged into an already-standardized linked dataset", {
+  hh <- suppressMessages(suppressWarnings(HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes"),
+      today = as.Date(c("2025-02-01", "2025-02-02")),
+      date_recall = as.Date(c("2024-11-01", "2024-11-01"))
+    )
+  )))
+
+  roster <- suppressMessages(suppressWarnings(IndividualData$new(
+    data = tibble::tibble(
+      person_id = c("p1", "p2"),
+      hh_uuid = c("hh1", "hh2"),
+      age_years = c(10, 25)
+    )
+  )))
+
+  # Standardize the roster *before* linking it to the household dataset
+  suppressMessages(suppressWarnings(roster$standardize()))
+  expect_true(roster$standardized)
+  expect_false("date_survey" %in% names(roster$standardized_data))
+
+  suppressMessages(suppressWarnings({
+    hh$add_linked_dataset("roster", roster)
+    hh$standardize()
+  }))
+
+  expect_true("date_survey" %in% names(roster$standardized_data))
+  expect_true("date_recall" %in% names(roster$standardized_data))
+  expect_equal(roster$get(field = "..variable_map")$date_recall, "date_recall")
+})
