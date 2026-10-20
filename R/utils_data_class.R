@@ -53,6 +53,84 @@
   return(FALSE)
 }
 
+#' Resolve the household linkage column of a linked dataset
+#'
+#' Determines which column of a linked dataset (roster, deaths, ...) holds the
+#' parent household identifier. Resolution order:
+#' 1. the column mapped to the `hh_uuid` / `household_uuid` role in the linked
+#'    object's `variable_map`;
+#' 2. the `col_names` aliases declared for those roles in the linked object's
+#'    variable schema (in schema preference order);
+#' 3. the role names themselves used as literal column names.
+#'
+#' Candidates are only accepted when the column is actually present in
+#' `data_cols`, so a stale or unmapped `variable_map` cannot make the lookup
+#' fall back to a column that does not exist.
+#'
+#' @param linked_obj A `Data` object linked to a `HouseholdData` object.
+#' @param data_cols Character vector of column names of the linked dataset.
+#' @param roles Character vector of variable roles to try, in order of preference.
+#'
+#' @return A list with `column` (the resolved column name, or `NULL` when no
+#'   candidate exists in the data), `role` (the role it was resolved from) and
+#'   `candidates` (every candidate that was considered).
+#'
+#' @keywords internal
+.resolve_linked_hh_column <- function(linked_obj,
+                                      data_cols,
+                                      roles = c("hh_uuid", "household_uuid")) {
+  valid <- function(x) {
+    is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
+  }
+
+  variable_map <- linked_obj$get(field = "..variable_map")
+  if (!is.list(variable_map)) {
+    variable_map <- list()
+  }
+
+  schema <- linked_obj$get(field = "..variable_schema")
+
+  candidates <- character(0)
+  candidate_roles <- character(0)
+
+  add_candidates <- function(cols, role) {
+    cols <- cols[vapply(cols, valid, logical(1))]
+    cols <- setdiff(cols, candidates)
+    candidates <<- c(candidates, cols)
+    candidate_roles <<- c(candidate_roles, rep(role, length(cols)))
+  }
+
+  for (role in roles) {
+    # 1. explicit variable_map entry
+    add_candidates(variable_map[[role]], role)
+
+    # 2. schema col_names aliases, in the order declared by the schema
+    if (is.data.frame(schema) && all(c("variable", "col_names") %in% names(schema))) {
+      rows <- which(schema$variable == role)
+      if ("rule_type" %in% names(schema)) {
+        rows <- rows[schema$rule_type[rows] %in% c("variable", NA)]
+      }
+      for (row in rows) {
+        aliases <- schema$col_names[[row]]
+        if (valid(aliases)) {
+          add_candidates(trimws(strsplit(aliases, ",")[[1]]), role)
+        }
+      }
+    }
+
+    # 3. the role name used as a literal column name
+    add_candidates(role, role)
+  }
+
+  match_idx <- which(candidates %in% data_cols)[1]
+
+  list(
+    column = if (is.na(match_idx)) NULL else candidates[[match_idx]],
+    role = if (is.na(match_idx)) NULL else candidate_roles[[match_idx]],
+    candidates = candidates
+  )
+}
+
 #' Convert a schema table into a canonical nested schema list
 #' @param df A data frame or tibble in the flat schema table format (as produced by
 #'   \code{data_schema_to_table()}).

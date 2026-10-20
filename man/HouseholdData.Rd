@@ -226,6 +226,13 @@ standardized and clean) rather than a single fallback stage, because
 \code{standardize()} always rebuilds its output from \code{raw_data}; merging into
 \code{clean_data} or \code{standardized_data} alone would be discarded on the next
 standardization pass.
+
+The household linkage column of the linked dataset is resolved from its
+\code{variable_map} (\code{hh_uuid} / \code{household_uuid}), falling back to the
+\code{col_names} aliases declared in its variable schema and finally to the
+role name used as a literal column name. Only candidates that actually
+exist in the data are accepted, so an unmapped or stale \code{variable_map}
+cannot make the merge target a non-existent column.
 }
 \seealso{
 [Data], [IndividualData], [DeathIndividualData], [WaterContainerData],

@@ -2607,6 +2607,13 @@ HouseholdDataOptimized <- R6::R6Class(
     #' `clean_data` or `standardized_data` alone would be discarded on the next
     #' standardization pass.
     #'
+    #' The household linkage column of the linked dataset is resolved from its
+    #' `variable_map` (`hh_uuid` / `household_uuid`), falling back to the
+    #' `col_names` aliases declared in its variable schema and finally to the
+    #' role name used as a literal column name. Only candidates that actually
+    #' exist in the data are accepted, so an unmapped or stale `variable_map`
+    #' cannot make the merge target a non-existent column.
+    #'
     #' @keywords internal
     ..merge_household_vars_to_linked = function(
       linked_obj,
@@ -2675,21 +2682,34 @@ HouseholdDataOptimized <- R6::R6Class(
             return(invisible(NULL))
           }
 
-          # Determine the household linkage column in the linked dataset
-          linked_variable_map <- linked_obj$get(field = ".variable_map") %||% list()
-          linked_hh_col <- linked_variable_map$hh_uuid %||%
-            linked_variable_map$household_uuid %||%
-            "hh_uuid"
+          # Determine the household linkage column in the linked dataset.
+          # The linked object's variable_map may not have been populated yet
+          # (its schema is loaded after Data$initialize() has already mapped),
+          # so fall back to the schema's col_names aliases rather than assuming
+          # a literal "hh_uuid" column.
+          linkage <- .resolve_linked_hh_column(
+            linked_obj = linked_obj,
+            data_cols = names(linked_data)
+          )
+          linked_hh_col <- linkage$column
 
-          if (!linked_hh_col %in% names(linked_data)) {
+          if (is.null(linked_hh_col)) {
             phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
-                "Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'."
+                "Linked dataset '{link_name}' has no household linkage column. Tried: {paste(linkage$candidates, collapse=', ')}."
               )
             )
             return(invisible(NULL))
           }
+
+          # Keep the linked object's variable_map in sync with the column that
+          # was actually used, so downstream lookups resolve the same column.
+          linked_obj$set(
+            field = "..variable_map",
+            role = linkage$role,
+            value = linked_hh_col
+          )
 
           # Define the list of household variables to merge
           # These are the canonical variable names in the variable_map
@@ -2763,11 +2783,21 @@ HouseholdDataOptimized <- R6::R6Class(
               next
             }
 
-            if (!linked_hh_col %in% names(stage_data)) {
+            # Stages can carry different column names (standardization may
+            # rename the linkage column), so resolve it per stage.
+            stage_hh_col <- linked_hh_col
+            if (!stage_hh_col %in% names(stage_data)) {
+              stage_hh_col <- .resolve_linked_hh_column(
+                linked_obj = linked_obj,
+                data_cols = names(stage_data)
+              )$column
+            }
+
+            if (is.null(stage_hh_col)) {
               phrutils::phr_warning(
                 self$dataset_name,
                 phr_txt(
-                  "Linked dataset '{link_name}' {stage_name} data has no household linkage column '{linked_hh_col}'. Skipping that stage."
+                  "Linked dataset '{link_name}' {stage_name} data has no household linkage column. Skipping that stage."
                 )
               )
               next
@@ -2792,7 +2822,7 @@ HouseholdDataOptimized <- R6::R6Class(
             stage_data_merged <- dplyr::left_join(
               stage_data,
               hh_merge_data,
-              by = stats::setNames(hh_uuid_col, linked_hh_col)
+              by = stats::setNames(hh_uuid_col, stage_hh_col)
             )
 
             linked_obj$set(field = stage_field, value = stage_data_merged)

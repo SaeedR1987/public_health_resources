@@ -1810,3 +1810,54 @@ test_that("household variables are merged into an already-standardized linked da
   expect_true("date_recall" %in% names(roster$standardized_data))
   expect_equal(roster$get(field = "..variable_map")$date_recall, "date_recall")
 })
+
+test_that("household variables merge when the linkage column is named 'uuid'", {
+  hh <- suppressMessages(suppressWarnings(HouseholdData$new(
+    data = tibble::tibble(
+      uuid = c("hh1", "hh2"),
+      consent = c("yes", "yes"),
+      today = as.Date(c("2025-02-01", "2025-02-02")),
+      date_recall = as.Date(c("2024-11-01", "2024-11-01"))
+    )
+  )))
+
+  # Roster/deaths whose household foreign key column is literally "uuid"
+  # rather than "hh_uuid" (a common XLSForm export layout).
+  roster <- suppressMessages(suppressWarnings(IndividualData$new(
+    data = tibble::tibble(
+      person_id = c("p1", "p2", "p3"),
+      uuid = c("hh1", "hh1", "hh2"),
+      age_years = c(10, 25, 40)
+    )
+  )))
+
+  deaths <- suppressMessages(suppressWarnings(DeathIndividualData$new(
+    data = tibble::tibble(
+      death_id = c("d1"),
+      uuid = c("hh1"),
+      age_years = c(70)
+    ),
+    recall_date = "2024-11-01"
+  )))
+
+  # The hh_uuid role must resolve before any standardize() call, otherwise the
+  # merge falls back to a non-existent "hh_uuid" column.
+  expect_equal(roster$get(field = "..variable_map")$hh_uuid, "uuid")
+  expect_equal(deaths$get(field = "..variable_map")$hh_uuid, "uuid")
+
+  suppressMessages(suppressWarnings({
+    hh$add_linked_dataset("roster", roster)
+    hh$add_linked_dataset("deaths", deaths)
+    hh$standardize()
+  }))
+
+  for (linked in list(roster, deaths)) {
+    expect_true("date_survey" %in% names(linked$raw_data))
+    expect_true("date_recall" %in% names(linked$raw_data))
+  }
+
+  expect_equal(
+    as.character(roster$raw_data$date_survey),
+    c("2025-02-01", "2025-02-01", "2025-02-02")
+  )
+})
