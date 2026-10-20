@@ -958,7 +958,7 @@ HouseholdData <- R6::R6Class(
             return(invisible(NULL))
           }
 
-          phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phrutils::phr_txt(
             "Processing {length(self$linked_objects)} linked dataset(s) for {self$dataset_name}..."
           ))
 
@@ -997,7 +997,7 @@ HouseholdData <- R6::R6Class(
               "Checking standardization status of linked dataset '{link_name}'..."
             ))
             if (!linked_obj$standardized) {
-              phrutils::phr_message(phr_txt(
+              phrutils::phr_message(phrutils::phr_txt(
                 "Linked dataset '{link_name}' is not standardized. Running standardize()..."
               ))
               linked_obj$standardize(stage = stage)
@@ -2717,7 +2717,7 @@ HouseholdData <- R6::R6Class(
 
           linked_data <- linked_data_result$data
           linked_data_stage <- linked_data_result$stage
-          phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phrutils::phr_txt(
             "Using linked dataset '{link_name}' data from stage: {linked_data_stage}"
           ))
 
@@ -2757,6 +2757,8 @@ HouseholdData <- R6::R6Class(
           linked_hh_col <- linked_variable_map$hh_uuid %||%
             linked_variable_map$household_uuid %||%
             "hh_uuid"
+
+          write.csv(x = as.data.frame(c(hh_uuid_col, linked_hh_col, linked_variable_map$hh_uuid)), file = "testing_oct.csv")
 
           if (!linked_hh_col %in% names(linked_data)) {
             phrutils::phr_warning(
