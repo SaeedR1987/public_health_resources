@@ -528,13 +528,19 @@ DataAnalytics <- R6::R6Class(
             return(invisible(self))
           }
           tbl <- quality_schema_to_table(list(checks = self$quality_schema))
-          phrutils::phr_message(origin, paste("Exporting quality schema to:", path))
+          phrutils::phr_message(
+            origin,
+            paste("Exporting quality schema to:", path)
+          )
           if (format == "xlsx") {
             openxlsx::write.xlsx(tbl, path)
           } else if (format == "csv") {
             readr::write_csv(tbl, path)
           } else {
-            phrutils::phr_warning(origin, paste("Unsupported export format:", format))
+            phrutils::phr_warning(
+              origin,
+              paste("Unsupported export format:", format)
+            )
           }
         },
         on_error = "warn",
@@ -550,7 +556,10 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     import_quality_schema = function(path) {
       origin <- paste0(self$dataset_name, "$import_quality_schema")
-      phrutils::phr_message(origin, paste("Importing quality schema from:", path))
+      phrutils::phr_message(
+        origin,
+        paste("Importing quality schema from:", path)
+      )
 
       phrutils::phr_try(
         {
@@ -1863,7 +1872,6 @@ DataAnalytics <- R6::R6Class(
             }
             inputs <- private$.resolve_field_set(sets[[i]])
 
-
             print("I am here testing 1")
             print(paste0(names(inputs)))
             print(paste0(inputs$variable_map))
@@ -1876,7 +1884,7 @@ DataAnalytics <- R6::R6Class(
             )
           }
 
-          phrutils::phr_message(phr_txt(glue::glue(
+          phrutils::phr_message(phrutils::phr_txt(glue::glue(
             "run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s)."
           )))
 
@@ -1907,7 +1915,10 @@ DataAnalytics <- R6::R6Class(
       }
 
       if (is.null(self$data)) {
-        phrutils::phr_warning(origin, "No data available to create survey design.")
+        phrutils::phr_warning(
+          origin,
+          "No data available to create survey design."
+        )
         return(NULL)
       }
 
@@ -2004,7 +2015,10 @@ DataAnalytics <- R6::R6Class(
             multiplier = multiplier,
             indicator_unit = indicator_unit
           )
-          phrutils::phr_message(origin, paste("Added indicator:", indicator_name))
+          phrutils::phr_message(
+            origin,
+            paste("Added indicator:", indicator_name)
+          )
         },
         on_error = "warn",
         origin = origin,
@@ -2032,7 +2046,10 @@ DataAnalytics <- R6::R6Class(
             field = "log_df",
             value = dap_df[dap_df$indicator_name != indicator_name, ]
           )
-          phrutils::phr_message(origin, paste("Removed indicator:", indicator_name))
+          phrutils::phr_message(
+            origin,
+            paste("Removed indicator:", indicator_name)
+          )
         },
         on_error = "warn",
         origin = origin,
@@ -2119,14 +2136,20 @@ DataAnalytics <- R6::R6Class(
     #' @return A named list of indicator specification lists
     to_list_schema = function() {
       origin <- paste0(self$dataset_name, "$to_list_schema")
-      phrutils::phr_message(origin, "Converting indicator schema tibble to named list...")
+      phrutils::phr_message(
+        origin,
+        "Converting indicator schema tibble to named list..."
+      )
 
       result <- phrutils::phr_try(
         {
           if (
             is.null(self$analysis_schema) || nrow(self$analysis_schema) == 0
           ) {
-            phrutils::phr_warning(origin, "No analysis_schema loaded to convert.")
+            phrutils::phr_warning(
+              origin,
+              "No analysis_schema loaded to convert."
+            )
             return(list())
           }
           purrr::pmap(self$analysis_schema, function(...) list(...)) |>
@@ -2145,7 +2168,10 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     generate_dap_from_schema = function() {
       origin <- paste0(self$dataset_name, "$generate_dap_from_schema")
-      phrutils::phr_message(origin, "Generating data_analysis_plan from schema...")
+      phrutils::phr_message(
+        origin,
+        "Generating data_analysis_plan from schema..."
+      )
 
       phrutils::phr_try(
         {
@@ -2292,7 +2318,10 @@ DataAnalytics <- R6::R6Class(
               )
             )
             self$analysis_plan_issue_log <- issues
-            phrutils::phr_warning(origin, "Schema validation FAILED: schema empty.")
+            phrutils::phr_warning(
+              origin,
+              "Schema validation FAILED: schema empty."
+            )
             return(invisible(FALSE))
           }
 
@@ -2477,7 +2506,10 @@ DataAnalytics <- R6::R6Class(
           paste("Validation found", nrow(issues), "issue(s).")
         )
       } else {
-        phrutils::phr_message(origin, "Analysis plan validation passed with no issues.")
+        phrutils::phr_message(
+          origin,
+          "Analysis plan validation passed with no issues."
+        )
       }
       invisible(self)
     },
@@ -2613,7 +2645,10 @@ DataAnalytics <- R6::R6Class(
             return(invisible(self))
           }
 
-          phrutils::phr_message(origin, paste("Exporting analysis results to:", path))
+          phrutils::phr_message(
+            origin,
+            paste("Exporting analysis results to:", path)
+          )
 
           if (format == "xlsx") {
             sheets <- list()
@@ -2628,7 +2663,10 @@ DataAnalytics <- R6::R6Class(
             tbl <- self$analysis_results$survey_design %||% tibble::tibble()
             readr::write_csv(tbl, path)
           } else {
-            phrutils::phr_warning(origin, paste("Unsupported export format:", format))
+            phrutils::phr_warning(
+              origin,
+              paste("Unsupported export format:", format)
+            )
           }
         },
         on_error = "warn",
@@ -2730,13 +2768,19 @@ DataAnalytics <- R6::R6Class(
             phrutils::phr_warning(origin, "No analysis schema to export.")
             return(invisible(self))
           }
-          phrutils::phr_message(origin, paste("Exporting analysis schema to:", path))
+          phrutils::phr_message(
+            origin,
+            paste("Exporting analysis schema to:", path)
+          )
           if (format == "xlsx") {
             openxlsx::write.xlsx(self$analysis_schema, path)
           } else if (format == "csv") {
             readr::write_csv(self$analysis_schema, path)
           } else {
-            phrutils::phr_warning(origin, paste("Unsupported export format:", format))
+            phrutils::phr_warning(
+              origin,
+              paste("Unsupported export format:", format)
+            )
           }
         },
         on_error = "warn",
@@ -2752,7 +2796,10 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     import_analysis_schema = function(path) {
       origin <- paste0(self$dataset_name, "$import_analysis_schema")
-      phrutils::phr_message(origin, paste("Importing analysis schema from:", path))
+      phrutils::phr_message(
+        origin,
+        paste("Importing analysis schema from:", path)
+      )
 
       phrutils::phr_try(
         {
@@ -2811,420 +2858,512 @@ DataAnalytics <- R6::R6Class(
   # Private helpers
 
   private = list(
+    #' @description
+    #' Resolve a "variable_map" role reference to its mapped dataset column name.
+    #'
+    #' Mirrors \code{Data$..resolve_variable_map_reference()}, but accepts an
+    #' explicit \code{variable_map} argument so that \code{DataAnalytics}
+    #' subclasses holding more than one variable map (e.g.
+    #' \code{linked_ind_roster_variable_map}, \code{linked_ind_health_variable_map})
+    #' can specify which map to resolve against.
+    #'
+    #' @param ref Character string to check/resolve. When \code{tags = TRUE},
+    #'   this is expected to be a \code{@variable_map$role} tag (e.g.
+    #'   "@variable_map$fever"). When \code{tags = FALSE}, \code{ref} is treated
+    #'   directly as the role name, with no \code{@} stripping.
+    #' @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
+    #'   \code{@variable_map$role} tag. If \code{FALSE} (default), \code{ref} is
+    #'   resolved directly as a role name.
+    #' @param variable_map Optional named list mapping canonical roles to actual
+    #'   column names. Defaults to \code{self$variable_map} when \code{NULL},
+    #'   allowing callers to specify an alternative map (e.g. a linked dataset's
+    #'   variable map) when this class holds more than one.
+    #'
+    #' @return A list with:
+    #'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
+    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
+    #'   * `role` - the extracted role name (NULL if not a reference).
+    #'   * `value` - the resolved column name, or NULL if the role is not
+    #'     mapped (or not a valid/non-empty mapping).
+    ..resolve_variable_map_reference = function(
+      ref,
+      tags = FALSE,
+      variable_map = NULL
+    ) {
+      vm <- variable_map %||% self$variable_map
 
-#' @description
-#' Resolve a "variable_map" role reference to its mapped dataset column name.
-#'
-#' Mirrors \code{Data$..resolve_variable_map_reference()}, but accepts an
-#' explicit \code{variable_map} argument so that \code{DataAnalytics}
-#' subclasses holding more than one variable map (e.g.
-#' \code{linked_ind_roster_variable_map}, \code{linked_ind_health_variable_map})
-#' can specify which map to resolve against.
-#'
-#' @param ref Character string to check/resolve. When \code{tags = TRUE},
-#'   this is expected to be a \code{@variable_map$role} tag (e.g.
-#'   "@variable_map$fever"). When \code{tags = FALSE}, \code{ref} is treated
-#'   directly as the role name, with no \code{@} stripping.
-#' @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
-#'   \code{@variable_map$role} tag. If \code{FALSE} (default), \code{ref} is
-#'   resolved directly as a role name.
-#' @param variable_map Optional named list mapping canonical roles to actual
-#'   column names. Defaults to \code{self$variable_map} when \code{NULL},
-#'   allowing callers to specify an alternative map (e.g. a linked dataset's
-#'   variable map) when this class holds more than one.
-#'
-#' @return A list with:
-#'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
-#'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
-#'   * `role` - the extracted role name (NULL if not a reference).
-#'   * `value` - the resolved column name, or NULL if the role is not
-#'     mapped (or not a valid/non-empty mapping).
-..resolve_variable_map_reference = function(ref, tags = FALSE, variable_map = NULL) {
-  vm <- variable_map %||% self$variable_map
-
-  if (!is.character(ref) || length(ref) != 1) {
-    return(list(is_reference = FALSE, role = NULL, value = NULL))
-  }
-
-  if (tags) {
-    if (!grepl("^@variable_map\\$", ref)) {
-      return(list(is_reference = FALSE, role = NULL, value = NULL))
-    }
-    role <- sub("^@variable_map\\$", "", ref)
-  } else {
-    role <- ref
-  }
-
-  value <- vm[[role]]
-
-  if (is.null(value) || identical(value, "")) {
-    value <- NULL
-  }
-
-  list(is_reference = TRUE, role = role, value = value)
-},
-
-#' @description
-#' Resolve a "value_map" role (or "role$canonical_value") reference to its
-#' mapped dataset value(s).
-#'
-#' Mirrors \code{Data$..resolve_value_map_reference()}, but accepts an
-#' explicit \code{value_map} argument so that \code{DataAnalytics}
-#' subclasses holding more than one value map (e.g.
-#' \code{linked_ind_roster_value_map}, \code{linked_ind_health_value_map})
-#' can specify which map to resolve against.
-#'
-#' @param ref Character string to check/resolve. When \code{tags = TRUE},
-#'   this is expected to be a \code{@value_map$role} or
-#'   \code{@value_map$role$canonical_value} tag (e.g.
-#'   "@value_map$status$yes"). When \code{tags = FALSE}, \code{ref} is
-#'   treated directly as "role" or "role$canonical_value", with no \code{@}
-#'   stripping.
-#' @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
-#'   \code{@value_map$...} tag. If \code{FALSE} (default), \code{ref} is
-#'   resolved directly.
-#' @param value_map Optional named list mapping canonical roles to dataset
-#'   value(s). Defaults to \code{self$value_map} when \code{NULL}, allowing
-#'   callers to specify an alternative map (e.g. a linked dataset's value
-#'   map) when this class holds more than one.
-#'
-#' @return A list with:
-#'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
-#'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
-#'   * `role` - the extracted role name (NULL if not a reference).
-#'   * `canonical_value` - the extracted canonical value name, if provided
-#'     (NULL otherwise).
-#'   * `role_found` - TRUE if `role` exists in `value_map`.
-#'   * `value` - the resolved value(s): a single mapping (when
-#'     `canonical_value` is given), the entire role's value map (when it
-#'     is not), or NULL if the role/canonical value could not be resolved.
-..resolve_value_map_reference = function(ref, tags = FALSE, value_map = NULL) {
-  vm <- value_map %||% self$value_map
-
-  if (!is.character(ref) || length(ref) != 1) {
-    return(list(
-      is_reference = FALSE,
-      role = NULL,
-      canonical_value = NULL,
-      role_found = FALSE,
-      value = NULL
-    ))
-  }
-
-  if (tags) {
-    if (!grepl("^@value_map\\$", ref)) {
-      return(list(
-        is_reference = FALSE,
-        role = NULL,
-        canonical_value = NULL,
-        role_found = FALSE,
-        value = NULL
-      ))
-    }
-    ref <- sub("^@value_map\\$", "", ref)
-  }
-
-  parts <- strsplit(ref, "\\$")[[1]]
-  role <- parts[1]
-  canonical_value <- if (length(parts) == 2) parts[2] else NULL
-  role_map <- vm[[role]]
-
-  if (is.null(role_map)) {
-    return(list(
-      is_reference = TRUE,
-      role = role,
-      canonical_value = canonical_value,
-      role_found = FALSE,
-      value = NULL
-    ))
-  }
-
-  value <- if (!is.null(canonical_value)) {
-    role_map[[canonical_value]]
-  } else {
-    role_map
-  }
-
-  list(
-    is_reference = TRUE,
-    role = role,
-    canonical_value = canonical_value,
-    role_found = TRUE,
-    value = value
-  )
-},
-
-#' @description
-#' Execute a data analysis plan against a survey design
-#'
-#' Loops through each row of \code{analysis_plan}, dispatches the appropriate
-#' survey calculation function (\code{prop}, \code{mean}, \code{median},
-#' \code{ratio}, or \code{categorical}), handles optional disaggregation, and
-#' binds all results into a single tibble.
-#'
-#' Results columns are returned in the following order:
-#' \code{plan_row}, \code{variable}, \code{indicator_name},
-#' \code{indicator_unit}, \code{group_name}, \code{disaggregation_value},
-#' \code{calculation}, \code{point.estimate}, \code{lower_ci},
-#' \code{upper_ci}, \code{ci_method}, \code{n_unweighted},
-#' \code{n_weighted}, \code{denom_unweighted}, \code{denom_weighted},
-#' \code{n_eff}, \code{deff}, \code{note}.
-#'
-#' @param design A \code{srvyr} or \code{survey} design object.
-#' @param analysis_plan A data frame with columns \code{indicator_name},
-#'   \code{calculation}, \code{var_name}, \code{denom_var},
-#'   \code{disaggregation}, \code{multiplier}, and \code{indicator_unit}.
-#' @param high_design_complexity Logical; if \code{TRUE}, triggers stricter
-#'   CI selection (e.g. logit-transformed CIs for proportions).
-#' @param variable_map Optional named list mapping canonical variable roles to
-#'   actual column names, used to resolve \code{var_name}, \code{denom_var}
-#'   and \code{disaggregation} row values via
-#'   \code{private$..resolve_variable_map_reference()}. Defaults to
-#'   \code{self$variable_map} when \code{NULL}.
-#' @param value_map Optional named list mapping canonical value roles to
-#'   dataset value(s), used as a fallback to resolve \code{var_name},
-#'   \code{denom_var} and \code{disaggregation} row values via
-#'   \code{private$..resolve_value_map_reference()} when they are not found
-#'   in \code{variable_map}. Defaults to \code{self$value_map} when
-#'   \code{NULL}.
-#'
-#' @return A tibble of analysis results, one row per indicator (or one row per
-#'   disaggregation group when disaggregation is specified).
-#' @noRd
-..phr_calc_survey_from_plan = function(design,
-                                        analysis_plan,
-                                        high_design_complexity = FALSE,
-                                        variable_map = NULL,
-                                        value_map = NULL) {
-  origin <- "phr_calc_survey_from_plan"
-  phrutils::phr_message(origin, "Starting execution of data analysis plan...")
-
-  # --- Validation
-  phrutils::phr_try({
-    if (is.null(design)) phr_error(origin, "Survey design object is NULL.")
-    if (!inherits(analysis_plan, "data.frame")) {
-      phr_error(origin, "analysis_plan must be a data.frame or tibble.")
-    }
-
-    required_cols <- c(
-      "indicator_name", "calculation", "var_name",
-      "denom_var", "disaggregation", "multiplier", "indicator_unit"
-    )
-    missing_cols <- setdiff(required_cols, names(analysis_plan))
-    if (length(missing_cols) > 0) {
-      phr_error(origin, paste("Analysis plan missing columns:", paste(missing_cols, collapse = ", ")))
-    }
-  },
-  on_error = "abort",
-  origin = origin,
-  hint = "Check that your data_analysis_plan follows the expected template.")
-
-  # --- Initialize results holder
-  results <- list()
-
-  # --- Loop through analysis plan
-  for (i in seq_len(nrow(analysis_plan))) {
-    row <- analysis_plan[i, ]
-    indicator <- row$indicator_name
-    calc_type <- tolower(trimws(row$calculation))
-
-    # Resolve canonical variable names referenced in var_name, denom_var and
-    # disaggregation via variable_map (preferred) or value_map (fallback).
-    # No tag-stripping is performed here (tags = FALSE); the values are
-    # already expected to be bare canonical names, not "@variable_map$..."
-    # style tags.
-    resolve_ref <- function(ref) {
-      if (is.null(ref) || is.na(ref) || !nzchar(ref)) return(ref)
-      var_ref <- private$..resolve_variable_map_reference(
-        ref,
-        tags = FALSE,
-        variable_map = variable_map
-      )
-      if (!is.null(var_ref$value)) return(var_ref$value)
-      val_ref <- private$..resolve_value_map_reference(
-        ref,
-        tags = FALSE,
-        value_map = value_map
-      )
-      if (
-        isTRUE(val_ref$role_found) && !is.null(val_ref$value) &&
-          is.character(val_ref$value) && length(val_ref$value) == 1
-      ) {
-        return(val_ref$value)
+      if (!is.character(ref) || length(ref) != 1) {
+        return(list(is_reference = FALSE, role = NULL, value = NULL))
       }
-      ref
-    }
 
-    var_name  <- resolve_ref(row$var_name)
-    denom_var <- if (!is.null(row$denom_var) && !is.na(row$denom_var)) {
-      resolve_ref(row$denom_var)
-    } else {
-      row$denom_var
-    }
-    disagg    <- if (!is.null(row$disaggregation) && !is.na(row$disaggregation)) {
-      resolve_ref(row$disaggregation)
-    } else {
-      NULL
-    }
-    mult      <- ifelse(is.null(row$multiplier) || is.na(row$multiplier), 1, row$multiplier)
-    unit      <- ifelse(is.null(row$indicator_unit) || is.na(row$indicator_unit), "", row$indicator_unit)
-
-    phrutils::phr_message(origin, paste0("Running [", i, "/", nrow(analysis_plan), "]: ", indicator, " (", calc_type, ")"))
-
-    # --- Internal helper for one calculation
-    run_single_calc <- function(design_subset, group_value = NA_character_) {
-      result_i <- phrutils::phr_try({
-        if (calc_type %in% c("prop", "proportion")) {
-          phr_calc_survey_prop_single(
-            design = design_subset,
-            var_name = var_name,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            multiplier = mult,
-            group_name_label = group_value,
-            high_design_complexity = high_design_complexity
-          )
-
-        } else if (calc_type %in% c("mean", "average")) {
-          phr_calc_survey_mean_single(
-            design = design_subset,
-            var_name = var_name,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            multiplier = mult,
-            group_name_label = group_value,
-            high_design_complexity = high_design_complexity
-          )
-
-        } else if (calc_type %in% c("median")) {
-          phr_calc_survey_median_single(
-            design = design_subset,
-            var_name = var_name,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            multiplier = mult,
-            group_name_label = group_value,
-            high_design_complexity = high_design_complexity
-          )
-
-        } else if (calc_type %in% c("ratio", "rate")) {
-          phr_calc_survey_ratio_single(
-            design = design_subset,
-            numerator_var = var_name,
-            denominator_var = denom_var,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            multiplier = mult,
-            group_name_label = group_value,
-            high_design_complexity = high_design_complexity
-          )
-
+      if (tags) {
+        if (!grepl("^@variable_map\\$", ref)) {
+          return(list(is_reference = FALSE, role = NULL, value = NULL))
         }
-        else if (calc_type %in% c("categorical", "category", "cat")) {
-          phr_calc_survey_categorical_single(
-            design = design_subset,
-            var_name = var_name,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            multiplier = mult,
-            group_name_label = group_value,
-            high_design_complexity = high_design_complexity
-          )
-        } else if (calc_type %in% c("select_multiple_cat")) {
-          phr_calc_multiple_choice_cat(
-            design = design_subset,
-            var_name = var_name,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            multiplier = mult,
-            group_name_label = group_value,
-            high_design_complexity = high_design_complexity
-          )
-        } else {
-          phrutils::phr_warning(origin, paste("Unknown calculation type for indicator:", indicator))
-          tibble::tibble(
-            variable = var_name,
-            indicator_name = indicator,
-            indicator_unit = unit,
-            point.estimate = NA_real_,
-            lower_ci = NA_real_,
-            upper_ci = NA_real_,
-            ci_method = NA_character_,
-            n_unweighted = NA_real_,
-            n_weighted = NA_real_,
-            denom_unweighted = NA_real_,
-            denom_weighted = NA_real_,
-            n_eff = NA_real_,
-            deff = NA_real_,
-            group_name = group_value,
-            note = "unknown calculation type"
-          )
+        role <- sub("^@variable_map\\$", "", ref)
+      } else {
+        role <- ref
+      }
+
+      value <- vm[[role]]
+
+      if (is.null(value) || identical(value, "")) {
+        value <- NULL
+      }
+
+      list(is_reference = TRUE, role = role, value = value)
+    },
+
+    #' @description
+    #' Resolve a "value_map" role (or "role$canonical_value") reference to its
+    #' mapped dataset value(s).
+    #'
+    #' Mirrors \code{Data$..resolve_value_map_reference()}, but accepts an
+    #' explicit \code{value_map} argument so that \code{DataAnalytics}
+    #' subclasses holding more than one value map (e.g.
+    #' \code{linked_ind_roster_value_map}, \code{linked_ind_health_value_map})
+    #' can specify which map to resolve against.
+    #'
+    #' @param ref Character string to check/resolve. When \code{tags = TRUE},
+    #'   this is expected to be a \code{@value_map$role} or
+    #'   \code{@value_map$role$canonical_value} tag (e.g.
+    #'   "@value_map$status$yes"). When \code{tags = FALSE}, \code{ref} is
+    #'   treated directly as "role" or "role$canonical_value", with no \code{@}
+    #'   stripping.
+    #' @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
+    #'   \code{@value_map$...} tag. If \code{FALSE} (default), \code{ref} is
+    #'   resolved directly.
+    #' @param value_map Optional named list mapping canonical roles to dataset
+    #'   value(s). Defaults to \code{self$value_map} when \code{NULL}, allowing
+    #'   callers to specify an alternative map (e.g. a linked dataset's value
+    #'   map) when this class holds more than one.
+    #'
+    #' @return A list with:
+    #'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
+    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
+    #'   * `role` - the extracted role name (NULL if not a reference).
+    #'   * `canonical_value` - the extracted canonical value name, if provided
+    #'     (NULL otherwise).
+    #'   * `role_found` - TRUE if `role` exists in `value_map`.
+    #'   * `value` - the resolved value(s): a single mapping (when
+    #'     `canonical_value` is given), the entire role's value map (when it
+    #'     is not), or NULL if the role/canonical value could not be resolved.
+    ..resolve_value_map_reference = function(
+      ref,
+      tags = FALSE,
+      value_map = NULL
+    ) {
+      vm <- value_map %||% self$value_map
+
+      if (!is.character(ref) || length(ref) != 1) {
+        return(list(
+          is_reference = FALSE,
+          role = NULL,
+          canonical_value = NULL,
+          role_found = FALSE,
+          value = NULL
+        ))
+      }
+
+      if (tags) {
+        if (!grepl("^@value_map\\$", ref)) {
+          return(list(
+            is_reference = FALSE,
+            role = NULL,
+            canonical_value = NULL,
+            role_found = FALSE,
+            value = NULL
+          ))
         }
-      },
-      on_error = "warn",
-      origin = paste0(origin, ":", indicator),
-      hint = paste("Check variable", var_name, "and denominator", denom_var, "if applicable."))
+        ref <- sub("^@value_map\\$", "", ref)
+      }
 
-      # Add traceability columns and reorder to canonical column order:
-      # plan_row, variable, indicator_name, indicator_unit, group_name,
-      # disaggregation_value, calculation, point.estimate, lower_ci,
-      # upper_ci, ci_method, n_unweighted, n_weighted, denom_unweighted,
-      # denom_weighted, n_eff, deff, note
-      result_i$plan_row             <- i
-      result_i$disaggregation_value <- group_value
-      result_i$calculation          <- calc_type
+      parts <- strsplit(ref, "\\$")[[1]]
+      role <- parts[1]
+      canonical_value <- if (length(parts) == 2) parts[2] else NULL
+      role_map <- vm[[role]]
 
-      col_order <- c(
-        "plan_row", "variable", "indicator_name", "indicator_unit",
-        "group_name", "disaggregation_value", "calculation",
-        "point.estimate", "lower_ci", "upper_ci", "ci_method",
-        "n_unweighted", "n_weighted", "denom_unweighted", "denom_weighted",
-        "n_eff", "deff", "note"
+      if (is.null(role_map)) {
+        return(list(
+          is_reference = TRUE,
+          role = role,
+          canonical_value = canonical_value,
+          role_found = FALSE,
+          value = NULL
+        ))
+      }
+
+      value <- if (!is.null(canonical_value)) {
+        role_map[[canonical_value]]
+      } else {
+        role_map
+      }
+
+      list(
+        is_reference = TRUE,
+        role = role,
+        canonical_value = canonical_value,
+        role_found = TRUE,
+        value = value
       )
-      present <- col_order[col_order %in% names(result_i)]
-      extra   <- setdiff(names(result_i), col_order)
-      result_i[c(present, extra)]
-    }
+    },
 
-    # --- Handle disaggregated analysis
-    if (!is.null(disagg) && disagg %in% names(design$variables)) {
-      group_levels <- unique(na.omit(design$variables[[disagg]]))
-      phrutils::phr_message(origin, paste("Disaggregating by:", disagg, "(", length(group_levels), "groups )"))
+    #' @description
+    #' Execute a data analysis plan against a survey design
+    #'
+    #' Loops through each row of \code{analysis_plan}, dispatches the appropriate
+    #' survey calculation function (\code{prop}, \code{mean}, \code{median},
+    #' \code{ratio}, or \code{categorical}), handles optional disaggregation, and
+    #' binds all results into a single tibble.
+    #'
+    #' Results columns are returned in the following order:
+    #' \code{plan_row}, \code{variable}, \code{indicator_name},
+    #' \code{indicator_unit}, \code{group_name}, \code{disaggregation_value},
+    #' \code{calculation}, \code{point.estimate}, \code{lower_ci},
+    #' \code{upper_ci}, \code{ci_method}, \code{n_unweighted},
+    #' \code{n_weighted}, \code{denom_unweighted}, \code{denom_weighted},
+    #' \code{n_eff}, \code{deff}, \code{note}.
+    #'
+    #' @param design A \code{srvyr} or \code{survey} design object.
+    #' @param analysis_plan A data frame with columns \code{indicator_name},
+    #'   \code{calculation}, \code{var_name}, \code{denom_var},
+    #'   \code{disaggregation}, \code{multiplier}, and \code{indicator_unit}.
+    #' @param high_design_complexity Logical; if \code{TRUE}, triggers stricter
+    #'   CI selection (e.g. logit-transformed CIs for proportions).
+    #' @param variable_map Optional named list mapping canonical variable roles to
+    #'   actual column names, used to resolve \code{var_name}, \code{denom_var}
+    #'   and \code{disaggregation} row values via
+    #'   \code{private$..resolve_variable_map_reference()}. Defaults to
+    #'   \code{self$variable_map} when \code{NULL}.
+    #' @param value_map Optional named list mapping canonical value roles to
+    #'   dataset value(s), used as a fallback to resolve \code{var_name},
+    #'   \code{denom_var} and \code{disaggregation} row values via
+    #'   \code{private$..resolve_value_map_reference()} when they are not found
+    #'   in \code{variable_map}. Defaults to \code{self$value_map} when
+    #'   \code{NULL}.
+    #'
+    #' @return A tibble of analysis results, one row per indicator (or one row per
+    #'   disaggregation group when disaggregation is specified).
+    #' @noRd
+    ..phr_calc_survey_from_plan = function(
+      design,
+      analysis_plan,
+      high_design_complexity = FALSE,
+      variable_map = NULL,
+      value_map = NULL
+    ) {
+      origin <- "phr_calc_survey_from_plan"
+      phrutils::phr_message(
+        origin,
+        "Starting execution of data analysis plan..."
+      )
 
-      group_results <- purrr::map_dfr(group_levels, function(g) {
-        subset_design <- tryCatch(
-          subset(design, design$variables[[disagg]] == g),
-          error = function(e) {
-            phrutils::phr_warning(origin, paste("Subset failed for", disagg, "=", g))
-            NULL
+      # --- Validation
+      phrutils::phr_try(
+        {
+          if (is.null(design)) {
+            phr_error(origin, "Survey design object is NULL.")
           }
-        )
-        if (!is.null(subset_design)) {
-          run_single_calc(subset_design, group_value = as.character(g))
-        } else {
-          tibble::tibble()
+          if (!inherits(analysis_plan, "data.frame")) {
+            phr_error(origin, "analysis_plan must be a data.frame or tibble.")
+          }
+
+          required_cols <- c(
+            "indicator_name",
+            "calculation",
+            "var_name",
+            "denom_var",
+            "disaggregation",
+            "multiplier",
+            "indicator_unit"
+          )
+          missing_cols <- setdiff(required_cols, names(analysis_plan))
+          if (length(missing_cols) > 0) {
+            phr_error(
+              origin,
+              paste(
+                "Analysis plan missing columns:",
+                paste(missing_cols, collapse = ", ")
+              )
+            )
+          }
+        },
+        on_error = "abort",
+        origin = origin,
+        hint = "Check that your data_analysis_plan follows the expected template."
+      )
+
+      # --- Initialize results holder
+      results <- list()
+
+      # --- Loop through analysis plan
+      for (i in seq_len(nrow(analysis_plan))) {
+        row <- analysis_plan[i, ]
+        indicator <- row$indicator_name
+        calc_type <- tolower(trimws(row$calculation))
+
+        # Resolve canonical variable names referenced in var_name, denom_var and
+        # disaggregation via variable_map (preferred) or value_map (fallback).
+        # No tag-stripping is performed here (tags = FALSE); the values are
+        # already expected to be bare canonical names, not "@variable_map$..."
+        # style tags.
+        resolve_ref <- function(ref) {
+          if (is.null(ref) || is.na(ref) || !nzchar(ref)) {
+            return(ref)
+          }
+          var_ref <- private$..resolve_variable_map_reference(
+            ref,
+            tags = FALSE,
+            variable_map = variable_map
+          )
+          if (!is.null(var_ref$value)) {
+            return(var_ref$value)
+          }
+          val_ref <- private$..resolve_value_map_reference(
+            ref,
+            tags = FALSE,
+            value_map = value_map
+          )
+          if (
+            isTRUE(val_ref$role_found) &&
+              !is.null(val_ref$value) &&
+              is.character(val_ref$value) &&
+              length(val_ref$value) == 1
+          ) {
+            return(val_ref$value)
+          }
+          ref
         }
-      })
 
-      results[[i]] <- group_results
+        var_name <- resolve_ref(row$var_name)
+        denom_var <- if (!is.null(row$denom_var) && !is.na(row$denom_var)) {
+          resolve_ref(row$denom_var)
+        } else {
+          row$denom_var
+        }
+        disagg <- if (
+          !is.null(row$disaggregation) && !is.na(row$disaggregation)
+        ) {
+          resolve_ref(row$disaggregation)
+        } else {
+          NULL
+        }
+        mult <- ifelse(
+          is.null(row$multiplier) || is.na(row$multiplier),
+          1,
+          row$multiplier
+        )
+        unit <- ifelse(
+          is.null(row$indicator_unit) || is.na(row$indicator_unit),
+          "",
+          row$indicator_unit
+        )
 
-    } else {
-      results[[i]] <- run_single_calc(design, group_value = "Overall")
-    }
-  }
+        phrutils::phr_message(
+          origin,
+          paste0(
+            "Running [",
+            i,
+            "/",
+            nrow(analysis_plan),
+            "]: ",
+            indicator,
+            " (",
+            calc_type,
+            ")"
+          )
+        )
 
-  # --- Bind and return
-  out <- tryCatch(
-    dplyr::bind_rows(results),
-    error = function(e) {
-      phrutils::phr_warning(origin, paste("Binding failed:", e$message))
-      dplyr::tibble()
-    }
-  )
+        # --- Internal helper for one calculation
+        run_single_calc <- function(
+          design_subset,
+          group_value = NA_character_
+        ) {
+          result_i <- phrutils::phr_try(
+            {
+              if (calc_type %in% c("prop", "proportion")) {
+                phr_calc_survey_prop_single(
+                  design = design_subset,
+                  var_name = var_name,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  multiplier = mult,
+                  group_name_label = group_value,
+                  high_design_complexity = high_design_complexity
+                )
+              } else if (calc_type %in% c("mean", "average")) {
+                phr_calc_survey_mean_single(
+                  design = design_subset,
+                  var_name = var_name,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  multiplier = mult,
+                  group_name_label = group_value,
+                  high_design_complexity = high_design_complexity
+                )
+              } else if (calc_type %in% c("median")) {
+                phr_calc_survey_median_single(
+                  design = design_subset,
+                  var_name = var_name,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  multiplier = mult,
+                  group_name_label = group_value,
+                  high_design_complexity = high_design_complexity
+                )
+              } else if (calc_type %in% c("ratio", "rate")) {
+                phr_calc_survey_ratio_single(
+                  design = design_subset,
+                  numerator_var = var_name,
+                  denominator_var = denom_var,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  multiplier = mult,
+                  group_name_label = group_value,
+                  high_design_complexity = high_design_complexity
+                )
+              } else if (calc_type %in% c("categorical", "category", "cat")) {
+                phr_calc_survey_categorical_single(
+                  design = design_subset,
+                  var_name = var_name,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  multiplier = mult,
+                  group_name_label = group_value,
+                  high_design_complexity = high_design_complexity
+                )
+              } else if (calc_type %in% c("select_multiple_cat")) {
+                phr_calc_multiple_choice_cat(
+                  design = design_subset,
+                  var_name = var_name,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  multiplier = mult,
+                  group_name_label = group_value,
+                  high_design_complexity = high_design_complexity
+                )
+              } else {
+                phrutils::phr_warning(
+                  origin,
+                  paste("Unknown calculation type for indicator:", indicator)
+                )
+                tibble::tibble(
+                  variable = var_name,
+                  indicator_name = indicator,
+                  indicator_unit = unit,
+                  point.estimate = NA_real_,
+                  lower_ci = NA_real_,
+                  upper_ci = NA_real_,
+                  ci_method = NA_character_,
+                  n_unweighted = NA_real_,
+                  n_weighted = NA_real_,
+                  denom_unweighted = NA_real_,
+                  denom_weighted = NA_real_,
+                  n_eff = NA_real_,
+                  deff = NA_real_,
+                  group_name = group_value,
+                  note = "unknown calculation type"
+                )
+              }
+            },
+            on_error = "warn",
+            origin = paste0(origin, ":", indicator),
+            hint = paste(
+              "Check variable",
+              var_name,
+              "and denominator",
+              denom_var,
+              "if applicable."
+            )
+          )
 
-  phrutils::phr_message(origin, paste("Completed", nrow(analysis_plan), "indicators successfully."))
-  return(out)
-},
+          # Add traceability columns and reorder to canonical column order:
+          # plan_row, variable, indicator_name, indicator_unit, group_name,
+          # disaggregation_value, calculation, point.estimate, lower_ci,
+          # upper_ci, ci_method, n_unweighted, n_weighted, denom_unweighted,
+          # denom_weighted, n_eff, deff, note
+          result_i$plan_row <- i
+          result_i$disaggregation_value <- group_value
+          result_i$calculation <- calc_type
+
+          col_order <- c(
+            "plan_row",
+            "variable",
+            "indicator_name",
+            "indicator_unit",
+            "group_name",
+            "disaggregation_value",
+            "calculation",
+            "point.estimate",
+            "lower_ci",
+            "upper_ci",
+            "ci_method",
+            "n_unweighted",
+            "n_weighted",
+            "denom_unweighted",
+            "denom_weighted",
+            "n_eff",
+            "deff",
+            "note"
+          )
+          present <- col_order[col_order %in% names(result_i)]
+          extra <- setdiff(names(result_i), col_order)
+          result_i[c(present, extra)]
+        }
+
+        # --- Handle disaggregated analysis
+        if (!is.null(disagg) && disagg %in% names(design$variables)) {
+          group_levels <- unique(na.omit(design$variables[[disagg]]))
+          phrutils::phr_message(
+            origin,
+            paste(
+              "Disaggregating by:",
+              disagg,
+              "(",
+              length(group_levels),
+              "groups )"
+            )
+          )
+
+          group_results <- purrr::map_dfr(group_levels, function(g) {
+            subset_design <- tryCatch(
+              subset(design, design$variables[[disagg]] == g),
+              error = function(e) {
+                phrutils::phr_warning(
+                  origin,
+                  paste("Subset failed for", disagg, "=", g)
+                )
+                NULL
+              }
+            )
+            if (!is.null(subset_design)) {
+              run_single_calc(subset_design, group_value = as.character(g))
+            } else {
+              tibble::tibble()
+            }
+          })
+
+          results[[i]] <- group_results
+        } else {
+          results[[i]] <- run_single_calc(design, group_value = "Overall")
+        }
+      }
+
+      # --- Bind and return
+      out <- tryCatch(
+        dplyr::bind_rows(results),
+        error = function(e) {
+          phrutils::phr_warning(origin, paste("Binding failed:", e$message))
+          dplyr::tibble()
+        }
+      )
+
+      phrutils::phr_message(
+        origin,
+        paste("Completed", nrow(analysis_plan), "indicators successfully.")
+      )
+      return(out)
+    },
 
     # Resolve a field-name set (as returned by the pre_run_* hooks) into the
     # actual objects stored on self.
@@ -3245,25 +3384,17 @@ DataAnalytics <- R6::R6Class(
         val <- set[[nm]]
 
         if (is.null(val)) {
-
           next
-
         } else if (nm %in% keep_as_is) {
-
           resolved[[nm]] <- val
-
         } else if (is.character(val) && length(val) == 1) {
-
           if (!is.null(self[[val]])) {
             resolved[[nm]] <- self[[val]]
           } else if (!is.null(private[[val]])) {
             resolved[[nm]] <- private[[val]]
           }
-
         } else {
-
           resolved[[nm]] <- val
-
         }
       }
 
@@ -3539,7 +3670,7 @@ DataAnalytics <- R6::R6Class(
 
       if (is.null(outputs_schema) || length(outputs_schema) == 0) {
         phrutils::phr_warning(
-          message = phr_txt(glue::glue(
+          message = phrutils::phr_txt(glue::glue(
             "No outputs defined in outputs schema for '{set_role}'. Skipping."
           )),
           origin = self$dataset_name
@@ -3568,7 +3699,8 @@ DataAnalytics <- R6::R6Class(
       # analysis_results_key takes precedence; otherwise nested sets default
       # to their own role name when present in analysis_results.
       analysis_res <- self$analysis_results
-      ar_key <- inputs$analysis_results_key %||% (if (nested) set_role else NULL)
+      ar_key <- inputs$analysis_results_key %||%
+        (if (nested) set_role else NULL)
       if (
         !is.null(ar_key) &&
           is.list(analysis_res) &&
@@ -3596,9 +3728,7 @@ DataAnalytics <- R6::R6Class(
         phrutils::phr_try(
           {
             func_name <- out$output_func_name
-            if (
-              is.null(func_name) || is.na(func_name) || !nzchar(func_name)
-            ) {
+            if (is.null(func_name) || is.na(func_name) || !nzchar(func_name)) {
               phrutils::phr_warning(
                 message = phr_txt(glue::glue(
                   "Output '{out_name}' has no output_func_name specified. Skipping."
@@ -3635,9 +3765,7 @@ DataAnalytics <- R6::R6Class(
             if (is.null(output_function)) {
               tryCatch(
                 {
-                  if (
-                    exists(func_name, mode = "function", inherits = TRUE)
-                  ) {
+                  if (exists(func_name, mode = "function", inherits = TRUE)) {
                     output_function <- get(
                       func_name,
                       mode = "function",
@@ -3679,16 +3807,12 @@ DataAnalytics <- R6::R6Class(
               "base" = base_design,
               "data" = base_design,
               "survey_design" = weighted_design,
-              "analysis_results_surveydesign" = if (
-                !is.null(analysis_res)
-              ) {
+              "analysis_results_surveydesign" = if (!is.null(analysis_res)) {
                 analysis_res$survey_design
               } else {
                 NULL
               },
-              "analysis_results_base" = if (
-                !is.null(analysis_res)
-              ) {
+              "analysis_results_base" = if (!is.null(analysis_res)) {
                 analysis_res$base
               } else {
                 NULL
@@ -3706,7 +3830,9 @@ DataAnalytics <- R6::R6Class(
                   is.character(arg_val_check) &&
                     arg_val_check == "@results_table"
                 ) {
-                  func_args[[1]] <- self$results_to_table(results = plaus_results)
+                  func_args[[1]] <- self$results_to_table(
+                    results = plaus_results
+                  )
                   break
                 }
               }
@@ -3789,7 +3915,7 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$tables[[key]] <- result
                 }
-                phrutils::phr_message(phr_txt(glue::glue(
+                phrutils::phr_message(phrutils::phr_txt(glue::glue(
                   "Table '{key}' stored successfully."
                 )))
               } else if (
@@ -3816,15 +3942,15 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$visualizations[[key]] <- result
                 }
-                phrutils::phr_message(phr_txt(glue::glue(
+                phrutils::phr_message(phrutils::phr_txt(
                   "Visualization '{key}' stored successfully."
-                )))
+                ))
               } else {
                 phrutils::phr_warning(
-                  message = phr_txt(glue::glue(
+                  message = phrutils::phr_txt(
                     "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
                     "Expected 'visualization' or 'table'. Result not stored."
-                  )),
+                  ),
                   origin = self$dataset_name
                 )
               }
@@ -3847,9 +3973,9 @@ DataAnalytics <- R6::R6Class(
                 var_label <- role
                 if (is.null(col_name)) {
                   phrutils::phr_warning(
-                    message = phr_txt(glue::glue(
+                    message = phrutils::phr_txt(
                       "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
-                    )),
+                    ),
                     origin = self$dataset_name
                   )
                   col_name <- NULL
@@ -3863,16 +3989,12 @@ DataAnalytics <- R6::R6Class(
               # All survey_design types: extract variables tibble.
               source_df <- switch(
                 dataset_type,
-                "analysis_results_surveydesign" = if (
-                  !is.null(analysis_res)
-                ) {
+                "analysis_results_surveydesign" = if (!is.null(analysis_res)) {
                   analysis_res$survey_design
                 } else {
                   NULL
                 },
-                "analysis_results_base" = if (
-                  !is.null(analysis_res)
-                ) {
+                "analysis_results_base" = if (!is.null(analysis_res)) {
                   analysis_res$base
                 } else {
                   NULL
@@ -3903,15 +4025,13 @@ DataAnalytics <- R6::R6Class(
                 unique_vals <- unique(source_df[[col_name]])
                 unique_vals <- unique_vals[!is.na(unique_vals)]
 
-                phrutils::phr_message(phr_txt(glue::glue(
+                phrutils::phr_message(phrutils::phr_txt(
                   "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
-                )))
+                ))
 
                 for (val in unique_vals) {
                   if (is_survey_design_type) {
-                    design_to_filter <- if (
-                      dataset_type == "survey_design"
-                    ) {
+                    design_to_filter <- if (dataset_type == "survey_design") {
                       weighted_design
                     } else {
                       base_design
@@ -3923,9 +4043,9 @@ DataAnalytics <- R6::R6Class(
                       ),
                       error = function(e) {
                         phrutils::phr_warning(
-                          message = phr_txt(glue::glue(
+                          message = phrutils::phr_txt(
                             "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
-                          )),
+                          ),
                           origin = self$dataset_name
                         )
                         NULL
@@ -3937,9 +4057,9 @@ DataAnalytics <- R6::R6Class(
                         dplyr::filter(!!rlang::sym(col_name) == val),
                       error = function(e) {
                         phrutils::phr_warning(
-                          message = phr_txt(glue::glue(
+                          message = phrutils::phr_txt(
                             "Failed to filter data for '{var_label}' == '{val}': {e$message}"
-                          )),
+                          ),
                           origin = self$dataset_name
                         )
                         NULL
@@ -3975,22 +4095,28 @@ DataAnalytics <- R6::R6Class(
                 }
               } else if (!is.null(col_name)) {
                 phrutils::phr_warning(
-                  message = phr_txt(glue::glue(
+                  message = phrutils::phr_txt(
                     "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
-                  )),
+                  ),
                   origin = self$dataset_name
                 )
               }
             } else {
-              phrutils::phr_message(phr_txt(glue::glue(
+              phrutils::phr_message(phrutils::phr_txt(
                 "Calling {func_name} for output '{out_name}'..."
-              )))
+              ))
               output_result <- do.call(output_function, func_args)
               store_result(output_result, label)
             }
           },
           on_error = "warn",
-          origin = paste0(self$dataset_name, "$run_outputs$", set_role, "$", out_name)
+          origin = paste0(
+            self$dataset_name,
+            "$run_outputs$",
+            set_role,
+            "$",
+            out_name
+          )
         )
       }
       invisible(NULL)
