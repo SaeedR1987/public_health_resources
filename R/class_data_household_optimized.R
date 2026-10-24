@@ -43,11 +43,14 @@
 #' 1. Generate survey weights via `generate_weights()` when a `SamplingFrame` is
 #'    stored in `self$sampling_frame` and a stratum role is mapped in `variable_map`
 #'    (skipped silently if either is unavailable).
-#' 2. Check linked datasets and ensure they are standardized
-#' 3. Merge household-level variables to all linked datasets (if available):
-#'    `enum_id`, `device_id`, `date_survey`, `weight`, `stratum`, `cluster_id`,
-#'    `site`, `admin1`, `admin2`, `admin3`, `admin4`. Existing variables in
-#'    linked datasets are overwritten with household values.
+#' 2. Merge household-level variables to all linked datasets (if available):
+#'    `enum_id`, `device_id`, `date_survey`, `date_recall`, `weight`, `stratum`,
+#'    `cluster_id`, `site`, `admin1`, `admin2`, `admin3`, `admin4`. Columns are
+#'    added to the linked dataset under their canonical role names and registered
+#'    in the linked object's `variable_map`; existing variables with those names
+#'    are overwritten with household values.
+#' 3. Standardize the linked datasets, re-standardizing any that were already
+#'    standardized when household variables were merged into them
 #' 4. Aggregate data from linked datasets and add columns to household data with
 #'    a naming convention like `linked_<name>_<column>` to show the source
 #'
@@ -840,8 +843,14 @@ HouseholdDataOptimized <- R6::R6Class(
     #' 1. Generates survey weights via \code{generate_weights()} when a
     #'    \code{SamplingFrame} is stored in \code{self$sampling_frame} and a
     #'    stratum role is mapped in \code{variable_map}; skipped silently otherwise.
-    #' 2. Validates that linked datasets are standardized
-    #' 3. Merges household-level variables to linked datasets (enum_id, device_id, date_survey, weight, stratum, cluster_id, etc.)
+    #' 2. Merges household-level variables to linked datasets using their canonical
+    #'    role names (enum_id, device_id, date_survey, date_recall, weight, stratum,
+    #'    cluster_id, site, admin1-admin4) and registers those roles in each linked
+    #'    object's \code{variable_map}
+    #' 3. Standardizes each linked dataset. Datasets that were already standardized
+    #'    are standardized again when household variables were merged into them, so
+    #'    that indicators depending on the merged columns (e.g. person-time, which
+    #'    needs \code{date_survey} and \code{date_recall}) are recalculated
     #' 4. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
     #'
     #' Supported aggregations vary by dataset type (see class documentation for details)
@@ -854,6 +863,12 @@ HouseholdDataOptimized <- R6::R6Class(
           # We write to raw_data here so the weight column is present when standardize()
           # copies raw_data -> standardized_data in subsequent steps.
           self$generate_weights(stage = "raw")
+
+          # Refresh the household variable_map before merging so that any
+          # household columns added after initialization (e.g. a computed
+          # date_recall column) are mapped and therefore eligible for merging
+          # into the linked datasets.
+          private$..map_schema_vars(stage = "raw")
 
           # Check if any linked objects exist (using inherited linked_objects from Data class)
           if (length(self$linked_objects) == 0) {
@@ -886,20 +901,29 @@ HouseholdDataOptimized <- R6::R6Class(
             # First merge household-level variables to linked dataset
             # This needs to happen before standardize so household vars are available
             # in variable and value maps during standardize operations
-            self$..merge_household_vars_to_linked(
+            merged <- self$..merge_household_vars_to_linked(
               linked_obj,
               link_name,
               hh_stage = stage,
               linked_stage = stage
             )
 
-            # Then check if the linked dataset is standardized
+            # Then (re-)standardize the linked dataset. An already-standardized
+            # dataset must be standardized again when household variables were
+            # merged, otherwise the newly added columns are never picked up by
+            # its variable_map or by indicator functions that depend on them
+            # (e.g. add_persontime() needs date_survey and date_recall).
             phrutils::phr_message(phr_txt(
               "Checking standardization status of linked dataset '{link_name}'..."
             ))
             if (!linked_obj$standardized) {
               phrutils::phr_message(phr_txt(
                 "Linked dataset '{link_name}' is not standardized. Running standardize()..."
+              ))
+              linked_obj$standardize(stage = stage)
+            } else if (isTRUE(merged)) {
+              phrutils::phr_message(phr_txt(
+                "Linked dataset '{link_name}' is already standardized but received merged household variables. Re-running standardize()..."
               ))
               linked_obj$standardize(stage = stage)
             } else {
@@ -2567,9 +2591,28 @@ HouseholdDataOptimized <- R6::R6Class(
     #' @return TRUE invisibly on success, NULL on failure
     #'
     #' @details
-    #' Merges household variables to linked datasets: enum_id, device_id, date_survey, weight,
-    #' stratum, cluster_id, site, admin1, admin2, admin3, admin4. Existing variables in linked
-    #' datasets are overwritten with household values. Uses fallback logic to find available data stages.
+    #' Merges household variables to linked datasets: enum_id, device_id, date_survey,
+    #' date_recall, weight, stratum, cluster_id, site, admin1, admin2, admin3, admin4.
+    #'
+    #' Merged columns are written to the linked dataset using their *canonical role
+    #' names* (for example the household column `today` is merged as `date_survey`),
+    #' and the role is registered in the linked object's `variable_map` so that
+    #' indicator functions such as `add_persontime()` can resolve
+    #' `@variable_map$date_survey` / `@variable_map$date_recall` afterwards.
+    #' Any existing column of the same name in the linked dataset is overwritten.
+    #'
+    #' The merge is applied to every populated stage of the linked dataset (raw,
+    #' standardized and clean) rather than a single fallback stage, because
+    #' `standardize()` always rebuilds its output from `raw_data`; merging into
+    #' `clean_data` or `standardized_data` alone would be discarded on the next
+    #' standardization pass.
+    #'
+    #' The household linkage column of the linked dataset is resolved from its
+    #' `variable_map` (`hh_uuid` / `household_uuid`), falling back to the
+    #' `col_names` aliases declared in its variable schema and finally to the
+    #' role name used as a literal column name. Only candidates that actually
+    #' exist in the data are accepted, so an unmapped or stale `variable_map`
+    #' cannot make the merge target a non-existent column.
     #'
     #' @keywords internal
     ..merge_household_vars_to_linked = function(
@@ -2639,20 +2682,34 @@ HouseholdDataOptimized <- R6::R6Class(
             return(invisible(NULL))
           }
 
-          # Determine the household linkage column in the linked dataset
-          linked_hh_col <- linked_obj$get(field = ".variable_map")$hh_uuid %||%
-            linked_obj$get(field = ".variable_map")$household_uuid %||%
-            "hh_uuid"
+          # Determine the household linkage column in the linked dataset.
+          # The linked object's variable_map may not have been populated yet
+          # (its schema is loaded after Data$initialize() has already mapped),
+          # so fall back to the schema's col_names aliases rather than assuming
+          # a literal "hh_uuid" column.
+          linkage <- .resolve_linked_hh_column(
+            linked_obj = linked_obj,
+            data_cols = names(linked_data)
+          )
+          linked_hh_col <- linkage$column
 
-          if (!linked_hh_col %in% names(linked_data)) {
+          if (is.null(linked_hh_col)) {
             phrutils::phr_warning(
               self$dataset_name,
               phr_txt(
-                "Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'."
+                "Linked dataset '{link_name}' has no household linkage column. Tried: {paste(linkage$candidates, collapse=', ')}."
               )
             )
             return(invisible(NULL))
           }
+
+          # Keep the linked object's variable_map in sync with the column that
+          # was actually used, so downstream lookups resolve the same column.
+          linked_obj$set(
+            field = "..variable_map",
+            role = linkage$role,
+            value = linked_hh_col
+          )
 
           # Define the list of household variables to merge
           # These are the canonical variable names in the variable_map
@@ -2699,44 +2756,104 @@ HouseholdDataOptimized <- R6::R6Class(
             "Merging {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'..."
           ))
 
-          # Create a subset of household data with only the variables to merge plus the UUID
-          merge_cols <- c(hh_uuid_col, unlist(vars_to_merge))
-          hh_merge_data <- hh_data[, merge_cols, drop = FALSE]
-
-          # Check which variables already exist in linked data and will be overwritten
-          existing_vars <- intersect(unlist(vars_to_merge), names(linked_data))
-          if (length(existing_vars) > 0) {
-            phrutils::phr_message(
-              phr_txt(
-                "The following variables already exist in linked dataset '{link_name}' and will be overwritten: {paste(existing_vars, collapse=', ')}"
-              )
-            )
-            # Remove existing columns from linked data before merge
-            linked_data <- linked_data[,
-              !(names(linked_data) %in% existing_vars),
-              drop = FALSE
-            ]
+          # Build the merge table keyed on the household UUID. Columns are named
+          # after the canonical role (not the household column name) so that the
+          # linked dataset receives canonical columns that its own schema and
+          # variable_map can resolve.
+          hh_merge_data <- hh_data[, hh_uuid_col, drop = FALSE]
+          for (var_name in names(vars_to_merge)) {
+            hh_merge_data[[var_name]] <- hh_data[[vars_to_merge[[var_name]]]]
           }
 
-          # Perform the merge (left join from linked_data perspective)
-          linked_data_merged <- dplyr::left_join(
-            linked_data,
-            hh_merge_data,
-            by = stats::setNames(hh_uuid_col, linked_hh_col)
-          )
+          # Merge into every populated stage of the linked dataset. standardize()
+          # always rebuilds from raw_data, so writing to a single fallback stage
+          # would be silently discarded on the next standardization pass.
+          merge_stages <- c("raw", "standardized", "clean")
+          merged_stages <- character(0)
 
-          # Update the appropriate linked data stage
-          if (linked_data_stage == "clean") {
-            linked_obj$clean_data <- linked_data_merged
-          } else if (linked_data_stage == "standardized") {
-            linked_obj$standardized_data <- linked_data_merged
-          } else {
-            linked_obj$raw_data <- linked_data_merged
+          for (stage_name in merge_stages) {
+            stage_field <- paste0("..", stage_name, "_data")
+            stage_data <- linked_obj$get(field = stage_field)
+
+            if (
+              is.null(stage_data) ||
+                !is.data.frame(stage_data) ||
+                nrow(stage_data) == 0
+            ) {
+              next
+            }
+
+            # Stages can carry different column names (standardization may
+            # rename the linkage column), so resolve it per stage.
+            stage_hh_col <- linked_hh_col
+            if (!stage_hh_col %in% names(stage_data)) {
+              stage_hh_col <- .resolve_linked_hh_column(
+                linked_obj = linked_obj,
+                data_cols = names(stage_data)
+              )$column
+            }
+
+            if (is.null(stage_hh_col)) {
+              phrutils::phr_warning(
+                self$dataset_name,
+                phr_txt(
+                  "Linked dataset '{link_name}' {stage_name} data has no household linkage column. Skipping that stage."
+                )
+              )
+              next
+            }
+
+            # Drop any columns that would collide with the merged canonical
+            # columns before joining (household values take precedence)
+            existing_vars <- intersect(names(vars_to_merge), names(stage_data))
+            if (length(existing_vars) > 0) {
+              phrutils::phr_message(
+                phr_txt(
+                  "The following variables already exist in linked dataset '{link_name}' ({stage_name}) and will be overwritten: {paste(existing_vars, collapse=', ')}"
+                )
+              )
+              stage_data <- stage_data[,
+                !(names(stage_data) %in% existing_vars),
+                drop = FALSE
+              ]
+            }
+
+            # Perform the merge (left join from the linked data perspective)
+            stage_data_merged <- dplyr::left_join(
+              stage_data,
+              hh_merge_data,
+              by = stats::setNames(hh_uuid_col, stage_hh_col)
+            )
+
+            linked_obj$set(field = stage_field, value = stage_data_merged)
+            merged_stages <- c(merged_stages, stage_name)
+          }
+
+          if (length(merged_stages) == 0) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phr_txt(
+                "No stage of linked dataset '{link_name}' could receive the merged household variables."
+              )
+            )
+            return(invisible(NULL))
+          }
+
+          # Register the merged roles in the linked object's variable_map so that
+          # downstream indicators (e.g. add_persontime) can resolve
+          # @variable_map$date_survey / @variable_map$date_recall. Without this,
+          # roles absent from the linked dataset's own schema stay unmapped.
+          for (var_name in names(vars_to_merge)) {
+            linked_obj$set(
+              field = "..variable_map",
+              role = var_name,
+              value = var_name
+            )
           }
 
           phrutils::phr_message(
             phr_txt(
-              "Successfully merged {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}'."
+              "Successfully merged {length(vars_to_merge)} household variable(s) to linked dataset '{link_name}' (stages: {paste(merged_stages, collapse=', ')})."
             )
           )
 

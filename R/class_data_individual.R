@@ -138,6 +138,12 @@ IndividualData <- R6::R6Class(
           )
         }
 
+        # Re-map schema variables now that the individual schema is loaded.
+        # Data$initialize() already mapped against the (still empty) parent
+        # schema, so roles such as hh_uuid would otherwise stay unmapped until
+        # the first standardize() call.
+        private$..map_schema_vars(stage = "raw")
+
         phrutils::phr_message(phrutils::phr_txt("{dataset_name} initialized as IndividualData object."))
 
       }, on_error = "abort", origin = "IndividualData$initialize")
