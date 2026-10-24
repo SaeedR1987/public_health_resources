@@ -39,8 +39,8 @@
 #' @field linked_ind_deaths_value_label Value labels for linked deaths data
 #' @field analysis_schema_roster Analysis schema for linked roster dataset
 #' @field analysis_schema_deaths Analysis schema for linked deaths dataset
-#' @field outputs_schema_roster Outputs schema for linked roster dataset
-#' @field outputs_schema_deaths Outputs schema for linked deaths dataset
+#' @field outputs_schema_roster Outputs schema (data frame) for linked roster dataset
+#' @field outputs_schema_deaths Outputs schema (data frame) for linked deaths dataset
 #' @field data_analysis_plan_roster Data analysis plan for linked roster dataset
 #' @field data_analysis_plan_deaths Data analysis plan for linked deaths dataset
 #' @field survey_design_roster srvyr survey design object for the linked roster dataset
@@ -350,7 +350,7 @@ MortalityDataAnalytics <- R6::R6Class(
     },
 
     #' @description Load the default Mortality household outputs schema from template file
-    #' @return A list of Mortality-specific outputs definitions for the household dataset
+    #' @return A tibble of Mortality-specific outputs definitions for the household dataset
     default_outputs_schema = function() {
 
       file <- system.file(
@@ -362,7 +362,7 @@ MortalityDataAnalytics <- R6::R6Class(
       if (!file.exists(file) || file == "") {
         file <- file.path("resources", "outputs_schema_data_analytics_mortality_template.xlsx")
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -374,10 +374,10 @@ MortalityDataAnalytics <- R6::R6Class(
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     },
 
     #' @description Load the default Mortality household analysis schema from template file
@@ -412,7 +412,7 @@ MortalityDataAnalytics <- R6::R6Class(
     },
 
     #' @description Load the default Mortality roster outputs schema from template file
-    #' @return A list of outputs definitions for the linked roster dataset
+    #' @return A tibble of outputs definitions for the linked roster dataset
     default_outputs_schema_roster = function() {
 
       file <- system.file(
@@ -424,7 +424,7 @@ MortalityDataAnalytics <- R6::R6Class(
       if (!file.exists(file) || file == "") {
         file <- file.path("resources", "outputs_schema_data_analytics_mortality_roster_template.xlsx")
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -436,14 +436,14 @@ MortalityDataAnalytics <- R6::R6Class(
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     },
 
     #' @description Load the default Mortality deaths outputs schema from template file
-    #' @return A list of outputs definitions for the linked deaths dataset
+    #' @return A tibble of outputs definitions for the linked deaths dataset
     default_outputs_schema_deaths = function() {
 
       file <- system.file(
@@ -455,7 +455,7 @@ MortalityDataAnalytics <- R6::R6Class(
       if (!file.exists(file) || file == "") {
         file <- file.path("resources", "outputs_schema_data_analytics_mortality_deaths_template.xlsx")
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -467,10 +467,10 @@ MortalityDataAnalytics <- R6::R6Class(
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     },
 
     #' @description Load the default Mortality roster analysis schema from template file
@@ -704,7 +704,9 @@ MortalityDataAnalytics <- R6::R6Class(
     #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
     #' the appropriate survey design objects for the dataset, so output entries
     #' with \code{dataset_type = "survey_design"} receive the weighted design and
-    #' \code{"data"}/\code{"base"} entries receive the unweighted base design.
+    #' \code{"base"} entries receive the unweighted base design. Each set also
+    #' names the dataset's own variable map, so \code{@variable_map$} references
+    #' in \code{test_params} resolve against the correct dataset.
     #'
     #' @return A named list of field sets.
     pre_run_outputs = function() {
@@ -721,7 +723,7 @@ MortalityDataAnalytics <- R6::R6Class(
       )
 
       if (!is.null(self$linked_ind_roster_data)) {
-        if (length(self$outputs_schema_roster %||% list()) > 0) {
+        if (!is.null(self$outputs_schema_roster) && nrow(self$outputs_schema_roster) > 0) {
           sets$roster <- list(
             data = "linked_ind_roster_data",
             outputs_schema = "outputs_schema_roster",
@@ -735,7 +737,7 @@ MortalityDataAnalytics <- R6::R6Class(
       }
 
       if (!is.null(self$linked_ind_deaths_data)) {
-        if (length(self$outputs_schema_deaths %||% list()) > 0) {
+        if (!is.null(self$outputs_schema_deaths) && nrow(self$outputs_schema_deaths) > 0) {
           sets$deaths <- list(
             data = "linked_ind_deaths_data",
             outputs_schema = "outputs_schema_deaths",

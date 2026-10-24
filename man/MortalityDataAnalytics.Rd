@@ -68,9 +68,9 @@ and \code{run_outputs()} iterate over these sets.
 
     \item{\code{analysis_schema_deaths}}{Analysis schema for linked deaths dataset}
 
-    \item{\code{outputs_schema_roster}}{Outputs schema for linked roster dataset}
+    \item{\code{outputs_schema_roster}}{Outputs schema (data frame) for linked roster dataset}
 
-    \item{\code{outputs_schema_deaths}}{Outputs schema for linked deaths dataset}
+    \item{\code{outputs_schema_deaths}}{Outputs schema (data frame) for linked deaths dataset}
 
     \item{\code{data_analysis_plan_roster}}{Data analysis plan for linked roster dataset}
 

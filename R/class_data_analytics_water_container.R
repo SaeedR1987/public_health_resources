@@ -105,7 +105,7 @@ WaterContainerDataAnalytics <- R6::R6Class(
     },
 
     #' @description Load the default water container unified outputs schema
-    #' @return A list of water container-specific output definitions
+    #' @return A tibble of water container-specific output definitions
     default_outputs_schema = function() {
 
       file <- system.file(
@@ -117,7 +117,7 @@ WaterContainerDataAnalytics <- R6::R6Class(
       if (!file.exists(file) || file == "") {
         file <- file.path("resources", "outputs_schema_data_analytics_water_container_template.xlsx")
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -129,10 +129,10 @@ WaterContainerDataAnalytics <- R6::R6Class(
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     }
   )
 )

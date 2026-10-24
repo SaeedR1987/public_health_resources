@@ -106,7 +106,7 @@ FSLDataAnalytics <- R6::R6Class(
     },
 
     #' @description Load the default FSL unified outputs schema from template file
-    #' @return A list of FSL-specific outputs definitions (quality and analysis combined)
+    #' @return A tibble of FSL-specific outputs definitions (quality and analysis combined)
     default_outputs_schema = function() {
 
       file <- system.file(
@@ -118,7 +118,7 @@ FSLDataAnalytics <- R6::R6Class(
       if (!file.exists(file) || file == "") {
         file <- file.path("resources", "outputs_schema_data_analytics_fsl_template.xlsx")
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -130,10 +130,10 @@ FSLDataAnalytics <- R6::R6Class(
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     },
 
     #' @description Load the default FSL analysis schema from template file

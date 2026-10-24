@@ -20,8 +20,9 @@ output containers.
 Key design principles:
 * `quality_schema` drives quality checks; `analysis_schema` drives analysis
 * `outputs_schema` defines all visualizations/tables (quality and analysis combined)
-* Each output entry uses `dataset_type` to specify the data source
-  ("data" for quality outputs, "survey_design" for analysis outputs)
+  as a data frame, one row per output
+* Each output row uses `dataset_type` to specify the data source
+  ("base" for the unweighted design, "survey_design" for the weighted design)
 * `results` stores quality check results; `analysis_results` stores analysis results
 * All outputs store into the same `visualizations` and `tables` fields
 * The `pre_run_quality_checks()`, `pre_run_analysis()` and `pre_run_outputs()`
@@ -58,7 +59,7 @@ Key design principles:
 
     \item{\code{analysis_schema}}{Analysis schema (catalog of possible indicators)}
 
-    \item{\code{outputs_schema}}{Unified outputs schema for all visualizations and tables}
+    \item{\code{outputs_schema}}{Unified outputs schema (data frame) for all visualizations and tables}
 
     \item{\code{visualizations}}{List of ggplot2 graphics/visualizations (shared)}
 
@@ -872,11 +873,10 @@ pointing at the core \code{data}, \code{outputs_schema},
 fields. Subclasses that hold multiple datasets (e.g. linked roster or
 deaths data) can override this method to return one entry per dataset.
 Each entry must be a named list whose elements give the names of the
-public fields holding the respective inputs. An optional
-\code{analysis_results_key} element (a plain character key, not a field
-name) selects the sub-list of \code{analysis_results} used for
-\code{dataset_type = "analysis_results_*"} outputs; it defaults to the
-set's role name when multiple sets are defined.
+public fields holding the respective inputs. The \code{variable_map}
+entry is used to resolve \code{@variable_map$} references in each
+output's \code{test_params}, so sets pointing at a linked dataset must
+name that dataset's own variable map.
 
 When more than one set is returned (or the single set is not named
 \code{main}), outputs are stored under the set's role name in
@@ -919,10 +919,8 @@ auto-generate the \code{title_name} argument passed to \code{plot_*} or
 
 Supported \code{dataset_type} values:
 \describe{
-  \item{"base" / "data"}{uses the set's base (unweighted) survey design (default for all quality outputs)}
+  \item{"base"}{uses the set's base (unweighted) survey design; this is the default}
   \item{"survey_design"}{uses the set's weighted survey design}
-  \item{"analysis_results_surveydesign"}{uses the set's \code{analysis_results$survey_design}}
-  \item{"analysis_results_base"}{uses the set's \code{analysis_results$base}}
 }
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}

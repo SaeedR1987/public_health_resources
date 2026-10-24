@@ -4,7 +4,10 @@
 \alias{outputs_schema_utils}
 \title{Outputs Schema Utility Functions}
 \description{
-Functions for converting between outputs schema table and nested list format.
-These functions follow the same patterns as data_schema_to_table and data_table_to_schema
-for consistency across the phr package.
+Functions for validating, normalising and parsing the outputs schema.
+}
+\details{
+The outputs schema is a data frame: one row per output, with the
+comma-separated `variables` / `disaggregation` cells and the `test_params`
+cell parsed on demand, row by row. There is no nested-list representation.
 }
