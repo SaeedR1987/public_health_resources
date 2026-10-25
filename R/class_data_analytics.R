@@ -251,9 +251,9 @@ DataAnalytics <- R6::R6Class(
         error = function(e) {
           phrutils::phr_warning(
             origin = "DataAnalytics$default_quality_schema",
-            message = phr_txt(glue::glue(
+            message = phrutils::phr_txt(
               "Failed to read quality_schema_data_quality_template.xlsx: {e$message}"
-            ))
+            )
           )
           return(NULL)
         }
@@ -298,9 +298,9 @@ DataAnalytics <- R6::R6Class(
         error = function(e) {
           phrutils::phr_warning(
             origin = "DataAnalytics$default_outputs_schema",
-            message = phr_txt(glue::glue(
+            message = phrutils::phr_txt(
               "Failed to read outputs_schema_data_analytics_template.xlsx: {e$message}"
-            ))
+            )
           )
           return(NULL)
         }
@@ -372,7 +372,7 @@ DataAnalytics <- R6::R6Class(
           self$validate_quality_schema(schema)
           self$quality_schema <- schema
           phrutils::phr_message(
-            phr_txt(glue::glue("Quality schema set for {self$dataset_name}."))
+            phrutils::phr_txt("Quality schema set for {self$dataset_name}.")
           )
         },
         on_error = "abort",
@@ -2830,6 +2830,30 @@ DataAnalytics <- R6::R6Class(
   # Private helpers
 
   private = list(
+    # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_quality_schema_filename = c(
+      "resources",
+      "quality_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_filename = c(
+      "resources",
+      "outputs_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_filename = c(
+      "resources",
+      "analysis_schema_data_household_template.xlsx"
+    ),
+
     #' @description
     #' Resolve a "variable_map" role reference to its mapped dataset column name.
     #'

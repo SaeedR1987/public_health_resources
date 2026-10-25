@@ -119,50 +119,50 @@ HouseholdData <- R6::R6Class(
             uuid = default_map$uuid
           )
 
-          # 2) Build and merge household schema into any existing schema
-          hh_schema <- self$default_schema()
-          parent_schema <- private$..variable_schema
+          # # 2) Build and merge household schema into any existing schema
+          # hh_schema <- self$default_schema()
+          # parent_schema <- private$..variable_schema
 
-          if (is.data.frame(hh_schema)) {
-            # Current flat-data-frame schema format: combine any existing
-            # rows with the default household rows (existing variables win
-            # on duplicate rule_type/variable/value).
-            if (is.data.frame(parent_schema) && nrow(parent_schema) > 0) {
-              merged_schema <- unique(rbind(parent_schema, hh_schema))
-            } else {
-              merged_schema <- hh_schema
-            }
-          } else {
-            merged_schema <- utils::modifyList(parent_schema %||% list(), hh_schema)
-          }
-          self$set(field = "..variable_schema", value = merged_schema)
+          # if (is.data.frame(hh_schema)) {
+          #   # Current flat-data-frame schema format: combine any existing
+          #   # rows with the default household rows (existing variables win
+          #   # on duplicate rule_type/variable/value).
+          #   if (is.data.frame(parent_schema) && nrow(parent_schema) > 0) {
+          #     merged_schema <- unique(rbind(parent_schema, hh_schema))
+          #   } else {
+          #     merged_schema <- hh_schema
+          #   }
+          # } else {
+          #   merged_schema <- utils::modifyList(parent_schema %||% list(), hh_schema)
+          # }
+          # self$set(field = "..variable_schema", value = merged_schema)
 
-          # 3) Load default indicator schema
-          default_ind_schema <- self$default_indicator_schema()
-          if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
+          # # 3) Load default indicator schema
+          # default_ind_schema <- self$default_indicator_schema()
+          # if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
 
-            self$set(field = "..indicator_schema", value = default_ind_schema)
+          #   self$set(field = "..indicator_schema", value = default_ind_schema)
 
-            phrutils::phr_message(
-              phrutils::phr_txt(glue::glue(
-                "Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s)."
-              ))
-            )
-          }
+          #   phrutils::phr_message(
+          #     phrutils::phr_txt(glue::glue(
+          #       "Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s)."
+          #     ))
+          #   )
+          # }
 
-          # 4) Load default dependency schema
-          default_dep_schema <- self$default_dependency_schema()
-          if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
+          # # 4) Load default dependency schema
+          # default_dep_schema <- self$default_dependency_schema()
+          # if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
 
-            self$set(field = "..dependency_schema", value = default_dep_schema)
+          #   self$set(field = "..dependency_schema", value = default_dep_schema)
 
-            # self$set_dependency_schema(default_dep_schema)
-            phrutils::phr_message(
-              phrutils::phr_txt(
-                "Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies."
-              )
-            )
-          }
+          #   # self$set_dependency_schema(default_dep_schema)
+          #   phrutils::phr_message(
+          #     phrutils::phr_txt(
+          #       "Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies."
+          #     )
+          #   )
+          # }
 
           # 5) Merge household-required columns into Data$required_columns
           #    (ensure we store *column names*, not roles)
@@ -180,21 +180,55 @@ HouseholdData <- R6::R6Class(
           # Data$initialize already set private$..required_columns <- uuid
           # We extend that with the household-specific requirements
 
-          self$set(field = "..required_columns", value = unique(c(private$..required_columns, hh_required)))
+          self$set(
+            field = "..required_columns",
+            value = unique(c(private$..required_columns, hh_required))
+          )
 
           # private$..required_columns <- unique(c(private$..required_columns, hh_required))
 
           # Optional (mapped) columns
 
-          self$set(field = "optional_columns", value = c(
-            private$..variable_map$cluster_id,
-            private$..variable_map$stratum,
-            private$..variable_map$weight,
-            private$..variable_map$admin1,
-            private$..variable_map$admin2,
-            private$..variable_map$gps_lat,
-            private$..variable_map$gps_lon
-          ))
+          self$set(
+            field = "optional_columns",
+            value = c(
+              private$..variable_map$cluster_id,
+              private$..variable_map$stratum,
+              private$..variable_map$weight,
+              private$..variable_map$admin1,
+              private$..variable_map$admin2,
+              private$..variable_map$gps_lat,
+              private$..variable_map$gps_lon
+            )
+          )
+
+          self$register_analytics_type(
+
+            "mortality",
+            private$..mortality_analytics_config()
+
+            function(data,
+                      stage,
+                      analysis_config,
+                      common_args,
+                      ...) {
+
+              GeneralDataAnalytics$new(
+                data = data,
+                dap = analysis_config,
+                parent_data_object = self,
+                dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
+                data_stage_name = stage,
+                data_hash = self$get(field = "..metadata", role = "hash_id"),
+                variable_map = private$..variable_map,
+                value_map = private$..value_map,
+                variable_label = private$..variable_label,
+                value_label = private$..value_label
+              )
+
+            }
+
+          )
 
           private$..map_schema_vars(stage = "raw")
 
@@ -205,329 +239,6 @@ HouseholdData <- R6::R6Class(
         on_error = "abort",
         origin = "HouseholdData$initialize"
       )
-    },
-
-    #' Load Default Variable Schema
-    #'
-    #' @description
-    #' Loads the default variable schema from the household variable schema template Excel file
-    #'
-    #' @return Named list with variable schema definitions (types, allowed values, etc.)
-    #'
-    #' @details
-    #' Reads variable_schema_data_household_template.xlsx from package resources and converts
-    #' to canonical nested schema structure
-    default_schema = function() {
-      file <- system.file(
-        "resources",
-        "variable_schema_data_household_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_error(
-          origin = "HouseholdData$default_schema",
-          message = "variable_schema_data_household_template.xlsx not found in package resources.",
-          hint = "Place the schema file under inst/resources/ before building the package."
-        )
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_error(
-            origin = "HouseholdData$default_schema",
-            message = "Failed to read variable_schema_data_household_template.xlsx",
-            hint = e$message
-          )
-        }
-      )
-
-      # The xlsx template is already in the canonical flat variable-schema
-      # table format (the format expected by `data_diagnose()` and other
-      # schema consumers), so validate and store it directly rather than
-      # round-tripping it through the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "rule_type", "variable", "value", "required", "type", "allowed",
-          "col_names", "unique",
-          "label", "comment",
-          "question_type", "is_other", "other_column_link"
-        ),
-        origin = "HouseholdData$default_schema"
-      )
-
-      return(df)
-    },
-
-    #' Load Default Indicator Schema
-    #'
-    #' @description
-    #' Loads the default indicator schema from the household indicator schema template Excel file
-    #'
-    #' @return A flat data frame with one row per indicator, or an empty data frame if template not found
-    #'
-    #' @details
-    #' Reads indicator_schema_data_household_template.xlsx from package resources and returns
-    #' it as the flat indicator-schema table. Issues warning if file not found.
-    default_indicator_schema = function() {
-      file <- system.file(
-        "resources",
-        "indicator_schema_data_household_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin = "HouseholdData$default_indicator_schema",
-          message = "indicator_schema_data_household_template.xlsx not found in package resources. Continuing without default indicator schema."
-        )
-        return(tibble::tibble(
-          indicator_name = character(0),
-          function_name = character(0),
-          variables = character(0),
-          arguments = character(0),
-          label = character(0),
-          comment = character(0)
-        ))
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin = "HouseholdData$default_indicator_schema",
-            message = phr_txt(glue::glue(
-              "Failed to read indicator_schema_data_household_template.xlsx: {e$message}"
-            ))
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) {
-        return(tibble::tibble(
-          indicator_name = character(0),
-          function_name = character(0),
-          variables = character(0),
-          arguments = character(0),
-          label = character(0),
-          comment = character(0)
-        ))
-      }
-
-      # The xlsx template is already in the canonical flat indicator-schema
-      # table format; validate and store it directly rather than converting
-      # to the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "indicator_name",
-          "function_name",
-          "variables",
-          "arguments",
-          "label",
-          "comment"
-        ),
-        origin = "HouseholdData$default_indicator_schema"
-      )
-
-      return(df)
-    },
-
-    #' Load Default Dependency Schema
-    #'
-    #' @description
-    #' Loads the default dependency schema from the household dependency schema template Excel file
-    #'
-    #' @return A flat data frame with one row per dependency rule, or an empty data frame if template not found
-    #'
-    #' @details
-    #' Reads dependency_schema_data_household_template.xlsx from package resources and returns
-    #' it as the flat dependency-schema table. Issues warning if file not found.
-    default_dependency_schema = function() {
-      file <- system.file(
-        "resources",
-        "dependency_schema_data_household_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin = "HouseholdData$default_dependency_schema",
-          message = "dependency_schema_data_household_template.xlsx not found in package resources. Continuing without default dependency schema."
-        )
-        return(tibble::tibble(
-          rule_type = character(0),
-          dep_name = character(0),
-          variables = character(0),
-          condition_if = character(0),
-          then = character(0),
-          action = character(0),
-          label = character(0),
-          comment = character(0)
-        ))
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin = "HouseholdData$default_dependency_schema",
-            message = phr_txt(
-              "Failed to read dependency_schema_data_household_template.xlsx: {e$message}"
-            )
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) {
-        return(tibble::tibble(
-          rule_type = character(0),
-          dep_name = character(0),
-          variables = character(0),
-          condition_if = character(0),
-          then = character(0),
-          action = character(0),
-          label = character(0),
-          comment = character(0)
-        ))
-      }
-
-      # The xlsx template is already in the canonical flat dependency-schema
-      # table format; validate and store it directly rather than converting
-      # to the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "rule_type",
-          "dep_name",
-          "variables",
-          "condition_if",
-          "then",
-          "action",
-          "label",
-          "comment"
-        ),
-        origin = "HouseholdData$default_dependency_schema"
-      )
-
-      return(df)
-    },
-
-    #' Post-Validation Hook for Household Data
-    #'
-    #' @description
-    #' Hook method called after core validation completes. Performs household-specific validation checks.
-    #'
-    #' @param df Data frame that was validated
-    #'
-    #' @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
-    #'
-    #' @details
-    #' Performs household-specific checks:
-    #' * GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
-    #' * Weight distribution checks (negative or zero weights)
-    #' * Interview date validity checks
-    #' * Consent field validation
-    post_validate = function(df) {
-      nm <- self$dataset_name
-
-      # Track whether any issues occurred
-      had_issues <- FALSE
-
-      # GPS validity check
-
-      lat_col <- private$..variable_map$gps_lat
-      lon_col <- private$..variable_map$gps_lon
-
-      if (
-        !is.null(lat_col) &&
-          lat_col %in% names(df) &&
-          !is.null(lon_col) &&
-          lon_col %in% names(df)
-      ) {
-        lat_invalid <- which(
-          !is.na(df[[lat_col]]) &
-            (df[[lat_col]] < -90 | df[[lat_col]] > 90)
-        )
-        lon_invalid <- which(
-          !is.na(df[[lon_col]]) &
-            (df[[lon_col]] < -180 | df[[lon_col]] > 180)
-        )
-
-        if (length(lat_invalid) > 0 || length(lon_invalid) > 0) {
-          phrutils::phr_warning(
-            nm,
-            phr_txt(
-              "Some GPS coordinates appear invalid (latitudes outside [-90,90] or longitudes outside [-180,180])."
-            )
-          )
-          had_issues <- TRUE
-        }
-      }
-
-      # Weight checks
-
-      if (
-        !is.null(private$..variable_map$weight) &&
-          private$..variable_map$weight %in% names(df)
-      ) {
-        wts <- suppressWarnings(as.numeric(df[[private$..variable_map$weight]]))
-
-        if (any(is.na(wts))) {
-          phrutils::phr_warning(
-            nm,
-            phrutils::phr_txt("Missing values found in weight variable.")
-          )
-          had_issues <- TRUE
-        }
-
-        if (any(wts < 0, na.rm = TRUE)) {
-          phrutils::phr_warning(nm, phrutils::phr_txt("Negative weights detected."))
-          had_issues <- TRUE
-        }
-      }
-
-      # Strata checks
-
-      if (
-        !is.null(private$..variable_map$strata) &&
-          private$..variable_map$strata %in% names(df)
-      ) {
-        strata_vals <- df[[private$..variable_map$strata]]
-
-        if (any(is.na(strata_vals))) {
-          phrutils::phr_warning(nm, phrutils::phr_txt("Missing strata values detected."))
-          had_issues <- TRUE
-        }
-      }
-
-      # Link placeholders
-
-      if (!is.null(self$roster_link)) {
-        phrutils::phr_message(phr_txt(
-          "Validating linked roster data (placeholder)."
-        ))
-      }
-
-      if (!is.null(self$deaths_link)) {
-        phrutils::phr_message(phr_txt(
-          "Validating linked deaths data (placeholder)."
-        ))
-      }
-
-      phrutils::phr_message(phr_txt(glue::glue(
-        "Post-validation for {nm} complete."
-      )))
-
-      # Return TRUE (good) or FALSE (warnings occurred)
-      return(!had_issues)
     },
 
     #' Add Linked Dataset
@@ -603,7 +314,9 @@ HouseholdData <- R6::R6Class(
           if (!inherits(data_object, "Data")) {
             phrutils::phr_error(
               self$dataset_name,
-              phrutils::phr_txt("Linked object must be a Data class or subclass object.")
+              phrutils::phr_txt(
+                "Linked object must be a Data class or subclass object."
+              )
             )
           }
 
@@ -641,60 +354,120 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Get Data with Fallback Logic
+    #' Post-Validation Hook for Household Data
     #'
     #' @description
-    #' Internal helper to retrieve data from a Data object with automatic fallback to available stages
+    #' Hook method called after core validation completes. Performs household-specific validation checks.
     #'
+    #' @param df Data frame that was validated
     #'
-    #' @param data_obj Data class object to retrieve data from
-    #' @param stage Character string specifying preferred stage: "clean", "standardized", or "raw"
-    #'
-    #' @return List with 'data' (data frame) and 'stage' (character) elements, or NULL if no data found
+    #' @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
     #'
     #' @details
-    #' Priority order depends on requested stage:
-    #' * If "clean": clean -> standardized -> raw
-    #' * If "standardized": standardized -> clean -> raw
-    #' * If "raw": raw -> clean -> standardized
-    ..get_data_with_fallback = function(
-      data_obj,
-      stage = c("clean", "standardized", "raw")
-    ) {
-      stage <- match.arg(stage)
+    #' Performs household-specific checks:
+    #' * GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
+    #' * Weight distribution checks (negative or zero weights)
+    #' * Interview date validity checks
+    #' * Consent field validation
+    post_validate = function(df) {
+      nm <- self$dataset_name
 
-      phrutils::phr_try(
-        {
-          # Define priority order based on requested stage
-          if (stage == "clean") {
-            priority_order <- c("clean", "standardized", "raw")
-          } else if (stage == "standardized") {
-            priority_order <- c("standardized", "clean", "raw")
-          } else {
-            priority_order <- c("raw", "clean", "standardized")
-          }
+      # Track whether any issues occurred
+      had_issues <- FALSE
 
-          # Try each stage in priority order
-          for (stage_name in priority_order) {
-            data <- switch(
-              stage_name,
-              "clean" = data_obj$clean_data,
-              "standardized" = data_obj$standardized_data,
-              "raw" = data_obj$raw_data,
-              NULL
+      # GPS validity check
+
+      lat_col <- private$..variable_map$gps_lat
+      lon_col <- private$..variable_map$gps_lon
+
+      if (
+        !is.null(lat_col) &&
+          lat_col %in% names(df) &&
+          !is.null(lon_col) &&
+          lon_col %in% names(df)
+      ) {
+        lat_invalid <- which(
+          !is.na(df[[lat_col]]) &
+            (df[[lat_col]] < -90 | df[[lat_col]] > 90)
+        )
+        lon_invalid <- which(
+          !is.na(df[[lon_col]]) &
+            (df[[lon_col]] < -180 | df[[lon_col]] > 180)
+        )
+
+        if (length(lat_invalid) > 0 || length(lon_invalid) > 0) {
+          phrutils::phr_warning(
+            nm,
+            phr_txt(
+              "Some GPS coordinates appear invalid (latitudes outside [-90,90] or longitudes outside [-180,180])."
             )
+          )
+          had_issues <- TRUE
+        }
+      }
 
-            if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
-              return(list(data = data, stage = stage_name))
-            }
-          }
+      # Weight checks
 
-          # If no data found, return NULL
-          return(NULL)
-        },
-        on_error = "warn",
-        origin = paste0(self$dataset_name, "$..get_data_with_fallback")
-      )
+      if (
+        !is.null(private$..variable_map$weight) &&
+          private$..variable_map$weight %in% names(df)
+      ) {
+        wts <- suppressWarnings(as.numeric(df[[private$..variable_map$weight]]))
+
+        if (any(is.na(wts))) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt("Missing values found in weight variable.")
+          )
+          had_issues <- TRUE
+        }
+
+        if (any(wts < 0, na.rm = TRUE)) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt("Negative weights detected.")
+          )
+          had_issues <- TRUE
+        }
+      }
+
+      # Strata checks
+
+      if (
+        !is.null(private$..variable_map$strata) &&
+          private$..variable_map$strata %in% names(df)
+      ) {
+        strata_vals <- df[[private$..variable_map$strata]]
+
+        if (any(is.na(strata_vals))) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt("Missing strata values detected.")
+          )
+          had_issues <- TRUE
+        }
+      }
+
+      # Link placeholders
+
+      if (!is.null(self$roster_link)) {
+        phrutils::phr_message(phr_txt(
+          "Validating linked roster data (placeholder)."
+        ))
+      }
+
+      if (!is.null(self$deaths_link)) {
+        phrutils::phr_message(phr_txt(
+          "Validating linked deaths data (placeholder)."
+        ))
+      }
+
+      phrutils::phr_message(phr_txt(glue::glue(
+        "Post-validation for {nm} complete."
+      )))
+
+      # Return TRUE (good) or FALSE (warnings occurred)
+      return(!had_issues)
     },
 
     #' Generate Survey Weights from a Sampling Frame
@@ -993,7 +766,7 @@ HouseholdData <- R6::R6Class(
             # merged, otherwise the newly added columns are never picked up by
             # its variable_map or by indicator functions that depend on them
             # (e.g. add_persontime() needs date_survey and date_recall).
-            phrutils::phr_message(phr_txt(
+            phrutils::phr_message(phrutils::phr_txt(
               "Checking standardization status of linked dataset '{link_name}'..."
             ))
             if (!linked_obj$standardized) {
@@ -1002,7 +775,7 @@ HouseholdData <- R6::R6Class(
               ))
               linked_obj$standardize(stage = stage)
             } else if (isTRUE(merged)) {
-              phrutils::phr_message(phr_txt(
+              phrutils::phr_message(phrutils::phr_txt(
                 "Linked dataset '{link_name}' is already standardized but received merged household variables. Re-running standardize()..."
               ))
               linked_obj$standardize(stage = stage)
@@ -1014,11 +787,11 @@ HouseholdData <- R6::R6Class(
           }
 
           # Get household data using fallback logic
-          hh_data_result <- self$..get_data_with_fallback(self, stage)
+          hh_data_result <- self$get_data_with_fallback(self, stage)
           if (is.null(hh_data_result)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phr_txt(
+              phrutils::phr_txt(
                 "No household data available (tried stages: clean, standardized, raw). Cannot aggregate linked data."
               )
             )
@@ -1032,7 +805,7 @@ HouseholdData <- R6::R6Class(
           ))
 
           # Now aggregate data from linked datasets and add to household data
-          hh_data_updated <- self$..aggregate_linked_data(
+          hh_data_updated <- private$..aggregate_linked_data(
             hh_data,
             stage = stage
           )
@@ -1046,7 +819,7 @@ HouseholdData <- R6::R6Class(
             private$..raw_data <- hh_data_updated
           }
 
-          phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phrutils::phr_txt(
             "Pre-standardize processing complete for {self$dataset_name}."
           ))
         },
@@ -1055,10 +828,11 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Generate Cleaning Log for Household and Linked Datasets
+    #' Sub Class Specific Pre Generate Cleaning Log for Linked Datasets
     #'
     #' @description
-    #' Generates a cleaning log for the household dataset by calling the parent
+    #' The household data class specific post generate cleaning log will iterate
+    #' through  dataset by calling the parent
     #' implementation, then propagates the call to all linked data objects so
     #' that each linked dataset produces its own cleaning log entries.
     #'
@@ -1069,20 +843,17 @@ HouseholdData <- R6::R6Class(
     #'
     #' @return NULL (invisibly). Side effect: populates cleaning logs on the
     #'   household object and on every linked data object.
-    generate_cleaning_log = function(
+    pre_generate_cleaning_log = function(
       stage = "standardized",
       overwrite = FALSE
     ) {
-      # Run parent implementation for the household dataset itself
-      super$generate_cleaning_log(stage = stage, overwrite = overwrite)
-
       phrutils::phr_try(
         {
           if (length(self$linked_objects) == 0) {
             return(invisible(NULL))
           }
 
-          phrutils::phr_message(phr_txt(
+          phrutils::phr_message(phrutils::phr_txt(
             "Generating cleaning log for {length(self$linked_objects)} linked dataset(s) in {self$dataset_name}..."
           ))
 
@@ -1093,7 +864,7 @@ HouseholdData <- R6::R6Class(
             if (!inherits(linked_obj, "Data")) {
               phrutils::phr_warning(
                 self$dataset_name,
-                phr_txt(
+                phrutils::phr_txt(
                   "Linked object '{link_name}' is not a Data class object. Skipping."
                 )
               )
@@ -1114,14 +885,14 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Post clean for HouseholdData object
+    #' Pre clean for HouseholdData object
     #'
     #' @description
     #' Runs clean on all linked Data Objects in the Household Data object.
     #'
     #' @return NULL (invisibly). Side effect: sets \code{clean_data}
     #'   on every linked data object.
-    post_clean = function() {
+    pre_clean = function() {
       # Run parent implementation for the household dataset itself
 
       phrutils::phr_try(
@@ -1301,7 +1072,9 @@ HouseholdData <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt("No {stage} data available for DataAnalytics generation.")
+              phrutils::phr_txt(
+                "No {stage} data available for DataAnalytics generation."
+              )
             )
             return(NULL)
           }
@@ -1652,7 +1425,33 @@ HouseholdData <- R6::R6Class(
         on_error = "warn",
         origin = paste0(self$dataset_name, "$generate_data_analytics")
       )
-    },
+    }
+  ),
+
+  private = list(
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_household_template.xlsx",
+    ),
 
     #' Aggregate Linked Dataset Data
     #'
@@ -1691,7 +1490,7 @@ HouseholdData <- R6::R6Class(
           if (!hh_uuid_col %in% names(hh_data)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phr_txt(
+              phrutils::phr_txt(
                 "Household UUID column '{hh_uuid_col}' not found. Cannot aggregate linked data."
               )
             )
@@ -1709,7 +1508,7 @@ HouseholdData <- R6::R6Class(
             }
 
             # Get linked data using fallback logic
-            linked_data_result <- self$..get_data_with_fallback(
+            linked_data_result <- self$get_data_with_fallback(
               linked_obj,
               stage
             )
@@ -1731,7 +1530,9 @@ HouseholdData <- R6::R6Class(
 
             # Determine the household linkage column in the linked dataset
             # Try to find hh_uuid in variable_map first
-            linked_hh_col <- linked_obj$get(field = ".variable_map")$hh_uuid %||%
+            linked_hh_col <- linked_obj$get(
+              field = ".variable_map"
+            )$hh_uuid %||%
               linked_obj$get(field = ".variable_map")$household_uuid %||%
               "hh_uuid"
 
@@ -1754,7 +1555,7 @@ HouseholdData <- R6::R6Class(
             # Store result and check for NULL before assigning to hh_data
             agg_result <- NULL
             if (inherits(linked_obj, "DeathIndividualData")) {
-              agg_result <- self$..aggregate_deaths_data(
+              agg_result <- private$..aggregate_deaths_data(
                 hh_data,
                 linked_data,
                 hh_uuid_col,
@@ -1763,7 +1564,7 @@ HouseholdData <- R6::R6Class(
                 linked_obj
               )
             } else if (inherits(linked_obj, "WaterContainerData")) {
-              agg_result <- self$..aggregate_water_container_data(
+              agg_result <- private$..aggregate_water_container_data(
                 hh_data,
                 linked_data,
                 hh_uuid_col,
@@ -1772,7 +1573,7 @@ HouseholdData <- R6::R6Class(
                 linked_obj
               )
             } else if (inherits(linked_obj, "NutritionIndividualData")) {
-              agg_result <- self$..aggregate_nutrition_data(
+              agg_result <- private$..aggregate_nutrition_data(
                 hh_data,
                 linked_data,
                 hh_uuid_col,
@@ -1781,7 +1582,7 @@ HouseholdData <- R6::R6Class(
                 linked_obj
               )
             } else if (inherits(linked_obj, "HealthIndividualData")) {
-              agg_result <- self$..aggregate_health_data(
+              agg_result <- private$..aggregate_health_data(
                 hh_data,
                 linked_data,
                 hh_uuid_col,
@@ -1790,7 +1591,7 @@ HouseholdData <- R6::R6Class(
                 linked_obj
               )
             } else if (inherits(linked_obj, "WomenIndividualData")) {
-              agg_result <- self$..aggregate_women_data(
+              agg_result <- private$..aggregate_women_data(
                 hh_data,
                 linked_data,
                 hh_uuid_col,
@@ -1802,7 +1603,7 @@ HouseholdData <- R6::R6Class(
               # This is primarily for base IndividualData (roster data)
               # Any remaining IndividualData subclasses without specialized handlers will also use this
               # Note: roster-style aggregation may not be appropriate for all subclass types
-              agg_result <- self$..aggregate_roster_data(
+              agg_result <- private$..aggregate_roster_data(
                 hh_data,
                 linked_data,
                 hh_uuid_col,
@@ -1882,7 +1683,7 @@ HouseholdData <- R6::R6Class(
         {
           # Use variable_map to identify canonical death and person_time columns
           # These are the standardized output column names from death data processing
-          vm <- linked_obj$get(field = ".variable_map")
+          vm <- linked_obj$get(field = "..variable_map")
 
           # Build list of canonical column names
           # These are standardized output columns created by add_standardized_deaths and add_persontime
@@ -2041,8 +1842,12 @@ HouseholdData <- R6::R6Class(
       phrutils::phr_try(
         {
           # Look for total liters column - try variable_map first, then fallback to known names
-          water_col <- linked_obj$get(field = ".variable_map")$container_capacity_liters %||%
-            linked_obj$get(field = ".variable_map")$wash_container_total_liters %||%
+          water_col <- linked_obj$get(
+            field = ".variable_map"
+          )$container_capacity_liters %||%
+            linked_obj$get(
+              field = ".variable_map"
+            )$wash_container_total_liters %||%
             intersect(
               names(water_data),
               c(
@@ -2060,7 +1865,7 @@ HouseholdData <- R6::R6Class(
           ) {
             phrutils::phr_warning(
               self$dataset_name,
-              phr_txt(
+              phrutils::phr_txt(
                 "No water container total liters column found in linked dataset '{link_name}'."
               )
             )
@@ -2184,7 +1989,9 @@ HouseholdData <- R6::R6Class(
           # Compute roster_birth from date columns as a fallback when the
           # indicator pipeline (add_standardized_age) did not produce it.
           if (!"roster_birth" %in% names(roster_data)) {
-            dob_col_for_fallback <- if ("calc_date_birth_final" %in% names(roster_data)) {
+            dob_col_for_fallback <- if (
+              "calc_date_birth_final" %in% names(roster_data)
+            ) {
               "calc_date_birth_final"
             } else if ("dob_exact" %in% names(roster_data)) {
               "dob_exact"
@@ -2194,20 +2001,31 @@ HouseholdData <- R6::R6Class(
               NULL
             }
 
-            recall_col_for_fallback <- if ("recall_date" %in% names(roster_data)) {
+            recall_col_for_fallback <- if (
+              "recall_date" %in% names(roster_data)
+            ) {
               "recall_date"
             } else {
               NULL
             }
 
-            if (!is.null(dob_col_for_fallback) && !is.null(recall_col_for_fallback)) {
+            if (
+              !is.null(dob_col_for_fallback) &&
+                !is.null(recall_col_for_fallback)
+            ) {
               dob_final_vals <- tryCatch(
                 phrutils::phr_convert_date(roster_data[[dob_col_for_fallback]]),
-                error = function(e) as.Date(rep(NA_character_, nrow(roster_data)))
+                error = function(e) {
+                  as.Date(rep(NA_character_, nrow(roster_data)))
+                }
               )
               recall_dt_vals <- tryCatch(
-                phrutils::phr_convert_date(roster_data[[recall_col_for_fallback]]),
-                error = function(e) as.Date(rep(NA_character_, nrow(roster_data)))
+                phrutils::phr_convert_date(roster_data[[
+                  recall_col_for_fallback
+                ]]),
+                error = function(e) {
+                  as.Date(rep(NA_character_, nrow(roster_data)))
+                }
               )
               roster_data[["roster_birth"]] <- as.integer(
                 !is.na(dob_final_vals) &
@@ -2406,7 +2224,7 @@ HouseholdData <- R6::R6Class(
             ) {
               phrutils::phr_warning(
                 self$dataset_name,
-                phr_txt(
+                phrutils::phr_txt(
                   "No canonical nutrition columns or age in months column found in linked dataset '{link_name}'."
                 )
               )
@@ -2446,7 +2264,7 @@ HouseholdData <- R6::R6Class(
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phr_txt(
+              phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
             )
@@ -2617,7 +2435,7 @@ HouseholdData <- R6::R6Class(
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
               self$dataset_name,
-              phr_txt(
+              phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
             )
@@ -2708,7 +2526,7 @@ HouseholdData <- R6::R6Class(
           }
 
           # Get linked data using fallback logic
-          linked_data_result <- self$..get_data_with_fallback(
+          linked_data_result <- self$get_data_with_fallback(
             linked_obj,
             linked_stage
           )
@@ -2729,7 +2547,7 @@ HouseholdData <- R6::R6Class(
           ))
 
           # Get household data using fallback logic
-          hh_data_result <- self$..get_data_with_fallback(self, hh_stage)
+          hh_data_result <- self$get_data_with_fallback(self, hh_stage)
           if (is.null(hh_data_result)) {
             phrutils::phr_warning(
               self$dataset_name,

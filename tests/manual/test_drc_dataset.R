@@ -148,8 +148,8 @@ head(mortality_analytics$analysis_results$household$survey_design)
 head(mortality_analytics$analysis_results$roster$base)
 head(mortality_analytics$analysis_results$roster$survey_design)
 
-head(mortality_analytics$analysis_results$deaths$base)
-head(mortality_analytics$analysis_results$deaths$survey_design)
+View(mortality_analytics$analysis_results$deaths$base)
+View(mortality_analytics$analysis_results$deaths$survey_design)
 
 # testing plausibility
 mortality_analytics$quality_diagnose()
@@ -173,62 +173,23 @@ head(mortality_analytics$outputs_schema_deaths)
 
 mortality_analytics$run_outputs()
 
-mortality_analytics$tables$roster$unweighted$basic_demo_table
-mortality_analytics$tables$roster$unweighted$basic_demo_table_strata
-mortality_analytics$tables$roster$unweighted$basic_demo_table_weighted
-mortality_analytics$tables$roster$unweighted$sex_age_cat_demo_table
-mortality_analytics$tables$roster$unweighted$sex_age_months_cat_demo_table
+mortality_analytics$tables$roster$unweighted$basic_demo_table7
+mortality_analytics$tables$roster$unweighted$basic_demo_table_strata8
+
+mortality_analytics$tables$roster$unweighted$basic_demo_table_weighted9
+mortality_analytics$tables$roster$unweighted$basic_demo_table_strata_weighted10
+mortality_analytics$tables$roster$unweighted$sex_age_cat_demo_table11
+mortality_analytics$tables$roster$unweighted$sex_age_months_cat_demo_table12
 
 mortality_analytics$visualizations$roster$unweighted$age_pyramid_overall_unweighted
 mortality_analytics$visualizations$roster$unweighted$age_months_distribution_unweighted
 mortality_analytics$visualizations$roster$unweighted$age_months_cat_donut_unweighted
 
-mortality_analytics$tables$deaths$weighted
+mortality_analytics$tables$deaths$unweighted$basic_death_demo_table_strata1
+mortality_analytics$tables$deaths$weighted$basic_death_demo_table_strata3
 
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted1
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted2
 
-mortality_analytics$visualizations$roster$weighted$
-
-mortality_analytics$visualizations$roster$weighted
-
-mortality_analytics$visualizations$roster$unweighted$age_pyramid_overall_unweighted
-
-mortality_analytics$variable_map$stratum
-table(mortality_analytics$data$admin3)
-
-
-View(mortality_analytics$quality_issues_log)
-
-
-mortality_analytics$outputs_diagnose()
-View(mortality_analytics$outputs_issues_log)
-
-
-mortality_analytics$tables$deaths$weighted
-
-mortality_analytics$tables$deaths
-
-
-mortality_analytics$visualizations$roster$unweighted$age_months_distribution_unweighted
-mortality_analytics$visualizations$roster$unweighted$age_months_cat_donut_unweighted
-
-mortality_analytics$visualizations$deaths
-
-
-mortality_analytics$analysis_plan_issue_log
-
-mortality_analytics$tables$plausibility$penalty_summary
-mortality_analytics$visualizations$deaths$weighted
-
-mortality_analytics$tables$roster$mortality_analytics$visualizations$roster$age_pyramid_overall_unweighted
-mortality_analytics$visualizations$roster$age_pyramid_overall_weighted
-mortality_analytics$visualizations$roster$age_months_distribution_unweighted
-
-mortality_analytics$tables$roster
-mortality_analytics$tables$roster$basic_demo_table_weighted
-mortality_analytics$tables$roster$basic_demo_table_strata_weighted
-
-
-(a <- sum(mortality_analytics$data$linked_person_time))
-(b <- sum(mortality_analytics$data$linked_person_time_female))
-(c <- sum(mortality_analytics$data$linked_person_time_male))
-(d <- sum(mortality_analytics$data$linked_person_time_under5))
+mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted3
+mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted4

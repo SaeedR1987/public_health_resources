@@ -145,7 +145,9 @@ Data <- R6::R6Class(
           if (!uuid %in% names(data)) {
             phrutils::phr_error(
               dataset_name,
-              phrutils::phr_txt("UUID column '{uuid}' not found in provided data.")
+              phrutils::phr_txt(
+                "UUID column '{uuid}' not found in provided data."
+              )
             )
           }
 
@@ -156,29 +158,311 @@ Data <- R6::R6Class(
           self$set(field = "..uuid", value = uuid)
           self$set(field = "..required_columns", value = uuid)
           self$set(field = "..other_columns", value = list())
-          self$set(field = "..variable_map",
-                   value = if (!is.null(private$..variable_map)) {
-                     private$..variable_map
-                   } else {
-                     list(uuid = uuid)
-                   })
-          self$set(field = "..value_map",
-                   value = if (!is.null(private$..value_map)) private$..value_map else list())
-          self$set(field = "..cleaning_log",
-                   value = CleaningLog$new(
-                     log_name = paste0(dataset_name, "_CleaningLog")
-                   ))
-          self$set(field = "..deletion_log",
-                   value = DeletionLog$new(
-                     log_name = paste0(dataset_name, "_DeletionLog")
-                   ))
+          self$set(
+            field = "..variable_map",
+            value = if (!is.null(private$..variable_map)) {
+              private$..variable_map
+            } else {
+              list(uuid = uuid)
+            }
+          )
+          self$set(
+            field = "..value_map",
+            value = if (!is.null(private$..value_map)) {
+              private$..value_map
+            } else {
+              list()
+            }
+          )
+          self$set(
+            field = "..cleaning_log",
+            value = CleaningLog$new(
+              log_name = paste0(dataset_name, "_CleaningLog")
+            )
+          )
+          self$set(
+            field = "..deletion_log",
+            value = DeletionLog$new(
+              log_name = paste0(dataset_name, "_DeletionLog")
+            )
+          )
 
+          # Loading, validating, and setting default variable schema
+          # The default filename is saved under private list, and located in resources folder.
+          phrutils::phr_try(
+            {
+              df_variable_schema <- tryCatch(
+                readxl::read_xlsx(
+                  do.call(
+                    system.file,
+                    c(
+                      as.list(private$..default_variable_schema_filename),
+                      package = "phr"
+                    )
+                  )
+                ),
+
+                error = function(e) {
+                  phrutils::phr_warning(
+                    origin = "HouseholdData$default_variable_schema",
+                    message = phrutils::phr_txt(
+                      "Failed to read variable_schema_data_household_template.xlsx: {e$message}"
+                    )
+                  )
+                  return(NULL)
+                }
+              )
+
+              # Validate and only set if valid
+              if (
+                isTRUE(
+                  private$..validate_table_schema(
+                    df_variable_schema,
+                    required_cols = c(
+                      "rule_type",
+                      "variable",
+                      "value",
+                      "required",
+                      "type",
+                      "allowed",
+                      "col_names",
+                      "unique",
+                      "label",
+                      "comment",
+                      "question_type",
+                      "is_other",
+                      "other_column_link"
+                    ),
+                    origin = "HouseholdData$validate_variable_schema"
+                  )
+                )
+              ) {
+                self$set(
+                  field = "..variable_schema",
+                  value = df_variable_schema
+                )
+              } else {
+                self$set(
+                  field = "..variable_schema",
+                  value = tibble::tibble(
+                    rule_type = character(0),
+                    variable = character(0),
+                    value = character(0),
+                    required = character(0),
+                    type = character(0),
+                    allowed = character(0),
+                    col_names = character(0),
+                    unique = character(0),
+                    label = character(0),
+                    comment = character(0),
+                    question_type = character(0),
+                    is_other = character(0),
+                    other_column_link = character(0)
+                  )
+                )
+
+                if (is.null(df_variable_schema)) {
+                  message <- "The loaded variable schema was or coerced to NULL. A blank valid dataframe was stored instead."
+                } else {
+                  message <- "The loaded variable schema did not have the correct required columns. A blank valid dataframe was stored instead."
+                }
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(message),
+                  origin = paste0(dataset_name, "$loading_variable_schema"),
+                  hint = "Check required columns or format of the variable schema input file."
+                )
+              }
+            },
+            on_error = "warn",
+            origin = paste0(dataset_name, "$initialize_variable_schema")
+          )
+
+          # Loading, validating, and setting default dependency schema
+          # The default filename is saved under private list, and located in resources folder.
+          phrutils::phr_try(
+            {
+              df_dependency_schema <- tryCatch(
+                readxl::read_xlsx(
+                  do.call(
+                    system.file,
+                    c(
+                      as.list(private$..default_dependency_schema_filename),
+                      package = "phr"
+                    )
+                  )
+                ),
+
+                error = function(e) {
+                  phrutils::phr_warning(
+                    origin = "HouseholdData$default_dependency_schema",
+                    message = phrutils::phr_txt(
+                      "Failed to read dependency_schema_data_household_template.xlsx: {e$message}"
+                    )
+                  )
+                  return(NULL)
+                }
+              )
+
+              # Validate and only set if valid
+              if (
+                isTRUE(
+                  private$..validate_table_schema(
+                    df_dependency_schema,
+                    required_cols = c(
+                      "rule_type",
+                      "dep_name",
+                      "variables",
+                      "condition_if",
+                      "then",
+                      "action",
+                      "label",
+                      "comment"
+                    ),
+                    origin = "HouseholdData$validate_dependency_schema"
+                  )
+                )
+              ) {
+                self$set(
+                  field = "..dependency_schema",
+                  value = df_dependency_schema
+                )
+              } else {
+                self$set(
+                  field = "..dependency_schema",
+                  value = tibble::tibble(
+                    indicator_name = character(0),
+                    function_name = character(0),
+                    variables = character(0),
+                    arguments = character(0),
+                    label = character(0),
+                    comment = character(0)
+                  )
+                )
+
+                if (is.null(df_dependency_schema)) {
+                  message <- "The loaded dependency schema was or coerced to NULL. A blank valid dataframe was stored instead."
+                } else {
+                  message <- "The loaded dependency schema did not have the correct required columns. A blank valid dataframe was stored instead."
+                }
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(message),
+                  origin = paste0(dataset_name, "$loading_dependency_schema"),
+                  hint = "Check required columns or format of the dependency schema input file."
+                )
+              }
+            },
+            on_error = "warn",
+            origin = paste0(dataset_name, "$initialize_dependency_schema")
+          )
+
+          # Loading, validating, and setting default indicator schema
+          # The default filename is saved under private list, and located in resources folder.
+          # A fallback empty tibble will be passed if
+          phrutils::phr_try(
+            {
+              df_indicator_schema <- tryCatch(
+                readxl::read_xlsx(
+                  do.call(
+                    system.file,
+                    c(
+                      as.list(private$..default_indicator_schema_filename),
+                      package = "phr"
+                    )
+                  )
+                ),
+
+                error = function(e) {
+                  phrutils::phr_warning(
+                    origin = "HouseholdData$default_indicator_schema",
+                    message = phrutils::phr_txt(
+                      "Failed to read indicator_schema_data_household_template.xlsx: {e$message}"
+                    )
+                  )
+                  return(NULL)
+                }
+              )
+
+              # Validate and only set if valid, otherwise blank fallback
+              if (
+                isTRUE(
+                  private$..validate_table_schema(
+                    df_indicator_schema,
+                    required_cols = c(
+                      "indicator_name",
+                      "function_name",
+                      "variables",
+                      "arguments",
+                      "label",
+                      "comment"
+                    ),
+                    origin = "HouseholdData$validate_indicator_schema"
+                  )
+                )
+              ) {
+                self$set(
+                  field = "..indicator_schema",
+                  value = df_indicator_schema
+                )
+              } else {
+                self$set(
+                  field = "..indicator_schema",
+                  value = tibble::tibble(
+                    indicator_name = character(0),
+                    function_name = character(0),
+                    variables = character(0),
+                    arguments = character(0),
+                    label = character(0),
+                    comment = character(0)
+                  )
+                )
+
+                if (is.null(df_indicator_schema)) {
+                  message <- "The loaded indicator schema was or coerced to NULL. A blank valid dataframe was stored instead."
+                } else {
+                  message <- "The loaded indicator schema did not have the correct required columns. A blank valid dataframe was stored instead."
+                }
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(message),
+                  origin = paste0(dataset_name, "$loading_indicator_schema"),
+                  hint = "Check required columns or format of the indicator schema input file."
+                )
+              }
+            },
+            on_error = "warn",
+            origin = paste0(dataset_name, "$initialize_indicator_schema")
+          )
+
+          private$..analytics_registry <- list(
+
+            general = function(data,
+                              stage,
+                              analysis_config,
+                              common_args,
+                              ...) {
+
+              GeneralDataAnalytics$new(
+                data = data,
+                dap = analysis_config,
+                parent_data_object = self,
+                dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
+                data_stage_name = stage,
+                data_hash = self$get(field = "..metadata", role = "hash_id"),
+                variable_map = private$..variable_map,
+                value_map = private$..value_map,
+                variable_label = private$..variable_label,
+                value_label = private$..value_label
+              )
+
+            }
+
+          )
+
+          # Populate variable and value maps on initalization.
           private$..map_schema_vars(stage = "raw")
 
           phrutils::phr_message(phrutils::phr_txt(
             "{dataset_name} initialized with {nrow(data)} records."
           ))
-
         },
         on_error = "abort",
         origin = paste0(dataset_name, "$initialize")
@@ -224,6 +508,173 @@ Data <- R6::R6Class(
         on_error = "warn",
         origin = paste0(self$dataset_name, "$summary")
       )
+    },
+
+    # Data access
+
+    #' Get Data at Specified Stage
+    #'
+    #' @description
+    #' Retrieves the data frame at the specified processing stage
+    #'
+    #' @param stage Character string: "raw", "standardized", or "clean"
+    #'
+    #' @return Data frame at the specified stage, or NULL if stage not yet available
+    get_data = function(stage = c("raw", "standardized", "clean")) {
+      stage <- match.arg(stage)
+      phrutils::phr_try(
+        {
+          if (stage == "raw") {
+            return(private$..raw_data)
+          }
+          if (stage == "standardized") {
+            return(private$..standardized_data)
+          }
+          if (stage == "clean") return(private$..clean_data)
+        },
+        on_error = "abort",
+        origin = paste0(self$dataset_name, "$get_data")
+      )
+    },
+
+    #' Get Data with Fallback Logic
+    #'
+    #' @description
+    #' Internal helper to retrieve data from a Data object with automatic fallback to available stages
+    #'
+    #'
+    #' @param data_obj Data class object to retrieve data from
+    #' @param stage Character string specifying preferred stage: "clean", "standardized", or "raw"
+    #'
+    #' @return List with 'data' (data frame) and 'stage' (character) elements, or NULL if no data found
+    #'
+    #' @details
+    #' Priority order depends on requested stage:
+    #' * If "clean": clean -> standardized -> raw
+    #' * If "standardized": standardized -> clean -> raw
+    #' * If "raw": raw -> clean -> standardized
+    get_data_with_fallback = function(
+      data_obj,
+      stage = c("clean", "standardized", "raw")
+    ) {
+      stage <- match.arg(stage)
+
+      phrutils::phr_try(
+        {
+          # Define priority order based on requested stage
+          if (stage == "clean") {
+            priority_order <- c("clean", "standardized", "raw")
+          } else if (stage == "standardized") {
+            priority_order <- c("standardized", "clean", "raw")
+          } else {
+            priority_order <- c("raw", "clean", "standardized")
+          }
+
+          # Try each stage in priority order
+          for (stage_name in priority_order) {
+            data <- switch(
+              stage_name,
+              "clean" = data_obj$clean_data,
+              "standardized" = data_obj$standardized_data,
+              "raw" = data_obj$raw_data,
+              NULL
+            )
+
+            if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
+              return(list(data = data, stage = stage_name))
+            }
+          }
+
+          # If no data found, return NULL
+          return(NULL)
+        },
+        on_error = "warn",
+        origin = paste0(self$dataset_name, "$..get_data_with_fallback")
+      )
+    },
+
+    #' Resolve Column from Role
+    #'
+    #' @description
+    #' Resolves a semantic role to its column name and optionally retrieves mapped values and data diagnostics
+    #'
+    #' @param role Character string with semantic role or direct column name
+    #' @param stage Character string specifying data stage: "raw", "standardized", or "clean" (default: "raw")
+    #' @param values Logical; if TRUE, returns list with column and mapped values
+    #' @param full Logical; if TRUE, returns full diagnostic information including values in data
+    #'
+    #' @return Character string (column name), list (if values=TRUE or full=TRUE), or NULL if not found
+    #'
+    #' @details
+    #' Resolution priority: variable_map role lookup, then direct column name fallback.
+    #' With full=TRUE, returns: role, column, values, exists_in_data, values_in_data.
+    resolve_column = function(
+      role,
+      stage = "raw",
+      values = FALSE,
+      full = FALSE
+    ) {
+      if (missing(role) || is.null(role) || role == "") {
+        return(NULL)
+      }
+
+      # Determine column name from variable_map
+      if (
+        !is.null(private$..variable_map) &&
+          role %in% names(private$..variable_map)
+      ) {
+        col <- private$..variable_map[[role]]
+      } else {
+        col <- role # fallback assume direct column name
+      }
+
+      df <- self$get_data(stage)
+
+      # Warn if column missing
+      exists_in_data <- !is.null(df) && col %in% names(df)
+      if (!exists_in_data) {
+        phrutils::phr_warning(
+          self$dataset_name,
+          phrutils::phr_txt(
+            "Column '{col}' not found in data (role='{role}')."
+          )
+        )
+      }
+
+      # ---- VALUE MAP AWARENESS
+      mapped_vals <- NULL
+      if (
+        !is.null(private$..value_map) && role %in% names(private$..value_map)
+      ) {
+        mapped_vals <- private$..value_map[[role]]
+      }
+
+      # Return column name only (current behaviour)
+      if (!values && !full) {
+        return(if (exists_in_data) col else NULL)
+      }
+
+      # Return column + mapped values
+      if (values && !full) {
+        return(list(
+          column = if (exists_in_data) col else NULL,
+          values = mapped_vals
+        ))
+      }
+
+      # Full diagnostic mode
+      vals_in_data <- NULL
+      if (exists_in_data) {
+        vals_in_data <- unique(df[[col]])
+      }
+
+      return(list(
+        role = role,
+        column = if (exists_in_data) col else NULL,
+        values = mapped_vals,
+        exists_in_data = exists_in_data,
+        values_in_data = vals_in_data
+      ))
     },
 
     # Validation pipeline
@@ -293,7 +744,9 @@ Data <- R6::R6Class(
           if (!private$..uuid %in% names(df)) {
             phrutils::phr_error(
               self$dataset_name,
-              phrutils::phr_txt("UUID column '{private$..uuid}' not found in dataset.")
+              phrutils::phr_txt(
+                "UUID column '{private$..uuid}' not found in dataset."
+              )
             )
           }
 
@@ -430,7 +883,6 @@ Data <- R6::R6Class(
           phrutils::phr_message(phrutils::phr_txt(
             "{self$dataset_name} validation complete."
           ))
-
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$validate")
@@ -503,7 +955,9 @@ Data <- R6::R6Class(
               }
             },
             step = "Check raw data",
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            hint = phrutils::phr_txt(
+              "Ensure raw data exists before standardization"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -524,7 +978,9 @@ Data <- R6::R6Class(
               }
             },
             step = "Validation",
-            hint = phrutils::phr_txt("Check data structure and required columns")
+            hint = phrutils::phr_txt(
+              "Check data structure and required columns"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -536,7 +992,9 @@ Data <- R6::R6Class(
               self$pre_standardize(stage = stage)
             },
             step = "Pre-standardize hook",
-            hint = phrutils::phr_txt("Subclass-specific setup before standardization")
+            hint = phrutils::phr_txt(
+              "Subclass-specific setup before standardization"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -550,13 +1008,17 @@ Data <- R6::R6Class(
               private$..map_schema_labels()
             },
             step = "Map schema variables",
-            hint = phrutils::phr_txt("Auto-map schema variables to dataset columns")
+            hint = phrutils::phr_txt(
+              "Auto-map schema variables to dataset columns"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
           }
 
-          phrutils::phr_message(phrutils::phr_txt("Standardizing {self$dataset_name}..."))
+          phrutils::phr_message(phrutils::phr_txt(
+            "Standardizing {self$dataset_name}..."
+          ))
 
           data_copy <- private$..raw_data
           sch <- private$..as_variable_schema_list() %||% list()
@@ -712,21 +1174,23 @@ Data <- R6::R6Class(
 
                     # Add to other_columns if not numeric and has at least one unique value
                     if (!is_numeric_col && uniq_n > 0) {
-
-                      self$set(field = "..other_columns",
-                               role = nm,
-                               value = list(
-                                 other_column = nm,
-                                 other_linked_columns = inferred_links
-                               ))
-
+                      self$set(
+                        field = "..other_columns",
+                        role = nm,
+                        value = list(
+                          other_column = nm,
+                          other_linked_columns = inferred_links
+                        )
+                      )
                     }
                   }
                 }
               }
             },
             step = "Type coercion and other column detection",
-            hint = phrutils::phr_txt("Check schema types and column conversion logic")
+            hint = phrutils::phr_txt(
+              "Check schema types and column conversion logic"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -768,24 +1232,26 @@ Data <- R6::R6Class(
                         )
                       }
 
-                      self$set(field = "..other_columns",
-                               role = text_col,
-                               value = list(
-                                 other_column = text_col,
-                                 other_linked_columns = linked_cols
-                               ))
-
+                      self$set(
+                        field = "..other_columns",
+                        role = text_col,
+                        value = list(
+                          other_column = text_col,
+                          other_linked_columns = linked_cols
+                        )
+                      )
                     } else {
                       # If no text column, use dummy column as main with original as linked
                       dummy_col <- var_info$dummy_other_column
                       if (!is.null(dummy_col)) {
-
-                        self$set(field = "..other_columns",
-                                 role = dummy_col,
-                                 value = list(
-                                   other_column = dummy_col,
-                                   other_linked_columns = c(var_info$original_column)
-                                 ))
+                        self$set(
+                          field = "..other_columns",
+                          role = dummy_col,
+                          value = list(
+                            other_column = dummy_col,
+                            other_linked_columns = c(var_info$original_column)
+                          )
+                        )
                       }
                     }
                   }
@@ -805,7 +1271,9 @@ Data <- R6::R6Class(
               }
             },
             step = "Process select_multiple columns",
-            hint = phrutils::phr_txt("Check select_multiple schema and expansion logic")
+            hint = phrutils::phr_txt(
+              "Check select_multiple schema and expansion logic"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -851,13 +1319,14 @@ Data <- R6::R6Class(
 
                     # Add as list entry
 
-                    self$set(field = "..other_columns",
-                             role = col,
-                             value = list(
-                               other_column = col,
-                               other_linked_columns = linked_cols
-                             ))
-
+                    self$set(
+                      field = "..other_columns",
+                      role = col,
+                      value = list(
+                        other_column = col,
+                        other_linked_columns = linked_cols
+                      )
+                    )
                   }
                   phrutils::phr_message(
                     phrutils::phr_txt(
@@ -1204,7 +1673,10 @@ Data <- R6::R6Class(
                         # Temporarily assign working_data to standardized_data so map_schema_vars can access it
                         temp_standardized <- private$..standardized_data
 
-                        self$set(field = "..standardized_data", value = working_data)
+                        self$set(
+                          field = "..standardized_data",
+                          value = working_data
+                        )
 
                         phrutils::phr_try(
                           {
@@ -1220,8 +1692,10 @@ Data <- R6::R6Class(
                         )
 
                         # Restore original standardized_data (will be set properly at the end)
-                        self$set(field = "..standardized_data", value = temp_standardized)
-
+                        self$set(
+                          field = "..standardized_data",
+                          value = temp_standardized
+                        )
                       } else {
                         phrutils::phr_warning(
                           self$dataset_name,
@@ -1245,7 +1719,9 @@ Data <- R6::R6Class(
               working_data
             },
             step = "Process indicator schema",
-            hint = phrutils::phr_txt("Check indicator functions and required variables")
+            hint = phrutils::phr_txt(
+              "Check indicator functions and required variables"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1277,7 +1753,11 @@ Data <- R6::R6Class(
                   as.integer(numeric_map[as.character(cluster_vals)])
                 )
 
-                self$set(field = "..variable_map", role = "cluster_id_numeric", value = "cluster_id_numeric")
+                self$set(
+                  field = "..variable_map",
+                  role = "cluster_id_numeric",
+                  value = "cluster_id_numeric"
+                )
 
                 phrutils::phr_message(
                   phrutils::phr_txt(
@@ -1315,11 +1795,13 @@ Data <- R6::R6Class(
                 phrutils::phr_message(phrutils::phr_txt(
                   "Running quality checks on {self$dataset_name}..."
                 ))
-                self$run_quality_checks(stage = "standardized")
+                private$..run_quality_checks(stage = "standardized")
               }
             },
             step = "Run quality checks",
-            hint = phrutils::phr_txt("Check dependency schema and type validations")
+            hint = phrutils::phr_txt(
+              "Check dependency schema and type validations"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1331,7 +1813,9 @@ Data <- R6::R6Class(
               self$post_standardize()
             },
             step = "Post-standardize hook",
-            hint = phrutils::phr_txt("Subclass-specific processing after standardization")
+            hint = phrutils::phr_txt(
+              "Subclass-specific processing after standardization"
+            )
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1350,7 +1834,6 @@ Data <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
-
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$standardize")
@@ -1375,1081 +1858,7 @@ Data <- R6::R6Class(
     #' @return NULL (default implementation does nothing)
     post_standardize = function() {}, # subclass hook
 
-    # Cleaning
-
-    #' Clean Data
-    #'
-    #' @description
-    #' Applies cleaning operations from cleaning_log and deletion_log to standardized data
-    #'
-    #' @return Invisible self for method chaining
-    #'
-    #' @details
-    #' Cleaning process:
-    #' 1. Validates data if not already validated
-    #' 2. Ensures data is standardized
-    #' 3. Copies standardized_data to clean_data
-    #' 4. Applies cleaning log edits (if present)
-    #' 5. Applies deletion log removals (if present)
-    #' 6. Updates metadata and sets cleaned flag
-    clean = function() {
-      phrutils::phr_try(
-        {
-          # Run validation to ensure data is validated before cleaning
-          self$validate()
-
-          if (!self$validated) {
-            phrutils::phr_warning(
-              message = phrutils::phr_txt(
-                "Data validation failed. Proceeding with cleaning with caution."
-              ),
-              origin = paste0(self$dataset_name, "$clean")
-            )
-          }
-
-          if (!self$standardized) {
-            phrutils::phr_warning(
-              message = phrutils::phr_txt(
-                "Data should be standardized before cleaning. Using fallback."
-              ),
-              origin = paste0(self$dataset_name, "$clean")
-            )
-          }
-
-          phrutils::phr_message(phrutils::phr_txt(
-            "Starting cleaning for {self$dataset_name}..."
-          ))
-
-          # BASELINE CLEAN DATA (robust fallback)
-
-          if (
-            !is.null(private$..standardized_data) &&
-              is.data.frame(private$..standardized_data)
-          ) {
-
-            self$set(field = "..clean_data", value = self$get(field = "..standardized_data"))
-
-          } else {
-            # Only warn if standardized_data should have existed
-            if (!self$standardized) {
-              phrutils::phr_warning(
-                message = phrutils::phr_txt(
-                  "Data should be standardized before cleaning. Using fallback."
-                ),
-                origin = paste0(self$dataset_name, "$clean")
-              )
-            }
-
-            if (
-              !is.null(private$..standardized_data) &&
-                !is.data.frame(private$..standardized_data)
-            ) {
-              phrutils::phr_warning(
-                message = phrutils::phr_txt(
-                  "Standardized data is invalid or corrupted; falling back to raw data."
-                ),
-                origin = paste0(self$dataset_name, "$clean")
-              )
-            }
-
-            self$set(field = "..clean_data", value = self$get(field = "..raw_data"))
-
-          }
-
-          # Run any specified sub class pre cleaning
-          self$pre_clean()
-
-          # VALIDATE & APPLY CLEANING LOG
-
-          if (
-            !is.null(private$..cleaning_log) &&
-              inherits(private$..cleaning_log, "CleaningLog")
-          ) {
-            # validation (internal + schema)
-            private$..cleaning_log$validate()
-
-            # post-validate: check cleaning log against dataset
-            private$..cleaning_log$post_validate(self, stage = "clean")
-
-            print("I am here 1")
-
-            # apply changes (authoritative mode option A)
-            if (nrow(private$..cleaning_log$log_df) > 0) {
-
-              print("I am here 2")
-
-              self$set(field = "..clean_data",
-                       value = private$..apply_cleaning_changes(
-                         df = private$..clean_data,
-                         log_df = private$..cleaning_log$log_df,
-                         uuid_col = private$..uuid
-                       ))
-
-              print("I am here 3")
-
-            }
-          }
-
-          # VALIDATE & APPLY DELETION LOG
-
-          if (
-            !is.null(private$..deletion_log) &&
-              inherits(private$..deletion_log, "DeletionLog")
-          ) {
-
-            print("I am here 4")
-
-            private$..deletion_log$validate()
-            private$..deletion_log$post_validate(self, stage = "clean")
-
-            print("I am here 5")
-
-            # apply deletions
-            if (nrow(private$..deletion_log$log_df) > 0) {
-              delete_ids <- as.character(private$..deletion_log$log_df$uuid)
-
-              self$set(field = "..clean_data", value = private$..clean_data[
-                !as.character(private$..clean_data[[private$..uuid]]) %in% delete_ids,
-              ])
-
-            }
-          }
-
-          # FINALIZE
-
-          self$post_clean()
-
-          self$cleaned <- TRUE
-
-          private$..touch(log = TRUE, name = self$dataset_name, message = phrutils::phr_txt("Data cleaning Complete."))
-
-          phrutils::phr_message(phrutils::phr_txt(
-            "{self$dataset_name} cleaning complete."
-          ))
-
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$clean")
-      )
-    },
-
-    #' Pre-clean Hook
-    #'
-    #' @description
-    #' Hook method called before clean begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
-    pre_clean = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
-
-    #' Post-clean Hook
-    #'
-    #' @description
-    #' Hook method called after clean completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
-    post_clean = function() {}, # subclass hook
-
-    # Data access
-
-    #' Get Data at Specified Stage
-    #'
-    #' @description
-    #' Retrieves the data frame at the specified processing stage
-    #'
-    #' @param stage Character string: "raw", "standardized", or "clean"
-    #'
-    #' @return Data frame at the specified stage, or NULL if stage not yet available
-    get_data = function(stage = c("raw", "standardized", "clean")) {
-      stage <- match.arg(stage)
-      phrutils::phr_try(
-        {
-          if (stage == "raw") {
-            return(private$..raw_data)
-          }
-          if (stage == "standardized") {
-            return(private$..standardized_data)
-          }
-          if (stage == "clean") return(private$..clean_data)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$get_data")
-      )
-    },
-
-    #' Resolve Column from Role
-    #'
-    #' @description
-    #' Resolves a semantic role to its column name and optionally retrieves mapped values and data diagnostics
-    #'
-    #' @param role Character string with semantic role or direct column name
-    #' @param stage Character string specifying data stage: "raw", "standardized", or "clean" (default: "raw")
-    #' @param values Logical; if TRUE, returns list with column and mapped values
-    #' @param full Logical; if TRUE, returns full diagnostic information including values in data
-    #'
-    #' @return Character string (column name), list (if values=TRUE or full=TRUE), or NULL if not found
-    #'
-    #' @details
-    #' Resolution priority: variable_map role lookup, then direct column name fallback.
-    #' With full=TRUE, returns: role, column, values, exists_in_data, values_in_data.
-    resolve_column = function(
-      role,
-      stage = "raw",
-      values = FALSE,
-      full = FALSE
-    ) {
-      if (missing(role) || is.null(role) || role == "") {
-        return(NULL)
-      }
-
-      # Determine column name from variable_map
-      if (!is.null(private$..variable_map) && role %in% names(private$..variable_map)) {
-        col <- private$..variable_map[[role]]
-      } else {
-        col <- role # fallback assume direct column name
-      }
-
-      df <- self$get_data(stage)
-
-      # Warn if column missing
-      exists_in_data <- !is.null(df) && col %in% names(df)
-      if (!exists_in_data) {
-        phrutils::phr_warning(
-          self$dataset_name,
-          phrutils::phr_txt("Column '{col}' not found in data (role='{role}').")
-        )
-      }
-
-      # ---- VALUE MAP AWARENESS
-      mapped_vals <- NULL
-      if (!is.null(private$..value_map) && role %in% names(private$..value_map)) {
-        mapped_vals <- private$..value_map[[role]]
-      }
-
-      # Return column name only (current behaviour)
-      if (!values && !full) {
-        return(if (exists_in_data) col else NULL)
-      }
-
-      # Return column + mapped values
-      if (values && !full) {
-        return(list(
-          column = if (exists_in_data) col else NULL,
-          values = mapped_vals
-        ))
-      }
-
-      # Full diagnostic mode
-      vals_in_data <- NULL
-      if (exists_in_data) {
-        vals_in_data <- unique(df[[col]])
-      }
-
-      return(list(
-        role = role,
-        column = if (exists_in_data) col else NULL,
-        values = mapped_vals,
-        exists_in_data = exists_in_data,
-        values_in_data = vals_in_data
-      ))
-    },
-
-    # Schema diagnostics
-
-    #' Diagnose Data Against Schema
-    #'
-    #' @description
-    #' Compares data columns against variable schema to identify type mismatches and invalid values
-    #'
-    #' @param stage Character string: "raw", "standardized", or "clean"
-    #'
-    #' @return Data frame with diagnostic results (variable, expected_type, actual_type, type_ok, values_ok, issues)
-    #'
-    #' @details
-    #' For each variable in the schema:
-    #' * Checks if type matches expected type
-    #' * Validates values against allowed_values (if defined)
-    #' * Reports all issues found
-    #' Returns NULL if no schema is defined or no data available.
-    data_diagnose = function(stage = c("raw", "standardized", "clean")) {
-      stage <- match.arg(stage)
-
-      phrutils::phr_try(
-        {
-          # 1. Get data for selected stage
-          df <- self$get_data(stage)
-          if (is.null(df)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No data available at selected stage '{stage}'.")
-            )
-            return(NULL)
-          }
-
-          # 2. Check if schema exists
-          sch <- private$..variable_schema
-          if (is.null(sch) || (is.list(sch) && length(sch) == 0) ||
-                (is.data.frame(sch) && nrow(sch) == 0)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No variable schema defined.")
-            )
-            return(NULL)
-          }
-
-          # 3. Build diagnostic table
-          # The variable schema is a flat data frame where each row describes
-          # either a canonical variable's rule (rule_type == "variable") or a
-          # dependency check (ignored here; see run_quality_checks()). A
-          # variable with a value_map has one row per canonical value (the
-          # `value` column holds the canonical value name and `allowed` holds
-          # the comma-separated dataset values for that value), plus the
-          # variable-level columns (`type`, `required`, `comment`, etc.)
-          # repeated on each row.
-
-          diagnostic_rows <- list()
-
-          # Helper: return the first non-missing/non-empty value in a vector
-          first_non_empty <- function(x) {
-            x <- x[!is.na(x) & x != ""]
-            if (length(x) == 0) NA_character_ else as.character(x[[1]])
-          }
-
-          sch_vars <- sch
-          if ("rule_type" %in% names(sch_vars)) {
-            sch_vars <- sch_vars[sch_vars$rule_type == "variable", , drop = FALSE]
-          }
-
-          if (nrow(sch_vars) == 0 || !"variable" %in% names(sch_vars)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt("No variable schema defined.")
-            )
-            return(NULL)
-          }
-
-          # Get current mappings
-          vm <- private$..variable_map %||% list()
-          vmap <- private$..value_map %||% list()
-
-          # Iterate over each distinct variable referenced in the schema
-          schema_vars <- unique(sch_vars$variable[
-            !is.na(sch_vars$variable) & sch_vars$variable != ""
-          ])
-
-          for (var_role in schema_vars) {
-
-            var_rows <- sch_vars[sch_vars$variable == var_role, , drop = FALSE]
-
-            required_type <- first_non_empty(var_rows$type)
-            comment <- if ("comment" %in% names(var_rows)) {
-              first_non_empty(var_rows$comment)
-            } else {
-              NA_character_
-            }
-
-            # Get mapped variable name from variable_map
-            mapped_variable <- vm[[var_role]] %||% NA_character_
-
-            # Check if variable is mapped and exists in data
-            var_exists <- !is.na(mapped_variable) &&
-              mapped_variable %in% names(df)
-
-            # Determine safely_coercible
-            safely_coercible <- NA
-            if (var_exists) {
-              safely_coercible <- phrutils::is_safely_coercible(
-                df[[mapped_variable]],
-                required_type
-              )
-            }
-
-            # Rows that map a canonical value for this variable
-            value_rows <- if ("value" %in% names(var_rows)) {
-              var_rows[!is.na(var_rows$value) & var_rows$value != "", , drop = FALSE]
-            } else {
-              var_rows[0, , drop = FALSE]
-            }
-
-            # Is this variable a select_multiple question (values space-separated)?
-            is_select_multiple <- "question_type" %in% names(var_rows) &&
-              any(var_rows$question_type %in% "select_multiple", na.rm = TRUE)
-
-            if (nrow(value_rows) > 0) {
-              # This variable has canonical values defined in schema
-              for (i in seq_len(nrow(value_rows))) {
-                value_row <- value_rows[i, ]
-                canonical_val <- value_row$value
-
-                # Get the mapped values from value_map for this canonical value
-                mapped_values <- NA_character_
-                mapped_vals_vector <- character(0)
-                if (var_role %in% names(vmap) && is.list(vmap[[var_role]])) {
-                  if (canonical_val %in% names(vmap[[var_role]])) {
-                    dataset_vals <- vmap[[var_role]][[canonical_val]]
-                    if (length(dataset_vals) > 0) {
-                      # Store as string, but we'll use the actual vector for validation
-                      mapped_values <- paste(dataset_vals, collapse = ", ")
-                      mapped_vals_vector <- dataset_vals # Keep the actual vector for validation
-                    }
-                  }
-                }
-
-                # Determine issues for this variable/value pair
-                issues <- character(0)
-
-                # Check if variable is not mapped
-                if (is.na(mapped_variable)) {
-                  issues <- c(issues, "variable not mapped")
-                } else if (!var_exists) {
-                  issues <- c(issues, "mapped variable not in dataset")
-                }
-
-                # Check if value is not mapped
-                if (is.na(mapped_values)) {
-                  issues <- c(issues, "value not mapped")
-                } else if (var_exists && length(mapped_vals_vector) > 0) {
-                  # Check if mapped values exist in data
-                  data_vals <- unique(df[[mapped_variable]])
-
-                  # For select_multiple, values are space-separated, so we
-                  # need to extract tokens before comparing
-                  if (is_select_multiple) {
-                    data_vals <- private$..extract_select_multiple_tokens(
-                      data_vals
-                    )
-                  }
-
-                  missing_vals <- setdiff(mapped_vals_vector, data_vals)
-                  if (length(missing_vals) > 0) {
-                    issues <- c(
-                      issues,
-                      paste0(
-                        "mapped values not in dataset: ",
-                        paste(missing_vals, collapse = ", ")
-                      )
-                    )
-                  }
-                }
-
-                # Check type coercion issues
-                if (var_exists && isFALSE(safely_coercible)) {
-                  issues <- c(issues, "not safely coercible to required type")
-                }
-
-                # Create issues string
-                issues_str <- if (length(issues) == 0) {
-                  "ok"
-                } else {
-                  paste(issues, collapse = "; ")
-                }
-
-                # Add row
-                diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
-                  required_variable = var_role,
-                  required_value = canonical_val,
-                  required_type = required_type,
-                  mapped_variable = mapped_variable,
-                  mapped_value = mapped_values,
-                  safely_coercible = safely_coercible,
-                  comment = comment,
-                  issues = issues_str
-                )
-              }
-            } else {
-              # No value map - add single row for just the variable
-              issues <- character(0)
-              if (is.na(mapped_variable)) {
-                issues <- c(issues, "variable not mapped")
-              } else if (!var_exists) {
-                issues <- c(issues, "mapped variable not in dataset")
-              }
-              if (var_exists && isFALSE(safely_coercible)) {
-                issues <- c(issues, "not safely coercible to required type")
-              }
-
-              issues_str <- if (length(issues) == 0) {
-                "ok"
-              } else {
-                paste(issues, collapse = "; ")
-              }
-
-              diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
-                required_variable = var_role,
-                required_value = NA_character_,
-                required_type = required_type,
-                mapped_variable = mapped_variable,
-                mapped_value = NA_character_,
-                safely_coercible = safely_coercible,
-                comment = comment,
-                issues = issues_str
-              )
-            }
-          }
-
-          # Convert to data frame
-          if (length(diagnostic_rows) == 0) {
-            # Empty schema or no variables
-            result <- data.frame(
-              required_variable = character(0),
-              required_value = character(0),
-              required_type = character(0),
-              mapped_variable = character(0),
-              mapped_value = character(0),
-              safely_coercible = logical(0),
-              comment = character(0),
-              issues = character(0),
-              stringsAsFactors = FALSE
-            )
-          } else {
-            result <- do.call(
-              rbind,
-              lapply(diagnostic_rows, function(row) {
-                data.frame(
-                  required_variable = row$required_variable,
-                  required_value = row$required_value,
-                  required_type = row$required_type,
-                  mapped_variable = row$mapped_variable,
-                  mapped_value = row$mapped_value,
-                  safely_coercible = row$safely_coercible,
-                  comment = row$comment,
-                  issues = row$issues,
-                  stringsAsFactors = FALSE
-                )
-              })
-            )
-          }
-
-          # Store in data_diagnostics field
-          self$set(field = "..data_diagnostics", value = result)
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Generated diagnostic table with {nrow(result)} row(s) for {self$dataset_name}."
-            )
-          )
-
-          # Return the table
-          return(result)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$data_diagnose")
-      )
-    },
-
-    #' Run Data Quality Checks
-    #'
-    #' @description
-    #' Executes data quality checks defined in dependency_schema and generates quality flags
-    #'
-    #' @param stage Character string: "standardized" (default) or "clean"
-    #'
-    #' @return A list containing check results and flags, or NULL if no dependency schema
-    #'
-    #' @details
-    #' Quality checks include:
-    #' * Dependency validations (e.g., if A is answered, B must be answered)
-    #' * Range checks and logical consistency
-    #' * Custom validation rules from dependency_schema
-    #' Results are stored in private$..data_quality_flags for later use.
-    run_quality_checks = function(stage = "standardized") {
-      phrutils::phr_try(
-        {
-          # SAFE LOAD OF DATA & SCHEMA
-
-          df <- phrutils::phr_try(
-            self$get_data(stage),
-            on_error = "abort",
-            origin = paste0(self$dataset_name, "_DQ_load")
-          )
-
-          if (is.null(df)) {
-            phrutils::phr_error(
-              message = phrutils::phr_txt("No dataset is available at the selected stage."),
-              origin = paste0(self$dataset_name, "$run_quality_checks")
-            )
-          }
-
-          # Load dependency_schema (primary) and variable_schema (for types only)
-          # Both are stored as flat data frames and are iterated over directly
-          # in that form here (one row per dependency rule / variable value).
-          dep_schema <- phrutils::phr_try(
-            {
-              sch <- private$..dependency_schema
-              if (!is.null(sch) && !is.data.frame(sch)) {
-                sch <- private$..schema_to_table(
-                  schema_type = "dependency",
-                  schema_list = sch
-                )
-              }
-              sch
-            },
-            on_error = "abort",
-            origin = paste0(self$dataset_name, "_DQ_dep_schema_load")
-          )
-
-          var_schema <- phrutils::phr_try(
-            {
-              sch <- private$..variable_schema
-              if (!is.null(sch) && !is.data.frame(sch)) {
-                sch <- private$..schema_to_table(
-                  schema_type = "variable",
-                  schema_list = sch
-                )
-              }
-              sch
-            },
-            on_error = "abort",
-            origin = paste0(self$dataset_name, "_DQ_var_schema_load")
-          )
-
-          # Read a single schema cell as a character scalar, normalizing
-          # NA/"NA"/missing columns to an empty string.
-          schema_value <- function(row, cols) {
-            for (col in cols) {
-              if (!col %in% names(row)) {
-                next
-              }
-              val <- row[[col]][1]
-              if (is.null(val) || is.na(val)) {
-                next
-              }
-              val <- trimws(as.character(val))
-              if (val == "" || val == "NA") {
-                next
-              }
-              return(val)
-            }
-            ""
-          }
-
-          # Dependency rows: keep only "dependency" rules with a usable name
-          dep_rows <- NULL
-          if (is.data.frame(dep_schema) && nrow(dep_schema) > 0) {
-            rule_types <- if ("rule_type" %in% names(dep_schema)) {
-              as.character(dep_schema$rule_type)
-            } else {
-              rep("dependency", nrow(dep_schema))
-            }
-            dep_names <- if ("dep_name" %in% names(dep_schema)) {
-              as.character(dep_schema$dep_name)
-            } else {
-              rep(NA_character_, nrow(dep_schema))
-            }
-            keep <- !is.na(rule_types) &
-              rule_types == "dependency" &
-              !is.na(dep_names) &
-              dep_names != "" &
-              dep_names != "NA"
-            dep_rows <- dep_schema[keep, , drop = FALSE]
-          }
-
-          # Variable rows carrying a declared type (one row per variable)
-          type_rows <- NULL
-          if (
-            is.data.frame(var_schema) &&
-              nrow(var_schema) > 0 &&
-              all(c("variable", "type") %in% names(var_schema))
-          ) {
-            rule_types <- if ("rule_type" %in% names(var_schema)) {
-              as.character(var_schema$rule_type)
-            } else {
-              rep("variable", nrow(var_schema))
-            }
-            variables <- as.character(var_schema$variable)
-            types <- as.character(var_schema$type)
-            keep <- !is.na(rule_types) &
-              rule_types == "variable" &
-              !is.na(variables) &
-              variables != "" &
-              !is.na(types) &
-              types != ""
-            type_rows <- var_schema[keep, , drop = FALSE]
-            type_rows <- type_rows[
-              !duplicated(as.character(type_rows$variable)), ,
-              drop = FALSE
-            ]
-          }
-
-          # Check if we have any schema to work with
-          has_dep_schema <- !is.null(dep_rows) && nrow(dep_rows) > 0
-
-          has_types <- !is.null(type_rows) && nrow(type_rows) > 0
-
-          if (!has_dep_schema && !has_types) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              "No dependency schema or type information available; skipping data quality checks."
-            )
-            self$set(field = "..data_quality_flags", value = NULL)
-            return(invisible(NULL))
-          }
-
-          # FLAG COLLECTION
-
-          flags <- list()
-
-          add_flag <- function(name, vec) {
-            phrutils::phr_try(
-              {
-                if (!is.null(vec) && length(vec) == nrow(df)) {
-                  flags[[name]] <<- vec
-                }
-              },
-              on_error = "warn",
-              origin = paste0(self$dataset_name, "_DQ_addflag_", name)
-            )
-          }
-
-          # 1. Type coercion checks (row-level flags)
-          # Iterate the variable schema rows to determine intended types
-          # This check identifies specific rows that cannot be coerced
-
-          phrutils::phr_try(
-            {
-              if (has_types) {
-                for (type_i in seq_len(nrow(type_rows))) {
-                  type_row <- type_rows[type_i, , drop = FALSE]
-                  col <- schema_value(type_row, "variable")
-                  if (col == "" || !col %in% names(df)) {
-                    next
-                  }
-                  want <- schema_value(type_row, "type")
-                  x <- df[[col]]
-
-                  # Column-level coercibility
-                  is_ok <- phrutils::is_safely_coercible(x, want)
-
-                  if (is_ok) {
-                    add_flag(paste0("flag_", col, "_type"), rep(0, nrow(df)))
-                  } else {
-                    bad_rows <- phrutils::which_bad_coercible(x, want)
-                    add_flag(
-                      paste0("flag_", col, "_type"),
-                      ifelse(bad_rows, 1, 0)
-                    )
-                  }
-                }
-              }
-            },
-            on_error = "warn",
-            origin = paste0(self$dataset_name, "_DQ_typecheck")
-          )
-
-          # 2. Dependencies from dependency_schema
-          # All other quality checks (allowed values, ranges, patterns, unique, mutex, etc.)
-          # should now be defined as dependency rules in the dependency_schema
-
-          phrutils::phr_try(
-            {
-              if (has_dep_schema) {
-                # Process all dependency rows (action field determines treatment)
-                for (dep_i in seq_len(nrow(dep_rows))) {
-                  dep_row <- dep_rows[dep_i, , drop = FALSE]
-                  flag_name <- schema_value(dep_row, "dep_name")
-
-                  # Wrap each dependency processing in phr_try to continue on errors
-                  phrutils::phr_try(
-                    {
-                        # CHANGE 1: Check if required variables are present in dataset
-                        # Variables in dependency schema use canonical names from
-                        # variable_map, stored as a comma-separated string.
-                        required_vars <- character(0)
-                        vars_raw <- schema_value(dep_row, "variables")
-                        if (vars_raw != "") {
-                          required_vars <- trimws(strsplit(vars_raw, ",")[[1]])
-                          required_vars <- required_vars[required_vars != ""]
-                        }
-
-                        skip_dependency <- FALSE
-
-                        if (
-                          !is.null(required_vars) && length(required_vars) > 0
-                        ) {
-                          # Resolve canonical variable names to dataset column names
-                          mapped_cols <- character(0)
-                          missing_vars <- character(0)
-
-                          for (var_canonical in required_vars) {
-                            # Try to resolve using variable_map
-                            # Suppress warnings from resolve_column since we handle missing variables gracefully
-                            var_actual <- suppressWarnings(self$resolve_column(
-                              var_canonical,
-                              stage = stage
-                            ))
-
-                            if (is.null(var_actual)) {
-                              # Variable not found in dataset
-                              missing_vars <- c(missing_vars, var_canonical)
-                            } else {
-                              mapped_cols <- c(mapped_cols, var_actual)
-                            }
-                          }
-
-                          # Skip this dependency if any required variables are missing
-                          if (length(missing_vars) > 0) {
-                            phrutils::phr_message(
-                              phrutils::phr_txt(
-                                "Skipping dependency '{flag_name}': required variable(s) not present in dataset: {paste(missing_vars, collapse=', ')}"
-                              )
-                            )
-                            skip_dependency <- TRUE
-                          }
-                        }
-
-                        if (!skip_dependency) {
-                          # Read the action field before checking required fields, since
-                          # flag_delete dependencies may omit the 'then' clause
-                          rule_action <- schema_value(dep_row, "action")
-
-                          rule_if <- schema_value(
-                            dep_row,
-                            c("condition_if", "if", "condition")
-                          )
-
-                          rule_then <- schema_value(
-                            dep_row,
-                            c("then", "require")
-                          )
-
-                          if (rule_if == "") {
-                            phrutils::phr_warning(
-                              self$dataset_name,
-                              phrutils::phr_txt(
-                                "Invalid dependency rule structure for '{flag_name}': missing 'if/condition_if'."
-                              )
-                            )
-                            skip_dependency <- TRUE
-                          } else if (
-                            rule_then == "" && rule_action != "flag_delete"
-                          ) {
-                            # 'then' is required for all actions except flag_delete,
-                            # which may use condition_if alone to identify rows for deletion
-                            phrutils::phr_warning(
-                              self$dataset_name,
-                              phrutils::phr_txt(
-                                "Invalid dependency rule structure for '{flag_name}': missing 'then'."
-                              )
-                            )
-                            skip_dependency <- TRUE
-                          }
-                        }
-
-                        # Only process dependency if it should not be skipped
-                        if (!skip_dependency) {
-                          # DEPENDENCY EXPRESSION TRANSLATION
-
-                          # Translate canonical variable names and values in dependency expressions
-                          # to dataset-specific column names and values.
-                          #
-                          # Example:
-                          # Input:  "fever == 'yes' & !is.na(temperature)"
-                          # Output: "fever_col %in% c('yes', 'y', 'oui') & !is.na(temp_col)"
-                          #
-                          # Translation uses:
-                          # - variable_map: Maps canonical names (fever) to columns (fever_col)
-                          # - value_map: Maps canonical values ('yes') to dataset values (c('yes', 'y'))
-                          #
-                          # This allows dependency rules to be written using portable canonical names
-                          # rather than dataset-specific column names.
-                          #
-                          # For comprehensive documentation, see:
-                          # docs/variable_value_mapping_guide.md
-
-                          rule_if_translated <- private$..translate_expression(
-                            rule_if,
-                            stage = stage
-                          )
-
-                          cond_if <- phrutils::phr_try(
-                            {
-                              out <- with(
-                                df,
-                                eval(parse(text = rule_if_translated))
-                              )
-                              if (!is.logical(out)) {
-                                rep(FALSE, nrow(df))
-                              } else if (length(out) == 1) {
-                                # Scalar logical value (e.g., TRUE or FALSE) - replicate to all rows
-                                rep(out, nrow(df))
-                              } else if (length(out) != nrow(df)) {
-                                # Length mismatch - default to FALSE
-                                rep(FALSE, nrow(df))
-                              } else {
-                                out
-                              }
-                            },
-                            on_error = "warn",
-                            origin = paste0(
-                              self$dataset_name,
-                              "_DQ_if_",
-                              flag_name
-                            ),
-                            hint = tryCatch(
-                              {
-                                # Try to parse to get specific error
-                                parse(text = rule_if_translated)
-                                NULL # If parse succeeds, no special hint needed
-                              },
-                              error = function(e) {
-                                private$..get_expression_parse_hint(
-                                  rule_if_translated,
-                                  conditionMessage(e)
-                                )
-                              }
-                            )
-                          )
-
-                          # Evaluate 'then' only when present
-                          cond_then <- NULL
-                          if (rule_then != "") {
-                            rule_then_translated <- private$..translate_expression(
-                              rule_then,
-                              stage = stage
-                            )
-
-                            cond_then <- phrutils::phr_try(
-                              {
-                                out <- with(
-                                  df,
-                                  eval(parse(text = rule_then_translated))
-                                )
-                                if (!is.logical(out)) {
-                                  rep(FALSE, nrow(df))
-                                } else if (length(out) == 1) {
-                                  # Scalar logical value (e.g., TRUE or FALSE) - replicate to all rows
-                                  rep(out, nrow(df))
-                                } else if (length(out) != nrow(df)) {
-                                  # Length mismatch - default to FALSE
-                                  rep(FALSE, nrow(df))
-                                } else {
-                                  out
-                                }
-                              },
-                              on_error = "warn",
-                              origin = paste0(
-                                self$dataset_name,
-                                "_DQ_then_",
-                                flag_name
-                              ),
-                              hint = tryCatch(
-                                {
-                                  # Try to parse to get specific error
-                                  parse(text = rule_then_translated)
-                                  NULL # If parse succeeds, no special hint needed
-                                },
-                                error = function(e) {
-                                  private$..get_expression_parse_hint(
-                                    rule_then_translated,
-                                    conditionMessage(e)
-                                  )
-                                }
-                              )
-                            )
-                          }
-
-                          # Calculate flag for this rule.
-                          # When 'then' is present: flag rows where cond_if is TRUE but cond_then is FALSE.
-                          # When 'then' is absent (flag_delete with condition_if only): flag rows where
-                          # cond_if is TRUE — those rows are the ones to be deleted.
-                          # Note: NA positions in flag_vec are converted to 1 (flagged) since we cannot
-                          # confirm the condition is met when the evaluation result is NA.
-                          flag_vec <- rep(0, nrow(df))
-                          if (!is.null(cond_then)) {
-                            flag_vec[cond_if & !cond_then] <- 1
-                          } else {
-                            flag_vec[cond_if] <- 1
-                          }
-                          flag_vec[is.na(flag_vec)] <- 1
-
-                          # Add flag with consistent "flag_" prefix
-                          add_flag(flag_name, flag_vec)
-                        }
-                    },
-                    on_error = "warn",
-                    origin = paste0(self$dataset_name, "_DQ_dep_", flag_name)
-                  )
-                }
-
-                # Note: soft_dependencies removed - use action field to determine treatment
-              }
-            },
-            on_error = "warn",
-            origin = paste0(self$dataset_name, "_DQ_dependencies")
-          )
-
-          # Final assembly of flags
-
-          if (length(flags) == 0) {
-            phrutils::phr_message(
-              self$dataset_name,
-              "No data quality issues detected."
-            )
-            private$..data_quality_flags <- NULL
-            return(invisible(NULL))
-          }
-
-          flag_df <- as.data.frame(flags, stringsAsFactors = FALSE)
-
-          if (private$..uuid %in% names(df)) {
-            flag_df[[private$..uuid]] <- df[[private$..uuid]]
-          }
-
-          self$set(field = "..data_quality_flags", value = flag_df)
-
-          # Append to standardized data
-
-          phrutils::phr_try(
-            {
-              std <- private$..standardized_data
-              if (!is.null(std) && private$..uuid %in% names(std)) {
-                join_col <- private$..uuid
-                if (join_col %in% names(flag_df)) {
-                  # Remove columns from std that already exist in flag_df (excluding
-                  # the join key) to prevent dplyr from creating .x/.y duplicates.
-                  overlapping_cols <- setdiff(
-                    intersect(names(std), names(flag_df)),
-                    join_col
-                  )
-                  if (length(overlapping_cols) > 0) {
-                    std <- std[,
-                      !names(std) %in% overlapping_cols,
-                      drop = FALSE
-                    ]
-                  }
-
-                  std <- dplyr::left_join(std, flag_df, by = join_col)
-                  self$set(field = "..standardized_data", value = std)
-
-                  phrutils::phr_message(
-                    phrutils::phr_txt(
-                      "Appended {ncol(flag_df)-1} data quality flag columns onto standardized dataset."
-                    )
-                  )
-                }
-              }
-            },
-            on_error = "warn",
-            origin = paste0(self$dataset_name, "_DQ_append")
-          )
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Data quality check complete. {ncol(flag_df)-1} flag types generated."
-            )
-          )
-
-          invisible(flag_df)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$run_quality_checks")
-      )
-    },
-
     # Cleaning & Deletion Logs
-
-
 
     #' @description
     #' Generate cleaning and deletion log entries from data quality flags.
@@ -2457,7 +1866,7 @@ Data <- R6::R6Class(
     #' Populates the existing CleaningLog with entries for each quality flag violation.
     #' Populates the DeletionLog for flags with action "flag_delete" and for duplicate
     #' values in variables marked as unique in the variable schema.
-    #' Must be called after run_quality_checks() has been executed.
+    #' Must be called after ..run_quality_checks() has been executed.
     #'
     #' @param stage Data stage to use ("standardized" or "clean")
     #' @param overwrite If TRUE, clears existing log before adding new entries
@@ -2476,11 +1885,13 @@ Data <- R6::R6Class(
             )
           }
 
+          self$pre_generate_cleaning_log(stage = stage)
+
           # Warns on no quality flags
           if (is.null(private$..data_quality_flags)) {
             phrutils::phr_warning(
               self$dataset_name,
-              "No data quality flags available. Run run_quality_checks() first."
+              "No data quality flags available. Run ..run_quality_checks() first."
             )
             # return(invisible(private$..cleaning_log))
           }
@@ -2497,8 +1908,8 @@ Data <- R6::R6Class(
           flag_cols <- setdiff(flag_cols, private$..uuid)
 
           # Get enum_id and device_id from variable_map if available
-          enum_id_col <- self$.variable_map$enum_id %||% NA_character_
-          device_id_col <- self$.variable_map$device_id %||% NA_character_
+          enum_id_col <- private$..variable_map$enum_id %||% NA_character_
+          device_id_col <- private$..variable_map$device_id %||% NA_character_
 
           entries_added <- 0
           deletions_added <- 0
@@ -2844,10 +2255,512 @@ Data <- R6::R6Class(
             }
           }
 
+          self$post_generate_cleaning_log(stage = stage)
+
           invisible(private$..cleaning_log)
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$generate_cleaning_log")
+      )
+    },
+
+    #' Pre-generate cleaning log Hook
+    #'
+    #' @description
+    #' Hook method called before generate_cleaning_log begins. Override in subclasses for custom pre-processing.
+    #'
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #'
+    #' @return NULL (default implementation does nothing)
+    pre_generate_cleaning_log = function(
+      stage = c("clean", "standardized", "raw")
+    ) {}, # subclass hook - called before standardization begins
+
+    #' Post-generate cleaning log Hook
+    #'
+    #' @description
+    #' Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
+    #'
+    #' @return NULL (default implementation does nothing)
+    post_generate_cleaning_log = function() {}, # subclass hook
+
+    # Cleaning
+
+    #' Clean Data
+    #'
+    #' @description
+    #' Applies cleaning operations from cleaning_log and deletion_log to standardized data
+    #'
+    #' @return Invisible self for method chaining
+    #'
+    #' @details
+    #' Cleaning process:
+    #' 1. Validates data if not already validated
+    #' 2. Ensures data is standardized
+    #' 3. Copies standardized_data to clean_data
+    #' 4. Applies cleaning log edits (if present)
+    #' 5. Applies deletion log removals (if present)
+    #' 6. Updates metadata and sets cleaned flag
+    clean = function() {
+      phrutils::phr_try(
+        {
+          # Run validation to ensure data is validated before cleaning
+          self$validate()
+
+          if (!self$validated) {
+            phrutils::phr_warning(
+              message = phrutils::phr_txt(
+                "Data validation failed. Proceeding with cleaning with caution."
+              ),
+              origin = paste0(self$dataset_name, "$clean")
+            )
+          }
+
+          if (!self$standardized) {
+            phrutils::phr_warning(
+              message = phrutils::phr_txt(
+                "Data should be standardized before cleaning. Using fallback."
+              ),
+              origin = paste0(self$dataset_name, "$clean")
+            )
+          }
+
+          phrutils::phr_message(phrutils::phr_txt(
+            "Starting cleaning for {self$dataset_name}..."
+          ))
+
+          # BASELINE CLEAN DATA (robust fallback)
+
+          if (
+            !is.null(private$..standardized_data) &&
+              is.data.frame(private$..standardized_data)
+          ) {
+            self$set(
+              field = "..clean_data",
+              value = self$get(field = "..standardized_data")
+            )
+          } else {
+            # Only warn if standardized_data should have existed
+            if (!self$standardized) {
+              phrutils::phr_warning(
+                message = phrutils::phr_txt(
+                  "Data should be standardized before cleaning. Using fallback."
+                ),
+                origin = paste0(self$dataset_name, "$clean")
+              )
+            }
+
+            if (
+              !is.null(private$..standardized_data) &&
+                !is.data.frame(private$..standardized_data)
+            ) {
+              phrutils::phr_warning(
+                message = phrutils::phr_txt(
+                  "Standardized data is invalid or corrupted; falling back to raw data."
+                ),
+                origin = paste0(self$dataset_name, "$clean")
+              )
+            }
+
+            self$set(
+              field = "..clean_data",
+              value = self$get(field = "..raw_data")
+            )
+          }
+
+          # Run any specified sub class pre cleaning
+          self$pre_clean()
+
+          # VALIDATE & APPLY CLEANING LOG
+
+          if (
+            !is.null(private$..cleaning_log) &&
+              inherits(private$..cleaning_log, "CleaningLog")
+          ) {
+            # validation (internal + schema)
+            private$..cleaning_log$validate()
+
+            # post-validate: check cleaning log against dataset
+            private$..cleaning_log$post_validate(self, stage = "clean")
+
+            print("I am here 1")
+
+            # apply changes (authoritative mode option A)
+            if (nrow(private$..cleaning_log$log_df) > 0) {
+              print("I am here 2")
+
+              self$set(
+                field = "..clean_data",
+                value = private$..apply_cleaning_changes(
+                  df = private$..clean_data,
+                  log_df = private$..cleaning_log$log_df,
+                  uuid_col = private$..uuid
+                )
+              )
+
+              print("I am here 3")
+            }
+          }
+
+          # VALIDATE & APPLY DELETION LOG
+
+          if (
+            !is.null(private$..deletion_log) &&
+              inherits(private$..deletion_log, "DeletionLog")
+          ) {
+            print("I am here 4")
+
+            private$..deletion_log$validate()
+            private$..deletion_log$post_validate(self, stage = "clean")
+
+            print("I am here 5")
+
+            # apply deletions
+            if (nrow(private$..deletion_log$log_df) > 0) {
+              delete_ids <- as.character(private$..deletion_log$log_df$uuid)
+
+              self$set(
+                field = "..clean_data",
+                value = private$..clean_data[
+                  !as.character(private$..clean_data[[private$..uuid]]) %in%
+                    delete_ids,
+                ]
+              )
+            }
+          }
+
+          # FINALIZE
+
+          self$post_clean()
+
+          self$cleaned <- TRUE
+
+          private$..touch(
+            log = TRUE,
+            name = self$dataset_name,
+            message = phrutils::phr_txt("Data cleaning Complete.")
+          )
+
+          phrutils::phr_message(phrutils::phr_txt(
+            "{self$dataset_name} cleaning complete."
+          ))
+        },
+        on_error = "abort",
+        origin = paste0(self$dataset_name, "$clean")
+      )
+    },
+
+    #' Pre-clean Hook
+    #'
+    #' @description
+    #' Hook method called before clean begins. Override in subclasses for custom pre-processing.
+    #'
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #'
+    #' @return NULL (default implementation does nothing)
+    pre_clean = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
+
+    #' Post-clean Hook
+    #'
+    #' @description
+    #' Hook method called after clean completes. Override in subclasses for custom post-processing.
+    #'
+    #' @return NULL (default implementation does nothing)
+    post_clean = function() {}, # subclass hook
+
+    # Schema diagnostics
+
+    #' Diagnose Data Against Schema
+    #'
+    #' @description
+    #' Compares data columns against variable schema to identify type mismatches and invalid values
+    #'
+    #' @param stage Character string: "raw", "standardized", or "clean"
+    #'
+    #' @return Data frame with diagnostic results (variable, expected_type, actual_type, type_ok, values_ok, issues)
+    #'
+    #' @details
+    #' For each variable in the schema:
+    #' * Checks if type matches expected type
+    #' * Validates values against allowed_values (if defined)
+    #' * Reports all issues found
+    #' Returns NULL if no schema is defined or no data available.
+    data_diagnose = function(stage = c("raw", "standardized", "clean")) {
+      stage <- match.arg(stage)
+
+      phrutils::phr_try(
+        {
+          # 1. Get data for selected stage
+          df <- self$get_data(stage)
+          if (is.null(df)) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt(
+                "No data available at selected stage '{stage}'."
+              )
+            )
+            return(NULL)
+          }
+
+          # 2. Check if schema exists
+          sch <- private$..variable_schema
+          if (
+            is.null(sch) ||
+              (is.list(sch) && length(sch) == 0) ||
+              (is.data.frame(sch) && nrow(sch) == 0)
+          ) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt("No variable schema defined.")
+            )
+            return(NULL)
+          }
+
+          # 3. Build diagnostic table
+          # The variable schema is a flat data frame where each row describes
+          # either a canonical variable's rule (rule_type == "variable") or a
+          # dependency check (ignored here; see ..run_quality_checks()). A
+          # variable with a value_map has one row per canonical value (the
+          # `value` column holds the canonical value name and `allowed` holds
+          # the comma-separated dataset values for that value), plus the
+          # variable-level columns (`type`, `required`, `comment`, etc.)
+          # repeated on each row.
+
+          diagnostic_rows <- list()
+
+          # Helper: return the first non-missing/non-empty value in a vector
+          first_non_empty <- function(x) {
+            x <- x[!is.na(x) & x != ""]
+            if (length(x) == 0) NA_character_ else as.character(x[[1]])
+          }
+
+          sch_vars <- sch
+          if ("rule_type" %in% names(sch_vars)) {
+            sch_vars <- sch_vars[
+              sch_vars$rule_type == "variable",
+              ,
+              drop = FALSE
+            ]
+          }
+
+          if (nrow(sch_vars) == 0 || !"variable" %in% names(sch_vars)) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              phrutils::phr_txt("No variable schema defined.")
+            )
+            return(NULL)
+          }
+
+          # Get current mappings
+          vm <- private$..variable_map %||% list()
+          vmap <- private$..value_map %||% list()
+
+          # Iterate over each distinct variable referenced in the schema
+          schema_vars <- unique(sch_vars$variable[
+            !is.na(sch_vars$variable) & sch_vars$variable != ""
+          ])
+
+          for (var_role in schema_vars) {
+            var_rows <- sch_vars[sch_vars$variable == var_role, , drop = FALSE]
+
+            required_type <- first_non_empty(var_rows$type)
+            comment <- if ("comment" %in% names(var_rows)) {
+              first_non_empty(var_rows$comment)
+            } else {
+              NA_character_
+            }
+
+            # Get mapped variable name from variable_map
+            mapped_variable <- vm[[var_role]] %||% NA_character_
+
+            # Check if variable is mapped and exists in data
+            var_exists <- !is.na(mapped_variable) &&
+              mapped_variable %in% names(df)
+
+            # Determine safely_coercible
+            safely_coercible <- NA
+            if (var_exists) {
+              safely_coercible <- phrutils::is_safely_coercible(
+                df[[mapped_variable]],
+                required_type
+              )
+            }
+
+            # Rows that map a canonical value for this variable
+            value_rows <- if ("value" %in% names(var_rows)) {
+              var_rows[
+                !is.na(var_rows$value) & var_rows$value != "",
+                ,
+                drop = FALSE
+              ]
+            } else {
+              var_rows[0, , drop = FALSE]
+            }
+
+            # Is this variable a select_multiple question (values space-separated)?
+            is_select_multiple <- "question_type" %in%
+              names(var_rows) &&
+              any(var_rows$question_type %in% "select_multiple", na.rm = TRUE)
+
+            if (nrow(value_rows) > 0) {
+              # This variable has canonical values defined in schema
+              for (i in seq_len(nrow(value_rows))) {
+                value_row <- value_rows[i, ]
+                canonical_val <- value_row$value
+
+                # Get the mapped values from value_map for this canonical value
+                mapped_values <- NA_character_
+                mapped_vals_vector <- character(0)
+                if (var_role %in% names(vmap) && is.list(vmap[[var_role]])) {
+                  if (canonical_val %in% names(vmap[[var_role]])) {
+                    dataset_vals <- vmap[[var_role]][[canonical_val]]
+                    if (length(dataset_vals) > 0) {
+                      # Store as string, but we'll use the actual vector for validation
+                      mapped_values <- paste(dataset_vals, collapse = ", ")
+                      mapped_vals_vector <- dataset_vals # Keep the actual vector for validation
+                    }
+                  }
+                }
+
+                # Determine issues for this variable/value pair
+                issues <- character(0)
+
+                # Check if variable is not mapped
+                if (is.na(mapped_variable)) {
+                  issues <- c(issues, "variable not mapped")
+                } else if (!var_exists) {
+                  issues <- c(issues, "mapped variable not in dataset")
+                }
+
+                # Check if value is not mapped
+                if (is.na(mapped_values)) {
+                  issues <- c(issues, "value not mapped")
+                } else if (var_exists && length(mapped_vals_vector) > 0) {
+                  # Check if mapped values exist in data
+                  data_vals <- unique(df[[mapped_variable]])
+
+                  # For select_multiple, values are space-separated, so we
+                  # need to extract tokens before comparing
+                  if (is_select_multiple) {
+                    data_vals <- private$..extract_select_multiple_tokens(
+                      data_vals
+                    )
+                  }
+
+                  missing_vals <- setdiff(mapped_vals_vector, data_vals)
+                  if (length(missing_vals) > 0) {
+                    issues <- c(
+                      issues,
+                      paste0(
+                        "mapped values not in dataset: ",
+                        paste(missing_vals, collapse = ", ")
+                      )
+                    )
+                  }
+                }
+
+                # Check type coercion issues
+                if (var_exists && isFALSE(safely_coercible)) {
+                  issues <- c(issues, "not safely coercible to required type")
+                }
+
+                # Create issues string
+                issues_str <- if (length(issues) == 0) {
+                  "ok"
+                } else {
+                  paste(issues, collapse = "; ")
+                }
+
+                # Add row
+                diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
+                  required_variable = var_role,
+                  required_value = canonical_val,
+                  required_type = required_type,
+                  mapped_variable = mapped_variable,
+                  mapped_value = mapped_values,
+                  safely_coercible = safely_coercible,
+                  comment = comment,
+                  issues = issues_str
+                )
+              }
+            } else {
+              # No value map - add single row for just the variable
+              issues <- character(0)
+              if (is.na(mapped_variable)) {
+                issues <- c(issues, "variable not mapped")
+              } else if (!var_exists) {
+                issues <- c(issues, "mapped variable not in dataset")
+              }
+              if (var_exists && isFALSE(safely_coercible)) {
+                issues <- c(issues, "not safely coercible to required type")
+              }
+
+              issues_str <- if (length(issues) == 0) {
+                "ok"
+              } else {
+                paste(issues, collapse = "; ")
+              }
+
+              diagnostic_rows[[length(diagnostic_rows) + 1]] <- list(
+                required_variable = var_role,
+                required_value = NA_character_,
+                required_type = required_type,
+                mapped_variable = mapped_variable,
+                mapped_value = NA_character_,
+                safely_coercible = safely_coercible,
+                comment = comment,
+                issues = issues_str
+              )
+            }
+          }
+
+          # Convert to data frame
+          if (length(diagnostic_rows) == 0) {
+            # Empty schema or no variables
+            result <- data.frame(
+              required_variable = character(0),
+              required_value = character(0),
+              required_type = character(0),
+              mapped_variable = character(0),
+              mapped_value = character(0),
+              safely_coercible = logical(0),
+              comment = character(0),
+              issues = character(0),
+              stringsAsFactors = FALSE
+            )
+          } else {
+            result <- do.call(
+              rbind,
+              lapply(diagnostic_rows, function(row) {
+                data.frame(
+                  required_variable = row$required_variable,
+                  required_value = row$required_value,
+                  required_type = row$required_type,
+                  mapped_variable = row$mapped_variable,
+                  mapped_value = row$mapped_value,
+                  safely_coercible = row$safely_coercible,
+                  comment = row$comment,
+                  issues = row$issues,
+                  stringsAsFactors = FALSE
+                )
+              })
+            )
+          }
+
+          # Store in data_diagnostics field
+          self$set(field = "..data_diagnostics", value = result)
+
+          phrutils::phr_message(
+            phrutils::phr_txt(
+              "Generated diagnostic table with {nrow(result)} row(s) for {self$dataset_name}."
+            )
+          )
+
+          # Return the table
+          return(result)
+        },
+        on_error = "abort",
+        origin = paste0(self$dataset_name, "$data_diagnose")
       )
     },
 
@@ -2877,7 +2790,9 @@ Data <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_error(
               self$dataset_name,
-              phrutils::phr_txt("No data available at stage '{stage}' to export.")
+              phrutils::phr_txt(
+                "No data available at stage '{stage}' to export."
+              )
             )
           }
           if (is.null(file_path)) {
@@ -2891,16 +2806,13 @@ Data <- R6::R6Class(
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
               phrutils::phr_error(
                 self$dataset_name,
-                phrutils::phr_txt("Package 'openxlsx' is required for XLSX export.")
+                phrutils::phr_txt(
+                  "Package 'openxlsx' is required for XLSX export."
+                )
               )
             }
             openxlsx::write.xlsx(df, file = file_path)
           }
-
-          # ---- DUMMY SESSION EXPORT HOOK
-          # if (exists("session") && !is.null(session$userData)) {
-          #   session$userData$last_export_path <- file_path
-          # }
 
           phrutils::phr_message(phrutils::phr_txt(
             "Exported {stage} data to '{file_path}'."
@@ -2951,7 +2863,6 @@ Data <- R6::R6Class(
       invisible(TRUE)
     },
 
-
     # Data Analytics Generation Hook
 
     #' @description
@@ -2977,27 +2888,38 @@ Data <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt("No {stage} data available for DataAnalytics generation.")
+              phrutils::phr_txt(
+                "No {stage} data available for DataAnalytics generation."
+              )
             )
             return(NULL)
           }
 
-          data_hash <- self$get(field = "..metadata", role = "hash_id")
-          variable_map <- private$..variable_map
-          value_map <- private$..value_map
-
-          analytics <- DataAnalytics$new(
+          common_args <- list(
             data = df,
             dap = analysis_config,
             parent_data_object = self,
             dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
             data_stage_name = stage,
-            data_hash = data_hash,
-            variable_map = variable_map,
-            value_map = value_map,
+            data_hash = self$get(field = "..metadata", role = "hash_id"),
+            variable_map = private$..variable_map,
+            value_map = private$..value_map,
             variable_label = private$..variable_label,
             value_label = private$..value_label
           )
+
+          builder <- private$..analytics_registry[[type]]
+
+          if (is.null(builder)) {
+            phrutils::phr_error(
+              message = paste(
+                "Unknown analytics type:",
+                type
+              )
+            )
+          }
+
+          builder(common_args)
 
           phrutils::phr_message(
             phrutils::phr_txt(
@@ -3009,267 +2931,6 @@ Data <- R6::R6Class(
         },
         on_error = "warn",
         origin = paste0(self$dataset_name, "$generate_data_analytics")
-      )
-    },
-
-    # Map Schema Variables & Repair Maps
-
-
-    #'
-    #' This is a helper function to safely update the variable_map and value_map
-    #' by accepting dataframes as input. This provides a programmatic way to
-    #' update mappings that can be called from UI components.
-    #'
-    #' @param variable_map_df A dataframe with columns 'role' and 'column_name'
-    #'        to update the variable_map. Set column_name to NA to remove a mapping.
-    #' @param value_map_df A dataframe with columns 'role' and 'values'
-    #'        to update the value_map. The 'values' column should contain
-    #'        comma-separated strings of allowed values. Set to NA to remove.
-    #' @param mode Either "merge" (default) to merge with existing maps,
-    #'        or "replace" to completely replace existing maps.
-    #' @param validate_columns Whether to validate that mapped columns exist
-    #'        in the dataset (default TRUE).
-    #' @param stage The data stage to validate against ("raw", "standardized", "clean")
-    #' @return A list with 'success' (logical), 'variables_updated' (count),
-    #'         'values_updated' (count), and 'warnings' (character vector)
-    #'
-    #' @details
-    #' Future UI Integration: This method is designed to be called from a modal
-    #' UI that allows users to manually configure variable and value mappings.
-    #' The UI would present the user with:
-    #' - A table showing current variable_map entries
-    #' - A table showing current value_map entries
-    #' - Options to add, edit, or remove mappings
-    #' - Validation feedback on invalid mappings
-    #'
-    #' Placeholder: UI modal implementation will be developed in a separate branch.
-    repair_maps = function(
-      variable_map_df = NULL,
-      value_map_df = NULL,
-      mode = c("merge", "replace"),
-      validate_columns = TRUE,
-      stage = "raw"
-    ) {
-      mode <- match.arg(mode)
-
-      result <- list(
-        success = TRUE,
-        variables_updated = 0,
-        values_updated = 0,
-        warnings = character(0)
-      )
-
-      phrutils::phr_try(
-        {
-          df <- if (validate_columns) self$get_data(stage) else NULL
-          data_cols <- if (!is.null(df)) names(df) else character(0)
-
-          # --- VARIABLE MAP UPDATES ---
-
-          if (!is.null(variable_map_df)) {
-            # Validate input structure
-            if (!is.data.frame(variable_map_df)) {
-              phrutils::phr_error(
-                self$dataset_name,
-                phrutils::phr_txt("variable_map_df must be a data frame.")
-              )
-            }
-
-            required_cols <- c("role", "column_name")
-            missing <- setdiff(required_cols, names(variable_map_df))
-            if (length(missing) > 0) {
-              phrutils::phr_error(
-                self$dataset_name,
-                phrutils::phr_txt(
-                  "variable_map_df missing required columns: {paste(missing, collapse=', ')}"
-                )
-              )
-            }
-
-            # Start with empty map if replacing
-            if (mode == "replace") {
-              # Keep uuid mapping as it's critical
-              uuid_mapping <- self$.variable_map$uuid
-              self$set(field = "..variable_map", value = list(uuid = uuid_mapping))
-            }
-
-            # Process each row
-            for (i in seq_len(nrow(variable_map_df))) {
-              row <- variable_map_df[i, ]
-              role <- as.character(row$role)
-              col_name <- as.character(row$column_name)
-
-              if (is.na(role) || role == "") {
-                next
-              }
-
-              # Remove mapping if column_name is NA
-              if (is.na(col_name) || col_name == "") {
-                if (role != "uuid") {
-                  # Never remove uuid mapping
-                  self$set(field = "..variable_map", role = role, value = NULL)
-                  result$variables_updated <- result$variables_updated + 1
-                }
-                next
-              }
-
-              # Validate column exists if requested
-              if (
-                validate_columns &&
-                  length(data_cols) > 0 &&
-                  !(col_name %in% data_cols)
-              ) {
-                warn_msg <- phrutils::phr_txt(
-                  "Column '{col_name}' for role '{role}' not found in dataset."
-                )
-                result$warnings <- c(result$warnings, warn_msg)
-                phrutils::phr_warning(self$dataset_name, warn_msg)
-                next
-              }
-
-              # Set the mapping
-              self$set(field = "..variable_map", role = role, value = col_name)
-              result$variables_updated <- result$variables_updated + 1
-            }
-          }
-
-          # --- VALUE MAP UPDATES ---
-
-          if (!is.null(value_map_df)) {
-            # Validate input structure
-            if (!is.data.frame(value_map_df)) {
-              phrutils::phr_error(
-                self$dataset_name,
-                phrutils::phr_txt("value_map_df must be a data frame.")
-              )
-            }
-
-            required_cols <- c("role", "values")
-            missing <- setdiff(required_cols, names(value_map_df))
-            if (length(missing) > 0) {
-              phrutils::phr_error(
-                self$dataset_name,
-                phrutils::phr_txt(
-                  "value_map_df missing required columns: {paste(missing, collapse=', ')}"
-                )
-              )
-            }
-
-            # Start with empty map if replacing
-            if (mode == "replace") {
-              self$.value_map <- list()
-            }
-
-            # Process each row
-            for (i in seq_len(nrow(value_map_df))) {
-              row <- value_map_df[i, ]
-              role <- as.character(row$role)
-              values_str <- as.character(row$values)
-
-              if (is.na(role) || role == "") {
-                next
-              }
-
-              # Remove mapping if values is NA
-              if (is.na(values_str) || values_str == "") {
-                self$set(field = "..value_map", role = role, value = NULL)
-                result$values_updated <- result$values_updated + 1
-                next
-              }
-
-              # Parse comma-separated values
-              parsed_values <- trimws(strsplit(values_str, ",")[[1]])
-              parsed_values <- parsed_values[parsed_values != ""]
-
-              if (length(parsed_values) == 0) {
-                self$set(field = "..value_map", role = role, value = NULL)
-              } else {
-                self$set(field = "..value_map", role = role, value = parsed_values)
-              }
-              result$values_updated <- result$values_updated + 1
-            }
-          }
-
-          if (result$variables_updated > 0 || result$values_updated > 0) {
-            phrutils::phr_message(
-              phrutils::phr_txt(
-                "Updated {result$variables_updated} variable mapping(s) and {result$values_updated} value mapping(s) for {self$dataset_name}."
-              )
-            )
-          }
-
-          result$success <- length(result$warnings) == 0
-
-          return(result)
-        },
-        on_error = "warn",
-        origin = paste0(self$dataset_name, "$repair_maps")
-      )
-    },
-
-    # Placeholder for future UI modal integration
-    # TODO: Implement in separate branch
-    #
-    # show_repair_maps_modal = function(session = NULL) {
-    #   # This will be implemented in a separate branch to provide
-    #   # a Shiny modal UI for manually editing variable and value maps.
-    #   #
-    #   # The modal will include:
-    #   # - A table editor for variable_map (role -> column_name)
-    #   # - A table editor for value_map (role -> allowed values)
-    #   # - Validation feedback
-    #   # - Save/Cancel buttons
-    #   #
-    #   # When saved, it will call repair_maps() with the edited dataframes.
-    #   phr_message("UI modal for repair_maps not yet implemented.")
-    #   return(NULL)
-    # }
-
-    #' @description
-    #' Get the current variable and value maps as dataframes.
-    #'
-    #' Helper function to export maps in a format suitable for
-    #' repair_maps() or UI display.
-    #'
-    #' @return A list with 'variable_map_df' and 'value_map_df' dataframes
-    get_maps_as_df = function() {
-      # Variable map dataframe
-      if (length(private$..variable_map) > 0) {
-        variable_map_df <- data.frame(
-          role = names(self$.variable_map),
-          column_name = unlist(self$.variable_map, use.names = FALSE),
-          stringsAsFactors = FALSE
-        )
-      } else {
-        variable_map_df <- data.frame(
-          role = character(0),
-          column_name = character(0),
-          stringsAsFactors = FALSE
-        )
-      }
-
-      # Value map dataframe
-      if (length(private$..value_map) > 0) {
-        value_map_df <- data.frame(
-          role = names(private$..value_map),
-          values = vapply(
-            private$..value_map,
-            function(v) paste(v, collapse = ","),
-            character(1)
-          ),
-          stringsAsFactors = FALSE
-        )
-      } else {
-        value_map_df <- data.frame(
-          role = character(0),
-          values = character(0),
-          stringsAsFactors = FALSE
-        )
-      }
-
-      list(
-        variable_map_df = variable_map_df,
-        value_map_df = value_map_df
       )
     }
   ),
@@ -3311,11 +2972,6 @@ Data <- R6::R6Class(
     ..other_columns = list(),
 
     # -- Maps and labels (moved from public) --
-    #
-    # These four fields are exposed via the read/write active bindings
-    # `.variable_map`, `.value_map`, `.variable_label`, and `.value_label`
-    # (single-dot prefix) so both `d$.variable_map` and the inherited
-    # `d$get(field = ".variable_map")` API resolve them.
 
     # @field ..variable_map List mapping variable roles to column names.
     # @keywords internal
@@ -3336,6 +2992,29 @@ Data <- R6::R6Class(
     ..value_label = list(),
 
     # -- Schemas (moved from public) --
+
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_indicator_schema_filename Named list of presentation-ready value labels
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_household_template.xlsx"
+    ),
 
     # @field ..variable_schema Variable schema with types and allowed values.
     # @keywords internal
@@ -3376,6 +3055,511 @@ Data <- R6::R6Class(
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
+    # @field ..analytics_registry List of analytics objects and types that can be
+    # created with generate_data_analytics
+    # @keywords internal
+    ..analytics_registry = NULL,
+
+    #' Run Data Quality Checks
+    #'
+    #' @description
+    #' Executes data quality checks defined in dependency_schema and generates quality flags
+    #'
+    #' @param stage Character string: "standardized" (default) or "clean"
+    #'
+    #' @return A list containing check results and flags, or NULL if no dependency schema
+    #'
+    #' @details
+    #' Quality checks include:
+    #' * Dependency validations (e.g., if A is answered, B must be answered)
+    #' * Range checks and logical consistency
+    #' * Custom validation rules from dependency_schema
+    #' Results are stored in private$..data_quality_flags for later use.
+    ..run_quality_checks = function(stage = "standardized") {
+      phrutils::phr_try(
+        {
+          # SAFE LOAD OF DATA & SCHEMA
+
+          df <- phrutils::phr_try(
+            self$get_data(stage),
+            on_error = "abort",
+            origin = paste0(self$dataset_name, "_DQ_load")
+          )
+
+          if (is.null(df)) {
+            phrutils::phr_error(
+              message = phrutils::phr_txt(
+                "No dataset is available at the selected stage."
+              ),
+              origin = paste0(self$dataset_name, "$..run_quality_checks")
+            )
+          }
+
+          # Load dependency_schema (primary) and variable_schema (for types only)
+          # Both are stored as flat data frames and are iterated over directly
+          # in that form here (one row per dependency rule / variable value).
+          dep_schema <- phrutils::phr_try(
+            {
+              sch <- private$..dependency_schema
+              sch
+            },
+            on_error = "abort",
+            origin = paste0(self$dataset_name, "_DQ_dep_schema_load")
+          )
+
+          var_schema <- phrutils::phr_try(
+            {
+              sch <- private$..variable_schema
+              sch
+            },
+            on_error = "abort",
+            origin = paste0(self$dataset_name, "_DQ_var_schema_load")
+          )
+
+          # Read a single schema cell as a character scalar, normalizing
+          # NA/"NA"/missing columns to an empty string.
+          schema_value <- function(row, cols) {
+            for (col in cols) {
+              if (!col %in% names(row)) {
+                next
+              }
+              val <- row[[col]][1]
+              if (is.null(val) || is.na(val)) {
+                next
+              }
+              val <- trimws(as.character(val))
+              if (val == "" || val == "NA") {
+                next
+              }
+              return(val)
+            }
+            ""
+          }
+
+          # Dependency rows: keep only "dependency" rules with a usable name
+          dep_rows <- NULL
+          if (is.data.frame(dep_schema) && nrow(dep_schema) > 0) {
+            rule_types <- if ("rule_type" %in% names(dep_schema)) {
+              as.character(dep_schema$rule_type)
+            } else {
+              rep("dependency", nrow(dep_schema))
+            }
+            dep_names <- if ("dep_name" %in% names(dep_schema)) {
+              as.character(dep_schema$dep_name)
+            } else {
+              rep(NA_character_, nrow(dep_schema))
+            }
+            keep <- !is.na(rule_types) &
+              rule_types == "dependency" &
+              !is.na(dep_names) &
+              dep_names != "" &
+              dep_names != "NA"
+            dep_rows <- dep_schema[keep, , drop = FALSE]
+          }
+
+          # Variable rows carrying a declared type (one row per variable)
+          type_rows <- NULL
+          if (
+            is.data.frame(var_schema) &&
+              nrow(var_schema) > 0 &&
+              all(c("variable", "type") %in% names(var_schema))
+          ) {
+            rule_types <- if ("rule_type" %in% names(var_schema)) {
+              as.character(var_schema$rule_type)
+            } else {
+              rep("variable", nrow(var_schema))
+            }
+            variables <- as.character(var_schema$variable)
+            types <- as.character(var_schema$type)
+            keep <- !is.na(rule_types) &
+              rule_types == "variable" &
+              !is.na(variables) &
+              variables != "" &
+              !is.na(types) &
+              types != ""
+            type_rows <- var_schema[keep, , drop = FALSE]
+            type_rows <- type_rows[
+              !duplicated(as.character(type_rows$variable)),
+              ,
+              drop = FALSE
+            ]
+          }
+
+          # Check if we have any schema to work with
+          has_dep_schema <- !is.null(dep_rows) && nrow(dep_rows) > 0
+
+          has_types <- !is.null(type_rows) && nrow(type_rows) > 0
+
+          if (!has_dep_schema && !has_types) {
+            phrutils::phr_warning(
+              self$dataset_name,
+              "No dependency schema or type information available; skipping data quality checks."
+            )
+            self$set(field = "..data_quality_flags", value = NULL)
+            return(invisible(NULL))
+          }
+
+          # FLAG COLLECTION
+
+          flags <- list()
+
+          add_flag <- function(name, vec) {
+            phrutils::phr_try(
+              {
+                if (!is.null(vec) && length(vec) == nrow(df)) {
+                  flags[[name]] <<- vec
+                }
+              },
+              on_error = "warn",
+              origin = paste0(self$dataset_name, "_DQ_addflag_", name)
+            )
+          }
+
+          # 1. Type coercion checks (row-level flags)
+          # Iterate the variable schema rows to determine intended types
+          # This check identifies specific rows that cannot be coerced
+
+          phrutils::phr_try(
+            {
+              if (has_types) {
+                for (type_i in seq_len(nrow(type_rows))) {
+                  type_row <- type_rows[type_i, , drop = FALSE]
+                  col <- schema_value(type_row, "variable")
+                  if (col == "" || !col %in% names(df)) {
+                    next
+                  }
+                  want <- schema_value(type_row, "type")
+                  x <- df[[col]]
+
+                  # Column-level coercibility
+                  is_ok <- phrutils::is_safely_coercible(x, want)
+
+                  if (is_ok) {
+                    add_flag(paste0("flag_", col, "_type"), rep(0, nrow(df)))
+                  } else {
+                    bad_rows <- phrutils::which_bad_coercible(x, want)
+                    add_flag(
+                      paste0("flag_", col, "_type"),
+                      ifelse(bad_rows, 1, 0)
+                    )
+                  }
+                }
+              }
+            },
+            on_error = "warn",
+            origin = paste0(self$dataset_name, "_DQ_typecheck")
+          )
+
+          # 2. Dependencies from dependency_schema
+          # All other quality checks (allowed values, ranges, patterns, unique, mutex, etc.)
+          # should now be defined as dependency rules in the dependency_schema
+
+          phrutils::phr_try(
+            {
+              if (has_dep_schema) {
+                # Process all dependency rows (action field determines treatment)
+                for (dep_i in seq_len(nrow(dep_rows))) {
+                  dep_row <- dep_rows[dep_i, , drop = FALSE]
+                  flag_name <- schema_value(dep_row, "dep_name")
+
+                  # Wrap each dependency processing in phr_try to continue on errors
+                  phrutils::phr_try(
+                    {
+                      # CHANGE 1: Check if required variables are present in dataset
+                      # Variables in dependency schema use canonical names from
+                      # variable_map, stored as a comma-separated string.
+                      required_vars <- character(0)
+                      vars_raw <- schema_value(dep_row, "variables")
+                      if (vars_raw != "") {
+                        required_vars <- trimws(strsplit(vars_raw, ",")[[1]])
+                        required_vars <- required_vars[required_vars != ""]
+                      }
+
+                      skip_dependency <- FALSE
+
+                      if (
+                        !is.null(required_vars) && length(required_vars) > 0
+                      ) {
+                        # Resolve canonical variable names to dataset column names
+                        mapped_cols <- character(0)
+                        missing_vars <- character(0)
+
+                        for (var_canonical in required_vars) {
+                          # Try to resolve using variable_map
+                          # Suppress warnings from resolve_column since we handle missing variables gracefully
+                          var_actual <- suppressWarnings(self$resolve_column(
+                            var_canonical,
+                            stage = stage
+                          ))
+
+                          if (is.null(var_actual)) {
+                            # Variable not found in dataset
+                            missing_vars <- c(missing_vars, var_canonical)
+                          } else {
+                            mapped_cols <- c(mapped_cols, var_actual)
+                          }
+                        }
+
+                        # Skip this dependency if any required variables are missing
+                        if (length(missing_vars) > 0) {
+                          phrutils::phr_message(
+                            phrutils::phr_txt(
+                              "Skipping dependency '{flag_name}': required variable(s) not present in dataset: {paste(missing_vars, collapse=', ')}"
+                            )
+                          )
+                          skip_dependency <- TRUE
+                        }
+                      }
+
+                      if (!skip_dependency) {
+                        # Read the action field before checking required fields, since
+                        # flag_delete dependencies may omit the 'then' clause
+                        rule_action <- schema_value(dep_row, "action")
+
+                        rule_if <- schema_value(
+                          dep_row,
+                          c("condition_if", "if", "condition")
+                        )
+
+                        rule_then <- schema_value(
+                          dep_row,
+                          c("then", "require")
+                        )
+
+                        if (rule_if == "") {
+                          phrutils::phr_warning(
+                            self$dataset_name,
+                            phrutils::phr_txt(
+                              "Invalid dependency rule structure for '{flag_name}': missing 'if/condition_if'."
+                            )
+                          )
+                          skip_dependency <- TRUE
+                        } else if (
+                          rule_then == "" && rule_action != "flag_delete"
+                        ) {
+                          # 'then' is required for all actions except flag_delete,
+                          # which may use condition_if alone to identify rows for deletion
+                          phrutils::phr_warning(
+                            self$dataset_name,
+                            phrutils::phr_txt(
+                              "Invalid dependency rule structure for '{flag_name}': missing 'then'."
+                            )
+                          )
+                          skip_dependency <- TRUE
+                        }
+                      }
+
+                      # Only process dependency if it should not be skipped
+                      if (!skip_dependency) {
+                        # DEPENDENCY EXPRESSION TRANSLATION
+
+                        # Translate canonical variable names and values in dependency expressions
+                        # to dataset-specific column names and values.
+                        #
+                        # Example:
+                        # Input:  "fever == 'yes' & !is.na(temperature)"
+                        # Output: "fever_col %in% c('yes', 'y', 'oui') & !is.na(temp_col)"
+                        #
+                        # Translation uses:
+                        # - variable_map: Maps canonical names (fever) to columns (fever_col)
+                        # - value_map: Maps canonical values ('yes') to dataset values (c('yes', 'y'))
+                        #
+                        # This allows dependency rules to be written using portable canonical names
+                        # rather than dataset-specific column names.
+                        #
+                        # For comprehensive documentation, see:
+                        # docs/variable_value_mapping_guide.md
+
+                        rule_if_translated <- private$..translate_expression(
+                          rule_if,
+                          stage = stage
+                        )
+
+                        cond_if <- phrutils::phr_try(
+                          {
+                            out <- with(
+                              df,
+                              eval(parse(text = rule_if_translated))
+                            )
+                            if (!is.logical(out)) {
+                              rep(FALSE, nrow(df))
+                            } else if (length(out) == 1) {
+                              # Scalar logical value (e.g., TRUE or FALSE) - replicate to all rows
+                              rep(out, nrow(df))
+                            } else if (length(out) != nrow(df)) {
+                              # Length mismatch - default to FALSE
+                              rep(FALSE, nrow(df))
+                            } else {
+                              out
+                            }
+                          },
+                          on_error = "warn",
+                          origin = paste0(
+                            self$dataset_name,
+                            "_DQ_if_",
+                            flag_name
+                          ),
+                          hint = tryCatch(
+                            {
+                              # Try to parse to get specific error
+                              parse(text = rule_if_translated)
+                              NULL # If parse succeeds, no special hint needed
+                            },
+                            error = function(e) {
+                              private$..get_expression_parse_hint(
+                                rule_if_translated,
+                                conditionMessage(e)
+                              )
+                            }
+                          )
+                        )
+
+                        # Evaluate 'then' only when present
+                        cond_then <- NULL
+                        if (rule_then != "") {
+                          rule_then_translated <- private$..translate_expression(
+                            rule_then,
+                            stage = stage
+                          )
+
+                          cond_then <- phrutils::phr_try(
+                            {
+                              out <- with(
+                                df,
+                                eval(parse(text = rule_then_translated))
+                              )
+                              if (!is.logical(out)) {
+                                rep(FALSE, nrow(df))
+                              } else if (length(out) == 1) {
+                                # Scalar logical value (e.g., TRUE or FALSE) - replicate to all rows
+                                rep(out, nrow(df))
+                              } else if (length(out) != nrow(df)) {
+                                # Length mismatch - default to FALSE
+                                rep(FALSE, nrow(df))
+                              } else {
+                                out
+                              }
+                            },
+                            on_error = "warn",
+                            origin = paste0(
+                              self$dataset_name,
+                              "_DQ_then_",
+                              flag_name
+                            ),
+                            hint = tryCatch(
+                              {
+                                # Try to parse to get specific error
+                                parse(text = rule_then_translated)
+                                NULL # If parse succeeds, no special hint needed
+                              },
+                              error = function(e) {
+                                private$..get_expression_parse_hint(
+                                  rule_then_translated,
+                                  conditionMessage(e)
+                                )
+                              }
+                            )
+                          )
+                        }
+
+                        # Calculate flag for this rule.
+                        # When 'then' is present: flag rows where cond_if is TRUE but cond_then is FALSE.
+                        # When 'then' is absent (flag_delete with condition_if only): flag rows where
+                        # cond_if is TRUE — those rows are the ones to be deleted.
+                        # Note: NA positions in flag_vec are converted to 1 (flagged) since we cannot
+                        # confirm the condition is met when the evaluation result is NA.
+                        flag_vec <- rep(0, nrow(df))
+                        if (!is.null(cond_then)) {
+                          flag_vec[cond_if & !cond_then] <- 1
+                        } else {
+                          flag_vec[cond_if] <- 1
+                        }
+                        flag_vec[is.na(flag_vec)] <- 1
+
+                        # Add flag with consistent "flag_" prefix
+                        add_flag(flag_name, flag_vec)
+                      }
+                    },
+                    on_error = "warn",
+                    origin = paste0(self$dataset_name, "_DQ_dep_", flag_name)
+                  )
+                }
+
+                # Note: soft_dependencies removed - use action field to determine treatment
+              }
+            },
+            on_error = "warn",
+            origin = paste0(self$dataset_name, "_DQ_dependencies")
+          )
+
+          # Final assembly of flags
+
+          if (length(flags) == 0) {
+            phrutils::phr_message(
+              self$dataset_name,
+              "No data quality issues detected."
+            )
+            private$..data_quality_flags <- NULL
+            return(invisible(NULL))
+          }
+
+          flag_df <- as.data.frame(flags, stringsAsFactors = FALSE)
+
+          if (private$..uuid %in% names(df)) {
+            flag_df[[private$..uuid]] <- df[[private$..uuid]]
+          }
+
+          self$set(field = "..data_quality_flags", value = flag_df)
+
+          # Append to standardized data
+
+          phrutils::phr_try(
+            {
+              std <- private$..standardized_data
+              if (!is.null(std) && private$..uuid %in% names(std)) {
+                join_col <- private$..uuid
+                if (join_col %in% names(flag_df)) {
+                  # Remove columns from std that already exist in flag_df (excluding
+                  # the join key) to prevent dplyr from creating .x/.y duplicates.
+                  overlapping_cols <- setdiff(
+                    intersect(names(std), names(flag_df)),
+                    join_col
+                  )
+                  if (length(overlapping_cols) > 0) {
+                    std <- std[,
+                      !names(std) %in% overlapping_cols,
+                      drop = FALSE
+                    ]
+                  }
+
+                  std <- dplyr::left_join(std, flag_df, by = join_col)
+                  self$set(field = "..standardized_data", value = std)
+
+                  phrutils::phr_message(
+                    phrutils::phr_txt(
+                      "Appended {ncol(flag_df)-1} data quality flag columns onto standardized dataset."
+                    )
+                  )
+                }
+              }
+            },
+            on_error = "warn",
+            origin = paste0(self$dataset_name, "_DQ_append")
+          )
+
+          phrutils::phr_message(
+            phrutils::phr_txt(
+              "Data quality check complete. {ncol(flag_df)-1} flag types generated."
+            )
+          )
+
+          invisible(flag_df)
+        },
+        on_error = "abort",
+        origin = paste0(self$dataset_name, "$..run_quality_checks")
+      )
+    },
+
     # @description Generalized validation for the flat schema tables (one
     #   row per variable/indicator/dependency rule) read from the variable,
     #   indicator, and dependency xlsx templates. Consolidates the previous
@@ -3405,8 +3589,8 @@ Data <- R6::R6Class(
             df,
             required_cols = required_cols,
             origin = origin,
-            hint   = "Schema table missing required columns.",
-            soft   = FALSE
+            hint = "Schema table missing required columns.",
+            soft = FALSE
           )
 
           TRUE
@@ -3416,591 +3600,6 @@ Data <- R6::R6Class(
       )
     },
 
-    # @description Private entry point used by subclasses' `default_schema()`
-    #   methods to convert a flat variable-schema table (as read from an xlsx
-    #   template) into the canonical nested variable schema list. Thin
-    #   delegating wrapper around the exported `data_table_to_schema()`
-    #   utility, kept here so all subclasses funnel through a single private
-    #   call site instead of calling the exported function directly.
-    # @param df A data frame or tibble in the flat schema table format.
-    # @return A nested-list representation of the variable schema.
-    # @keywords internal
-    ..data_table_to_schema = function(df) {
-      data_table_to_schema(df)
-    },
-
-    # @description Private entry point used by subclasses' default indicator
-    #   schema loaders to convert a flat indicator-schema table into the
-    #   canonical nested indicator schema list. Thin delegating wrapper
-    #   around the exported `indicator_table_to_schema()` utility.
-    # @param df A data frame or tibble in the flat indicator schema table format.
-    # @return A nested list representation of the indicator schema.
-    # @keywords internal
-    ..indicator_table_to_schema = function(df) {
-      indicator_table_to_schema(df)
-    },
-
-    # @description Private entry point used by subclasses' default dependency
-    #   schema loaders to convert a flat dependency-schema table into the
-    #   canonical nested dependency schema list. Thin delegating wrapper
-    #   around the exported `dependency_table_to_schema()` utility.
-    # @param df A data frame or tibble in the flat dependency schema table format.
-    # @return A nested list representation of the dependency schema.
-    # @keywords internal
-    ..dependency_table_to_schema = function(df) {
-      dependency_table_to_schema(df)
-    },
-
-    # @description Normalize `..variable_schema` to the canonical nested-list
-    #   shape for internal consumers (auto-mapping, type coercion, dependency
-    #   lookups) that still operate on the list form. `..variable_schema` is
-    #   now stored as a flat data frame for all subclasses; this helper
-    #   converts it back to the nested list on demand via
-    #   `data_table_to_schema()`, while passing through unchanged when the
-    #   legacy nested-list shape is already in use (backward compatibility).
-    # @param sch Optional schema to normalize. Defaults to
-    #   `private$..variable_schema`.
-    # @return A nested-list schema, or `NULL`/`list()` when no schema is set.
-    # @keywords internal
-    ..as_variable_schema_list = function(sch = NULL) {
-      if (missing(sch) || is.null(sch)) {
-        sch <- private$..variable_schema
-      }
-      if (is.data.frame(sch)) {
-        if (nrow(sch) == 0) {
-          return(list())
-        }
-        return(data_table_to_schema(sch))
-      }
-      sch
-    },
-
-    # @description Normalize `..indicator_schema` to the canonical
-    #   nested-list shape (one named entry per indicator, with
-    #   `function_name`/`variables`/`arguments`) for internal consumers
-    #   (e.g. `standardize()`'s indicator-processing step) that still
-    #   operate on the list form. `..indicator_schema` is stored as a flat
-    #   data frame (one row per indicator); this helper converts it to the
-    #   nested list on demand via `indicator_table_to_schema()`, while
-    #   passing through unchanged when the legacy nested-list shape is
-    #   already in use (backward compatibility).
-    # @param sch Optional schema to normalize. Defaults to
-    #   `private$..indicator_schema`.
-    # @return A nested-list schema, or `list()` when no schema is set.
-    # @keywords internal
-    ..as_indicator_schema_list = function(sch = NULL) {
-      if (missing(sch) || is.null(sch)) {
-        sch <- private$..indicator_schema
-      }
-      if (is.data.frame(sch)) {
-        if (nrow(sch) == 0) {
-          return(list())
-        }
-        return(indicator_table_to_schema(sch))
-      }
-      sch %||% list()
-    },
-
-    # @description Normalize `..dependency_schema` to the canonical
-    #   nested-list shape (`list(dependencies = ..., soft_dependencies = ...)`)
-    #   for internal consumers (e.g. `run_quality_checks()`,
-    #   `..get_flag_action_from_schema()`, `..get_flag_variables_from_schema()`)
-    #   that still operate on the list form. `..dependency_schema` is stored
-    #   as a flat data frame (one row per dependency rule); this helper
-    #   converts it to the nested list on demand via
-    #   `dependency_table_to_schema()`, while passing through unchanged when
-    #   the legacy nested-list shape is already in use (backward
-    #   compatibility).
-    # @param sch Optional schema to normalize. Defaults to
-    #   `private$..dependency_schema`.
-    # @return A nested-list schema with `dependencies`/`soft_dependencies`
-    #   elements, or `list(dependencies = list(), soft_dependencies = list())`
-    #   when no schema is set.
-    # @keywords internal
-    ..as_dependency_schema_list = function(sch = NULL) {
-      empty <- list(dependencies = list(), soft_dependencies = list())
-      if (missing(sch) || is.null(sch)) {
-        sch <- private$..dependency_schema
-      }
-      if (is.data.frame(sch)) {
-        if (nrow(sch) == 0) {
-          return(empty)
-        }
-        return(dependency_table_to_schema(sch))
-      }
-      sch %||% empty
-    },
-
-    # @description Convert one of the class's nested-list schemas
-    #   (variable, indicator, or dependency) to a flat data-frame form.
-    #   Consolidates the previous private wrappers
-    #   \code{..data_schema_to_table} / \code{..indicator_schema_to_table} /
-    #   \code{..dependency_schema_to_table} into a single dispatcher and
-    #   inlines the row-building logic that previously lived in the
-    #   exported \code{data_schema_to_table()},
-    #   \code{indicator_schema_to_table()} and
-    #   \code{dependency_schema_to_table()} utilities.
-    # @param schema_type Character scalar identifying which schema to
-    #   convert: one of \code{"variable"}, \code{"indicator"} or
-    #   \code{"dependency"}.
-    # @param schema_list Optional nested-list schema to convert. When
-    #   \code{NULL} (default), the object's own \code{variable_schema},
-    #   \code{indicator_schema} or \code{dependency_schema} is used.
-    # @return A tibble representation of the requested schema.
-    # @keywords internal
-    ..schema_to_table = function(
-      schema_type = c("variable", "indicator", "dependency"),
-      schema_list = NULL
-    ) {
-      schema_type <- match.arg(schema_type)
-
-      if (is.null(schema_list)) {
-        schema_list <- switch(
-          schema_type,
-          variable   = private$..variable_schema,
-          indicator  = private$..indicator_schema,
-          dependency = private$..dependency_schema
-        )
-      }
-
-      # Variable, indicator and dependency schemas are now all stored as a
-      # flat data frame (one row per variable value / indicator / dependency
-      # rule); if we were handed one already (either explicitly or via
-      # private$..variable_schema / ..indicator_schema / ..dependency_schema),
-      # it's already in the desired output shape, so pass it through as-is.
-      if (is.data.frame(schema_list)) {
-        return(schema_list)
-      }
-
-      switch(
-        schema_type,
-        variable = {
-          # ---- Inlined body of data_schema_to_table()
-          data_validate_schema_to_table(
-            schema_list = schema_list,
-            origin      = "..schema_to_table(variable)"
-          )
-
-          fixed_cols <- c(
-            "rule_type", "variable", "value", "required", "type",
-            "question_type", "is_other", "other_column_link",
-            "allowed", "col_names",
-            "unique",
-            "variable_label_en", "variable_label_fr", "variable_label_ar",
-            "value_label_en",    "value_label_fr",    "value_label_ar",
-            "label", "comment"
-          )
-
-          empty_row <- function() {
-            x <- setNames(as.list(rep(NA_character_, length(fixed_cols))), fixed_cols)
-            x$required <- NA
-            x
-          }
-
-          out <- list()
-
-          vars <- unique(c(
-            names(schema_list$types %||% list()),
-            names(schema_list$allowed_values %||% list()),
-            names(schema_list$value_map %||% list()),
-            names(schema_list$question_types %||% list()),
-            names(schema_list$is_other %||% list()),
-            names(schema_list$other_column_link %||% list()),
-            schema_list$required %||% character(0)
-          ))
-
-          for (v in vars) {
-            has_value_map <- !is.null(schema_list$value_map[[v]])
-
-            if (has_value_map) {
-              value_mappings <- schema_list$value_map[[v]]
-
-              for (canonical_value in names(value_mappings)) {
-                row <- empty_row()
-                row$rule_type <- "variable"
-                row$variable  <- v
-                row$value     <- canonical_value
-                row$required  <- v %in% (schema_list$required %||% character(0))
-
-                if (!is.null(schema_list$types[[v]])) {
-                  row[["type"]] <- schema_list$types[[v]]
-                } else {
-                  row[["type"]] <- NA_character_
-                }
-
-                dataset_values <- value_mappings[[canonical_value]]
-                if (!is.null(dataset_values) && length(dataset_values) > 0) {
-                  row[["allowed"]] <- paste(dataset_values, collapse = ",")
-                } else {
-                  row[["allowed"]] <- NA_character_
-                }
-
-                if (!is.null(schema_list$col_names[[v]])) {
-                  row[["col_names"]] <- paste(schema_list$col_names[[v]], collapse = ",")
-                } else {
-                  row[["col_names"]] <- NA_character_
-                }
-
-                if (!is.null(schema_list$unique) && v %in% schema_list$unique) {
-                  row$unique <- "TRUE"
-                } else {
-                  row$unique <- NA_character_
-                }
-
-                if (!is.null(schema_list$question_types[[v]])) {
-                  row$question_type <- schema_list$question_types[[v]]
-                } else {
-                  row$question_type <- NA_character_
-                }
-
-                if (!is.null(schema_list$is_other[[v]])) {
-                  row$is_other <- ifelse(isTRUE(schema_list$is_other[[v]]), "TRUE", "FALSE")
-                } else {
-                  row$is_other <- NA_character_
-                }
-
-                if (!is.null(schema_list$other_column_link[[v]])) {
-                  if (is.character(schema_list$other_column_link[[v]])) {
-                    row$other_column_link <- paste(schema_list$other_column_link[[v]], collapse = ",")
-                  } else {
-                    row$other_column_link <- as.character(schema_list$other_column_link[[v]])
-                  }
-                } else {
-                  row$other_column_link <- NA_character_
-                }
-
-                for (lang in c("en", "fr", "ar")) {
-                  col <- paste0("variable_label_", lang)
-                  lbl <- (schema_list$variable_labels %||% list())[[lang]][[v]]
-                  row[[col]] <- if (!is.null(lbl)) as.character(lbl) else NA_character_
-                }
-
-                for (lang in c("en", "fr", "ar")) {
-                  col <- paste0("value_label_", lang)
-                  lbl <- (schema_list$value_labels %||% list())[[lang]][[v]][[canonical_value]]
-                  row[[col]] <- if (!is.null(lbl)) as.character(lbl) else NA_character_
-                }
-
-                out <- append(out, list(row))
-              }
-            } else {
-              row <- empty_row()
-              row$rule_type <- "variable"
-              row$variable  <- v
-              row$value     <- NA_character_
-              row$required  <- v %in% (schema_list$required %||% character(0))
-
-              if (!is.null(schema_list$types[[v]])) {
-                row[["type"]] <- schema_list$types[[v]]
-              } else {
-                row[["type"]] <- NA_character_
-              }
-
-              if (!is.null(schema_list$allowed_values[[v]])) {
-                row[["allowed"]] <- paste(schema_list$allowed_values[[v]], collapse = ",")
-              } else {
-                row[["allowed"]] <- NA_character_
-              }
-
-              if (!is.null(schema_list$col_names[[v]])) {
-                row[["col_names"]] <- paste(schema_list$col_names[[v]], collapse = ",")
-              } else {
-                row[["col_names"]] <- NA_character_
-              }
-
-              if (!is.null(schema_list$unique) && v %in% schema_list$unique) {
-                row$unique <- "TRUE"
-              } else {
-                row$unique <- NA_character_
-              }
-
-              if (!is.null(schema_list$question_types[[v]])) {
-                row$question_type <- schema_list$question_types[[v]]
-              } else {
-                row$question_type <- NA_character_
-              }
-
-              if (!is.null(schema_list$is_other[[v]])) {
-                row$is_other <- ifelse(isTRUE(schema_list$is_other[[v]]), "TRUE", "FALSE")
-              } else {
-                row$is_other <- NA_character_
-              }
-
-              if (!is.null(schema_list$other_column_link[[v]])) {
-                if (is.character(schema_list$other_column_link[[v]])) {
-                  row$other_column_link <- paste(schema_list$other_column_link[[v]], collapse = ",")
-                } else {
-                  row$other_column_link <- as.character(schema_list$other_column_link[[v]])
-                }
-              } else {
-                row$other_column_link <- NA_character_
-              }
-
-              for (lang in c("en", "fr", "ar")) {
-                col <- paste0("variable_label_", lang)
-                lbl <- (schema_list$variable_labels %||% list())[[lang]][[v]]
-                row[[col]] <- if (!is.null(lbl)) as.character(lbl) else NA_character_
-              }
-
-              for (lang in c("en", "fr", "ar")) {
-                row[[paste0("value_label_", lang)]] <- NA_character_
-              }
-
-              out <- append(out, list(row))
-            }
-          }
-
-          deps <- schema_list$dependencies %||% list()
-          if (length(deps) > 0) {
-            for (dep_name in names(deps)) {
-              d <- deps[[dep_name]]
-              row <- empty_row()
-              row[["rule_type"]] <- "dependency"
-              row[["variable"]]  <- NA_character_
-              row[["variables"]] <- paste(d[["variables"]], collapse = ",")
-              row[["condition_if"]] <- d[["condition_if"]] %||% NA_character_
-              row[["then"]]        <- d[["then"]]         %||% NA_character_
-
-              if (grepl("^flag_", dep_name)) {
-                row[["dep_group"]] <- sub("^flag_", "", dep_name)
-              } else if (grepl("^dq_dep_", dep_name)) {
-                row[["dep_group"]] <- NA_character_
-              } else {
-                row[["dep_group"]] <- dep_name
-              }
-
-              row[["action"]] <- d[["action"]] %||% NA_character_
-
-              out <- append(out, list(row))
-            }
-          }
-
-          soft <- schema_list$soft_dependencies %||% list()
-          if (length(soft) > 0) {
-            for (dep_name in names(soft)) {
-              d <- soft[[dep_name]]
-              row <- empty_row()
-              row[["rule_type"]] <- "soft_dependency"
-              row[["variable"]]  <- ""
-              row[["variables"]] <- paste(d[["variables"]], collapse = ",")
-              row[["condition_if"]] <- d[["condition_if"]] %||% NA_character_
-              row[["then"]]        <- d[["then"]]         %||% NA_character_
-
-              if (grepl("^flag_", dep_name)) {
-                row[["dep_group"]] <- sub("^flag_", "", dep_name)
-              } else if (grepl("^dq_soft_dep_", dep_name)) {
-                row[["dep_group"]] <- NA_character_
-              } else {
-                row[["dep_group"]] <- dep_name
-              }
-
-              row[["action"]] <- d[["action"]] %||% NA_character_
-
-              out <- append(out, list(row))
-            }
-          }
-
-          tibble::as_tibble(do.call(
-            rbind,
-            lapply(out, function(x) as.data.frame(x, stringsAsFactors = FALSE))
-          ))
-        },
-        indicator = {
-          # ---- Inlined body of indicator_schema_to_table()
-          if (is.null(schema_list) || !is.list(schema_list)) {
-            phrutils::phr_error("..schema_to_table(indicator)", "Indicator schema must be a list object.")
-          }
-
-          fixed_cols <- c(
-            "indicator_name",
-            "function_name",
-            "variables",
-            "arguments",
-            "label",
-            "comment"
-          )
-
-          empty_row <- function() {
-            setNames(as.list(rep(NA_character_, length(fixed_cols))), fixed_cols)
-          }
-
-          out <- list()
-
-          if (length(schema_list) > 0) {
-            for (ind_name in names(schema_list)) {
-              ind <- schema_list[[ind_name]]
-              row <- empty_row()
-
-              row[["indicator_name"]] <- ind[["indicator_name"]] %||% ind_name
-              row[["function_name"]]  <- ind[["function_name"]] %||% NA_character_
-              row[["variables"]]      <- paste(ind[["variables"]] %||% character(0), collapse = ",")
-              row[["label"]]          <- ind[["label"]] %||% NA_character_
-              row[["comment"]]        <- ind[["comment"]] %||% NA_character_
-
-              args <- ind[["arguments"]] %||% list()
-              if (length(args) > 0) {
-                arg_strings <- mapply(
-                  function(name, value) paste0(name, "=", value),
-                  names(args),
-                  args,
-                  SIMPLIFY = TRUE
-                )
-                row[["arguments"]] <- paste(arg_strings, collapse = ",")
-              } else {
-                row[["arguments"]] <- NA_character_
-              }
-
-              out <- append(out, list(row))
-            }
-          }
-
-          if (length(out) == 0) {
-            return(tibble::tibble(
-              indicator_name = character(0),
-              function_name = character(0),
-              variables = character(0),
-              arguments = character(0),
-              label = character(0),
-              comment = character(0)
-            ))
-          }
-
-          tibble::as_tibble(do.call(
-            rbind,
-            lapply(out, function(x) as.data.frame(x, stringsAsFactors = FALSE))
-          ))
-        },
-        dependency = {
-          # ---- Inlined body of dependency_schema_to_table()
-          dependency_validate_schema_to_table(
-            dependency_schema_list = schema_list,
-            origin = "..schema_to_table(dependency)"
-          )
-
-          fixed_cols <- c(
-            "rule_type",
-            "dep_name",
-            "variables",
-            "condition_if",
-            "then",
-            "action",
-            "label",
-            "comment"
-          )
-
-          empty_row <- function() {
-            setNames(as.list(rep(NA_character_, length(fixed_cols))), fixed_cols)
-          }
-
-          out <- list()
-
-          deps <- schema_list$dependencies %||% list()
-          if (length(deps) > 0) {
-            for (dep_name in names(deps)) {
-              d <- deps[[dep_name]]
-              row <- empty_row()
-
-              row[["rule_type"]]    <- "dependency"
-              row[["dep_name"]]     <- dep_name
-              row[["variables"]]    <- paste(d[["variables"]] %||% character(0), collapse = ",")
-              row[["condition_if"]] <- d[["condition_if"]] %||% NA_character_
-              row[["then"]]         <- d[["then"]] %||% NA_character_
-              row[["action"]]       <- d[["action"]] %||% NA_character_
-              row[["label"]]        <- d[["label"]] %||% NA_character_
-              row[["comment"]]      <- d[["comment"]] %||% NA_character_
-
-              out <- append(out, list(row))
-            }
-          }
-
-          soft <- schema_list$soft_dependencies %||% list()
-          if (length(soft) > 0) {
-            for (dep_name in names(soft)) {
-              d <- soft[[dep_name]]
-              row <- empty_row()
-
-              row[["rule_type"]]    <- "soft_dependency"
-              row[["dep_name"]]     <- dep_name
-              row[["variables"]]    <- paste(d[["variables"]] %||% character(0), collapse = ",")
-              row[["condition_if"]] <- d[["condition_if"]] %||% NA_character_
-              row[["then"]]         <- d[["then"]] %||% NA_character_
-              row[["action"]]       <- d[["action"]] %||% NA_character_
-              row[["label"]]        <- d[["label"]] %||% NA_character_
-              row[["comment"]]      <- d[["comment"]] %||% NA_character_
-
-              out <- append(out, list(row))
-            }
-          }
-
-          if (length(out) == 0) {
-            return(tibble::tibble(
-              rule_type = character(0),
-              dep_name = character(0),
-              variables = character(0),
-              condition_if = character(0),
-              then = character(0),
-              action = character(0),
-              label = character(0),
-              comment = character(0)
-            ))
-          }
-
-          tibble::as_tibble(do.call(
-            rbind,
-            lapply(out, function(x) as.data.frame(x, stringsAsFactors = FALSE))
-          ))
-        }
-      )
-    },
-
-    # @description Private, unified export method that converts one of
-    #   the object's nested-list schemas (variable, indicator, or
-    #   dependency) into a data frame with logging and error handling.
-    #   Intended to be invoked through the inherited \code{Asset$call()}
-    #   API, e.g.
-    #   \code{d$call(field = "..export_schema_to_table", schema_type = "variable")}.
-    # @param schema_type Character scalar identifying the schema to
-    #   export: one of \code{"variable"}, \code{"indicator"}, or
-    #   \code{"dependency"}.
-    # @return Data frame representation of the requested schema, or
-    #   \code{NULL} when the schema is not set (a warning is emitted).
-    # @keywords internal
-    ..export_schema_to_table = function(
-      schema_type = c("variable", "indicator", "dependency")
-    ) {
-      schema_type <- match.arg(schema_type)
-      phrutils::phr_try(
-        {
-          schema <- switch(
-            schema_type,
-            variable   = private$..variable_schema,
-            indicator  = private$..indicator_schema,
-            dependency = private$..dependency_schema
-          )
-          if (is.null(schema)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "No {schema_type} schema available to export."
-              )
-            )
-            return(NULL)
-          }
-          tbl <- private$..schema_to_table(
-            schema_type = schema_type,
-            schema_list = schema
-          )
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Exported {schema_type} schema from {self$dataset_name} ({nrow(tbl)} row(s))."
-            )
-          )
-          tbl
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$..export_schema_to_table")
-      )
-    },
     #' @description
     #' Resolve a "@variable_map$role" schema reference (or a bare role name)
     #' to its mapped dataset column name.
@@ -4146,9 +3745,7 @@ Data <- R6::R6Class(
               return(action)
             }
             # Check soft dependencies
-            if (
-              flag_name %in% names(dep_schema_list$soft_dependencies)
-            ) {
+            if (flag_name %in% names(dep_schema_list$soft_dependencies)) {
               dep <- dep_schema_list$soft_dependencies[[flag_name]]
               action <- dep[["action"]] %||% ""
               return(action)
@@ -4193,9 +3790,7 @@ Data <- R6::R6Class(
               return(variables)
             }
             # Check soft dependencies
-            if (
-              flag_name %in% names(dep_schema_list$soft_dependencies)
-            ) {
+            if (flag_name %in% names(dep_schema_list$soft_dependencies)) {
               dep <- dep_schema_list$soft_dependencies[[flag_name]]
               variables <- dep[["variables"]] %||% NULL
               return(variables)
@@ -4244,7 +3839,9 @@ Data <- R6::R6Class(
         idx <- which(as.character(df[[uuid_col]]) == as.character(u))
 
         if (
-          length(idx) == 1 && col %in% names(df) && isTRUE(row$changed == "yes")
+          length(idx) == 1 &&
+            col %in% names(df) &&
+            isTRUE(row$changed == "yes")
         ) {
           # Coerce new_val to the target column type before assignment
           target_class <- class(df[[col]])[1]
@@ -4314,9 +3911,12 @@ Data <- R6::R6Class(
                   NA
                 }
               },
-              "Date" = tryCatch(phrutils::phr_convert_date(new_val), error = function(e) {
-                as.Date(NA)
-              }),
+              "Date" = tryCatch(
+                phrutils::phr_convert_date(new_val),
+                error = function(e) {
+                  as.Date(NA)
+                }
+              ),
               "POSIXct" = tryCatch(
                 phrutils::phr_convert_datetime(new_val),
                 error = function(e) {
@@ -4361,7 +3961,10 @@ Data <- R6::R6Class(
 
       # Store any issues for user follow-up
       if (length(issues) > 0) {
-        self$set(field = "..cleaning_log_issues", value = do.call(rbind, issues))
+        self$set(
+          field = "..cleaning_log_issues",
+          value = do.call(rbind, issues)
+        )
       }
 
       df
@@ -4379,7 +3982,9 @@ Data <- R6::R6Class(
       # Use lapply for efficient token collection
       token_list <- lapply(values, function(val) {
         if (!is.na(val) && nchar(val) > 0) {
-          tokens <- trimws(strsplit(as.character(val), " ", fixed = TRUE)[[1]])
+          tokens <- trimws(strsplit(as.character(val), " ", fixed = TRUE)[[
+            1
+          ]])
           tokens[tokens != ""]
         } else {
           character(0)
@@ -4524,7 +4129,9 @@ Data <- R6::R6Class(
       }
 
       # Step 1: Replace canonical variable names with mapped dataset column names
-      if (!is.null(private$..variable_map) && length(private$..variable_map) > 0) {
+      if (
+        !is.null(private$..variable_map) && length(private$..variable_map) > 0
+      ) {
         for (role in names(private$..variable_map)) {
           dataset_col <- private$..variable_map[[role]]
           if (!is.null(dataset_col) && dataset_col != "") {
@@ -4764,7 +4371,11 @@ Data <- R6::R6Class(
                     "\\b"
                   )
                   if (length(dataset_vals) == 1) {
-                    replacement_eq_rev <- paste0(val_expr, " == ", dataset_col)
+                    replacement_eq_rev <- paste0(
+                      val_expr,
+                      " == ",
+                      dataset_col
+                    )
                   } else {
                     replacement_eq_rev <- paste0(
                       dataset_col,
@@ -4787,7 +4398,11 @@ Data <- R6::R6Class(
                     "\\b"
                   )
                   if (length(dataset_vals) == 1) {
-                    replacement_ne_rev <- paste0(val_expr, " != ", dataset_col)
+                    replacement_ne_rev <- paste0(
+                      val_expr,
+                      " != ",
+                      dataset_col
+                    )
                   } else {
                     replacement_ne_rev <- paste0(
                       "!(",
@@ -4928,7 +4543,9 @@ Data <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phrutils::phr_txt("No {stage} data available for schema variable mapping.")
+              phrutils::phr_txt(
+                "No {stage} data available for schema variable mapping."
+              )
             )
             return(invisible(self))
           }
@@ -4990,7 +4607,11 @@ Data <- R6::R6Class(
 
             # Update variable_map if needed
             if (should_update) {
-              self$set(field = "..variable_map", role = var_role, value = matched_col)
+              self$set(
+                field = "..variable_map",
+                role = var_role,
+                value = matched_col
+              )
               vars_mapped <- vars_mapped + 1
 
               # Now check for value mapping (only for non-numeric types)
@@ -5070,7 +4691,11 @@ Data <- R6::R6Class(
                     }
 
                     if (length(matched_canonical) > 0) {
-                      self$set(field = "..value_map", role = var_role, value = matched_canonical)
+                      self$set(
+                        field = "..value_map",
+                        role = var_role,
+                        value = matched_canonical
+                      )
                       vals_mapped <- vals_mapped + 1
                     }
                   } else {
@@ -5096,7 +4721,11 @@ Data <- R6::R6Class(
                     }
 
                     if (length(matched_canonical) > 0) {
-                      self$set(field = "..value_map", role = var_role, value = matched_canonical)
+                      self$set(
+                        field = "..value_map",
+                        role = var_role,
+                        value = matched_canonical
+                      )
                       vals_mapped <- vals_mapped + 1
                     }
                   }
@@ -5113,13 +4742,20 @@ Data <- R6::R6Class(
                     # Use vectorized approach for efficiency
                     matches <- sapply(schema_allowed, function(allowed_val) {
                       escaped_val <- escape_regex(allowed_val)
-                      any(grepl(paste0("\\b", escaped_val, "\\b"), all_tokens))
+                      any(grepl(
+                        paste0("\\b", escaped_val, "\\b"),
+                        all_tokens
+                      ))
                     })
                     found_values <- schema_allowed[matches]
 
                     if (length(found_values) > 0) {
                       # Store as flat list for backward compatibility
-                      self$set(field = "..value_map", role = var_role, value = found_values)
+                      self$set(
+                        field = "..value_map",
+                        role = var_role,
+                        value = found_values
+                      )
                       vals_mapped <- vals_mapped + 1
                     }
                   } else {
@@ -5129,7 +4765,11 @@ Data <- R6::R6Class(
 
                     if (length(found_values) > 0) {
                       # Store as flat list for backward compatibility
-                      self$set(field = "..value_map", role = var_role, value = found_values)
+                      self$set(
+                        field = "..value_map",
+                        role = var_role,
+                        value = found_values
+                      )
                       vals_mapped <- vals_mapped + 1
                     }
                   }
@@ -5213,7 +4853,11 @@ Data <- R6::R6Class(
           # Populate variable_label for each role present in variable_map
           for (var_role in names(private$..variable_map)) {
             if (!is.null(schema_var_labels[[var_role]])) {
-              self$set(field = "..variable_label", role = var_role, value = schema_var_labels[[var_role]])
+              self$set(
+                field = "..variable_label",
+                role = var_role,
+                value = schema_var_labels[[var_role]]
+              )
               vars_labelled <- vars_labelled + 1
             }
           }
@@ -5222,7 +4866,11 @@ Data <- R6::R6Class(
           for (var_role in names(private$..value_map)) {
             val_label_entry <- schema_val_labels[[var_role]]
             if (!is.null(val_label_entry) && length(val_label_entry) > 0) {
-              self$set(field = "..value_label", role = var_role, value = val_label_entry)
+              self$set(
+                field = "..value_label",
+                role = var_role,
+                value = val_label_entry
+              )
               vals_labelled <- vals_labelled + 1
             }
           }
@@ -5240,106 +4888,14 @@ Data <- R6::R6Class(
         on_error = "warn",
         origin = paste0(self$dataset_name, "$map_schema_labels")
       )
+    },
+    
+    register_analytics_type = function(type, builder) {
+
+      private$..analytics_registry[[type]] <- builder
+
     }
-  ),
 
-  active = list(
-    #' @field raw_data Active binding exposing the private `..raw_data`
-    #'   field (original imported data frame). Reads return the stored
-    #'   data; assignments write through to the private field. Prefer
-    #'   the inherited `get()` / `set()` API or `get_data(stage = "raw")`
-    #'   in new code.
-    raw_data = function(value) {
-      if (missing(value)) {
-        private$..raw_data
-      } else {
-        self$set(field = "..raw_data", value = value)
-        invisible(value)
-      }
-    },
-
-    #' @field standardized_data Active binding exposing the private
-    #'   `..standardized_data` field (data frame after standardization).
-    #'   Reads return the stored data; assignments write through to the
-    #'   private field. Prefer the inherited `get()` / `set()` API or
-    #'   `get_data(stage = "standardized")` in new code.
-    standardized_data = function(value) {
-      if (missing(value)) {
-        private$..standardized_data
-      } else {
-        self$set(field = "..standardized_data", value = value)
-        invisible(value)
-      }
-    },
-
-    #' @field clean_data Active binding exposing the private
-    #'   `..clean_data` field (data frame after cleaning). Reads return
-    #'   the stored data; assignments write through to the private
-    #'   field. Prefer the inherited `get()` / `set()` API or
-    #'   `get_data(stage = "clean")` in new code.
-    clean_data = function(value) {
-      if (missing(value)) {
-        private$..clean_data
-      } else {
-        self$set(field = "..clean_data", value = value)
-        invisible(value)
-      }
-    },
-
-    #' @field .variable_map Active binding exposing the private
-    #'   `..variable_map` field. Reads return the stored list;
-    #'   assignments write through to the private field. Also resolvable
-    #'   via the inherited `get(field = ".variable_map")` /
-    #'   `set(field = ".variable_map", value = …)` API.
-    .variable_map = function(value) {
-      if (missing(value)) {
-        private$..variable_map
-      } else {
-        self$set(field = "..variable_map", value = value)
-        invisible(value)
-      }
-    },
-
-    #' @field .value_map Active binding exposing the private
-    #'   `..value_map` field. Reads return the stored list; assignments
-    #'   write through to the private field. Also resolvable via the
-    #'   inherited `get(field = ".value_map")` /
-    #'   `set(field = ".value_map", value = …)` API.
-    .value_map = function(value) {
-      if (missing(value)) {
-        private$..value_map
-      } else {
-        self$set(field = "..value_map", value = value)
-        invisible(value)
-      }
-    },
-
-    #' @field .variable_label Active binding exposing the private
-    #'   `..variable_label` field. Reads return the stored list;
-    #'   assignments write through to the private field. Also resolvable
-    #'   via the inherited `get(field = ".variable_label")` /
-    #'   `set(field = ".variable_label", value = …)` API.
-    .variable_label = function(value) {
-      if (missing(value)) {
-        private$..variable_label
-      } else {
-        self$set(field = "..variable_label", value = value)
-        invisible(value)
-      }
-    },
-
-    #' @field .value_label Active binding exposing the private
-    #'   `..value_label` field. Reads return the stored list;
-    #'   assignments write through to the private field. Also resolvable
-    #'   via the inherited `get(field = ".value_label")` /
-    #'   `set(field = ".value_label", value = …)` API.
-    .value_label = function(value) {
-      if (missing(value)) {
-        private$..value_label
-      } else {
-        self$set(field = "..value_label", value = value)
-        invisible(value)
-      }
-    }
+    )
   )
 )

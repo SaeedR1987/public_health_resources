@@ -42,7 +42,13 @@
   }
   # Handle string values
   if (is.character(val)) {
-    return(val == "TRUE" || val == "true" || val == "True" || val == "T" || val == "1")
+    return(
+      val == "TRUE" ||
+        val == "true" ||
+        val == "True" ||
+        val == "T" ||
+        val == "1"
+    )
   }
   # Handle numeric values (1 = TRUE, 0 or other values = FALSE)
   # Note: Only 1 is treated as TRUE to match Excel's boolean cell conversion (1=TRUE, 0=FALSE)
@@ -76,9 +82,11 @@
 #'   `candidates` (every candidate that was considered).
 #'
 #' @keywords internal
-.resolve_linked_hh_column <- function(linked_obj,
-                                      data_cols,
-                                      roles = c("hh_uuid", "household_uuid")) {
+.resolve_linked_hh_column <- function(
+  linked_obj,
+  data_cols,
+  roles = c("hh_uuid", "household_uuid")
+) {
   valid <- function(x) {
     is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
   }
@@ -105,7 +113,10 @@
     add_candidates(variable_map[[role]], role)
 
     # 2. schema col_names aliases, in the order declared by the schema
-    if (is.data.frame(schema) && all(c("variable", "col_names") %in% names(schema))) {
+    if (
+      is.data.frame(schema) &&
+        all(c("variable", "col_names") %in% names(schema))
+    ) {
       rows <- which(schema$variable == role)
       if ("rule_type" %in% names(schema)) {
         rows <- rows[schema$rule_type[rows] %in% c("variable", NA)]
@@ -131,439 +142,6 @@
   )
 }
 
-#' Convert a schema table into a canonical nested schema list
-#' @param df A data frame or tibble in the flat schema table format (as produced by
-#'   \code{data_schema_to_table()}).
-#' @export
-data_table_to_schema <- function(df) {
-
-  phrutils::phr_validate_dataframe(df, origin = "data_table_to_schema", soft = FALSE)
-
-  # Canonical schema object
-  schema <- list(
-    required          = character(0),
-    types             = list(),
-    allowed_values    = list(),
-    value_map         = list(),
-    col_names         = list(),
-    unique            = character(0),
-    question_types    = list(),
-    is_other          = list(),
-    other_column_link = list(),
-    variable_labels   = list(en = list(), fr = list(), ar = list()),
-    value_labels      = list(en = list(), fr = list(), ar = list())
-  )
-
-  # ------------------------------------------
-  # VARIABLE ROWS
-  # ------------------------------------------
-
-  vars_df <- df[df$rule_type == "variable", ]
-
-  for (i in seq_len(nrow(vars_df))) {
-    row <- vars_df[i, ]
-
-    v <- row$variable
-    if (v == "" || is.na(v)) next
-
-    # Check if this row has a value (canonical value mapping)
-    has_value <- "value" %in% names(row) && !is.na(row$value) && row$value != ""
-
-    # required (only set once per variable, not per value)
-    if (isTRUE(row$required)) {
-      schema$required <- unique(c(schema$required, v))
-    }
-
-    # type (only set once per variable, not per value)
-    if (!is.na(row$type) && row$type != "") {
-      schema$types[[v]] <- row$type
-    }
-
-    if (has_value) {
-      # This row maps a canonical value to dataset values
-      canonical_val <- row$value
-
-      # Parse allowed values for this canonical value
-      if (!is.na(row$allowed) && row$allowed != "") {
-        dataset_vals <- trimws(strsplit(row$allowed, ",")[[1]])
-
-        # Initialize value_map for this variable if needed
-        if (is.null(schema$value_map[[v]])) {
-          schema$value_map[[v]] <- list()
-        }
-
-        # Store the mapping: canonical_value -> dataset_values
-        schema$value_map[[v]][[canonical_val]] <- dataset_vals
-      }
-    } else {
-      # No value column or value is NA - use old allowed_values approach
-      if (!is.na(row$allowed) && row$allowed != "") {
-        schema$allowed_values[[v]] <- trimws(strsplit(row$allowed, ",")[[1]])
-      }
-    }
-
-    # col_names (possible column name alternatives for auto-mapping)
-    # Only set once per variable
-    if ("col_names" %in% names(row) && !is.na(row$col_names) && row$col_names != "") {
-      schema$col_names[[v]] <- trimws(strsplit(row$col_names, ",")[[1]])
-    }
-
-    # unique (only set once per variable)
-    if (.safe_bool(row$unique)) {
-      schema$unique <- unique(c(schema$unique, v))
-    }
-
-    # metadata (only set once per variable)
-    if (is.null(schema$variables[[v]])) {
-      schema$variables[[v]] <- list(
-        required = isTRUE(row$required),
-        type     = row$type,
-        label    = row$label %||% "",
-        comment  = row$comment %||% ""
-      )
-    }
-
-    # question_type (xlsform/odk question type) (only set once per variable)
-    if ("question_type" %in% names(row) && !is.na(row$question_type) && row$question_type != "") {
-      schema$question_types[[v]] <- row$question_type
-    }
-
-    # is_other (flag for "other" columns) (only set once per variable)
-    if ("is_other" %in% names(row)) {
-      schema$is_other[[v]] <- .safe_bool(row$is_other)
-    }
-
-    # other_column_link (corresponding main column for "other" columns) (only set once per variable)
-    if ("other_column_link" %in% names(row) && !is.na(row$other_column_link) && row$other_column_link != "") {
-      schema$other_column_link[[v]] <- trimws(strsplit(row$other_column_link, ",")[[1]])
-    }
-
-    # variable_label columns (store once per variable; first non-NA occurrence wins)
-    for (lang in c("en", "fr", "ar")) {
-      col <- paste0("variable_label_", lang)
-      if (col %in% names(row) && !is.null(row[[col]]) && !is.na(row[[col]]) && row[[col]] != "") {
-        if (is.null(schema$variable_labels[[lang]][[v]])) {
-          schema$variable_labels[[lang]][[v]] <- as.character(row[[col]])
-        }
-      }
-    }
-
-    # value_label columns (store per canonical value; only when has_value is TRUE)
-    if (has_value) {
-      canonical_val <- row$value
-      for (lang in c("en", "fr", "ar")) {
-        col <- paste0("value_label_", lang)
-        if (col %in% names(row) && !is.null(row[[col]]) && !is.na(row[[col]]) && row[[col]] != "") {
-          if (is.null(schema$value_labels[[lang]][[v]])) {
-            schema$value_labels[[lang]][[v]] <- character(0)
-          }
-          schema$value_labels[[lang]][[v]][[canonical_val]] <- as.character(row[[col]])
-        }
-      }
-    }
-  }
-
-  schema
-}
-
-
-#' Validate schema_list structure for data_schema_to_table()
-#' @keywords internal
-data_validate_schema_to_table <- function(schema_list, origin = "schema") {
-
-  # ------------------------------------------
-  # 0. BASIC STRUCTURE
-  # ------------------------------------------
-  if (is.null(schema_list) || !is.list(schema_list)) {
-    phr_error(origin, "Schema must be a list object.")
-  }
-
-  # required
-  required <- schema_list$required %||% character(0)
-  if (!is.character(required)) {
-    phr_error(origin, "`required` must be a character vector.")
-  }
-
-  # types
-  types <- schema_list$types %||% list()
-  if (!is.list(types)) {
-    phr_error(origin, "`types` must be a list.")
-  }
-
-  # must be a *named* list
-  if (length(types) > 0 && (is.null(names(types)) || any(names(types) == ""))) {
-    phr_error(origin, "`types` must be a named list.")
-  }
-
-  # allowed
-  allowed <- schema_list$allowed_values %||% list()
-  if (!is.list(allowed)) {
-    phr_error(origin, "`allowed_values` must be a list.")
-  }
-
-  # col_names (possible column name alternatives for auto-mapping)
-  col_names <- schema_list$col_names %||% list()
-  if (!is.list(col_names)) {
-    phr_error(origin, "`col_names` must be a list.")
-  }
-
-  # patterns
-  patterns <- schema_list$patterns %||% list()
-  if (!is.list(patterns)) {
-    phr_error(origin, "`patterns` must be a list.")
-  }
-
-  # must be a *named* list
-  if (length(patterns) > 0 && (is.null(names(patterns)) || any(names(patterns) == ""))) {
-    phr_error(origin, "`patterns` must be a named list.")
-  }
-
-  # ranges
-  ranges <- schema_list$ranges %||% list()
-  if (!is.list(ranges)) {
-    phr_error(origin, "`ranges` must be a list.")
-  }
-
-  # precision limits
-  precision <- schema_list$precision_limits %||% list()
-  if (!is.list(precision)) {
-    phr_error(origin, "`precision_limits` must be a list.")
-  }
-
-  # ------------------------------------------
-  # 1. VALIDATE TYPES (restored purrr loop)
-  # ------------------------------------------
-
-  valid_type_strings <- c(
-    "numeric", "integer", "double",
-    "character",
-    "logical",
-    "factor",
-    "date", "Date", "POSIXct", "POSIXlt", "datetime"
-  )
-
-  purrr::iwalk(types, function(val, varname) {
-
-    if (!is.atomic(val) ||
-        !is.character(val) ||
-        length(val) != 1 ||
-        !(val %in% valid_type_strings)) {
-
-      bad_val <- paste0(capture.output(str(val)), collapse = " ")
-
-      phr_error(
-        origin  = origin,
-        message = phr_txt("Invalid type entry for variable '{varname}'."),
-        hint    = phr_txt(
-          "Expected one of: {paste(valid_type_strings, collapse=', ')}. Received: {bad_val}"
-        )
-      )
-    }
-  })
-
-
-  # ------------------------------------------
-  # 2. VALIDATE ALLOWED VALUES
-  # ------------------------------------------
-
-  purrr::iwalk(allowed, function(val, varname) {
-    if (!is.atomic(val)) {
-      bad_val <- paste0(capture.output(str(val)), collapse = " ")
-      phr_error(
-        origin  = origin,
-        message = phr_txt("Allowed values for '{varname}' must be atomic."),
-        hint    = phr_txt("Received: {bad_val}")
-      )
-    }
-  })
-
-
-  # ------------------------------------------
-  # 2.4 VALIDATE VALUE_MAP (nested list structure)
-  # ------------------------------------------
-
-  value_map <- schema_list$value_map %||% list()
-  if (!is.list(value_map)) {
-    phr_error(origin, "`value_map` must be a list.")
-  }
-
-  # value_map must be a named list where each entry is also a named list
-  if (length(value_map) > 0) {
-    if (is.null(names(value_map)) || any(names(value_map) == "")) {
-      phr_error(origin, "`value_map` must be a named list (variable names).")
-    }
-
-    # Each variable's value_map must be a named list
-    purrr::iwalk(value_map, function(val_mappings, varname) {
-      if (!is.list(val_mappings)) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt("value_map for '{varname}' must be a list."),
-          hint    = phr_txt("Expected: list(canonical_val = c(dataset_vals, ...))")
-        )
-      }
-
-      if (is.null(names(val_mappings)) || any(names(val_mappings) == "")) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt("value_map for '{varname}' must be a named list (canonical values)."),
-          hint    = phr_txt("Expected: list(canonical_val = c(dataset_vals, ...))")
-        )
-      }
-
-      # Each canonical value must map to an atomic vector
-      purrr::iwalk(val_mappings, function(dataset_vals, canonical_val) {
-        if (!is.atomic(dataset_vals)) {
-          bad_val <- paste0(capture.output(str(dataset_vals)), collapse = " ")
-          phr_error(
-            origin  = origin,
-            message = phr_txt("value_map['{varname}']['{canonical_val}'] must be atomic."),
-            hint    = phr_txt("Received: {bad_val}")
-          )
-        }
-      })
-    })
-  }
-
-
-
-  # 2.5 VALIDATE COL_NAMES (must be character vector)
-
-
-  purrr::iwalk(col_names, function(val, varname) {
-    if (!is.atomic(val) || !is.character(val)) {
-      bad_val <- paste0(capture.output(str(val)), collapse = " ")
-      phr_error(
-        origin  = origin,
-        message = phr_txt("col_names for '{varname}' must be a character vector."),
-        hint    = phr_txt("Received: {bad_val}")
-      )
-    }
-  })
-
-
-
-  # 3. VALIDATE PATTERNS - now optional (moved to dependency_schema)
-  # Keep validation only if patterns are present for backward compatibility
-
-  patterns <- schema_list$patterns %||% list()
-  if (length(patterns) > 0) {
-    purrr::iwalk(patterns, function(val, varname) {
-
-      if (!is.atomic(val) || !is.character(val) || length(val) != 1) {
-
-        bad_val <- paste0(capture.output(str(val)), collapse = " ")
-
-        phrutils::phr_warning(
-          origin  = origin,
-          message = phr_txt("Pattern for '{varname}' should be a single regex string. Note: patterns have moved to dependency_schema."),
-          hint    = phr_txt("Received: {bad_val}")
-        )
-      }
-    })
-  }
-
-
-
-  # 4. VALIDATE RANGES (must be length 2 numeric)
-
-
-  purrr::iwalk(ranges, function(val, varname) {
-
-    if (!is.atomic(val) ||
-        length(val) != 2 ||
-        !all(suppressWarnings(!is.na(as.numeric(val))))) {
-
-      bad_val <- paste0(capture.output(str(val)), collapse = " ")
-
-      phr_error(
-        origin  = origin,
-        message = phr_txt("Range for '{varname}' must be numeric of length 2 (min, max)."),
-        hint    = phr_txt("Received: {bad_val}")
-      )
-    }
-  })
-
-
-
-  # 5. VALIDATE PRECISION LIMITS (must be numeric of length 1)
-
-
-  purrr::iwalk(precision, function(val, varname) {
-
-    if (!is.atomic(val) ||
-        length(val) != 1 ||
-        suppressWarnings(is.na(as.numeric(val)))) {
-
-      bad_val <- paste0(capture.output(str(val)), collapse = " ")
-
-      phr_error(
-        origin  = origin,
-        message = phr_txt("Precision limit for '{varname}' must be a numeric value."),
-        hint    = phr_txt("Received: {bad_val}")
-      )
-    }
-  })
-
-
-  # 6. VALIDATE VARIABLE_LABELS (optional; must be a named list of named char lists per language)
-
-  variable_labels <- schema_list$variable_labels %||% list()
-  if (length(variable_labels) > 0) {
-    if (!is.list(variable_labels)) {
-      phr_error(origin, "`variable_labels` must be a named list keyed by language code (en/fr/ar).")
-    }
-    valid_langs <- c("en", "fr", "ar")
-    bad_langs <- setdiff(names(variable_labels), valid_langs)
-    if (length(bad_langs) > 0) {
-      phrutils::phr_warning(
-        origin  = origin,
-        message = phr_txt("Unexpected language keys in `variable_labels`: {paste(bad_langs, collapse=', ')}."),
-        hint    = phr_txt("Expected keys: {paste(valid_langs, collapse=', ')}.")
-      )
-    }
-    purrr::iwalk(variable_labels, function(lang_labels, lang) {
-      if (!is.list(lang_labels)) {
-        phr_error(origin, phr_txt("`variable_labels${lang}` must be a named list."))
-      }
-      purrr::iwalk(lang_labels, function(lbl, varname) {
-        if (!is.character(lbl) || length(lbl) != 1) {
-          phr_error(
-            origin  = origin,
-            message = phr_txt("variable_labels${lang}${varname} must be a single character string.")
-          )
-        }
-      })
-    })
-  }
-
-
-  # 7. VALIDATE VALUE_LABELS (optional; must be a named list of named char vectors per language)
-
-  schema_value_labels <- schema_list$value_labels %||% list()
-  if (length(schema_value_labels) > 0) {
-    if (!is.list(schema_value_labels)) {
-      phr_error(origin, "`value_labels` in schema must be a named list keyed by language code (en/fr/ar).")
-    }
-    purrr::iwalk(schema_value_labels, function(lang_labels, lang) {
-      if (!is.list(lang_labels)) {
-        phr_error(origin, phr_txt("`value_labels${lang}` must be a named list."))
-      }
-      purrr::iwalk(lang_labels, function(val_labels, varname) {
-        if (!is.character(val_labels)) {
-          phr_error(
-            origin  = origin,
-            message = phr_txt("value_labels${lang}${varname} must be a named character vector.")
-          )
-        }
-      })
-    })
-  }
-
-  invisible(TRUE)
-}
-
-
 #' Expand select_multiple column into dummy variables
 #'
 #' @description
@@ -580,12 +158,15 @@ data_validate_schema_to_table <- function(schema_list, origin = "schema") {
 #'
 #' @keywords internal
 expand_select_multiple <- function(column, column_name, separator = " ") {
-
   # Handle NA and empty values
   column <- ifelse(is.na(column) | column == "", NA_character_, column)
 
   # Split each cell by separator and get unique values across all rows
-  all_values <- unlist(strsplit(column[!is.na(column)], separator, fixed = TRUE))
+  all_values <- unlist(strsplit(
+    column[!is.na(column)],
+    separator,
+    fixed = TRUE
+  ))
   all_values <- trimws(all_values)
   all_values <- all_values[all_values != ""]
   unique_values <- sort(unique(all_values))
@@ -596,7 +177,11 @@ expand_select_multiple <- function(column, column_name, separator = " ") {
   }
 
   # Create dummy columns
-  dummy_df <- data.frame(matrix(0, nrow = length(column), ncol = length(unique_values)))
+  dummy_df <- data.frame(matrix(
+    0,
+    nrow = length(column),
+    ncol = length(unique_values)
+  ))
   colnames(dummy_df) <- paste0(column_name, ".", unique_values)
 
   # Fill in 1s where values are present
@@ -634,7 +219,6 @@ expand_select_multiple <- function(column, column_name, separator = " ") {
 #'
 #' @keywords internal
 process_select_multiple_columns <- function(data, schema) {
-
   result <- list(
     data = data,
     expanded_columns = character(0),
@@ -642,7 +226,11 @@ process_select_multiple_columns <- function(data, schema) {
   )
 
   # Check if schema has question_types
-  if (is.null(schema) || is.null(schema$question_types) || length(schema$question_types) == 0) {
+  if (
+    is.null(schema) ||
+      is.null(schema$question_types) ||
+      length(schema$question_types) == 0
+  ) {
     return(result)
   }
 
@@ -657,19 +245,20 @@ process_select_multiple_columns <- function(data, schema) {
   # Process each select_multiple column
   for (var in select_mult_vars) {
     if (var %in% names(data)) {
-
       # Expand the column
       dummy_df <- expand_select_multiple(data[[var]], var)
 
       if (ncol(dummy_df) > 0) {
         # Add dummy columns to the data
         result$data <- cbind(result$data, dummy_df)
-        result$expanded_columns <- c(result$expanded_columns, colnames(dummy_df))
+        result$expanded_columns <- c(
+          result$expanded_columns,
+          colnames(dummy_df)
+        )
 
         # Check if "other" is one of the values in this select_multiple
         other_dummy_col <- paste0(var, ".other")
         if (other_dummy_col %in% colnames(dummy_df)) {
-
           # Look for a corresponding open text "other" column
           # Common naming patterns: var_other_text, var_other_specify, var_other_value
           potential_other_text_cols <- c(
@@ -693,7 +282,7 @@ process_select_multiple_columns <- function(data, schema) {
           result$other_related_columns[[var]] <- list(
             original_column = var,
             dummy_other_column = other_dummy_col,
-            text_other_column = other_text_col  # May be NULL if not found
+            text_other_column = other_text_col # May be NULL if not found
           )
         }
       }
@@ -707,17 +296,17 @@ process_select_multiple_columns <- function(data, schema) {
 # INDICATOR SCHEMA FUNCTIONS ####
 
 #' Parse indicator arguments string respecting parentheses and quoted strings
-#' 
+#'
 #' Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
 #' properly by respecting parentheses and quoted strings so that c(...) vectors
 #' and quoted values containing commas are not split incorrectly.
-#' 
+#'
 #' This function is intentionally called twice during indicator processing:
 #' 1. First call: Parse the full argument string into individual argument pairs
 #' 2. Second call: Parse the content inside c(...) vectors into individual elements
 #' This two-stage parsing is necessary because arguments and vector elements have
 #' different semantic meanings and resolution rules.
-#' 
+#'
 #' @param arg_string Character string containing arguments
 #' @return Character vector of argument pairs
 #' @keywords internal
@@ -725,23 +314,23 @@ process_select_multiple_columns <- function(data, schema) {
   if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
     return(character(0))
   }
-  
-  result      <- character(0)
+
+  result <- character(0)
   current_arg <- ""
   paren_depth <- 0L
-  in_quote    <- FALSE
-  quote_char  <- ""
-  chars       <- strsplit(arg_string, "")[[1]]
-  
+  in_quote <- FALSE
+  quote_char <- ""
+  chars <- strsplit(arg_string, "")[[1]]
+
   for (char in chars) {
     if (in_quote) {
       current_arg <- paste0(current_arg, char)
       if (char == quote_char) {
-        in_quote   <- FALSE
+        in_quote <- FALSE
         quote_char <- ""
       }
     } else if (char %in% c('"', "'")) {
-      in_quote   <- TRUE
+      in_quote <- TRUE
       quote_char <- char
       current_arg <- paste0(current_arg, char)
     } else if (char == "(") {
@@ -760,257 +349,11 @@ process_select_multiple_columns <- function(data, schema) {
       current_arg <- paste0(current_arg, char)
     }
   }
-  
+
   # Add the last argument
   if (nchar(current_arg) > 0) {
     result <- c(result, trimws(current_arg))
   }
-  
+
   result
 }
-
-
-#' Convert an indicator schema table into a canonical nested list
-#' @param df A data frame or tibble in the flat indicator schema table format (as produced by
-#'   \code{indicator_schema_to_table()}).
-#' @export
-indicator_table_to_schema <- function(df) {
-
-  phrutils::phr_validate_dataframe(df, origin = "indicator_table_to_schema", soft = FALSE)
-
-  # Canonical indicator schema object
-  indicator_schema <- list()
-
-  for (i in seq_len(nrow(df))) {
-    row <- df[i, ]
-
-    # Get the indicator name
-    indicator_name <- row[["indicator_name"]]
-    if (is.na(indicator_name) || indicator_name == "" || indicator_name == "NA") {
-      # Skip indicators without a name
-      next
-    }
-
-    # Get function name
-    function_name <- row[["function_name"]] %||% ""
-
-    # Parse variables (comma-separated list)
-    variables <- character(0)
-    if (!is.na(row[["variables"]]) && row[["variables"]] != "") {
-      variables <- trimws(strsplit(row[["variables"]], ",")[[1]])
-    }
-
-    # Parse arguments (stored as "arg1=value1,arg2=value2" format)
-    # Handle vectors like c(val1,val2,val3) by respecting parentheses
-    arguments <- list()
-    if (!is.na(row[["arguments"]]) && row[["arguments"]] != "") {
-      arg_string <- row[["arguments"]]
-      arg_pairs <- .parse_indicator_arguments(arg_string)
-
-      for (pair in arg_pairs) {
-        if (grepl("=", pair)) {
-          parts <- strsplit(pair, "=", fixed = TRUE)[[1]]
-          if (length(parts) == 2) {
-            arg_name <- trimws(parts[1])
-            arg_value <- trimws(parts[2])
-            arguments[[arg_name]] <- arg_value
-          }
-        }
-      }
-    }
-
-    # Get label and comment
-    label <- row[["label"]]
-    if (is.na(label) || label == "NA") label <- NULL
-
-    comment <- row[["comment"]]
-    if (is.na(comment) || comment == "NA") comment <- NULL
-
-    # Create indicator object
-    ind_obj <- list(
-      indicator_name = indicator_name,
-      function_name  = function_name,
-      variables      = variables,
-      arguments      = arguments
-    )
-
-    if (!is.null(label)) ind_obj$label <- label
-    if (!is.null(comment)) ind_obj$comment <- comment
-
-    # Use indicator_name as the key
-    indicator_schema[[indicator_name]] <- ind_obj
-  }
-
-  indicator_schema
-}
-
-
-# DEPENDENCY SCHEMA FUNCTIONS ####
-
-#' Convert a dependency schema table into a canonical nested list
-#' @param df A data frame or tibble in the flat dependency schema table format (as produced by
-#'   \code{dependency_schema_to_table()}).
-#' @export
-dependency_table_to_schema <- function(df) {
-
-  phrutils::phr_validate_dataframe(df, origin = "dependency_table_to_schema", soft = FALSE)
-
-  # Canonical dependency schema object
-  dependency_schema <- list(
-    dependencies = list(),
-    soft_dependencies = list()
-  )
-
-  for (i in seq_len(nrow(df))) {
-    row <- df[i, ]
-
-    rule_type <- row[["rule_type"]]
-    dep_name <- row[["dep_name"]]
-
-    # Skip rows without a name
-    if (is.na(dep_name) || dep_name == "" || dep_name == "NA") {
-      next
-    }
-
-    # Parse variables (comma-separated list)
-    variables <- character(0)
-    if (!is.na(row[["variables"]]) && row[["variables"]] != "") {
-      variables <- trimws(strsplit(row[["variables"]], ",")[[1]])
-    }
-
-    # Get condition_if and then
-    condition_if <- row[["condition_if"]]
-    if (is.na(condition_if) || condition_if == "NA") condition_if <- ""
-
-    then_cond <- row[["then"]]
-    if (is.na(then_cond) || then_cond == "NA") then_cond <- ""
-
-    # Get action
-    action <- row[["action"]]
-    if (is.na(action) || action == "NA") action <- ""
-
-    # Get label and comment
-    label <- row[["label"]]
-    if (is.na(label) || label == "NA") label <- NULL
-
-    comment <- row[["comment"]]
-    if (is.na(comment) || comment == "NA") comment <- NULL
-
-    # Create dependency object
-    dep_obj <- list(
-      variables = variables,
-      condition_if = condition_if,
-      then = then_cond,
-      action = action
-    )
-
-    if (!is.null(label)) dep_obj$label <- label
-    if (!is.null(comment)) dep_obj$comment <- comment
-
-    # Add to appropriate list based on rule_type
-    if (rule_type == "dependency") {
-      dependency_schema$dependencies[[dep_name]] <- dep_obj
-    } else if (rule_type == "soft_dependency") {
-      dependency_schema$soft_dependencies[[dep_name]] <- dep_obj
-    }
-  }
-
-  dependency_schema
-}
-
-
-#' Validate dependency_schema_list structure for dependency_schema_to_table()
-#' @keywords internal
-dependency_validate_schema_to_table <- function(dependency_schema_list, origin = "dependency_schema") {
-
-  # ------------------------------------------
-  # 0. BASIC STRUCTURE
-  # ------------------------------------------
-  if (is.null(dependency_schema_list) || !is.list(dependency_schema_list)) {
-    phr_error(origin, "Dependency schema must be a list object.")
-  }
-
-  # dependencies
-  deps <- dependency_schema_list$dependencies %||% list()
-  if (!is.list(deps)) {
-    phr_error(origin, "`dependencies` must be a list.")
-  }
-
-  # must be a *named* list if not empty
-  if (length(deps) > 0 && (is.null(names(deps)) || any(names(deps) == ""))) {
-    phr_error(origin, "`dependencies` must be a named list.")
-  }
-
-  # soft_dependencies
-  soft <- dependency_schema_list$soft_dependencies %||% list()
-  if (!is.list(soft)) {
-    phr_error(origin, "`soft_dependencies` must be a list.")
-  }
-
-  # must be a *named* list if not empty
-  if (length(soft) > 0 && (is.null(names(soft)) || any(names(soft) == ""))) {
-    phr_error(origin, "`soft_dependencies` must be a named list.")
-  }
-
-
-  # ------------------------------------------
-  # 1. VALIDATE DEPENDENCIES
-  # ------------------------------------------
-
-  validate_dependency <- function(d, dep_name) {
-
-    if (!is.list(d)) {
-      phr_error(origin, "Each dependency must be a list.")
-    }
-
-    # variables
-    if (is.null(d[["variables"]]) || !is.character(d[["variables"]])) {
-      phr_error(origin, phr_txt("Dependency '{dep_name}' must include character `variables`."))
-    }
-
-    # condition_if condition
-    if (!is.null(d[["condition_if"]]) && !is.character(d[["condition_if"]])) {
-      bad_val <- paste0(capture.output(str(d[["condition_if"]])), collapse = " ")
-      phr_error(
-        origin,
-        phr_txt("Dependency '{dep_name}' `condition_if` must be a character string."),
-        hint = phr_txt("Received: {bad_val}")
-      )
-    }
-
-    # then condition
-    if (!is.null(d[["then"]]) && !is.character(d[["then"]])) {
-      bad_val <- paste0(capture.output(str(d[["then"]])), collapse = " ")
-      phr_error(
-        origin,
-        phr_txt("Dependency '{dep_name}' `then` must be a character string."),
-        hint = phr_txt("Received: {bad_val}")
-      )
-    }
-
-    # action (optional)
-    if (!is.null(d[["action"]]) && !is.character(d[["action"]])) {
-      bad_val <- paste0(capture.output(str(d[["action"]])), collapse = " ")
-      phr_error(
-        origin,
-        phr_txt("Dependency '{dep_name}' `action` must be a character string if provided."),
-        hint = phr_txt("Received: {bad_val}")
-      )
-    }
-  }
-
-  # Validate all dependencies
-  for (dep_name in names(deps)) {
-    validate_dependency(deps[[dep_name]], dep_name)
-  }
-
-  # Validate all soft_dependencies
-  for (dep_name in names(soft)) {
-    validate_dependency(soft[[dep_name]], dep_name)
-  }
-
-
-  invisible(TRUE)
-}
-
-
