@@ -93,7 +93,7 @@ GeneralDataAnalytics <- R6::R6Class(
     },
 
     #' @description Load the default General unified outputs schema from template file
-    #' @return A list of General-specific outputs definitions
+    #' @return A tibble of General-specific outputs definitions
     default_outputs_schema = function() {
 
       file <- system.file(
@@ -105,7 +105,7 @@ GeneralDataAnalytics <- R6::R6Class(
       if (!file.exists(file) || file == "") {
         file <- file.path("resources", "outputs_schema_data_analytics_general_template.xlsx")
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -117,10 +117,10 @@ GeneralDataAnalytics <- R6::R6Class(
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     }
   )
 )

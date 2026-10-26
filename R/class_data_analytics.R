@@ -16,8 +16,9 @@
 #' Key design principles:
 #' * `quality_schema` drives quality checks; `analysis_schema` drives analysis
 #' * `outputs_schema` defines all visualizations/tables (quality and analysis combined)
-#' * Each output entry uses `dataset_type` to specify the data source
-#'   ("data" for quality outputs, "survey_design" for analysis outputs)
+#'   as a data frame, one row per output
+#' * Each output row uses `dataset_type` to specify the data source
+#'   ("base" for the unweighted design, "survey_design" for the weighted design)
 #' * `results` stores quality check results; `analysis_results` stores analysis results
 #' * All outputs store into the same `visualizations` and `tables` fields
 #' * The `pre_run_quality_checks()`, `pre_run_analysis()` and `pre_run_outputs()`
@@ -37,7 +38,7 @@
 #' @field value_label Named list of value labels
 #' @field quality_schema Quality check schema with test definitions, thresholds, and penalty scores
 #' @field analysis_schema Analysis schema (catalog of possible indicators)
-#' @field outputs_schema Unified outputs schema for all visualizations and tables
+#' @field outputs_schema Unified outputs schema (data frame) for all visualizations and tables
 #' @field visualizations List of ggplot2 graphics/visualizations (shared)
 #' @field tables List of dataframes or formatted table objects (shared)
 #' @field plausibility_results Results of quality checks execution
@@ -250,9 +251,9 @@ DataAnalytics <- R6::R6Class(
         error = function(e) {
           phrutils::phr_warning(
             origin = "DataAnalytics$default_quality_schema",
-            message = phr_txt(glue::glue(
+            message = phrutils::phr_txt(
               "Failed to read quality_schema_data_quality_template.xlsx: {e$message}"
-            ))
+            )
           )
           return(NULL)
         }
@@ -274,7 +275,7 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Load the default unified outputs schema from template file
-    #' @return A list of outputs definitions (quality and analysis combined)
+    #' @return A tibble of outputs definitions (quality and analysis combined)
     default_outputs_schema = function() {
       file <- system.file(
         "resources",
@@ -288,7 +289,7 @@ DataAnalytics <- R6::R6Class(
           "outputs_schema_data_analytics_template.xlsx"
         )
         if (!file.exists(file)) {
-          return(list())
+          return(tibble::tibble())
         }
       }
 
@@ -297,19 +298,19 @@ DataAnalytics <- R6::R6Class(
         error = function(e) {
           phrutils::phr_warning(
             origin = "DataAnalytics$default_outputs_schema",
-            message = phr_txt(glue::glue(
+            message = phrutils::phr_txt(
               "Failed to read outputs_schema_data_analytics_template.xlsx: {e$message}"
-            ))
+            )
           )
           return(NULL)
         }
       )
 
       if (is.null(df) || nrow(df) == 0) {
-        return(list())
+        return(tibble::tibble())
       }
 
-      outputs_table_to_schema(df)
+      outputs_normalize_schema(df)
     },
 
     #' @description Load the default analysis schema from template file
@@ -371,7 +372,7 @@ DataAnalytics <- R6::R6Class(
           self$validate_quality_schema(schema)
           self$quality_schema <- schema
           phrutils::phr_message(
-            phr_txt(glue::glue("Quality schema set for {self$dataset_name}."))
+            phrutils::phr_txt("Quality schema set for {self$dataset_name}.")
           )
         },
         on_error = "abort",
@@ -435,18 +436,16 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Set the unified outputs schema
-    #' @param schema A named list defining output specifications (quality and analysis combined)
+    #' @param schema A data frame defining output specifications (quality and
+    #'   analysis combined), one row per output.
     #' @return Invisibly returns self.
     set_outputs_schema = function(schema) {
       phrutils::phr_try(
         {
-          outputs_validate_schema_to_table(
-            outputs_schema = schema,
+          self$outputs_schema <- outputs_normalize_schema(
+            schema,
             origin = paste0(self$dataset_name, "$set_outputs_schema")
           )
-          tbl <- outputs_schema_to_table(schema)
-          outputs_validate_table_to_schema(df = tbl)
-          self$outputs_schema <- schema
           phrutils::phr_message(
             phr_txt(glue::glue("Outputs schema set for {self$dataset_name}."))
           )
@@ -459,7 +458,7 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Get the unified outputs schema
-    #' @return The current outputs schema (named list), or NULL.
+    #' @return The current outputs schema (a data frame), or NULL.
     get_outputs_schema = function() {
       self$outputs_schema
     },
@@ -469,9 +468,7 @@ DataAnalytics <- R6::R6Class(
     export_outputs_schema = function() {
       phrutils::phr_try(
         {
-          if (
-            is.null(self$outputs_schema) || length(self$outputs_schema) == 0
-          ) {
+          if (is.null(self$outputs_schema) || nrow(self$outputs_schema) == 0) {
             phrutils::phr_warning(
               phr_txt(glue::glue(
                 "No outputs schema defined for {self$dataset_name}."
@@ -480,7 +477,7 @@ DataAnalytics <- R6::R6Class(
             )
             return(NULL)
           }
-          outputs_schema_to_table(self$outputs_schema)
+          self$outputs_schema
         },
         on_error = "abort",
         origin = paste0(self$dataset_name, "$export_outputs_schema")
@@ -493,16 +490,14 @@ DataAnalytics <- R6::R6Class(
     import_outputs_schema = function(df) {
       phrutils::phr_try(
         {
-          phrutils::phr_validate_dataframe(
+          new_schema <- outputs_normalize_schema(
             df,
-            origin = "import_outputs_schema",
-            soft = FALSE
+            origin = paste0(self$dataset_name, "$import_outputs_schema")
           )
-          new_schema <- outputs_table_to_schema(df)
           self$outputs_schema <- new_schema
           phrutils::phr_message(
             phr_txt(glue::glue(
-              "Outputs schema imported for {self$dataset_name} ({length(new_schema)} output(s))."
+              "Outputs schema imported for {self$dataset_name} ({nrow(new_schema)} output(s))."
             ))
           )
           invisible(new_schema)
@@ -1786,11 +1781,10 @@ DataAnalytics <- R6::R6Class(
     #' fields. Subclasses that hold multiple datasets (e.g. linked roster or
     #' deaths data) can override this method to return one entry per dataset.
     #' Each entry must be a named list whose elements give the names of the
-    #' public fields holding the respective inputs. An optional
-    #' \code{analysis_results_key} element (a plain character key, not a field
-    #' name) selects the sub-list of \code{analysis_results} used for
-    #' \code{dataset_type = "analysis_results_*"} outputs; it defaults to the
-    #' set's role name when multiple sets are defined.
+    #' public fields holding the respective inputs. The \code{variable_map}
+    #' entry is used to resolve \code{@variable_map$} references in each
+    #' output's \code{test_params}, so sets pointing at a linked dataset must
+    #' name that dataset's own variable map.
     #'
     #' When more than one set is returned (or the single set is not named
     #' \code{main}), outputs are stored under the set's role name in
@@ -1805,8 +1799,7 @@ DataAnalytics <- R6::R6Class(
           outputs_schema = "outputs_schema",
           base_survey_design = "base_survey_design",
           survey_design = "survey_design",
-          variable_map = "variable_map",
-          analysis_results_key = NULL
+          variable_map = "variable_map"
         )
       )
     },
@@ -1814,30 +1807,32 @@ DataAnalytics <- R6::R6Class(
     #' @description Run all outputs defined in the outputs schema(s).
     #'
     #' Iterates over every input set returned by \code{pre_run_outputs()}.
-    #' For each output entry in a set's outputs schema, resolves the required
-    #' dataset from the set's survey design objects or analysis results, calls
-    #' the specified output function, and stores results in
-    #' \code{self$visualizations} or \code{self$tables}. For the default single
-    #' \code{main} set results are stored flat (unchanged behaviour); when
+    #' Each set's outputs schema is a data frame and is processed row by row:
+    #' the required survey design is resolved from the row's
+    #' \code{dataset_type}, the specified output function is called, and the
+    #' result is stored in \code{self$visualizations} or \code{self$tables}.
+    #' For the default single \code{main} set results are stored flat; when
     #' multiple sets are defined, results are nested under each set's role name
     #' (e.g. \code{tables$roster}, \code{visualizations$deaths}).
     #'
-    #' The \code{output_name} field in each schema entry controls the key used
-    #' when storing results in \code{visualizations} or \code{tables}. The
-    #' \code{output_title} field (matching the schema list key) and the
-    #' language-specific title fields (\code{output_title_english},
-    #' \code{output_title_french}, \code{output_title_arabic}) are used to
-    #' auto-generate the \code{title_name} argument passed to \code{plot_*} or
-    #' \code{table_*} functions. The language-specific title for the chosen
-    #' \code{language} takes precedence; if absent the generic
-    #' \code{output_title} value is used as a fallback.
+    #' The \code{output_name} column controls the key used when storing results
+    #' in \code{visualizations} or \code{tables}, and \code{outputs_group}
+    #' optionally groups them one level deeper. Outputs whose function fails
+    #' return \code{NULL}; these are reported as warnings and are not stored, so
+    #' no empty \code{outputs_group} node is left behind.
+    #'
+    #' The \code{output_title} column and the language-specific title columns
+    #' (\code{output_title_english}, \code{output_title_french},
+    #' \code{output_title_arabic}) are used to auto-generate the
+    #' \code{title_name} argument passed to \code{plot_*} or \code{table_*}
+    #' functions. The language-specific title for the chosen \code{language}
+    #' takes precedence; if absent the generic \code{output_title} value is used
+    #' as a fallback.
     #'
     #' Supported \code{dataset_type} values:
     #' \describe{
-    #'   \item{"base" / "data"}{uses the set's base (unweighted) survey design (default for all quality outputs)}
+    #'   \item{"base"}{uses the set's base (unweighted) survey design; this is the default}
     #'   \item{"survey_design"}{uses the set's weighted survey design}
-    #'   \item{"analysis_results_surveydesign"}{uses the set's \code{analysis_results$survey_design}}
-    #'   \item{"analysis_results_base"}{uses the set's \code{analysis_results$base}}
     #' }
     #'
     #' @param language Character string specifying the language for auto-generated
@@ -1871,10 +1866,6 @@ DataAnalytics <- R6::R6Class(
               paste0("set_", i)
             }
             inputs <- private$.resolve_field_set(sets[[i]])
-
-            print("I am here testing 1")
-            print(paste0(names(inputs)))
-            print(paste0(inputs$variable_map))
 
             private$.run_outputs_for_set(
               inputs = inputs,
@@ -2708,27 +2699,8 @@ DataAnalytics <- R6::R6Class(
       self$analysis_plan_issue_log <- state$analysis_plan_issue_log
       self$analysis_schema <- state$analysis_schema
       self$quality_schema <- state$quality_schema
-      # Support loading state saved with old split schema fields
       if (!is.null(state$outputs_schema)) {
         self$outputs_schema <- state$outputs_schema
-      } else if (
-        !is.null(state$quality_outputs_schema) ||
-          !is.null(state$analysis_outputs_schema)
-      ) {
-        # Merge legacy quality and analysis outputs schemas into unified outputs_schema
-        merged <- c(
-          if (!is.null(state$quality_outputs_schema)) {
-            state$quality_outputs_schema
-          } else {
-            list()
-          },
-          if (!is.null(state$analysis_outputs_schema)) {
-            state$analysis_outputs_schema
-          } else {
-            list()
-          }
-        )
-        if (length(merged) > 0) self$outputs_schema <- merged
       }
       self$visualizations <- state$visualizations
       self$tables <- state$tables
@@ -2858,6 +2830,30 @@ DataAnalytics <- R6::R6Class(
   # Private helpers
 
   private = list(
+    # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_quality_schema_filename = c(
+      "resources",
+      "quality_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_filename = c(
+      "resources",
+      "outputs_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_filename = c(
+      "resources",
+      "analysis_schema_data_household_template.xlsx"
+    ),
+
     #' @description
     #' Resolve a "variable_map" role reference to its mapped dataset column name.
     #'
@@ -3369,15 +3365,14 @@ DataAnalytics <- R6::R6Class(
     # actual objects stored on self.
     #
     # Each element of `set` is normally a length-1 character string naming a
-    # public field on self. Elements listed in `keep_as_is` (e.g.
-    # analysis_results_key) are passed through unchanged. Non-character
-    # elements are also passed through unchanged, allowing hooks to supply
+    # public field on self. Elements listed in `keep_as_is` are passed through
+    # unchanged, as are non-character elements, allowing hooks to supply
     # objects directly.
     #
     # @param set A named list of field names (or literal objects).
     # @param keep_as_is Character vector of element names passed through as-is.
     # @return A named list of resolved objects.
-    .resolve_field_set = function(set, keep_as_is = "analysis_results_key") {
+    .resolve_field_set = function(set, keep_as_is = character(0)) {
       resolved <- list()
 
       for (nm in names(set)) {
@@ -3653,9 +3648,12 @@ DataAnalytics <- R6::R6Class(
     # results in \code{self$visualizations} / \code{self$tables} (nested under
     # \code{set_role} when \code{nested} is TRUE).
     #
+    # The outputs schema is a data frame and is iterated row by row; the
+    # comma-separated \code{variables} / \code{disaggregation} cells and the
+    # \code{test_params} cell are parsed per row.
+    #
     # @param inputs Named list of resolved inputs: data, outputs_schema,
-    #   base_survey_design, survey_design, variable_map and (optionally)
-    #   analysis_results_key.
+    #   base_survey_design, survey_design and variable_map.
     # @param set_role Character role name for this input set.
     # @param nested Logical; TRUE when results are stored under set_role.
     # @param language Character language for auto-generated titles.
@@ -3668,7 +3666,7 @@ DataAnalytics <- R6::R6Class(
     ) {
       outputs_schema <- inputs$outputs_schema
 
-      if (is.null(outputs_schema) || length(outputs_schema) == 0) {
+      if (is.null(outputs_schema) || nrow(outputs_schema) == 0) {
         phrutils::phr_warning(
           message = phrutils::phr_txt(glue::glue(
             "No outputs defined in outputs schema for '{set_role}'. Skipping."
@@ -3695,20 +3693,6 @@ DataAnalytics <- R6::R6Class(
 
       vm <- inputs$variable_map %||% self$variable_map %||% list()
 
-      # Resolve the analysis results sub-list for this set. An explicit
-      # analysis_results_key takes precedence; otherwise nested sets default
-      # to their own role name when present in analysis_results.
-      analysis_res <- self$analysis_results
-      ar_key <- inputs$analysis_results_key %||%
-        (if (nested) set_role else NULL)
-      if (
-        !is.null(ar_key) &&
-          is.list(analysis_res) &&
-          ar_key %in% names(analysis_res)
-      ) {
-        analysis_res <- analysis_res[[ar_key]]
-      }
-
       # Resolve the plausibility results for this set (used by @results_table).
       plaus_results <- self$plausibility_results
       if (
@@ -3720,15 +3704,34 @@ DataAnalytics <- R6::R6Class(
       }
 
       phrutils::phr_message(phr_txt(glue::glue(
-        "Running {length(outputs_schema)} output(s) for {self$dataset_name} ('{set_role}')..."
+        "Running {nrow(outputs_schema)} output(s) for {self$dataset_name} ('{set_role}')..."
       )))
 
-      for (out_name in names(outputs_schema)) {
-        out <- outputs_schema[[out_name]]
+      # Read a single schema cell, returning NULL when the column is absent or
+      # the value is missing/empty so downstream guards stay simple.
+      cell <- function(col, i) {
+        if (!col %in% names(outputs_schema)) {
+          return(NULL)
+        }
+        value <- outputs_schema[[col]][[i]]
+        if (is.null(value) || length(value) != 1 || is.na(value)) {
+          return(NULL)
+        }
+        if (is.character(value) && !nzchar(value)) {
+          return(NULL)
+        }
+        value
+      }
+
+      for (i in seq_len(nrow(outputs_schema))) {
+        out_name <- cell("output_title", i) %||% paste0("output_", i)
+        output_type <- cell("output_type", i)
+        test_params <- outputs_parse_test_params(cell("test_params", i))
+
         phrutils::phr_try(
           {
-            func_name <- out$output_func_name
-            if (is.null(func_name) || is.na(func_name) || !nzchar(func_name)) {
+            func_name <- cell("output_func_name", i)
+            if (is.null(func_name)) {
               phrutils::phr_warning(
                 message = phr_txt(glue::glue(
                   "Output '{out_name}' has no output_func_name specified. Skipping."
@@ -3788,44 +3791,23 @@ DataAnalytics <- R6::R6Class(
 
             # Determine first positional argument based on dataset_type column.
             # Supported values:
-            #   "base" / "data"                 – base_design (unweighted)
-            #   "survey_design"                 – weighted_design (weighted)
-            #   "analysis_results_surveydesign" – analysis_res$survey_design
-            #   "analysis_results_base"         – analysis_res$base
-            dataset_type <- if (
-              !is.null(out$dataset_type) &&
-                !is.na(out$dataset_type) &&
-                nzchar(out$dataset_type)
-            ) {
-              out$dataset_type
-            } else {
-              "base"
-            }
+            #   "base"          – base_design (unweighted); also the default
+            #   "survey_design" – weighted_design (weighted)
+            dataset_type <- cell("dataset_type", i) %||% "base"
 
             first_arg <- switch(
               dataset_type,
               "base" = base_design,
-              "data" = base_design,
               "survey_design" = weighted_design,
-              "analysis_results_surveydesign" = if (!is.null(analysis_res)) {
-                analysis_res$survey_design
-              } else {
-                NULL
-              },
-              "analysis_results_base" = if (!is.null(analysis_res)) {
-                analysis_res$base
-              } else {
-                NULL
-              },
               base_design # default: "base" (unweighted survey design)
             )
 
             func_args <- list(first_arg)
 
             # Check if any test_param uses @results_table; if so, replace first arg
-            if (!is.null(out$test_params) && length(out$test_params) > 0) {
-              for (arg_name_check in names(out$test_params)) {
-                arg_val_check <- out$test_params[[arg_name_check]]
+            if (length(test_params) > 0) {
+              for (arg_name_check in names(test_params)) {
+                arg_val_check <- test_params[[arg_name_check]]
                 if (
                   is.character(arg_val_check) &&
                     arg_val_check == "@results_table"
@@ -3838,25 +3820,18 @@ DataAnalytics <- R6::R6Class(
               }
             }
 
-            if (!is.null(out$test_params) && length(out$test_params) > 0) {
+            if (length(test_params) > 0) {
               func_args <- private$.resolve_output_params(
                 func_args = func_args,
-                test_params = out$test_params,
+                test_params = test_params,
                 out_name = out_name,
-                skip_results_table = TRUE
+                skip_results_table = TRUE,
+                variable_map = vm
               )
             }
 
-            # Storage key: use output_name field; fall back to out_name (schema list key)
-            label <- if (
-              !is.null(out$output_name) &&
-                !is.na(out$output_name) &&
-                nzchar(out$output_name)
-            ) {
-              out$output_name
-            } else {
-              out_name
-            }
+            # Storage key: use output_name field; fall back to the output title
+            label <- cell("output_name", i) %||% out_name
 
             # Auto-inject title_name unless already supplied in test_params
             if (is.null(func_args[["title_name"]])) {
@@ -3866,35 +3841,31 @@ DataAnalytics <- R6::R6Class(
                 "arabic" = "output_title_arabic",
                 "output_title_english"
               )
-              auto_title <- out[[title_field]]
-              if (
-                is.null(auto_title) ||
-                  is.na(auto_title) ||
-                  !nzchar(auto_title)
-              ) {
-                auto_title <- out$output_title
-              }
-              if (
-                !is.null(auto_title) &&
-                  !is.na(auto_title) &&
-                  nzchar(auto_title)
-              ) {
+              auto_title <- cell(title_field, i) %||% cell("output_title", i)
+              if (!is.null(auto_title)) {
                 func_args[["title_name"]] <- auto_title
               }
             }
 
-            group <- if (
-              !is.null(out$outputs_group) &&
-                !is.na(out$outputs_group) &&
-                nzchar(out$outputs_group)
-            ) {
-              out$outputs_group
-            } else {
-              NULL
-            }
+            group <- cell("outputs_group", i)
 
             store_result <- function(result, key) {
-              if (!is.null(out$output_type) && out$output_type == "table") {
+              # Output functions wrap their bodies in phr_try(on_error = "warn")
+              # and therefore return NULL on failure. Assigning NULL into a list
+              # deletes the element, which would silently leave behind an empty
+              # output_group node, so bail out before any node is created.
+              if (is.null(result)) {
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(glue::glue(
+                    "Output '{out_name}' returned NULL (the output function failed). ",
+                    "Nothing stored for '{key}'."
+                  )),
+                  origin = self$dataset_name
+                )
+                return(invisible(NULL))
+              }
+
+              if (!is.null(output_type) && output_type == "table") {
                 if (nested) {
                   if (is.null(self$tables[[set_role]])) {
                     self$tables[[set_role]] <- list()
@@ -3919,8 +3890,8 @@ DataAnalytics <- R6::R6Class(
                   "Table '{key}' stored successfully."
                 )))
               } else if (
-                !is.null(out$output_type) &&
-                  out$output_type == "visualization"
+                !is.null(output_type) &&
+                  output_type == "visualization"
               ) {
                 if (nested) {
                   if (is.null(self$visualizations[[set_role]])) {
@@ -3942,29 +3913,21 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$visualizations[[key]] <- result
                 }
-                phrutils::phr_message(phrutils::phr_txt(
+                phrutils::phr_message(phrutils::phr_txt(glue::glue(
                   "Visualization '{key}' stored successfully."
-                ))
+                )))
               } else {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
-                    "Output '{out_name}' has unrecognized output_type '{out$output_type}'. ",
+                  message = phrutils::phr_txt(glue::glue(
+                    "Output '{out_name}' has unrecognized output_type '{output_type}'. ",
                     "Expected 'visualization' or 'table'. Result not stored."
-                  ),
+                  )),
                   origin = self$dataset_name
                 )
               }
             }
 
-            per_group_ref <- if (
-              !is.null(out$outputs_per_group) &&
-                !is.na(out$outputs_per_group) &&
-                nzchar(out$outputs_per_group)
-            ) {
-              out$outputs_per_group
-            } else {
-              NULL
-            }
+            per_group_ref <- cell("outputs_per_group", i)
 
             if (!is.null(per_group_ref)) {
               if (grepl("^@variable_map\\$", per_group_ref)) {
@@ -3973,9 +3936,9 @@ DataAnalytics <- R6::R6Class(
                 var_label <- role
                 if (is.null(col_name)) {
                   phrutils::phr_warning(
-                    message = phrutils::phr_txt(
+                    message = phrutils::phr_txt(glue::glue(
                       "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
-                    ),
+                    )),
                     origin = self$dataset_name
                   )
                   col_name <- NULL
@@ -3985,37 +3948,18 @@ DataAnalytics <- R6::R6Class(
                 var_label <- per_group_ref
               }
 
-              # Determine the data frame used for finding unique group values.
-              # All survey_design types: extract variables tibble.
-              source_df <- switch(
-                dataset_type,
-                "analysis_results_surveydesign" = if (!is.null(analysis_res)) {
-                  analysis_res$survey_design
-                } else {
-                  NULL
-                },
-                "analysis_results_base" = if (!is.null(analysis_res)) {
-                  analysis_res$base
-                } else {
-                  NULL
-                },
-                # default: base or survey_design – extract variables tibble
-                {
-                  design_obj <- if (dataset_type == "survey_design") {
-                    weighted_design
-                  } else {
-                    base_design
-                  }
-                  if (!is.null(design_obj)) {
-                    tryCatch(design_obj$variables, error = function(e) NULL)
-                  } else {
-                    NULL
-                  }
-                }
-              )
-
-              is_survey_design_type <- !(dataset_type %in%
-                c("analysis_results_surveydesign", "analysis_results_base"))
+              # Determine the data frame used for finding unique group values
+              # by extracting the variables tibble from the relevant design.
+              design_obj <- if (dataset_type == "survey_design") {
+                weighted_design
+              } else {
+                base_design
+              }
+              source_df <- if (!is.null(design_obj)) {
+                tryCatch(design_obj$variables, error = function(e) NULL)
+              } else {
+                NULL
+              }
 
               if (
                 !is.null(col_name) &&
@@ -4025,47 +3969,31 @@ DataAnalytics <- R6::R6Class(
                 unique_vals <- unique(source_df[[col_name]])
                 unique_vals <- unique_vals[!is.na(unique_vals)]
 
-                phrutils::phr_message(phrutils::phr_txt(
+                phrutils::phr_message(phrutils::phr_txt(glue::glue(
                   "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
-                ))
+                )))
 
                 for (val in unique_vals) {
-                  if (is_survey_design_type) {
-                    design_to_filter <- if (dataset_type == "survey_design") {
-                      weighted_design
-                    } else {
-                      base_design
-                    }
-                    filtered_first_arg <- tryCatch(
-                      dplyr::filter(
-                        design_to_filter,
-                        !!rlang::sym(col_name) == val
-                      ),
-                      error = function(e) {
-                        phrutils::phr_warning(
-                          message = phrutils::phr_txt(
-                            "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
-                          ),
-                          origin = self$dataset_name
-                        )
-                        NULL
-                      }
-                    )
+                  design_to_filter <- if (dataset_type == "survey_design") {
+                    weighted_design
                   } else {
-                    filtered_first_arg <- tryCatch(
-                      source_df |>
-                        dplyr::filter(!!rlang::sym(col_name) == val),
-                      error = function(e) {
-                        phrutils::phr_warning(
-                          message = phrutils::phr_txt(
-                            "Failed to filter data for '{var_label}' == '{val}': {e$message}"
-                          ),
-                          origin = self$dataset_name
-                        )
-                        NULL
-                      }
-                    )
+                    base_design
                   }
+                  filtered_first_arg <- tryCatch(
+                    dplyr::filter(
+                      design_to_filter,
+                      !!rlang::sym(col_name) == val
+                    ),
+                    error = function(e) {
+                      phrutils::phr_warning(
+                        message = phrutils::phr_txt(glue::glue(
+                          "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
+                        )),
+                        origin = self$dataset_name
+                      )
+                      NULL
+                    }
+                  )
 
                   if (is.null(filtered_first_arg)) {
                     next
@@ -4095,16 +4023,16 @@ DataAnalytics <- R6::R6Class(
                 }
               } else if (!is.null(col_name)) {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
+                  message = phrutils::phr_txt(glue::glue(
                     "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
-                  ),
+                  )),
                   origin = self$dataset_name
                 )
               }
             } else {
-              phrutils::phr_message(phrutils::phr_txt(
+              phrutils::phr_message(phrutils::phr_txt(glue::glue(
                 "Calling {func_name} for output '{out_name}'..."
-              ))
+              )))
               output_result <- do.call(output_function, func_args)
               store_result(output_result, label)
             }
@@ -4419,13 +4347,21 @@ DataAnalytics <- R6::R6Class(
     # @param out_name Character; output name used in warning messages.
     # @param skip_results_table Logical; if TRUE, @results_table entries are
     #   skipped as named args (they were already handled as first positional arg).
+    # @param variable_map Named list mapping canonical roles to column names.
+    #   Defaults to self$variable_map. Subclasses holding several datasets (e.g.
+    #   linked roster / deaths) must pass the map belonging to the input set
+    #   being processed, otherwise @variable_map$ references resolve against the
+    #   wrong dataset's columns.
     # @return Updated func_args list.
     .resolve_output_params = function(
       func_args,
       test_params,
       out_name,
-      skip_results_table = FALSE
+      skip_results_table = FALSE,
+      variable_map = NULL
     ) {
+      variable_map <- variable_map %||% self$variable_map %||% list()
+
       for (arg_name in names(test_params)) {
         arg_value <- test_params[[arg_name]]
 
@@ -4439,7 +4375,7 @@ DataAnalytics <- R6::R6Class(
             elem <- trimws(elem)
             if (grepl("^@variable_map\\$", elem)) {
               role <- sub("^@variable_map\\$", "", elem)
-              resolved <- self$variable_map[[role]]
+              resolved <- variable_map[[role]]
               if (!is.null(resolved)) {
                 resolved_elements <- c(resolved_elements, resolved)
               } else {
@@ -4573,7 +4509,7 @@ DataAnalytics <- R6::R6Class(
           is.character(arg_value) && grepl("^@variable_map\\$", arg_value)
         ) {
           role <- sub("^@variable_map\\$", "", arg_value)
-          resolved <- self$variable_map[[role]]
+          resolved <- variable_map[[role]]
           if (!is.null(resolved)) func_args[[arg_name]] <- resolved
         } else if (
           is.character(arg_value) && grepl("^@value_map\\$", arg_value)
@@ -4635,7 +4571,7 @@ DataAnalytics <- R6::R6Class(
             status = character()
           )
 
-          if (is.null(schema) || length(schema) == 0) {
+          if (is.null(schema) || nrow(schema) == 0) {
             phrutils::phr_warning(
               message = phr_txt(glue::glue(
                 "No {schema_name} defined. Cannot diagnose."
@@ -4646,25 +4582,33 @@ DataAnalytics <- R6::R6Class(
             return(invisible(empty_result))
           }
 
+          # Read a schema cell, returning NA_character_ when absent or empty.
+          cell <- function(col, i) {
+            if (!col %in% names(schema)) {
+              return(NA_character_)
+            }
+            value <- schema[[col]][[i]]
+            if (is.null(value) || length(value) != 1 || is.na(value)) {
+              return(NA_character_)
+            }
+            value <- as.character(value)
+            if (!nzchar(value)) NA_character_ else value
+          }
+
           rows <- list()
 
-          for (out_name in names(schema)) {
-            out <- schema[[out_name]]
-
-            func_name <- out$output_func_name %||% NA_character_
-            output_type <- out$output_type %||% NA_character_
-            output_name <- out$output_name %||% NA_character_
-            outputs_group <- out$outputs_group %||% NA_character_
-            variables <- out$variables %||% character(0)
-            test_params <- out$test_params %||% list()
+          for (i in seq_len(nrow(schema))) {
+            out_name <- cell("output_title", i)
+            func_name <- cell("output_func_name", i)
+            output_type <- cell("output_type", i)
+            output_name <- cell("output_name", i)
+            outputs_group <- cell("outputs_group", i)
+            test_params <- cell("test_params", i)
+            variables <- outputs_parse_list_field(cell("variables", i)) %||%
+              character(0)
 
             # --- 1. required fields present
-            req_ok <- !is.null(func_name) &&
-              !is.na(func_name) &&
-              nzchar(func_name) &&
-              !is.null(output_type) &&
-              !is.na(output_type) &&
-              nzchar(output_type)
+            req_ok <- !is.na(func_name) && !is.na(output_type)
 
             # --- 2. function available
             func_available <- FALSE
@@ -4737,24 +4681,15 @@ DataAnalytics <- R6::R6Class(
 
             rows[[length(rows) + 1]] <- tibble::tibble(
               output_title = out_name,
-              output_name = output_name %||% NA_character_,
-              output_func_name = func_name %||% NA_character_,
-              output_type = output_type %||% NA_character_,
+              output_name = output_name,
+              output_func_name = func_name,
+              output_type = output_type,
               variables = if (length(variables) > 0) {
                 paste(variables, collapse = ", ")
               } else {
                 NA_character_
               },
-              test_params = if (length(test_params) > 0) {
-                paste(
-                  names(test_params),
-                  test_params,
-                  sep = "=",
-                  collapse = ", "
-                )
-              } else {
-                NA_character_
-              },
+              test_params = test_params,
               outputs_group = outputs_group,
               function_available = func_available,
               variables_in_data = vars_in_data,

@@ -25,7 +25,7 @@ test_that("DataAnalytics initializes with valid data", {
   expect_true(is.list(da$plausibility_results))
 
   # Unified outputs schema initialized
-  expect_true(is.list(da$outputs_schema))
+  expect_true(is.data.frame(da$outputs_schema))
 
   # Analysis fields initialized
   expect_s3_class(da$data_analysis_plan, "QuantDataAnalysisPlanLog")
@@ -618,7 +618,7 @@ test_that("outputs_diagnose returns empty tibble when no schema", {
     )
   )
 
-  da$outputs_schema <- list()
+  da$outputs_schema <- tibble::tibble()
 
   suppressWarnings(
     result <- suppressMessages(
@@ -640,16 +640,16 @@ test_that("outputs_diagnose flags unavailable function", {
     )
   )
 
-  da$outputs_schema <- list(
-    out1 = list(
-      output_title = "out1",
-      output_name = "Out 1",
-      output_func_name = "this_func_does_not_exist_xyz",
-      output_type = "visualization",
-      variables = c("val"),
-      test_params = list(),
-      outputs_group = NULL
-    )
+  da$outputs_schema <- tibble::tibble(
+    output_title     = "out1",
+    output_name      = "Out 1",
+    output_subtitle  = NA_character_,
+    variables        = "val",
+    disaggregation   = NA_character_,
+    output_func_name = "this_func_does_not_exist_xyz",
+    test_params      = NA_character_,
+    output_type      = "visualization",
+    outputs_group    = NA_character_
   )
 
   suppressWarnings(
@@ -672,16 +672,16 @@ test_that("outputs_diagnose flags missing variable", {
     )
   )
 
-  da$outputs_schema <- list(
-    out_missing = list(
-      output_title = "out_missing",
-      output_name = "Missing var output",
-      output_func_name = "plot_stacked_bar",
-      output_type = "visualization",
-      variables = c("nonexistent_col"),
-      test_params = list(),
-      outputs_group = NULL
-    )
+  da$outputs_schema <- tibble::tibble(
+    output_title     = "out_missing",
+    output_name      = "Missing var output",
+    output_subtitle  = NA_character_,
+    variables        = "nonexistent_col",
+    disaggregation   = NA_character_,
+    output_func_name = "plot_stacked_bar",
+    test_params      = NA_character_,
+    output_type      = "visualization",
+    outputs_group    = NA_character_
   )
 
   suppressWarnings(
@@ -741,16 +741,16 @@ test_that("outputs_diagnose resolves canonical var names via variable_map", {
 
   da$variable_map <- list(canonical_col = "actual_col")
 
-  da$outputs_schema <- list(
-    out_mapped = list(
-      output_title = "out_mapped",
-      output_name = "Mapped var output",
-      output_func_name = "plot_stacked_bar",
-      output_type = "visualization",
-      variables = c("canonical_col"),
-      test_params = list(),
-      outputs_group = NULL
-    )
+  da$outputs_schema <- tibble::tibble(
+    output_title     = "out_mapped",
+    output_name      = "Mapped var output",
+    output_subtitle  = NA_character_,
+    variables        = "canonical_col",
+    disaggregation   = NA_character_,
+    output_func_name = "plot_stacked_bar",
+    test_params      = NA_character_,
+    output_type      = "visualization",
+    outputs_group    = NA_character_
   )
 
   result <- suppressMessages(
@@ -804,19 +804,17 @@ test_that("set_outputs_schema and get_outputs_schema work", {
     )
   )
 
-  new_schema <- list(
-    test_out = list(
-      output_title = "test_out",
-      output_name = "Test output",
-      output_subtitle = NA_character_,
-      variables = c("id"),
-      disaggregation = NULL,
-      output_func_name = "plot_stacked_bar",
-      test_params = list(),
-      output_type = "visualization",
-      outputs_group = NULL,
-      outputs_per_group = NULL
-    )
+  new_schema <- tibble::tibble(
+    output_title      = "test_out",
+    output_name       = "Test output",
+    output_subtitle   = NA_character_,
+    variables         = "id",
+    disaggregation    = NA_character_,
+    output_func_name  = "plot_stacked_bar",
+    test_params       = NA_character_,
+    output_type       = "visualization",
+    outputs_group     = NA_character_,
+    outputs_per_group = NA_character_
   )
 
   # set_outputs_schema() may message; suppress if it does
@@ -825,8 +823,9 @@ test_that("set_outputs_schema and get_outputs_schema work", {
   )
 
   result <- da$get_outputs_schema()
-  expect_equal(length(result), 1)
-  expect_equal(result$test_out$output_title, "test_out")
+  expect_true(is.data.frame(result))
+  expect_equal(nrow(result), 1)
+  expect_equal(result$output_title[[1]], "test_out")
 })
 
 test_that("get_quality_schema returns current quality schema", {
@@ -1384,4 +1383,139 @@ test_that("add_all_to_dap iterates over multiple field sets from the pre-hook", 
   expect_equal(da$data_analysis_plan2$get("log_df")$var_name, "b_txt")
   expect_equal(da$data_analysis_plan2$get("log_df")$calculation, "cat")
   expect_equal(da$variable_map2[["b_txt"]], "b_txt")
+})
+
+
+# ============================================================================
+# run_outputs: outputs_group handling and per-set variable_map resolution
+# ============================================================================
+
+outputs_row <- function(name, group, dataset_type, test_params) {
+  tibble::tibble(
+    output_title     = name,
+    output_name      = name,
+    output_subtitle  = NA_character_,
+    variables        = NA_character_,
+    disaggregation   = NA_character_,
+    output_func_name = "plot_stacked_bar",
+    test_params      = test_params,
+    output_type      = "visualization",
+    outputs_group    = group,
+    dataset_type     = dataset_type
+  )
+}
+
+outputs_test_da <- function(name) {
+  set.seed(42)
+  n <- 60
+  df <- tibble::tibble(
+    id = seq_len(n),
+    sex = rep(c("m", "f"), length.out = n),
+    hh_weight = rep(c(1, 2), length.out = n)
+  )
+
+  suppressWarnings(
+    da <- suppressMessages(DataAnalytics$new(data = df, dataset_name = name))
+  )
+
+  da$variable_map <- list(weight = "hh_weight", sex = "sex")
+  da$base_survey_design <- srvyr::as_survey_design(df, ids = 1)
+  da$survey_design <- srvyr::as_survey_design(df, ids = 1, weights = hh_weight)
+  da
+}
+
+test_that("run_outputs populates both weighted and unweighted outputs_group nodes", {
+  skip_if_not_installed("srvyr")
+
+  da <- outputs_test_da("GroupsDA")
+
+  da$outputs_schema <- outputs_normalize_schema(dplyr::bind_rows(
+    outputs_row("sex_unw", "unweighted", "base", "category_var=sex"),
+    outputs_row(
+      "sex_wtd", "weighted", "survey_design",
+      "category_var=sex, weighted=TRUE, weights_col=@variable_map$weight"
+    )
+  ))
+
+  suppressWarnings(suppressMessages(da$run_outputs()))
+
+  expect_named(da$visualizations, c("unweighted", "weighted"), ignore.order = TRUE)
+  expect_equal(length(da$visualizations$unweighted), 1)
+  expect_equal(length(da$visualizations$weighted), 1)
+  expect_true("sex_wtd" %in% names(da$visualizations$weighted))
+})
+
+test_that("run_outputs does not create an empty outputs_group node when an output fails", {
+  skip_if_not_installed("srvyr")
+
+  da <- outputs_test_da("FailGroupDA")
+
+  # category_var is required; omitting it makes plot_stacked_bar return NULL
+  da$outputs_schema <- outputs_normalize_schema(
+    outputs_row("broken", "weighted", "survey_design", NA_character_)
+  )
+
+  suppressWarnings(suppressMessages(da$run_outputs()))
+
+  expect_false("weighted" %in% names(da$visualizations))
+  expect_equal(length(da$visualizations), 0)
+})
+
+test_that("run_outputs resolves @variable_map references against the set's own variable_map", {
+  skip_if_not_installed("srvyr")
+
+  PerSetDA <- R6::R6Class(
+    "PerSetDA",
+    inherit = DataAnalytics,
+    public = list(
+      alt_outputs_schema = NULL,
+      alt_variable_map = NULL,
+      alt_base_survey_design = NULL,
+      alt_survey_design = NULL,
+      pre_run_outputs = function() {
+        list(
+          alt = list(
+            outputs_schema = "alt_outputs_schema",
+            base_survey_design = "alt_base_survey_design",
+            survey_design = "alt_survey_design",
+            variable_map = "alt_variable_map"
+          )
+        )
+      }
+    )
+  )
+
+  n <- 60
+  alt_df <- tibble::tibble(
+    id = seq_len(n),
+    sex = rep(c("m", "f"), length.out = n),
+    alt_weight = rep(c(1, 3), length.out = n)
+  )
+
+  suppressWarnings(
+    da <- suppressMessages(PerSetDA$new(
+      data = tibble::tibble(id = seq_len(n)),
+      dataset_name = "PerSetDA"
+    ))
+  )
+
+  # The household-level map deliberately points at a column that does NOT
+  # exist in the alt dataset; resolution must use alt_variable_map instead.
+  da$variable_map <- list(weight = "hh_weight_not_in_alt")
+  da$alt_variable_map <- list(weight = "alt_weight")
+  da$alt_base_survey_design <- srvyr::as_survey_design(alt_df, ids = 1)
+  da$alt_survey_design <- srvyr::as_survey_design(alt_df, ids = 1, weights = alt_weight)
+
+  da$alt_outputs_schema <- outputs_normalize_schema(
+    outputs_row(
+      "alt_wtd", "weighted", "survey_design",
+      "category_var=sex, weighted=TRUE, weights_col=@variable_map$weight"
+    )
+  )
+
+  suppressWarnings(suppressMessages(da$run_outputs()))
+
+  expect_true("alt" %in% names(da$visualizations))
+  expect_true("weighted" %in% names(da$visualizations$alt))
+  expect_equal(length(da$visualizations$alt$weighted), 1)
 })

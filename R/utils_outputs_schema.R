@@ -1,354 +1,251 @@
 #' Outputs Schema Utility Functions
 #'
-#' Functions for converting between outputs schema table and nested list format.
-#' These functions follow the same patterns as data_schema_to_table and data_table_to_schema
-#' for consistency across the phr package.
+#' Functions for validating, normalising and parsing the outputs schema.
+#'
+#' The outputs schema is a data frame: one row per output, with the
+#' comma-separated `variables` / `disaggregation` cells and the `test_params`
+#' cell parsed on demand, row by row. There is no nested-list representation.
 #'
 #' @name outputs_schema_utils
 NULL
 
 
-#' Convert outputs schema to table format
+# Columns every outputs schema row must define.
+.outputs_schema_required_cols <- c(
+  "output_title",
+  "output_name",
+  "output_subtitle",
+  "variables",
+  "disaggregation",
+  "output_func_name",
+  "test_params",
+  "output_type"
+)
+
+# Optional columns; added as NA_character_ by outputs_normalize_schema().
+.outputs_schema_optional_cols <- c(
+  "outputs_group",
+  "outputs_per_group",
+  "dataset_type",
+  "output_title_english",
+  "output_title_french",
+  "output_title_arabic"
+)
+
+# Accepted values for the output_type and dataset_type columns.
+.outputs_schema_valid_output_types <- c("visualization", "table")
+.outputs_schema_valid_dataset_types <- c("base", "survey_design")
+
+
+#' Parse a comma-separated outputs schema cell into a character vector
 #'
-#' Converts a nested list outputs schema to a flat table format.
-#' This follows the same pattern as data_schema_to_table().
+#' Used for the `variables` and `disaggregation` columns. Commas inside
+#' parentheses or quotes are not treated as separators.
 #'
-#' @param outputs_schema A nested list outputs schema
-#' @return A data frame with outputs schema
+#' @param x A single character value, or NA/NULL.
+#' @return A character vector, or NULL when the cell is empty.
 #' @export
-outputs_schema_to_table <- function(outputs_schema) {
-
-  outputs_validate_schema_to_table(
-    outputs_schema,
-    origin = "outputs_schema_to_table"
-  )
-
-  rows <- list()
-
-  for (nm in names(outputs_schema)) {
-    x <- outputs_schema[[nm]]
-
-    output_title <- x$output_title %||% nm
-    output_name <- x$output_name %||% NA_character_
-    output_subtitle <- x$output_subtitle %||% NA_character_
-    output_title_english <- x$output_title_english %||% NA_character_
-    output_title_french <- x$output_title_french %||% NA_character_
-    output_title_arabic <- x$output_title_arabic %||% NA_character_
-
-    variables <- if (!is.null(x$variables)) {
-      paste(x$variables, collapse = ",")
-    } else NA_character_
-
-    disaggregation <- if (!is.null(x$disaggregation)) {
-      paste(x$disaggregation, collapse = ",")
-    } else NA_character_
-
-    output_func_name <- x$output_func_name %||% NA_character_
-
-    test_params <- if (!is.null(x$test_params) && length(x$test_params) > 0) {
-      paste(names(x$test_params), x$test_params, sep = "=", collapse = ",")
-    } else NA_character_
-
-    output_type <- x$output_type %||% NA_character_
-
-    outputs_group <- x$outputs_group %||% NA_character_
-
-    outputs_per_group <- x$outputs_per_group %||% NA_character_
-
-    dataset_type <- x$dataset_type %||% NA_character_
-
-    rows <- append(rows, list(tibble::tibble(
-      output_title = output_title,
-      output_name = output_name,
-      output_subtitle = output_subtitle,
-      output_title_english = output_title_english,
-      output_title_french = output_title_french,
-      output_title_arabic = output_title_arabic,
-      variables = variables,
-      disaggregation = disaggregation,
-      output_func_name = output_func_name,
-      test_params = test_params,
-      output_type = output_type,
-      outputs_group = outputs_group,
-      outputs_per_group = outputs_per_group,
-      dataset_type = dataset_type
-    )))
+outputs_parse_list_field <- function(x) {
+  if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
+    return(NULL)
   }
 
-  dplyr::bind_rows(rows)
+  parts <- trimws(.parse_indicator_arguments(as.character(x)))
+  parts <- parts[nzchar(parts)]
+
+  if (length(parts) == 0) NULL else parts
 }
 
 
-#' Convert outputs schema table back to nested list
+#' Parse an outputs schema `test_params` cell into a named list
 #'
-#' Converts a flat table format back into a nested list structure.
-#' This follows the same pattern as data_table_to_schema().
+#' Splits a `"key=value,key2=value2"` string into a named list, coercing
+#' numeric and logical values. Commas inside parentheses (e.g. `c(a, b)`) or
+#' quotes are preserved.
 #'
-#' @param df A data frame with outputs schema definitions
-#' @return A nested list outputs schema
+#' @param x A single character value, or NA/NULL.
+#' @return A named list of parameters, or NULL when the cell is empty.
 #' @export
-outputs_table_to_schema <- function(df) {
+outputs_parse_test_params <- function(x) {
+  if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
+    return(NULL)
+  }
 
-  phrutils::phr_validate_dataframe(df, origin = "outputs_table_to_schema", soft = FALSE)
-  outputs_validate_table_to_schema(df)
+  pairs <- .parse_indicator_arguments(as.character(x))
+  params <- list()
 
-  phrutils::phr_validate_columns(
-    df,
-    required_cols = c(
-      "output_title",
-      "output_name",
-      "output_subtitle",
-      "variables",
-      "disaggregation",
-      "output_func_name",
-      "test_params",
-      "output_type"
-    ),
-    origin = "outputs_table_to_schema",
-    hint = phr_txt("Outputs table must include all required schema fields."),
-    soft = FALSE
-  )
+  for (pair in pairs) {
+    pair <- trimws(pair)
+    eq_pos <- regexpr("=", pair)[[1]]
 
-  outputs <- list()
+    if (eq_pos > 1) {
+      key <- trimws(substr(pair, 1, eq_pos - 1))
+      value_str <- trimws(substr(pair, eq_pos + 1, nchar(pair)))
+      value <- suppressWarnings(as.numeric(value_str))
 
-  for (i in seq_len(nrow(df))) {
-    row <- df[i, ]
-
-    output_title <- row$output_title
-
-    variables <- if (!is.na(row$variables) && nzchar(row$variables)) {
-      strsplit(row$variables, ",")[[1]] |> trimws()
-    } else NULL
-
-    disaggregation <- if (!is.na(row$disaggregation) && nzchar(row$disaggregation)) {
-      strsplit(row$disaggregation, ",")[[1]] |> trimws()
-    } else NULL
-
-    test_params <- if (!is.na(row$test_params) && nzchar(row$test_params)) {
-      pairs <- .parse_indicator_arguments(row$test_params)
-      params <- list()
-
-      for (pair in pairs) {
-        pair <- trimws(pair)
-        eq_pos <- regexpr("=", pair)[[1]]
-        if (eq_pos > 1) {
-          key <- trimws(substr(pair, 1, eq_pos - 1))
-          value_str <- trimws(substr(pair, eq_pos + 1, nchar(pair)))
-          value <- suppressWarnings(as.numeric(value_str))
-          if (is.na(value)) {
-            if (toupper(value_str) %in% c("TRUE", "FALSE")) {
-              value <- as.logical(value_str)
-            } else {
-              value <- value_str
-            }
-          }
-          params[[key]] <- value
+      if (is.na(value)) {
+        if (toupper(value_str) %in% c("TRUE", "FALSE")) {
+          value <- as.logical(value_str)
+        } else {
+          value <- value_str
         }
       }
-      params
-    } else NULL
 
-    outputs_group <- if ("outputs_group" %in% names(row) &&
-                         !is.na(row$outputs_group) && nzchar(row$outputs_group)) {
-      row$outputs_group
-    } else NULL
-
-    outputs_per_group <- if ("outputs_per_group" %in% names(row) &&
-                              !is.na(row$outputs_per_group) && nzchar(row$outputs_per_group)) {
-      row$outputs_per_group
-    } else NULL
-
-    dataset_type <- if ("dataset_type" %in% names(row) &&
-                          !is.na(row$dataset_type) && nzchar(row$dataset_type)) {
-      row$dataset_type
-    } else NULL
-
-    output_title_english <- if ("output_title_english" %in% names(row) &&
-                                  !is.na(row$output_title_english) && nzchar(row$output_title_english)) {
-      row$output_title_english
-    } else NULL
-
-    output_title_french <- if ("output_title_french" %in% names(row) &&
-                                 !is.na(row$output_title_french) && nzchar(row$output_title_french)) {
-      row$output_title_french
-    } else NULL
-
-    output_title_arabic <- if ("output_title_arabic" %in% names(row) &&
-                                 !is.na(row$output_title_arabic) && nzchar(row$output_title_arabic)) {
-      row$output_title_arabic
-    } else NULL
-
-    outputs[[output_title]] <- list(
-      output_title = output_title,
-      output_name = row$output_name,
-      output_subtitle = row$output_subtitle,
-      output_title_english = output_title_english,
-      output_title_french = output_title_french,
-      output_title_arabic = output_title_arabic,
-      variables = variables,
-      disaggregation = disaggregation,
-      output_func_name = row$output_func_name,
-      test_params = test_params,
-      output_type = row$output_type,
-      outputs_group = outputs_group,
-      outputs_per_group = outputs_per_group,
-      dataset_type = dataset_type
-    )
+      params[[key]] <- value
+    }
   }
 
-  outputs
+  if (length(params) == 0) NULL else params
 }
 
 
-#' Validate outputs schema table before conversion
+#' Validate an outputs schema data frame
 #'
-#' Validates table structure before converting to nested list.
-#' This follows the same pattern as `Data`'s private `..validate_table_schema()` method.
+#' Checks that the required columns are present and that `output_type`,
+#' `dataset_type` and `output_title` hold usable values. Warns (but does not
+#' error) when two rows would store their result under the same key.
 #'
-#' @param df Data frame with outputs definitions
-#' @return TRUE if valid, otherwise throws error
+#' @param df A data frame holding the outputs schema.
+#' @param origin Origin string for error messages.
+#' @return TRUE if valid, otherwise throws an error.
 #' @export
-outputs_validate_table_to_schema <- function(df) {
+outputs_validate_schema <- function(df, origin = "outputs_validate_schema") {
 
   phrutils::phr_try({
 
-    phrutils::phr_validate_dataframe(
-      df,
-      origin = "outputs_validate_table_to_schema",
-      soft = FALSE
-    )
-
-    required_cols <- c(
-      "output_title",
-      "output_name",
-      "output_subtitle",
-      "variables",
-      "disaggregation",
-      "output_func_name",
-      "test_params",
-      "output_type"
-    )
+    phrutils::phr_validate_dataframe(df, origin = origin, soft = FALSE)
 
     phrutils::phr_validate_columns(
       df,
-      required_cols = required_cols,
-      origin = "outputs_validate_table_to_schema",
-      hint = phr_txt("Outputs schema table must include all required fields."),
+      required_cols = .outputs_schema_required_cols,
+      origin = origin,
+      hint = phr_txt("Outputs schema must include all required fields."),
       soft = FALSE
     )
 
-    # Validate output_type values
-    valid_types <- c("visualization", "table")
-    invalid_types <- df$output_type[!is.na(df$output_type) &
-                                     !df$output_type %in% valid_types]
-    
+    invalid_types <- df$output_type[
+      !is.na(df$output_type) &
+        !df$output_type %in% .outputs_schema_valid_output_types
+    ]
+
     if (length(invalid_types) > 0) {
-      phr_error(
-        origin = "outputs_validate_table_to_schema",
+      phrutils::phr_error(
+        origin = origin,
         message = phr_txt(
-          glue::glue("Invalid output_type values: {paste(unique(invalid_types), collapse=', ')}")
+          glue::glue(
+            "Invalid output_type values: {paste(unique(invalid_types), collapse = ', ')}"
+          )
         ),
         hint = phr_txt("output_type must be either 'visualization' or 'table'.")
       )
     }
 
-    TRUE
+    if ("dataset_type" %in% names(df)) {
+      invalid_datasets <- df$dataset_type[
+        !is.na(df$dataset_type) &
+          nzchar(df$dataset_type) &
+          !df$dataset_type %in% .outputs_schema_valid_dataset_types
+      ]
 
-  }, on_error = "abort", origin = "outputs_validate_table_to_schema")
-}
-
-
-#' Validate outputs schema structure
-#'
-#' Validates nested list schema structure before converting to table.
-#' This follows the same pattern as data_validate_schema_to_table().
-#'
-#' @param outputs_schema A list containing outputs definitions
-#' @param origin Origin string for error messages
-#' @return Invisibly returns TRUE if valid, otherwise throws error
-#' @export
-outputs_validate_schema_to_table <- function(outputs_schema, origin = "outputs_validate_schema_to_table") {
-
-  phrutils::phr_try({
-
-    if (is.null(outputs_schema) || !is.list(outputs_schema)) {
-      phr_error(
-        origin  = origin,
-        message = phr_txt("Outputs schema must be a list object."),
-        hint    = phr_txt("Ensure outputs_schema is a named list.")
-      )
-    }
-
-    purrr::iwalk(outputs_schema, function(out, name) {
-
-      if (!is.list(out)) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt(glue::glue("Output '{name}' must be a list."))
-        )
-      }
-
-      # output_title
-      if (!is.character(out$output_title) || length(out$output_title) != 1) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt(glue::glue("`output_title` in '{name}' must be a single character string."))
-        )
-      }
-
-      if (out$output_title != name) {
-        phr_error(
-          origin  = origin,
+      if (length(invalid_datasets) > 0) {
+        phrutils::phr_error(
+          origin = origin,
           message = phr_txt(
             glue::glue(
-              "Output list name '{name}' does not match output_title field value '{out$output_title}'."
+              "Invalid dataset_type values: {paste(unique(invalid_datasets), collapse = ', ')}"
             )
           ),
           hint = phr_txt(
-            "The name used in the outputs list must be identical to the output_title field value."
+            "dataset_type must be 'base' (unweighted) or 'survey_design' (weighted)."
           )
         )
       }
+    }
 
-      # output_type validation
-      if (!is.character(out$output_type) || length(out$output_type) != 1) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt(glue::glue("`output_type` in '{name}' must be a single character string."))
-        )
-      }
+    missing_titles <- is.na(df$output_title) | !nzchar(df$output_title)
 
-      valid_types <- c("visualization", "table")
-      if (!out$output_type %in% valid_types) {
-        phr_error(
-          origin  = origin,
+    if (any(missing_titles)) {
+      phrutils::phr_error(
+        origin = origin,
+        message = phr_txt(
+          glue::glue(
+            "Missing output_title in row(s): {paste(which(missing_titles), collapse = ', ')}"
+          )
+        ),
+        hint = phr_txt("Every outputs schema row must define an output_title.")
+      )
+    }
+
+    # Each row is run independently, so a duplicate output_title is harmless
+    # (it only affects the auto-generated display title). A genuine collision
+    # requires the same output_name within the same outputs_group, since that
+    # is the key results are stored under.
+    if ("output_name" %in% names(df)) {
+      storage_key <- paste(
+        df$output_name,
+        if ("outputs_group" %in% names(df)) df$outputs_group else "",
+        sep = "\r"
+      )
+
+      duplicate_keys <- unique(df$output_name[duplicated(storage_key)])
+
+      if (length(duplicate_keys) > 0) {
+        phrutils::phr_warning(
+          origin = origin,
           message = phr_txt(
             glue::glue(
-              "`output_type` in '{name}' must be either 'visualization' or 'table', got '{out$output_type}'."
+              "Duplicate output_name value(s) within the same outputs_group: ",
+              "{paste(duplicate_keys, collapse = ', ')}. ",
+              "Each row still runs, but later results will overwrite earlier ones."
             )
           )
         )
       }
+    }
 
-      # variables (optional)
-      if (!is.null(out$variables) &&
-          !(is.character(out$variables) && is.atomic(out$variables))) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt(glue::glue("`variables` in '{name}' must be a character vector."))
-        )
+    TRUE
+
+  }, on_error = "abort", origin = origin)
+}
+
+
+#' Normalise an outputs schema data frame
+#'
+#' Validates the schema, adds any missing optional columns as `NA_character_`
+#' and returns the columns in a stable order as a tibble.
+#'
+#' @param df A data frame holding the outputs schema.
+#' @param origin Origin string for error messages.
+#' @return A tibble holding the normalised outputs schema.
+#' @export
+outputs_normalize_schema <- function(df, origin = "outputs_normalize_schema") {
+
+  phrutils::phr_try({
+
+    outputs_validate_schema(df, origin = origin)
+
+    df <- tibble::as_tibble(df)
+
+    for (col in .outputs_schema_optional_cols) {
+      if (!col %in% names(df)) {
+        df[[col]] <- NA_character_
       }
+    }
 
-      # test_params (optional)
-      if (!is.null(out$test_params) && !is.list(out$test_params)) {
-        phr_error(
-          origin  = origin,
-          message = phr_txt(glue::glue("`test_params` in '{name}' must be a list."))
-        )
-      }
-    })
+    known_cols <- c(
+      .outputs_schema_required_cols,
+      .outputs_schema_optional_cols
+    )
 
-    invisible(TRUE)
+    for (col in known_cols) {
+      df[[col]] <- as.character(df[[col]])
+    }
+
+    dplyr::select(
+      df,
+      dplyr::all_of(known_cols),
+      dplyr::everything()
+    )
 
   }, on_error = "abort", origin = origin)
 }
