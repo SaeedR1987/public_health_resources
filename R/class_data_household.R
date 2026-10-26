@@ -202,34 +202,6 @@ HouseholdData <- R6::R6Class(
             )
           )
 
-          self$register_analytics_type(
-
-            "mortality",
-            private$..mortality_analytics_config()
-
-            function(data,
-                      stage,
-                      analysis_config,
-                      common_args,
-                      ...) {
-
-              GeneralDataAnalytics$new(
-                data = data,
-                dap = analysis_config,
-                parent_data_object = self,
-                dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
-                data_stage_name = stage,
-                data_hash = self$get(field = "..metadata", role = "hash_id"),
-                variable_map = private$..variable_map,
-                value_map = private$..value_map,
-                variable_label = private$..variable_label,
-                value_label = private$..value_label
-              )
-
-            }
-
-          )
-
           private$..map_schema_vars(stage = "raw")
 
           phrutils::phr_message(phrutils::phr_txt(
@@ -354,122 +326,6 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Post-Validation Hook for Household Data
-    #'
-    #' @description
-    #' Hook method called after core validation completes. Performs household-specific validation checks.
-    #'
-    #' @param df Data frame that was validated
-    #'
-    #' @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
-    #'
-    #' @details
-    #' Performs household-specific checks:
-    #' * GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
-    #' * Weight distribution checks (negative or zero weights)
-    #' * Interview date validity checks
-    #' * Consent field validation
-    post_validate = function(df) {
-      nm <- self$dataset_name
-
-      # Track whether any issues occurred
-      had_issues <- FALSE
-
-      # GPS validity check
-
-      lat_col <- private$..variable_map$gps_lat
-      lon_col <- private$..variable_map$gps_lon
-
-      if (
-        !is.null(lat_col) &&
-          lat_col %in% names(df) &&
-          !is.null(lon_col) &&
-          lon_col %in% names(df)
-      ) {
-        lat_invalid <- which(
-          !is.na(df[[lat_col]]) &
-            (df[[lat_col]] < -90 | df[[lat_col]] > 90)
-        )
-        lon_invalid <- which(
-          !is.na(df[[lon_col]]) &
-            (df[[lon_col]] < -180 | df[[lon_col]] > 180)
-        )
-
-        if (length(lat_invalid) > 0 || length(lon_invalid) > 0) {
-          phrutils::phr_warning(
-            nm,
-            phr_txt(
-              "Some GPS coordinates appear invalid (latitudes outside [-90,90] or longitudes outside [-180,180])."
-            )
-          )
-          had_issues <- TRUE
-        }
-      }
-
-      # Weight checks
-
-      if (
-        !is.null(private$..variable_map$weight) &&
-          private$..variable_map$weight %in% names(df)
-      ) {
-        wts <- suppressWarnings(as.numeric(df[[private$..variable_map$weight]]))
-
-        if (any(is.na(wts))) {
-          phrutils::phr_warning(
-            nm,
-            phrutils::phr_txt("Missing values found in weight variable.")
-          )
-          had_issues <- TRUE
-        }
-
-        if (any(wts < 0, na.rm = TRUE)) {
-          phrutils::phr_warning(
-            nm,
-            phrutils::phr_txt("Negative weights detected.")
-          )
-          had_issues <- TRUE
-        }
-      }
-
-      # Strata checks
-
-      if (
-        !is.null(private$..variable_map$strata) &&
-          private$..variable_map$strata %in% names(df)
-      ) {
-        strata_vals <- df[[private$..variable_map$strata]]
-
-        if (any(is.na(strata_vals))) {
-          phrutils::phr_warning(
-            nm,
-            phrutils::phr_txt("Missing strata values detected.")
-          )
-          had_issues <- TRUE
-        }
-      }
-
-      # Link placeholders
-
-      if (!is.null(self$roster_link)) {
-        phrutils::phr_message(phr_txt(
-          "Validating linked roster data (placeholder)."
-        ))
-      }
-
-      if (!is.null(self$deaths_link)) {
-        phrutils::phr_message(phr_txt(
-          "Validating linked deaths data (placeholder)."
-        ))
-      }
-
-      phrutils::phr_message(phr_txt(glue::glue(
-        "Post-validation for {nm} complete."
-      )))
-
-      # Return TRUE (good) or FALSE (warnings occurred)
-      return(!had_issues)
-    },
-
     #' Generate Survey Weights from a Sampling Frame
     #'
     #' @description
@@ -509,8 +365,8 @@ HouseholdData <- R6::R6Class(
     #' Rows whose stratum value is \code{NA}, empty, or absent from the
     #' \code{SamplingFrame} receive \code{NA} weights and a warning is issued.
     generate_weights = function(
-      sampling_frame = NULL,
-      stage = c("standardized", "clean", "raw")
+    sampling_frame = NULL,
+    stage = c("standardized", "clean", "raw")
     ) {
       stage <- match.arg(stage)
       origin <- paste0(self$dataset_name, "$generate_weights")
@@ -639,9 +495,9 @@ HouseholdData <- R6::R6Class(
           existing_weight_col <- self$.variable_map$weight
           if (
             !is.null(existing_weight_col) &&
-              !is.na(existing_weight_col) &&
-              existing_weight_col != "" &&
-              existing_weight_col %in% names(df)
+            !is.na(existing_weight_col) &&
+            existing_weight_col != "" &&
+            existing_weight_col %in% names(df)
           ) {
             weight_col <- existing_weight_col
             phrutils::phr_message(phrutils::phr_txt(
@@ -678,6 +534,122 @@ HouseholdData <- R6::R6Class(
         on_error = "warn",
         origin = origin
       )
+    },
+
+    #' Post-Validation Hook for Household Data
+    #'
+    #' @description
+    #' Hook method called after core validation completes. Performs household-specific validation checks.
+    #'
+    #' @param df Data frame that was validated
+    #'
+    #' @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
+    #'
+    #' @details
+    #' Performs household-specific checks:
+    #' * GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
+    #' * Weight distribution checks (negative or zero weights)
+    #' * Interview date validity checks
+    #' * Consent field validation
+    post_validate = function(df) {
+      nm <- self$dataset_name
+
+      # Track whether any issues occurred
+      had_issues <- FALSE
+
+      # GPS validity check
+
+      lat_col <- private$..variable_map$gps_lat
+      lon_col <- private$..variable_map$gps_lon
+
+      if (
+        !is.null(lat_col) &&
+          lat_col %in% names(df) &&
+          !is.null(lon_col) &&
+          lon_col %in% names(df)
+      ) {
+        lat_invalid <- which(
+          !is.na(df[[lat_col]]) &
+            (df[[lat_col]] < -90 | df[[lat_col]] > 90)
+        )
+        lon_invalid <- which(
+          !is.na(df[[lon_col]]) &
+            (df[[lon_col]] < -180 | df[[lon_col]] > 180)
+        )
+
+        if (length(lat_invalid) > 0 || length(lon_invalid) > 0) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt(
+              "Some GPS coordinates appear invalid (latitudes outside [-90,90] or longitudes outside [-180,180])."
+            )
+          )
+          had_issues <- TRUE
+        }
+      }
+
+      # Weight checks
+
+      if (
+        !is.null(private$..variable_map$weight) &&
+          private$..variable_map$weight %in% names(df)
+      ) {
+        wts <- suppressWarnings(as.numeric(df[[private$..variable_map$weight]]))
+
+        if (any(is.na(wts))) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt("Missing values found in weight variable.")
+          )
+          had_issues <- TRUE
+        }
+
+        if (any(wts < 0, na.rm = TRUE)) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt("Negative weights detected.")
+          )
+          had_issues <- TRUE
+        }
+      }
+
+      # Strata checks
+
+      if (
+        !is.null(private$..variable_map$strata) &&
+          private$..variable_map$strata %in% names(df)
+      ) {
+        strata_vals <- df[[private$..variable_map$strata]]
+
+        if (any(is.na(strata_vals))) {
+          phrutils::phr_warning(
+            nm,
+            phrutils::phr_txt("Missing strata values detected.")
+          )
+          had_issues <- TRUE
+        }
+      }
+
+      # Link placeholders
+
+      if (!is.null(self$roster_link)) {
+        phrutils::phr_message(phrutils::phr_txt(
+          "Validating linked roster data (placeholder)."
+        ))
+      }
+
+      if (!is.null(self$deaths_link)) {
+        phrutils::phr_message(phrutils::phr_txt(
+          "Validating linked deaths data (placeholder)."
+        ))
+      }
+
+      phrutils::phr_message(phrutils::phr_txt(
+        "Post-validation for {nm} complete."
+      ))
+
+      # Return TRUE (good) or FALSE (warnings occurred)
+      return(!had_issues)
     },
 
     #' Pre-Standardize Hook for Household Data
@@ -927,123 +899,6 @@ HouseholdData <- R6::R6Class(
         },
         on_error = "warn",
         origin = paste0(self$dataset_name, "$clean")
-      )
-    },
-
-    #' Get Survey Design Object
-    #'
-    #' @description
-    #' Creates and returns a srvyr survey design object for weighted analyses
-    #'
-    #' @param stage Character string specifying data stage: "clean", "standardized", or "raw"
-    #'
-    #' @return A srvyr survey design object, or NULL if required fields are missing
-    #'
-    #' @details
-    #' Creates a survey design using:
-    #' * ids: cluster_id (required)
-    #' * weights: weight (required)
-    #' * strata: strata (optional)
-    #' * fpc: fpc (optional)
-    #'
-    #' Stores the design object in self$survey_design field for later use
-    get_survey_design = function(stage = c("clean", "standardized", "raw")) {
-      stage <- match.arg(stage)
-
-      phrutils::phr_try(
-        {
-          if (!requireNamespace("srvyr", quietly = TRUE)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "Package 'srvyr' must be installed to create survey design objects."
-              )
-            )
-          }
-
-          df <- self$get_data(stage)
-          if (is.null(df)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt(glue::glue(
-                "No {stage} data available to create survey design."
-              ))
-            )
-            return(NULL)
-          }
-
-          ids_col <- self$.variable_map$cluster_id
-          strata_col <- self$.variable_map$strata
-          weight_col <- self$.variable_map$weight
-          fpc_col <- self$.variable_map$fpc %||% NULL
-
-          missing_fields <- c()
-          if (is.null(ids_col) || ids_col == "" || !ids_col %in% names(df)) {
-            missing_fields <- c(missing_fields, "cluster_id")
-          }
-          if (
-            is.null(weight_col) ||
-              weight_col == "" ||
-              !weight_col %in% names(df)
-          ) {
-            missing_fields <- c(missing_fields, "weight")
-          }
-
-          if (length(missing_fields) > 0) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "Survey design creation incomplete: missing required fields ({paste(missing_fields, collapse=', ')})."
-              )
-            )
-            return(NULL)
-          }
-
-          # ---- OPTIONAL COLUMN SAFETY
-          # Prevent srvyr from choking on missing optional fields like `strata` or `fpc`
-          optional_cols <- c(strata_col, fpc_col)
-          for (oc in optional_cols) {
-            if (!is.null(oc) && !(oc %in% names(df))) {
-              # If the column does not exist, nullify it so srvyr ignores it
-              if (identical(oc, strata_col)) {
-                strata_col <- NULL
-              }
-              if (identical(oc, fpc_col)) fpc_col <- NULL
-            }
-          }
-
-          # Tidy-eval symbols
-          ids_sym <- if (!is.null(ids_col)) rlang::sym(ids_col) else NULL
-          strata_sym <- if (!is.null(strata_col)) {
-            rlang::sym(strata_col)
-          } else {
-            NULL
-          }
-          weight_sym <- if (!is.null(weight_col)) {
-            rlang::sym(weight_col)
-          } else {
-            NULL
-          }
-          fpc_sym <- if (!is.null(fpc_col)) rlang::sym(fpc_col) else NULL
-
-          design <- srvyr::as_survey_design(
-            .data = df,
-            ids = !!ids_sym,
-            strata = !!strata_sym,
-            weights = !!weight_sym,
-            fpc = !!fpc_sym,
-            nest = TRUE
-          )
-
-          self$survey_design <- design
-          phrutils::phr_message(phrutils::phr_txt(
-            "Survey design object created and stored in HouseholdData."
-          ))
-
-          invisible(design)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$get_survey_design")
       )
     },
 
@@ -2756,6 +2611,313 @@ HouseholdData <- R6::R6Class(
         },
         on_error = "warn",
         origin = paste0(self$dataset_name, "$..merge_household_vars_to_linked")
+      )
+    },
+
+    # @field ..analytics_registry List of analytics objects and types that can be
+    # created with generate_data_analytics
+    # @keywords internal
+    ..analytics_registry = function() {
+
+      registry <- super$..analytics_registry()
+
+      c(
+        registry,
+        list(
+          fsl = function(data,
+                         stage,
+                         analysis_config,
+                         parent) {
+
+            FSLDataAnalytics$new(
+              data = data,
+              dap = analysis_config,
+              parent_data_object = parent,
+              dataset_name = paste0(self$dataset_name, "_FSLDataAnalytics"),
+              data_stage_name = stage,
+              data_hash = parent$get(field = "..metadata", role = "hash_id"),
+              variable_map = parent$get(field = "..variable_map"),
+              value_map = parent$get(field = "..value_map"),
+              variable_label = parent$get(field = "..variable_label"),
+              value_label = parent$get(field = "..value_label")
+            )
+          },
+
+
+          wash = function(data,
+                         stage,
+                         analysis_config,
+                         parent) {
+
+            water_containers <- parent$linked_objects$water_containers$object
+            water_containers_data <- water_containers$get_data_with_fallback(self, stage)
+            varm <- water_containers$get(field = "..variable_map")
+            valm <- water_containers$get(field = "..value_map")
+            varlab <- water_containers$get(field = "..variable_label")
+            vallab <- water_containers$get(field = "..value_label")
+
+            WASHDataAnalytics$new(
+                data = data,
+                dap = analysis_config,
+                parent_data_object = parent,
+                dataset_name = paste0(self$dataset_name, "_WASHDataAnalytics"),
+                data_stage_name = stage,
+                data_hash = parent$get(field = "..metadata", role = "hash_id"),
+                variable_map = parent$get(field = "..variable_map"),
+                value_map = parent$get(field = "..value_map"),
+                variable_label = parent$get(field = "..variable_label"),
+                value_label = parent$get(field = "..value_label"),
+                linked_containers_data = if (!is.null(water_containers_data$data)) {
+                  water_containers_data$data
+                } else {
+                  NULL
+                },
+                linked_containers_data_stage_name = if (
+                  !is.null(water_containers_data$stage_name)
+                ) {
+                  water_containers_data$stage_name
+                } else {
+                  NULL
+                },
+                linked_containers_data_hash = if (
+                  !is.null(water_containers$get(field = "..metadata", role = "hash_id"))
+                ) {
+                  water_containers$get(field = "..metadata", role = "hash_id")
+                } else {
+                  NULL
+                },
+                linked_containers_variable_map = if (
+                  !is.null(varm)
+                ) {
+                  varm
+                } else {
+                  NULL
+                },
+                linked_containers_value_map = if (
+                  !is.null(valm)
+                ) {
+                  valm
+                } else {
+                  NULL
+                },
+                linked_containers_variable_label = if (
+                  !is.null(varlab)
+                ) {
+                  varlab
+                } else {
+                  NULL
+                },
+                linked_containers_value_label = if (
+                  !is.null(vallab)
+                ) {
+                  vallab
+                } else {
+                  NULL
+                }
+              )
+
+          },
+
+          health = function(data,
+                            stage,
+                            analysis_config,
+                            parent) {
+
+            roster <- parent$linked_objects$roster$object
+            roster_data <- roster$get_data_with_fallback(self, stage)
+
+            health_ind <- parent$linked_objects$health$object
+            health_ind_data <- water_containers$get_data_with_fallback(self, stage)
+
+              HealthDataAnalytics$new(
+                data = data,
+                dap = analysis_config,
+                parent_data_object = parent,
+                dataset_name = paste0(self$dataset_name, "_HealthDataAnalytics"),
+                data_stage_name = stage,
+                data_hash = parent$get(field = "..metadata", role = "hash_id"),
+                variable_map = parent$get(field = "..variable_map"),
+                value_map = parent$get(field = "..value_map"),
+                variable_label = parent$get(field = "..variable_label"),
+                value_label = parent$get(field = "..value_label"),
+                linked_ind_roster_data = if (!is.null(roster_data$data)) {
+                  roster_data$data
+                } else {
+                  NULL
+                },
+                linked_ind_roster_data_stage_name = if (
+                  !is.null(roster_data$stage_name)
+                ) {
+                  roster_data$stage_name
+                } else {
+                  NULL
+                },
+                linked_ind_roster_data_hash = if (!is.null(roster$get(field = "..metadata", role = "hash_id"))) {
+                  roster$get(field = "..metadata", role = "hash_id")
+                } else {
+                  NULL
+                },
+                linked_ind_roster_variable_map = if (
+                  !is.null(roster$get(field = "..variable_map"))
+                ) {
+                  roster$get(field = "..variable_map")
+                } else {
+                  NULL
+                },
+                linked_ind_roster_value_map = if (!is.null(roster$get(field = "..value_map"))) {
+                  roster$get(field = "..value_map")
+                } else {
+                  NULL
+                },
+                linked_ind_health_data = if (!is.null(health_ind_data$data)) {
+                  health_ind_data$data
+                } else {
+                  NULL
+                },
+                linked_ind_health_data_stage_name = if (
+                  !is.null(health_ind_data$stage_name)
+                ) {
+                  health_ind_data$stage_name
+                } else {
+                  NULL
+                },
+                linked_ind_health_data_hash = if (!is.null(health_ind$get(field = "..metadata", role = "hash_id"))) {
+                  health_ind$get(field = "..metadata", role = "hash_id")
+                } else {
+                  NULL
+                },
+                linked_ind_health_variable_map = if (
+                  !is.null(health_ind$get(field = "..variable_map"))
+                ) {
+                  health_ind$get(field = "..variable_map")
+                } else {
+                  NULL
+                },
+                linked_ind_health_value_map = if (!is.null(health_ind$get(field = "..value_map"))) {
+                  health_ind$get(field = "..value_map")
+                } else {
+                  NULL
+                }
+              )
+          },
+
+          mortality = function(data,
+                               stage,
+                               analysis_config,
+                               parent) {
+
+            roster <- parent$linked_objects$roster$object
+            roster_data <- roster$get_data_with_fallback(self, stage)
+
+            deaths <- parent$linked_objects$deaths$object
+            deaths_data <- deaths$get_data_with_fallback(self, stage)
+
+              MortalityDataAnalytics$new(
+                data = data,
+                dap = analysis_config,
+                parent_data_object = parent,
+                dataset_name = paste0(
+                  self$dataset_name,
+                  "_MortalityDataAnalytics"
+                ),
+                data_stage_name = stage,
+                data_hash = parent$get(field = "..metadata", role = "hash_id"),
+                variable_map = parent$get(field = "..variable_map"),
+                value_map = parent$get(field = "..value_map"),
+                variable_label = parent$get(field = "..variable_label"),
+                value_label = parent$get(field = "..value_label"),
+                linked_ind_roster_data = if (!is.null(roster_data$data)) {
+                  roster_data$data
+                } else {
+                  NULL
+                },
+                linked_ind_roster_data_stage_name = if (
+                  !is.null(roster_data$stage_name)
+                ) {
+                  roster_data$stage_name
+                } else {
+                  NULL
+                },
+                linked_ind_roster_data_hash = if (!is.null(roster$get(field = "..metadata", role = "hash_id"))) {
+                  roster$get(field = "..metadata", role = "hash_id")
+                } else {
+                  NULL
+                },
+                linked_ind_roster_variable_map = if (
+                  !is.null(roster$get(field = "..variable_map"))
+                ) {
+                  roster$get(field = "..variable_map")
+                } else {
+                  NULL
+                },
+                linked_ind_roster_value_map = if (!is.null(roster$get(field = "..value_map"))) {
+                  roster$get(field = "..value_map")
+                } else {
+                  NULL
+                },
+                linked_ind_roster_variable_label = if (
+                  !is.null(roster$get(field = "..variable_label"))
+                ) {
+                  roster$get(field = "..variable_label")
+                } else {
+                  NULL
+                },
+                linked_ind_roster_value_label = if (
+                  !is.null(roster$get(field = "value_label"))
+                ) {
+                  roster$get(field = "..value_label")
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_data = if (!is.null(deaths_data$data)) {
+                  deaths_data$data
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_data_stage_name = if (
+                  !is.null(deaths_data$stage_name)
+                ) {
+                  deaths_data$stage_name
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_data_hash = if (!is.null(deaths$get(field = "..metadata", role = "hash_id"))) {
+                  deaths$get(field = "..metadata", role = "hash_id")
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_variable_map = if (
+                  !is.null(deaths$get(field = "..variable_map"))
+                ) {
+                  deaths$get(field = "..variable_map")
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_value_map = if (!is.null(deaths$get(field = "..value_map"))) {
+                  deaths$get(field = "..value_map")
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_variable_label = if (
+                  !is.null(deaths$get(field = "..variable_label"))
+                ) {
+                  deaths$get(field = "..variable_label")
+                } else {
+                  NULL
+                },
+                linked_ind_deaths_value_label = if (
+                  !is.null(deaths$get(field = "..value_label"))
+                ) {
+                  deaths$get(field = "..value_label")
+                } else {
+                  NULL
+                }
+              )
+
+          }
+        )
+
+
       )
     }
   )

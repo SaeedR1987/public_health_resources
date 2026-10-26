@@ -204,9 +204,9 @@ Data <- R6::R6Class(
 
                 error = function(e) {
                   phrutils::phr_warning(
-                    origin = "HouseholdData$default_variable_schema",
+                    origin = "Data$default_variable_schema",
                     message = phrutils::phr_txt(
-                      "Failed to read variable_schema_data_household_template.xlsx: {e$message}"
+                      "Failed to read {private$..default_variable_schema_filename}: {e$message}"
                     )
                   )
                   return(NULL)
@@ -233,7 +233,7 @@ Data <- R6::R6Class(
                       "is_other",
                       "other_column_link"
                     ),
-                    origin = "HouseholdData$validate_variable_schema"
+                    origin = "Data$validate_variable_schema"
                   )
                 )
               ) {
@@ -294,9 +294,9 @@ Data <- R6::R6Class(
 
                 error = function(e) {
                   phrutils::phr_warning(
-                    origin = "HouseholdData$default_dependency_schema",
+                    origin = "Data$default_dependency_schema",
                     message = phrutils::phr_txt(
-                      "Failed to read dependency_schema_data_household_template.xlsx: {e$message}"
+                      "Failed to read {private$..default_dependency_schema_filename}: {e$message}"
                     )
                   )
                   return(NULL)
@@ -318,7 +318,7 @@ Data <- R6::R6Class(
                       "label",
                       "comment"
                     ),
-                    origin = "HouseholdData$validate_dependency_schema"
+                    origin = "Data$validate_dependency_schema"
                   )
                 )
               ) {
@@ -373,9 +373,9 @@ Data <- R6::R6Class(
 
                 error = function(e) {
                   phrutils::phr_warning(
-                    origin = "HouseholdData$default_indicator_schema",
+                    origin = "Data$default_indicator_schema",
                     message = phrutils::phr_txt(
-                      "Failed to read indicator_schema_data_household_template.xlsx: {e$message}"
+                      "Failed to read {private$..default_indicator_schema_filename}: {e$message}"
                     )
                   )
                   return(NULL)
@@ -440,18 +440,7 @@ Data <- R6::R6Class(
                               common_args,
                               ...) {
 
-              GeneralDataAnalytics$new(
-                data = data,
-                dap = analysis_config,
-                parent_data_object = self,
-                dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
-                data_stage_name = stage,
-                data_hash = self$get(field = "..metadata", role = "hash_id"),
-                variable_map = private$..variable_map,
-                value_map = private$..value_map,
-                variable_label = private$..variable_label,
-                value_label = private$..value_label
-              )
+
 
             }
 
@@ -2877,6 +2866,7 @@ Data <- R6::R6Class(
     #' @return A DataAnalytics object or NULL
     generate_data_analytics = function(
       stage = c("standardized", "clean"),
+      type = "general",
       analysis_config = NULL
     ) {
       stage <- match.arg(stage)
@@ -2895,20 +2885,7 @@ Data <- R6::R6Class(
             return(NULL)
           }
 
-          common_args <- list(
-            data = df,
-            dap = analysis_config,
-            parent_data_object = self,
-            dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
-            data_stage_name = stage,
-            data_hash = self$get(field = "..metadata", role = "hash_id"),
-            variable_map = private$..variable_map,
-            value_map = private$..value_map,
-            variable_label = private$..variable_label,
-            value_label = private$..value_label
-          )
-
-          builder <- private$..analytics_registry[[type]]
+          builder <- private$..analytics_registry()[[type]]
 
           if (is.null(builder)) {
             phrutils::phr_error(
@@ -2919,11 +2896,16 @@ Data <- R6::R6Class(
             )
           }
 
-          builder(common_args)
+          analytics <- builder(
+            data = df,
+            stage = stage,
+            analysis_config = analysis_config,
+            parent = self
+          )
 
           phrutils::phr_message(
             phrutils::phr_txt(
-              "Generated general DataAnalytics object for {self$dataset_name}."
+              "Generated DataAnalytics object for {self$dataset_name}."
             )
           )
 
@@ -3058,7 +3040,28 @@ Data <- R6::R6Class(
     # @field ..analytics_registry List of analytics objects and types that can be
     # created with generate_data_analytics
     # @keywords internal
-    ..analytics_registry = NULL,
+    ..analytics_registry = function() {
+      list(
+        general = function(data,
+                           stage,
+                           analysis_config,
+                           parent) {
+
+            GeneralDataAnalytics$new(
+              data = data,
+              dap = analysis_config,
+              parent_data_object = parent,
+              dataset_name = paste0(self$dataset_name, "_DataAnalytics"),
+              data_stage_name = stage,
+              data_hash = self$get(field = "..metadata", role = "hash_id"),
+              variable_map = private$..variable_map,
+              value_map = private$..value_map,
+              variable_label = private$..variable_label,
+              value_label = private$..value_label
+            )
+        }
+      )
+    },
 
     #' Run Data Quality Checks
     #'
@@ -4889,7 +4892,7 @@ Data <- R6::R6Class(
         origin = paste0(self$dataset_name, "$map_schema_labels")
       )
     },
-    
+
     register_analytics_type = function(type, builder) {
 
       private$..analytics_registry[[type]] <- builder

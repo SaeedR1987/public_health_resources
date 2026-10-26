@@ -468,5 +468,62 @@ IndividualData <- R6::R6Class(
 
       }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analytics"))
     }
+  ),
+
+  private = list(
+
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_individual_roster_template.xlsx"
+    ),
+
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_individual_roster_template.xlsx"
+    ),
+
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_individual_roster_template.xlsx",
+    ),
+
+    ..analytics_registry = function() {
+
+      registry <- super$..analytics_registry()
+
+      c(
+        registry,
+        list(
+          demographics = function(data,
+                         stage,
+                         analysis_config,
+                         parent) {
+
+            DemographicsDataAnalytics$new(
+              data = data,
+              dap = analysis_config,
+              parent_data_object = parent,
+              dataset_name = paste0(self$dataset_name, "_DemographicsDataAnalytics"),
+              data_stage_name = stage,
+              data_hash = parent$get(field = "..metadata", role = "hash_id"),
+              variable_map = parent$get(field = "..variable_map"),
+              value_map = parent$get(field = "..value_map"),
+              variable_label = parent$get(field = "..variable_label"),
+              value_label = parent$get(field = "..value_label")
+            )
+          }
+        )
+      )
+    }
+
   )
 )
