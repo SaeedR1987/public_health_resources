@@ -24,13 +24,6 @@ WASHDataAnalytics <- R6::R6Class(
 
   public = list(
 
-    # Fields for linked water container data
-    linked_containers_data = NULL,
-    linked_containers_data_stage_name = NULL,
-    linked_containers_data_hash = NULL,
-    linked_containers_variable_map = NULL,
-    linked_containers_value_map = NULL,
-
     #' @description
     #' Initialize a new WASHDataAnalytics object
     #'
@@ -82,124 +75,155 @@ WASHDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      self$linked_containers_data              <- linked_containers_data
-      self$linked_containers_data_stage_name   <- linked_containers_data_stage_name
-      self$linked_containers_data_hash         <- linked_containers_data_hash
-      self$linked_containers_variable_map      <- linked_containers_variable_map
-      self$linked_containers_value_map         <- linked_containers_value_map
+      private$..linked_containers_data              <- linked_containers_data
+      private$..linked_containers_data_stage_name   <- linked_containers_data_stage_name
+      private$..linked_containers_data_hash         <- linked_containers_data_hash
+      private$..linked_containers_variable_map      <- linked_containers_variable_map
+      private$..linked_containers_value_map         <- linked_containers_value_map
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_water_container_filename,
+        target_field = "..analysis_schema_water_container",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_water_container",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_water_container_filename,
+        target_field = "..outputs_schema_water_container",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_water_container",
+        dataset_name = private$..dataset_name
+      )
+
+      # Generate per-dataset analysis plans for roster and deaths
+      private$..data_analysis_plan_water_container <- QuantDataAnalysisPlanLog$new(
+        log_df   = NULL,
+        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+      )
+
+      # Build the DAP for roster dataset from available columns and analysis_schema_roster
+      if (!is.null(linked_container_data)) {
+
+        result <- private$..build_dap_from_schema(
+          analysis_schema = private$..analysis_schema_water_container,
+          variable_map    = private$..variable_map_water_container %||% list(),
+          available_vars  = names(private$..linked_containers_data),
+          dataset_label   = "water_containers"
+        )
+
+        private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+
+      }
+
+      # Create and store per-dataset survey designs for roster and deaths
+      if (!is.null(linked_containers_data)) {
+        private$..base_survey_design_water_container <- phrutils::phr_try(
+          srvyr::as_survey_design(.data = linked_containers_data, ids = 1),
+          on_error = "warn",
+          origin   = paste0(dataset_name, "$initialize"),
+          hint     = phrutils::phr_txt("Could not create base (unweighted) survey design for roster data.")
+        )
+        private$..survey_design_water_container <- private$..create_survey_design_for_dataset(
+          data         = linked_containers_data,
+          variable_map = linked_containers_variable_map %||% private$..linked_containers_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
+      }
 
       if (!is.null(linked_containers_data)) {
         phrutils::phr_message(
-          phr_txt("WASHDataAnalytics initialized with linked water container data.")
+          phrutils::phr_txt("WASHDataAnalytics initialized with linked water container data.")
         )
       } else {
         phrutils::phr_message(
-          phr_txt(glue::glue("{dataset_name} initialized as WASHDataAnalytics object."))
+          phrutils::phr_txt("{dataset_name} initialized as WASHDataAnalytics object.")
         )
       }
-    },
-
-    #' @description Load the default WASH quality schema from template file
-    #' @return A list of WASH-specific quality checks
-    default_quality_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "quality_schema_data_quality_wash_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "quality_schema_data_quality_wash_template.xlsx")
-        if (!file.exists(file)) {
-          return(list())
-        }
-      }
-
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "WASHDataAnalytics$default_quality_schema",
-            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_wash_template.xlsx: {e$message}"))
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(list())
-      }
-
-      schema_with_metadata <- quality_table_to_schema(df)
-
-      if (!is.null(schema_with_metadata) && !is.null(schema_with_metadata$checks)) {
-        return(schema_with_metadata$checks)
-      }
-
-      return(list())
-    },
-
-    #' @description Load the default WASH unified outputs schema from template file
-    #' @return A tibble of WASH-specific outputs definitions (quality and analysis combined)
-    default_outputs_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "outputs_schema_data_analytics_wash_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_schema_data_analytics_wash_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
-        }
-      }
-
-      df <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "WASHDataAnalytics$default_outputs_schema",
-        hint     = "Check that outputs_schema_data_analytics_wash_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(tibble::tibble())
-      }
-
-      outputs_normalize_schema(df)
-    },
-
-    #' @description Load the default WASH analysis schema from template file
-    #' @return A tibble containing the WASH analysis schema
-    default_analysis_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "analysis_schema_quant_data_analysis_wash_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "analysis_schema_quant_data_analysis_wash_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
-        }
-      }
-
-      schema_tbl <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "WASHDataAnalytics$default_analysis_schema",
-        hint     = "Check that analysis_schema_quant_data_analysis_wash_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(schema_tbl) || nrow(schema_tbl) == 0) {
-        return(tibble::tibble())
-      }
-
-      return(schema_tbl)
     }
+  ),
+
+  private = list(
+
+    # Fields for linked water container data
+    ..linked_containers_data = NULL,
+    ..linked_containers_data_stage_name = NULL,
+    ..linked_containers_data_hash = NULL,
+    ..linked_containers_variable_map = NULL,
+    ..linked_containers_value_map = NULL,
+    ..linked_containers_variable_label = NULL,
+    ..linked_containers_value_label = NULL,
+
+    ..data_analysis_plan_water_container = NULL,
+    ..analysis_schema_water_container = NULL,
+    ..outputs_schema_water_container = NULL,
+
+    ..base_survey_design_water_container = NULL,
+    ..survey_design_water_container = NULL,
+
+
+    # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_quality_schema_filename = c(
+      "resources",
+      "quality_schema_data_quality_wash_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_filename = c(
+      "resources",
+      "outputs_schema_data_analytics_wash_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_filename = c(
+      "resources",
+      "analysis_schema_quant_data_analysis_wash_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_water_container_filename = c(
+      "resources",
+      "outputs_schema_data_analytics_water_container_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_water_container_filename = c(
+      "resources",
+      "analysis_schema_quant_data_analysis_water_container_template.xlsx"
+    )
   )
 )

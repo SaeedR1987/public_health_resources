@@ -29,20 +29,6 @@ HealthDataAnalytics <- R6::R6Class(
 
   public = list(
 
-    # Fields for linked roster data
-    linked_ind_roster_data = NULL,
-    linked_ind_roster_data_stage_name = NULL,
-    linked_ind_roster_data_hash = NULL,
-    linked_ind_roster_variable_map = NULL,
-    linked_ind_roster_value_map = NULL,
-
-    # Fields for linked health individual data
-    linked_ind_health_data = NULL,
-    linked_ind_health_data_stage_name = NULL,
-    linked_ind_health_data_hash = NULL,
-    linked_ind_health_variable_map = NULL,
-    linked_ind_health_value_map = NULL,
-
     #' @description
     #' Initialize a new HealthDataAnalytics object
     #'
@@ -104,135 +90,346 @@ HealthDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      self$linked_ind_roster_data              <- linked_ind_roster_data
-      self$linked_ind_roster_data_stage_name   <- linked_ind_roster_data_stage_name
-      self$linked_ind_roster_data_hash         <- linked_ind_roster_data_hash
-      self$linked_ind_roster_variable_map      <- linked_ind_roster_variable_map
-      self$linked_ind_roster_value_map         <- linked_ind_roster_value_map
+      private$..linked_ind_roster_data              <- linked_ind_roster_data
+      private$..linked_ind_roster_data_stage_name   <- linked_ind_roster_data_stage_name
+      private$..linked_ind_roster_data_hash         <- linked_ind_roster_data_hash
+      private$..linked_ind_roster_variable_map      <- linked_ind_roster_variable_map
+      private$..linked_ind_roster_value_map         <- linked_ind_roster_value_map
 
-      self$linked_ind_health_data              <- linked_ind_health_data
-      self$linked_ind_health_data_stage_name   <- linked_ind_health_data_stage_name
-      self$linked_ind_health_data_hash         <- linked_ind_health_data_hash
-      self$linked_ind_health_variable_map      <- linked_ind_health_variable_map
-      self$linked_ind_health_value_map         <- linked_ind_health_value_map
+      private$..linked_ind_health_data              <- linked_ind_health_data
+      private$..linked_ind_health_data_stage_name   <- linked_ind_health_data_stage_name
+      private$..linked_ind_health_data_hash         <- linked_ind_health_data_hash
+      private$..linked_ind_health_variable_map      <- linked_ind_health_variable_map
+      private$..linked_ind_health_value_map         <- linked_ind_health_value_map
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_roster_filename,
+        target_field = "..analysis_schema_roster",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_roster_filename,
+        target_field = "..outputs_schema_roster",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_health_filename,
+        target_field = "..analysis_schema_health",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_health",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_health_filename,
+        target_field = "..outputs_schema_health",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_health",
+        dataset_name = private$..dataset_name
+      )
+
+      # Generate per-dataset analysis plans for roster and deaths
+      private$..data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
+        log_df   = NULL,
+        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+      )
+      private$..data_analysis_plan_health <- QuantDataAnalysisPlanLog$new(
+        log_df   = NULL,
+        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Health)")
+      )
+
+      # Build the DAP for roster dataset from available columns and analysis_schema_roster
+      if (!is.null(linked_ind_roster_data)) {
+
+        result <- private$..build_dap_from_schema(
+          analysis_schema = private$..analysis_schema_roster,
+          variable_map    = private$..variable_map_roster %||% list(),
+          available_vars  = names(private$..linked_ind_roster_data),
+          dataset_label   = "roster"
+        )
+
+        private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+
+      }
+
+      # Build the DAP for deaths dataset from available columns and analysis_schema_deaths
+      if (!is.null(linked_ind_health_data)) {
+
+        result <- private$..build_dap_from_schema(
+          analysis_schema = private$..analysis_schema_health,
+          variable_map    = private$..variable_map_health %||% list(),
+          available_vars  = names(private$..linked_ind_health_data),
+          dataset_label   = "health"
+        )
+
+        private$..data_analysis_plan_health$set(field = "log_df", value = result$dap_df)
+
+      }
+
+      # Create and store per-dataset survey designs for roster and deaths
+      if (!is.null(linked_ind_roster_data)) {
+        private$..base_survey_design_roster <- phrutils::phr_try(
+          srvyr::as_survey_design(.data = linked_ind_roster_data, ids = 1),
+          on_error = "warn",
+          origin   = paste0(dataset_name, "$initialize"),
+          hint     = phrutils::phr_txt("Could not create base (unweighted) survey design for roster data.")
+        )
+        private$..survey_design_roster <- private$..create_survey_design_for_dataset(
+          data         = linked_ind_roster_data,
+          variable_map = linked_ind_roster_variable_map %||% ..linked_ind_roster_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
+      }
+
+      if (!is.null(linked_ind_deaths_data)) {
+        private$..base_survey_design_health <- phrutils::phr_try(
+          srvyr::as_survey_design(.data = linked_ind_deaths_data, ids = 1),
+          on_error = "warn",
+          origin   = paste0(dataset_name, "$initialize"),
+          hint     = phrutils::phr_txt("Could not create base (unweighted) survey design for health data.")
+        )
+        private$..survey_design_health <- private$..create_survey_design_for_dataset(
+          data         = linked_ind_deaths_data,
+          variable_map = linked_ind_deaths_variable_map %||% private$..linked_ind_health_variable_map,
+          origin       = paste0(dataset_name, "$initialize")
+        )
+      }
 
       msg_parts <- c()
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
       if (!is.null(linked_ind_health_data))  msg_parts <- c(msg_parts, "health individual")
       if (length(msg_parts) > 0) {
         phrutils::phr_message(
-          phr_txt(glue::glue(
+          phrutils::phr_txt(
             "HealthDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data."
-          ))
+          )
         )
       } else {
         phrutils::phr_message(
-          phr_txt(glue::glue("{dataset_name} initialized as HealthDataAnalytics object."))
+          phrutils::phr_txt("{dataset_name} initialized as HealthDataAnalytics object.")
         )
       }
     },
 
-    #' @description Load the default Health quality schema from template file
-    #' @return A list of Health-specific quality checks
-    default_quality_schema = function() {
+    #' @description
+    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
+    #'
+    #' Returns one input set per available mortality dataset:
+    #' \describe{
+    #'   \item{household}{Always included, using the core \code{data},
+    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
+    #'     stored in \code{analysis_results$household}.}
+    #'   \item{roster}{Included when \code{linked_ind_roster_data} is available and
+    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
+    #'     stored in \code{analysis_results$roster}.}
+    #'   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
+    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
+    #'     stored in \code{analysis_results$deaths}.}
+    #' }
+    #'
+    #' @return A named list of field sets.
+    pre_run_analysis = function() {
+      origin <- paste0(private$..dataset_name, "$pre_run_analysis")
 
-      file <- system.file(
-        "resources",
-        "quality_schema_data_quality_health_template.xlsx",
-        package = "phr"
-      )
+      sets <- super$pre_run_analysis()
 
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "quality_schema_data_quality_health_template.xlsx")
-        if (!file.exists(file)) {
-          return(list())
-        }
-      }
-
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "HealthDataAnalytics$default_quality_schema",
-            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_health_template.xlsx: {e$message}"))
+      if (!is.null(private$..linked_ind_roster_data)) {
+        if (is.null(private$..data_analysis_plan_roster$get(field = "log_df"))) {
+          sets$roster <- list(
+            data = "linked_ind_roster_data",
+            survey_design = "survey_design_roster",
+            data_analysis_plan = "data_analysis_plan_roster"
           )
-          return(NULL)
+        } else {
+          phrutils::phr_message(origin, phrutils::phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
         }
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(list())
       }
 
-      schema_with_metadata <- quality_table_to_schema(df)
-
-      if (!is.null(schema_with_metadata) && !is.null(schema_with_metadata$checks)) {
-        return(schema_with_metadata$checks)
+      if (!is.null(private$..linked_ind_health_data)) {
+        if (is.null(private$..data_analysis_plan_health$get(field = "log_df"))) {
+          sets$health <- list(
+            data = "linked_ind_health_data",
+            survey_design = "survey_design_health",
+            data_analysis_plan = "data_analysis_plan_health"
+          )
+        } else {
+          phrutils::phr_message(origin, phrutils::phr_txt("Linked health data present but data_analysis_plan_health is empty. Skipping health analysis."))
+        }
       }
 
-      return(list())
+      sets
     },
 
-    #' @description Load the default Health unified outputs schema from template file
-    #' @return A tibble of Health-specific outputs definitions (quality and analysis combined)
-    default_outputs_schema = function() {
+    #' @description
+    #' Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
+    #'
+    #' Returns one input set per available mortality dataset so that outputs are
+    #' generated independently for each dataset and stored in named sub-lists
+    #' (\code{visualizations$household} / \code{tables$household},
+    #' \code{visualizations$roster} / \code{tables$roster},
+    #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
+    #' the appropriate survey design objects for the dataset, so output entries
+    #' with \code{dataset_type = "survey_design"} receive the weighted design and
+    #' \code{"base"} entries receive the unweighted base design. Each set also
+    #' names the dataset's own variable map, so \code{@variable_map$} references
+    #' in \code{test_params} resolve against the correct dataset.
+    #'
+    #' @return A named list of field sets.
+    pre_run_outputs = function() {
+      origin <- paste0(private$..dataset_name, "$pre_run_outputs")
 
-      file <- system.file(
-        "resources",
-        "outputs_schema_data_analytics_health_template.xlsx",
-        package = "phr"
+      sets <- list(
+        household = list(
+          data = "data",
+          outputs_schema = "outputs_schema",
+          base_survey_design = "base_survey_design",
+          survey_design = "survey_design",
+          variable_map = "variable_map"
+        )
       )
 
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_schema_data_analytics_health_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
+      if (!is.null(private$..linked_ind_roster_data)) {
+        if (!is.null(private$..outputs_schema_roster) && nrow(private$..outputs_schema_roster) > 0) {
+          sets$roster <- list(
+            data = "linked_ind_roster_data",
+            outputs_schema = "outputs_schema_roster",
+            base_survey_design = "base_survey_design_roster",
+            survey_design = "survey_design_roster",
+            variable_map = "linked_ind_roster_variable_map"
+          )
+        } else {
+          phrutils::phr_message(origin, "Linked roster data present but outputs_schema_roster is empty. Skipping roster outputs.")
         }
       }
 
-      df <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "HealthDataAnalytics$default_outputs_schema",
-        hint     = "Check that outputs_schema_data_analytics_health_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(tibble::tibble())
-      }
-
-      outputs_normalize_schema(df)
-    },
-
-    #' @description Load the default Health analysis schema from template file
-    #' @return A tibble containing the Health analysis schema
-    default_analysis_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "analysis_schema_quant_data_analysis_health_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "analysis_schema_quant_data_analysis_health_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
+      if (!is.null(private$..linked_ind_health_data)) {
+        if (!is.null(private$..outputs_schema_health) && nrow(private$..outputs_schema_health) > 0) {
+          sets$health <- list(
+            data = "linked_ind_health_data",
+            outputs_schema = "outputs_schema_health",
+            base_survey_design = "base_survey_design_health",
+            survey_design = "survey_design_health",
+            variable_map = "linked_ind_health_variable_map"
+          )
+        } else {
+          phrutils::phr_message(origin, "Linked health data present but outputs_schema_health is empty. Skipping health outputs.")
         }
       }
 
-      schema_tbl <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "HealthDataAnalytics$default_analysis_schema",
-        hint     = "Check that analysis_schema_quant_data_analysis_health_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(schema_tbl) || nrow(schema_tbl) == 0) {
-        return(tibble::tibble())
-      }
-
-      return(schema_tbl)
+      sets
     }
+  ),
+
+  private = list(
+
+    # Fields for linked roster data
+    ..linked_ind_roster_data = NULL,
+    ..linked_ind_roster_data_stage_name = NULL,
+    ..linked_ind_roster_data_hash = NULL,
+    ..linked_ind_roster_variable_map = NULL,
+    ..linked_ind_roster_value_map = NULL,
+    ..linked_ind_roster_variable_label = NULL,
+    ..linked_ind_roster_value_label = NULL,
+
+    # Fields for linked deaths data
+    ..linked_ind_health_data = NULL,
+    ..linked_ind_health_data_stage_name = NULL,
+    ..linked_ind_health_data_hash = NULL,
+    ..linked_ind_health_variable_map = NULL,
+    ..linked_ind_health_value_map = NULL,
+    ..linked_ind_health_variable_label = NULL,
+    ..linked_ind_health_value_label = NULL,
+
+    # Per-dataset schemas for roster and deaths
+    ..analysis_schema_roster = NULL,
+    ..analysis_schema_health = NULL,
+    ..outputs_schema_roster  = NULL,
+    ..outputs_schema_health  = NULL,
+
+    # Per-dataset data analysis plans
+    ..data_analysis_plan_roster = NULL,
+    ..data_analysis_plan_health = NULL,
+
+    # Per-dataset survey design objects
+    ..survey_design_roster = NULL,
+    ..survey_design_health = NULL,
+    ..base_survey_design_roster = NULL,
+    ..base_survey_design_health = NULL,
+
+    # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_quality_schema_filename = c(
+      "resources",
+      "quality_schema_data_quality_health_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_filename = c(
+      "resources",
+      "outputs_schema_data_analytics_health_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_filename = c(
+      "resources",
+      "analysis_schema_quant_data_analysis_health_template.xlsx"
+    )
   )
 )

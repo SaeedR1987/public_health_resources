@@ -119,51 +119,6 @@ HouseholdData <- R6::R6Class(
             uuid = default_map$uuid
           )
 
-          # # 2) Build and merge household schema into any existing schema
-          # hh_schema <- self$default_schema()
-          # parent_schema <- private$..variable_schema
-
-          # if (is.data.frame(hh_schema)) {
-          #   # Current flat-data-frame schema format: combine any existing
-          #   # rows with the default household rows (existing variables win
-          #   # on duplicate rule_type/variable/value).
-          #   if (is.data.frame(parent_schema) && nrow(parent_schema) > 0) {
-          #     merged_schema <- unique(rbind(parent_schema, hh_schema))
-          #   } else {
-          #     merged_schema <- hh_schema
-          #   }
-          # } else {
-          #   merged_schema <- utils::modifyList(parent_schema %||% list(), hh_schema)
-          # }
-          # self$set(field = "..variable_schema", value = merged_schema)
-
-          # # 3) Load default indicator schema
-          # default_ind_schema <- self$default_indicator_schema()
-          # if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
-
-          #   self$set(field = "..indicator_schema", value = default_ind_schema)
-
-          #   phrutils::phr_message(
-          #     phrutils::phr_txt(glue::glue(
-          #       "Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s)."
-          #     ))
-          #   )
-          # }
-
-          # # 4) Load default dependency schema
-          # default_dep_schema <- self$default_dependency_schema()
-          # if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
-
-          #   self$set(field = "..dependency_schema", value = default_dep_schema)
-
-          #   # self$set_dependency_schema(default_dep_schema)
-          #   phrutils::phr_message(
-          #     phrutils::phr_txt(
-          #       "Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies."
-          #     )
-          #   )
-          # }
-
           # 5) Merge household-required columns into Data$required_columns
           #    (ensure we store *column names*, not roles)
 
@@ -249,7 +204,7 @@ HouseholdData <- R6::R6Class(
           if (!is.null(by_self_role) || !is.null(by_other_role)) {
             phrutils::phr_warning(
               self$dataset_name,
-              phr_txt(
+              phrutils::phr_txt(
                 "by_self_role and by_other_role are not used for HouseholdData. They are automatically set to 'uuid' and 'hh_uuid' respectively."
               )
             )

@@ -60,80 +60,34 @@ IYCFDataAnalytics <- R6::R6Class(
       )
 
       phrutils::phr_message(
-        phr_txt(glue::glue("{dataset_name} initialized as IYCFDataAnalytics object."))
+        phrutils::phr_txt("{dataset_name} initialized as IYCFDataAnalytics object.")
       )
-    },
-
-    #' @description Load the default IYCF quality schema from template file
-    #' @return A list of IYCF-specific quality checks
-    default_quality_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "quality_schema_data_quality_iycf_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "quality_schema_data_quality_iycf_template.xlsx")
-        if (!file.exists(file)) {
-          return(list())
-        }
-      }
-
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "IYCFDataAnalytics$default_quality_schema",
-            message = phr_txt(glue::glue("Failed to read quality_schema_data_quality_iycf_template.xlsx: {e$message}"))
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(list())
-      }
-
-      schema_with_metadata <- quality_table_to_schema(df)
-
-      if (!is.null(schema_with_metadata) && !is.null(schema_with_metadata$checks)) {
-        return(schema_with_metadata$checks)
-      }
-
-      return(list())
-    },
-
-    #' @description Load the default IYCF unified outputs schema from template file
-    #' @return A tibble of IYCF-specific outputs definitions
-    default_outputs_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "outputs_schema_data_analytics_iycf_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_schema_data_analytics_iycf_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
-        }
-      }
-
-      df <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "IYCFDataAnalytics$default_outputs_schema",
-        hint     = "Check that outputs_schema_data_analytics_iycf_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(tibble::tibble())
-      }
-
-      outputs_normalize_schema(df)
     }
+  ),
+
+  private = list(
+    # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_quality_schema_filename = c(
+      "resources",
+      "quality_schema_data_quality_iycf_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_filename = c(
+      "resources",
+      "outputs_schema_data_analytics_nutrition_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_filename = c(
+      "resources",
+      "analysis_schema_quant_data_analysis_nutrition_template.xlsx"
+    )
   )
 )

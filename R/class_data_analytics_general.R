@@ -57,70 +57,35 @@ GeneralDataAnalytics <- R6::R6Class(
       )
 
       phrutils::phr_message(
-        phr_txt(glue::glue("{dataset_name} initialized as GeneralDataAnalytics object."))
+        phrutils::phr_txt(glue::glue("{dataset_name} initialized as GeneralDataAnalytics object."))
       )
-    },
-
-    #' @description Load the default General analysis schema from template file
-    #' @return A tibble containing the General analysis schema
-    default_analysis_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "analysis_schema_quant_data_analysis_general_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "analysis_schema_quant_data_analysis_general_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
-        }
-      }
-
-      schema_tbl <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "GeneralDataAnalytics$default_analysis_schema",
-        hint     = "Check that analysis_schema_quant_data_analysis_general_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(schema_tbl) || nrow(schema_tbl) == 0) {
-        return(tibble::tibble())
-      }
-
-      return(schema_tbl)
-    },
-
-    #' @description Load the default General unified outputs schema from template file
-    #' @return A tibble of General-specific outputs definitions
-    default_outputs_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "outputs_schema_data_analytics_general_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file) || file == "") {
-        file <- file.path("resources", "outputs_schema_data_analytics_general_template.xlsx")
-        if (!file.exists(file)) {
-          return(tibble::tibble())
-        }
-      }
-
-      df <- phrutils::phr_try(
-        readxl::read_xlsx(file),
-        on_error = "warn",
-        origin   = "GeneralDataAnalytics$default_outputs_schema",
-        hint     = "Check that outputs_schema_data_analytics_general_template.xlsx is a valid Excel file."
-      )
-
-      if (is.null(df) || nrow(df) == 0) {
-        return(tibble::tibble())
-      }
-
-      outputs_normalize_schema(df)
     }
+
+  ),
+
+  private = list(
+    # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_quality_schema_filename = c(
+      "resources",
+      "quality_schema_data_quality_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_filename = c(
+      "resources",
+      "outputs_schema_data_analytics_template.xlsx"
+    ),
+
+    # @field ..default_analysis_schema_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_filename = c(
+      "resources",
+      "analysis_schema_quant_data_analysis_template.xlsx"
+    )
   )
 )

@@ -24,12 +24,10 @@ IndividualData <- R6::R6Class(
 
   public = list(
 
-
     # Additional fields
 
     household_link   = NULL,  # linkage back to HouseholdData (optional)
     optional_columns = NULL,
-
 
     #' @description
     #' Creates a new IndividualData object with person-level survey data
@@ -75,7 +73,7 @@ IndividualData <- R6::R6Class(
           uuid         = uuid
         )
 
-        # ---- Required & optional columns ----------------------------
+        # ---- Required & optional columns
         # Merge individual-required columns into Data$required_columns
         # (ensure we store *column names*, not roles)
         ind_required <- c(
@@ -99,45 +97,6 @@ IndividualData <- R6::R6Class(
           private$..variable_map$joined_hh
         )
 
-        # ---- Build and merge individual schema into any existing schema ----
-        ind_schema    <- self$default_schema()
-        parent_schema <- private$..variable_schema
-
-        if (is.data.frame(ind_schema)) {
-          # Current flat-data-frame schema format: combine any existing
-          # rows with the default roster rows (existing variables win on
-          # duplicate rule_type/variable/value).
-          if (is.data.frame(parent_schema) && nrow(parent_schema) > 0) {
-            merged_schema <- unique(rbind(parent_schema, ind_schema))
-          } else {
-            merged_schema <- ind_schema
-          }
-        } else {
-          merged_schema <- utils::modifyList(parent_schema %||% list(), ind_schema)
-        }
-
-        self$set(field = "..variable_schema", value = merged_schema)
-
-        # ---- Load default indicator schema
-        default_ind_schema <- self$default_indicator_schema()
-        if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
-
-          self$set(field = "..indicator_schema", value = default_ind_schema)
-
-          phrutils::phr_message(
-            phrutils::phr_txt("Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s).")
-          )
-        }
-
-        # ---- Load default dependency schema
-        default_dep_schema <- self$default_dependency_schema()
-        if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
-          self$set(field = "..dependency_schema", value = default_dep_schema)
-          phrutils::phr_message(
-            phrutils::phr_txt("Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies.")
-          )
-        }
-
         # Re-map schema variables now that the individual schema is loaded.
         # Data$initialize() already mapped against the (still empty) parent
         # schema, so roles such as hh_uuid would otherwise stay unmapped until
@@ -147,207 +106,6 @@ IndividualData <- R6::R6Class(
         phrutils::phr_message(phrutils::phr_txt("{dataset_name} initialized as IndividualData object."))
 
       }, on_error = "abort", origin = "IndividualData$initialize")
-    },
-
-
-    #' Load Default Variable Schema
-    #'
-    #' @description
-    #' Loads the default variable schema from the individual roster variable schema template Excel file
-    #'
-    #' @return Named list with variable schema definitions (types, allowed values, etc.)
-    #'
-    #' @details
-    #' Reads variable_schema_data_individual_roster_template.xlsx from package resources and converts
-    #' to canonical nested schema structure
-    default_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "variable_schema_data_individual_roster_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phr_error(
-          origin  = "IndividualData$default_schema",
-          message = phrutils::phr_txt("variable_schema_data_individual_roster_template.xlsx not found in package resources."),
-          hint    = phrutils::phr_txt("Place the schema file under inst/resources/ before building the package.")
-        )
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_error(
-            origin  = "IndividualData$default_schema",
-            message = phrutils::phr_txt("Failed to read variable_schema_data_individual_roster_template.xlsx"),
-            hint    = e$message
-          )
-        }
-      )
-
-      # The xlsx template is already in the canonical flat variable-schema
-      # table format (the format expected by `data_diagnose()` and other
-      # schema consumers), so validate and store it directly rather than
-      # round-tripping it through the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "rule_type", "variable", "value", "required", "type", "allowed",
-          "col_names", "unique",
-          "label", "comment",
-          "question_type", "is_other", "other_column_link"
-        ),
-        origin = "IndividualData$default_schema"
-      )
-
-      return(df)
-    },
-
-    #' Load Default Indicator Schema
-    #'
-    #' @description
-    #' Loads the default indicator schema from the individual roster indicator schema template Excel file
-    #'
-    #' @return Named list with indicator schema definitions, or empty list if template not found
-    #'
-    #' @details
-    #' Reads indicator_schema_data_individual_roster_template.xlsx from package resources and converts
-    #' to canonical nested indicator schema structure. Issues warning if file not found.
-    default_indicator_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "indicator_schema_data_individual_roster_template.xlsx",
-        package = "phr"
-      )
-
-      empty_indicator_schema <- function() {
-        tibble::tibble(
-          indicator_name = character(0),
-          function_name = character(0),
-          variables = character(0),
-          arguments = character(0),
-          label = character(0),
-          comment = character(0)
-        )
-      }
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "IndividualData$default_indicator_schema",
-          message = phrutils::phr_txt("indicator_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default indicator schema.")
-        )
-        return(empty_indicator_schema())
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "IndividualData$default_indicator_schema",
-            message = phrutils::phr_txt("Failed to read indicator_schema_data_individual_roster_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(empty_indicator_schema())
-
-      # The xlsx template is already in the canonical flat indicator-schema
-      # table format; validate and store it directly rather than converting
-      # to the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "indicator_name",
-          "function_name",
-          "variables",
-          "arguments",
-          "label",
-          "comment"
-        ),
-        origin = "IndividualData$default_indicator_schema"
-      )
-
-      return(df)
-    },
-
-    #' Load Default Dependency Schema
-    #'
-    #' @description
-    #' Loads the default dependency schema from the individual roster dependency schema template Excel file
-    #'
-    #' @return List with 'dependencies' element containing dependency definitions, or empty dependencies list if template not found
-    #'
-    #' @details
-    #' Reads dependency_schema_data_individual_roster_template.xlsx from package resources and converts
-    #' to canonical nested dependency schema structure. Issues warning if file not found.
-    default_dependency_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "dependency_schema_data_individual_roster_template.xlsx",
-        package = "phr"
-      )
-
-      empty_dependency_schema <- function() {
-        tibble::tibble(
-          rule_type = character(0),
-          dep_name = character(0),
-          variables = character(0),
-          condition_if = character(0),
-          then = character(0),
-          action = character(0),
-          label = character(0),
-          comment = character(0)
-        )
-      }
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "IndividualData$default_dependency_schema",
-          message = phrutils::phr_txt("dependency_schema_data_individual_roster_template.xlsx not found in package resources. Continuing without default dependency schema.")
-        )
-        return(empty_dependency_schema())
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "IndividualData$default_dependency_schema",
-            message = phrutils::phr_txt("Failed to read dependency_schema_data_individual_roster_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(empty_dependency_schema())
-
-      # The xlsx template is already in the canonical flat dependency-schema
-      # table format; validate and store it directly rather than converting
-      # to the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "rule_type",
-          "dep_name",
-          "variables",
-          "condition_if",
-          "then",
-          "action",
-          "label",
-          "comment"
-        ),
-        origin = "IndividualData$default_dependency_schema"
-      )
-
-      return(df)
     },
 
     #' Post-Validation Hook for Individual Data
@@ -376,7 +134,7 @@ IndividualData <- R6::R6Class(
         if (is.null(df)) df <- self$get_data("raw")
 
         # Household linkage may duplicate — informational only
-        hh_uuid_col <- self$.variable_map$hh_uuid
+        hh_uuid_col <- private$..variable_map$hh_uuid
         if (!is.null(hh_uuid_col) && hh_uuid_col %in% names(df)) {
           dup_hh <- df[[hh_uuid_col]][duplicated(df[[hh_uuid_col]])]
           if (length(dup_hh) > 0) {
@@ -387,7 +145,7 @@ IndividualData <- R6::R6Class(
         }
 
         # Check that age is non-negative
-        age_col <- self$.variable_map$age
+        age_col <- private$..variable_map$age
         if (!is.null(age_col) && age_col %in% names(df)) {
           if (any(df[[age_col]] < 0, na.rm = TRUE)) {
             phrutils::phr_warning(nm, phrutils::phr_txt("Negative ages detected."))
@@ -400,74 +158,14 @@ IndividualData <- R6::R6Class(
           phrutils::phr_message(phrutils::phr_txt("Validating linked HouseholdData (placeholder)."))
         }
 
-        phrutils::phr_message(phrutils::phr_txt(glue::glue("Post-validation for {nm} complete.")))
+        phrutils::phr_message(phrutils::phr_txt("Post-validation for {nm} complete."))
 
       }, on_error = "warn", origin = paste0(self$dataset_name, "$post_validate"))
 
       # Return TRUE (good) or FALSE (warnings occurred)
       return(!had_issues)
-    },
-
-
-    #' @description
-    #' Generate a DemographicsDataAnalytics object for individual data.
-    #' Unifies quality checks and quantitative analysis in one object.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param type The type of analytics to create (currently "demographics")
-    #' @param analysis_config Optional data analysis plan (tibble)
-    #' @return A DataAnalytics subclass object or NULL
-    generate_data_analytics = function(stage = c("standardized", "clean"),
-                                       type  = c("demographics"),
-                                       analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-      type  <- match.arg(type)
-
-      phrutils::phr_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          phrutils::phr_warning(
-            self$dataset_name,
-            phrutils::phr_txt("No {stage} data available for DataAnalytics generation.")
-          )
-          return(NULL)
-        }
-
-        data_hash    <- self$get_hash(stage)
-        variable_map <- self$.variable_map
-        value_map    <- self$.value_map
-
-        analytics <- switch(
-          type,
-          "demographics" = DemographicsDataAnalytics$new(
-            data               = df,
-            dap                = analysis_config,
-            parent_data_object = self,
-            dataset_name       = paste0(self$dataset_name, "_DemographicsDataAnalytics"),
-            data_stage_name    = stage,
-            data_hash          = data_hash,
-            variable_map       = variable_map,
-            value_map          = value_map,
-            variable_label     = self$.variable_label,
-            value_label        = self$.value_label
-          ),
-          phr_error(
-            origin  = paste0(self$dataset_name, "$generate_data_analytics"),
-            message = phrutils::phr_txt("Unknown analytics type '{type}' for IndividualData. Valid types: demographics")
-          )
-        )
-
-        phrutils::phr_message(
-          phrutils::phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
-        )
-
-        return(analytics)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analytics"))
     }
+
   ),
 
   private = list(

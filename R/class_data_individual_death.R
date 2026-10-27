@@ -77,12 +77,12 @@ DeathIndividualData <- R6::R6Class(
           uuid = uuid
         )
 
-        # --- Required and optional columns ---------------------------
+        # --- Required and optional columns
         self$set(field = "..required_columns", value = unique(c(
           private$..required_columns  # keep inherited ones (uuid, hh_uuid)
         )))
 
-        # --- Schema merge --------------------------------------------
+        # --- Schema merge
         self$set(field = "..variable_schema", value = self$default_schema())
 
         # Load default indicator schema
@@ -114,250 +114,63 @@ DeathIndividualData <- R6::R6Class(
         phrutils::phr_message(phrutils::phr_txt("{dataset_name} initialized as DeathIndividualData."))
 
       }, on_error = "abort", origin = "DeathIndividualData$initialize")
-    },
-
-    #' @description
-    #' Load the default variable schema for death data
-    #'
-    #' Reads the variable_schema_data_individual_death_template.xlsx file from package resources
-    #' and converts it to the canonical flat variable-schema data frame.
-    #'
-    #' @return A data frame containing the death data variable schema
-    default_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "variable_schema_data_individual_death_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_error(
-          origin  = "DeathIndividualData$default_schema",
-          message = phrutils::phr_txt("variable_schema_data_individual_death_template.xlsx not found in package resources."),
-          hint    = phrutils::phr_txt("Place the schema file under inst/resources/ before building the package.")
-        )
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_error(
-            origin  = "DeathIndividualData$default_schema",
-            message = phrutils::phr_txt("Failed to read variable_schema_data_individual_death_template.xlsx"),
-            hint    = e$message
-          )
-        }
-      )
-
-      # The xlsx template is already in the canonical flat variable-schema
-      # table format (the format expected by `data_diagnose()` and other
-      # schema consumers), so validate and store it directly rather than
-      # round-tripping it through the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "rule_type", "variable", "value", "required", "type", "allowed",
-          "col_names", "unique",
-          "label", "comment",
-          "question_type", "is_other", "other_column_link"
-        ),
-        origin = "DeathIndividualData$default_schema"
-      )
-
-      return(df)
-    },
-
-    #' @description
-    #' Load the default indicator schema for death data
-    #'
-    #' Reads the indicator_schema_data_individual_death_template.xlsx file from package resources
-    #' and converts it to a nested list of indicator definitions (e.g., mortality rates).
-    #'
-    #' @return A list containing the death data indicator schema
-    default_indicator_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "indicator_schema_data_individual_death_template.xlsx",
-        package = "phr"
-      )
-
-      empty_indicator_schema <- function() {
-        tibble::tibble(
-          indicator_name = character(0),
-          function_name = character(0),
-          variables = character(0),
-          arguments = character(0),
-          label = character(0),
-          comment = character(0)
-        )
-      }
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "DeathIndividualData$default_indicator_schema",
-          message = phrutils::phr_txt("indicator_schema_data_individual_death_template.xlsx not found in package resources. Continuing without default indicator schema.")
-        )
-        return(empty_indicator_schema())
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "DeathIndividualData$default_indicator_schema",
-            message = phrutils::phr_txt("Failed to read indicator_schema_data_individual_death_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(empty_indicator_schema())
-
-      # The xlsx template is already in the canonical flat indicator-schema
-      # table format; validate and store it directly rather than converting
-      # to the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "indicator_name",
-          "function_name",
-          "variables",
-          "arguments",
-          "label",
-          "comment"
-        ),
-        origin = "DeathIndividualData$default_indicator_schema"
-      )
-
-      return(df)
-    },
-
-    #' @description
-    #' Load the default dependency schema for death data
-    #'
-    #' Reads the dependency_schema_data_individual_death_template.xlsx file from package resources
-    #' and converts it to a nested list of variable dependency rules.
-    #'
-    #' @return A list containing the death data dependency schema
-    default_dependency_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "dependency_schema_data_individual_death_template.xlsx",
-        package = "phr"
-      )
-
-      empty_dependency_schema <- function() {
-        tibble::tibble(
-          rule_type = character(0),
-          dep_name = character(0),
-          variables = character(0),
-          condition_if = character(0),
-          then = character(0),
-          action = character(0),
-          label = character(0),
-          comment = character(0)
-        )
-      }
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "DeathIndividualData$default_dependency_schema",
-          message = phr_txt("dependency_schema_data_individual_death_template.xlsx not found in package resources. Continuing without default dependency schema.")
-        )
-        return(empty_dependency_schema())
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "DeathIndividualData$default_dependency_schema",
-            message = phr_txt("Failed to read dependency_schema_data_individual_death_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(empty_dependency_schema())
-
-      # The xlsx template is already in the canonical flat dependency-schema
-      # table format; validate and store it directly rather than converting
-      # to the nested-list representation.
-      private$..validate_table_schema(
-        df,
-        required_cols = c(
-          "rule_type",
-          "dep_name",
-          "variables",
-          "condition_if",
-          "then",
-          "action",
-          "label",
-          "comment"
-        ),
-        origin = "DeathIndividualData$default_dependency_schema"
-      )
-
-      return(df)
-    },
-
-
-    #' @description
-    #' Generate a DataAnalytics object for death individual data.
-    #' Combines quality checks and quantitative analysis in one object.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param analysis_config Optional data analysis plan (tibble)
-    #' @return A DataAnalytics object or NULL
-    generate_data_analytics = function(stage = c("standardized", "clean"),
-                                       analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-
-      phrutils::phr_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          phrutils::phr_warning(
-            self$dataset_name,
-            phrutils::phr_txt("No {stage} data available for DataAnalytics generation.")
-          )
-          return(NULL)
-        }
-
-        data_hash    <- self$get(field = "..metadata", role = "hash_id")
-        variable_map <- private$..variable_map
-        value_map    <- private$..value_map
-
-        analytics <- DataAnalytics$new(
-          data               = df,
-          dap                = analysis_config,
-          parent_data_object = self,
-          dataset_name       = paste0(self$dataset_name, "_DataAnalytics"),
-          data_stage_name    = stage,
-          data_hash          = data_hash,
-          variable_map       = variable_map,
-          value_map          = value_map,
-          variable_label     = private$..variable_label,
-          value_label        = private$..value_label
-        )
-
-        phrutils::phr_message(
-          phrutils::phr_txt("Generated DataAnalytics object for {self$dataset_name}.")
-        )
-
-        return(analytics)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analytics"))
     }
+  ),
 
+  private = list(
+
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_individual_death_template.xlsx"
+    ),
+
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_individual_death_template.xlsx"
+    ),
+
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_individual_death_template.xlsx",
+    ),
+
+    ..analytics_registry = function() {
+
+      registry <- super$..analytics_registry()
+
+      c(
+        registry,
+        list(
+          demographics = function(data,
+                            stage,
+                            analysis_config,
+                            parent) {
+
+            DemographicsDataAnalytics$new(
+              data = data,
+              dap = analysis_config,
+              parent_data_object = parent,
+              dataset_name = paste0(self$dataset_name, "_DemographicsDataAnalytics"),
+              data_stage_name = stage,
+              data_hash = parent$get(field = "..metadata", role = "hash_id"),
+              variable_map = parent$get(field = "..variable_map"),
+              value_map = parent$get(field = "..value_map"),
+              variable_label = parent$get(field = "..variable_label"),
+              value_label = parent$get(field = "..value_label")
+            )
+          }
+        )
+      )
+    }
 
   )
 )

@@ -49,249 +49,91 @@ NutritionIndividualData <- R6::R6Class(
         # Extend optional columns
         self$optional_columns <- c(self$optional_columns, unlist(nutrition_map))
 
-        # Load and merge schema
-        self$set_variable_schema(self$default_nutrition_schema())
-
-        # Load default indicator schema
-        default_ind_schema <- self$default_indicator_schema()
-        if (length(default_ind_schema) > 0) {
-          self$set_indicator_schema(default_ind_schema)
-          phrutils::phr_message(
-            phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
-          )
-        }
-
-        # Load default dependency schema
-        default_dep_schema <- self$default_dependency_schema()
-        if (length(default_dep_schema$dependencies) > 0) {
-          self$set_dependency_schema(default_dep_schema)
-          phrutils::phr_message(
-            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
-          )
-        }
+        private$..map_schema_vars(stage = "raw")
 
         phrutils::phr_message(
-          phr_txt("{dataset_name} initialized as NutritionIndividualData object.")
+          phrutils::phr_txt("{dataset_name} initialized as NutritionIndividualData object.")
         )
 
       }, on_error = "abort", origin = "NutritionIndividualData$initialize")
-    },
+    }
+  ),
 
+  private = list(
 
-    #' @description
-    #' Load the default variable schema for nutrition data
-    #'
-    #' Reads the variable_schema_data_individual_nutrition_template.xlsx file from package resources
-    #' and converts it to a nested list of variable definitions for anthropometry and nutrition.
-    #'
-    #' @return A list containing the nutrition data variable schema
-    default_nutrition_schema = function() {
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_individual_nutrition_template.xlsx"
+    ),
 
-      file <- system.file(
-        "resources",
-        "variable_schema_data_individual_nutrition_template.xlsx",
-        package = "phr"
-      )
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_individual_nutrition_template.xlsx"
+    ),
 
-      if (!file.exists(file)) {
-        phr_error(
-          origin  = "NutritionIndividualData$default_nutrition_schema",
-          message = phr_txt("variable_schema_data_individual_nutrition_template.xlsx not found in package resources."),
-          hint    = phr_txt("Place the schema file under inst/resources/ before building the package.")
-        )
-      }
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_individual_nutrition_template.xlsx",
+    ),
 
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phr_error(
-            origin  = "NutritionIndividualData$default_nutrition_schema",
-            message = phr_txt("Failed to read variable_schema_data_individual_nutrition_template.xlsx"),
-            hint    = e$message
-          )
-        }
-      )
+    ..analytics_registry = function() {
 
-      # Convert table → canonical nested schema list
-      schema <- private$..data_table_to_schema(df)
+      registry <- super$..analytics_registry()
 
-      return(schema)
-    },
+      c(
+        registry,
+        list(
+          nutrition = function(data,
+                              stage,
+                              analysis_config,
+                              parent) {
 
-    #' @description
-    #' Load the default indicator schema for nutrition data
-    #'
-    #' Reads the indicator_schema_data_individual_nutrition_template.xlsx file from package resources
-    #' and converts it to a nested list of indicator definitions (e.g., malnutrition prevalence).
-    #'
-    #' @return A list containing the nutrition data indicator schema
-    default_indicator_schema = function() {
+            NutritionDataAnalytics$new(
+              data = data,
+              dap = analysis_config,
+              parent_data_object = parent,
+              dataset_name = paste0(self$dataset_name, "_NutritionData"),
+              data_stage_name = stage,
+              data_hash = parent$get(field = "..metadata", role = "hash_id"),
+              variable_map = parent$get(field = "..variable_map"),
+              value_map = parent$get(field = "..value_map"),
+              variable_label = parent$get(field = "..variable_label"),
+              value_label = parent$get(field = "..value_label")
+            )
+          },
 
-      file <- system.file(
-        "resources",
-        "indicator_schema_data_individual_nutrition_template.xlsx",
-        package = "phr"
-      )
+        iycf = function(data,
+                        stage,
+                        analysis_config,
+                        parent) {
 
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "NutritionIndividualData$default_indicator_schema",
-          message = phr_txt("indicator_schema_data_individual_nutrition_template.xlsx not found in package resources. Continuing without default indicator schema.")
-        )
-        return(list())
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "NutritionIndividualData$default_indicator_schema",
-            message = phr_txt("Failed to read indicator_schema_data_individual_nutrition_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(list())
-
-      # Convert table → canonical nested indicator schema list
-      indicator_schema <- private$..indicator_table_to_schema(df)
-
-      return(indicator_schema)
-    },
-
-    #' @description
-    #' Load the default dependency schema for nutrition data
-    #'
-    #' Reads the dependency_schema_data_individual_nutrition_template.xlsx file from package resources
-    #' and converts it to a nested list of variable dependency rules.
-    #'
-    #' @return A list containing the nutrition data dependency schema
-    default_dependency_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "dependency_schema_data_individual_nutrition_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "NutritionIndividualData$default_dependency_schema",
-          message = phr_txt("dependency_schema_data_individual_nutrition_template.xlsx not found in package resources. Continuing without default dependency schema.")
-        )
-        return(list(dependencies = list()))
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "NutritionIndividualData$default_dependency_schema",
-            message = phr_txt("Failed to read dependency_schema_data_individual_nutrition_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(list(dependencies = list()))
-
-      # Convert table → canonical nested dependency schema list
-      dependency_schema <- private$..dependency_table_to_schema(df)
-
-      return(dependency_schema)
-    },
-
-
-    #' @description
-    #' Generate a NutritionDataAnalytics or IYCFDataAnalytics object.
-    #' Unifies quality checks and quantitative analysis in one object.
-    #' For anthropometric data, use type = "nutrition" as NutritionDataAnalytics
-    #' covers anthropometric quality checks and analysis.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param type The type of analytics to create ("nutrition" or "iycf")
-    #' @param analysis_config Optional data analysis plan (tibble)
-    #' @return A DataAnalytics subclass object or NULL
-    generate_data_analytics = function(stage = c("standardized", "clean"),
-                                       type  = c("nutrition", "iycf"),
-                                       analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-      type  <- match.arg(type)
-
-      phrutils::phr_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          phrutils::phr_warning(
-            self$dataset_name,
-            phr_txt("No {stage} data available for DataAnalytics generation.")
-          )
-          return(NULL)
-        }
-
-        data_hash    <- self$get_hash(stage)
-        variable_map <- self$.variable_map
-        value_map    <- self$.value_map
-
-        analytics <- switch(
-          type,
-          "nutrition" = NutritionDataAnalytics$new(
-            data               = df,
+          IYCFDataAnalytics$new(
+            data               = data,
             dap                = analysis_config,
-            parent_data_object = self,
-            dataset_name       = paste0(self$dataset_name, "_NutritionDataAnalytics"),
-            data_stage_name    = stage,
-            data_hash          = data_hash,
-            variable_map       = variable_map,
-            value_map          = value_map,
-            variable_label     = self$.variable_label,
-            value_label        = self$.value_label
-          ),
-          "anthropometric" = NutritionDataAnalytics$new(
-            data               = df,
-            dap                = analysis_config,
-            parent_data_object = self,
-            dataset_name       = paste0(self$dataset_name, "_NutritionDataAnalytics"),
-            data_stage_name    = stage,
-            data_hash          = data_hash,
-            variable_map       = variable_map,
-            value_map          = value_map,
-            variable_label     = self$.variable_label,
-            value_label        = self$.value_label
-          ),
-          "iycf" = IYCFDataAnalytics$new(
-            data               = df,
-            dap                = analysis_config,
-            parent_data_object = self,
+            parent_data_object = parent,
             dataset_name       = paste0(self$dataset_name, "_IYCFDataAnalytics"),
             data_stage_name    = stage,
-            data_hash          = data_hash,
-            variable_map       = variable_map,
-            value_map          = value_map,
-            variable_label     = self$.variable_label,
-            value_label        = self$.value_label
-          ),
-          phr_error(
-            origin  = paste0(self$dataset_name, "$generate_data_analytics"),
-            message = phr_txt("Unknown analytics type '{type}' for NutritionIndividualData. Valid types: nutrition, iycf")
+            data_hash          = parent$get(field = "..metadata", role = "hash_id"),
+            variable_map       = parent$get(field = "..variable_map"),
+            value_map          = parent$get(field = "..value_map"),
+            variable_label     = parent$get(field = "..variable_label"),
+            value_label        = parent$get(field = "..value_label")
           )
+
+        }
+
         )
-
-        phrutils::phr_message(
-          phr_txt("Generated {type} DataAnalytics object for {self$dataset_name}.")
-        )
-
-        return(analytics)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analytics"))
+      )
     }
-
 
   )
 )
