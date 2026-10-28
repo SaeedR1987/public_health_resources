@@ -31,7 +31,7 @@
 #'
 #' When `standardize()` is called, the `pre_standardize()` hook will:
 #' 1. Generate survey weights via `generate_weights()` when a `SamplingFrame` is
-#'    stored in `self$sampling_frame` and a stratum role is mapped in `variable_map`
+#'    stored in `private$..sampling_frame` and a stratum role is mapped in `variable_map`
 #'    (skipped silently if either is unavailable).
 #' 2. Merge household-level variables to all linked datasets (if available):
 #'    `enum_id`, `device_id`, `date_survey`, `date_recall`, `weight`, `stratum`,
@@ -60,7 +60,6 @@
 #'
 #' Utility methods such as `summarize_weights()` provide quick field diagnostics.
 #'
-#' @field survey_design Survey design object (srvyr) for weighted analyses (created at clean stage)
 #' @field optional_columns Character vector of optional columns commonly present in household data
 #' @field sampling_frame Optional \code{\link{SamplingFrame}} object used by \code{generate_weights()}
 #'   to derive survey weights from population totals per stratum.
@@ -75,10 +74,8 @@ HouseholdData <- R6::R6Class(
   public = list(
     # Additional fields
 
-    survey_design = NULL, # store srvyr design object (clean stage)
     # linked_datasets removed - now using inherited linked_objects from Data class
     optional_columns = NULL, # non-required but commonly present columns
-    sampling_frame = NULL, # optional SamplingFrame for generate_weights()
 
     #' @description
     #' Creates a new HouseholdData object with household-level survey data
@@ -168,119 +165,6 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Add Linked Dataset
-    #'
-    #' @description
-    #' Adds a Data object to the linked_objects list with validation of link name and object type.
-    #' This method overrides the base Data class method to provide household-specific validation.
-    #'
-    #' @param name Character name for the link. Must be one of: roster, deaths, water_containers, women, nutrition, health
-    #' @param data_object Data class or subclass object to link. Must match expected type for the link name.
-    #' @param by_self_role Not used - automatically set to "uuid". Parameter included for compatibility with base class signature.
-    #' @param by_other_role Not used - automatically set to "hh_uuid". Parameter included for compatibility with base class signature.
-    #'
-    #' @return TRUE invisibly on success
-    #'
-    #' @details
-    #' Allowed link names and expected types:
-    #' * roster: IndividualData
-    #' * deaths: DeathIndividualData
-    #' * water_containers: WaterContainerData
-    #' * women: WomenIndividualData
-    #' * nutrition: NutritionIndividualData
-    #' * health: HealthIndividualData
-    #'
-    #' Links are stored with foreign key relationship information (by_self_role="uuid", by_other_role="hh_uuid").
-    #' For HouseholdData, these roles are always fixed. If you need custom roles, use a base Data object instead.
-    add_linked_dataset = function(
-      name,
-      data_object,
-      by_self_role = NULL,
-      by_other_role = NULL
-    ) {
-      phrutils::phr_try(
-        {
-          # Warn if user provided role parameters (they will be ignored)
-          if (!is.null(by_self_role) || !is.null(by_other_role)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "by_self_role and by_other_role are not used for HouseholdData. They are automatically set to 'uuid' and 'hh_uuid' respectively."
-              )
-            )
-          }
-
-          # Define allowed link names and their corresponding expected Data subclasses
-          allowed_links <- list(
-            roster = "IndividualData",
-            deaths = "DeathIndividualData",
-            water_containers = "WaterContainerData",
-            women = "WomenIndividualData",
-            nutrition = "NutritionIndividualData",
-            health = "HealthIndividualData"
-          )
-
-          # Validate inputs
-          if (missing(name) || !is.character(name) || length(name) != 1) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt("Link name must be a single character string.")
-            )
-          }
-
-          # Check if name is in the allowed list
-          if (!name %in% names(allowed_links)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "Link name '{name}' is not allowed. Allowed names are: {paste(names(allowed_links), collapse=', ')}."
-              )
-            )
-          }
-
-          if (!inherits(data_object, "Data")) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "Linked object must be a Data class or subclass object."
-              )
-            )
-          }
-
-          # Check if the data object is of the correct type for this link name
-          expected_class <- allowed_links[[name]]
-          if (!inherits(data_object, expected_class)) {
-            phrutils::phr_error(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "Link name '{name}' expects a {expected_class} object, but received {class(data_object)[1]}."
-              )
-            )
-          }
-
-          # Add to linked_objects (inherited from Data class)
-          # Store with optional by_self_role and by_other_role for foreign key relationships
-          # by_self_role: role name in household's variable_map (maps to household's UUID column)
-          # by_other_role: role name in linked dataset's variable_map (maps to hh_uuid foreign key column)
-          self$linked_objects[[name]] <- list(
-            object = data_object,
-            by_self_role = "uuid", # household UUID role
-            by_other_role = "hh_uuid" # household UUID foreign key role in linked dataset
-          )
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Added linked dataset '{name}' ({class(data_object)[1]}) to {self$dataset_name}."
-            )
-          )
-
-          invisible(TRUE)
-        },
-        on_error = "abort",
-        origin = paste0(self$dataset_name, "$add_linked_dataset")
-      )
-    },
-
     #' Generate Survey Weights from a Sampling Frame
     #'
     #' @description
@@ -324,17 +208,17 @@ HouseholdData <- R6::R6Class(
     stage = c("standardized", "clean", "raw")
     ) {
       stage <- match.arg(stage)
-      origin <- paste0(self$dataset_name, "$generate_weights")
+      origin <- paste0(private$..dataset_name, "$generate_weights")
 
       phrutils::phr_try(
         {
           # 1. Resolve SamplingFrame
 
-          sf <- sampling_frame %||% self$sampling_frame
+          sf <- sampling_frame %||% private$..sampling_frame
 
           if (is.null(sf)) {
             phrutils::phr_message(phrutils::phr_txt(
-              "No SamplingFrame available for {self$dataset_name}. Skipping generate_weights."
+              "No SamplingFrame available for {private$..dataset_name}. Skipping generate_weights."
             ))
             return(invisible(self))
           }
@@ -363,7 +247,7 @@ HouseholdData <- R6::R6Class(
 
           if (is.null(stratum_col) || stratum_col == "" || is.na(stratum_col)) {
             phrutils::phr_message(phr_txt(
-              "No stratum role found in variable_map for {self$dataset_name}. Skipping generate_weights."
+              "No stratum role found in variable_map for {private$..dataset_name}. Skipping generate_weights."
             ))
             return(invisible(self))
           }
@@ -376,7 +260,7 @@ HouseholdData <- R6::R6Class(
             phrutils::phr_warning(
               origin,
               phrutils::phr_txt(
-                "No {stage} data available in {self$dataset_name}. Skipping generate_weights."
+                "No {stage} data available in {private$..dataset_name}. Skipping generate_weights."
               )
             )
             return(invisible(self))
@@ -385,7 +269,7 @@ HouseholdData <- R6::R6Class(
           if (!stratum_col %in% names(df)) {
             phrutils::phr_message(
               phrutils::phr_txt(
-                "Stratum column '{stratum_col}' not found in {stage} data for {self$dataset_name}. Skipping generate_weights."
+                "Stratum column '{stratum_col}' not found in {stage} data for {private$..dataset_name}. Skipping generate_weights."
               )
             )
             return(invisible(self))
@@ -447,7 +331,7 @@ HouseholdData <- R6::R6Class(
 
           # 7. Determine weight column name and update variable_map if needed
 
-          existing_weight_col <- self$.variable_map$weight
+          existing_weight_col <- private$..variable_map$weight
           if (
             !is.null(existing_weight_col) &&
             !is.na(existing_weight_col) &&
@@ -460,7 +344,7 @@ HouseholdData <- R6::R6Class(
             ))
           } else {
             weight_col <- "survey_weight"
-            self$.variable_map[["weight"]] <- weight_col
+            private$..variable_map[["weight"]] <- weight_col
             phrutils::phr_message(phrutils::phr_txt(
               "No existing weight column mapped. Writing weights to '{weight_col}' and updating variable_map."
             ))
@@ -480,7 +364,7 @@ HouseholdData <- R6::R6Class(
 
           phrutils::phr_message(
             phrutils::phr_txt(
-              "Survey weights generated and added to '{weight_col}' column in {stage} data for {self$dataset_name}."
+              "Survey weights generated and added to '{weight_col}' column in {stage} data for {private$..dataset_name}."
             )
           )
 
@@ -489,7 +373,35 @@ HouseholdData <- R6::R6Class(
         on_error = "warn",
         origin = origin
       )
-    },
+    }
+  ),
+
+  private = list(
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_household_template.xlsx"
+    ),
+
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_household_template.xlsx",
+    ),
+
+    ..sampling_frame = NULL, # optional SamplingFrame for generate_weights()
 
     #' Post-Validation Hook for Household Data
     #'
@@ -506,8 +418,8 @@ HouseholdData <- R6::R6Class(
     #' * Weight distribution checks (negative or zero weights)
     #' * Interview date validity checks
     #' * Consent field validation
-    post_validate = function(df) {
-      nm <- self$dataset_name
+    ..post_validate = function(df) {
+      nm <- private$..dataset_name
 
       # Track whether any issues occurred
       had_issues <- FALSE
@@ -519,9 +431,9 @@ HouseholdData <- R6::R6Class(
 
       if (
         !is.null(lat_col) &&
-          lat_col %in% names(df) &&
-          !is.null(lon_col) &&
-          lon_col %in% names(df)
+        lat_col %in% names(df) &&
+        !is.null(lon_col) &&
+        lon_col %in% names(df)
       ) {
         lat_invalid <- which(
           !is.na(df[[lat_col]]) &
@@ -547,7 +459,7 @@ HouseholdData <- R6::R6Class(
 
       if (
         !is.null(private$..variable_map$weight) &&
-          private$..variable_map$weight %in% names(df)
+        private$..variable_map$weight %in% names(df)
       ) {
         wts <- suppressWarnings(as.numeric(df[[private$..variable_map$weight]]))
 
@@ -572,7 +484,7 @@ HouseholdData <- R6::R6Class(
 
       if (
         !is.null(private$..variable_map$strata) &&
-          private$..variable_map$strata %in% names(df)
+        private$..variable_map$strata %in% names(df)
       ) {
         strata_vals <- df[[private$..variable_map$strata]]
 
@@ -583,20 +495,6 @@ HouseholdData <- R6::R6Class(
           )
           had_issues <- TRUE
         }
-      }
-
-      # Link placeholders
-
-      if (!is.null(self$roster_link)) {
-        phrutils::phr_message(phrutils::phr_txt(
-          "Validating linked roster data (placeholder)."
-        ))
-      }
-
-      if (!is.null(self$deaths_link)) {
-        phrutils::phr_message(phrutils::phr_txt(
-          "Validating linked deaths data (placeholder)."
-        ))
       }
 
       phrutils::phr_message(phrutils::phr_txt(
@@ -634,7 +532,7 @@ HouseholdData <- R6::R6Class(
     #' 4. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
     #'
     #' Supported aggregations vary by dataset type (see class documentation for details)
-    pre_standardize = function(stage = c("clean", "standardized", "raw")) {
+    ..pre_standardize = function(stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
       phrutils::phr_try(
@@ -651,26 +549,26 @@ HouseholdData <- R6::R6Class(
           private$..map_schema_vars(stage = "raw")
 
           # Check if any linked objects exist (using inherited linked_objects from Data class)
-          if (length(self$linked_objects) == 0) {
+          if (length(private$..linked_objects) == 0) {
             phrutils::phr_message(phrutils::phr_txt(
-              "No linked datasets found in {self$dataset_name}."
+              "No linked datasets found in {private$..dataset_name}."
             ))
             return(invisible(NULL))
           }
 
           phrutils::phr_message(phrutils::phr_txt(
-            "Processing {length(self$linked_objects)} linked dataset(s) for {self$dataset_name}..."
+            "Processing {length(private$..linked_objects)} linked dataset(s) for {private$..dataset_name}..."
           ))
 
           # Iterate through linked objects
-          for (link_name in names(self$linked_objects)) {
-            link_info <- self$linked_objects[[link_name]]
+          for (link_name in names(private$..linked_objects)) {
+            link_info <- private$..linked_objects[[link_name]]
             linked_obj <- link_info$object
 
             # Validate that the linked object is a Data class or subclass
             if (!inherits(linked_obj, "Data")) {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "Linked object '{link_name}' is not a Data class object. Skipping."
                 )
@@ -681,7 +579,7 @@ HouseholdData <- R6::R6Class(
             # First merge household-level variables to linked dataset
             # This needs to happen before standardize so household vars are available
             # in variable and value maps during standardize operations
-            merged <- self$..merge_household_vars_to_linked(
+            merged <- private$..merge_household_vars_to_linked(
               linked_obj,
               link_name,
               hh_stage = stage,
@@ -717,7 +615,7 @@ HouseholdData <- R6::R6Class(
           hh_data_result <- self$get_data_with_fallback(self, stage)
           if (is.null(hh_data_result)) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "No household data available (tried stages: clean, standardized, raw). Cannot aggregate linked data."
               )
@@ -747,11 +645,11 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(phrutils::phr_txt(
-            "Pre-standardize processing complete for {self$dataset_name}."
+            "Pre-standardize processing complete for {private$..dataset_name}."
           ))
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$pre_standardize")
+        origin = paste0(private$..dataset_name, "$pre_standardize")
       )
     },
 
@@ -770,9 +668,9 @@ HouseholdData <- R6::R6Class(
     #'
     #' @return NULL (invisibly). Side effect: populates cleaning logs on the
     #'   household object and on every linked data object.
-    pre_generate_cleaning_log = function(
-      stage = "standardized",
-      overwrite = FALSE
+    ..pre_generate_cleaning_log = function(
+    stage = "standardized",
+    overwrite = FALSE
     ) {
       phrutils::phr_try(
         {
@@ -781,11 +679,11 @@ HouseholdData <- R6::R6Class(
           }
 
           phrutils::phr_message(phrutils::phr_txt(
-            "Generating cleaning log for {length(self$linked_objects)} linked dataset(s) in {self$dataset_name}..."
+            "Generating cleaning log for {length(private$..linked_objects)} linked dataset(s) in {private$..dataset_name}..."
           ))
 
-          for (link_name in names(self$linked_objects)) {
-            link_info <- self$linked_objects[[link_name]]
+          for (link_name in names(private$..linked_objects)) {
+            link_info <- private$..linked_objects[[link_name]]
             linked_obj <- link_info$object
 
             if (!inherits(linked_obj, "Data")) {
@@ -798,7 +696,7 @@ HouseholdData <- R6::R6Class(
               next
             }
 
-            phrutils::phr_message(phr_txt(
+            phrutils::phr_message(phrutils::phr_txt(
               "Generating cleaning log for linked dataset '{link_name}'..."
             ))
             linked_obj$generate_cleaning_log(
@@ -808,7 +706,7 @@ HouseholdData <- R6::R6Class(
           }
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$generate_cleaning_log")
+        origin = paste0(private$..dataset_name, "$generate_cleaning_log")
       )
     },
 
@@ -819,26 +717,26 @@ HouseholdData <- R6::R6Class(
     #'
     #' @return NULL (invisibly). Side effect: sets \code{clean_data}
     #'   on every linked data object.
-    pre_clean = function() {
+    ..pre_clean = function() {
       # Run parent implementation for the household dataset itself
 
       phrutils::phr_try(
         {
-          if (length(self$linked_objects) == 0) {
+          if (length(private$..linked_objects) == 0) {
             return(invisible(NULL))
           }
 
           phrutils::phr_message(phrutils::phr_txt(
-            "Cleaning {length(self$linked_objects)} linked dataset(s) in {self$dataset_name}..."
+            "Cleaning {length(private$..linked_objects)} linked dataset(s) in {private$..dataset_name}..."
           ))
 
-          for (link_name in names(self$linked_objects)) {
-            link_info <- self$linked_objects[[link_name]]
+          for (link_name in names(private$..linked_objects)) {
+            link_info <- private$..linked_objects[[link_name]]
             linked_obj <- link_info$object
 
             if (!inherits(linked_obj, "Data")) {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "Linked object '{link_name}' is not a Data class object. Skipping."
                 )
@@ -853,415 +751,10 @@ HouseholdData <- R6::R6Class(
           }
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$clean")
+        origin = paste0(private$..dataset_name, "$clean")
       )
     },
 
-    #' @description
-    #' Generate a thematic DataAnalytics object for household data.
-    #'
-    #' Creates a unified analytics object integrating both data quality checks and
-    #' quantitative analysis for the specified sector.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param type The type of analytics object to create ("fsl", "wash", "health", "mortality", "general")
-    #' @param analysis_config Optional analysis configuration (data analysis plan tibble)
-    #' @return A DataAnalytics subclass object or NULL
-    generate_data_analytics = function(
-      stage = c("standardized", "clean"),
-      type = c("fsl", "wash", "health", "mortality", "general"),
-      analysis_config = NULL
-    ) {
-      stage <- match.arg(stage)
-      type <- match.arg(type)
-
-      phrutils::phr_try(
-        {
-          df <- self$get_data(stage)
-
-          if (is.null(df)) {
-            phrutils::phr_warning(
-              self$dataset_name,
-              phrutils::phr_txt(
-                "No {stage} data available for DataAnalytics generation."
-              )
-            )
-            return(NULL)
-          }
-
-          data_hash <- self$get(field = "..metadata", role = "hash_id")
-          variable_map <- private$..variable_map
-          value_map <- private$..value_map
-
-          # Helper to extract linked data info
-          # self$linked_objects stores wrapper lists: list(object = <Data obj>, by_self_role, by_other_role)
-          # so we must access $object to reach the actual Data object's methods/fields.
-          get_linked_data_info <- function(linked_obj, stage) {
-            if (is.null(linked_obj)) {
-              return(list(
-                data = NULL,
-                stage_name = NULL,
-                hash = NULL,
-                variable_map = NULL,
-                value_map = NULL,
-                variable_label = NULL,
-                value_label = NULL
-              ))
-            }
-            obj <- linked_obj$object
-            list(
-              data = obj$get_data(stage),
-              stage_name = stage,
-              hash = obj$get(field = "..metadata", role = "hash_id"),
-              variable_map = obj$get(field = ".variable_map"),
-              value_map = obj$get(field = ".value_map"),
-              variable_label = obj$get(field = ".variable_label"),
-              value_label = obj$get(field = ".value_label")
-            )
-          }
-
-          linked_info_containers <- NULL
-          linked_info_roster <- NULL
-          linked_info_deaths <- NULL
-          linked_info_health <- NULL
-
-          if (
-            type == "wash" && !is.null(self$linked_objects$water_containers)
-          ) {
-            linked_info_containers <- get_linked_data_info(
-              self$linked_objects$water_containers,
-              stage
-            )
-          } else if (type == "mortality") {
-            if (!is.null(self$linked_objects$roster)) {
-              linked_info_roster <- get_linked_data_info(
-                self$linked_objects$roster,
-                stage
-              )
-            } else {
-              phrutils::phr_warning(
-                origin = paste0(self$dataset_name, "$generate_data_analytics"),
-                message = phrutils::phr_txt(
-                  "No linked roster data found. Mortality analytics will use only household data."
-                )
-              )
-            }
-            if (!is.null(self$linked_objects$deaths)) {
-              linked_info_deaths <- get_linked_data_info(
-                self$linked_objects$deaths,
-                stage
-              )
-            } else {
-              phrutils::phr_warning(
-                origin = paste0(self$dataset_name, "$generate_data_analytics"),
-                message = phrutils::phr_txt(
-                  "No linked deaths data found. Mortality analytics will use only household data."
-                )
-              )
-            }
-          } else if (type == "health") {
-            if (!is.null(self$linked_objects$roster)) {
-              linked_info_roster <- get_linked_data_info(
-                self$linked_objects$roster,
-                stage
-              )
-            }
-            if (!is.null(self$linked_objects$health)) {
-              linked_info_health <- get_linked_data_info(
-                self$linked_objects$health,
-                stage
-              )
-            }
-          }
-
-          analytics <- switch(
-            type,
-            "fsl" = FSLDataAnalytics$new(
-              data = df,
-              dap = analysis_config,
-              parent_data_object = self,
-              dataset_name = paste0(self$dataset_name, "_FSLDataAnalytics"),
-              data_stage_name = stage,
-              data_hash = data_hash,
-              variable_map = variable_map,
-              value_map = value_map,
-              variable_label = self$.variable_label,
-              value_label = self$.value_label
-            ),
-            "wash" = WASHDataAnalytics$new(
-              data = df,
-              dap = analysis_config,
-              parent_data_object = self,
-              dataset_name = paste0(self$dataset_name, "_WASHDataAnalytics"),
-              data_stage_name = stage,
-              data_hash = data_hash,
-              variable_map = variable_map,
-              value_map = value_map,
-              variable_label = self$.variable_label,
-              value_label = self$.value_label,
-              linked_containers_data = if (!is.null(linked_info_containers)) {
-                linked_info_containers$data
-              } else {
-                NULL
-              },
-              linked_containers_data_stage_name = if (
-                !is.null(linked_info_containers)
-              ) {
-                linked_info_containers$stage_name
-              } else {
-                NULL
-              },
-              linked_containers_data_hash = if (
-                !is.null(linked_info_containers)
-              ) {
-                linked_info_containers$hash
-              } else {
-                NULL
-              },
-              linked_containers_variable_map = if (
-                !is.null(linked_info_containers)
-              ) {
-                linked_info_containers$variable_map
-              } else {
-                NULL
-              },
-              linked_containers_value_map = if (
-                !is.null(linked_info_containers)
-              ) {
-                linked_info_containers$value_map
-              } else {
-                NULL
-              }
-            ),
-            "mortality" = MortalityDataAnalytics$new(
-              data = df,
-              dap = analysis_config,
-              parent_data_object = self,
-              dataset_name = paste0(
-                self$dataset_name,
-                "_MortalityDataAnalytics"
-              ),
-              data_stage_name = stage,
-              data_hash = data_hash,
-              variable_map = variable_map,
-              value_map = value_map,
-              variable_label = self$.variable_label,
-              value_label = self$.value_label,
-              linked_ind_roster_data = if (!is.null(linked_info_roster)) {
-                linked_info_roster$data
-              } else {
-                NULL
-              },
-              linked_ind_roster_data_stage_name = if (
-                !is.null(linked_info_roster)
-              ) {
-                linked_info_roster$stage_name
-              } else {
-                NULL
-              },
-              linked_ind_roster_data_hash = if (!is.null(linked_info_roster)) {
-                linked_info_roster$hash
-              } else {
-                NULL
-              },
-              linked_ind_roster_variable_map = if (
-                !is.null(linked_info_roster)
-              ) {
-                linked_info_roster$variable_map
-              } else {
-                NULL
-              },
-              linked_ind_roster_value_map = if (!is.null(linked_info_roster)) {
-                linked_info_roster$value_map
-              } else {
-                NULL
-              },
-              linked_ind_roster_variable_label = if (
-                !is.null(linked_info_roster)
-              ) {
-                linked_info_roster$variable_label
-              } else {
-                NULL
-              },
-              linked_ind_roster_value_label = if (
-                !is.null(linked_info_roster)
-              ) {
-                linked_info_roster$value_label
-              } else {
-                NULL
-              },
-              linked_ind_deaths_data = if (!is.null(linked_info_deaths)) {
-                linked_info_deaths$data
-              } else {
-                NULL
-              },
-              linked_ind_deaths_data_stage_name = if (
-                !is.null(linked_info_deaths)
-              ) {
-                linked_info_deaths$stage_name
-              } else {
-                NULL
-              },
-              linked_ind_deaths_data_hash = if (!is.null(linked_info_deaths)) {
-                linked_info_deaths$hash
-              } else {
-                NULL
-              },
-              linked_ind_deaths_variable_map = if (
-                !is.null(linked_info_deaths)
-              ) {
-                linked_info_deaths$variable_map
-              } else {
-                NULL
-              },
-              linked_ind_deaths_value_map = if (!is.null(linked_info_deaths)) {
-                linked_info_deaths$value_map
-              } else {
-                NULL
-              },
-              linked_ind_deaths_variable_label = if (
-                !is.null(linked_info_deaths)
-              ) {
-                linked_info_deaths$variable_label
-              } else {
-                NULL
-              },
-              linked_ind_deaths_value_label = if (
-                !is.null(linked_info_deaths)
-              ) {
-                linked_info_deaths$value_label
-              } else {
-                NULL
-              }
-            ),
-            "health" = HealthDataAnalytics$new(
-              data = df,
-              dap = analysis_config,
-              parent_data_object = self,
-              dataset_name = paste0(self$dataset_name, "_HealthDataAnalytics"),
-              data_stage_name = stage,
-              data_hash = data_hash,
-              variable_map = variable_map,
-              value_map = value_map,
-              variable_label = self$.variable_label,
-              value_label = self$.value_label,
-              linked_ind_roster_data = if (!is.null(linked_info_roster)) {
-                linked_info_roster$data
-              } else {
-                NULL
-              },
-              linked_ind_roster_data_stage_name = if (
-                !is.null(linked_info_roster)
-              ) {
-                linked_info_roster$stage_name
-              } else {
-                NULL
-              },
-              linked_ind_roster_data_hash = if (!is.null(linked_info_roster)) {
-                linked_info_roster$hash
-              } else {
-                NULL
-              },
-              linked_ind_roster_variable_map = if (
-                !is.null(linked_info_roster)
-              ) {
-                linked_info_roster$variable_map
-              } else {
-                NULL
-              },
-              linked_ind_roster_value_map = if (!is.null(linked_info_roster)) {
-                linked_info_roster$value_map
-              } else {
-                NULL
-              },
-              linked_ind_health_data = if (!is.null(linked_info_health)) {
-                linked_info_health$data
-              } else {
-                NULL
-              },
-              linked_ind_health_data_stage_name = if (
-                !is.null(linked_info_health)
-              ) {
-                linked_info_health$stage_name
-              } else {
-                NULL
-              },
-              linked_ind_health_data_hash = if (!is.null(linked_info_health)) {
-                linked_info_health$hash
-              } else {
-                NULL
-              },
-              linked_ind_health_variable_map = if (
-                !is.null(linked_info_health)
-              ) {
-                linked_info_health$variable_map
-              } else {
-                NULL
-              },
-              linked_ind_health_value_map = if (!is.null(linked_info_health)) {
-                linked_info_health$value_map
-              } else {
-                NULL
-              }
-            ),
-            "general" = GeneralDataAnalytics$new(
-              data = df,
-              dap = analysis_config,
-              parent_data_object = self,
-              dataset_name = paste0(self$dataset_name, "_GeneralDataAnalytics"),
-              data_stage_name = stage,
-              data_hash = data_hash,
-              variable_map = variable_map,
-              value_map = value_map,
-              variable_label = self$.variable_label,
-              value_label = self$.value_label
-            ),
-            phr_error(
-              origin = paste0(self$dataset_name, "$generate_data_analytics"),
-              message = phrutils::phr_txt(
-                "Unknown analytics type '{type}' for HouseholdData. Valid types: fsl, wash, health, mortality, general"
-              )
-            )
-          )
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Generated {type} DataAnalytics object for {self$dataset_name}."
-            )
-          )
-
-          return(analytics)
-        },
-        on_error = "warn",
-        origin = paste0(self$dataset_name, "$generate_data_analytics")
-      )
-    }
-  ),
-
-  private = list(
-    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
-    # Should be a two element character vector with the folder and filename.
-    # @keywords internal
-    ..default_variable_schema_filename = c(
-      "resources",
-      "variable_schema_data_household_template.xlsx"
-    ),
-
-    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
-    # Should be a two element character vector with the folder and filename.
-    # @keywords internal
-    ..default_dependency_schema_filename = c(
-      "resources",
-      "dependency_schema_data_household_template.xlsx"
-    ),
-
-    # @field ..value_label Named list of presentation-ready value labels
-    #  for categorical variables (populated by ..map_schema_labels()).
-    # @keywords internal
-    ..default_indicator_schema_filename = c(
-      "resources",
-      "indicator_schema_data_household_template.xlsx",
-    ),
 
     #' Aggregate Linked Dataset Data
     #'
@@ -1290,7 +783,7 @@ HouseholdData <- R6::R6Class(
       result <- phrutils::phr_try(
         {
           # Use linked_objects (inherited from Data class) instead of linked_datasets
-          if (length(self$linked_objects) == 0) {
+          if (length(private$..linked_objects) == 0) {
             return(hh_data)
           }
 
@@ -1299,7 +792,7 @@ HouseholdData <- R6::R6Class(
 
           if (!hh_uuid_col %in% names(hh_data)) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "Household UUID column '{hh_uuid_col}' not found. Cannot aggregate linked data."
               )
@@ -1308,8 +801,8 @@ HouseholdData <- R6::R6Class(
           }
 
           # Process each linked dataset
-          for (link_name in names(self$linked_objects)) {
-            link_info <- self$linked_objects[[link_name]]
+          for (link_name in names(private$..linked_objects)) {
+            link_info <- private$..linked_objects[[link_name]]
             linked_obj <- link_info$object
 
             # Skip if not a Data object
@@ -1324,8 +817,8 @@ HouseholdData <- R6::R6Class(
             )
             if (is.null(linked_data_result)) {
               phrutils::phr_warning(
-                self$dataset_name,
-                phr_txt(
+                private$..dataset_name,
+                phrutils::phr_txt(
                   "Linked dataset '{link_name}' has no data at any stage."
                 )
               )
@@ -1341,14 +834,14 @@ HouseholdData <- R6::R6Class(
             # Determine the household linkage column in the linked dataset
             # Try to find hh_uuid in variable_map first
             linked_hh_col <- linked_obj$get(
-              field = ".variable_map"
+              field = "..variable_map"
             )$hh_uuid %||%
-              linked_obj$get(field = ".variable_map")$household_uuid %||%
+              linked_obj$get(field = "..variable_map")$household_uuid %||%
               "hh_uuid"
 
             if (!linked_hh_col %in% names(linked_data)) {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "Linked dataset '{link_name}' has no household linkage column '{linked_hh_col}'."
                 )
@@ -1433,7 +926,7 @@ HouseholdData <- R6::R6Class(
               hh_data <- agg_result
             } else {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "Aggregation of linked dataset '{link_name}' failed. Skipping this dataset."
                 )
@@ -1444,13 +937,13 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_linked_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_linked_data")
       )
 
       # Ensure we never return NULL - if phr_try returned NULL on error, return original data
       if (is.null(result)) {
         phrutils::phr_warning(
-          self$dataset_name,
+          private$..dataset_name,
           phrutils::phr_txt(
             "Aggregation encountered an error. Returning original household data without aggregated columns."
           )
@@ -1521,7 +1014,7 @@ HouseholdData <- R6::R6Class(
 
           if (length(available_cols) == 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "No canonical death or person_time columns found in linked dataset '{link_name}'."
               )
@@ -1570,8 +1063,8 @@ HouseholdData <- R6::R6Class(
           existing_cols <- intersect(agg_cols_only, names(hh_data))
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
-              self$dataset_name,
-              phr_txt(
+              private$..dataset_name,
+              phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
             )
@@ -1620,7 +1113,7 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_deaths_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_deaths_data")
       )
     },
 
@@ -1674,7 +1167,7 @@ HouseholdData <- R6::R6Class(
               !water_col %in% names(water_data)
           ) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "No water container total liters column found in linked dataset '{link_name}'."
               )
@@ -1705,7 +1198,7 @@ HouseholdData <- R6::R6Class(
           existing_cols <- intersect(agg_cols_only, names(hh_data))
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
@@ -1742,7 +1235,7 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_water_container_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_water_container_data")
       )
     },
 
@@ -1850,7 +1343,7 @@ HouseholdData <- R6::R6Class(
 
           if (length(available_cols) == 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "No canonical roster columns found in linked dataset '{link_name}'. Falling back to basic household_size calculation."
               )
@@ -1906,7 +1399,7 @@ HouseholdData <- R6::R6Class(
           existing_cols <- intersect(agg_cols_only, names(hh_data))
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
@@ -1956,7 +1449,7 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_roster_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_roster_data")
       )
     },
 
@@ -2033,7 +1526,7 @@ HouseholdData <- R6::R6Class(
                 !age_months_col %in% names(nutrition_data)
             ) {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "No canonical nutrition columns or age in months column found in linked dataset '{link_name}'."
                 )
@@ -2073,7 +1566,7 @@ HouseholdData <- R6::R6Class(
           existing_cols <- intersect(agg_cols_only, names(hh_data))
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
@@ -2108,7 +1601,7 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_nutrition_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_nutrition_data")
       )
     },
 
@@ -2158,7 +1651,7 @@ HouseholdData <- R6::R6Class(
           existing_cols <- intersect(agg_cols_only, names(hh_data))
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
@@ -2193,7 +1686,7 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_health_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_health_data")
       )
     },
 
@@ -2244,7 +1737,7 @@ HouseholdData <- R6::R6Class(
           existing_cols <- intersect(agg_cols_only, names(hh_data))
           if (length(existing_cols) > 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "The following columns already exist and will NOT be overwritten: {paste(existing_cols, collapse=', ')}"
               )
@@ -2279,7 +1772,7 @@ HouseholdData <- R6::R6Class(
           return(hh_data)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..aggregate_women_data")
+        origin = paste0(private$..dataset_name, "$..aggregate_women_data")
       )
     },
 
@@ -2342,7 +1835,7 @@ HouseholdData <- R6::R6Class(
           )
           if (is.null(linked_data_result)) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "Linked dataset '{link_name}' has no data at any stage to merge variables to."
               )
@@ -2360,7 +1853,7 @@ HouseholdData <- R6::R6Class(
           hh_data_result <- self$get_data_with_fallback(self, hh_stage)
           if (is.null(hh_data_result)) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "Household data not available at any stage; cannot merge variables to linked dataset '{link_name}'."
               )
@@ -2379,7 +1872,7 @@ HouseholdData <- R6::R6Class(
 
           if (!hh_uuid_col %in% names(hh_data)) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "Household UUID column '{hh_uuid_col}' not found. Cannot merge variables to linked dataset '{link_name}'."
               )
@@ -2400,7 +1893,7 @@ HouseholdData <- R6::R6Class(
 
           if (is.null(linked_hh_col)) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "Linked dataset '{link_name}' has no household linkage column. Tried: {paste(linkage$candidates, collapse=', ')}."
               )
@@ -2500,7 +1993,7 @@ HouseholdData <- R6::R6Class(
 
             if (is.null(stage_hh_col)) {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "Linked dataset '{link_name}' {stage_name} data has no household linkage column. Skipping that stage."
                 )
@@ -2536,7 +2029,7 @@ HouseholdData <- R6::R6Class(
 
           if (length(merged_stages) == 0) {
             phrutils::phr_warning(
-              self$dataset_name,
+              private$..dataset_name,
               phrutils::phr_txt(
                 "No stage of linked dataset '{link_name}' could receive the merged household variables."
               )
@@ -2569,6 +2062,21 @@ HouseholdData <- R6::R6Class(
       )
     },
 
+    # @field ..data_registry List of data object types and associated types
+    # that are allowable for add_linked_object
+    # @keywords internal
+    ..data_registry = function() {
+      list(
+        general = "Data",
+        roster = "IndividualData",
+        deaths = "DeathIndividualData",
+        water_containers = "WaterContainerData",
+        women = "WomenIndividualData",
+        nutrition = "NutritionIndividualData",
+        health = "HealthIndividualData"
+      )
+    },
+
     # @field ..analytics_registry List of analytics objects and types that can be
     # created with generate_data_analytics
     # @keywords internal
@@ -2588,7 +2096,7 @@ HouseholdData <- R6::R6Class(
               data = data,
               dap = analysis_config,
               parent_data_object = parent,
-              dataset_name = paste0(self$dataset_name, "_FSLDataAnalytics"),
+              dataset_name = paste0(private$..dataset_name, "_FSLDataAnalytics"),
               data_stage_name = stage,
               data_hash = parent$get(field = "..metadata", role = "hash_id"),
               variable_map = parent$get(field = "..variable_map"),
@@ -2615,7 +2123,7 @@ HouseholdData <- R6::R6Class(
                 data = data,
                 dap = analysis_config,
                 parent_data_object = parent,
-                dataset_name = paste0(self$dataset_name, "_WASHDataAnalytics"),
+                dataset_name = paste0(private$..dataset_name, "_WASHDataAnalytics"),
                 data_stage_name = stage,
                 data_hash = parent$get(field = "..metadata", role = "hash_id"),
                 variable_map = parent$get(field = "..variable_map"),
@@ -2688,7 +2196,7 @@ HouseholdData <- R6::R6Class(
                 data = data,
                 dap = analysis_config,
                 parent_data_object = parent,
-                dataset_name = paste0(self$dataset_name, "_HealthDataAnalytics"),
+                dataset_name = paste0(private$..dataset_name, "_HealthDataAnalytics"),
                 data_stage_name = stage,
                 data_hash = parent$get(field = "..metadata", role = "hash_id"),
                 variable_map = parent$get(field = "..variable_map"),
@@ -2772,7 +2280,7 @@ HouseholdData <- R6::R6Class(
                 dap = analysis_config,
                 parent_data_object = parent,
                 dataset_name = paste0(
-                  self$dataset_name,
+                  private$..dataset_name,
                   "_MortalityDataAnalytics"
                 ),
                 data_stage_name = stage,

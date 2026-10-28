@@ -89,11 +89,6 @@ Data <- R6::R6Class(
     #   d$set(field = ".variable_map", value = list(...))
     #   d$call(field = "cleaning_log", member = "add_row", ...)
 
-    # Persistence & linkage
-
-    autosave = FALSE, # If TRUE, snapshot on key steps
-    linked_objects = list(), # For dependency linking (name -> list(obj, by_self, by_other))
-
     #' @description
     #' Initialize a new Data object with survey data
     #'
@@ -501,7 +496,7 @@ Data <- R6::R6Class(
 
           df <- self$get_data(stage)
 
-          self$pre_validate()
+          private$..pre_validate()
 
           # Core checks
           phrutils::phr_validate_dataframe(
@@ -654,7 +649,7 @@ Data <- R6::R6Class(
 
           # POST VALIDATION
 
-          pv <- self$post_validate(df)
+          pv <- private$..post_validate(df)
 
           # Combine everything
           validated <- (!had_warnings) && pv
@@ -671,27 +666,6 @@ Data <- R6::R6Class(
       invisible(private$..validated)
     },
 
-    #' Pre-validation Hook
-    #'
-    #' @description
-    #' Hook method called before validation begins. Override in subclasses for custom pre-validation logic.
-    #'
-    #' @return NULL (default implementation does nothing)
-    pre_validate = function() {}, # subclass hook
-
-    #' Post-validation Hook
-    #'
-    #' @description
-    #' Hook method called after core validation completes. Override in subclasses for additional validation.
-    #'
-    #' @param df Data frame that was validated
-    #'
-    #' @return Logical indicating validation success (TRUE by default)
-    post_validate = function(df) {
-      # Default: no additional post-validation in base class
-      return(TRUE)
-    },
-
     # Standardize (adds type coercion helper)
 
     #' Standardize Data
@@ -699,7 +673,6 @@ Data <- R6::R6Class(
     #' @description
     #' Standardizes column names, types, and values according to variable schema and mappings
     #'
-    #' @param skip Character vector of standardization steps to skip (currently unused placeholder)
     #' @param stage Character string specifying source stage: "clean", "standardized", or "raw" (default: "clean")
     #'
     #' @return Invisible self for method chaining
@@ -714,111 +687,181 @@ Data <- R6::R6Class(
     #' 6. Calls post_standardize() and post_standardize_domain() hooks
     #' 7. Updates metadata and sets standardized flag
     standardize = function(
-      skip = c(
-        # "start", "end"
-      ),
       stage = c("clean", "standardized", "raw")
     ) {
       stage <- match.arg(stage)
 
       phrutils::phr_try(
         {
-          # Ensure raw_data exists
+          # Step 1: Ensure raw_data exists and validation
           result <- phrutils::phr_try_step(
             {
-              if (is.null(private$..raw_data)) {
-                phrutils::phr_error(
-                  "Raw data is NULL; cannot standardize.",
-                  origin = paste0(private$..dataset_name, "$standardize"),
-                  hint = phrutils::phr_txt("Raw dataset has been removed or corrupted. Reinitialize the Data object.")
-                )
-              }
+              private$..standardize_check_prerequisites()
             },
-            step = "Check raw data",
-            hint = phrutils::phr_txt(
-              "Ensure raw data exists before standardization"
-            )
+            step = phrutils::phr_txt("Check raw data"),
+            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
           }
 
-          # Run validation to ensure data is validated before standardization
+          # Step 2: Run pre_standardize hook
+
           result <- phrutils::phr_try_step(
             {
-              self$validate()
-
-              if (!private$..validated) {
-                phrutils::phr_warning(
-                  private$..dataset_name,
-                  phrutils::phr_txt(
-                    "Data validation failed. Proceed with standardization with caution."
-                  )
-                )
-              }
+              private$..pre_standardize(stage = stage)
             },
-            step = "Validation",
-            hint = phrutils::phr_txt(
-              "Check data structure and required columns"
-            )
+            step = phrutils::phr_txt("Pre-standardize hook"),
+            hint = phrutils::phr_txt("Subclass-specific setup before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
           }
 
-          # Run pre-standardize hook (subclass extension point)
-          result <- phrutils::phr_try_step(
-            {
-              self$pre_standardize(stage = stage)
-            },
-            step = "Pre-standardize hook",
-            hint = phrutils::phr_txt(
-              "Subclass-specific setup before standardization"
-            )
-          )
-          if (phrutils::phr_failed(result)) {
-            return(result)
-          }
-
+          # Step 3: Initial map schema vars and labels
           # Update variable and value maps after pre_standardize
-          # (in case pre_standardize added new columns or values)
+          # (Done now in case pre_standardize added new columns or values)
+
           result <- phrutils::phr_try_step(
             {
               private$..map_schema_vars(stage = "raw")
               private$..map_schema_labels()
             },
-            step = "Map schema variables",
-            hint = phrutils::phr_txt(
-              "Auto-map schema variables to dataset columns"
-            )
+            step = phrutils::phr_txt("Map schema variables"),
+            hint = phrutils::phr_txt("Auto-map schema variables to dataset columns")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
           }
 
-          phrutils::phr_message(phrutils::phr_txt(
-            "Standardizing {private$..dataset_name}..."
-          ))
+          # Step 4: Setup for main standardize
 
-          data_copy <- private$..raw_data
-          sch <- private$..as_variable_schema_list() %||% list()
+          result <- phrutils::phr_try_step(
+            {
 
-          # normalize skip vector
-          skip <- intersect(skip, names(data_copy))
+              phrutils::phr_message(phrutils::phr_txt("Standardizing {private$..dataset_name}..."))
+              data_copy <- private$..raw_data
+              sch <- private$..variable_schema %||% data.frame()
+              # reset other-columns tracker
+              private$..other_columns <- list()
+              var_schema <- private$..variable_schema #names(sch$types %||% list())
 
-          # reset other-columns tracker
-          private$..other_columns <- list()
+              other_col_patterns <- c(
+                "_other_text$",
+                "_other_specify$",
+                "_other_value$",
+                "_autre$",
+                "_other$"
+              )
 
-          schema_cols <- names(sch$types %||% list())
+            },
+            step = phrutils::phr_txt("Setup of main standardize process"),
+            hint = phrutils::phr_txt("")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          # Step 5-7: For Loop - Schema type conversion and inferred other column registration
+
+          result <- phrutils::phr_try_step(
+            {
+              for (nm in names(data_copy)) {
+
+                col <- data_copy[[nm]]
+                origin_tag <- paste0(private$..dataset_name, "$standardize$", nm)
+
+                # (a) SCHEMA TYPE CONVERSION
+                type_result <- private$..standardize_type_conversion(
+                  nm = nm,
+                  col = col,
+                  schema = var_schema)
+
+                if (type_result$schema_match) {
+                  data_copy[[nm]] <- type_result$value
+                  next
+                }
+
+                # (b) INFERENCE-BASED COERCION (non-schema columns only)
+                new <- private$..standardize_inference_conversion(
+                      nm = nm,
+                      col = col
+                    )
+
+                data_copy[[nm]] <- new
+
+                # (c) DETECT LIKELY "OTHER" COLUMNS and REGISTER (non-schema columns only)
+
+                private$..standardize_register_inferred_other_column(
+                  nm = nm,
+                  col = new,
+                  data = data_copy
+                )
+              }
+            },
+            step = phrutils::phr_txt("Column type conversions"),
+            hint = phrutils::phr_txt("Check expected types in the variable schema vs. what is in the target dataset column {nm}.")
+            )
+            if (phrutils::phr_failed(result)) {
+              return(result)
+            }
+
+          # Step 8: Process Select Multiple Column handling (incl. select multiple related other columns)
+
+          result <- phrutils::phr_try_step(
+            {
+
+                # (d) PROCESS SELECT_MULTIPLE COLUMNS
+                data_copy <- private$..standardize_process_select_multiple_columns(
+                  data = data_copy,
+                  schema = var_schema
+                )
+            },
+            step = phrutils::phr_txt("Process select_multiple columns"),
+            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          # Step 9: Register Schema Identified Other Columns, if not already added
+          result <- phrutils::phr_try_step(
+            {
+              private$..register_schema_other_columns(
+                data = data_copy,
+                schema = variable_schema
+              )
+
+            },
+            step = phrutils::phr_txt("Process select_multiple columns"),
+            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+
+
+
+
+          # (e) ADD SCHEMA-IDENTIFIED "OTHER" COLUMNS
+
+
+
+
+
+          # (e.1) Process indicator schema (if present) - BEFORE assigning standardized data
+
+          # (e.2) GENERATE cluster_id_numeric FROM cluster_id
+
+
+
+
 
           # ---- iterate over each column with type coercion
           result <- phrutils::phr_try_step(
             {
               for (nm in names(data_copy)) {
-                # skip designated columns entirely
-                if (nm %in% skip) {
-                  next
-                }
 
                 col <- data_copy[[nm]]
                 origin_tag <- paste0(private$..dataset_name, "$standardize$", nm)
@@ -975,6 +1018,9 @@ Data <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+
+
 
           # (e) PROCESS SELECT_MULTIPLE COLUMNS
           # If schema has question_types with select_multiple, expand those columns
@@ -1590,7 +1636,7 @@ Data <- R6::R6Class(
           # (g) Subclass extension hook
           result <- phrutils::phr_try_step(
             {
-              self$post_standardize()
+              private$..post_standardize()
             },
             step = "Post-standardize hook",
             hint = phrutils::phr_txt(
@@ -1620,24 +1666,6 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Pre-standardization Hook
-    #'
-    #' @description
-    #' Hook method called before standardization begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
-    pre_standardize = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
-
-    #' Post-standardization Hook
-    #'
-    #' @description
-    #' Hook method called after standardization completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
-    post_standardize = function() {}, # subclass hook
-
     # Cleaning & Deletion Logs
 
     #' @description
@@ -1665,7 +1693,7 @@ Data <- R6::R6Class(
             )
           }
 
-          self$pre_generate_cleaning_log(stage = stage)
+          private$..pre_generate_cleaning_log(stage = stage)
 
           # Warns on no quality flags
           if (is.null(private$..data_quality_flags)) {
@@ -2035,7 +2063,7 @@ Data <- R6::R6Class(
             }
           }
 
-          self$post_generate_cleaning_log(stage = stage)
+          private$..post_generate_cleaning_log(stage = stage)
 
           invisible(private$..cleaning_log)
         },
@@ -2044,25 +2072,7 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Pre-generate cleaning log Hook
-    #'
-    #' @description
-    #' Hook method called before generate_cleaning_log begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
-    pre_generate_cleaning_log = function(
-      stage = c("clean", "standardized", "raw")
-    ) {}, # subclass hook - called before standardization begins
 
-    #' Post-generate cleaning log Hook
-    #'
-    #' @description
-    #' Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
-    post_generate_cleaning_log = function() {}, # subclass hook
 
     # Cleaning
 
@@ -2149,7 +2159,7 @@ Data <- R6::R6Class(
           }
 
           # Run any specified sub class pre cleaning
-          self$pre_clean()
+          private$..pre_clean()
 
           # VALIDATE & APPLY CLEANING LOG
 
@@ -2208,7 +2218,7 @@ Data <- R6::R6Class(
 
           # FINALIZE
 
-          self$post_clean()
+          private$..post_clean()
 
           private$..cleaned <- TRUE
 
@@ -2227,23 +2237,7 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Pre-clean Hook
-    #'
-    #' @description
-    #' Hook method called before clean begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
-    pre_clean = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
 
-    #' Post-clean Hook
-    #'
-    #' @description
-    #' Hook method called after clean completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
-    post_clean = function() {}, # subclass hook
 
     # Schema diagnostics
 
@@ -2629,7 +2623,21 @@ Data <- R6::R6Class(
           phrutils::phr_txt("Link 'name' must be a single character string.")
         )
       }
-      self$linked_objects[[name]] <- list(
+
+      allowed <- private$..data_registry
+      nms_allowed <- names(allowed)
+
+      if(!(name %in% nms_allowed)) {
+        phrutils::phr_error(message = phrutils::phr_txt("The name '{name}' is not in the allowed list of data object types to link to this Data object. Allowed types include: {nms_allowed} "))
+      }
+
+      exp_class <- allowed[[name]]
+
+      if(!inherits(x = other_object, what = allowed[[name]])) {
+        phrutils::phr_error(message = phrutils::phr_txt("The object does not match the expected class for the allowed data type to link to this Data object. For '{name} was expecting an object of class {exp_class}."))
+      }
+
+      private$..linked_objects[[name]] <- list(
         object = other_object,
         by_self_role = by_self_role,
         by_other_role = by_other_role
@@ -2831,6 +2839,20 @@ Data <- R6::R6Class(
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
+    # @field ..linked_objects list of Data class or subclass objects linked
+    #   to this data object.
+    # @keywords internal
+    ..linked_objects = list(), # For dependency linking (name -> list(obj, by_self, by_other))
+
+    # @field ..data_registry List of data object types and associated types
+    # that are allowable for add_linked_object
+    # @keywords internal
+    ..data_registry = function() {
+      list(
+        general = "Data"
+      )
+    },
+
     # @field ..analytics_registry List of analytics objects and types that can be
     # created with generate_data_analytics
     # @keywords internal
@@ -3010,6 +3032,669 @@ Data <- R6::R6Class(
         )
       )
     },
+
+    #' Pre-validation Hook
+    #'
+    #' @description
+    #' Hook method called before validation begins. Override in subclasses for custom pre-validation logic.
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..pre_validate = function() {}, # subclass hook
+
+    #' Post-validation Hook
+    #'
+    #' @description
+    #' Hook method called after core validation completes. Override in subclasses for additional validation.
+    #'
+    #' @param df Data frame that was validated
+    #'
+    #' @return Logical indicating validation success (TRUE by default)
+    ..post_validate = function(df) {
+      # Default: no additional post-validation in base class
+      return(TRUE)
+    },
+
+    #' Check Standardization Preconditions
+    #'
+    #' @description
+    #' Ensures that the dataset is in a valid state for standardization.
+    #' Currently verifies that raw data exists.
+    #'
+    #' @return A `phr_try_step()` result object.
+    ..standardize_check_prerequisites = function() {
+
+      phrutils::phr_try({
+
+        # Step 1: Ensure raw_data exists
+        result <- phrutils::phr_try_step(
+          {
+            if (is.null(private$..raw_data)) {
+              phrutils::phr_error(
+                phrutils::phr_txt("Raw data is NULL; cannot standardize."),
+                origin = paste0(private$..dataset_name, "$standardize"),
+                hint = phrutils::phr_txt("Raw dataset has been removed or corrupted. Reinitialize the Data object.")
+              )
+            }
+          },
+          step = phrutils::phr_txt("Check raw data"),
+          hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+        # Run validation to ensure data is validated before standardization
+        result <- phrutils::phr_try_step(
+          {
+            self$validate()
+
+            if (!private$..validated) {
+              phrutils::phr_warning(
+                private$..dataset_name,
+                phrutils::phr_txt(
+                  "Data validation failed. Proceed with standardization with caution."
+                )
+              )
+            }
+          },
+          step = "Validation",
+          hint = phrutils::phr_txt(
+            "Check data structure and required columns"
+          )
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+      })
+
+      result
+    },
+
+    #' Standardize Column Type from Schema
+    #'
+    #' @description
+    #' Applies schema-defined type conversion to a column when a matching
+    #' variable and type are present in the variable schema.
+    #'
+    #' @param nm Column name.
+    #' @param col Column values.
+    #' @param schema Data frame containing `variable` and `type` columns.
+    #'
+    #' @return A list containing `handled` and `value`.
+    ..standardize_type_conversion = function(nm, col, schema, variable_map) {
+
+
+      canonical_name <- private$..get_canonical_variable(
+        dataset_variable = nm,
+        variable_map = variable_map
+      )
+
+      if (is.null(canonical_name)) {
+        return(list(
+          schema_match = FALSE,
+          value = col
+        ))
+      }
+
+      schema_row <- schema[
+        schema$variable == canonical_name,
+        ,
+        drop = FALSE
+      ]
+
+      if (nrow(schema_row) == 0) {
+        return(list(
+          handled = FALSE,
+          value = col
+        ))
+      }
+
+      want <- schema_row$type[[1]]
+
+      if (phrutils::is_safely_coercible(col, want)) {
+
+        # numeric
+        if (want == "numeric") {
+          new <- suppressWarnings(as.numeric(col))
+
+          # character
+        } else if (want == "character") {
+          new <- trimws(as.character(col))
+
+          # logical (explicit TRUE and FALSE mapping)
+        } else if (want == "logical") {
+          lc <- tolower(trimws(as.character(col)))
+          true_vals <- c("true", "t", "yes", "y", "1")
+          false_vals <- c("false", "f", "no", "n", "0")
+
+          new <- ifelse(
+            lc %in% true_vals,
+            TRUE,
+            ifelse(lc %in% false_vals, FALSE, NA)
+          )
+
+          # date
+        } else if (want == "date") {
+          new <- phrutils::phr_convert_date(col)
+
+          # datetime
+        } else if (want == "datetime") {
+          new <- phrutils::phr_convert_datetime(col)
+
+          # fallback
+        } else {
+          new <- trimws(as.character(col))
+        }
+
+        return(list(
+          handled = TRUE,
+          value = new
+        ))
+
+      } else {
+
+        phrutils::phr_warning(
+          private$..dataset_name,
+          phrutils::phr_txt(
+            "Column '{nm}' cannot be safely coerced to schema type '{want}'. Leaving as-is."
+          )
+        )
+
+        return(list(
+          handled = TRUE,
+          value = col
+        ))
+      }
+    },
+
+    #' Standardize Column Using Type Inference
+    #'
+    #' @description
+    #' Infers a column type and applies appropriate type coercion.
+    #'
+    #' @param nm Column name.
+    #' @param col Column values.
+    #'
+    #' @return A standardized column vector.
+    ..standardize_inference_conversion = function(nm, col) {
+
+      inferred <- tryCatch(
+        phrutils::phr_infer_column_type(col, name = nm),
+        error = function(e) "character"
+      )
+
+      # numeric
+      if (
+        identical(inferred, "numeric") &&
+        phrutils::is_safely_coercible(col, "numeric")
+      ) {
+
+        new <- suppressWarnings(as.numeric(col))
+
+        # logical
+      } else if (
+        identical(inferred, "logical") &&
+        phrutils::is_safely_coercible(col, "logical")
+      ) {
+
+        lc <- tolower(trimws(as.character(col)))
+
+        true_vals <- c("true", "t", "yes", "y", "1")
+        false_vals <- c("false", "f", "no", "n", "0")
+
+        new <- ifelse(
+          lc %in% true_vals,
+          TRUE,
+          ifelse(lc %in% false_vals, FALSE, NA)
+        )
+
+        # date
+      } else if (
+        identical(inferred, "date") &&
+        phrutils::is_safely_coercible(col, "Date")
+      ) {
+
+        new <- phrutils::phr_convert_date(col)
+
+        # fallback -> character
+      } else {
+
+        new <- trimws(as.character(col))
+
+      }
+
+      new
+
+    },
+
+    #' Register Inferred Other Column
+    #'
+    #' @description
+    #' Detects and registers likely "other" text columns based on
+    #' common naming patterns.
+    #'
+    #' @param nm Column name.
+    #' @param col Standardized column values.
+    #' @param data Dataset.
+    #'
+    #' @return Invisibly registers entries in `..other_columns`.
+    ..standardize_register_inferred_other_column = function(
+    nm,
+    col,
+    data
+    ) {
+
+      # Check if column name matches "other" patterns
+      # Common patterns: var_other_text -> var, var_other -> var
+
+      base_patterns <- c(
+        "_other_text$",
+        "_other_specify$",
+        "_other_value$",
+        "_autre$",
+        "_other$"
+      )
+
+      matches_other_pattern <- FALSE
+      inferred_links <- character(0)
+
+      for (pattern in base_patterns) {
+
+        if (grepl(pattern, nm)) {
+
+          matches_other_pattern <- TRUE
+
+          base_name <- sub(pattern, "", nm)
+
+          if (base_name %in% names(data)) {
+            inferred_links <- c(inferred_links, base_name)
+          }
+
+          break
+        }
+      }
+
+      # Only consider as "other" column if:
+      # 1. Column name matches an "other" pattern
+      # 2. Column is not numeric
+      # 3. Has at least one non-blank value
+
+      if (matches_other_pattern) {
+
+        is_numeric_col <- is.numeric(col)
+
+        blank_pct <- mean(is.na(col) | col == "")
+        uniq_n <- length(unique(col[!is.na(col) & col != ""]))
+
+        if (!is_numeric_col && uniq_n > 0) {
+
+          self$set(
+            field = "..other_columns",
+            role = nm,
+            value = list(
+              other_column = nm,
+              other_linked_columns = inferred_links
+            )
+          )
+
+        }
+      }
+
+    },
+
+    #' Process Select Multiple Columns
+    #'
+    #' @description
+    #' Expands select_multiple variables and registers any associated
+    #' "other" response columns.
+    #'
+    #' @param data Dataset.
+    #' @param schema Variable schema.
+    #'
+    #' @return Modified dataset.
+    ..standardize_process_select_multiple_columns = function(
+    data,
+    schema
+    ) {
+
+      result <- phrutils::phr_try_step(
+        {
+          if (
+            !is.null(sch$question_types) && length(sch$question_types) > 0
+          ) {
+            sm_result <- private$..process_select_multiple_columns(data, schema)
+
+            if (length(sm_result$expanded_columns) > 0) {
+              phrutils::phr_message(
+                phrutils::phr_txt(
+                  "Expanded {length(sm_result$expanded_columns)} dummy columns from select_multiple questions."
+                )
+              )
+            }
+
+            # Track "other" related columns from select_multiple
+            if (length(sm_result$other_related_columns) > 0) {
+              for (var_info in sm_result$other_related_columns) {
+                # For select_multiple with "other", create entry with text column as main
+                # and dummy + original select_multiple as linked columns
+
+                text_col <- var_info$text_other_column
+
+                # If there's a text column, use it as the main other_column
+                if (!is.null(text_col) && text_col != "") {
+                  linked_cols <- c(var_info$original_column)
+                  if (!is.null(var_info$dummy_other_column)) {
+                    linked_cols <- c(
+                      linked_cols,
+                      var_info$dummy_other_column
+                    )
+                  }
+
+                  self$set(
+                    field = "..other_columns",
+                    role = text_col,
+                    value = list(
+                      other_column = text_col,
+                      other_linked_columns = linked_cols
+                    )
+                  )
+                } else {
+                  # If no text column, use dummy column as main with original as linked
+                  dummy_col <- var_info$dummy_other_column
+                  if (!is.null(dummy_col)) {
+                    self$set(
+                      field = "..other_columns",
+                      role = dummy_col,
+                      value = list(
+                        other_column = dummy_col,
+                        other_linked_columns = c(var_info$original_column)
+                      )
+                    )
+                  }
+                }
+              }
+
+              phrutils::phr_message(
+                phrutils::phr_txt(
+                  "Tracked {length(sm_result$other_related_columns)} select_multiple column(s) with 'other' responses."
+                )
+              )
+            }
+
+            # Return the modified data
+            sm_result$data
+          } else {
+            # No select_multiple columns to process
+            data_copy
+          }
+        },
+        step = "Process select_multiple columns",
+        hint = phrutils::phr_txt(
+          "Check select_multiple schema and expansion logic"
+        )
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+    },
+
+    #' Identify and expand all select_multiple columns in a dataset
+    #'
+    #' @description
+    #' Helper function that processes a dataset based on schema question_types,
+    #' identifying select_multiple columns and expanding them into dummy variables.
+    #'
+    #' @param data A data frame to process
+    #' @param schema A schema list with question_types field (can be NULL or without
+    #'   question_types, in which case the function returns the original data unchanged)
+    #'
+    #' @return A list with 'data' (modified data frame), 'expanded_columns' (character
+    #'   vector of new column names), and 'other_related_columns' (list tracking columns
+    #'   related to "other" responses in select_multiple questions)
+    #'
+    #' @keywords internal
+    ..process_select_multiple_columns <- function(data, schema) {
+      result <- list(
+        data = data,
+        expanded_columns = character(0),
+        other_related_columns = list()
+      )
+
+      # Check if schema has question_types
+      if (
+        is.null(schema) ||
+        is.null(schema$question_types) ||
+        length(schema$question_types) == 0
+      ) {
+        return(result)
+      }
+
+      # Find select_multiple columns
+      question_types <- schema$question_types
+      select_mult_vars <- names(question_types)[question_types == "select_multiple"]
+
+      if (length(select_mult_vars) == 0) {
+        return(result)
+      }
+
+      # Process each select_multiple column
+      for (var in select_mult_vars) {
+        if (var %in% names(data)) {
+          # Expand the column
+          dummy_df <- expand_select_multiple(data[[var]], var)
+
+          if (ncol(dummy_df) > 0) {
+            # Add dummy columns to the data
+            result$data <- cbind(result$data, dummy_df)
+            result$expanded_columns <- c(
+              result$expanded_columns,
+              colnames(dummy_df)
+            )
+
+            # Check if "other" is one of the values in this select_multiple
+            other_dummy_col <- paste0(var, ".other")
+            if (other_dummy_col %in% colnames(dummy_df)) {
+              # Look for a corresponding open text "other" column
+              # Common naming patterns: var_other_text, var_other_specify, var_other_value
+              potential_other_text_cols <- c(
+                paste0(var, "_other_text"),
+                paste0(var, "_other_specify"),
+                paste0(var, "_other"),
+                paste0(var, "_autre"),
+                paste0(var, "_text")
+              )
+
+              # Find which one exists in the data
+              other_text_col <- NULL
+              for (potential_col in potential_other_text_cols) {
+                if (potential_col %in% names(result$data)) {
+                  other_text_col <- potential_col
+                  break
+                }
+              }
+
+              # Track all three columns related to "other" response
+              result$other_related_columns[[var]] <- list(
+                original_column = var,
+                dummy_other_column = other_dummy_col,
+                text_other_column = other_text_col # May be NULL if not found
+              )
+            }
+          }
+        }
+      }
+
+      return(result)
+    },
+
+    #' Register Schema Other Columns
+    #'
+    #' @description
+    #' Registers columns identified as "other" in the variable schema.
+    #'
+    #' @param data Dataset.
+    #' @param schema Variable schema.
+    #'
+    #' @return Invisibly updates `..other_columns`.
+    ..standardize_register_schema_other_columns = function(
+    data,
+    schema
+    ) {
+
+      if ("is_other" %in% names(schema)) {
+
+        schema_other_rows <- schema[
+          !is.na(schema$is_other) & schema$is_other,
+          ,
+          drop = FALSE
+        ]
+
+        # Only include columns that exist in the dataset
+        schema_other_rows <- schema_other_rows[
+          schema_other_rows$variable %in% names(data),
+          ,
+          drop = FALSE
+        ]
+
+        if (nrow(schema_other_rows) > 0) {
+
+          for (i in seq_len(nrow(schema_other_rows))) {
+
+            col <- schema_other_rows$variable[[i]]
+
+            # Skip if already added by inference or select_multiple processing
+            if (col %in% names(private$..other_columns)) {
+              next
+            }
+
+            # Get linked columns from schema if available
+            linked_cols <- character(0)
+
+            if (
+              "other_column_link" %in% names(schema_other_rows) &&
+              !is.na(schema_other_rows$other_column_link[[i]]) &&
+              schema_other_rows$other_column_link[[i]] != ""
+            ) {
+
+              linked_cols <- schema_other_rows$other_column_link[[i]]
+
+              # Handle list-column or scalar value
+              if (!is.character(linked_cols)) {
+                linked_cols <- unlist(linked_cols, use.names = FALSE)
+              }
+
+              # Ensure linked columns exist in dataset
+              linked_cols <- linked_cols[
+                linked_cols %in% names(data)
+              ]
+            }
+
+            self$set(
+              field = "..other_columns",
+              role = col,
+              value = list(
+                other_column = col,
+                other_linked_columns = linked_cols
+                )
+              )
+            }
+
+            phrutils::phr_message(
+              phrutils::phr_txt(
+                "Added {nrow(schema_other_rows)} schema-identified 'other' columns."
+              )
+            )
+
+          }
+        }
+
+      },
+
+
+    #' Pre-standardization Hook
+    #'
+    #' @description
+    #' Hook method called before standardization begins. Override in subclasses for custom pre-processing.
+    #'
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..pre_standardize = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
+
+    #' Post-standardization Hook
+    #'
+    #' @description
+    #' Hook method called after standardization completes. Override in subclasses for custom post-processing.
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..post_standardize = function() {}, # subclass hook
+
+    #' Resolve Canonical Variable Name
+    #'
+    #' @description
+    #' Resolves a dataset column name to its canonical variable name
+    #' using the variable map.
+    #'
+    #' @param dataset_variable Dataset column name.
+    #' @param variable_map Named list of canonical-to-dataset mappings.
+    #'
+    #' @return Character scalar containing the canonical variable name,
+    #' or `NULL` if no mapping exists.
+    ..get_canonical_variable = function(
+    dataset_variable,
+    variable_map
+    ) {
+
+      matches <- names(variable_map)[
+        unlist(variable_map, use.names = FALSE) == dataset_variable
+      ]
+
+      if (length(matches) == 0) {
+        return(NULL)
+      }
+
+      matches[[1]]
+
+    },
+
+    #' Pre-generate cleaning log Hook
+    #'
+    #' @description
+    #' Hook method called before generate_cleaning_log begins. Override in subclasses for custom pre-processing.
+    #'
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..pre_generate_cleaning_log = function(
+    stage = c("clean", "standardized", "raw")
+    ) {}, # subclass hook - called before standardization begins
+
+    #' Post-generate cleaning log Hook
+    #'
+    #' @description
+    #' Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..post_generate_cleaning_log = function() {}, # subclass hook
+
+    #' Pre-clean Hook
+    #'
+    #' @description
+    #' Hook method called before clean begins. Override in subclasses for custom pre-processing.
+    #'
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..pre_clean = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
+
+    #' Post-clean Hook
+    #'
+    #' @description
+    #' Hook method called after clean completes. Override in subclasses for custom post-processing.
+    #'
+    #' @return NULL (default implementation does nothing)
+    ..post_clean = function() {}, # subclass hook
 
     #' Run Data Quality Checks
     #'

@@ -24,10 +24,7 @@ IndividualData <- R6::R6Class(
 
   public = list(
 
-    # Additional fields
 
-    household_link   = NULL,  # linkage back to HouseholdData (optional)
-    optional_columns = NULL,
 
     #' @description
     #' Creates a new IndividualData object with person-level survey data
@@ -89,7 +86,7 @@ IndividualData <- R6::R6Class(
         private$..required_columns <- unique(c(private$..required_columns, ind_required))
 
         # Optional (mapped) columns
-        self$optional_columns <- c(
+        private$..optional_columns <- c(
           private$..variable_map$est_dob,
           private$..variable_map$exact_dob,
           private$..variable_map$age_months,
@@ -106,7 +103,40 @@ IndividualData <- R6::R6Class(
         phrutils::phr_message(phrutils::phr_txt("{dataset_name} initialized as IndividualData object."))
 
       }, on_error = "abort", origin = "IndividualData$initialize")
-    },
+    }
+
+  ),
+
+  private = list(
+
+    # Additional fields
+
+    ..household_link   = NULL,  # linkage back to HouseholdData (optional)
+    ..optional_columns = NULL,
+
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_individual_roster_template.xlsx"
+    ),
+
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_individual_roster_template.xlsx"
+    ),
+
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_individual_roster_template.xlsx",
+    ),
 
     #' Post-Validation Hook for Individual Data
     #'
@@ -122,9 +152,9 @@ IndividualData <- R6::R6Class(
     #' * Household linkage validation (informational - duplicate hh_uuid expected for multi-member households)
     #' * Age validation (checks for negative ages)
     #' * Optional household link integrity check if household_link field is set
-    post_validate = function(df = NULL) {
+    ..post_validate = function(df = NULL) {
 
-      nm <- self$dataset_name
+      nm <- private$..dataset_name
 
       # Track whether any issues occurred
       had_issues <- FALSE
@@ -154,45 +184,17 @@ IndividualData <- R6::R6Class(
         }
 
         # Optional link integrity check
-        if (!is.null(self$household_link)) {
+        if (!is.null(private$..household_link)) {
           phrutils::phr_message(phrutils::phr_txt("Validating linked HouseholdData (placeholder)."))
         }
 
         phrutils::phr_message(phrutils::phr_txt("Post-validation for {nm} complete."))
 
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$post_validate"))
+      }, on_error = "warn", origin = paste0(private$..dataset_name, "$post_validate"))
 
       # Return TRUE (good) or FALSE (warnings occurred)
       return(!had_issues)
-    }
-
-  ),
-
-  private = list(
-
-    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
-    # Should be a two element character vector with the folder and filename.
-    # @keywords internal
-    ..default_variable_schema_filename = c(
-      "resources",
-      "variable_schema_data_individual_roster_template.xlsx"
-    ),
-
-    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
-    # Should be a two element character vector with the folder and filename.
-    # @keywords internal
-    ..default_dependency_schema_filename = c(
-      "resources",
-      "dependency_schema_data_individual_roster_template.xlsx"
-    ),
-
-    # @field ..value_label Named list of presentation-ready value labels
-    #  for categorical variables (populated by ..map_schema_labels()).
-    # @keywords internal
-    ..default_indicator_schema_filename = c(
-      "resources",
-      "indicator_schema_data_individual_roster_template.xlsx",
-    ),
+    },
 
     ..analytics_registry = function() {
 
@@ -210,7 +212,7 @@ IndividualData <- R6::R6Class(
               data = data,
               dap = analysis_config,
               parent_data_object = parent,
-              dataset_name = paste0(self$dataset_name, "_DemographicsDataAnalytics"),
+              dataset_name = paste0(private$..dataset_name, "_DemographicsDataAnalytics"),
               data_stage_name = stage,
               data_hash = parent$get(field = "..metadata", role = "hash_id"),
               variable_map = parent$get(field = "..variable_map"),

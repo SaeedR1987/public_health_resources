@@ -265,12 +265,12 @@ DataAnalytics <- R6::R6Class(
     run_quality_checks = function() {
       phrutils::phr_try(
         {
-          sets <- self$pre_run_quality_checks()
+          sets <- private$..pre_run_quality_checks()
 
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
-              message = "pre_run_quality_checks() returned no input sets.",
-              origin = self$dataset_name
+              message = "..pre_run_quality_checks() returned no input sets.",
+              origin = private$..dataset_name
             )
             return(invisible(list()))
           }
@@ -288,7 +288,7 @@ DataAnalytics <- R6::R6Class(
               paste0("set_", i)
             }
             inputs <- private$..resolve_field_set(sets[[i]])
-            results <- private$.run_quality_checks_for_set(
+            results <- private$..run_quality_checks_for_set(
               inputs = inputs,
               set_role = set_role,
               nested = nested
@@ -304,64 +304,38 @@ DataAnalytics <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phrutils::phr_txt(glue::glue(
-              "Ran {length(combined_results)} quality checks for {self$dataset_name}."
-            ))
+            phrutils::phr_txt(
+              "Ran {length(combined_results)} quality checks for {private$..dataset_name}."
+            )
           )
 
           invisible(self$plausibility_results)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$run_quality_checks")
+        origin = paste0(private$..dataset_name, "$run_quality_checks")
       )
     },
 
     # Quality Checks
 
-    #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{quality_schema},
-    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
-    #' fields. Subclasses that hold multiple datasets or quality schemas can
-    #' override this method to return one entry per dataset/schema. Each entry
-    #' must be a named list whose elements give the names of the public fields
-    #' holding the respective inputs.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), quality results are stored under the set's role name in
-    #' \code{plausibility_results} and penalty tables under
-    #' \code{tables[[role]][["plausibility"]]}.
-    #'
-    #' @return A named list of field sets.
-    pre_run_quality_checks = function() {
-      list(
-        main = list(
-          data = "data",
-          quality_schema = "quality_schema",
-          base_survey_design = "base_survey_design",
-          survey_design = "survey_design",
-          variable_map = "variable_map"
-        )
-      )
-    },
+
 
     # Diagnose Methods
 
     #' @description
     #' Diagnose issues in the quality schema against the current dataset.
     #'
-    #' For every check defined in \code{self$quality_schema}, this method
-    #' verifies that (a) the required variables exist in \code{self$data},
+    #' For every check defined in \code{private$..quality_schema}, this method
+    #' verifies that (a) the required variables exist in \code{private$..data},
     #' (b) the statistical test function can be found, and (c) each
     #' threshold expression is syntactically valid. The results mirror the
     #' flat quality schema table and add a \code{status} column ("ok" or a
     #' description of the issue).  Results are stored in
-    #' \code{self$quality_issues_log}.
+    #' \code{private$..quality_issues_log}.
     #'
     #' @return A tibble (invisibly) with one row per quality check.
     quality_diagnose = function() {
-      origin <- paste0(self$dataset_name, "DataAnalytics$quality_diagnose")
+      origin <- paste0(private$..dataset_name, "DataAnalytics$quality_diagnose")
 
       phrutils::phr_try(
         {
@@ -542,11 +516,11 @@ DataAnalytics <- R6::R6Class(
             )
           }
 
-          self$quality_issues_log <- result
+          private$..quality_issues_log <- result
 
           n_issues <- sum(result$status != "ok", na.rm = TRUE)
           phrutils::phr_message(phrutils::phr_txt(
-            "quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {self$dataset_name}."
+            "quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}."
           ))
 
           invisible(result)
@@ -565,11 +539,11 @@ DataAnalytics <- R6::R6Class(
     #' exist in the dataset (or survey design), and that the \code{calculation}
     #' type is valid. The results mirror the analysis plan tibble and add
     #' diagnostic columns. Results are stored in
-    #' \code{self$analysis_plan_issues_log}.
+    #' \code{private$..analysis_plan_issues_log}.
     #'
     #' @return A tibble (invisibly) with one row per analysis plan indicator.
     analysis_diagnose = function() {
-      origin <- paste0(self$dataset_name, "DataAnalytics$analysis_diagnose")
+      origin <- paste0(private$..dataset_name, "DataAnalytics$analysis_diagnose")
 
       valid_calcs <- c(
         "prop",
@@ -706,7 +680,7 @@ DataAnalytics <- R6::R6Class(
           n_issues <- sum(result$status != "ok", na.rm = TRUE)
           phrutils::phr_message(
             phrutils::phr_txt(
-            "analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {self$dataset_name}."
+            "analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}."
           ))
 
           invisible(result)
@@ -719,12 +693,12 @@ DataAnalytics <- R6::R6Class(
     #' @description
     #' Diagnose issues in the unified outputs schema against the current dataset.
     #'
-    #' For every output defined in \code{self$outputs_schema}, this method checks
+    #' For every output defined in \code{private$..outputs_schema}, this method checks
     #' that (a) the output function exists, (b) any \code{variables} listed exist
     #' in the data or survey design, and (c) required schema fields
     #' (\code{output_title}, \code{output_func_name}, \code{output_type}) are
     #' non-empty. The results mirror the outputs schema table and add a
-    #' \code{status} column. Results are stored in \code{self$outputs_issues_log}.
+    #' \code{status} column. Results are stored in \code{private$..outputs_issues_log}.
     #'
     #' @return A tibble (invisibly) with one row per output definition.
     outputs_diagnose = function() {
@@ -739,14 +713,6 @@ DataAnalytics <- R6::R6Class(
           character(0)
         }
       ))
-
-      # private$.diagnose_outputs_schema(
-      #   schema = self$outputs_schema,
-      #   schema_name = "outputs_schema",
-      #   log_field = "outputs_issues_log",
-      #   data_cols = all_cols,
-      #   origin = origin
-      # )
 
       phrutils::phr_try(
         {
@@ -907,7 +873,7 @@ DataAnalytics <- R6::R6Class(
           n_issues <- sum(result$status != "ok", na.rm = TRUE)
           phrutils::phr_message(
             phrutils::phr_txt(
-            "{schema_name} diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {self$dataset_name}."
+            "{schema_name} diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}."
           ))
 
           invisible(result)
@@ -919,36 +885,7 @@ DataAnalytics <- R6::R6Class(
 
     },
 
-    #' @description Pre-hook providing the input sets used by \code{run_outputs()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{outputs_schema},
-    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
-    #' fields. Subclasses that hold multiple datasets (e.g. linked roster or
-    #' deaths data) can override this method to return one entry per dataset.
-    #' Each entry must be a named list whose elements give the names of the
-    #' public fields holding the respective inputs. The \code{variable_map}
-    #' entry is used to resolve \code{@variable_map$} references in each
-    #' output's \code{test_params}, so sets pointing at a linked dataset must
-    #' name that dataset's own variable map.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), outputs are stored under the set's role name in
-    #' \code{visualizations} and \code{tables} (e.g.
-    #' \code{visualizations$roster}, \code{tables$deaths}).
-    #'
-    #' @return A named list of field sets.
-    pre_run_outputs = function() {
-      list(
-        main = list(
-          data = "data",
-          outputs_schema = "outputs_schema",
-          base_survey_design = "base_survey_design",
-          survey_design = "survey_design",
-          variable_map = "variable_map"
-        )
-      )
-    },
+
 
     #' @description Run all outputs defined in the outputs schema(s).
     #'
@@ -989,7 +926,7 @@ DataAnalytics <- R6::R6Class(
     run_outputs = function(language = "english") {
       phrutils::phr_try(
         {
-          sets <- self$pre_run_outputs()
+          sets <- private$..pre_run_outputs()
 
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
@@ -1032,7 +969,7 @@ DataAnalytics <- R6::R6Class(
           ))
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "DataAnalytics$run_outputs")
+        origin = paste0(private$..dataset_name, "DataAnalytics$run_outputs")
       )
     },
 
@@ -1056,16 +993,16 @@ DataAnalytics <- R6::R6Class(
     #'
     #' @return Invisibly returns self.
     add_all_to_dap = function() {
-      origin <- paste0(self$dataset_name, "$add_all_to_dap")
+      origin <- paste0(private$..dataset_name, "$add_all_to_dap")
 
       phrutils::phr_try(
         {
-          sets <- self$pre_add_all_to_dap()
+          sets <- private$..pre_add_all_to_dap()
 
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
               origin,
-              phrutils::phr_txt("pre_add_all_to_dap() returned no field sets. Nothing to do.")
+              phrutils::phr_txt("..pre_add_all_to_dap() returned no field sets. Nothing to do.")
             )
             return(invisible(self))
           }
@@ -1089,27 +1026,7 @@ DataAnalytics <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description Pre-hook providing the field sets used by \code{add_all_to_dap()}.
-    #'
-    #' The default implementation returns a single set pointing at the core
-    #' \code{data}, \code{variable_map} and \code{data_analysis_plan} fields.
-    #' Subclasses that hold multiple datasets (e.g. linked roster or deaths
-    #' data) can override this method to return one entry per dataset. Each
-    #' entry must be a named list with elements \code{data},
-    #' \code{variable_map} and \code{data_analysis_plan}, giving the names of
-    #' the public fields that hold the dataset, its variable map, and its
-    #' data analysis plan respectively.
-    #'
-    #' @return A named list of field sets.
-    pre_add_all_to_dap = function() {
-      list(
-        main = list(
-          data = "data",
-          variable_map = "variable_map",
-          data_analysis_plan = "data_analysis_plan"
-        )
-      )
-    },
+
 
     #' @description Run the data analysis plan(s) and store results in analysis_results
     #'
@@ -1117,20 +1034,20 @@ DataAnalytics <- R6::R6Class(
     #' Each set's indicators are executed twice: once using the set's full
     #' survey design (weighted) and once using a simple unweighted design.
     #' For the default single \code{main} set both result sets are stored flat
-    #' in \code{self$analysis_results} as a named list with elements
+    #' in \code{private$..analysis_results} as a named list with elements
     #' \code{survey_design} and \code{base} (unchanged behaviour). When
     #' multiple sets are defined, results are nested under each set's role
     #' name (e.g. \code{analysis_results$roster$survey_design}).
     #'
-    #' After storing the results, \code{self$post_run_analysis()} is called to
+    #' After storing the results, \code{private$..post_run_analysis()} is called to
     #' allow subclasses to perform additional analysis steps.
     #'
     #' @return Invisibly returns self.
     run_analysis = function() {
-      origin <- paste0(self$dataset_name, "$run_analysis")
+      origin <- paste0(private$..dataset_name, "$run_analysis")
       phrutils::phr_message(origin, phrutils::phr_txt("Running analysis plan..."))
 
-      sets <- self$pre_run_analysis()
+      sets <- private$..pre_run_analysis()
 
       if (is.null(sets) || length(sets) == 0) {
         phrutils::phr_error(origin, phrutils::phr_txt("pre_run_analysis() returned no input sets."))
@@ -1169,43 +1086,8 @@ DataAnalytics <- R6::R6Class(
       phrutils::phr_message(origin, phrutils::phr_txt("Analysis completed successfully."))
 
       # Call the post-analysis hook so subclasses can perform additional steps.
-      self$post_run_analysis()
+      private$..post_run_analysis()
 
-      invisible(self)
-    },
-
-    #' @description Pre-hook providing the input sets used by \code{run_analysis()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{survey_design} and
-    #' \code{data_analysis_plan} fields. Subclasses that hold multiple datasets
-    #' (e.g. linked roster or deaths data) can override this method to return
-    #' one entry per dataset. Each entry must be a named list whose elements
-    #' give the names of the public fields holding the respective inputs.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), analysis results are stored under the set's role name in
-    #' \code{analysis_results} (e.g. \code{analysis_results$roster}).
-    #'
-    #' @return A named list of field sets.
-    pre_run_analysis = function() {
-      list(
-        main = list(
-          data = "data",
-          survey_design = "survey_design",
-          data_analysis_plan = "data_analysis_plan"
-        )
-      )
-    },
-
-    #' @description Post-analysis hook called at the end of \code{run_analysis()}.
-    #'
-    #' The default implementation is a no-op.  Subclasses can override this
-    #' method to perform additional analysis steps after the standard analysis
-    #' plan has been executed and stored in \code{self$analysis_results}.
-    #'
-    #' @return Invisibly returns self.
-    post_run_analysis = function() {
       invisible(self)
     }
   ),
@@ -1423,10 +1305,126 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
+    #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
+    #'
+    #' The default implementation returns a single set (named \code{main})
+    #' pointing at the core \code{data}, \code{quality_schema},
+    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    #' fields. Subclasses that hold multiple datasets or quality schemas can
+    #' override this method to return one entry per dataset/schema. Each entry
+    #' must be a named list whose elements give the names of the public fields
+    #' holding the respective inputs.
+    #'
+    #' When more than one set is returned (or the single set is not named
+    #' \code{main}), quality results are stored under the set's role name in
+    #' \code{plausibility_results} and penalty tables under
+    #' \code{tables[[role]][["plausibility"]]}.
+    #'
+    #' @return A named list of field sets.
+    ..pre_run_quality_checks = function() {
+      list(
+        main = list(
+          data = "data",
+          quality_schema = "quality_schema",
+          base_survey_design = "base_survey_design",
+          survey_design = "survey_design",
+          variable_map = "variable_map"
+        )
+      )
+    },
+
+    #' @description Pre-hook providing the input sets used by \code{run_outputs()}.
+    #'
+    #' The default implementation returns a single set (named \code{main})
+    #' pointing at the core \code{data}, \code{outputs_schema},
+    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    #' fields. Subclasses that hold multiple datasets (e.g. linked roster or
+    #' deaths data) can override this method to return one entry per dataset.
+    #' Each entry must be a named list whose elements give the names of the
+    #' public fields holding the respective inputs. The \code{variable_map}
+    #' entry is used to resolve \code{@variable_map$} references in each
+    #' output's \code{test_params}, so sets pointing at a linked dataset must
+    #' name that dataset's own variable map.
+    #'
+    #' When more than one set is returned (or the single set is not named
+    #' \code{main}), outputs are stored under the set's role name in
+    #' \code{visualizations} and \code{tables} (e.g.
+    #' \code{visualizations$roster}, \code{tables$deaths}).
+    #'
+    #' @return A named list of field sets.
+    ..pre_run_outputs = function() {
+      list(
+        main = list(
+          data = "data",
+          outputs_schema = "outputs_schema",
+          base_survey_design = "base_survey_design",
+          survey_design = "survey_design",
+          variable_map = "variable_map"
+        )
+      )
+    },
+
+    #' @description Pre-hook providing the input sets used by \code{run_analysis()}.
+    #'
+    #' The default implementation returns a single set (named \code{main})
+    #' pointing at the core \code{data}, \code{survey_design} and
+    #' \code{data_analysis_plan} fields. Subclasses that hold multiple datasets
+    #' (e.g. linked roster or deaths data) can override this method to return
+    #' one entry per dataset. Each entry must be a named list whose elements
+    #' give the names of the public fields holding the respective inputs.
+    #'
+    #' When more than one set is returned (or the single set is not named
+    #' \code{main}), analysis results are stored under the set's role name in
+    #' \code{analysis_results} (e.g. \code{analysis_results$roster}).
+    #'
+    #' @return A named list of field sets.
+    ..pre_run_analysis = function() {
+      list(
+        main = list(
+          data = "data",
+          survey_design = "survey_design",
+          data_analysis_plan = "data_analysis_plan"
+        )
+      )
+    },
+
+    #' @description Post-analysis hook called at the end of \code{run_analysis()}.
+    #'
+    #' The default implementation is a no-op.  Subclasses can override this
+    #' method to perform additional analysis steps after the standard analysis
+    #' plan has been executed and stored in \code{private$..analysis_results}.
+    #'
+    #' @return Invisibly returns self.
+    ..post_run_analysis = function() {
+      invisible(self)
+    },
+
+    #' @description Pre-hook providing the field sets used by \code{add_all_to_dap()}.
+    #'
+    #' The default implementation returns a single set pointing at the core
+    #' \code{data}, \code{variable_map} and \code{data_analysis_plan} fields.
+    #' Subclasses that hold multiple datasets (e.g. linked roster or deaths
+    #' data) can override this method to return one entry per dataset. Each
+    #' entry must be a named list with elements \code{data},
+    #' \code{variable_map} and \code{data_analysis_plan}, giving the names of
+    #' the public fields that hold the dataset, its variable map, and its
+    #' data analysis plan respectively.
+    #'
+    #' @return A named list of field sets.
+    pre_add_all_to_dap = function() {
+      list(
+        main = list(
+          data = "data",
+          variable_map = "variable_map",
+          data_analysis_plan = "data_analysis_plan"
+        )
+      )
+    },
+
     #' @description Translate canonical variable names to actual column names using variable_map
     #' @param canonical_vars Character vector of canonical variable names
     #' @param variable_map Optional named list mapping canonical names to actual
-    #'   column names. Defaults to \code{self$variable_map} when \code{NULL}.
+    #'   column names. Defaults to \code{private$..variable_map} when \code{NULL}.
     #' @return Character vector of actual column names
     ..translate_canonical_to_actual_vars = function(
     canonical_vars,
@@ -1557,12 +1555,12 @@ DataAnalytics <- R6::R6Class(
     #' @description Execute a single quality check using statistical tests
     #' @param check A single check definition from the schema
     #' @param survey_design Optional srvyr survey design to use. Defaults to
-    #'   \code{self$base_survey_design} (or \code{self$survey_design} as fallback)
+    #'   \code{private$..base_survey_design} (or \code{private$..survey_design} as fallback)
     #'   when \code{NULL}.
     #' @param data Optional data frame to check variables against. Defaults to
-    #'   \code{self$data} when \code{NULL}.
+    #'   \code{private$..data} when \code{NULL}.
     #' @param variable_map Optional named list mapping canonical names to actual
-    #'   column names. Defaults to \code{self$variable_map} when \code{NULL}.
+    #'   column names. Defaults to \code{private$..variable_map} when \code{NULL}.
     #' @return A list containing the check result
     ..execute_check = function(
     check,
@@ -1722,7 +1720,7 @@ DataAnalytics <- R6::R6Class(
           return(result)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "$..execute_check")
+        origin = paste0(private$..dataset_name, "$..execute_check")
       )
     },
 
@@ -1732,7 +1730,7 @@ DataAnalytics <- R6::R6Class(
     #' Create a survey design object from the stored data and variable_map.
     #' @return A srvyr survey design object, or NULL
     ..create_survey_design = function() {
-      origin <- paste0(self$dataset_name, "$create_survey_design")
+      origin <- paste0(private$..dataset_name, "$create_survey_design")
 
       if (!requireNamespace("srvyr", quietly = TRUE)) {
         phrutils::phr_warning(
@@ -1789,7 +1787,7 @@ DataAnalytics <- R6::R6Class(
 
       design <- phrutils::phr_try(
         srvyr::as_survey_design(
-          .data = self$data,
+          .data = private$..data,
           ids = !!ids_sym,
           strata = !!strata_sym,
           weights = !!weight_sym,
@@ -1810,7 +1808,7 @@ DataAnalytics <- R6::R6Class(
 
     #' @description Convert quality results to a tabular format
     #' @param results Optional flat named list of check results to convert.
-    #'   Defaults to \code{self$plausibility_results} when \code{NULL}.
+    #'   Defaults to \code{private$..plausibility_results} when \code{NULL}.
     #' @return A tibble with quality check results
     ..results_to_table = function(results = NULL) {
       phrutils::phr_try(
@@ -1849,17 +1847,17 @@ DataAnalytics <- R6::R6Class(
           dplyr::bind_rows(rows)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "DataAnalytics$..results_to_table")
+        origin = paste0(private$..dataset_name, "$..results_to_table")
       )
     },
 
     #' @description Run quality checks on data subsets for each unique value of a grouping column
     #' @param group_col Character string. The actual column name in the data to group by.
-    #' @param data Optional data frame to subset. Defaults to \code{self$data}.
+    #' @param data Optional data frame to subset. Defaults to \code{private$..data}.
     #' @param quality_schema Optional quality schema to execute. Defaults to
-    #'   \code{self$quality_schema}.
+    #'   \code{private$..quality_schema}.
     #' @param variable_map Optional named list mapping canonical names to actual
-    #'   column names. Defaults to \code{self$variable_map}.
+    #'   column names. Defaults to \code{private$..variable_map}.
     #' @return A tibble with per-group check results, or NULL
     ..compute_results_by_group = function(
     group_col,
@@ -1895,7 +1893,7 @@ DataAnalytics <- R6::R6Class(
             subset_design <- phrutils::phr_try(
               srvyr::as_survey_design(.data = subset_data, ids = 1),
               on_error = "warn",
-              origin = paste0(self$dataset_name, "DataAnalytics$compute_results_by_group"),
+              origin = paste0(private$..dataset_name, "$compute_results_by_group"),
               hint = paste0(phrutils::phr_txt("Could not create survey design for group: "), gv)
             )
 
@@ -1903,7 +1901,7 @@ DataAnalytics <- R6::R6Class(
               names(schema),
               function(check_name) {
                 check <- schema[[check_name]]
-                result <- self$..execute_check(
+                result <- private$..execute_check(
                   check,
                   survey_design = subset_design,
                   data = subset_data,
@@ -1928,14 +1926,14 @@ DataAnalytics <- R6::R6Class(
           dplyr::bind_rows(all_group_results)
         },
         on_error = "warn",
-        origin = paste0(self$dataset_name, "DataAnalytics$..compute_results_by_group")
+        origin = paste0(private$..dataset_name, "$..compute_results_by_group")
       )
     },
 
     #' @description Generate the data analysis plan from the analysis schema
     #' @return Invisibly returns self.
     ..generate_dap_from_schema = function() {
-      origin <- paste0(private$..dataset_name, "DataAnalytics$generate_dap_from_schema")
+      origin <- paste0(private$..dataset_name, "$generate_dap_from_schema")
 
       phrutils::phr_try(
         {
@@ -1954,7 +1952,7 @@ DataAnalytics <- R6::R6Class(
             }
             if (
               !is.null(private$..variable_map) &&
-              canonical_name %in% names(self$variable_map)
+              canonical_name %in% names(private$..variable_map)
             ) {
               actual_name <- private$..variable_map[[canonical_name]]
               if (!is.null(actual_name) && actual_name != "") {
@@ -2075,7 +2073,7 @@ DataAnalytics <- R6::R6Class(
     #'   \code{@variable_map$role} tag. If \code{FALSE} (default), \code{ref} is
     #'   resolved directly as a role name.
     #' @param variable_map Optional named list mapping canonical roles to actual
-    #'   column names. Defaults to \code{self$variable_map} when \code{NULL},
+    #'   column names. Defaults to \code{private$..variable_map} when \code{NULL},
     #'   allowing callers to specify an alternative map (e.g. a linked dataset's
     #'   variable map) when this class holds more than one.
     #'
@@ -2134,7 +2132,7 @@ DataAnalytics <- R6::R6Class(
     #'   \code{@value_map$...} tag. If \code{FALSE} (default), \code{ref} is
     #'   resolved directly.
     #' @param value_map Optional named list mapping canonical roles to dataset
-    #'   value(s). Defaults to \code{self$value_map} when \code{NULL}, allowing
+    #'   value(s). Defaults to \code{private$..value_map} when \code{NULL}, allowing
     #'   callers to specify an alternative map (e.g. a linked dataset's value
     #'   map) when this class holds more than one.
     #'
@@ -2234,12 +2232,12 @@ DataAnalytics <- R6::R6Class(
     #'   actual column names, used to resolve \code{var_name}, \code{denom_var}
     #'   and \code{disaggregation} row values via
     #'   \code{private$..resolve_variable_map_reference()}. Defaults to
-    #'   \code{self$variable_map} when \code{NULL}.
+    #'   \code{private$..variable_map} when \code{NULL}.
     #' @param value_map Optional named list mapping canonical value roles to
     #'   dataset value(s), used as a fallback to resolve \code{var_name},
     #'   \code{denom_var} and \code{disaggregation} row values via
     #'   \code{private$..resolve_value_map_reference()} when they are not found
-    #'   in \code{variable_map}. Defaults to \code{self$value_map} when
+    #'   in \code{private$..variable_map}. Defaults to \code{private$..value_map} when
     #'   \code{NULL}.
     #'
     #' @return A tibble of analysis results, one row per indicator (or one row per
@@ -2587,8 +2585,8 @@ DataAnalytics <- R6::R6Class(
         } else if (nm %in% keep_as_is) {
           resolved[[nm]] <- val
         } else if (is.character(val) && length(val) == 1) {
-          if (!is.null(self[[val]])) {
-            resolved[[nm]] <- self[[val]]
+          if (!is.null(private[[val]])) {
+            resolved[[nm]] <- private[[val]]
           } else if (!is.null(private[[val]])) {
             resolved[[nm]] <- private[[val]]
           }
@@ -2613,7 +2611,7 @@ DataAnalytics <- R6::R6Class(
     # @param set_role Character role name for this input set.
     # @param nested Logical; TRUE when results are stored under set_role.
     # @return A named list of check results.
-    .run_quality_checks_for_set = function(inputs, set_role, nested) {
+    ..run_quality_checks_for_set = function(inputs, set_role, nested) {
       quality_schema <- inputs$quality_schema
 
       if (is.null(quality_schema) || length(quality_schema) == 0) {
@@ -2634,7 +2632,7 @@ DataAnalytics <- R6::R6Class(
         base_design <- phrutils::phr_try(
           srvyr::as_survey_design(.data = check_data, ids = 1),
           on_error = "warn",
-          origin = paste0(self$dataset_name, "$run_quality_checks"),
+          origin = paste0(private$..dataset_name, "$run_quality_checks"),
           hint = paste0(
             phrutils::phr_txt("Could not create base (unweighted) survey design for '"),
             set_role,
@@ -2648,7 +2646,7 @@ DataAnalytics <- R6::R6Class(
 
       for (check_name in names(quality_schema)) {
         check <- quality_schema[[check_name]]
-        result <- self$..execute_check(
+        result <- private$..execute_check(
           check,
           survey_design = effective_design,
           data = check_data,
@@ -2875,7 +2873,7 @@ DataAnalytics <- R6::R6Class(
           message = phrutils::phr_txt(
             "No outputs defined in outputs schema for '{set_role}'. Skipping."
           ),
-          origin = self$dataset_name
+          origin = private$..dataset_name
         )
         return(invisible(NULL))
       }
@@ -2885,7 +2883,7 @@ DataAnalytics <- R6::R6Class(
         base_design <- phrutils::phr_try(
           srvyr::as_survey_design(.data = inputs$data, ids = 1),
           on_error = "warn",
-          origin = paste0(self$dataset_name, "$run_outputs"),
+          origin = paste0(private$..dataset_name, "$run_outputs"),
           hint = paste0(
             phrutils::phr_txt("Could not create base (unweighted) survey design for '"),
             set_role,
@@ -2909,7 +2907,7 @@ DataAnalytics <- R6::R6Class(
 
       phrutils::phr_message(
         phrutils::phr_txt(
-        "Running {nrow(outputs_schema)} output(s) for {self$dataset_name} ('{set_role}')..."
+        "Running {nrow(outputs_schema)} output(s) for {private$..dataset_name} ('{set_role}')..."
       ))
 
       # Read a single schema cell, returning NULL when the column is absent or
@@ -2941,7 +2939,7 @@ DataAnalytics <- R6::R6Class(
                 message = phrutils::phr_txt(
                   "Output '{out_name}' has no output_func_name specified. Skipping."
                 ),
-                origin = self$dataset_name
+                origin = private$..dataset_name
               )
               next
             }
@@ -2989,7 +2987,7 @@ DataAnalytics <- R6::R6Class(
                 message = phrutils::phr_txt(
                   "Function '{func_name}' for output '{out_name}' not found. Skipping."
                 ),
-                origin = self$dataset_name
+                origin = private$..dataset_name
               )
               next
             }
@@ -3065,7 +3063,7 @@ DataAnalytics <- R6::R6Class(
                     "Output '{out_name}' returned NULL (the output function failed). ",
                     "Nothing stored for '{key}'."
                   ),
-                  origin = self$dataset_name
+                  origin = private$..dataset_name
                 )
                 return(invisible(NULL))
               }
@@ -3127,7 +3125,7 @@ DataAnalytics <- R6::R6Class(
                     "Output '{out_name}' has unrecognized output_type '{output_type}'. ",
                     "Expected 'visualization' or 'table'. Result not stored."
                   ),
-                  origin = self$dataset_name
+                  origin = private$..dataset_name
                 )
               }
             }
@@ -3144,7 +3142,7 @@ DataAnalytics <- R6::R6Class(
                     message = phrutils::phr_txt(
                       "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
                     ),
-                    origin = self$dataset_name
+                    origin = private$..dataset_name
                   )
                   col_name <- NULL
                 }
@@ -3194,7 +3192,7 @@ DataAnalytics <- R6::R6Class(
                         message = phrutils::phr_txt(
                           "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
                         ),
-                        origin = self$dataset_name
+                        origin = private$..dataset_name
                       )
                       NULL
                     }
@@ -3218,8 +3216,8 @@ DataAnalytics <- R6::R6Class(
                     },
                     on_error = "warn",
                     origin = paste0(
-                      self$dataset_name,
-                      "DataAnalytics$run_outputs$",
+                      private$..dataset_name,
+                      "$run_outputs$",
                       out_name,
                       "$",
                       val
@@ -3231,7 +3229,7 @@ DataAnalytics <- R6::R6Class(
                   message = phrutils::phr_txt(
                     "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
                   ),
-                  origin = self$dataset_name
+                  origin = private$..dataset_name
                 )
               }
             } else {
@@ -3244,7 +3242,7 @@ DataAnalytics <- R6::R6Class(
           },
           on_error = "warn",
           origin = paste0(
-            self$dataset_name,
+            private$..dataset_name,
             "DataAnalytics$run_outputs$",
             set_role,
             "$",
@@ -3553,7 +3551,7 @@ DataAnalytics <- R6::R6Class(
     # @param skip_results_table Logical; if TRUE, @results_table entries are
     #   skipped as named args (they were already handled as first positional arg).
     # @param variable_map Named list mapping canonical roles to column names.
-    #   Defaults to self$variable_map. Subclasses holding several datasets (e.g.
+    #   Defaults to private$..variable_map. Subclasses holding several datasets (e.g.
     #   linked roster / deaths) must pass the map belonging to the input set
     #   being processed, otherwise @variable_map$ references resolve against the
     #   wrong dataset's columns.
@@ -3588,30 +3586,30 @@ DataAnalytics <- R6::R6Class(
                   message = phrutils::phr_txt(
                     "Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'."
                   ),
-                  origin = self$dataset_name
+                  origin = private$..dataset_name
                 )
               }
             } else if (grepl("^@value_map\\$", elem)) {
               parts <- strsplit(sub("^@value_map\\$", "", elem), "\\$")[[1]]
               if (length(parts) >= 1) {
                 role <- parts[1]
-                if (!is.null(self$value_map[[role]])) {
+                if (!is.null(private$..value_map[[role]])) {
                   if (length(parts) == 2) {
-                    resolved <- self$value_map[[role]][[parts[2]]]
+                    resolved <- private$..value_map[[role]][[parts[2]]]
                     if (!is.null(resolved)) {
                       resolved_elements <- c(resolved_elements, resolved)
                     }
                   } else {
                     resolved_elements <- c(
                       resolved_elements,
-                      unlist(self$value_map[[role]], use.names = FALSE)
+                      unlist(private$..value_map[[role]], use.names = FALSE)
                     )
                   }
                 }
               }
             } else if (grepl("^@variable_label\\$", elem)) {
               role <- sub("^@variable_label\\$", "", elem)
-              resolved <- self$variable_label[[role]]
+              resolved <- private$..variable_label[[role]]
               if (!is.null(resolved)) {
                 resolved_elements <- c(resolved_elements, resolved)
               } else {
@@ -3619,30 +3617,30 @@ DataAnalytics <- R6::R6Class(
                   message = phrutils::phr_txt(
                     "Variable label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'."
                   ),
-                  origin = self$dataset_name
+                  origin = private$..dataset_name
                 )
               }
             } else if (grepl("^@value_label\\$", elem)) {
               parts <- strsplit(sub("^@value_label\\$", "", elem), "\\$")[[1]]
               if (length(parts) >= 1) {
                 role <- parts[1]
-                if (!is.null(self$value_label[[role]])) {
+                if (!is.null(private$..value_label[[role]])) {
                   if (length(parts) == 2) {
-                    resolved <- self$value_label[[role]][[parts[2]]]
+                    resolved <- private$..value_label[[role]][[parts[2]]]
                     if (!is.null(resolved)) {
                       resolved_elements <- c(resolved_elements, resolved)
                     } else {
                       phrutils::phr_warning(
-                        message = phr_txt(glue::glue(
+                        message = phrutils::phr_txt(
                           "Value label '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'."
-                        )),
-                        origin = self$dataset_name
+                        ),
+                        origin = private$..dataset_name
                       )
                     }
                   } else {
                     resolved_elements <- c(
                       resolved_elements,
-                      unlist(self$value_label[[role]], use.names = FALSE)
+                      unlist(private$..value_label[[role]], use.names = FALSE)
                     )
                   }
                 } else {
@@ -3650,7 +3648,7 @@ DataAnalytics <- R6::R6Class(
                     message = phrutils::phr_txt(
                       "Value label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'."
                     ),
-                    origin = self$dataset_name
+                    origin = private$..dataset_name
                   )
                 }
               }
@@ -3835,7 +3833,7 @@ DataAnalytics <- R6::R6Class(
     high_design_complexity = FALSE,
     note = NULL
     ) {
-      origin <- paste0(self$dataset_name, "DataAnalytics$add_indicator_dap")
+      origin <- paste0(private$..dataset_name, "DataAnalytics$add_indicator_dap")
 
       phrutils::phr_try(
         {
@@ -3863,7 +3861,7 @@ DataAnalytics <- R6::R6Class(
     #' @param indicator_name Character; label of the indicator to remove.
     #' @return Invisibly returns self.
     ..remove_indicator_dap = function(indicator_name) {
-      origin <- paste0(self$dataset_name, "DataAnalytics$remove_indicator_dap")
+      origin <- paste0(private$..dataset_name, "DataAnalytics$remove_indicator_dap")
 
       phrutils::phr_try(
         {
@@ -3893,7 +3891,7 @@ DataAnalytics <- R6::R6Class(
     # Create a proper survey design for an arbitrary data frame using variable_map.
     #
     # Applies the same logic as \code{create_survey_design()} (which operates on
-    # \code{self$data} and \code{self$variable_map}) but accepts any data frame and
+    # \code{private$..data} and \code{private$..variable_map}) but accepts any data frame and
     # variable map. Reads \code{cluster_id_numeric} / \code{cluster_id},
     # \code{weight}, \code{stratum}, and \code{fpc} from \code{variable_map} and
     # builds an \code{srvyr} survey design accordingly. Falls back to a simple
@@ -3905,7 +3903,7 @@ DataAnalytics <- R6::R6Class(
     # @return An \code{srvyr} survey design object, or NULL on failure.
     ..create_survey_design_for_dataset = function(data, variable_map, origin = NULL) {
 
-      origin <- origin %||% paste0(self$dataset_name, "$.create_survey_design_for_dataset")
+      origin <- origin %||% paste0(private$..dataset_name, "$.create_survey_design_for_dataset")
 
       if (is.null(data) || nrow(data) == 0) {
         phrutils::phr_warning(origin, phrutils::phr_txt("No data available to create survey design for linked dataset."))

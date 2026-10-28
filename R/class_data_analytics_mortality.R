@@ -122,7 +122,7 @@ MortalityDataAnalytics <- R6::R6Class(
 
       # Pre-merge linked roster and deaths variable/value maps and labels into the
       # household maps BEFORE calling super$initialize. This ensures that when
-      # super$initialize() calls generate_dap_from_schema(), self$variable_map
+      # super$initialize() calls generate_dap_from_schema(), private$..variable_map
       # already contains all canonical-name mappings, including those for mortality
       # analysis indicators that may be defined in a linked dataset's variable_map.
       # Household data takes precedence: keys already present are never overwritten.
@@ -337,7 +337,7 @@ MortalityDataAnalytics <- R6::R6Class(
       }
 
       if (!is.null(linked_ind_deaths_data)) {
-        self$base_survey_design_deaths <- phrutils::phr_try(
+        private$..base_survey_design_deaths <- phrutils::phr_try(
           srvyr::as_survey_design(.data = linked_ind_deaths_data, ids = 1),
           on_error = "warn",
           origin   = paste0(dataset_name, "$initialize"),
@@ -364,124 +364,7 @@ MortalityDataAnalytics <- R6::R6Class(
           phr_txt(glue::glue("{dataset_name} initialized as MortalityDataAnalytics object."))
         )
       }
-    },
-
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
-    #'
-    #' Returns one input set per available mortality dataset:
-    #' \describe{
-    #'   \item{household}{Always included, using the core \code{data},
-    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
-    #'     stored in \code{analysis_results$household}.}
-    #'   \item{roster}{Included when \code{linked_ind_roster_data} is available and
-    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$roster}.}
-    #'   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
-    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$deaths}.}
-    #' }
-    #'
-    #' @return A named list of field sets.
-    pre_run_analysis = function() {
-      origin <- paste0(self$dataset_name, "$pre_run_analysis")
-
-      sets <- super$pre_run_analysis()
-
-      # sets <- list(
-      #   household = list(
-      #     data = "data",
-      #     survey_design = "survey_design",
-      #     data_analysis_plan = "data_analysis_plan"
-      #   )
-      # )
-
-      if (!is.null(self$linked_ind_roster_data)) {
-        if (is.null(private$..data_analysis_plan_rosterget(field = "log_df"))) {
-          sets$roster <- list(
-            data = "linked_ind_roster_data",
-            survey_design = "survey_design_roster",
-            data_analysis_plan = "data_analysis_plan_roster"
-          )
-        } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
-        }
-      }
-
-      if (!is.null(self$linked_ind_deaths_data)) {
-        if (is.null(private$..data_analysis_plan_deathsget(field = "log_df"))) {
-          sets$deaths <- list(
-            data = "linked_ind_deaths_data",
-            survey_design = "survey_design_deaths",
-            data_analysis_plan = "data_analysis_plan_deaths"
-          )
-        } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked deaths data present but data_analysis_plan_deaths is empty. Skipping deaths analysis."))
-        }
-      }
-
-      sets
-    },
-
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
-    #'
-    #' Returns one input set per available mortality dataset so that outputs are
-    #' generated independently for each dataset and stored in named sub-lists
-    #' (\code{visualizations$household} / \code{tables$household},
-    #' \code{visualizations$roster} / \code{tables$roster},
-    #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
-    #' the appropriate survey design objects for the dataset, so output entries
-    #' with \code{dataset_type = "survey_design"} receive the weighted design and
-    #' \code{"base"} entries receive the unweighted base design. Each set also
-    #' names the dataset's own variable map, so \code{@variable_map$} references
-    #' in \code{test_params} resolve against the correct dataset.
-    #'
-    #' @return A named list of field sets.
-    pre_run_outputs = function() {
-      origin <- paste0(self$dataset_name, "$pre_run_outputs")
-
-      sets <- list(
-        household = list(
-          data = "data",
-          outputs_schema = "outputs_schema",
-          base_survey_design = "base_survey_design",
-          survey_design = "survey_design",
-          variable_map = "variable_map"
-        )
-      )
-
-      if (!is.null(self$linked_ind_roster_data)) {
-        if (!is.null(self$outputs_schema_roster) && nrow(self$outputs_schema_roster) > 0) {
-          sets$roster <- list(
-            data = "linked_ind_roster_data",
-            outputs_schema = "outputs_schema_roster",
-            base_survey_design = "base_survey_design_roster",
-            survey_design = "survey_design_roster",
-            variable_map = "linked_ind_roster_variable_map"
-          )
-        } else {
-          phrutils::phr_message(origin, "Linked roster data present but outputs_schema_roster is empty. Skipping roster outputs.")
-        }
-      }
-
-      if (!is.null(self$linked_ind_deaths_data)) {
-        if (!is.null(self$outputs_schema_deaths) && nrow(self$outputs_schema_deaths) > 0) {
-          sets$deaths <- list(
-            data = "linked_ind_deaths_data",
-            outputs_schema = "outputs_schema_deaths",
-            base_survey_design = "base_survey_design_deaths",
-            survey_design = "survey_design_deaths",
-            variable_map = "linked_ind_deaths_variable_map"
-          )
-        } else {
-          phrutils::phr_message(origin, "Linked deaths data present but outputs_schema_deaths is empty. Skipping deaths outputs.")
-        }
-      }
-
-      sets
     }
-
   ),
 
   private = list(
@@ -574,7 +457,125 @@ MortalityDataAnalytics <- R6::R6Class(
     ..default_analysis_schema_deaths_filename = c(
       "resources",
       "analysis_schema_quant_data_analysis_mortality_deaths_template.xlsx"
-    )
+    ),
+
+    #' @description
+    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
+    #'
+    #' Returns one input set per available mortality dataset:
+    #' \describe{
+    #'   \item{household}{Always included, using the core \code{data},
+    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
+    #'     stored in \code{analysis_results$household}.}
+    #'   \item{roster}{Included when \code{linked_ind_roster_data} is available and
+    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
+    #'     stored in \code{analysis_results$roster}.}
+    #'   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
+    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
+    #'     stored in \code{analysis_results$deaths}.}
+    #' }
+    #'
+    #' @return A named list of field sets.
+    ..pre_run_analysis = function() {
+      origin <- paste0(private$..dataset_name, "$pre_run_analysis")
+
+      sets <- super$..pre_run_analysis()
+
+      # sets <- list(
+      #   household = list(
+      #     data = "data",
+      #     survey_design = "survey_design",
+      #     data_analysis_plan = "data_analysis_plan"
+      #   )
+      # )
+
+      if (!is.null(private$..linked_ind_roster_data)) {
+        if (is.null(private$..data_analysis_plan_rosterget(field = "log_df"))) {
+          sets$roster <- list(
+            data = "..linked_ind_roster_data",
+            survey_design = "..survey_design_roster",
+            data_analysis_plan = "..data_analysis_plan_roster"
+          )
+        } else {
+          phrutils::phr_message(origin, phrutils::phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
+        }
+      }
+
+      if (!is.null(private$..linked_ind_deaths_data)) {
+        if (is.null(private$..data_analysis_plan_deathsget(field = "log_df"))) {
+          sets$deaths <- list(
+            data = "..linked_ind_deaths_data",
+            survey_design = "..survey_design_deaths",
+            data_analysis_plan = "..data_analysis_plan_deaths"
+          )
+        } else {
+          phrutils::phr_message(origin, phrutils::phr_txt("Linked deaths data present but data_analysis_plan_deaths is empty. Skipping deaths analysis."))
+        }
+      }
+
+      sets
+    },
+
+    #' @description
+    #' Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
+    #'
+    #' Returns one input set per available mortality dataset so that outputs are
+    #' generated independently for each dataset and stored in named sub-lists
+    #' (\code{visualizations$household} / \code{tables$household},
+    #' \code{visualizations$roster} / \code{tables$roster},
+    #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
+    #' the appropriate survey design objects for the dataset, so output entries
+    #' with \code{dataset_type = "survey_design"} receive the weighted design and
+    #' \code{"base"} entries receive the unweighted base design. Each set also
+    #' names the dataset's own variable map, so \code{@variable_map$} references
+    #' in \code{test_params} resolve against the correct dataset.
+    #'
+    #' @return A named list of field sets.
+    ..pre_run_outputs = function() {
+      origin <- paste0(private$..dataset_name, "$pre_run_outputs")
+
+      sets <- super$..pre_run_outputs()
+
+      # sets <- list(
+      #   household = list(
+      #     data = "data",
+      #     outputs_schema = "..outputs_schema",
+      #     base_survey_design = "..base_survey_design",
+      #     survey_design = "..survey_design",
+      #     variable_map = "..variable_map"
+      #   )
+      # )
+
+      if (!is.null(private$..linked_ind_roster_data)) {
+        if (!is.null(private$..outputs_schema_roster) && nrow(private$..outputs_schema_roster) > 0) {
+          sets$roster <- list(
+            data = "..linked_ind_roster_data",
+            outputs_schema = "..outputs_schema_roster",
+            base_survey_design = "..base_survey_design_roster",
+            survey_design = "..survey_design_roster",
+            variable_map = "..linked_ind_roster_variable_map"
+          )
+        } else {
+          phrutils::phr_message(origin, "Linked roster data present but outputs_schema_roster is empty. Skipping roster outputs.")
+        }
+      }
+
+      if (!is.null(private$..linked_ind_deaths_data)) {
+        if (!is.null(private$..outputs_schema_deaths) && nrow(private$..outputs_schema_deaths) > 0) {
+          sets$deaths <- list(
+            data = "..linked_ind_deaths_data",
+            outputs_schema = "..outputs_schema_deaths",
+            base_survey_design = "..base_survey_design_deaths",
+            survey_design = "..survey_design_deaths",
+            variable_map = "..linked_ind_deaths_variable_map"
+          )
+        } else {
+          phrutils::phr_message(origin, "Linked deaths data present but outputs_schema_deaths is empty. Skipping deaths outputs.")
+        }
+      }
+
+      sets
+    }
 
   )
 )

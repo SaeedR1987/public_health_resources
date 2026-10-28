@@ -47,7 +47,7 @@ NutritionIndividualData <- R6::R6Class(
         )
 
         # Extend optional columns
-        self$optional_columns <- c(self$optional_columns, unlist(nutrition_map))
+        private$..optional_columns <- c(private$..optional_columns, unlist(nutrition_map))
 
         private$..map_schema_vars(stage = "raw")
 
@@ -101,7 +101,7 @@ NutritionIndividualData <- R6::R6Class(
               data = data,
               dap = analysis_config,
               parent_data_object = parent,
-              dataset_name = paste0(self$dataset_name, "_NutritionData"),
+              dataset_name = paste0(private$..dataset_name, "_NutritionData"),
               data_stage_name = stage,
               data_hash = parent$get(field = "..metadata", role = "hash_id"),
               variable_map = parent$get(field = "..variable_map"),
@@ -120,7 +120,7 @@ NutritionIndividualData <- R6::R6Class(
             data               = data,
             dap                = analysis_config,
             parent_data_object = parent,
-            dataset_name       = paste0(self$dataset_name, "_IYCFDataAnalytics"),
+            dataset_name       = paste0(private$..dataset_name, "_IYCFDataAnalytics"),
             data_stage_name    = stage,
             data_hash          = parent$get(field = "..metadata", role = "hash_id"),
             variable_map       = parent$get(field = "..variable_map"),

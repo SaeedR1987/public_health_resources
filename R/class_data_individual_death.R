@@ -82,29 +82,6 @@ DeathIndividualData <- R6::R6Class(
           private$..required_columns  # keep inherited ones (uuid, hh_uuid)
         )))
 
-        # --- Schema merge
-        self$set(field = "..variable_schema", value = self$default_schema())
-
-        # Load default indicator schema
-        default_ind_schema <- self$default_indicator_schema()
-        if (is.data.frame(default_ind_schema) && nrow(default_ind_schema) > 0) {
-          self$set(field = "..indicator_schema", value = default_ind_schema)
-          phrutils::phr_message(
-            phrutils::phr_txt("Loaded default indicator schema with {nrow(default_ind_schema)} indicator(s).")
-          )
-        }
-
-        # Load default dependency schema
-        default_dep_schema <- self$default_dependency_schema()
-        if (is.data.frame(default_dep_schema) && nrow(default_dep_schema) > 0) {
-
-          self$set(field = "..dependency_schema", value = default_dep_schema)
-
-          phrutils::phr_message(
-            phrutils::phr_txt("Loaded default dependency schema with {nrow(default_dep_schema)} dependency/ies.")
-          )
-        }
-
         # Re-map schema variables now that the death schema is loaded.
         # Data$initialize() already mapped against the (still empty) parent
         # schema, so roles such as hh_uuid would otherwise stay unmapped until
