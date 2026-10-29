@@ -96,137 +96,97 @@ DataAnalytics <- R6::R6Class(
       value_label = NULL,
       quality_schema = NULL
     ) {
-      super$initialize()
+
       origin <- paste0(dataset_name, "$initialize")
-      phrutils::phr_message(origin, "Initializing DataAnalytics class...")
 
-      # --- Common fields
-      private$..parent_data_object <- parent_data_object
-      private$..parent_dataset_name <- dataset_name
-      private$..parent_data_stage_name <- data_stage_name
-      private$..parent_data_hash <- data_hash
-      private$..variable_map <- variable_map %||% list()
-      private$..value_map <- value_map %||% list()
-      private$..variable_label <- variable_label %||% list()
-      private$..value_label <- value_label %||% list()
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = private$..dataset_name,
+        message = phrutils::phr_txt(paste0(origin, " Started initialization for DataAanlytics object {dataset_name}."))
+      )
 
-      # --- Shared output containers
-      self$visualizations <- list()
-      self$tables <- list()
-
-      # --- Quality-specific initialization
-      if (!is.null(data)) {
-        phrutils::phr_validate_dataframe(data, origin = origin, soft = FALSE)
-        private$..data <- data
+      # Step 1: Super-initialize
+      result <- phrutils::phr_try_step(
+        {
+          super$initialize()
+        },
+        step = phrutils::phr_txt("Check raw data"),
+        hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      private$..plausibility_results <- list()
-      private$..overall_score <- NA_real_
-
-      # Diagnostic logs
-      private$..quality_issues_log <- tibble::tibble()
-      private$..analysis_plan_issues_log <- tibble::tibble()
-      private$..outputs_issues_log <- tibble::tibble()
-
-      # Loading quality, analysis, and outputs schemas
-      private$..load_default_schema(
-        filename = private$..default_quality_schema_filename,
-        target_field = "..quality_schema",
-        required_cols = c(
-          "check_group",
-          "check_name",
-          "check_label",
-          "variables",
-          "statistical_test",
-          "threshold_expression",
-          "penalty_score",
-          "test_params"
-        ),
-        schema_name = "quality",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_analysis_schema_filename,
-        target_field = "..analysis_schema",
-        required_cols = c(
-          "indicator_name",
-          "calculation",
-          "var_name",
-          "denom_var",
-          "disaggregation",
-          "multiplier",
-          "indicator_unit"
-        ),
-        schema_name = "analysis",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_outputs_schema_filename,
-        target_field = "..outputs_schema",
-        required_cols = c(
-          "output_title",
-          "output_name",
-          "output_subtitle",
-          "variables",
-          "disaggregation",
-          "output_func_name",
-          "test_params",
-          "output_type",
-          "outputs_group",
-          "outputs_per_group",
-          "dataset_type",
-          "output_title_english",
-          "output_title_french",
-          "output_title_arabic"
-        ),
-        schema_name = "outputs",
-        dataset_name = private$..dataset_name
-      )
-
-      # 2. Create survey design objects from data + variable_map.
-      #    base_survey_design: simple unweighted design (ids = 1, no weights/strata/clusters)
-      #    survey_design: full weighted design considering clusters, weights, and strata
-      if (!is.null(data)) {
-        private$..base_survey_design <- phrutils::phr_try(
-          srvyr::as_survey_design(.data = data, ids = 1),
-          on_error = "warn",
-          origin = origin,
-          hint = phrutils::phr_txt("Could not create base (unweighted) survey design from data.")
-        )
-        private$..survey_design <- private$..create_survey_design()
-      }
-
-      # 3. Populate data_analysis_plan
-      if (!is.null(dap)) {
-        private$..data_analysis_plan <- QuantDataAnalysisPlanLog$new(
-          log_df = dap,
-          log_name = paste0(dataset_name,"-Quant Data Analysis Plan")
-        )
-      } else {
-        private$..data_analysis_plan <- QuantDataAnalysisPlanLog$new(
-          log_df = NULL,
-          log_name = paste0(dataset_name,"-Quant Data Analysis Plan")
-        )
-        if (!is.null(private$..survey_design) || !is.null(private$..data)) {
-
-          result <- private$..build_dap_from_schema(
-            analysis_schema = private$..analysis_schema,
-            variable_map    = private$..variable_map %||% list(),
-            available_vars  = names(private$..data),
-            dataset_label   = "data"
+      # Step 2: Set fields
+      result <- phrutils::phr_try_step(
+        {
+          private$..initialize_set_fields(
+            parent_data_object = parent_data_object,
+            dataset_name = dataset_name,
+            data_stage_name = data_stage_name,
+            data_hash = data_hash,
+            variable_map = variable_map,
+            value_map = value_map,
+            variable_label = variable_label,
+            value_label = value_label,
+            data = data,
+            origin = origin
           )
-
-          private$..data_analysis_plan$set(field = "log_df", value = result$dap_df)
-
-        }
+        },
+        step = phrutils::phr_txt("Set initial fields for DataAnalytics class"),
+        hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      # 4. Load outputs schema (combined quality and analysis outputs)
-      # (already loaded above, no separate analysis outputs schema needed)
+      # Step 3: Load quality, analysis, and outputs schemas
+      result <- phrutils::phr_try_step(
+        {
+          private$..initialize_load_schemas()
+        },
+        step = phrutils::phr_txt("Load default quality, analysis, and outputs schemas"),
+        hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
 
-      phrutils::phr_message(origin, "Initialization complete.")
+      # Step 4: Create survey design objects (base and full)
+      result <- phrutils::phr_try_step(
+        {
+          if (!is.null(data)) {
+            self$set(field = "..base_survey_design", value = srvyr::as_survey_design(.data = data, ids = 1))
+            self$set(field = "..survey_design", value = private$..create_survey_design())
+          }
+        },
+        step = phrutils::phr_txt("Creating base and full survey design objects."),
+        hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+      # Step 5: Create data analysis plan from analysis schema
+      result <- phrutils::phr_try_step(
+        {
+          private$..initialize_populate_dap(dap)
+        },
+        step = phrutils::phr_txt("Creating base and full survey design objects."),
+        hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = private$..dataset_name,
+        message = phrutils::phr_txt(paste0(origin, " Initialization complete."))
+      )
+
       invisible(self)
     },
 
@@ -265,48 +225,78 @@ DataAnalytics <- R6::R6Class(
     run_quality_checks = function() {
       phrutils::phr_try(
         {
-          sets <- private$..pre_run_quality_checks()
 
-          if (is.null(sets) || length(sets) == 0) {
-            phrutils::phr_warning(
-              message = "..pre_run_quality_checks() returned no input sets.",
-              origin = private$..dataset_name
-            )
-            return(invisible(list()))
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt(paste0(private$..dataset_name, " Initialization complete."))
+          )
+
+          # Step 1: Get sets from pre run quality checks
+          result <- phrutils::phr_try_step(
+            {
+              sets <- private$..pre_run_quality_checks()
+
+              if (is.null(sets) || length(sets) == 0) {
+                phrutils::phr_warning(
+                  message = "..pre_run_quality_checks() returned no input sets.",
+                  origin = private$..dataset_name
+                )
+                return(invisible(list()))
+              }
+
+              sets
+
+            },
+            step = phrutils::phr_txt("Getting sets of parameters for quality checks."),
+            hint = phrutils::phr_txt("Check set parameters in ..pre_run_quality_checks")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
-          set_names <- names(sets) %||% rep("", length(sets))
-          nested <- !(length(sets) == 1 && identical(set_names, "main"))
+          sets <- result
 
-          all_results <- list()
-          combined_results <- list()
-
-          for (i in seq_along(sets)) {
-            set_role <- if (nzchar(set_names[i])) {
-              set_names[i]
-            } else {
-              paste0("set_", i)
-            }
-            inputs <- private$..resolve_field_set(sets[[i]])
-            results <- private$..run_quality_checks_for_set(
-              inputs = inputs,
-              set_role = set_role,
-              nested = nested
-            )
-            all_results[[set_role]] <- results %||% list()
-            combined_results <- c(combined_results, results %||% list())
+          # Step 2: Run quality checks for each set
+          result <- phrutils::phr_try_step(
+            {
+              private$..run_quality_checks_process_sets(
+                sets = sets
+              )
+            },
+            step = phrutils::phr_txt("Run quality checks for sets."),
+            hint = phrutils::phr_txt("Check the parameters for each set.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
-          self$plausibility_results <- if (nested) {
-            all_results
-          } else {
-            all_results[[1]]
+          nested <- result$nested
+          all_results <- result$all_results
+          combined_results <- result$combined_results
+
+          # Step 3: Storing plausibility results
+          result <- phrutils::phr_try_step(
+            {
+              self$plausibility_results <- if (nested) {
+                all_results
+              } else {
+                all_results[[1]]
+              }
+            },
+            step = phrutils::phr_txt("store quality checks results."),
+            hint = phrutils::phr_txt("Check the parameters for each set.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Ran {length(combined_results)} quality checks for {private$..dataset_name}."
-            )
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("Run quality checks complete. Ran {length(combined_results)} quality checks for {private$..dataset_name}.")
           )
 
           invisible(self$plausibility_results)
@@ -315,577 +305,6 @@ DataAnalytics <- R6::R6Class(
         origin = paste0(private$..dataset_name, "$run_quality_checks")
       )
     },
-
-    # Quality Checks
-
-
-
-    # Diagnose Methods
-
-    #' @description
-    #' Diagnose issues in the quality schema against the current dataset.
-    #'
-    #' For every check defined in \code{private$..quality_schema}, this method
-    #' verifies that (a) the required variables exist in \code{private$..data},
-    #' (b) the statistical test function can be found, and (c) each
-    #' threshold expression is syntactically valid. The results mirror the
-    #' flat quality schema table and add a \code{status} column ("ok" or a
-    #' description of the issue).  Results are stored in
-    #' \code{private$..quality_issues_log}.
-    #'
-    #' @return A tibble (invisibly) with one row per quality check.
-    quality_diagnose = function() {
-      origin <- paste0(private$..dataset_name, "DataAnalytics$quality_diagnose")
-
-      phrutils::phr_try(
-        {
-          if (
-            is.null(private$..quality_schema) || length(private$..quality_schema) == 0
-          ) {
-            phrutils::phr_warning(
-              message = phrutils::phr_txt("No quality_schema defined. Cannot diagnose."),
-              origin = origin
-            )
-            empty <- tibble::tibble(
-              check_group = character(),
-              check_name = character(),
-              check_label = character(),
-              variables = character(),
-              statistical_test = character(),
-              test_params = character(),
-              n_thresholds = integer(),
-              variables_in_data = logical(),
-              missing_variables = character(),
-              function_available = logical(),
-              thresholds_valid = logical(),
-              status = character()
-            )
-            private$..quality_issues_log <- empty
-            return(invisible(empty))
-          }
-
-          data_cols <- if (!is.null(private$..data)) {
-            names(private$..data)
-          } else {
-            character(0)
-          }
-          rows <- list()
-
-          for (check_name in names(private$..quality_schema)) {
-            check <- private$..quality_schema[[check_name]]
-
-            # --- basic fields
-            check_group <- check$check_group %||% NA_character_
-            check_label <- check$check_label %||% NA_character_
-            statistical_test <- check$statistical_test %||% NA_character_
-            variables <- check$variables %||% character(0)
-            test_params <- check$test_params %||% list()
-            thresholds <- check$thresholds %||% list()
-
-            # --- 1. variables present in data
-            mapped_vars <- private$..translate_canonical_to_actual_vars(variables)
-            missing_vars <- setdiff(mapped_vars, data_cols)
-            vars_in_data <- length(missing_vars) == 0
-
-            # --- 2. test function available
-            func_available <- FALSE
-            if (!is.na(statistical_test) && nzchar(statistical_test)) {
-              func_name <- paste0("quality_test_", statistical_test)
-              if (requireNamespace("phr", quietly = TRUE)) {
-                tryCatch(
-                  {
-                    ns <- asNamespace("phr")
-                    func_available <- exists(
-                      func_name,
-                      envir = ns,
-                      mode = "function",
-                      inherits = FALSE
-                    )
-                  },
-                  error = function(e) {}
-                )
-              }
-              if (!func_available) {
-                tryCatch(
-                  {
-                    func_available <- exists(
-                      func_name,
-                      mode = "function",
-                      inherits = TRUE
-                    )
-                  },
-                  error = function(e) {}
-                )
-              }
-            }
-
-            # --- 3. threshold expressions parseable
-            thresholds_valid <- TRUE
-            if (length(thresholds) > 0) {
-              for (thr in thresholds) {
-                expr_str <- thr$threshold_expression %||% thr$expression
-                if (
-                  !is.null(expr_str) && !is.na(expr_str) && nzchar(expr_str)
-                ) {
-                  parsed <- tryCatch(
-                    parse(text = expr_str),
-                    error = function(e) NULL
-                  )
-                  if (is.null(parsed)) {
-                    thresholds_valid <- FALSE
-                    break
-                  }
-                }
-              }
-            }
-
-            # --- build status string
-            issues <- character(0)
-            if (!vars_in_data) {
-              issues <- c(
-                issues,
-                paste0(
-                  phrutils::phr_txt("missing variables: "),
-                  paste(missing_vars, collapse = ", ")
-                )
-              )
-            }
-            if (!func_available) {
-              issues <- c(
-                issues,
-                paste0(
-                  phrutils::phr_txt("function not found: "), "quality_test_",
-                  statistical_test %||% "NA"
-                )
-              )
-            }
-            if (!thresholds_valid) {
-              issues <- c(issues, phrutils::phr_txt("invalid threshold expression(s)"))
-            }
-            status <- if (length(issues) == 0) {
-              "ok"
-            } else {
-              paste(issues, collapse = "; ")
-            }
-
-            rows[[length(rows) + 1]] <- tibble::tibble(
-              check_group = check_group,
-              check_name = check_name,
-              check_label = check_label,
-              variables = paste(variables, collapse = ", "),
-              statistical_test = statistical_test %||% NA_character_,
-              test_params = if (length(test_params) > 0) {
-                paste(
-                  names(test_params),
-                  test_params,
-                  sep = "=",
-                  collapse = ", "
-                )
-              } else {
-                NA_character_
-              },
-              n_thresholds = length(thresholds),
-              variables_in_data = vars_in_data,
-              missing_variables = if (length(missing_vars) > 0) {
-                paste(missing_vars, collapse = ", ")
-              } else {
-                NA_character_
-              },
-              function_available = func_available,
-              thresholds_valid = thresholds_valid,
-              status = status
-            )
-          }
-
-          result <- if (length(rows) > 0) {
-            dplyr::bind_rows(rows)
-          } else {
-            tibble::tibble(
-              check_group = character(),
-              check_name = character(),
-              check_label = character(),
-              variables = character(),
-              statistical_test = character(),
-              test_params = character(),
-              n_thresholds = integer(),
-              variables_in_data = logical(),
-              missing_variables = character(),
-              function_available = logical(),
-              thresholds_valid = logical(),
-              status = character()
-            )
-          }
-
-          private$..quality_issues_log <- result
-
-          n_issues <- sum(result$status != "ok", na.rm = TRUE)
-          phrutils::phr_message(phrutils::phr_txt(
-            "quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}."
-          ))
-
-          invisible(result)
-        },
-        on_error = "warn",
-        origin = origin
-      )
-    },
-
-    #' @description
-    #' Diagnose issues in the data analysis plan against the current dataset.
-    #'
-    #' For every indicator row in \code{self$data_analysis_plan$get("log_df")}, this
-    #' method verifies that the primary variable (\code{var_name}), the
-    #' denominator variable (\code{denom_var}), and the disaggregation variable
-    #' exist in the dataset (or survey design), and that the \code{calculation}
-    #' type is valid. The results mirror the analysis plan tibble and add
-    #' diagnostic columns. Results are stored in
-    #' \code{private$..analysis_plan_issues_log}.
-    #'
-    #' @return A tibble (invisibly) with one row per analysis plan indicator.
-    analysis_diagnose = function() {
-      origin <- paste0(private$..dataset_name, "DataAnalytics$analysis_diagnose")
-
-      valid_calcs <- c(
-        "prop",
-        "mean",
-        "median",
-        "ratio",
-        "cat",
-        "categorical",
-        "select_multiple_cat"
-      )
-
-      empty_result <- tibble::tibble(
-        indicator_name = character(),
-        calculation = character(),
-        var_name = character(),
-        denom_var = character(),
-        disaggregation = character(),
-        multiplier = numeric(),
-        indicator_unit = character(),
-        var_name_in_data = logical(),
-        denom_var_in_data = logical(),
-        disaggregation_in_data = logical(),
-        calculation_valid = logical(),
-        status = character()
-      )
-
-      phrutils::phr_try(
-        {
-          schema_df <- if (!is.null(private$..analysis_schema)) {
-            private$..analysis_schema
-          } else {
-            NULL
-          }
-
-          if (is.null(schema_df) || nrow(schema_df) == 0) {
-            phrutils::phr_warning(
-              message = phrutils::phr_txt("No analysis schema defined. Cannot diagnose."),
-              origin = origin
-            )
-            private$..analysis_plan_issues_log <- empty_result
-            return(invisible(empty_result))
-          }
-
-          available_vars <- if (!is.null(private$..survey_design)) {
-            names(private$..survey_design$variables)
-          } else if (!is.null(private$..data)) {
-            names(private$..data)
-          } else {
-            character(0)
-          }
-
-          rows <- lapply(seq_len(nrow(schema_df)), function(i) {
-            row <- schema_df[i, ]
-
-            # Helper: resolve a canonical name through variable_map and check availability
-            resolve_var <- function(val) {
-              v <- val %||% NA_character_
-              if (is.na(v) || !nzchar(v)) {
-                return(v)
-              }
-              resolved <- private$..translate_canonical_to_actual_vars(v)
-              if (length(resolved) > 0) resolved[[1]] else v
-            }
-
-            # Helper: an optional variable field is ok if blank/NA, or if the col exists in data
-            optional_var_ok <- function(val) {
-              v <- val %||% NA_character_
-              is.na(v) || !nzchar(v) || resolve_var(v) %in% available_vars
-            }
-
-            resolved_var_name <- resolve_var(row$var_name)
-            var_name_ok <- !is.na(row$var_name) &&
-              nzchar(row$var_name) &&
-              resolved_var_name %in% available_vars
-            denom_ok <- optional_var_ok(row$denom_var)
-            disagg_ok <- optional_var_ok(row$disaggregation)
-            calc_valid <- !is.na(row$calculation) &&
-              row$calculation %in% valid_calcs
-
-            issues <- character(0)
-            if (!var_name_ok) {
-              issues <- c(
-                issues,
-                paste0("var_name '", row$var_name, phrutils::phr_txt("' not found in data"))
-              )
-            }
-            if (!denom_ok) {
-              issues <- c(
-                issues,
-                paste0("denom_var '", row$denom_var, phrutils::phr_txt("' not found in data"))
-              )
-            }
-            if (!disagg_ok) {
-              issues <- c(
-                issues,
-                paste0(
-                  phrutils::phr_txt("disaggregation '"),
-                  row$disaggregation,
-                  phrutils::phr_txt("' not found in data")
-                )
-              )
-            }
-            if (!calc_valid) {
-              issues <- c(
-                issues,
-                paste0(phrutils::phr_txt("invalid calculation '"), row$calculation %||% "NA", "'")
-              )
-            }
-            status <- if (length(issues) == 0) {
-              "ok"
-            } else {
-              paste(issues, collapse = "; ")
-            }
-
-            tibble::tibble(
-              indicator_name = row$indicator_name %||% NA_character_,
-              calculation = row$calculation %||% NA_character_,
-              var_name = row$var_name %||% NA_character_,
-              denom_var = row$denom_var %||% NA_character_,
-              disaggregation = row$disaggregation %||% NA_character_,
-              multiplier = as.numeric(row$multiplier %||% NA),
-              indicator_unit = row$indicator_unit %||% NA_character_,
-              var_name_in_data = var_name_ok,
-              denom_var_in_data = denom_ok,
-              disaggregation_in_data = disagg_ok,
-              calculation_valid = calc_valid,
-              status = status
-            )
-          })
-
-          result <- dplyr::bind_rows(rows)
-          private$..analysis_plan_issues_log <- result
-
-          n_issues <- sum(result$status != "ok", na.rm = TRUE)
-          phrutils::phr_message(
-            phrutils::phr_txt(
-            "analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}."
-          ))
-
-          invisible(result)
-        },
-        on_error = "warn",
-        origin = origin
-      )
-    },
-
-    #' @description
-    #' Diagnose issues in the unified outputs schema against the current dataset.
-    #'
-    #' For every output defined in \code{private$..outputs_schema}, this method checks
-    #' that (a) the output function exists, (b) any \code{variables} listed exist
-    #' in the data or survey design, and (c) required schema fields
-    #' (\code{output_title}, \code{output_func_name}, \code{output_type}) are
-    #' non-empty. The results mirror the outputs schema table and add a
-    #' \code{status} column. Results are stored in \code{private$..outputs_issues_log}.
-    #'
-    #' @return A tibble (invisibly) with one row per output definition.
-    outputs_diagnose = function() {
-      origin <- paste0(private$..dataset_name, "DataAnalytics$outputs_diagnose")
-
-      # Combine column names from both data and survey_design for comprehensive checking
-      all_cols <- unique(c(
-        if (!is.null(private$..data)) names(private$..data) else character(0),
-        if (!is.null(private$..survey_design)) {
-          names(private$..survey_design$variables)
-        } else {
-          character(0)
-        }
-      ))
-
-      phrutils::phr_try(
-        {
-          empty_result <- tibble::tibble(
-            output_title = character(),
-            output_name = character(),
-            output_func_name = character(),
-            output_type = character(),
-            variables = character(),
-            test_params = character(),
-            outputs_group = character(),
-            function_available = logical(),
-            variables_in_data = logical(),
-            missing_variables = character(),
-            required_fields_ok = logical(),
-            status = character()
-          )
-
-          if (is.null(private$..outputs_schema) || nrow(private$..outputs_schema) == 0) {
-            phrutils::phr_warning(
-              message = phrutils::phr_txt(
-                "No {schema_name} defined. Cannot diagnose."
-              ),
-              origin = origin
-            )
-            private$..outputs_issues_log <- empty_result
-            return(invisible(empty_result))
-          }
-
-          # Read a schema cell, returning NA_character_ when absent or empty.
-          cell <- function(col, i) {
-            if (!col %in% names(private$..outputs_schema)) {
-              return(NA_character_)
-            }
-            value <- private$..outputs_schema[[col]][[i]]
-            if (is.null(value) || length(value) != 1 || is.na(value)) {
-              return(NA_character_)
-            }
-            value <- as.character(value)
-            if (!nzchar(value)) NA_character_ else value
-          }
-
-          rows <- list()
-
-          for (i in seq_len(nrow(private$..outputs_schema))) {
-            out_name <- cell("output_title", i)
-            func_name <- cell("output_func_name", i)
-            output_type <- cell("output_type", i)
-            output_name <- cell("output_name", i)
-            outputs_group <- cell("outputs_group", i)
-            test_params <- cell("test_params", i)
-            variables <- outputs_parse_list_field(cell("variables", i)) %||%
-              character(0)
-
-            # --- 1. required fields present
-            req_ok <- !is.na(func_name) && !is.na(output_type)
-
-            # --- 2. function available
-            func_available <- FALSE
-            if (req_ok) {
-              if (requireNamespace("phr", quietly = TRUE)) {
-                tryCatch(
-                  {
-                    ns <- asNamespace("phr")
-                    func_available <- exists(
-                      func_name,
-                      envir = ns,
-                      mode = "function",
-                      inherits = FALSE
-                    )
-                  },
-                  error = function(e) {}
-                )
-              }
-              if (!func_available) {
-                tryCatch(
-                  {
-                    func_available <- exists(
-                      func_name,
-                      mode = "function",
-                      inherits = TRUE
-                    )
-                  },
-                  error = function(e) {}
-                )
-              }
-            }
-
-            # --- 3. variables present in data
-            # Skip @variable_map and @value_map refs; resolve canonical names via variable_map
-            literal_vars <- variables[!grepl("^@", variables)]
-            resolved_vars <- private$..translate_canonical_to_actual_vars(
-              literal_vars
-            )
-            missing_vars <- setdiff(resolved_vars, data_cols)
-            vars_in_data <- length(missing_vars) == 0
-
-            # --- build status
-            issues <- character(0)
-            if (!req_ok) {
-              issues <- c(
-                issues,
-                "missing required fields (output_func_name or output_type)"
-              )
-            }
-            if (!func_available && req_ok) {
-              issues <- c(
-                issues,
-                paste0("function '", func_name, "' not found")
-              )
-            }
-            if (!vars_in_data) {
-              issues <- c(
-                issues,
-                paste0(
-                  "missing variables: ",
-                  paste(missing_vars, collapse = ", ")
-                )
-              )
-            }
-            status <- if (length(issues) == 0) {
-              "ok"
-            } else {
-              paste(issues, collapse = "; ")
-            }
-
-            rows[[length(rows) + 1]] <- tibble::tibble(
-              output_title = out_name,
-              output_name = output_name,
-              output_func_name = func_name,
-              output_type = output_type,
-              variables = if (length(variables) > 0) {
-                paste(variables, collapse = ", ")
-              } else {
-                NA_character_
-              },
-              test_params = test_params,
-              outputs_group = outputs_group,
-              function_available = func_available,
-              variables_in_data = vars_in_data,
-              missing_variables = if (length(missing_vars) > 0) {
-                paste(missing_vars, collapse = ", ")
-              } else {
-                NA_character_
-              },
-              required_fields_ok = req_ok,
-              status = status
-            )
-          }
-
-          result <- if (length(rows) > 0) {
-            dplyr::bind_rows(rows)
-          } else {
-            empty_result
-          }
-          private$..outputs_log_issues <- result
-
-          n_issues <- sum(result$status != "ok", na.rm = TRUE)
-          phrutils::phr_message(
-            phrutils::phr_txt(
-            "{schema_name} diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}."
-          ))
-
-          invisible(result)
-        },
-        on_error = "warn",
-        origin = origin
-      )
-
-
-    },
-
-
 
     #' @description Run all outputs defined in the outputs schema(s).
     #'
@@ -926,6 +345,14 @@ DataAnalytics <- R6::R6Class(
     run_outputs = function(language = "english") {
       phrutils::phr_try(
         {
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("Starting run_outputs...")
+          )
+
           sets <- private$..pre_run_outputs()
 
           if (is.null(sets) || length(sets) == 0) {
@@ -1089,7 +516,324 @@ DataAnalytics <- R6::R6Class(
       private$..post_run_analysis()
 
       invisible(self)
-    }
+    },
+
+    # Diagnose Methods
+
+    #' @description
+    #' Diagnose issues in the quality schema against the current dataset.
+    #'
+    #' For every check defined in \code{private$..quality_schema}, this method
+    #' verifies that (a) the required variables exist in \code{private$..data},
+    #' (b) the statistical test function can be found, and (c) each
+    #' threshold expression is syntactically valid. The results mirror the
+    #' flat quality schema table and add a \code{status} column ("ok" or a
+    #' description of the issue).  Results are stored in
+    #' \code{private$..quality_issues_log}.
+    #'
+    #' @return A tibble (invisibly) with one row per quality check.
+    quality_diagnose = function() {
+      origin <- paste0(private$..dataset_name, "$quality_diagnose")
+
+      phrutils::phr_try(
+        {
+
+          # Step 1: Setup for quality diagnose
+          result <- phrutils::phr_try_step(
+            {
+              private$..quality_diagnose_setup(
+                origin = origin
+              )
+            },
+            step = phrutils::phr_txt("Setup for quality diagnose"),
+            hint = phrutils::phr_txt("Check the quality schema for issues.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          if (is.data.frame(result) && nrow(result) == 0) {
+            return(invisible(result))
+          }
+
+          # Step 2: Rowwise checks against quality schema
+          result <- phrutils::phr_try_step(
+            {
+
+              data_cols <- if (!is.null(private$..data)) {
+                names(private$..data)
+              } else {
+                character(0)
+              }
+
+              rows <- list()
+
+              for (check_name in names(private$..quality_schema)) {
+
+                rows[[length(rows) + 1]] <- private$..quality_diagnose_verify_schema(
+                  check_name = check_name,
+                  data_cols = data_cols
+                )
+
+              }
+
+              rows
+
+            },
+            step = phrutils::phr_txt("Setup for quality diagnose"),
+            hint = phrutils::phr_txt("Check the quality schema for issues.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          rows <- result
+
+          result <- if (length(rows) > 0) {
+            dplyr::bind_rows(rows)
+          } else {
+            tibble::tibble(
+              check_group = character(),
+              check_name = character(),
+              check_label = character(),
+              variables = character(),
+              statistical_test = character(),
+              test_params = character(),
+              n_thresholds = integer(),
+              variables_in_data = logical(),
+              missing_variables = character(),
+              function_available = logical(),
+              thresholds_valid = logical(),
+              status = character()
+            )
+          }
+
+          private$..quality_issues_log <- result
+
+          n_issues <- sum(result$status != "ok", na.rm = TRUE)
+
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+          )
+
+          invisible(result)
+        },
+        on_error = "warn",
+        origin = origin
+      )
+    },
+
+    #' @description
+    #' Diagnose issues in the data analysis plan against the current dataset.
+    #'
+    #' For every indicator row in \code{self$data_analysis_plan$get("log_df")}, this
+    #' method verifies that the primary variable (\code{var_name}), the
+    #' denominator variable (\code{denom_var}), and the disaggregation variable
+    #' exist in the dataset (or survey design), and that the \code{calculation}
+    #' type is valid. The results mirror the analysis plan tibble and add
+    #' diagnostic columns. Results are stored in
+    #' \code{private$..analysis_plan_issues_log}.
+    #'
+    #' @return A tibble (invisibly) with one row per analysis plan indicator.
+    analysis_diagnose = function() {
+
+      origin <- paste0(private$..dataset_name, "$analysis_diagnose")
+
+      phrutils::phr_try(
+        {
+
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("Starting analysis_diagnose for {private$..dataset_name}.")
+          )
+
+          # Step 1: Analysis diagnose setup
+          result <- phrutils::phr_try_step(
+            {
+              setup <- private$..analysis_diagnose_setup(
+                origin = origin
+              )
+            },
+            step = phrutils::phr_txt("Setup for quality diagnose"),
+            hint = phrutils::phr_txt("Check the quality schema for issues.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          setup <- result
+
+          if (!setup$proceed) {
+            return(invisible(setup$empty_result))
+          }
+
+          empty_result <- setup$empty_result
+          schema_df <- setup$schema_df
+          available_vars <- setup$available_vars
+
+          # Step 2: Rowwise checks against analysis schema
+          result <- phrutils::phr_try_step(
+            {
+              rows <- lapply(
+                seq_len(nrow(schema_df)),
+                function(i) {
+
+                  private$..analysis_diagnose_verify_schema(
+                    row = schema_df[i, ],
+                    available_vars = available_vars,
+                    valid_calcs = valid_calcs
+                  )
+                }
+              )
+
+              rows
+            },
+            step = phrutils::phr_txt("Setup for quality diagnose"),
+            hint = phrutils::phr_txt("Check the quality schema for issues.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          rows <- result
+
+          # Step 3: Set analysis plan issues log
+          result <- phrutils::phr_try_step(
+            {
+              result <- dplyr::bind_rows(rows)
+              self$set(field = "..analysis_plan_issues_log", value = result)
+            },
+            step = phrutils::phr_txt("Setup for quality diagnose"),
+            hint = phrutils::phr_txt("Check the quality schema for issues.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          n_issues <- sum(result$status != "ok", na.rm = TRUE)
+
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+          )
+          invisible(result)
+        },
+        on_error = "warn",
+        origin = origin
+      )
+    },
+
+    #' @description
+    #' Diagnose issues in the unified outputs schema against the current dataset.
+    #'
+    #' For every output defined in \code{private$..outputs_schema}, this method checks
+    #' that (a) the output function exists, (b) any \code{variables} listed exist
+    #' in the data or survey design, and (c) required schema fields
+    #' (\code{output_title}, \code{output_func_name}, \code{output_type}) are
+    #' non-empty. The results mirror the outputs schema table and add a
+    #' \code{status} column. Results are stored in \code{private$..outputs_issues_log}.
+    #'
+    #' @return A tibble (invisibly) with one row per output definition.
+    outputs_diagnose = function() {
+      origin <- paste0(private$..dataset_name, "$outputs_diagnose")
+
+      phrutils::phr_try(
+        {
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("Starting outputs diagnose...")
+          )
+
+          setup <- phrutils::phr_try_step(
+            {
+              private$..outputs_diagnose_setup(
+                origin = origin,
+                schema_name = schema_name
+              )
+            },
+            step = phrutils::phr_txt("Setup outputs diagnose"),
+            hint = phrutils::phr_txt(
+              "Check outputs schema availability."
+            )
+          )
+          if (phrutils::phr_failed(setup)) {
+            return(setup)
+          }
+
+          if (!setup$proceed) {
+            return(invisible(setup$empty_result))
+          }
+
+          # Step 2: Check output schema rows
+          result <- phrutils::phr_try_step(
+            {
+              rows <- list()
+
+              for (i in seq_len(nrow(private$..outputs_schema))) {
+
+                rows[[length(rows) + 1]] <-
+                  private$..outputs_diagnose_verify_schema(
+                    i = i,
+                    data_cols = data_cols
+                  )
+              }
+            },
+            step = phrutils::phr_txt("Check output schema rows"),
+            hint = phrutils::phr_txt(
+              "Check outputs schema content."
+            )
+          )
+          if (phrutils::phr_failed(setup)) {
+            return(setup)
+          }
+
+
+          # Step 3: Set output log issues
+          result <- phrutils::phr_try_step(
+            {
+              result <- if (length(rows) > 0) {
+                dplyr::bind_rows(rows)
+              } else {
+                empty_result
+              }
+
+              self$set(field = "..outputs_log_issues", value = result)
+            },
+            step = phrutils::phr_txt("Check output schema rows"),
+            hint = phrutils::phr_txt(
+              "Check outputs schema content."
+            )
+          )
+          if (phrutils::phr_failed(setup)) {
+            return(setup)
+          }
+
+          n_issues <- sum(result$status != "ok", na.rm = TRUE)
+
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("{schema_name} diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+          )
+
+          invisible(result)
+        },
+        on_error = "warn",
+        origin = origin
+      )
+    },
+
   ),
 
   # Private helpers
@@ -1305,6 +1049,243 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
+    #' Initialize Quality Fields
+    #'
+    #' @description
+    #' Initializes object fields during construction.
+    #'
+    #' @param parent_data_object Parent data object.
+    #' @param dataset_name Dataset name.
+    #' @param data_stage_name Data stage name.
+    #' @param data_hash Data hash.
+    #' @param variable_map Variable mapping list.
+    #' @param value_map Value mapping list.
+    #' @param variable_label Variable label list.
+    #' @param value_label Value label list.
+    #' @param data Optional dataframe.
+    #' @param origin Origin string for validation messages.
+    #'
+    #' @return NULL. Called for side effects.
+    ..initialize_set_fields = function(
+    parent_data_object,
+    dataset_name,
+    data_stage_name,
+    data_hash,
+    variable_map,
+    value_map,
+    variable_label,
+    value_label,
+    data = NULL,
+    origin = NULL
+    ) {
+
+      self$set(field = "..parent_data_object", value = parent_data_object)
+      self$set(field = "..parent_dataset_name", value = dataset_name)
+      self$set(field = "..parent_data_stage_name", value = data_stage_name)
+      self$set(field = "..parent_data_hash", value = data_hash)
+
+      self$set(field = "..variable_map", value = variable_map %||% list())
+      self$set(field = "..value_map", value = value_map %||% list())
+      self$set(field = "..variable_label", value = variable_label %||% list())
+      self$set(field = "..value_label", value = value_label %||% list())
+
+      self$set(field = "visualizations", value = list())
+      self$set(field = "tables", value = list())
+
+      # --- Quality-specific initialization
+      if (!is.null(data)) {
+        phrutils::phr_validate_dataframe(
+          data,
+          origin = origin,
+          soft = FALSE
+        )
+
+        self$set(field = "..data", value = data)
+      }
+
+      self$set(field = "..plausibility_results", value = list())
+      self$set(field = "..overall_score", value = NA_real_)
+
+      self$set(field = "..quality_issues_log", value = tibble::tibble())
+      self$set(field = "..analysis_plan_issues_log", value = tibble::tibble())
+      self$set(field = "..outputs_issues_log", value = tibble::tibble())
+
+      invisible(NULL)
+    },
+
+    #' Initialize Default Schemas
+    #'
+    #' @description
+    #' Loads the default quality, analysis, and outputs schemas into
+    #' their corresponding private fields.
+    #'
+    #' @return Invisibly returns TRUE.
+    ..initialize_load_schemas = function() {
+
+      # Loading quality schema
+      private$..load_default_schema(
+        filename = private$..default_quality_schema_filename,
+        target_field = "..quality_schema",
+        required_cols = c(
+          "check_group",
+          "check_name",
+          "check_label",
+          "variables",
+          "statistical_test",
+          "threshold_expression",
+          "penalty_score",
+          "test_params"
+        ),
+        schema_name = "quality",
+        dataset_name = private$..dataset_name
+      )
+
+      # Loading analysis schema
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_filename,
+        target_field = "..analysis_schema",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis",
+        dataset_name = private$..dataset_name
+      )
+
+      # Loading outputs schema
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_filename,
+        target_field = "..outputs_schema",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs",
+        dataset_name = private$..dataset_name
+      )
+
+      invisible(TRUE)
+    },
+
+    #' Initialize Data Analysis Plan
+    #'
+    #' @description
+    #' Initializes and populates the data analysis plan log. If a DAP
+    #' data frame is provided, it is used directly. Otherwise, an empty
+    #' log is created and optionally populated from the analysis schema.
+    #'
+    #' @param dap Optional data analysis plan data frame.
+    #'
+    #' @return Invisibly returns the data analysis plan object.
+    ..initialize_populate_dap = function(dap = NULL) {
+
+      if (!is.null(dap)) {
+
+        private$..data_analysis_plan <- QuantDataAnalysisPlanLog$new(
+          log_df   = dap,
+          log_name = paste0(private$..dataset_name, "-Quant Data Analysis Plan")
+        )
+
+      } else {
+
+        private$..data_analysis_plan <- QuantDataAnalysisPlanLog$new(
+          log_df   = NULL,
+          log_name = paste0(private$..dataset_name, "-Quant Data Analysis Plan")
+        )
+
+        if (!is.null(private$..survey_design) || !is.null(private$..data)) {
+
+          result <- private$..build_dap_from_schema(
+            analysis_schema = private$..analysis_schema,
+            variable_map    = private$..variable_map %||% list(),
+            available_vars  = names(private$..data),
+            dataset_label   = "data"
+          )
+
+          private$..data_analysis_plan$set(
+            field = "log_df",
+            value = result$dap_df
+          )
+
+        }
+      }
+
+      invisible(private$..data_analysis_plan)
+    },
+
+    #' Process Quality Check Input Sets
+    #'
+    #' @description
+    #' Resolves quality check input sets and runs quality checks for each set,
+    #' aggregating both per-set and combined results.
+    #'
+    #' @param sets List of quality check input sets.
+    #'
+    #' @return A list containing `all_results`, `combined_results`, and `nested`.
+    ..run_quality_checks_process_sets = function(sets) {
+
+      set_names <- names(sets) %||% rep("", length(sets))
+
+      nested <- !(
+        length(sets) == 1 &&
+          identical(set_names, "main")
+      )
+
+      all_results <- list()
+      combined_results <- list()
+
+      for (i in seq_along(sets)) {
+
+        set_role <- if (nzchar(set_names[i])) {
+          set_names[i]
+        } else {
+          paste0("set_", i)
+        }
+
+        inputs <- private$..resolve_field_set(
+          sets[[i]]
+        )
+
+        results <- private$..run_quality_checks_for_set(
+          inputs = inputs,
+          set_role = set_role,
+          nested = nested
+        )
+
+        all_results[[set_role]] <- results %||% list()
+
+        combined_results <- c(
+          combined_results,
+          results %||% list()
+        )
+
+      }
+
+      list(
+        nested = nested,
+        all_results = all_results,
+        combined_results = combined_results
+      )
+
+    },
+
     #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
     #'
     #' The default implementation returns a single set (named \code{main})
@@ -1331,6 +1312,693 @@ DataAnalytics <- R6::R6Class(
           variable_map = "variable_map"
         )
       )
+    },
+
+    #' Setup Quality Diagnosis
+    #'
+    #' @description
+    #' Validates that a quality schema is available before running
+    #' quality diagnosis and initializes an empty issues log if not.
+    #'
+    #' @param origin Origin string used for logging.
+    #'
+    #' @return Quality schema if available; otherwise an empty tibble.
+    ..quality_diagnose_setup = function(origin) {
+
+      if (
+        is.null(private$..quality_schema) ||
+        length(private$..quality_schema) == 0
+      ) {
+
+        phrutils::phr_warning(
+          message = phrutils::phr_txt(
+            "No quality_schema defined. Cannot diagnose."
+          ),
+          origin = origin
+        )
+
+        empty <- tibble::tibble(
+          check_group = character(),
+          check_name = character(),
+          check_label = character(),
+          variables = character(),
+          statistical_test = character(),
+          test_params = character(),
+          n_thresholds = integer(),
+          variables_in_data = logical(),
+          missing_variables = character(),
+          function_available = logical(),
+          thresholds_valid = logical(),
+          status = character()
+        )
+
+        private$..quality_issues_log <- empty
+
+        return(empty)
+      }
+
+      private$..quality_schema
+
+    },
+
+    #' Verify Quality Schema Check
+    #'
+    #' @description
+    #' Validates a single quality check definition and returns a
+    #' diagnostic summary row.
+    #'
+    #' @param check_name Name of the quality check.
+    #' @param data_cols Character vector of dataset column names.
+    #'
+    #' @return A one-row tibble containing diagnostic information.
+    ..quality_diagnose_verify_schema = function(
+    check_name,
+    data_cols
+    ) {
+
+
+
+      check <- private$..quality_schema[[check_name]]
+
+      # --- basic fields
+      check_group <- check$check_group %||% NA_character_
+      check_label <- check$check_label %||% NA_character_
+      statistical_test <- check$statistical_test %||% NA_character_
+      variables <- check$variables %||% character(0)
+      test_params <- check$test_params %||% list()
+      thresholds <- check$thresholds %||% list()
+
+      # --- 1. variables present in data
+      mapped_vars <- private$..translate_canonical_to_actual_vars(
+        variables
+      )
+
+      missing_vars <- setdiff(
+        mapped_vars,
+        data_cols
+      )
+
+      vars_in_data <- length(missing_vars) == 0
+
+      # --- 2. test function available
+      func_available <- FALSE
+
+      if (!is.na(statistical_test) && nzchar(statistical_test)) {
+
+        func_name <- paste0(
+          "quality_test_",
+          statistical_test
+        )
+
+        if (requireNamespace("phr", quietly = TRUE)) {
+
+          tryCatch(
+            {
+              ns <- asNamespace("phr")
+
+              func_available <- exists(
+                func_name,
+                envir = ns,
+                mode = "function",
+                inherits = FALSE
+              )
+            },
+            error = function(e) {}
+          )
+
+        }
+
+        if (!func_available) {
+
+          tryCatch(
+            {
+              func_available <- exists(
+                func_name,
+                mode = "function",
+                inherits = TRUE
+              )
+            },
+            error = function(e) {}
+          )
+
+        }
+      }
+
+      # --- 3. threshold expressions parseable
+      thresholds_valid <- TRUE
+
+      if (length(thresholds) > 0) {
+
+        for (thr in thresholds) {
+
+          expr_str <- thr$threshold_expression %||% thr$expression
+
+          if (
+            !is.null(expr_str) &&
+            !is.na(expr_str) &&
+            nzchar(expr_str)
+          ) {
+
+            parsed <- tryCatch(
+              parse(text = expr_str),
+              error = function(e) NULL
+            )
+
+            if (is.null(parsed)) {
+              thresholds_valid <- FALSE
+              break
+            }
+
+          }
+        }
+      }
+
+      # --- build status string
+      issues <- character(0)
+
+      if (!vars_in_data) {
+
+        issues <- c(
+          issues,
+          paste0(
+            phrutils::phr_txt("missing variables: "),
+            paste(missing_vars, collapse = ", ")
+          )
+        )
+
+      }
+
+      if (!func_available) {
+
+        issues <- c(
+          issues,
+          paste0(
+            phrutils::phr_txt("function not found: "),
+            "quality_test_",
+            statistical_test %||% "NA"
+          )
+        )
+
+      }
+
+      if (!thresholds_valid) {
+
+        issues <- c(
+          issues,
+          phrutils::phr_txt(
+            "invalid threshold expression(s)"
+          )
+        )
+
+      }
+
+      status <- if (length(issues) == 0) {
+        "ok"
+      } else {
+        paste(issues, collapse = "; ")
+      }
+
+      tibble::tibble(
+        check_group = check_group,
+        check_name = check_name,
+        check_label = check_label,
+        variables = paste(
+          variables,
+          collapse = ", "
+        ),
+        statistical_test = statistical_test %||% NA_character_,
+        test_params = if (length(test_params) > 0) {
+          paste(
+            names(test_params),
+            test_params,
+            sep = "=",
+            collapse = ", "
+          )
+        } else {
+          NA_character_
+        },
+        n_thresholds = length(thresholds),
+        variables_in_data = vars_in_data,
+        missing_variables = if (length(missing_vars) > 0) {
+          paste(missing_vars, collapse = ", ")
+        } else {
+          NA_character_
+        },
+        function_available = func_available,
+        thresholds_valid = thresholds_valid,
+        status = status
+      )
+
+    },
+
+    #' Setup Analysis Diagnosis
+    #'
+    #' @description
+    #' Initializes analysis diagnosis objects and validates that an
+    #' analysis schema is available.
+    #'
+    #' @param origin Character string used for logging.
+    #'
+    #' @return A list containing `empty_result`, `schema_df`, and
+    #' `available_vars`.
+    ..analysis_diagnose_setup = function(origin) {
+
+      empty_result <- tibble::tibble(
+        indicator_name = character(),
+        calculation = character(),
+        var_name = character(),
+        denom_var = character(),
+        disaggregation = character(),
+        multiplier = numeric(),
+        indicator_unit = character(),
+        var_name_in_data = logical(),
+        denom_var_in_data = logical(),
+        disaggregation_in_data = logical(),
+        calculation_valid = logical(),
+        status = character()
+      )
+
+      schema_df <- if (!is.null(private$..analysis_schema)) {
+        private$..analysis_schema
+      } else {
+        NULL
+      }
+
+      if (is.null(schema_df) || nrow(schema_df) == 0) {
+
+        phrutils::phr_warning(
+          message = phrutils::phr_txt(
+            "No analysis schema defined. Cannot diagnose."
+          ),
+          origin = origin
+        )
+
+        private$..analysis_plan_issues_log <- empty_result
+
+        return(list(
+          empty_result = empty_result,
+          schema_df = NULL,
+          available_vars = character(0),
+          proceed = FALSE
+        ))
+
+      }
+
+      available_vars <- if (!is.null(private$..survey_design)) {
+
+        names(private$..survey_design$variables)
+
+      } else if (!is.null(private$..data)) {
+
+        names(private$..data)
+
+      } else {
+
+        character(0)
+
+      }
+
+      list(
+        empty_result = empty_result,
+        schema_df = schema_df,
+        available_vars = available_vars,
+        proceed = TRUE
+      )
+
+    },
+
+    #' Verify Analysis Schema Row
+    #'
+    #' @description
+    #' Validates a single analysis schema row against available variables
+    #' and allowed calculation types.
+    #'
+    #' @param row Single-row analysis schema data frame.
+    #' @param available_vars Character vector of available dataset variables.
+    #'
+    #' @return A one-row tibble containing diagnostic results.
+    ..analysis_diagnose_verify_schema = function(
+    row,
+    available_vars
+    ) {
+
+      valid_calcs <- c(
+        "prop",
+        "mean",
+        "median",
+        "ratio",
+        "cat",
+        "categorical",
+        "select_multiple_cat"
+      )
+
+      # Helper: resolve a canonical name through variable_map and check availability
+      resolve_var <- function(val) {
+
+        v <- val %||% NA_character_
+
+        if (is.na(v) || !nzchar(v)) {
+          return(v)
+        }
+
+        resolved <- private$..translate_canonical_to_actual_vars(v)
+
+        if (length(resolved) > 0) {
+          resolved[[1]]
+        } else {
+          v
+        }
+
+      }
+
+      # Helper: an optional variable field is ok if blank/NA,
+      # or if the column exists in data
+      optional_var_ok <- function(val) {
+
+        v <- val %||% NA_character_
+
+        is.na(v) ||
+          !nzchar(v) ||
+          resolve_var(v) %in% available_vars
+
+      }
+
+      resolved_var_name <- resolve_var(row$var_name)
+
+      var_name_ok <- !is.na(row$var_name) &&
+        nzchar(row$var_name) &&
+        resolved_var_name %in% available_vars
+
+      denom_ok <- optional_var_ok(row$denom_var)
+
+      disagg_ok <- optional_var_ok(row$disaggregation)
+
+      calc_valid <- !is.na(row$calculation) &&
+        row$calculation %in% valid_calcs
+
+      issues <- character(0)
+
+      if (!var_name_ok) {
+        issues <- c(
+          issues,
+          paste0(
+            "var_name '",
+            row$var_name,
+            phrutils::phr_txt("' not found in data")
+          )
+        )
+      }
+
+      if (!denom_ok) {
+        issues <- c(
+          issues,
+          paste0(
+            "denom_var '",
+            row$denom_var,
+            phrutils::phr_txt("' not found in data")
+          )
+        )
+      }
+
+      if (!disagg_ok) {
+        issues <- c(
+          issues,
+          paste0(
+            phrutils::phr_txt("disaggregation '"),
+            row$disaggregation,
+            phrutils::phr_txt("' not found in data")
+          )
+        )
+      }
+
+      if (!calc_valid) {
+        issues <- c(
+          issues,
+          paste0(
+            phrutils::phr_txt("invalid calculation '"),
+            row$calculation %||% "NA",
+            "'"
+          )
+        )
+      }
+
+      status <- if (length(issues) == 0) {
+        "ok"
+      } else {
+        paste(issues, collapse = "; ")
+      }
+
+      tibble::tibble(
+        indicator_name = row$indicator_name %||% NA_character_,
+        calculation = row$calculation %||% NA_character_,
+        var_name = row$var_name %||% NA_character_,
+        denom_var = row$denom_var %||% NA_character_,
+        disaggregation = row$disaggregation %||% NA_character_,
+        multiplier = as.numeric(row$multiplier %||% NA),
+        indicator_unit = row$indicator_unit %||% NA_character_,
+        var_name_in_data = var_name_ok,
+        denom_var_in_data = denom_ok,
+        disaggregation_in_data = disagg_ok,
+        calculation_valid = calc_valid,
+        status = status
+      )
+    },
+
+    #' Setup Outputs Diagnosis
+    #'
+    #' @description
+    #' Initializes outputs diagnosis objects and validates that an
+    #' outputs schema is available.
+    #'
+    #' @param origin Character string used for logging.
+    #' @param schema_name Character string used in warning messages.
+    #'
+    #' @return A list containing `empty_result` and a `proceed` flag.
+    ..outputs_diagnose_setup = function(
+    origin,
+    schema_name
+    ) {
+
+      empty_result <- tibble::tibble(
+        output_title = character(),
+        output_name = character(),
+        output_func_name = character(),
+        output_type = character(),
+        variables = character(),
+        test_params = character(),
+        outputs_group = character(),
+        function_available = logical(),
+        variables_in_data = logical(),
+        missing_variables = character(),
+        required_fields_ok = logical(),
+        status = character()
+      )
+
+      if (
+        is.null(private$..outputs_schema) ||
+        nrow(private$..outputs_schema) == 0
+      ) {
+
+        phrutils::phr_warning(
+          message = phrutils::phr_txt(
+            "No {schema_name} defined. Cannot diagnose."
+          ),
+          origin = origin
+        )
+
+        private$..outputs_issues_log <- empty_result
+
+        return(list(
+          empty_result = empty_result,
+          proceed = FALSE
+        ))
+
+      }
+
+      list(
+        empty_result = empty_result,
+        proceed = TRUE
+      )
+
+    },
+
+    #' Verify Outputs Schema Row
+    #'
+    #' @description
+    #' Validates a single outputs schema row and returns a diagnostic
+    #' summary row.
+    #'
+    #' @param i Row index in the outputs schema.
+    #' @param data_cols Character vector of dataset column names.
+    #'
+    #' @return A one-row tibble containing diagnostic results.
+    ..outputs_diagnose_verify_schema = function(
+    i,
+    data_cols
+    ) {
+
+      # Read a schema cell, returning NA_character_ when absent or empty.
+      cell <- function(col, i) {
+
+        if (!col %in% names(private$..outputs_schema)) {
+          return(NA_character_)
+        }
+
+        value <- private$..outputs_schema[[col]][[i]]
+
+        if (
+          is.null(value) ||
+          length(value) != 1 ||
+          is.na(value)
+        ) {
+          return(NA_character_)
+        }
+
+        value <- as.character(value)
+
+        if (!nzchar(value)) {
+          NA_character_
+        } else {
+          value
+        }
+
+      }
+
+      out_name <- cell("output_title", i)
+      func_name <- cell("output_func_name", i)
+      output_type <- cell("output_type", i)
+      output_name <- cell("output_name", i)
+      outputs_group <- cell("outputs_group", i)
+      test_params <- cell("test_params", i)
+
+      variables <- outputs_parse_list_field(
+        cell("variables", i)
+      ) %||% character(0)
+
+      # --- 1. required fields present
+      req_ok <- !is.na(func_name) &&
+        !is.na(output_type)
+
+      # --- 2. function available
+      func_available <- FALSE
+
+      if (req_ok) {
+
+        if (requireNamespace("phr", quietly = TRUE)) {
+
+          tryCatch(
+            {
+              ns <- asNamespace("phr")
+
+              func_available <- exists(
+                func_name,
+                envir = ns,
+                mode = "function",
+                inherits = FALSE
+              )
+            },
+            error = function(e) {}
+          )
+
+        }
+
+        if (!func_available) {
+
+          tryCatch(
+            {
+              func_available <- exists(
+                func_name,
+                mode = "function",
+                inherits = TRUE
+              )
+            },
+            error = function(e) {}
+          )
+
+        }
+
+      }
+
+      # --- 3. variables present in data
+      # Skip @variable_map and @value_map refs;
+      # resolve canonical names via variable_map
+
+      literal_vars <- variables[
+        !grepl("^@", variables)
+      ]
+
+      resolved_vars <- private$..translate_canonical_to_actual_vars(
+        literal_vars
+      )
+
+      missing_vars <- setdiff(
+        resolved_vars,
+        data_cols
+      )
+
+      vars_in_data <- length(missing_vars) == 0
+
+      # --- build status
+
+      issues <- character(0)
+
+      if (!req_ok) {
+        issues <- c(
+          issues,
+          "missing required fields (output_func_name or output_type)"
+        )
+      }
+
+      if (!func_available && req_ok) {
+        issues <- c(
+          issues,
+          paste0(
+            "function '",
+            func_name,
+            "' not found"
+          )
+        )
+      }
+
+      if (!vars_in_data) {
+        issues <- c(
+          issues,
+          paste0(
+            "missing variables: ",
+            paste(missing_vars, collapse = ", ")
+          )
+        )
+      }
+
+      status <- if (length(issues) == 0) {
+        "ok"
+      } else {
+        paste(issues, collapse = "; ")
+      }
+
+      tibble::tibble(
+        output_title = out_name,
+        output_name = output_name,
+        output_func_name = func_name,
+        output_type = output_type,
+        variables = if (length(variables) > 0) {
+          paste(variables, collapse = ", ")
+        } else {
+          NA_character_
+        },
+        test_params = test_params,
+        outputs_group = outputs_group,
+        function_available = func_available,
+        variables_in_data = vars_in_data,
+        missing_variables = if (length(missing_vars) > 0) {
+          paste(missing_vars, collapse = ", ")
+        } else {
+          NA_character_
+        },
+        required_fields_ok = req_ok,
+        status = status
+      )
+
     },
 
     #' @description Pre-hook providing the input sets used by \code{run_outputs()}.

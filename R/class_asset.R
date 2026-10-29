@@ -460,12 +460,16 @@ Asset <- R6::R6Class(
     #   through to \code{..track()} when \code{log} is \code{TRUE}.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
-    ..touch = function(log = FALSE, name = NULL, message = NULL) {
+    ..touch = function(log = FALSE, touch = TRUE, name = NULL, message = NULL) {
       if (is.null(private$..metadata) || !is.list(private$..metadata)) {
         private$..metadata <- list()
       }
-      private$..metadata$modified_datetime <- Sys.time()
-      private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
+
+      if(isTRUE(touch)) {
+        private$..metadata$modified_datetime <- Sys.time()
+        private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
+
+      }
 
       if (isTRUE(log)) {
         private$..track(name = name, message = message)
