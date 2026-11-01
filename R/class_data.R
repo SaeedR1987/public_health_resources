@@ -2763,7 +2763,7 @@ Data <- R6::R6Class(
     #'   related to "other" responses in select_multiple questions)
     #'
     #' @keywords internal
-    ..st_process_select_multiple_columns <- function(data, schema) {
+    ..st_process_select_multiple_columns = function(data, schema) {
       result <- list(
         data = data,
         expanded_columns = character(0),
@@ -5689,7 +5689,7 @@ Data <- R6::R6Class(
     #' @return A data frame of 0/1 dummy columns, one per unique token found in `column`
     #'
     #' @keywords internal
-    ..expand_select_multiple <- function(column, column_name, separator = " ") {
+    ..expand_select_multiple = function(column, column_name, separator = " ") {
       # Handle NA and empty values
       column <- ifelse(is.na(column) | column == "", NA_character_, column)
 
@@ -5750,7 +5750,7 @@ Data <- R6::R6Class(
     #' @param arg_string Character string containing arguments
     #' @return Character vector of argument pairs
     #' @keywords internal
-    ..parse_indicator_arguments <- function(arg_string) {
+    ..parse_indicator_arguments = function(arg_string) {
       if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
         return(character(0))
       }

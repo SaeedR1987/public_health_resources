@@ -180,7 +180,7 @@ IndividualData <- R6::R6Class(
     # @keywords internal
     ..default_indicator_schema_filename = c(
       "resources",
-      "indicator_schema_data_individual_roster_template.xlsx",
+      "indicator_schema_data_individual_roster_template.xlsx"
     ),
 
     #' Post-Validation Hook for Individual Data

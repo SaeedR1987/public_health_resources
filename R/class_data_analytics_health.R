@@ -228,7 +228,7 @@ HealthDataAnalytics <- R6::R6Class(
         name = dataset_name,
         message = phrutils::phr_txt(msg)
       )
-    },
+    }
   ),
 
   private = list(

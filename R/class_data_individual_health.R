@@ -78,7 +78,7 @@ HealthIndividualData <- R6::R6Class(
         )
 
       }, on_error = "abort", origin = "HealthIndividualData$initialize")
-    },
+    }
   ),
 
   private = list(
@@ -104,7 +104,7 @@ HealthIndividualData <- R6::R6Class(
     # @keywords internal
     ..default_indicator_schema_filename = c(
       "resources",
-      "indicator_schema_data_individual_health_template.xlsx",
+      "indicator_schema_data_individual_health_template.xlsx"
     ),
 
     ..analytics_registry = function() {

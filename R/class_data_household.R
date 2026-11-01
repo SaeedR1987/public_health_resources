@@ -447,7 +447,7 @@ HouseholdData <- R6::R6Class(
     # @keywords internal
     ..default_indicator_schema_filename = c(
       "resources",
-      "indicator_schema_data_household_template.xlsx",
+      "indicator_schema_data_household_template.xlsx"
     ),
 
     ..sampling_frame = NULL, # optional SamplingFrame for generate_weights()
@@ -2134,7 +2134,7 @@ HouseholdData <- R6::R6Class(
     #'   `candidates` (every candidate that was considered).
     #'
     #' @keywords internal
-    ..resolve_linked_hh_column <- function(
+    ..resolve_linked_hh_column = function(
     linked_obj,
     data_cols,
     roles = c("hh_uuid", "household_uuid")
