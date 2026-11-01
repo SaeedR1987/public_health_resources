@@ -103,12 +103,7 @@ HouseholdData <- R6::R6Class(
 
       phrutils::phr_try(
         {
-          private$..touch(
-            log = TRUE,
-            touch = FALSE,
-            name = dataset_name,
-            message = phrutils::phr_txt("Started initialization for {dataset_name}.")
-          )
+
 
           # Default variable map for common household fields (roles -> columns)
           default_map <- list(
@@ -134,6 +129,13 @@ HouseholdData <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = dataset_name,
+            message = phrutils::phr_txt("Started initialization for {dataset_name} as a HouseholdData object.")
+          )
 
           # 5) Merge household-required columns into Data$required_columns
           #    (ensure we store *column names*, not roles)
@@ -203,7 +205,7 @@ HouseholdData <- R6::R6Class(
 
           private$..touch(
             log = TRUE,
-            touch = FALSE,
+            touch = TRUE,
             name = dataset_name,
             message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
           )
