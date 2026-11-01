@@ -5949,6 +5949,8 @@ Data <- R6::R6Class(
                 )
                 return(invisible(self))
               }
+
+              list(df = df)
             },
             step = phrutils::phr_txt("Check raw data"),
             hint = phrutils::phr_txt("Ensure raw data exists before standardization")
@@ -5957,37 +5959,37 @@ Data <- R6::R6Class(
             return(result)
           }
 
-          df <- result
+          df <- result$df
           data_cols <- names(df)
 
-          # Step 2: Getting schema info
+          # Step 2: Getting schema info from the flat variable schema table
           result <- phrutils::phr_try_step(
             {
-              sch <- private$..variable_schema
-
-              col_names_map <- stats::setNames(
-                sch$col_names,
-                sch$var_name
+              col_names_map <- private$..variable_schema_lookup(
+                column = "col_names",
+                split = TRUE
               )
 
-              schema_value_map <- stats::setNames(
-                sch$value_map,
-                sch$var_name
+              # canonical value -> allowed dataset values, per variable
+              schema_value_map <- private$..variable_schema_lookup(
+                column = "allowed",
+                split = TRUE,
+                per_value = TRUE
               )
 
-              allowed_vals <- stats::setNames(
-                sch$allowed_values,
-                sch$var_name
+              # Plain allowed values only for variables without canonical values
+              allowed_vals <- private$..variable_schema_lookup(
+                column = "allowed",
+                split = TRUE
               )
+              allowed_vals <- allowed_vals[
+                setdiff(names(allowed_vals), names(schema_value_map))
+              ]
 
-              types <- stats::setNames(
-                sch$type,
-                sch$var_name
-              )
+              types <- private$..variable_schema_lookup(column = "type")
 
-              question_types <- stats::setNames(
-                sch$question_type,
-                sch$var_name
+              question_types <- private$..variable_schema_lookup(
+                column = "question_type"
               )
 
               list(
@@ -5999,9 +6001,9 @@ Data <- R6::R6Class(
               )
 
             },
-            step = phrutils::phr_txt("Check raw data"),
+            step = phrutils::phr_txt("Read variable schema"),
             hint = phrutils::phr_txt(
-              "Ensure raw data exists before standardization"
+              "Check the format of the variable schema table"
             )
           )
           if (phrutils::phr_failed(result)) {
@@ -6035,11 +6037,14 @@ Data <- R6::R6Class(
                   vals_mapped = vals_mapped
                 )
 
-                list(
-                  vars_mapped = res$vars_mapped,
-                  vals_mapped = res$vals_mapped
-                )
+                vars_mapped <- res$vars_mapped
+                vals_mapped <- res$vals_mapped
               }
+
+              list(
+                vars_mapped = vars_mapped,
+                vals_mapped = vals_mapped
+              )
             },
             step = phrutils::phr_txt("map schema vars iterations"),
             hint = phrutils::phr_txt("Ensure raw data exists before standardization")
@@ -6048,8 +6053,8 @@ Data <- R6::R6Class(
             return(result)
           }
 
-          vars_mapped <- results$vars_mapped
-          vals_mapped <- results$vals_mapped
+          vars_mapped <- result$vars_mapped
+          vals_mapped <- result$vals_mapped
 
           if (vars_mapped > 0 || vals_mapped > 0) {
             phrutils::phr_message(
@@ -6072,14 +6077,18 @@ Data <- R6::R6Class(
     #' Processes a single schema variable, updating the variable map and
     #' value map where applicable.
     #'
-    #' @param var_role Canonical variable name.
-    #' @param col_names_map Named list of possible dataset columns.
+    #' @param var_role Canonical variable name (schema `variable` column).
+    #' @param col_names_map Named list of candidate dataset columns per variable
+    #'   (parsed from the schema `col_names` column).
     #' @param data_cols Dataset column names.
     #' @param df Dataset.
-    #' @param schema_value_map Schema value mappings.
-    #' @param allowed_vals Schema allowed values.
-    #' @param types Variable types.
-    #' @param question_types Question types.
+    #' @param schema_value_map Named list per variable of canonical `value` ->
+    #'   allowed dataset values (parsed from the schema `allowed` column).
+    #' @param allowed_vals Named list of allowed values for variables without
+    #'   canonical `value` rows.
+    #' @param types Named list of variable types (schema `type` column).
+    #' @param question_types Named list of question types (schema
+    #'   `question_type` column).
     #' @param vars_mapped Current variable mapping count.
     #' @param vals_mapped Current value mapping count.
     #'
@@ -6192,9 +6201,9 @@ Data <- R6::R6Class(
         !is.na(data_values)
       ]
 
-      is_select_multiple <-
-        !is.null(question_types[[var_role]]) &&
+      is_select_multiple <- isTRUE(
         question_types[[var_role]] == "select_multiple"
+      )
 
       escape_regex <- function(str) {
         gsub(
@@ -6406,14 +6415,14 @@ Data <- R6::R6Class(
     #' @return Invisible self (for method chaining)
     #'
     #' @details
-    #' Labels are sourced from the variable schema fields:
-    #' * `variable_labels$en / $fr / $ar` -- one label per variable role
-    #' * `value_labels$en / $fr / $ar`    -- one label per canonical value per role
+    #' Labels are sourced from the flat variable schema table columns:
+    #' * `variable_label_en / _fr / _ar` -- one label per variable
+    #'   (first non-empty row of the variable)
+    #' * `value_label_en / _fr / _ar` -- one label per canonical `value` row,
+    #'   stored as a named character vector (canonical value -> label)
     #'
-    #' These fields are populated when the schema is loaded from an xlsx template
-    #' that contains the `variable_label_en`, `variable_label_fr`,
-    #' `variable_label_ar`, `value_label_en`, `value_label_fr`, and
-    #' `value_label_ar` columns.
+    #' These columns are loaded from the xlsx variable schema template
+    #' (e.g. `inst/resources/variable_schema_data_household_template.xlsx`).
     ..map_schema_labels = function(language = "english") {
       phrutils::phr_try(
         {
@@ -6443,14 +6452,16 @@ Data <- R6::R6Class(
           var_label_col <- paste0("variable_label_", lang)
           val_label_col <- paste0("value_label_", lang)
 
-          schema_var_labels <- stats::setNames(
-            sch[[var_label_col]],
-            sch$var_name
+          schema_var_labels <- private$..variable_schema_lookup(
+            column = var_label_col
           )
 
-          schema_val_labels <- stats::setNames(
-            sch[[val_label_col]],
-            sch$var_name
+          schema_val_labels <- lapply(
+            private$..variable_schema_lookup(
+              column = val_label_col,
+              per_value = TRUE
+            ),
+            unlist
           )
 
           vars_labelled <- 0
@@ -6494,6 +6505,82 @@ Data <- R6::R6Class(
         on_error = "warn",
         origin = paste0(private$..dataset_name, "$map_schema_labels")
       )
+    },
+
+    #' Variable Schema Lookup
+    #'
+    #' @description
+    #' Builds a named lookup from the flat variable schema table
+    #' (`private$..variable_schema`), keyed by the `variable` column. Only
+    #' `rule_type == "variable"` rows (when present) with a non-empty value in
+    #' `column` are used.
+    #'
+    #' @param column Name of the schema column to read (e.g. `"col_names"`,
+    #'   `"type"`, `"allowed"`, `"variable_label_en"`).
+    #' @param split Logical; if `TRUE`, split comma-separated cell values into
+    #'   a trimmed character vector.
+    #' @param per_value Logical; if `TRUE`, return a nested list keyed by
+    #'   variable then by canonical `value` (rows without a `value` are
+    #'   skipped). Otherwise the first non-empty entry per variable is used.
+    #'
+    #' @return A named list. Empty if the schema or column is unavailable.
+    ..variable_schema_lookup = function(
+    column,
+    split = FALSE,
+    per_value = FALSE
+    ) {
+
+      sch <- private$..variable_schema
+
+      needed <- c("variable", column, if (per_value) "value")
+
+      if (!is.data.frame(sch) || !all(needed %in% names(sch))) {
+        return(list())
+      }
+
+      if ("rule_type" %in% names(sch)) {
+        sch <- sch[
+          !is.na(sch$rule_type) & sch$rule_type == "variable",
+          ,
+          drop = FALSE
+        ]
+      }
+
+      vars <- trimws(as.character(sch$variable))
+      cells <- as.character(sch[[column]])
+      canon <- if (per_value) trimws(as.character(sch$value)) else NULL
+
+      keep <- !is.na(vars) & vars != "" & !is.na(cells) & trimws(cells) != ""
+      if (per_value) {
+        keep <- keep & !is.na(canon) & canon != ""
+      }
+
+      parse_cell <- function(x) {
+        if (!split) {
+          return(x)
+        }
+        parts <- trimws(strsplit(x, ",", fixed = TRUE)[[1]])
+        parts[parts != ""]
+      }
+
+      out <- list()
+
+      for (i in which(keep)) {
+        v <- vars[[i]]
+
+        if (per_value) {
+          if (is.null(out[[v]][[canon[[i]]]])) {
+            out[[v]] <- c(
+              out[[v]],
+              stats::setNames(list(parse_cell(cells[[i]])), canon[[i]])
+            )
+          }
+        } else if (is.null(out[[v]])) {
+          out[[v]] <- parse_cell(cells[[i]])
+        }
+      }
+
+      out
     }
 
     )

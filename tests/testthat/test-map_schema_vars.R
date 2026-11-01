@@ -457,7 +457,7 @@ test_that("get_maps_as_df returns empty dataframes when maps are empty", {
   d <- suppressMessages(
     Data$new(data = df, dataset_name = "TestData", uuid = "id")
   )
-  d$set(field = ".value_map", value = list() # Empty value map)
+  d$set(field = ".value_map", value = list()) # Empty value map
 
   maps <- d$get_maps_as_df()
 
@@ -1634,4 +1634,96 @@ test_that("map_schema_labels is called automatically after map_schema_vars in st
 
   expect_equal(d$get(field = ".variable_label")$sex, "Sex")
   expect_equal(d$get(field = ".value_label")$sex[["male"]], "Male")
+})
+
+# Test: map_schema_vars / map_schema_labels with the flat (data frame) variable schema
+
+flat_variable_schema_fixture <- function() {
+  tibble::tibble(
+    rule_type = "variable",
+    variable = c("sex", "sex", "members", "items", "items", "region"),
+    value = c("male", "female", NA, "soap", "water", NA),
+    type = c("character", "character", "numeric", "character", "character", "character"),
+    question_type = c("select_one", "select_one", NA, "select_multiple", "select_multiple", NA),
+    allowed = c("m,male", "f,female", NA, "soap,savon", "water,eau", "north, south,east"),
+    col_names = c("sex,gender", "sex,gender", "members, num_members", "items", "items", "region,adm1"),
+    variable_label_en = c("Sex", "Sex", "Members", "Items", "Items", "Region"),
+    variable_label_fr = c("Sexe", "Sexe", "Membres", "Articles", "Articles", "R\u00e9gion"),
+    value_label_en = c("Male", "Female", NA, "Soap", "Water", NA),
+    value_label_fr = c("Homme", "Femme", NA, "Savon", "Eau", NA)
+  )
+}
+
+test_that("map_schema_vars maps variables and values from a flat variable schema", {
+  df <- tibble::tibble(
+    id = 1:4,
+    gender = c("m", "female", "m", NA),
+    num_members = c(2, 3, 4, 5),
+    items = c("soap", "savon eau", NA, "soap"),
+    adm1 = c("north", "east", "north", "west")
+  )
+  d <- suppressMessages(
+    Data$new(data = df, dataset_name = "FlatSchema", uuid = "id")
+  )
+  d$set(field = "..variable_schema", value = flat_variable_schema_fixture())
+  suppressMessages(d$call(field = "..map_schema_vars"))
+
+  vm <- d$get(field = "..variable_map")
+  expect_equal(vm$sex, "gender")
+  expect_equal(vm$members, "num_members")
+  expect_equal(vm$items, "items")
+  expect_equal(vm$region, "adm1")
+
+  vlm <- d$get(field = "..value_map")
+  expect_equal(vlm$sex, list(male = "m", female = "female"))
+  expect_equal(vlm$items, list(soap = c("soap", "savon"), water = "eau"))
+  expect_setequal(vlm$region, c("north", "east"))
+  expect_false("members" %in% names(vlm))
+})
+
+test_that("map_schema_labels reads per-variable and per-value labels from a flat variable schema", {
+  df <- tibble::tibble(id = 1:2, gender = c("m", "f"), num_members = c(2, 3))
+  d <- suppressMessages(
+    Data$new(data = df, dataset_name = "FlatLabels", uuid = "id")
+  )
+  d$set(field = "..variable_schema", value = flat_variable_schema_fixture())
+  suppressMessages(d$call(field = "..map_schema_vars"))
+  suppressMessages(d$call(field = "..map_schema_labels"))
+
+  expect_equal(d$get(field = "..variable_label")$sex, "Sex")
+  expect_equal(d$get(field = "..variable_label")$members, "Members")
+  expect_false("region" %in% names(d$get(field = "..variable_label")))
+  expect_equal(
+    d$get(field = "..value_label")$sex,
+    c(male = "Male", female = "Female")
+  )
+
+  suppressMessages(d$call(field = "..map_schema_labels", language = "french"))
+  expect_equal(d$get(field = "..variable_label")$sex, "Sexe")
+  expect_equal(d$get(field = "..value_label")$sex[["female"]], "Femme")
+})
+
+test_that("HouseholdData maps variables and labels from the default household variable schema", {
+  df <- tibble::tibble(
+    uuid = paste0("u", 1:3),
+    today = c("2024-01-01", "2024-01-02", "2024-01-03"),
+    consent = c("yes", "no", "oui"),
+    sex_respondent = c("m", "f", "male")
+  )
+  hh <- suppressMessages(HouseholdData$new(data = df))
+
+  vm <- hh$get(field = "..variable_map")
+  expect_equal(vm$uuid, "uuid")
+  expect_equal(vm$date_survey, "today")
+  expect_equal(vm$consent, "consent")
+  expect_equal(vm$respondent_sex, "sex_respondent")
+
+  vlm <- hh$get(field = "..value_map")
+  expect_setequal(vlm$consent$yes, c("yes", "oui"))
+  expect_equal(vlm$consent$no, "no")
+  expect_setequal(vlm$respondent_sex$male, c("m", "male"))
+
+  suppressMessages(hh$call(field = "..map_schema_labels"))
+  expect_equal(hh$get(field = "..variable_label")$consent, "Consent to Participate")
+  expect_equal(hh$get(field = "..value_label")$consent[["yes"]], "Yes")
 })
