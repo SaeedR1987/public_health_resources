@@ -106,20 +106,13 @@ Data <- R6::R6Class(
       uuid = NULL
     ) {
 
-      private$..touch(
-        log = TRUE,
-        touch = FALSE,
-        name = private$..dataset_name,
-        message = phrutils::phr_txt("Started initialization for {dataset_name} as Data object.")
-      )
-
       phrutils::phr_try(
         {
 
           # Step 1: Super-initialize
           result <- phrutils::phr_try_step(
             {
-              super$initialize()
+              super$initialize(name = dataset_name)
             },
             step = phrutils::phr_txt("Check raw data"),
             hint = phrutils::phr_txt("Ensure raw data exists before standardization")
@@ -127,6 +120,13 @@ Data <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = dataset_name,
+            message = phrutils::phr_txt("Started initialization for {dataset_name} as Data object.")
+          )
 
           # Step 2: Core checks
           result <- phrutils::phr_try_step(
@@ -596,6 +596,13 @@ Data <- R6::R6Class(
                 "_other$"
               )
 
+              list(
+                data_copy = data_copy,
+                sch = sch,
+                var_schema = var_schema,
+                other_col_patterns = other_col_patterns
+              )
+
             },
             step = phrutils::phr_txt("Setup of main standardize process"),
             hint = phrutils::phr_txt("")
@@ -603,6 +610,11 @@ Data <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+          data_copy <- result$data_copy
+          sch <- result$sch
+          var_schema <- result$var_schema
+          other_col_patterns <- result$other_col_patterns
 
           # Step 5-7: For Loop - Schema type conversion and inferred other column registration
 
@@ -617,7 +629,8 @@ Data <- R6::R6Class(
                 type_result <- private$..standardize_type_conversion(
                   nm = nm,
                   col = col,
-                  schema = var_schema)
+                  schema = var_schema,
+                  variable_map = private$..variable_map)
 
                 if (type_result$schema_match) {
                   data_copy[[nm]] <- type_result$value
@@ -666,17 +679,22 @@ Data <- R6::R6Class(
             return(result)
           }
 
+          data_copy <- result
+
           # Step 9: Register Schema Identified Other Columns, if not already added
+          # This step shouldnt return anything in result, the private helper
+          # internally should register the identified other columns.
           result <- phrutils::phr_try_step(
             {
               private$..standardize_register_schema_other_columns(
                 data = data_copy,
-                schema = variable_schema
+                schema = var_schema,
+                stage = stage
               )
 
             },
-            step = phrutils::phr_txt("Process select_multiple columns"),
-            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+            step = phrutils::phr_txt("Process schema identified other columns"),
+            hint = phrutils::phr_txt("Check variables identified as other variables in the variable_schema.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -702,9 +720,10 @@ Data <- R6::R6Class(
                   )
                 }
               }
+              working_copy
             },
-            step = phrutils::phr_txt("Process select_multiple columns"),
-            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+            step = phrutils::phr_txt("Process indicator schema"),
+            hint = phrutils::phr_txt("Check content of indicator schema.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -721,8 +740,8 @@ Data <- R6::R6Class(
                 variable_map = private$..variable_map
               )
             },
-            step = phrutils::phr_txt("Process select_multiple columns"),
-            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+            step = phrutils::phr_txt("Generate cluster_id_numeric if cluster_id exists"),
+            hint = phrutils::phr_txt("Check the content or presence of cluster_id.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -742,8 +761,8 @@ Data <- R6::R6Class(
               ))
 
             },
-            step = phrutils::phr_txt("Process select_multiple columns"),
-            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+            step = phrutils::phr_txt("Set ..standardized data"),
+            hint = phrutils::phr_txt("Check if ..standardized data set properly.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1505,7 +1524,7 @@ Data <- R6::R6Class(
         )
       }
 
-      allowed <- private$..data_registry
+      allowed <- private$..data_registry()
       nms_allowed <- names(allowed)
 
       if(!(name %in% nms_allowed)) {
@@ -1792,7 +1811,7 @@ Data <- R6::R6Class(
     #' @param required_cols A character vector of column names required for the
     #'   schema to be considered valid.
     #' @param schema_name A character string identifying the schema type (e.g.
-    #'   `"quality"`, `"analysis"`, `"outputs"`). Used to construct warning and
+    #'   `"variable"`, `"dependency"`, `"indicator"`). Used to construct warning and
     #'   logging origins.
     #' @param dataset_name Optional character string identifying the dataset type.
     #'   When supplied, it is prefixed to warning and initialization origins.
@@ -1832,7 +1851,7 @@ Data <- R6::R6Class(
 
               phrutils::phr_warning(
                 origin = paste0(
-                  "DataAnalytics$default_",
+                  "Data$default_",
                   schema_name,
                   "_schema"
                 ),
@@ -1902,7 +1921,7 @@ Data <- R6::R6Class(
               message = phrutils::phr_txt(msg),
               origin = paste0(
                 dataset_name,
-                "DataAnalytics$loading_",
+                "Data$loading_",
                 schema_name,
                 "_schema"
               ),
@@ -2429,10 +2448,10 @@ Data <- R6::R6Class(
     #' @param nm Column name.
     #' @param col Column values.
     #' @param schema Data frame containing `variable` and `type` columns.
+    #' @param variable_map .
     #'
     #' @return A list containing `handled` and `value`.
     ..standardize_type_conversion = function(nm, col, schema, variable_map) {
-
 
       canonical_name <- private$..get_canonical_variable(
         dataset_variable = nm,
@@ -2670,14 +2689,17 @@ Data <- R6::R6Class(
       result <- phrutils::phr_try_step(
         {
           if (
-            !is.null(sch$question_types) && length(sch$question_types) > 0
+            !is.null(schema) &&
+            nrow(schema) > 0 &&
+            "question_type" %in% names(schema) &&
+            any(schema$question_type == "select_multiple", na.rm = TRUE)
           ) {
             sm_result <- private$..st_process_select_multiple_columns(data, schema)
 
             if (length(sm_result$expanded_columns) > 0) {
               phrutils::phr_message(
                 phrutils::phr_txt(
-                  "Expanded {length(sm_result$expanded_columns)} dummy columns from select_multiple questions."
+                  "Expanded {nrow(sm_result$expanded_columns)} dummy columns from select_multiple questions."
                 )
               )
             }
@@ -2735,7 +2757,7 @@ Data <- R6::R6Class(
             sm_result$data
           } else {
             # No select_multiple columns to process
-            data_copy
+            data
           }
         },
         step = "Process select_multiple columns",
@@ -2763,7 +2785,7 @@ Data <- R6::R6Class(
     #'   related to "other" responses in select_multiple questions)
     #'
     #' @keywords internal
-    ..st_process_select_multiple_columns <- function(data, schema) {
+    ..st_process_select_multiple_columns = function(data, schema) {
       result <- list(
         data = data,
         expanded_columns = character(0),
@@ -2854,11 +2876,13 @@ Data <- R6::R6Class(
     #'
     #' @param data Dataset.
     #' @param schema Variable schema.
+    #' @param stage The stage of the data being processed (raw, standardized, clean)
     #'
     #' @return Invisibly updates `..other_columns`.
     ..standardize_register_schema_other_columns = function(
     data,
-    schema
+    schema,
+    stage
     ) {
 
       if ("is_other" %in% names(schema)) {
@@ -5689,7 +5713,7 @@ Data <- R6::R6Class(
     #' @return A data frame of 0/1 dummy columns, one per unique token found in `column`
     #'
     #' @keywords internal
-    ..expand_select_multiple <- function(column, column_name, separator = " ") {
+    ..expand_select_multiple = function(column, column_name, separator = " ") {
       # Handle NA and empty values
       column <- ifelse(is.na(column) | column == "", NA_character_, column)
 
@@ -5750,7 +5774,7 @@ Data <- R6::R6Class(
     #' @param arg_string Character string containing arguments
     #' @return Character vector of argument pairs
     #' @keywords internal
-    ..parse_indicator_arguments <- function(arg_string) {
+    ..parse_indicator_arguments = function(arg_string) {
       if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
         return(character(0))
       }

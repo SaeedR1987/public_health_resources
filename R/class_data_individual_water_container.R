@@ -135,7 +135,7 @@ WaterContainerData <- R6::R6Class(
     # @keywords internal
     ..default_indicator_schema_filename = c(
       "resources",
-      "indicator_schema_data_water_container_template.xlsx",
-    ),
+      "indicator_schema_data_water_container_template.xlsx"
+    )
   )
 )

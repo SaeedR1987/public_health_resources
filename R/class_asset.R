@@ -16,18 +16,28 @@
 Asset <- R6::R6Class(
   "Asset",
   public = list(
+
     #' @description
     #' Creates a new Asset object.
     #' @return A new Asset object.
-    initialize = function() {
+    initialize = function(name = NULL) {
+
       timestamp <- Sys.time()
-      private$..metadata <- list(
-        created_datetime = timestamp,
-        modified_datetime = timestamp,
-        version = 0L,
-        hash_id = private$..compute_hash_id()
-      )
-      private$..touch()
+
+      private$..name <- if (is.null(name)) {"NewObject"} else {name}
+
+      self$set(field = "..metadata",
+               value = list(
+                 created_datetime = timestamp,
+                 modified_datetime = timestamp,
+                 version = 0L,
+                 hash_id = private$..compute_hash_id()
+               ))
+
+      private$..touch(log = TRUE,
+                      touch = TRUE,
+                      name = name,
+                      message = phrutils::phr_txt("Initialization for completed successfully."))
       invisible(self)
     },
 
@@ -424,7 +434,12 @@ Asset <- R6::R6Class(
             private$..sync_state()
           }
           if (update_modified) {
-            private$..touch()
+            private$..touch(
+              log = TRUE,
+              touch = TRUE,
+              name = private$..name,
+              message = phrutils::phr_txt("Started initialization for {private$..name} as Data object.")
+            )
           }
         },
         on_error = "abort",
@@ -435,6 +450,11 @@ Asset <- R6::R6Class(
   ),
 
   private = list(
+
+    # @field name Character name of the Asset object.
+    # @keywords internal
+    ..name = NULL,
+
     # @field ..metadata List containing private asset metadata, including
     #   `created_datetime`, `modified_datetime`, `version`, and `hash_id`.
     # @keywords internal

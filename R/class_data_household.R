@@ -103,12 +103,7 @@ HouseholdData <- R6::R6Class(
 
       phrutils::phr_try(
         {
-          private$..touch(
-            log = TRUE,
-            touch = FALSE,
-            name = dataset_name,
-            message = phrutils::phr_txt("Started initialization for {dataset_name}.")
-          )
+
 
           # Default variable map for common household fields (roles -> columns)
           default_map <- list(
@@ -134,6 +129,13 @@ HouseholdData <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = dataset_name,
+            message = phrutils::phr_txt("Started initialization for {dataset_name} as a HouseholdData object.")
+          )
 
           # 5) Merge household-required columns into Data$required_columns
           #    (ensure we store *column names*, not roles)
@@ -203,7 +205,7 @@ HouseholdData <- R6::R6Class(
 
           private$..touch(
             log = TRUE,
-            touch = FALSE,
+            touch = TRUE,
             name = dataset_name,
             message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
           )
@@ -447,7 +449,7 @@ HouseholdData <- R6::R6Class(
     # @keywords internal
     ..default_indicator_schema_filename = c(
       "resources",
-      "indicator_schema_data_household_template.xlsx",
+      "indicator_schema_data_household_template.xlsx"
     ),
 
     ..sampling_frame = NULL, # optional SamplingFrame for generate_weights()
@@ -2134,7 +2136,7 @@ HouseholdData <- R6::R6Class(
     #'   `candidates` (every candidate that was considered).
     #'
     #' @keywords internal
-    ..resolve_linked_hh_column <- function(
+    ..resolve_linked_hh_column = function(
     linked_obj,
     data_cols,
     roles = c("hh_uuid", "household_uuid")

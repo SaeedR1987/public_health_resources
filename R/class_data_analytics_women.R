@@ -93,7 +93,7 @@ WomanDataAnalytics <- R6::R6Class(
         name = dataset_name,
         message = phrutils::phr_txt("{dataset_name} initialized successfully.")
       )
-    },
+    }
   ),
 
   private = list(

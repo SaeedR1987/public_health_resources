@@ -106,7 +106,7 @@ NutritionIndividualData <- R6::R6Class(
     # @keywords internal
     ..default_indicator_schema_filename = c(
       "resources",
-      "indicator_schema_data_individual_nutrition_template.xlsx",
+      "indicator_schema_data_individual_nutrition_template.xlsx"
     ),
 
     ..analytics_registry = function() {

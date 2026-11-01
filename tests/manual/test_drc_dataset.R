@@ -76,12 +76,16 @@ deaths <- DeathIndividualData$new(
 
 drc_mort$add_linked_dataset(
   name = "roster",
-  data_object = roster
+  other_object = roster,
+  by_self_role = "uuid",
+  by_other_role = "hh_uuid"
 )
 
 drc_mort$add_linked_dataset(
   name = "deaths",
-  data_object = deaths
+  other_object = deaths,
+  by_self_role = "uuid",
+  by_other_role = "hh_uuid"
 )
 
 

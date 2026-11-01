@@ -937,7 +937,7 @@ DataAnalytics <- R6::R6Class(
         on_error = "warn",
         origin = origin
       )
-    },
+    }
 
   ),
 
@@ -1001,8 +1001,8 @@ DataAnalytics <- R6::R6Class(
     ),
 
     # Accepted values for the output_type and dataset_type columns.
-    ..outputs_schema_valid_output_types <- c("visualization", "table"),
-    ..outputs_schema_valid_dataset_types <- c("base", "survey_design"),
+    ..outputs_schema_valid_output_types = c("visualization", "table"),
+    ..outputs_schema_valid_dataset_types = c("base", "survey_design"),
 
 
     #' Load, validate, and assign a default schema.
@@ -2530,7 +2530,7 @@ DataAnalytics <- R6::R6Class(
     #' @param x A single character value, or NA/NULL.
     #' @return A character vector, or NULL when the cell is empty.
     #' @export
-    ..outputs_parse_list_field <- function(x) {
+    ..outputs_parse_list_field = function(x) {
       if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
         return(NULL)
       }
@@ -2638,7 +2638,7 @@ DataAnalytics <- R6::R6Class(
     #' @param x A single character value, or NA/NULL.
     #' @return A named list of parameters, or NULL when the cell is empty.
     #' @export
-    ..outputs_parse_test_params <- function(x) {
+    ..outputs_parse_test_params = function(x) {
       if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
         return(NULL)
       }
@@ -4597,7 +4597,7 @@ DataAnalytics <- R6::R6Class(
     #' @param arg_string Character string containing arguments
     #' @return Character vector of argument pairs
     #' @keywords internal
-    ..parse_indicator_arguments <- function(arg_string) {
+    ..parse_indicator_arguments = function(arg_string) {
       if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
         return(character(0))
       }

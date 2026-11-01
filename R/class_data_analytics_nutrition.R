@@ -676,8 +676,7 @@ NutritionDataAnalytics <- R6::R6Class(
 
       invisible(output)
 
-    },
-
+    }
 
   ),
 
