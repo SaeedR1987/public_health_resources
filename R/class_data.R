@@ -2037,7 +2037,7 @@ Data <- R6::R6Class(
       )
 
       self$set(
-        field = "dataset_name",
+        field = "..dataset_name",
         value = dataset_name
       )
 
