@@ -75,7 +75,7 @@ HouseholdData <- R6::R6Class(
     # Additional fields
 
     # linked_datasets removed - now using inherited linked_objects from Data class
-    optional_columns = NULL, # non-required but commonly present columns
+
 
     #' @description
     #' Creates a new HouseholdData object with household-level survey data
@@ -97,68 +97,117 @@ HouseholdData <- R6::R6Class(
     #' 6. Establishes required and optional columns
     initialize = function(
       data,
-      dataset_name = "HouseholdData"
+      dataset_name = "HouseholdData",
+      uuid = NULL
     ) {
+
       phrutils::phr_try(
         {
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = dataset_name,
+            message = phrutils::phr_txt("Started initialization for {dataset_name}.")
+          )
+
           # Default variable map for common household fields (roles -> columns)
           default_map <- list(
-            uuid = "uuid" # inherited identifier
+            uuid = if(!is.null(uuid) & is.character(uuid)) {uuid} else {"uuid"}
           )
 
           # Merge user-specified map over defaults
           # variable_map <- modifyList(default_map, variable_map %||% list())
 
-          # Call parent initializer first
-          super$initialize(
-            data = data,
-            dataset_name = dataset_name,
-            uuid = default_map$uuid
+          # Step 1: Set super initialize
+          result <- phrutils::phr_try_step(
+            {
+              # Call parent initialize first
+              super$initialize(
+                data = data,
+                dataset_name = dataset_name,
+                uuid = default_map$uuid
+              )
+            },
+          step = phrutils::phr_txt("Super initialize in {dataset_name}"),
+          hint = phrutils::phr_txt("Check the parent Data class")
           )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
 
           # 5) Merge household-required columns into Data$required_columns
           #    (ensure we store *column names*, not roles)
 
-          hh_required <- c(
-            private$..variable_map$uuid,
-            private$..variable_map$consent,
-            private$..variable_map$date_survey,
-            private$..variable_map$enum_id
+          # Step 2: Run map schema vars
+          result <- phrutils::phr_try_step(
+            {
+              private$..map_schema_vars(stage = "raw")
+            },
+          step = phrutils::phr_txt("Map variables to variable and value maps"),
+          hint = phrutils::phr_txt("Check ..map_schema_vars")
           )
-          hh_required <- unique(hh_required[
-            !is.na(hh_required) & hh_required != ""
-          ])
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
 
-          # Data$initialize already set private$..required_columns <- uuid
-          # We extend that with the household-specific requirements
+          # Step 3: Set required household variables
+          result <- phrutils::phr_try_step(
+            {
+              hh_required <- c(
+                private$..variable_map$uuid,
+                private$..variable_map$consent,
+                private$..variable_map$date_survey,
+                private$..variable_map$enum_id
+              )
+              hh_required <- unique(hh_required[
+                !is.na(hh_required) & hh_required != ""
+              ])
 
-          self$set(
-            field = "..required_columns",
-            value = unique(c(private$..required_columns, hh_required))
+              # Data$initialize already set private$..required_columns <- uuid
+              # We extend that with the household-specific requirements
+
+              self$set(
+                field = "..required_columns",
+                value = unique(c(private$..required_columns, hh_required))
+              )
+            },
+          step = phrutils::phr_txt("set required household variables"),
+          hint = phrutils::phr_txt("Check if required variables are present in dataset")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          # Step 4: Set optional household variables
+          result <- phrutils::phr_try_step(
+            {
+              self$set(
+                field = "optional_columns",
+                value = c(
+                  private$..variable_map$cluster_id,
+                  private$..variable_map$stratum,
+                  private$..variable_map$weight,
+                  private$..variable_map$admin1,
+                  private$..variable_map$admin2,
+                  private$..variable_map$gps_lat,
+                  private$..variable_map$gps_lon
+                )
+              )
+            },
+          step = phrutils::phr_txt("set optional household variables"),
+          hint = phrutils::phr_txt("Check if optional variables are present in dataset")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = dataset_name,
+            message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
           )
 
-          # private$..required_columns <- unique(c(private$..required_columns, hh_required))
-
-          # Optional (mapped) columns
-
-          self$set(
-            field = "optional_columns",
-            value = c(
-              private$..variable_map$cluster_id,
-              private$..variable_map$stratum,
-              private$..variable_map$weight,
-              private$..variable_map$admin1,
-              private$..variable_map$admin2,
-              private$..variable_map$gps_lat,
-              private$..variable_map$gps_lon
-            )
-          )
-
-          private$..map_schema_vars(stage = "raw")
-
-          phrutils::phr_message(phrutils::phr_txt(
-            "{dataset_name} initialized as HouseholdData object."
-          ))
         },
         on_error = "abort",
         origin = "HouseholdData$initialize"
@@ -1885,7 +1934,7 @@ HouseholdData <- R6::R6Class(
           # (its schema is loaded after Data$initialize() has already mapped),
           # so fall back to the schema's col_names aliases rather than assuming
           # a literal "hh_uuid" column.
-          linkage <- .resolve_linked_hh_column(
+          linkage <- private$..resolve_linked_hh_column(
             linked_obj = linked_obj,
             data_cols = names(linked_data)
           )
@@ -1985,7 +2034,7 @@ HouseholdData <- R6::R6Class(
             # rename the linkage column), so resolve it per stage.
             stage_hh_col <- linked_hh_col
             if (!stage_hh_col %in% names(stage_data)) {
-              stage_hh_col <- .resolve_linked_hh_column(
+              stage_hh_col <- private$..resolve_linked_hh_column(
                 linked_obj = linked_obj,
                 data_cols = names(stage_data)
               )$column
@@ -2062,6 +2111,89 @@ HouseholdData <- R6::R6Class(
       )
     },
 
+    #' Resolve the household linkage column of a linked dataset
+    #'
+    #' Determines which column of a linked dataset (roster, deaths, ...) holds the
+    #' parent household identifier. Resolution order:
+    #' 1. the column mapped to the `hh_uuid` / `household_uuid` role in the linked
+    #'    object's `variable_map`;
+    #' 2. the `col_names` aliases declared for those roles in the linked object's
+    #'    variable schema (in schema preference order);
+    #' 3. the role names themselves used as literal column names.
+    #'
+    #' Candidates are only accepted when the column is actually present in
+    #' `data_cols`, so a stale or unmapped `variable_map` cannot make the lookup
+    #' fall back to a column that does not exist.
+    #'
+    #' @param linked_obj A `Data` object linked to a `HouseholdData` object.
+    #' @param data_cols Character vector of column names of the linked dataset.
+    #' @param roles Character vector of variable roles to try, in order of preference.
+    #'
+    #' @return A list with `column` (the resolved column name, or `NULL` when no
+    #'   candidate exists in the data), `role` (the role it was resolved from) and
+    #'   `candidates` (every candidate that was considered).
+    #'
+    #' @keywords internal
+    ..resolve_linked_hh_column <- function(
+    linked_obj,
+    data_cols,
+    roles = c("hh_uuid", "household_uuid")
+    ) {
+      valid <- function(x) {
+        is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
+      }
+
+      variable_map <- linked_obj$get(field = "..variable_map")
+      if (!is.list(variable_map)) {
+        variable_map <- list()
+      }
+
+      schema <- linked_obj$get(field = "..variable_schema")
+
+      candidates <- character(0)
+      candidate_roles <- character(0)
+
+      add_candidates <- function(cols, role) {
+        cols <- cols[vapply(cols, valid, logical(1))]
+        cols <- setdiff(cols, candidates)
+        candidates <<- c(candidates, cols)
+        candidate_roles <<- c(candidate_roles, rep(role, length(cols)))
+      }
+
+      for (role in roles) {
+        # 1. explicit variable_map entry
+        add_candidates(variable_map[[role]], role)
+
+        # 2. schema col_names aliases, in the order declared by the schema
+        if (
+          is.data.frame(schema) &&
+          all(c("variable", "col_names") %in% names(schema))
+        ) {
+          rows <- which(schema$variable == role)
+          if ("rule_type" %in% names(schema)) {
+            rows <- rows[schema$rule_type[rows] %in% c("variable", NA)]
+          }
+          for (row in rows) {
+            aliases <- schema$col_names[[row]]
+            if (valid(aliases)) {
+              add_candidates(trimws(strsplit(aliases, ",")[[1]]), role)
+            }
+          }
+        }
+
+        # 3. the role name used as a literal column name
+        add_candidates(role, role)
+      }
+
+      match_idx <- which(candidates %in% data_cols)[1]
+
+      list(
+        column = if (is.na(match_idx)) NULL else candidates[[match_idx]],
+        role = if (is.na(match_idx)) NULL else candidate_roles[[match_idx]],
+        candidates = candidates
+      )
+    },
+
     # @field ..data_registry List of data object types and associated types
     # that are allowable for add_linked_object
     # @keywords internal
@@ -2071,7 +2203,7 @@ HouseholdData <- R6::R6Class(
         roster = "IndividualData",
         deaths = "DeathIndividualData",
         water_containers = "WaterContainerData",
-        women = "WomenIndividualData",
+        women = "WomanIndividualData",
         nutrition = "NutritionIndividualData",
         health = "HealthIndividualData"
       )

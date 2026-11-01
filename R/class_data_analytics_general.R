@@ -43,6 +43,13 @@ GeneralDataAnalytics <- R6::R6Class(
                           variable_label = NULL,
                           value_label = NULL) {
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = dataset_name,
+        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
+      )
+
       super$initialize(
         data = data,
         dap = dap,
@@ -56,8 +63,11 @@ GeneralDataAnalytics <- R6::R6Class(
         value_label = value_label
       )
 
-      phrutils::phr_message(
-        phrutils::phr_txt(glue::glue("{dataset_name} initialized as GeneralDataAnalytics object."))
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = dataset_name,
+        message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
       )
     }
 

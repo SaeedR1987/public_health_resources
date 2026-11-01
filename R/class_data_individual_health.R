@@ -18,15 +18,21 @@ HealthIndividualData <- R6::R6Class(
     #'
     #' @param data A data frame containing individual health records
     #' @param dataset_name A name for this dataset
-    #' @param metadata Optional list of metadata
-    #' @param variable_map Optional named list mapping standard variable names to data columns
+    #' @param uuid column name for uuid in the dataset
     #' @return A new HealthIndividualData object
     initialize = function(data,
                           dataset_name = "HealthIndividualData",
-                          metadata = NULL,
-                          variable_map = NULL) {
+                          uuid = NULL,
+                          hh_uuid = NULL) {
 
       phrutils::phr_try({
+
+        private$..touch(
+          log = TRUE,
+          touch = FALSE,
+          name = private$..dataset_name,
+          message = phrutils::phr_txt("Started initialization for Data object {dataset_name}.")
+        )
 
         health_map <- list(
           uuid      = "person_id",
@@ -34,23 +40,41 @@ HealthIndividualData <- R6::R6Class(
 
         )
 
-        variable_map <- modifyList(health_map, variable_map %||% list())
-
-        # Call parent
-        super$initialize(
-          data         = data,
-          dataset_name = dataset_name,
-          metadata     = metadata,
-          variable_map = variable_map
+        # Step 1: Super-initialize
+        result <- phrutils::phr_try_step(
+          {
+            # Call parent
+            super$initialize(
+              data         = data,
+              dataset_name = dataset_name,
+              uuid = if(is.null(uuid)) {health_map$uuid} else {uuid},
+              hh_uuid = if(is.null(hh_uuid)) {health_map$hh_uuid} else {hh_uuid}
+              )
+          },
+        step = phrutils::phr_txt("Super initialize of IndividualHealthData"),
+        hint = phrutils::phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
         )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
 
-        # Extend optional columns
-        private$..optional_columns <- c(private$..optional_columns, unlist(health_map))
+        # Step 2: Map schema vars
+        result <- phrutils::phr_try_step(
+          {
+            private$..map_schema_vars(stage = "raw")
+          },
+        step = phrutils::phr_txt("Mapping variables and value maps for IndividualHealthData"),
+        hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
 
-        private$..map_schema_vars(stage = "raw")
-
-        phrutils::phr_message(
-          phrutils::phr_txt("{dataset_name} initialized as HealthIndividualData object.")
+        private$..touch(
+          log = TRUE,
+          touch = TRUE,
+          name = private$..dataset_name,
+          message = phrutils::phr_txt("Initialization for {dataset_name} as a HealthInidividualData object completed succesfully with {nrow(data)} records.")
         )
 
       }, on_error = "abort", origin = "HealthIndividualData$initialize")
@@ -99,7 +123,7 @@ HealthIndividualData <- R6::R6Class(
               data = data,
               dap = analysis_config,
               parent_data_object = parent,
-              dataset_name = paste0(self$dataset_name, "_HealthData"),
+              dataset_name = paste0(private$..dataset_name, "_HealthData"),
               data_stage_name = stage,
               data_hash = parent$get(field = "..metadata", role = "hash_id"),
               variable_map = parent$get(field = "..variable_map"),

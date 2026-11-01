@@ -106,15 +106,15 @@ Data <- R6::R6Class(
       uuid = NULL
     ) {
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = private$..dataset_name,
+        message = phrutils::phr_txt("Started initialization for {dataset_name} as Data object.")
+      )
+
       phrutils::phr_try(
         {
-
-          private$..touch(
-            log = TRUE,
-            touch = FALSE,
-            name = private$..dataset_name,
-            message = phrutils::phr_txt("Started initialization for Data object {dataset_name}.")
-          )
 
           # Step 1: Super-initialize
           result <- phrutils::phr_try_step(
@@ -133,7 +133,7 @@ Data <- R6::R6Class(
             {
               private$..initialize_core_checks(
                 data = data,
-                uuid = uuid,
+                uuid = if(!is.null(uuid) & is.character(uuid)) {uuid} else {"uuid"},
                 dataset_name = dataset_name
               )
             },
@@ -157,7 +157,7 @@ Data <- R6::R6Class(
               private$..initialize_set_fields(
                 data = data,
                 dataset_name = dataset_name,
-                uuid = uuid
+                uuid = if(!is.null(uuid) & is.character(uuid)) {uuid} else {"uuid"}
               )
             },
             step = phrutils::phr_txt("Set initial fields for the Data object."),
@@ -196,7 +196,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("{dataset_name} initialized with {nrow(data)} records.")
+            message = phrutils::phr_txt("{dataset_name} initialized with {nrow(data)} records as Data object.")
           )
 
         },
@@ -458,13 +458,12 @@ Data <- R6::R6Class(
             step = phrutils::phr_txt("Run value map validation checks"),
             hint = phrutils::phr_txt(
               "Check value map roles, linked columns, and mapped values."
-          )
+          ))
           if (phrutils::phr_failed(result)) {
             return(result)
           }
 
           had_warnings <- result
-
 
           # Step 6: Post validation hook
 
@@ -475,6 +474,7 @@ Data <- R6::R6Class(
             step = phrutils::phr_txt("Run value map validation checks"),
             hint = phrutils::phr_txt(
               "Check value map roles, linked columns, and mapped values."
+              )
             )
             if (phrutils::phr_failed(result)) {
               return(result)
@@ -1639,6 +1639,10 @@ Data <- R6::R6Class(
     # @keywords internal
     ..required_columns = NULL,
 
+    # @field ..optional_columns Character vector of required column names.
+    # @keywords internal
+    ..optional_columns = NULL, # non-required but commonly present columns
+
     # @field ..other_columns List of other (non-required) column names.
     # @keywords internal
     ..other_columns = list(),
@@ -2777,21 +2781,24 @@ Data <- R6::R6Class(
 
       # Find select_multiple columns
       question_types <- schema$question_types
-      select_mult_vars <- names(question_types)[question_types == "select_multiple"]
+      select_mult_vars <- names(question_types)[
+        question_types == "select_multiple"
+      ]
 
       if (length(select_mult_vars) == 0) {
         return(result)
       }
 
-      # Process each select_multiple column
+      # Accumulate dummy data frames for all select_multiple columns and bind
+      # them onto the source data only once, after the loop.
+      dummy_df_list <- list()
+
       for (var in select_mult_vars) {
         if (var %in% names(data)) {
-          # Expand the column
-          dummy_df <- expand_select_multiple(data[[var]], var)
+          dummy_df <- private$..expand_select_multiple(data[[var]], var)
 
           if (ncol(dummy_df) > 0) {
-            # Add dummy columns to the data
-            result$data <- cbind(result$data, dummy_df)
+            dummy_df_list[[var]] <- dummy_df
             result$expanded_columns <- c(
               result$expanded_columns,
               colnames(dummy_df)
@@ -2810,10 +2817,13 @@ Data <- R6::R6Class(
                 paste0(var, "_text")
               )
 
-              # Find which one exists in the data
+              # Find which one exists in the (original) data; dummy columns are
+              # bound after this loop, but "other" text columns are always
+              # original source columns, so checking `data` (not `result$data`)
+              # here preserves the original lookup semantics.
               other_text_col <- NULL
               for (potential_col in potential_other_text_cols) {
-                if (potential_col %in% names(result$data)) {
+                if (potential_col %in% names(data)) {
                   other_text_col <- potential_col
                   break
                 }
@@ -2828,6 +2838,10 @@ Data <- R6::R6Class(
             }
           }
         }
+      }
+
+      if (length(dummy_df_list) > 0) {
+        result$data <- do.call(cbind, c(list(result$data), dummy_df_list))
       }
 
       return(result)
@@ -3142,7 +3156,7 @@ Data <- R6::R6Class(
 
       arguments <- indicator_row$arguments[[1]]
 
-      parsed_args <- .parse_indicator_arguments(arguments)
+      parsed_args <- private$..parse_indicator_arguments(arguments)
 
       for (arg_name in names(parsed_args)) {
 
@@ -3160,7 +3174,7 @@ Data <- R6::R6Class(
           vec_content <- sub("^c\\(", "", arg_value)
           vec_content <- sub("\\)$", "", vec_content)
 
-          vec_elements <- .parse_indicator_arguments(
+          vec_elements <- private$..parse_indicator_arguments(
             vec_content
           )
 
@@ -5662,6 +5676,128 @@ Data <- R6::R6Class(
       )
     },
 
+    #' Expand select_multiple column into 0/1 dummy variables
+    #'
+    #' @description
+    #' Takes a select_multiple column (with space-separated values) and expands it
+    #' into multiple dummy columns, one for each unique response option found.
+    #'
+    #' @param column A character vector containing space-separated values
+    #' @param column_name The name of the original column (used for naming dummies)
+    #' @param separator The separator used in the select_multiple values (default: " ")
+    #'
+    #' @return A data frame of 0/1 dummy columns, one per unique token found in `column`
+    #'
+    #' @keywords internal
+    ..expand_select_multiple <- function(column, column_name, separator = " ") {
+      # Handle NA and empty values
+      column <- ifelse(is.na(column) | column == "", NA_character_, column)
+
+      n_row <- length(column)
+      non_na_idx <- which(!is.na(column))
+
+      if (length(non_na_idx) == 0) {
+        return(data.frame())
+      }
+
+      # Split each non-NA cell once, trim tokens, and drop empties -- vectorized
+      # over the "split" step (strsplit already vectorizes across cells) with a
+      # single lapply pass to clean up each cell's tokens.
+      split_tokens <- lapply(
+        strsplit(column[non_na_idx], separator, fixed = TRUE),
+        function(toks) {
+          toks <- trimws(toks)
+          toks[toks != ""]
+        }
+      )
+
+      all_values <- unlist(split_tokens, use.names = FALSE)
+
+      if (length(all_values) == 0) {
+        return(data.frame())
+      }
+
+      unique_values <- sort(unique(all_values))
+
+      # Build (row, col) index pairs for every token occurrence in one shot,
+      # then fill the whole presence matrix with a single indexed assignment
+      # instead of looping cell-by-cell.
+      tokens_per_row <- lengths(split_tokens)
+      row_idx <- rep(non_na_idx, tokens_per_row)
+      col_idx <- match(all_values, unique_values)
+
+      mat <- matrix(0L, nrow = n_row, ncol = length(unique_values))
+      mat[cbind(row_idx, col_idx)] <- 1L
+
+      dummy_df <- as.data.frame(mat)
+      colnames(dummy_df) <- paste0(column_name, ".", unique_values)
+
+      return(dummy_df)
+    },
+
+    #' Parse indicator arguments string respecting parentheses and quoted strings
+    #'
+    #' Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
+    #' properly by respecting parentheses and quoted strings so that c(...) vectors
+    #' and quoted values containing commas are not split incorrectly.
+    #'
+    #' This function is intentionally called twice during indicator processing:
+    #' 1. First call: Parse the full argument string into individual argument pairs
+    #' 2. Second call: Parse the content inside c(...) vectors into individual elements
+    #' This two-stage parsing is necessary because arguments and vector elements have
+    #' different semantic meanings and resolution rules.
+    #'
+    #' @param arg_string Character string containing arguments
+    #' @return Character vector of argument pairs
+    #' @keywords internal
+    ..parse_indicator_arguments <- function(arg_string) {
+      if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
+        return(character(0))
+      }
+
+      result <- character(0)
+      current_arg <- ""
+      paren_depth <- 0L
+      in_quote <- FALSE
+      quote_char <- ""
+      chars <- strsplit(arg_string, "")[[1]]
+
+      for (char in chars) {
+        if (in_quote) {
+          current_arg <- paste0(current_arg, char)
+          if (char == quote_char) {
+            in_quote <- FALSE
+            quote_char <- ""
+          }
+        } else if (char %in% c('"', "'")) {
+          in_quote <- TRUE
+          quote_char <- char
+          current_arg <- paste0(current_arg, char)
+        } else if (char == "(") {
+          paren_depth <- paren_depth + 1L
+          current_arg <- paste0(current_arg, char)
+        } else if (char == ")") {
+          paren_depth <- paren_depth - 1L
+          current_arg <- paste0(current_arg, char)
+        } else if (char == "," && paren_depth == 0L) {
+          # This is a separator between arguments, not within a vector or quoted string
+          if (nchar(current_arg) > 0) {
+            result <- c(result, trimws(current_arg))
+            current_arg <- ""
+          }
+        } else {
+          current_arg <- paste0(current_arg, char)
+        }
+      }
+
+      # Add the last argument
+      if (nchar(current_arg) > 0) {
+        result <- c(result, trimws(current_arg))
+      }
+
+      result
+    },
+
     #' Validate Linked Objects
     #'
     #' @description
@@ -5745,6 +5881,7 @@ Data <- R6::R6Class(
         origin = paste0(private$..dataset_name, "$validate_links")
       )
     },
+
     #' @description
     #' Automatically map schema variables to dataset columns and values.
     #'
@@ -5762,10 +5899,10 @@ Data <- R6::R6Class(
     ..map_schema_vars = function(stage = "raw") {
       phrutils::phr_try(
         {
-          sch <- private$..as_variable_schema_list()
+          sch <- private$..variable_schema
 
           # Early exit if no schema is defined
-          if (is.null(sch) || length(sch) == 0) {
+          if (is.null(sch) || nrow(sch) == 0) {
             phrutils::phr_message(
               phrutils::phr_txt(
                 "No variable schema defined for {private$..dataset_name}; skipping auto-mapping."
@@ -5774,245 +5911,121 @@ Data <- R6::R6Class(
             return(invisible(self))
           }
 
-          df <- self$get_data(stage)
+          # Step 1: Getting data
+          result <- phrutils::phr_try_step(
+            {
+              df <- self$get_data(stage)
 
-          if (is.null(df)) {
-            phrutils::phr_warning(
-              private$..dataset_name,
-              phrutils::phr_txt(
-                "No {stage} data available for schema variable mapping."
-              )
-            )
-            return(invisible(self))
+              if (is.null(df)) {
+                phrutils::phr_warning(
+                  private$..dataset_name,
+                  phrutils::phr_txt(
+                    "No {stage} data available for schema variable mapping."
+                  )
+                )
+                return(invisible(self))
+              }
+            },
+            step = phrutils::phr_txt("Check raw data"),
+            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
+          df <- result
           data_cols <- names(df)
-          col_names_map <- sch$col_names %||% list()
-          schema_value_map <- sch$value_map %||% list()
-          allowed_vals <- sch$allowed_values %||% list()
-          types <- sch$types %||% list()
+
+          # Step 2: Getting schema info
+          result <- phrutils::phr_try_step(
+            {
+              sch <- private$..variable_schema
+
+              col_names_map <- stats::setNames(
+                sch$col_names,
+                sch$var_name
+              )
+
+              schema_value_map <- stats::setNames(
+                sch$value_map,
+                sch$var_name
+              )
+
+              allowed_vals <- stats::setNames(
+                sch$allowed_values,
+                sch$var_name
+              )
+
+              types <- stats::setNames(
+                sch$type,
+                sch$var_name
+              )
+
+              question_types <- stats::setNames(
+                sch$question_type,
+                sch$var_name
+              )
+
+              list(
+                col_names_map = col_names_map,
+                schema_value_map = schema_value_map,
+                allowed_vals = allowed_vals,
+                types = types,
+                question_types = question_types
+              )
+
+            },
+            step = phrutils::phr_txt("Check raw data"),
+            hint = phrutils::phr_txt(
+              "Ensure raw data exists before standardization"
+            )
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          col_names_map <- result$col_names_map
+          schema_value_map <- result$schema_value_map
+          allowed_vals <- result$allowed_vals
+          types <- result$types
+          question_types <- result$question_types
 
           vars_mapped <- 0
           vals_mapped <- 0
 
-          # Iterate over schema variables that have col_names defined
-          for (var_role in names(col_names_map)) {
-            possible_cols <- col_names_map[[var_role]]
+          # Step 3: Iterate over variable schema
+          result <- phrutils::phr_try_step(
+            {
+              for (var_role in names(col_names_map)) {
 
-            # Search for matching column name in the dataset (in order of preference)
-            matched_col <- NULL
-            for (col_candidate in possible_cols) {
-              if (col_candidate %in% data_cols) {
-                matched_col <- col_candidate
-                break
+                res <- private$..map_sch_vrs_iteration(
+                  var_role = var_role,
+                  col_names_map = col_names_map,
+                  data_cols = data_cols,
+                  df = df,
+                  schema_value_map = schema_value_map,
+                  allowed_vals = allowed_vals,
+                  types = types,
+                  question_types = question_types,
+                  vars_mapped = vars_mapped,
+                  vals_mapped = vals_mapped
+                )
+
+                list(
+                  vars_mapped = res$vars_mapped,
+                  vals_mapped = res$vals_mapped
+                )
               }
-            }
-
-            # Check if we should update the mapping
-            should_update <- FALSE
-
-            if (is.null(matched_col)) {
-              # No match found, skip this role
-              next
-            } else if (var_role %in% names(private$..variable_map)) {
-              # Role is already mapped - check if new match is more preferred
-              existing_col <- private$..variable_map[[var_role]]
-
-              if (is.null(existing_col) || !(existing_col %in% data_cols)) {
-                # Existing mapping is invalid, update with new match
-                should_update <- TRUE
-              } else if (matched_col != existing_col) {
-                # Check if matched_col is more preferred (appears earlier in possible_cols)
-                existing_idx <- match(existing_col, possible_cols)
-                matched_idx <- match(matched_col, possible_cols)
-
-                if (
-                  !is.na(matched_idx) &&
-                    !is.na(existing_idx) &&
-                    matched_idx < existing_idx
-                ) {
-                  # New match is more preferred
-                  should_update <- TRUE
-                }
-              }
-              # If matched_col == existing_col, no update needed (already correct)
-            } else {
-              # Role not yet mapped, add new mapping
-              should_update <- TRUE
-            }
-
-            # Update variable_map if needed
-            if (should_update) {
-              self$set(
-                field = "..variable_map",
-                role = var_role,
-                value = matched_col
-              )
-              vars_mapped <- vars_mapped + 1
-
-              # Now check for value mapping (only for non-numeric types)
-              var_type <- types[[var_role]]
-              is_numeric_type <- !is.null(var_type) &&
-                var_type %in% c("numeric", "integer", "double")
-
-              if (!is_numeric_type) {
-                data_values <- unique(df[[matched_col]])
-                data_values <- data_values[!is.na(data_values)]
-
-                # Check if this is a select_multiple question type
-                question_types <- sch$question_types %||% list()
-                is_select_multiple <- !is.null(question_types[[var_role]]) &&
-                  question_types[[var_role]] == "select_multiple"
-
-                # Helper function to escape regex special characters
-                # Escapes: . | ( ) \ ^ { } + $ * ? [ ]
-                escape_regex <- function(str) {
-                  gsub("([.|()\\\\^{}+$*?\\[\\]])", "\\\\\\1", str)
-                }
-
-                # Helper function to extract tokens from select_multiple values
-                extract_tokens <- function(values) {
-                  # Use lapply for efficient token collection
-                  token_list <- lapply(values, function(val) {
-                    if (!is.na(val) && nchar(val) > 0) {
-                      tokens <- trimws(strsplit(
-                        as.character(val),
-                        " ",
-                        fixed = TRUE
-                      )[[1]])
-                      tokens[tokens != ""]
-                    } else {
-                      character(0)
-                    }
-                  })
-                  # Flatten and return unique tokens
-                  unique(unlist(token_list, use.names = FALSE))
-                }
-
-                # Check if schema has value_map for this variable
-                if (var_role %in% names(schema_value_map)) {
-                  # New nested value_map structure
-                  canonical_mappings <- schema_value_map[[var_role]]
-
-                  if (is_select_multiple) {
-                    # SPECIAL HANDLING FOR SELECT_MULTIPLE
-                    # Values are space-separated and unordered in the same cell
-                    # Extract all unique tokens from all data values
-                    all_tokens <- extract_tokens(data_values)
-
-                    # For each canonical value, use grepl to search for allowed values in tokens
-                    matched_canonical <- list()
-                    for (canonical_val in names(canonical_mappings)) {
-                      allowed_for_canonical <- canonical_mappings[[
-                        canonical_val
-                      ]]
-
-                      # Find which allowed values appear in the tokens
-                      # Use vectorized approach for efficiency
-                      matches <- sapply(
-                        allowed_for_canonical,
-                        function(allowed_val) {
-                          escaped_val <- escape_regex(allowed_val)
-                          any(grepl(
-                            paste0("\\b", escaped_val, "\\b"),
-                            all_tokens
-                          ))
-                        }
-                      )
-                      found_values <- allowed_for_canonical[matches]
-
-                      if (length(found_values) > 0) {
-                        matched_canonical[[canonical_val]] <- found_values
-                      }
-                    }
-
-                    if (length(matched_canonical) > 0) {
-                      self$set(
-                        field = "..value_map",
-                        role = var_role,
-                        value = matched_canonical
-                      )
-                      vals_mapped <- vals_mapped + 1
-                    }
-                  } else {
-                    # STANDARD HANDLING FOR SELECT_ONE AND OTHER TYPES
-                    # Pre-compute data values for efficient matching
-                    data_values_set <- data_values
-
-                    # For each canonical value, check which dataset values exist
-                    matched_canonical <- list()
-                    for (canonical_val in names(canonical_mappings)) {
-                      allowed_for_canonical <- canonical_mappings[[
-                        canonical_val
-                      ]]
-
-                      # Find which of these allowed values exist in the data
-                      found_values <- allowed_for_canonical[
-                        allowed_for_canonical %in% data_values_set
-                      ]
-
-                      if (length(found_values) > 0) {
-                        matched_canonical[[canonical_val]] <- found_values
-                      }
-                    }
-
-                    if (length(matched_canonical) > 0) {
-                      self$set(
-                        field = "..value_map",
-                        role = var_role,
-                        value = matched_canonical
-                      )
-                      vals_mapped <- vals_mapped + 1
-                    }
-                  }
-                } else if (var_role %in% names(allowed_vals)) {
-                  # Fallback: old allowed_values structure (for backward compatibility)
-                  schema_allowed <- allowed_vals[[var_role]]
-
-                  if (is_select_multiple) {
-                    # SPECIAL HANDLING FOR SELECT_MULTIPLE with allowed_values
-                    # Extract all unique tokens using helper
-                    all_tokens <- extract_tokens(data_values)
-
-                    # Find which allowed values appear in the tokens
-                    # Use vectorized approach for efficiency
-                    matches <- sapply(schema_allowed, function(allowed_val) {
-                      escaped_val <- escape_regex(allowed_val)
-                      any(grepl(
-                        paste0("\\b", escaped_val, "\\b"),
-                        all_tokens
-                      ))
-                    })
-                    found_values <- schema_allowed[matches]
-
-                    if (length(found_values) > 0) {
-                      # Store as flat list for backward compatibility
-                      self$set(
-                        field = "..value_map",
-                        role = var_role,
-                        value = found_values
-                      )
-                      vals_mapped <- vals_mapped + 1
-                    }
-                  } else {
-                    # STANDARD HANDLING FOR SELECT_ONE
-                    # Find which allowed values exist in the data
-                    found_values <- intersect(schema_allowed, data_values)
-
-                    if (length(found_values) > 0) {
-                      # Store as flat list for backward compatibility
-                      self$set(
-                        field = "..value_map",
-                        role = var_role,
-                        value = found_values
-                      )
-                      vals_mapped <- vals_mapped + 1
-                    }
-                  }
-                }
-              }
-            }
+            },
+            step = phrutils::phr_txt("map schema vars iterations"),
+            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
+
+          vars_mapped <- results$vars_mapped
+          vals_mapped <- results$vals_mapped
 
           if (vars_mapped > 0 || vals_mapped > 0) {
             phrutils::phr_message(
@@ -6025,9 +6038,334 @@ Data <- R6::R6Class(
           invisible(self)
         },
         on_error = "warn",
-        origin = paste0(private$..dataset_name, "$map_schema_vars")
+        origin = paste0(private$..dataset_name, "$..map_schema_vars")
       )
     },
+
+    #' Process Schema Variable Mapping
+    #'
+    #' @description
+    #' Processes a single schema variable, updating the variable map and
+    #' value map where applicable.
+    #'
+    #' @param var_role Canonical variable name.
+    #' @param col_names_map Named list of possible dataset columns.
+    #' @param data_cols Dataset column names.
+    #' @param df Dataset.
+    #' @param schema_value_map Schema value mappings.
+    #' @param allowed_vals Schema allowed values.
+    #' @param types Variable types.
+    #' @param question_types Question types.
+    #' @param vars_mapped Current variable mapping count.
+    #' @param vals_mapped Current value mapping count.
+    #'
+    #' @return List containing updated `vars_mapped` and `vals_mapped`.
+    ..map_sch_vrs_iteration = function(
+    var_role,
+    col_names_map,
+    data_cols,
+    df,
+    schema_value_map,
+    allowed_vals,
+    types,
+    question_types,
+    vars_mapped,
+    vals_mapped
+    ) {
+
+      possible_cols <- col_names_map[[var_role]]
+
+      # Search for matching column name in the dataset
+      matched_col <- NULL
+
+      for (col_candidate in possible_cols) {
+        if (col_candidate %in% data_cols) {
+          matched_col <- col_candidate
+          break
+        }
+      }
+
+      should_update <- FALSE
+
+      if (is.null(matched_col)) {
+
+        return(list(
+          vars_mapped = vars_mapped,
+          vals_mapped = vals_mapped
+        ))
+
+      } else if (var_role %in% names(private$..variable_map)) {
+
+        existing_col <- private$..variable_map[[var_role]]
+
+        if (is.null(existing_col) || !(existing_col %in% data_cols)) {
+
+          should_update <- TRUE
+
+        } else if (matched_col != existing_col) {
+
+          existing_idx <- match(
+            existing_col,
+            possible_cols
+          )
+
+          matched_idx <- match(
+            matched_col,
+            possible_cols
+          )
+
+          if (
+            !is.na(matched_idx) &&
+            !is.na(existing_idx) &&
+            matched_idx < existing_idx
+          ) {
+            should_update <- TRUE
+          }
+        }
+
+      } else {
+
+        should_update <- TRUE
+
+      }
+
+      if (!should_update) {
+        return(list(
+          vars_mapped = vars_mapped,
+          vals_mapped = vals_mapped
+        ))
+      }
+
+      self$set(
+        field = "..variable_map",
+        role = var_role,
+        value = matched_col
+      )
+
+      vars_mapped <- vars_mapped + 1
+
+      var_type <- types[[var_role]]
+
+      is_numeric_type <- !is.null(var_type) &&
+        var_type %in% c(
+          "numeric",
+          "integer",
+          "double"
+        )
+
+      if (is_numeric_type) {
+        return(list(
+          vars_mapped = vars_mapped,
+          vals_mapped = vals_mapped
+        ))
+      }
+
+      data_values <- unique(
+        df[[matched_col]]
+      )
+
+      data_values <- data_values[
+        !is.na(data_values)
+      ]
+
+      is_select_multiple <-
+        !is.null(question_types[[var_role]]) &&
+        question_types[[var_role]] == "select_multiple"
+
+      escape_regex <- function(str) {
+        gsub(
+          "([.|()\\\\^{}+$*?\\[\\]])",
+          "\\\\\\1",
+          str
+        )
+      }
+
+      extract_tokens <- function(values) {
+
+        token_list <- lapply(
+          values,
+          function(val) {
+
+            if (!is.na(val) && nchar(val) > 0) {
+
+              tokens <- trimws(
+                strsplit(
+                  as.character(val),
+                  " ",
+                  fixed = TRUE
+                )[[1]]
+              )
+
+              tokens[tokens != ""]
+
+            } else {
+
+              character(0)
+
+            }
+          }
+        )
+
+        unique(
+          unlist(
+            token_list,
+            use.names = FALSE
+          )
+        )
+      }
+
+      if (var_role %in% names(schema_value_map)) {
+
+        canonical_mappings <- schema_value_map[[var_role]]
+
+        if (is_select_multiple) {
+
+          all_tokens <- extract_tokens(
+            data_values
+          )
+
+          matched_canonical <- list()
+
+          for (canonical_val in names(canonical_mappings)) {
+
+            allowed_for_canonical <-
+              canonical_mappings[[canonical_val]]
+
+            matches <- sapply(
+              allowed_for_canonical,
+              function(allowed_val) {
+
+                escaped_val <- escape_regex(
+                  allowed_val
+                )
+
+                any(
+                  grepl(
+                    paste0("\\b", escaped_val, "\\b"),
+                    all_tokens
+                  )
+                )
+              }
+            )
+
+            found_values <- allowed_for_canonical[matches]
+
+            if (length(found_values) > 0) {
+              matched_canonical[[canonical_val]] <- found_values
+            }
+          }
+
+          if (length(matched_canonical) > 0) {
+
+            self$set(
+              field = "..value_map",
+              role = var_role,
+              value = matched_canonical
+            )
+
+            vals_mapped <- vals_mapped + 1
+          }
+
+        } else {
+
+          data_values_set <- data_values
+
+          matched_canonical <- list()
+
+          for (canonical_val in names(canonical_mappings)) {
+
+            allowed_for_canonical <-
+              canonical_mappings[[canonical_val]]
+
+            found_values <- allowed_for_canonical[
+              allowed_for_canonical %in%
+                data_values_set
+            ]
+
+            if (length(found_values) > 0) {
+              matched_canonical[[canonical_val]] <- found_values
+            }
+          }
+
+          if (length(matched_canonical) > 0) {
+
+            self$set(
+              field = "..value_map",
+              role = var_role,
+              value = matched_canonical
+            )
+
+            vals_mapped <- vals_mapped + 1
+          }
+        }
+
+      } else if (var_role %in% names(allowed_vals)) {
+
+        schema_allowed <- allowed_vals[[var_role]]
+
+        if (is_select_multiple) {
+
+          all_tokens <- extract_tokens(
+            data_values
+          )
+
+          matches <- sapply(
+            schema_allowed,
+            function(allowed_val) {
+
+              escaped_val <- escape_regex(
+                allowed_val
+              )
+
+              any(
+                grepl(
+                  paste0("\\b", escaped_val, "\\b"),
+                  all_tokens
+                )
+              )
+            }
+          )
+
+          found_values <- schema_allowed[matches]
+
+          if (length(found_values) > 0) {
+
+            self$set(
+              field = "..value_map",
+              role = var_role,
+              value = found_values
+            )
+
+            vals_mapped <- vals_mapped + 1
+          }
+
+        } else {
+
+          found_values <- intersect(
+            schema_allowed,
+            data_values
+          )
+
+          if (length(found_values) > 0) {
+
+            self$set(
+              field = "..value_map",
+              role = var_role,
+              value = found_values
+            )
+
+            vals_mapped <- vals_mapped + 1
+          }
+        }
+      }
+
+      list(
+        vars_mapped = vars_mapped,
+        vals_mapped = vals_mapped
+      )
+
+    },
+
     #' Map Schema Labels to variable_label and value_label
     #'
     #' @description
@@ -6055,9 +6393,9 @@ Data <- R6::R6Class(
     ..map_schema_labels = function(language = "english") {
       phrutils::phr_try(
         {
-          sch <- private$..as_variable_schema_list()
+          sch <- private$..variable_schema
 
-          if (is.null(sch) || length(sch) == 0) {
+          if (is.null(sch) || nrow(sch) == 0) {
             return(invisible(self))
           }
 
@@ -6078,10 +6416,18 @@ Data <- R6::R6Class(
             }
           )
 
-          schema_var_labels <- (sch$variable_labels %||% list())[[lang]] %||%
-            list()
-          schema_val_labels <- (sch$value_labels %||% list())[[lang]] %||%
-            list()
+          var_label_col <- paste0("variable_label_", lang)
+          val_label_col <- paste0("value_label_", lang)
+
+          schema_var_labels <- stats::setNames(
+            sch[[var_label_col]],
+            sch$var_name
+          )
+
+          schema_val_labels <- stats::setNames(
+            sch[[val_label_col]],
+            sch$var_name
+          )
 
           vars_labelled <- 0
           vals_labelled <- 0

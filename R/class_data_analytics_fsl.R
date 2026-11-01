@@ -45,6 +45,13 @@ FSLDataAnalytics <- R6::R6Class(
                           value_label = NULL,
                           quality_schema = NULL) {
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = dataset_name,
+        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
+      )
+
       super$initialize(
         data = data,
         dap = dap,
@@ -59,9 +66,13 @@ FSLDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      phrutils::phr_message(
-        phrutils::phr_txt(glue::glue("{dataset_name} initialized as FSLDataAnalytics object."))
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = dataset_name,
+        message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
       )
+
     }
   ),
 

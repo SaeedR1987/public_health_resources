@@ -58,7 +58,6 @@
 DataAnalytics <- R6::R6Class(
   classname = "DataAnalytics",
   inherit = Asset,
-
   public = list(
 
     # Shared output containers
@@ -103,7 +102,7 @@ DataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt(paste0(origin, " Started initialization for DataAanlytics object {dataset_name}."))
+        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
       )
 
       # Step 1: Super-initialize
@@ -353,7 +352,19 @@ DataAnalytics <- R6::R6Class(
             message = phrutils::phr_txt("Starting run_outputs...")
           )
 
-          sets <- private$..pre_run_outputs()
+          # Step 1: Pre run outputs hook for specified sets
+          result <- phrutils::phr_try_step(
+            {
+              private$..pre_run_outputs()
+            },
+            step = phrutils::phr_txt("get sets of parameters for run_outputs."),
+            hint = phrutils::phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          sets <- result
 
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
@@ -366,29 +377,42 @@ DataAnalytics <- R6::R6Class(
             )))
           }
 
-          set_names <- names(sets) %||% rep("", length(sets))
-          nested <- !(length(sets) == 1 && identical(set_names, "main"))
+          # Step 2: Process output sets
+          result <- phrutils::phr_try_step(
+            {
+              set_names <- names(sets) %||% rep("", length(sets))
+              nested <- !(length(sets) == 1 && identical(set_names, "main"))
 
-          for (i in seq_along(sets)) {
-            set_role <- if (nzchar(set_names[i])) {
-              set_names[i]
-            } else {
-              paste0("set_", i)
-            }
-            inputs <- private$..resolve_field_set(sets[[i]])
+              for (i in seq_along(sets)) {
+                set_role <- if (nzchar(set_names[i])) {
+                  set_names[i]
+                } else {
+                  paste0("set_", i)
+                }
+                inputs <- private$..resolve_field_set(sets[[i]])
 
-            private$..run_outputs_for_set(
-              inputs = inputs,
-              set_role = set_role,
-              nested = nested,
-              language = language
-            )
+                private$..run_outputs_for_set(
+                  inputs = inputs,
+                  set_role = set_role,
+                  nested = nested,
+                  language = language
+                )
+              }
+
+            },
+            step = phrutils::phr_txt("process output sets."),
+            hint = phrutils::phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
-          phrutils::phr_message(
-            phrutils::phr_txt(
-            "run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s)."
-          ))
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s).")
+          )
 
           invisible(list(
             visualizations = self$visualizations,
@@ -396,7 +420,7 @@ DataAnalytics <- R6::R6Class(
           ))
         },
         on_error = "warn",
-        origin = paste0(private$..dataset_name, "DataAnalytics$run_outputs")
+        origin = paste0(private$..dataset_name, "$run_outputs")
       )
     },
 
@@ -424,7 +448,27 @@ DataAnalytics <- R6::R6Class(
 
       phrutils::phr_try(
         {
-          sets <- private$..pre_add_all_to_dap()
+
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("Starting add_all_to_dap for {private$..dataset_name}")
+          )
+
+          # Step 1: Retrieve parameter sets for add_all_to_dap
+          result <- phrutils::phr_try_step(
+            {
+              private$..pre_add_all_to_dap()
+            },
+            step = phrutils::phr_txt("process add_all_to_dap sets."),
+            hint = phrutils::phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          sets <- result
 
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
@@ -434,16 +478,34 @@ DataAnalytics <- R6::R6Class(
             return(invisible(self))
           }
 
-          set_names <- names(sets) %||% rep("", length(sets))
+          # Step 2: Iterate and add variables to data analysis plan
+          result <- phrutils::phr_try_step(
+            {
+              set_names <- names(sets) %||% rep("", length(sets))
 
-          for (i in seq_along(sets)) {
-            set_name <- if (nzchar(set_names[i])) {
-              set_names[i]
-            } else {
-              paste0("set_", i)
-            }
-            private$..add_all_to_dap_single(sets[[i]], set_name, origin)
+              for (i in seq_along(sets)) {
+                set_name <- if (nzchar(set_names[i])) {
+                  set_names[i]
+                } else {
+                  paste0("set_", i)
+                }
+                private$..add_all_to_dap_single(sets[[i]], set_name, origin)
+              }
+            },
+            step = phrutils::phr_txt("process add_all_to_dap sets."),
+            hint = phrutils::phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
+
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = private$..dataset_name,
+            message = phrutils::phr_txt("Completing add_all_to_dap for {private$..dataset_name}")
+          )
+
         },
         on_error = "warn",
         origin = origin,
@@ -452,8 +514,6 @@ DataAnalytics <- R6::R6Class(
 
       invisible(self)
     },
-
-
 
     #' @description Run the data analysis plan(s) and store results in analysis_results
     #'
@@ -472,48 +532,95 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns self.
     run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$run_analysis")
-      phrutils::phr_message(origin, phrutils::phr_txt("Running analysis plan..."))
 
-      sets <- private$..pre_run_analysis()
+      phrutils::phr_try({
+
+        private$..touch(
+          log = TRUE,
+          touch = FALSE,
+          name = private$..dataset_name,
+          message = phrutils::phr_txt(paste0(origin, ". Running analysis plan for {private$..dataset_name}"))
+        )
+
+        # Step 1: Retrieve parameter sets for analysis
+        result <- phrutils::phr_try_step(
+          {
+            private$..pre_run_analysis()
+          },
+          step = phrutils::phr_txt("retrieving parameter sets from pre_run_analysis."),
+          hint = phrutils::phr_txt("check subclass specific sets for run_analysis defined in pre_run_analysis hook.")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+      sets <- result
 
       if (is.null(sets) || length(sets) == 0) {
         phrutils::phr_error(origin, phrutils::phr_txt("pre_run_analysis() returned no input sets."))
         return(invisible(self))
       }
 
-      set_names <- names(sets) %||% rep("", length(sets))
-      nested <- !(length(sets) == 1 && identical(set_names, "main"))
+      # Step 2: Run analysis for each parameter set
+      result <- phrutils::phr_try_step(
+        {
+          set_names <- names(sets) %||% rep("", length(sets))
+          nested <- !(length(sets) == 1 && identical(set_names, "main"))
 
-      all_results <- list()
+          all_results <- list()
 
-      for (i in seq_along(sets)) {
-        set_role <- if (nzchar(set_names[i])) {
-          set_names[i]
-        } else {
-          paste0("set_", i)
-        }
-        inputs <- private$..resolve_field_set(sets[[i]])
-        set_results <- private$..run_analysis_for_set(
-          inputs = inputs,
-          set_role = set_role,
-          nested = nested,
-          origin = origin
-        )
-        if (!is.null(set_results)) {
-          all_results[[set_role]] <- set_results
-        }
+          for (i in seq_along(sets)) {
+            set_role <- if (nzchar(set_names[i])) {
+              set_names[i]
+            } else {
+              paste0("set_", i)
+            }
+            inputs <- private$..resolve_field_set(sets[[i]])
+            set_results <- private$..run_analysis_for_set(
+              inputs = inputs,
+              set_role = set_role,
+              nested = nested,
+              origin = origin
+            )
+            if (!is.null(set_results)) {
+              all_results[[set_role]] <- set_results
+            }
+          }
+
+          private$..analysis_results <- if (nested) {
+            all_results
+          } else {
+            all_results[[1]] %||% list(survey_design = NULL, base = NULL)
+          }
+        },
+        step = phrutils::phr_txt("process add_all_to_dap sets."),
+        hint = phrutils::phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      private$..analysis_results <- if (nested) {
-        all_results
-      } else {
-        all_results[[1]] %||% list(survey_design = NULL, base = NULL)
+      # Step 3: Run post run analysis hook
+      result <- phrutils::phr_try_step(
+        {
+          # Call the post-analysis hook so subclasses can perform additional steps.
+          private$..post_run_analysis()
+        },
+        step = phrutils::phr_txt("process add_all_to_dap sets."),
+        hint = phrutils::phr_txt("check subclass specific post run analysis hook.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      phrutils::phr_message(origin, phrutils::phr_txt("Analysis completed successfully."))
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = private$..dataset_name,
+        message = phrutils::phr_txt(paste0(origin, ". Analysis completed successfully for {private$..dataset_name}"))
+      )
 
-      # Call the post-analysis hook so subclasses can perform additional steps.
-      private$..post_run_analysis()
+      })
 
       invisible(self)
     },
@@ -754,6 +861,7 @@ DataAnalytics <- R6::R6Class(
             message = phrutils::phr_txt("Starting outputs diagnose...")
           )
 
+          # Step 1: Setup steps for outputs diagnose
           setup <- phrutils::phr_try_step(
             {
               private$..outputs_diagnose_setup(
@@ -797,7 +905,6 @@ DataAnalytics <- R6::R6Class(
             return(setup)
           }
 
-
           # Step 3: Set output log issues
           result <- phrutils::phr_try_step(
             {
@@ -810,9 +917,7 @@ DataAnalytics <- R6::R6Class(
               self$set(field = "..outputs_log_issues", value = result)
             },
             step = phrutils::phr_txt("Check output schema rows"),
-            hint = phrutils::phr_txt(
-              "Check outputs schema content."
-            )
+            hint = phrutils::phr_txt("Check outputs schema content.")
           )
           if (phrutils::phr_failed(setup)) {
             return(setup)
@@ -894,6 +999,11 @@ DataAnalytics <- R6::R6Class(
       "resources",
       "analysis_schema_data_household_template.xlsx"
     ),
+
+    # Accepted values for the output_type and dataset_type columns.
+    ..outputs_schema_valid_output_types <- c("visualization", "table"),
+    ..outputs_schema_valid_dataset_types <- c("base", "survey_design"),
+
 
     #' Load, validate, and assign a default schema.
     #'
@@ -1305,11 +1415,11 @@ DataAnalytics <- R6::R6Class(
     ..pre_run_quality_checks = function() {
       list(
         main = list(
-          data = "data",
-          quality_schema = "quality_schema",
-          base_survey_design = "base_survey_design",
-          survey_design = "survey_design",
-          variable_map = "variable_map"
+          data = "..data",
+          quality_schema = "..quality_schema",
+          base_survey_design = "..base_survey_design",
+          survey_design = "..survey_design",
+          variable_map = "..variable_map"
         )
       )
     },
@@ -1871,7 +1981,7 @@ DataAnalytics <- R6::R6Class(
       outputs_group <- cell("outputs_group", i)
       test_params <- cell("test_params", i)
 
-      variables <- outputs_parse_list_field(
+      variables <- private$..outputs_parse_list_field(
         cell("variables", i)
       ) %||% character(0)
 
@@ -2001,6 +2111,436 @@ DataAnalytics <- R6::R6Class(
 
     },
 
+    # Run all outputs for a single resolved input set.
+    #
+    # Contains the per-output logic used by \code{run_outputs()}: resolves the
+    # first positional argument from \code{dataset_type}, resolves
+    # \code{test_params} references, calls the output function, and stores
+    # results in \code{self$visualizations} / \code{self$tables} (nested under
+    # \code{set_role} when \code{nested} is TRUE).
+    #
+    # The outputs schema is a data frame and is iterated row by row; the
+    # comma-separated \code{variables} / \code{disaggregation} cells and the
+    # \code{test_params} cell are parsed per row.
+    #
+    # @param inputs Named list of resolved inputs: data, outputs_schema,
+    #   base_survey_design, survey_design and variable_map.
+    # @param set_role Character role name for this input set.
+    # @param nested Logical; TRUE when results are stored under set_role.
+    # @param language Character language for auto-generated titles.
+    # @return Invisibly returns NULL.
+    ..run_outputs_for_set = function(
+    inputs,
+    set_role,
+    nested,
+    language = "english"
+    ) {
+      outputs_schema <- inputs$outputs_schema
+
+      if (is.null(outputs_schema) || nrow(outputs_schema) == 0) {
+        phrutils::phr_warning(
+          message = phrutils::phr_txt(
+            "No outputs defined in outputs schema for '{set_role}'. Skipping."
+          ),
+          origin = private$..dataset_name
+        )
+        return(invisible(NULL))
+      }
+
+      base_design <- inputs$base_survey_design
+      if (is.null(base_design) && !is.null(inputs$data)) {
+        base_design <- phrutils::phr_try(
+          srvyr::as_survey_design(.data = inputs$data, ids = 1),
+          on_error = "warn",
+          origin = paste0(private$..dataset_name, "$run_outputs"),
+          hint = paste0(
+            phrutils::phr_txt("Could not create base (unweighted) survey design for '"),
+            set_role,
+            "'."
+          )
+        )
+      }
+      weighted_design <- inputs$survey_design
+
+      vm <- inputs$variable_map %||% private$..variable_map %||% list()
+
+      # Resolve the plausibility results for this set (used by @results_table).
+      plaus_results <- private$..plausibility_results
+      if (
+        nested &&
+        is.list(plaus_results) &&
+        set_role %in% names(plaus_results)
+      ) {
+        plaus_results <- plaus_results[[set_role]]
+      }
+
+      phrutils::phr_message(
+        phrutils::phr_txt(
+          "Running {nrow(outputs_schema)} output(s) for {private$..dataset_name} ('{set_role}')..."
+        ))
+
+      # Read a single schema cell, returning NULL when the column is absent or
+      # the value is missing/empty so downstream guards stay simple.
+      cell <- function(col, i) {
+        if (!col %in% names(outputs_schema)) {
+          return(NULL)
+        }
+        value <- outputs_schema[[col]][[i]]
+        if (is.null(value) || length(value) != 1 || is.na(value)) {
+          return(NULL)
+        }
+        if (is.character(value) && !nzchar(value)) {
+          return(NULL)
+        }
+        value
+      }
+
+      for (i in seq_len(nrow(outputs_schema))) {
+        out_name <- cell("output_title", i) %||% paste0("output_", i)
+        output_type <- cell("output_type", i)
+        test_params <- private$..outputs_parse_test_params(cell("test_params", i))
+
+        phrutils::phr_try(
+          {
+            func_name <- cell("output_func_name", i)
+            if (is.null(func_name)) {
+              phrutils::phr_warning(
+                message = phrutils::phr_txt(
+                  "Output '{out_name}' has no output_func_name specified. Skipping."
+                ),
+                origin = private$..dataset_name
+              )
+              next
+            }
+
+            output_function <- NULL
+            if (requireNamespace("phr", quietly = TRUE)) {
+              tryCatch(
+                {
+                  ns <- asNamespace("phr")
+                  if (
+                    exists(
+                      func_name,
+                      envir = ns,
+                      mode = "function",
+                      inherits = FALSE
+                    )
+                  ) {
+                    output_function <- get(
+                      func_name,
+                      envir = ns,
+                      mode = "function",
+                      inherits = FALSE
+                    )
+                  }
+                },
+                error = function(e) NULL
+              )
+            }
+            if (is.null(output_function)) {
+              tryCatch(
+                {
+                  if (exists(func_name, mode = "function", inherits = TRUE)) {
+                    output_function <- get(
+                      func_name,
+                      mode = "function",
+                      inherits = TRUE
+                    )
+                  }
+                },
+                error = function(e) NULL
+              )
+            }
+            if (is.null(output_function)) {
+              phrutils::phr_warning(
+                message = phrutils::phr_txt(
+                  "Function '{func_name}' for output '{out_name}' not found. Skipping."
+                ),
+                origin = private$..dataset_name
+              )
+              next
+            }
+
+            # Determine first positional argument based on dataset_type column.
+            # Supported values:
+            #   "base"          – base_design (unweighted); also the default
+            #   "survey_design" – weighted_design (weighted)
+            dataset_type <- cell("dataset_type", i) %||% "base"
+
+            first_arg <- switch(
+              dataset_type,
+              "base" = base_design,
+              "survey_design" = weighted_design,
+              base_design # default: "base" (unweighted survey design)
+            )
+
+            func_args <- list(first_arg)
+
+            # Check if any test_param uses @results_table; if so, replace first arg
+            if (length(test_params) > 0) {
+              for (arg_name_check in names(test_params)) {
+                arg_val_check <- test_params[[arg_name_check]]
+                if (
+                  is.character(arg_val_check) &&
+                  arg_val_check == "@results_table"
+                ) {
+                  func_args[[1]] <- private$..results_to_table(
+                    results = plaus_results
+                  )
+                  break
+                }
+              }
+            }
+
+            if (length(test_params) > 0) {
+              func_args <- private$..resolve_output_params(
+                func_args = func_args,
+                test_params = test_params,
+                out_name = out_name,
+                skip_results_table = TRUE,
+                variable_map = vm
+              )
+            }
+
+            # Storage key: use output_name field; fall back to the output title
+            label <- cell("output_name", i) %||% out_name
+
+            # Auto-inject title_name unless already supplied in test_params
+            if (is.null(func_args[["title_name"]])) {
+              title_field <- switch(
+                language,
+                "french" = "output_title_french",
+                "arabic" = "output_title_arabic",
+                "output_title_english"
+              )
+              auto_title <- cell(title_field, i) %||% cell("output_title", i)
+              if (!is.null(auto_title)) {
+                func_args[["title_name"]] <- auto_title
+              }
+            }
+
+            group <- cell("outputs_group", i)
+
+            store_result <- function(result, key) {
+              # Output functions wrap their bodies in phr_try(on_error = "warn")
+              # and therefore return NULL on failure. Assigning NULL into a list
+              # deletes the element, which would silently leave behind an empty
+              # output_group node, so bail out before any node is created.
+              if (is.null(result)) {
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(
+                    "Output '{out_name}' returned NULL (the output function failed). ",
+                    "Nothing stored for '{key}'."
+                  ),
+                  origin = private$..dataset_name
+                )
+                return(invisible(NULL))
+              }
+
+              if (!is.null(output_type) && output_type == "table") {
+                if (nested) {
+                  if (is.null(self$tables[[set_role]])) {
+                    self$tables[[set_role]] <- list()
+                  }
+                  if (!is.null(group)) {
+                    if (is.null(self$tables[[set_role]][[group]])) {
+                      self$tables[[set_role]][[group]] <- list()
+                    }
+                    self$tables[[set_role]][[group]][[key]] <- result
+                  } else {
+                    self$tables[[set_role]][[key]] <- result
+                  }
+                } else if (!is.null(group)) {
+                  if (is.null(self$tables[[group]])) {
+                    self$tables[[group]] <- list()
+                  }
+                  self$tables[[group]][[key]] <- result
+                } else {
+                  self$tables[[key]] <- result
+                }
+                phrutils::phr_message(phrutils::phr_txt(
+                  "Table '{key}' stored successfully."
+                ))
+              } else if (
+                !is.null(output_type) &&
+                output_type == "visualization"
+              ) {
+                if (nested) {
+                  if (is.null(self$visualizations[[set_role]])) {
+                    self$visualizations[[set_role]] <- list()
+                  }
+                  if (!is.null(group)) {
+                    if (is.null(self$visualizations[[set_role]][[group]])) {
+                      self$visualizations[[set_role]][[group]] <- list()
+                    }
+                    self$visualizations[[set_role]][[group]][[key]] <- result
+                  } else {
+                    self$visualizations[[set_role]][[key]] <- result
+                  }
+                } else if (!is.null(group)) {
+                  if (is.null(self$visualizations[[group]])) {
+                    self$visualizations[[group]] <- list()
+                  }
+                  self$visualizations[[group]][[key]] <- result
+                } else {
+                  self$visualizations[[key]] <- result
+                }
+                phrutils::phr_message(phrutils::phr_txt(
+                  "Visualization '{key}' stored successfully."
+                ))
+              } else {
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(
+                    "Output '{out_name}' has unrecognized output_type '{output_type}'. ",
+                    "Expected 'visualization' or 'table'. Result not stored."
+                  ),
+                  origin = private$..dataset_name
+                )
+              }
+            }
+
+            per_group_ref <- cell("outputs_per_group", i)
+
+            if (!is.null(per_group_ref)) {
+              if (grepl("^@variable_map\\$", per_group_ref)) {
+                role <- sub("^@variable_map\\$", "", per_group_ref)
+                col_name <- vm[[role]]
+                var_label <- role
+                if (is.null(col_name)) {
+                  phrutils::phr_warning(
+                    message = phrutils::phr_txt(
+                      "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
+                    ),
+                    origin = private$..dataset_name
+                  )
+                  col_name <- NULL
+                }
+              } else {
+                col_name <- per_group_ref
+                var_label <- per_group_ref
+              }
+
+              # Determine the data frame used for finding unique group values
+              # by extracting the variables tibble from the relevant design.
+              design_obj <- if (dataset_type == "survey_design") {
+                weighted_design
+              } else {
+                base_design
+              }
+              source_df <- if (!is.null(design_obj)) {
+                tryCatch(design_obj$variables, error = function(e) NULL)
+              } else {
+                NULL
+              }
+
+              if (
+                !is.null(col_name) &&
+                !is.null(source_df) &&
+                col_name %in% names(source_df)
+              ) {
+                unique_vals <- unique(source_df[[col_name]])
+                unique_vals <- unique_vals[!is.na(unique_vals)]
+
+                phrutils::phr_message(phrutils::phr_txt(
+                  "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
+                ))
+
+                for (val in unique_vals) {
+                  design_to_filter <- if (dataset_type == "survey_design") {
+                    weighted_design
+                  } else {
+                    base_design
+                  }
+                  filtered_first_arg <- tryCatch(
+                    dplyr::filter(
+                      design_to_filter,
+                      !!rlang::sym(col_name) == val
+                    ),
+                    error = function(e) {
+                      phrutils::phr_warning(
+                        message = phrutils::phr_txt(
+                          "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
+                        ),
+                        origin = private$..dataset_name
+                      )
+                      NULL
+                    }
+                  )
+
+                  if (is.null(filtered_first_arg)) {
+                    next
+                  }
+
+                  per_group_args <- func_args
+                  per_group_args[[1]] <- filtered_first_arg
+                  amended_label <- paste0(label, "-", var_label, ".", val)
+
+                  phrutils::phr_try(
+                    {
+                      output_result <- do.call(
+                        output_function,
+                        per_group_args
+                      )
+                      store_result(output_result, amended_label)
+                    },
+                    on_error = "warn",
+                    origin = paste0(
+                      private$..dataset_name,
+                      "$run_outputs$",
+                      out_name,
+                      "$",
+                      val
+                    )
+                  )
+                }
+              } else if (!is.null(col_name)) {
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(
+                    "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
+                  ),
+                  origin = private$..dataset_name
+                )
+              }
+            } else {
+              phrutils::phr_message(phrutils::phr_txt(
+                "Calling {func_name} for output '{out_name}'..."
+              ))
+              output_result <- do.call(output_function, func_args)
+              store_result(output_result, label)
+            }
+          },
+          on_error = "warn",
+          origin = paste0(
+            private$..dataset_name,
+            "DataAnalytics$run_outputs$",
+            set_role,
+            "$",
+            out_name
+          )
+        )
+      }
+      invisible(NULL)
+    },
+
+    #' Parse a comma-separated outputs schema cell into a character vector
+    #'
+    #' Used for the `variables` and `disaggregation` columns. Commas inside
+    #' parentheses or quotes are not treated as separators.
+    #'
+    #' @param x A single character value, or NA/NULL.
+    #' @return A character vector, or NULL when the cell is empty.
+    #' @export
+    ..outputs_parse_list_field <- function(x) {
+      if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
+        return(NULL)
+      }
+
+      parts <- trimws(private$..parse_indicator_arguments(as.character(x)))
+      parts <- parts[nzchar(parts)]
+
+      if (length(parts) == 0) NULL else parts
+    },
+
     #' @description Pre-hook providing the input sets used by \code{run_outputs()}.
     #'
     #' The default implementation returns a single set (named \code{main})
@@ -2023,11 +2563,11 @@ DataAnalytics <- R6::R6Class(
     ..pre_run_outputs = function() {
       list(
         main = list(
-          data = "data",
-          outputs_schema = "outputs_schema",
-          base_survey_design = "base_survey_design",
-          survey_design = "survey_design",
-          variable_map = "variable_map"
+          data = "..data",
+          outputs_schema = "..outputs_schema",
+          base_survey_design = "..base_survey_design",
+          survey_design = "..survey_design",
+          variable_map = "..variable_map"
         )
       )
     },
@@ -2049,9 +2589,9 @@ DataAnalytics <- R6::R6Class(
     ..pre_run_analysis = function() {
       list(
         main = list(
-          data = "data",
-          survey_design = "survey_design",
-          data_analysis_plan = "data_analysis_plan"
+          data = "..data",
+          survey_design = "..survey_design",
+          data_analysis_plan = "..data_analysis_plan"
         )
       )
     },
@@ -2079,7 +2619,7 @@ DataAnalytics <- R6::R6Class(
     #' data analysis plan respectively.
     #'
     #' @return A named list of field sets.
-    pre_add_all_to_dap = function() {
+    ..pre_add_all_to_dap = function() {
       list(
         main = list(
           data = "data",
@@ -2087,6 +2627,47 @@ DataAnalytics <- R6::R6Class(
           data_analysis_plan = "data_analysis_plan"
         )
       )
+    },
+
+    #' Parse an outputs schema `test_params` cell into a named list
+    #'
+    #' Splits a `"key=value,key2=value2"` string into a named list, coercing
+    #' numeric and logical values. Commas inside parentheses (e.g. `c(a, b)`) or
+    #' quotes are preserved.
+    #'
+    #' @param x A single character value, or NA/NULL.
+    #' @return A named list of parameters, or NULL when the cell is empty.
+    #' @export
+    ..outputs_parse_test_params <- function(x) {
+      if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
+        return(NULL)
+      }
+
+      pairs <- .parse_indicator_arguments(as.character(x))
+      params <- list()
+
+      for (pair in pairs) {
+        pair <- trimws(pair)
+        eq_pos <- regexpr("=", pair)[[1]]
+
+        if (eq_pos > 1) {
+          key <- trimws(substr(pair, 1, eq_pos - 1))
+          value_str <- trimws(substr(pair, eq_pos + 1, nchar(pair)))
+          value <- suppressWarnings(as.numeric(value_str))
+
+          if (is.na(value)) {
+            if (toupper(value_str) %in% c("TRUE", "FALSE")) {
+              value <- as.logical(value_str)
+            } else {
+              value <- value_str
+            }
+          }
+
+          params[[key]] <- value
+        }
+      }
+
+      if (length(params) == 0) NULL else params
     },
 
     #' @description Translate canonical variable names to actual column names using variable_map
@@ -3510,416 +4091,7 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    # Run all outputs for a single resolved input set.
-    #
-    # Contains the per-output logic used by \code{run_outputs()}: resolves the
-    # first positional argument from \code{dataset_type}, resolves
-    # \code{test_params} references, calls the output function, and stores
-    # results in \code{self$visualizations} / \code{self$tables} (nested under
-    # \code{set_role} when \code{nested} is TRUE).
-    #
-    # The outputs schema is a data frame and is iterated row by row; the
-    # comma-separated \code{variables} / \code{disaggregation} cells and the
-    # \code{test_params} cell are parsed per row.
-    #
-    # @param inputs Named list of resolved inputs: data, outputs_schema,
-    #   base_survey_design, survey_design and variable_map.
-    # @param set_role Character role name for this input set.
-    # @param nested Logical; TRUE when results are stored under set_role.
-    # @param language Character language for auto-generated titles.
-    # @return Invisibly returns NULL.
-    ..run_outputs_for_set = function(
-      inputs,
-      set_role,
-      nested,
-      language = "english"
-    ) {
-      outputs_schema <- inputs$outputs_schema
 
-      if (is.null(outputs_schema) || nrow(outputs_schema) == 0) {
-        phrutils::phr_warning(
-          message = phrutils::phr_txt(
-            "No outputs defined in outputs schema for '{set_role}'. Skipping."
-          ),
-          origin = private$..dataset_name
-        )
-        return(invisible(NULL))
-      }
-
-      base_design <- inputs$base_survey_design
-      if (is.null(base_design) && !is.null(inputs$data)) {
-        base_design <- phrutils::phr_try(
-          srvyr::as_survey_design(.data = inputs$data, ids = 1),
-          on_error = "warn",
-          origin = paste0(private$..dataset_name, "$run_outputs"),
-          hint = paste0(
-            phrutils::phr_txt("Could not create base (unweighted) survey design for '"),
-            set_role,
-            "'."
-          )
-        )
-      }
-      weighted_design <- inputs$survey_design
-
-      vm <- inputs$variable_map %||% private$..variable_map %||% list()
-
-      # Resolve the plausibility results for this set (used by @results_table).
-      plaus_results <- private$..plausibility_results
-      if (
-        nested &&
-          is.list(plaus_results) &&
-          set_role %in% names(plaus_results)
-      ) {
-        plaus_results <- plaus_results[[set_role]]
-      }
-
-      phrutils::phr_message(
-        phrutils::phr_txt(
-        "Running {nrow(outputs_schema)} output(s) for {private$..dataset_name} ('{set_role}')..."
-      ))
-
-      # Read a single schema cell, returning NULL when the column is absent or
-      # the value is missing/empty so downstream guards stay simple.
-      cell <- function(col, i) {
-        if (!col %in% names(outputs_schema)) {
-          return(NULL)
-        }
-        value <- outputs_schema[[col]][[i]]
-        if (is.null(value) || length(value) != 1 || is.na(value)) {
-          return(NULL)
-        }
-        if (is.character(value) && !nzchar(value)) {
-          return(NULL)
-        }
-        value
-      }
-
-      for (i in seq_len(nrow(outputs_schema))) {
-        out_name <- cell("output_title", i) %||% paste0("output_", i)
-        output_type <- cell("output_type", i)
-        test_params <- outputs_parse_test_params(cell("test_params", i))
-
-        phrutils::phr_try(
-          {
-            func_name <- cell("output_func_name", i)
-            if (is.null(func_name)) {
-              phrutils::phr_warning(
-                message = phrutils::phr_txt(
-                  "Output '{out_name}' has no output_func_name specified. Skipping."
-                ),
-                origin = private$..dataset_name
-              )
-              next
-            }
-
-            output_function <- NULL
-            if (requireNamespace("phr", quietly = TRUE)) {
-              tryCatch(
-                {
-                  ns <- asNamespace("phr")
-                  if (
-                    exists(
-                      func_name,
-                      envir = ns,
-                      mode = "function",
-                      inherits = FALSE
-                    )
-                  ) {
-                    output_function <- get(
-                      func_name,
-                      envir = ns,
-                      mode = "function",
-                      inherits = FALSE
-                    )
-                  }
-                },
-                error = function(e) NULL
-              )
-            }
-            if (is.null(output_function)) {
-              tryCatch(
-                {
-                  if (exists(func_name, mode = "function", inherits = TRUE)) {
-                    output_function <- get(
-                      func_name,
-                      mode = "function",
-                      inherits = TRUE
-                    )
-                  }
-                },
-                error = function(e) NULL
-              )
-            }
-            if (is.null(output_function)) {
-              phrutils::phr_warning(
-                message = phrutils::phr_txt(
-                  "Function '{func_name}' for output '{out_name}' not found. Skipping."
-                ),
-                origin = private$..dataset_name
-              )
-              next
-            }
-
-            # Determine first positional argument based on dataset_type column.
-            # Supported values:
-            #   "base"          – base_design (unweighted); also the default
-            #   "survey_design" – weighted_design (weighted)
-            dataset_type <- cell("dataset_type", i) %||% "base"
-
-            first_arg <- switch(
-              dataset_type,
-              "base" = base_design,
-              "survey_design" = weighted_design,
-              base_design # default: "base" (unweighted survey design)
-            )
-
-            func_args <- list(first_arg)
-
-            # Check if any test_param uses @results_table; if so, replace first arg
-            if (length(test_params) > 0) {
-              for (arg_name_check in names(test_params)) {
-                arg_val_check <- test_params[[arg_name_check]]
-                if (
-                  is.character(arg_val_check) &&
-                    arg_val_check == "@results_table"
-                ) {
-                  func_args[[1]] <- private$..results_to_table(
-                    results = plaus_results
-                  )
-                  break
-                }
-              }
-            }
-
-            if (length(test_params) > 0) {
-              func_args <- private$..resolve_output_params(
-                func_args = func_args,
-                test_params = test_params,
-                out_name = out_name,
-                skip_results_table = TRUE,
-                variable_map = vm
-              )
-            }
-
-            # Storage key: use output_name field; fall back to the output title
-            label <- cell("output_name", i) %||% out_name
-
-            # Auto-inject title_name unless already supplied in test_params
-            if (is.null(func_args[["title_name"]])) {
-              title_field <- switch(
-                language,
-                "french" = "output_title_french",
-                "arabic" = "output_title_arabic",
-                "output_title_english"
-              )
-              auto_title <- cell(title_field, i) %||% cell("output_title", i)
-              if (!is.null(auto_title)) {
-                func_args[["title_name"]] <- auto_title
-              }
-            }
-
-            group <- cell("outputs_group", i)
-
-            store_result <- function(result, key) {
-              # Output functions wrap their bodies in phr_try(on_error = "warn")
-              # and therefore return NULL on failure. Assigning NULL into a list
-              # deletes the element, which would silently leave behind an empty
-              # output_group node, so bail out before any node is created.
-              if (is.null(result)) {
-                phrutils::phr_warning(
-                  message = phrutils::phr_txt(
-                    "Output '{out_name}' returned NULL (the output function failed). ",
-                    "Nothing stored for '{key}'."
-                  ),
-                  origin = private$..dataset_name
-                )
-                return(invisible(NULL))
-              }
-
-              if (!is.null(output_type) && output_type == "table") {
-                if (nested) {
-                  if (is.null(self$tables[[set_role]])) {
-                    self$tables[[set_role]] <- list()
-                  }
-                  if (!is.null(group)) {
-                    if (is.null(self$tables[[set_role]][[group]])) {
-                      self$tables[[set_role]][[group]] <- list()
-                    }
-                    self$tables[[set_role]][[group]][[key]] <- result
-                  } else {
-                    self$tables[[set_role]][[key]] <- result
-                  }
-                } else if (!is.null(group)) {
-                  if (is.null(self$tables[[group]])) {
-                    self$tables[[group]] <- list()
-                  }
-                  self$tables[[group]][[key]] <- result
-                } else {
-                  self$tables[[key]] <- result
-                }
-                phrutils::phr_message(phrutils::phr_txt(
-                  "Table '{key}' stored successfully."
-                ))
-              } else if (
-                !is.null(output_type) &&
-                  output_type == "visualization"
-              ) {
-                if (nested) {
-                  if (is.null(self$visualizations[[set_role]])) {
-                    self$visualizations[[set_role]] <- list()
-                  }
-                  if (!is.null(group)) {
-                    if (is.null(self$visualizations[[set_role]][[group]])) {
-                      self$visualizations[[set_role]][[group]] <- list()
-                    }
-                    self$visualizations[[set_role]][[group]][[key]] <- result
-                  } else {
-                    self$visualizations[[set_role]][[key]] <- result
-                  }
-                } else if (!is.null(group)) {
-                  if (is.null(self$visualizations[[group]])) {
-                    self$visualizations[[group]] <- list()
-                  }
-                  self$visualizations[[group]][[key]] <- result
-                } else {
-                  self$visualizations[[key]] <- result
-                }
-                phrutils::phr_message(phrutils::phr_txt(
-                  "Visualization '{key}' stored successfully."
-                ))
-              } else {
-                phrutils::phr_warning(
-                  message = phrutils::phr_txt(
-                    "Output '{out_name}' has unrecognized output_type '{output_type}'. ",
-                    "Expected 'visualization' or 'table'. Result not stored."
-                  ),
-                  origin = private$..dataset_name
-                )
-              }
-            }
-
-            per_group_ref <- cell("outputs_per_group", i)
-
-            if (!is.null(per_group_ref)) {
-              if (grepl("^@variable_map\\$", per_group_ref)) {
-                role <- sub("^@variable_map\\$", "", per_group_ref)
-                col_name <- vm[[role]]
-                var_label <- role
-                if (is.null(col_name)) {
-                  phrutils::phr_warning(
-                    message = phrutils::phr_txt(
-                      "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
-                    ),
-                    origin = private$..dataset_name
-                  )
-                  col_name <- NULL
-                }
-              } else {
-                col_name <- per_group_ref
-                var_label <- per_group_ref
-              }
-
-              # Determine the data frame used for finding unique group values
-              # by extracting the variables tibble from the relevant design.
-              design_obj <- if (dataset_type == "survey_design") {
-                weighted_design
-              } else {
-                base_design
-              }
-              source_df <- if (!is.null(design_obj)) {
-                tryCatch(design_obj$variables, error = function(e) NULL)
-              } else {
-                NULL
-              }
-
-              if (
-                !is.null(col_name) &&
-                  !is.null(source_df) &&
-                  col_name %in% names(source_df)
-              ) {
-                unique_vals <- unique(source_df[[col_name]])
-                unique_vals <- unique_vals[!is.na(unique_vals)]
-
-                phrutils::phr_message(phrutils::phr_txt(
-                  "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
-                ))
-
-                for (val in unique_vals) {
-                  design_to_filter <- if (dataset_type == "survey_design") {
-                    weighted_design
-                  } else {
-                    base_design
-                  }
-                  filtered_first_arg <- tryCatch(
-                    dplyr::filter(
-                      design_to_filter,
-                      !!rlang::sym(col_name) == val
-                    ),
-                    error = function(e) {
-                      phrutils::phr_warning(
-                        message = phrutils::phr_txt(
-                          "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
-                        ),
-                        origin = private$..dataset_name
-                      )
-                      NULL
-                    }
-                  )
-
-                  if (is.null(filtered_first_arg)) {
-                    next
-                  }
-
-                  per_group_args <- func_args
-                  per_group_args[[1]] <- filtered_first_arg
-                  amended_label <- paste0(label, "-", var_label, ".", val)
-
-                  phrutils::phr_try(
-                    {
-                      output_result <- do.call(
-                        output_function,
-                        per_group_args
-                      )
-                      store_result(output_result, amended_label)
-                    },
-                    on_error = "warn",
-                    origin = paste0(
-                      private$..dataset_name,
-                      "$run_outputs$",
-                      out_name,
-                      "$",
-                      val
-                    )
-                  )
-                }
-              } else if (!is.null(col_name)) {
-                phrutils::phr_warning(
-                  message = phrutils::phr_txt(
-                    "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
-                  ),
-                  origin = private$..dataset_name
-                )
-              }
-            } else {
-              phrutils::phr_message(phrutils::phr_txt(
-                "Calling {func_name} for output '{out_name}'..."
-              ))
-              output_result <- do.call(output_function, func_args)
-              store_result(output_result, label)
-            }
-          },
-          on_error = "warn",
-          origin = paste0(
-            private$..dataset_name,
-            "DataAnalytics$run_outputs$",
-            set_role,
-            "$",
-            out_name
-          )
-        )
-      }
-      invisible(NULL)
-    },
 
     # Amend one data / variable_map / data_analysis_plan field set for
     # add_all_to_dap().
@@ -4239,7 +4411,7 @@ DataAnalytics <- R6::R6Class(
         # c(...) vector format
         if (is.character(arg_value) && grepl("^c\\(", arg_value)) {
           vec_content <- sub("^c\\(", "", sub("\\)$", "", arg_value))
-          vec_elements <- .parse_indicator_arguments(vec_content)
+          vec_elements <- private$..parse_indicator_arguments(vec_content)
 
           resolved_elements <- character()
           for (elem in vec_elements) {
@@ -4409,6 +4581,70 @@ DataAnalytics <- R6::R6Class(
 
       return(func_args)
     },
+
+    #' Parse indicator arguments string respecting parentheses and quoted strings
+    #'
+    #' Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
+    #' properly by respecting parentheses and quoted strings so that c(...) vectors
+    #' and quoted values containing commas are not split incorrectly.
+    #'
+    #' This function is intentionally called twice during indicator processing:
+    #' 1. First call: Parse the full argument string into individual argument pairs
+    #' 2. Second call: Parse the content inside c(...) vectors into individual elements
+    #' This two-stage parsing is necessary because arguments and vector elements have
+    #' different semantic meanings and resolution rules.
+    #'
+    #' @param arg_string Character string containing arguments
+    #' @return Character vector of argument pairs
+    #' @keywords internal
+    ..parse_indicator_arguments <- function(arg_string) {
+      if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
+        return(character(0))
+      }
+
+      result <- character(0)
+      current_arg <- ""
+      paren_depth <- 0L
+      in_quote <- FALSE
+      quote_char <- ""
+      chars <- strsplit(arg_string, "")[[1]]
+
+      for (char in chars) {
+        if (in_quote) {
+          current_arg <- paste0(current_arg, char)
+          if (char == quote_char) {
+            in_quote <- FALSE
+            quote_char <- ""
+          }
+        } else if (char %in% c('"', "'")) {
+          in_quote <- TRUE
+          quote_char <- char
+          current_arg <- paste0(current_arg, char)
+        } else if (char == "(") {
+          paren_depth <- paren_depth + 1L
+          current_arg <- paste0(current_arg, char)
+        } else if (char == ")") {
+          paren_depth <- paren_depth - 1L
+          current_arg <- paste0(current_arg, char)
+        } else if (char == "," && paren_depth == 0L) {
+          # This is a separator between arguments, not within a vector or quoted string
+          if (nchar(current_arg) > 0) {
+            result <- c(result, trimws(current_arg))
+            current_arg <- ""
+          }
+        } else {
+          current_arg <- paste0(current_arg, char)
+        }
+      }
+
+      # Add the last argument
+      if (nchar(current_arg) > 0) {
+        result <- c(result, trimws(current_arg))
+      }
+
+      result
+    },
+
 
     # Build a DAP tibble from an analysis schema, resolving canonical variable names.
     #

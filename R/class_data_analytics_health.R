@@ -26,7 +26,6 @@
 HealthDataAnalytics <- R6::R6Class(
   classname = "HealthDataAnalytics",
   inherit = DataAnalytics,
-
   public = list(
 
     #' @description
@@ -76,6 +75,13 @@ HealthDataAnalytics <- R6::R6Class(
                           linked_ind_health_variable_map = NULL,
                           linked_ind_health_value_map = NULL) {
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = dataset_name,
+        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
+      )
+
       super$initialize(
         data = data,
         dap = dap,
@@ -90,180 +96,139 @@ HealthDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      private$..linked_ind_roster_data              <- linked_ind_roster_data
-      private$..linked_ind_roster_data_stage_name   <- linked_ind_roster_data_stage_name
-      private$..linked_ind_roster_data_hash         <- linked_ind_roster_data_hash
-      private$..linked_ind_roster_variable_map      <- linked_ind_roster_variable_map
-      private$..linked_ind_roster_value_map         <- linked_ind_roster_value_map
+      # Step 1: Set fields
+      result <- phrutils::phr_try_step(
+        {
+          self$set(field = "..linked_ind_roster_data", value = linked_ind_roster_data)
+          self$set(field = "..linked_ind_roster_data_stage_name", value = linked_ind_roster_data_stage_name)
+          self$set(field = "..linked_ind_roster_data_hash", value = linked_ind_roster_data_hash)
+          self$set(field = "..linked_ind_roster_variable_map", value = linked_ind_roster_variable_map)
+          self$set(field = "..linked_ind_roster_value_map", value = linked_ind_roster_value_map)
 
-      private$..linked_ind_health_data              <- linked_ind_health_data
-      private$..linked_ind_health_data_stage_name   <- linked_ind_health_data_stage_name
-      private$..linked_ind_health_data_hash         <- linked_ind_health_data_hash
-      private$..linked_ind_health_variable_map      <- linked_ind_health_variable_map
-      private$..linked_ind_health_value_map         <- linked_ind_health_value_map
-
-      private$..load_default_schema(
-        filename = private$..default_analysis_schema_roster_filename,
-        target_field = "..analysis_schema_roster",
-        required_cols = c(
-          "indicator_name",
-          "calculation",
-          "var_name",
-          "denom_var",
-          "disaggregation",
-          "multiplier",
-          "indicator_unit"
-        ),
-        schema_name = "analysis_roster",
-        dataset_name = private$..dataset_name
+          self$set(field = "..linked_ind_health_data", value = linked_ind_health_data)
+          self$set(field = "..linked_ind_health_data_stage_name", value = linked_ind_health_data_stage_name)
+          self$set(field = "..linked_ind_health_data_hash", value = linked_ind_health_data_hash)
+          self$set(field = "..linked_ind_health_variable_map", value = linked_ind_health_variable_map)
+          self$set(field = "..linked_ind_health_value_map", value = linked_ind_health_value_map)
+        },
+        step = phrutils::phr_txt("Loading health specific fields in initialize"),
+        hint = phrutils::phr_txt("Check water container data and inputs")
       )
-
-      private$..load_default_schema(
-        filename = private$..default_outputs_schema_roster_filename,
-        target_field = "..outputs_schema_roster",
-        required_cols = c(
-          "output_title",
-          "output_name",
-          "output_subtitle",
-          "variables",
-          "disaggregation",
-          "output_func_name",
-          "test_params",
-          "output_type",
-          "outputs_group",
-          "outputs_per_group",
-          "dataset_type",
-          "output_title_english",
-          "output_title_french",
-          "output_title_arabic"
-        ),
-        schema_name = "outputs_roster",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_analysis_schema_health_filename,
-        target_field = "..analysis_schema_health",
-        required_cols = c(
-          "indicator_name",
-          "calculation",
-          "var_name",
-          "denom_var",
-          "disaggregation",
-          "multiplier",
-          "indicator_unit"
-        ),
-        schema_name = "analysis_health",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_outputs_schema_health_filename,
-        target_field = "..outputs_schema_health",
-        required_cols = c(
-          "output_title",
-          "output_name",
-          "output_subtitle",
-          "variables",
-          "disaggregation",
-          "output_func_name",
-          "test_params",
-          "output_type",
-          "outputs_group",
-          "outputs_per_group",
-          "dataset_type",
-          "output_title_english",
-          "output_title_french",
-          "output_title_arabic"
-        ),
-        schema_name = "outputs_health",
-        dataset_name = private$..dataset_name
-      )
-
-      # Generate per-dataset analysis plans for roster and deaths
-      private$..data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
-        log_df   = NULL,
-        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
-      )
-      private$..data_analysis_plan_health <- QuantDataAnalysisPlanLog$new(
-        log_df   = NULL,
-        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Health)")
-      )
-
-      # Build the DAP for roster dataset from available columns and analysis_schema_roster
-      if (!is.null(linked_ind_roster_data)) {
-
-        result <- private$..build_dap_from_schema(
-          analysis_schema = private$..analysis_schema_roster,
-          variable_map    = private$..variable_map_roster %||% list(),
-          available_vars  = names(private$..linked_ind_roster_data),
-          dataset_label   = "roster"
-        )
-
-        private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
-
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      # Build the DAP for deaths dataset from available columns and analysis_schema_deaths
-      if (!is.null(linked_ind_health_data)) {
-
-        result <- private$..build_dap_from_schema(
-          analysis_schema = private$..analysis_schema_health,
-          variable_map    = private$..variable_map_health %||% list(),
-          available_vars  = names(private$..linked_ind_health_data),
-          dataset_label   = "health"
-        )
-
-        private$..data_analysis_plan_health$set(field = "log_df", value = result$dap_df)
-
+      # Step 2: Load default schemas for health
+      result <- phrutils::phr_try_step(
+        {
+          private$..initialize_load_schemas_health()
+        },
+        step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        hint = phrutils::phr_txt("Check water container data and inputs")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      # Create and store per-dataset survey designs for roster and deaths
-      if (!is.null(linked_ind_roster_data)) {
-        private$..base_survey_design_roster <- phrutils::phr_try(
-          srvyr::as_survey_design(.data = linked_ind_roster_data, ids = 1),
-          on_error = "warn",
-          origin   = paste0(dataset_name, "$initialize"),
-          hint     = phrutils::phr_txt("Could not create base (unweighted) survey design for roster data.")
-        )
-        private$..survey_design_roster <- private$..create_survey_design_for_dataset(
-          data         = linked_ind_roster_data,
-          variable_map = linked_ind_roster_variable_map %||% ..linked_ind_roster_variable_map,
-          origin       = paste0(dataset_name, "$initialize")
-        )
+      # Step 3: Load default schemas for health
+      result <- phrutils::phr_try_step(
+        {
+          # Generate per-dataset analysis plans for roster and deaths
+
+          self$set(field = "..data_analysis_plan_roster",
+                   value = QuantDataAnalysisPlanLog$new(
+                     log_df   = NULL,
+                     log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+                   ))
+
+          self$set(field = "..data_analysis_plan_health",
+                   value = QuantDataAnalysisPlanLog$new(
+                     log_df   = NULL,
+                     log_name = phrutils::phr_txt("Quant Data Analysis Plan (Health)")
+                   ))
+
+          # Build the DAP for roster dataset from available columns and analysis_schema_roster
+          if (!is.null(linked_ind_roster_data)) {
+            result <- private$..build_dap_from_schema(
+              analysis_schema = private$..analysis_schema_roster,
+              variable_map    = private$..variable_map_roster %||% list(),
+              available_vars  = names(private$..linked_ind_roster_data),
+              dataset_label   = "roster"
+            )
+            private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+          }
+
+          # Build the DAP for deaths dataset from available columns and analysis_schema_deaths
+          if (!is.null(linked_ind_health_data)) {
+            result <- private$..build_dap_from_schema(
+              analysis_schema = private$..analysis_schema_health,
+              variable_map    = private$..variable_map_health %||% list(),
+              available_vars  = names(private$..linked_ind_health_data),
+              dataset_label   = "health"
+            )
+            private$..data_analysis_plan_health$set(field = "log_df", value = result$dap_df)
+          }
+        },
+        step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        hint = phrutils::phr_txt("Check water container data and inputs")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      if (!is.null(linked_ind_deaths_data)) {
-        private$..base_survey_design_health <- phrutils::phr_try(
-          srvyr::as_survey_design(.data = linked_ind_deaths_data, ids = 1),
-          on_error = "warn",
-          origin   = paste0(dataset_name, "$initialize"),
-          hint     = phrutils::phr_txt("Could not create base (unweighted) survey design for health data.")
-        )
-        private$..survey_design_health <- private$..create_survey_design_for_dataset(
-          data         = linked_ind_deaths_data,
-          variable_map = linked_ind_deaths_variable_map %||% private$..linked_ind_health_variable_map,
-          origin       = paste0(dataset_name, "$initialize")
-        )
+      # Step 4: Create health specific survey design objects
+      result <- phrutils::phr_try_step(
+        {
+          # Create and store per-dataset survey designs for roster and deaths
+          if (!is.null(linked_ind_roster_data)) {
+
+            self$set(field = "..base_survey_design_roster",
+                     value = srvyr::as_survey_design(.data = linked_ind_roster_data, ids = 1))
+
+            self$set(field = "..survey_design_roster",
+                     value = private$..create_survey_design_for_dataset(
+                       data         = linked_ind_roster_data,
+                       variable_map = linked_ind_roster_variable_map %||% ..linked_ind_roster_variable_map,
+                       origin       = paste0(dataset_name, "$initialize")
+                     ))
+          }
+
+          if (!is.null(linked_ind_health_data)) {
+
+            self$set(field = "..base_survey_design_health",
+                     value = srvyr::as_survey_design(.data = linked_ind_health_data, ids = 1))
+
+            self$set(field = "..survey_design_health",
+                     value = private$..create_survey_design_for_dataset(
+                       data         = linked_ind_health_data,
+                       variable_map = linked_ind_health_variable_map %||% private$..linked_ind_health_variable_map,
+                       origin       = paste0(dataset_name, "$initialize")
+                     ))
+          }
+        },
+        step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        hint = phrutils::phr_txt("Check water container data and inputs")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
       msg_parts <- c()
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
       if (!is.null(linked_ind_health_data))  msg_parts <- c(msg_parts, "health individual")
       if (length(msg_parts) > 0) {
-        phrutils::phr_message(
-          phrutils::phr_txt(
-            "HealthDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data."
-          )
-        )
+        msg <- "{dataset_name} initialized with linked {paste(msg_parts, collapse=' and ')} data."
       } else {
-        phrutils::phr_message(
-          phrutils::phr_txt("{dataset_name} initialized as HealthDataAnalytics object.")
-        )
+        msg <- "{dataset_name} initialized as HealthDataAnalytics object."
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = dataset_name,
+        message = phrutils::phr_txt(msg)
+      )
     },
-
-
   ),
 
   private = list(
@@ -432,6 +397,96 @@ HealthDataAnalytics <- R6::R6Class(
       }
 
       sets
+    },
+
+    #' Initialize Default Schemas for HealthAnalytics
+    #'
+    #' @description
+    #' Loads the default quality, analysis, and outputs schemas into
+    #' their corresponding private fields.
+    #'
+    #' @return Invisibly returns TRUE.
+    ..initialize_load_schemas_health = function() {
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_roster_filename,
+        target_field = "..analysis_schema_roster",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_roster_filename,
+        target_field = "..outputs_schema_roster",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_health_filename,
+        target_field = "..analysis_schema_health",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_health",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_health_filename,
+        target_field = "..outputs_schema_health",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_health",
+        dataset_name = private$..dataset_name
+      )
+
+      invisible(TRUE)
     }
   )
 )

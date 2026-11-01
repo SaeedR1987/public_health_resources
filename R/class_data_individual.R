@@ -24,8 +24,6 @@ IndividualData <- R6::R6Class(
 
   public = list(
 
-
-
     #' @description
     #' Creates a new IndividualData object with person-level survey data
     #'
@@ -48,60 +46,107 @@ IndividualData <- R6::R6Class(
     #' 7. Auto-maps schema variables based on column names
     initialize = function(data,
                           dataset_name = "IndividualData",
-                          uuid = NULL) {
+                          uuid = NULL,
+                          hh_uuid = NULL) {
 
       phrutils::phr_try({
+
+        private$..touch(
+          log = TRUE,
+          touch = TRUE,
+          name = private$..dataset_name,
+          message = phrutils::phr_txt("Starting initialize for {dataset_name} as IndividualData object.")
+        )
+
         # Default mapping for individual-level data
         default_map <- list(
-          uuid        = "person_id"        # unique individual ID
-          # hh_uuid     = "hh_uuid"     # household linkage
-
+          uuid        = "person_id",        # unique individual ID
+          hh_uuid     = "hh_uuid"     # household linkage
         )
 
-        # Merge user-specified map over defaults
-        # variable_map <- modifyList(default_map, variable_map %||% list())
-
-        if(is.null(uuid)) {uuid <- default_map$uuid}
-
-        # Call parent (Data) initializer — uuid now refers to individual identifier
-        super$initialize(
-          data         = data,
-          dataset_name = dataset_name,
-          uuid         = uuid
+        # Step 1: Super-initialize
+        result <- phrutils::phr_try_step(
+          {
+            # Call parent (Data) initializer — uuid now refers to individual identifier
+            super$initialize(
+              data         = data,
+              dataset_name = dataset_name,
+              uuid         = if (is.null(uuid)) {default_map$uuid} else {uuid}
+            )
+          },
+        step = phrutils::phr_txt("Super initialize of IndividualData"),
+        hint = phrutils::phr_txt("Check initialization in parent Data or Asset classes.")
         )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
 
-        # ---- Required & optional columns
-        # Merge individual-required columns into Data$required_columns
-        # (ensure we store *column names*, not roles)
-        ind_required <- c(
-          private$..variable_map$uuid,     # unique person identifier
-          private$..variable_map$hh_uuid,  # household linkage (duplicates allowed)
-          private$..variable_map$sex,
-          private$..variable_map$age
+        # Step 2: Map schema vars
+        result <- phrutils::phr_try_step(
+          {
+            # Re-map schema variables now that the individual schema is loaded.
+            # Data$initialize() already mapped against the (still empty) parent
+            # schema, so roles such as hh_uuid would otherwise stay unmapped until
+            # the first standardize() call.
+            private$..map_schema_vars(stage = "raw")
+          },
+          step = phrutils::phr_txt("Map schema vars for IndividualData"),
+          hint = phrutils::phr_txt("Check variable schema, variable or value maps.")
         )
-        ind_required <- unique(ind_required[!is.na(ind_required) & ind_required != ""])
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
 
-        # Data$initialize already set private$..required_columns <- uuid
-        # We extend that with the individual-specific requirements
-        private$..required_columns <- unique(c(private$..required_columns, ind_required))
 
-        # Optional (mapped) columns
-        private$..optional_columns <- c(
-          private$..variable_map$est_dob,
-          private$..variable_map$exact_dob,
-          private$..variable_map$age_months,
-          private$..variable_map$age_days,
-          private$..variable_map$joined_hh
+        # Step 3: Set required columns
+        result <- phrutils::phr_try_step(
+          {
+            # ---- Required & optional columns
+            # Merge individual-required columns into Data$required_columns
+            # (ensure we store *column names*, not roles)
+            ind_required <- c(
+              private$..variable_map$uuid,     # unique person identifier
+              if (is.null(hh_uuid)) {default_map$hh_uuid} else {hh_uuid},  # household linkage (duplicates allowed)
+              private$..variable_map$sex,
+              private$..variable_map$age_years
+            )
+            ind_required <- unique(ind_required[!is.na(ind_required) & ind_required != ""])
+
+            self$set(field = "..required_columns", value = unique(c(private$..required_columns, ind_required)))
+
+          },
+          step = phrutils::phr_txt("Set required columns for IndividualData"),
+          hint = phrutils::phr_txt("Check for presence of required variables: {ind_required}.")
         )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
 
-        # Re-map schema variables now that the individual schema is loaded.
-        # Data$initialize() already mapped against the (still empty) parent
-        # schema, so roles such as hh_uuid would otherwise stay unmapped until
-        # the first standardize() call.
-        private$..map_schema_vars(stage = "raw")
+        # Step 3: Set optional columns
+        result <- phrutils::phr_try_step(
+          {
+            # Optional (mapped) columns
+            self$set(field = "..optional_columns", value = c(
+              private$..optional_columns,
+              private$..variable_map$est_dob,
+              private$..variable_map$exact_dob,
+              private$..variable_map$age_months,
+              private$..variable_map$age_days
+            ))
+          },
+          step = phrutils::phr_txt("Setting optional columns for IndividualData"),
+          hint = phrutils::phr_txt("Check for presence of optional variables")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
 
-        phrutils::phr_message(phrutils::phr_txt("{dataset_name} initialized as IndividualData object."))
-
+        private$..touch(
+          log = TRUE,
+          touch = TRUE,
+          name = private$..dataset_name,
+          message = phrutils::phr_txt("Initialization for {dataset_name} as IndividualData object completed successfully.")
+        )
       }, on_error = "abort", origin = "IndividualData$initialize")
     }
 

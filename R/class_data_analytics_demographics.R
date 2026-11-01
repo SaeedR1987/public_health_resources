@@ -45,6 +45,13 @@ DemographicsDataAnalytics <- R6::R6Class(
                           value_label = NULL,
                           quality_schema = NULL) {
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = private$..dataset_name,
+        message = phrutils::phr_txt("Starting initialization of {dataset_name}.")
+      )
+
       super$initialize(
         data = data,
         dap = dap,
@@ -59,8 +66,11 @@ DemographicsDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      phrutils::phr_message(
-        phrutils::phr_txt("{dataset_name} initialized as DemographicsDataAnalytics object.")
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = private$..dataset_name,
+        message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
       )
     }
   ),

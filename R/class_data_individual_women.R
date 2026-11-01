@@ -1,261 +1,152 @@
-#' IPHRA Women Individual Data Class
+#' IPHRA Individual Woman Data Class
 #'
 #' Extends IndividualData by adding a comprehensive schema for
-#' women's individual-level maternal health data including:
-#' reproductive health indicators, antenatal care, delivery care,
-#' postnatal care, family planning, and maternal nutrition.
-#'
-#' This class provides data quality checks and visualization capabilities
-#' specific to maternal health assessments.
+#' individual-level health data for women of reproductive age including:
+#' sexual and reproductive health service coverage, dietary diversity,
+#' and MUAC indicators.
 #'
 #' @export
-WomenIndividualData <- R6::R6Class(
-  classname = "WomenIndividualData",
+WomanIndividualData <- R6::R6Class(
+  classname = "WomanIndividualData",
   inherit   = IndividualData,
-
   public = list(
 
     #' @description
-    #' Initialize a new WomenIndividualData object
+    #' Initialize a new WomanIndividualData object
     #'
-    #' @param data A data frame containing women's maternal health records
+    #' @param data A data frame containing individual health records
     #' @param dataset_name A name for this dataset
     #' @param metadata Optional list of metadata
     #' @param variable_map Optional named list mapping standard variable names to data columns
-    #' @return A new WomenIndividualData object
+    #' @return A new HealthIndividualData object
     initialize = function(data,
-                          dataset_name = "WomenIndividualData",
+                          dataset_name = "WomanIndividualData",
                           metadata = NULL,
                           variable_map = NULL) {
 
       phrutils::phr_try({
 
-        women_map <- list(
-          # Demographics (use generic names that map to data columns)
+        private$..touch(
+          log = TRUE,
+          touch = FALSE,
+          name = dataset_name,
+          message = phrutils::phr_txt("Starting initialization for WomanIndividualData object {dataset_name}.")
+        )
+
+        woman_map <- list(
           uuid      = "person_id",
           hh_uuid    = "hh_uuid"
         )
 
-        variable_map <- modifyList(women_map, variable_map %||% list())
-
-        # Call parent
-        super$initialize(
-          data         = data,
-          dataset_name = dataset_name,
-          metadata     = metadata,
-          variable_map = variable_map
+        # Step 1: Super-initialize
+        result <- phrutils::phr_try_step(
+          {
+            # Call parent
+            super$initialize(
+              data         = data,
+              dataset_name = dataset_name,
+              uuid = if (is.null(uuid)) {woman_map$uuid} else {uuid},
+              hh_uuid = if (is.null(hh_uuid)) {woman_map$hh_uuid} else {hh_uuid}
+            )
+          },
+          step = phrutils::phr_txt("Super initialize of WomanIndividualData"),
+          hint = phrutils::phr_txt("Check initialization in parent Asset, Data or IndividualData classes.")
         )
-
-        # Extend optional columns
-        self$optional_columns <- c(self$optional_columns, unlist(women_map))
-
-        # Load and merge schema
-        self$set_variable_schema(self$default_women_schema())
-
-        # Load default indicator schema
-        default_ind_schema <- self$default_indicator_schema()
-        if (length(default_ind_schema) > 0) {
-          self$set_indicator_schema(default_ind_schema)
-          phrutils::phr_message(
-            phr_txt("Loaded default indicator schema with {length(default_ind_schema)} indicator(s).")
-          )
+        if (phrutils::phr_failed(result)) {
+          return(result)
         }
 
-        # Load default dependency schema
-        default_dep_schema <- self$default_dependency_schema()
-        if (length(default_dep_schema$dependencies) > 0) {
-          self$set_dependency_schema(default_dep_schema)
-          phrutils::phr_message(
-            phr_txt("Loaded default dependency schema with {length(default_dep_schema$dependencies)} dependency/ies.")
+        # Step 2: Setting optional columns
+        result <- phrutils::phr_try_step(
+          {
+            self$set(field = "..optional_columns",
+                     value = c(private$..optional_columns, unlist(woman_map)))
+
+          },
+          step = phrutils::phr_txt("Loading health specific fields in initialize"),
+          hint = phrutils::phr_txt("Check water container data and inputs")
           )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+        # Step 2: Initial mapping of schema vars for woman individual data
+        result <- phrutils::phr_try_step(
+          {
+            private$..map_schema_vars(stage = "raw")
+          },
+          step = phrutils::phr_txt("Populate variable and value maps for woman data"),
+          hint = phrutils::phr_txt("Check variable and value maps for woman variables")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
         }
 
-        phrutils::phr_message(
-          phr_txt("{dataset_name} initialized as WomenIndividualData object.")
+        private$..touch(
+          log = TRUE,
+          touch = FALSE,
+          name = dataset_name,
+          message = phrutils::phr_txt("Initialization for {dataset_name} as WomanIndividualData object completed successfully with {nrow(data)} records.")
         )
 
-      }, on_error = "abort", origin = "WomenIndividualData$initialize")
+      }, on_error = "abort", origin = "WomanIndividualData$initialize")
     },
+  ),
 
+  private = list(
 
-    #' @description
-    #' Load the default variable schema for women's maternal health data
-    #'
-    #' Reads the variable_schema_data_individual_maternalhealth_template.xlsx file from package resources
-    #' and converts it to a nested list of variable definitions for maternal health indicators.
-    #'
-    #' @return A list containing the women's maternal health variable schema
-    default_women_schema = function() {
+    # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_variable_schema_filename = c(
+      "resources",
+      "variable_schema_data_individual_maternalhealth_template.xlsx"
+    ),
 
-      file <- system.file(
-        "resources",
-        "variable_schema_data_individual_maternalhealth_template.xlsx",
-        package = "phr"
-      )
+    # @field ..default_dependency_schema_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_dependency_schema_filename = c(
+      "resources",
+      "dependency_schema_data_individual_maternalhealth_template.xlsx"
+    ),
 
-      if (!file.exists(file)) {
-        phr_error(
-          origin  = "WomenIndividualData$default_women_schema",
-          message = phr_txt("variable_schema_data_individual_maternalhealth_template.xlsx not found in package resources."),
-          hint    = phr_txt("Place the schema file under inst/resources/ before building the package.")
+    # @field ..value_label Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_indicator_schema_filename = c(
+      "resources",
+      "indicator_schema_data_individual_maternalhealth_template.xlsx",
+    ),
+
+    ..analytics_registry = function() {
+
+      registry <- super$..analytics_registry()
+
+      c(
+        registry,
+        list(
+          woman = function(data,
+                            stage,
+                            analysis_config,
+                            parent) {
+
+            WomanDataAnalytics$new(
+              data = data,
+              dap = analysis_config,
+              parent_data_object = parent,
+              dataset_name = paste0(private$..dataset_name, "_WomanData"),
+              data_stage_name = stage,
+              data_hash = parent$get(field = "..metadata", role = "hash_id"),
+              variable_map = parent$get(field = "..variable_map"),
+              value_map = parent$get(field = "..value_map"),
+              variable_label = parent$get(field = "..variable_label"),
+              value_label = parent$get(field = "..value_label")
+            )
+          }
         )
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phr_error(
-            origin  = "WomenIndividualData$default_women_schema",
-            message = phr_txt("Failed to read variable_schema_data_individual_maternalhealth_template.xlsx"),
-            hint    = e$message
-          )
-        }
       )
-
-      # Convert table → canonical nested schema list
-      schema <- private$..data_table_to_schema(df)
-
-      return(schema)
-    },
-
-    #' @description
-    #' Load the default indicator schema for women's maternal health data
-    #'
-    #' Reads the indicator_schema_data_individual_maternalhealth_template.xlsx file from package resources
-    #' and converts it to a nested list of indicator definitions (e.g., ANC coverage).
-    #'
-    #' @return A list containing the maternal health indicator schema
-    default_indicator_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "indicator_schema_data_individual_maternalhealth_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "WomenIndividualData$default_indicator_schema",
-          message = phr_txt("indicator_schema_data_individual_maternalhealth_template.xlsx not found in package resources. Continuing without default indicator schema.")
-        )
-        return(list())
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "WomenIndividualData$default_indicator_schema",
-            message = phr_txt("Failed to read indicator_schema_data_individual_maternalhealth_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(list())
-
-      # Convert table → canonical nested indicator schema list
-      indicator_schema <- private$..indicator_table_to_schema(df)
-
-      return(indicator_schema)
-    },
-
-    #' @description
-    #' Load the default dependency schema for women's maternal health data
-    #'
-    #' Reads the dependency_schema_data_individual_maternalhealth_template.xlsx file from package resources
-    #' and converts it to a nested list of variable dependency rules.
-    #'
-    #' @return A list containing the maternal health dependency schema
-    default_dependency_schema = function() {
-
-      file <- system.file(
-        "resources",
-        "dependency_schema_data_individual_maternalhealth_template.xlsx",
-        package = "phr"
-      )
-
-      if (!file.exists(file)) {
-        phrutils::phr_warning(
-          origin  = "WomenIndividualData$default_dependency_schema",
-          message = phr_txt("dependency_schema_data_individual_maternalhealth_template.xlsx not found in package resources. Continuing without default dependency schema.")
-        )
-        return(list(dependencies = list()))
-      }
-
-      # Read the Excel table (first sheet)
-      df <- tryCatch(
-        readxl::read_xlsx(file),
-        error = function(e) {
-          phrutils::phr_warning(
-            origin  = "WomenIndividualData$default_dependency_schema",
-            message = phr_txt("Failed to read dependency_schema_data_individual_maternalhealth_template.xlsx: {e$message}")
-          )
-          return(NULL)
-        }
-      )
-
-      if (is.null(df)) return(list(dependencies = list()))
-
-      # Convert table → canonical nested dependency schema list
-      dependency_schema <- private$..dependency_table_to_schema(df)
-
-      return(dependency_schema)
-    },
-
-
-    #' @description
-    #' Generate a DataAnalytics object for women individual data.
-    #' Combines quality checks and quantitative analysis in one object.
-    #'
-    #' @param stage The data stage to use ("standardized" or "clean")
-    #' @param analysis_config Optional data analysis plan (tibble)
-    #' @return A DataAnalytics object or NULL
-    generate_data_analytics = function(stage = c("standardized", "clean"),
-                                       analysis_config = NULL) {
-
-      stage <- match.arg(stage)
-
-      phrutils::phr_try({
-
-        df <- self$get_data(stage)
-
-        if (is.null(df)) {
-          phrutils::phr_warning(
-            self$dataset_name,
-            phr_txt("No {stage} data available for DataAnalytics generation.")
-          )
-          return(NULL)
-        }
-
-        data_hash    <- self$get_hash(stage)
-        variable_map <- self$.variable_map
-        value_map    <- self$.value_map
-
-        analytics <- DataAnalytics$new(
-          data               = df,
-          dap                = analysis_config,
-          parent_data_object = self,
-          dataset_name       = paste0(self$dataset_name, "_DataAnalytics"),
-          data_stage_name    = stage,
-          data_hash          = data_hash,
-          variable_map       = variable_map,
-          value_map          = value_map,
-          variable_label     = self$.variable_label,
-          value_label        = self$.value_label
-        )
-
-        phrutils::phr_message(
-          phr_txt("Generated DataAnalytics object for {self$dataset_name}.")
-        )
-
-        return(analytics)
-
-      }, on_error = "warn", origin = paste0(self$dataset_name, "$generate_data_analytics"))
     }
-
 
   )
 )

@@ -113,67 +113,19 @@ MortalityDataAnalytics <- R6::R6Class(
 
       origin <- paste0(dataset_name, "$initialize")
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = dataset_name,
+        message = phrutils::phr_txt("Started initialization for {dataset_name}.")
+      )
+
       if (missing(data) || is.null(data)) {
         phrutils::phr_error(
           origin  = origin,
           message = phrutils::phr_txt("The data parameter (household dataframe) is required to initialize MortalityDataAnalytics.")
         )
       }
-
-      # Pre-merge linked roster and deaths variable/value maps and labels into the
-      # household maps BEFORE calling super$initialize. This ensures that when
-      # super$initialize() calls generate_dap_from_schema(), private$..variable_map
-      # already contains all canonical-name mappings, including those for mortality
-      # analysis indicators that may be defined in a linked dataset's variable_map.
-      # Household data takes precedence: keys already present are never overwritten.
-      # merged_variable_map   <- variable_map   %||% list()
-      # merged_value_map      <- value_map      %||% list()
-      # merged_variable_label <- variable_label %||% list()
-      # merged_value_label    <- value_label    %||% list()
-      #
-      # for (linked_maps in list(
-      #   list(
-      #     variable_map   = linked_ind_roster_variable_map,
-      #     value_map      = linked_ind_roster_value_map,
-      #     variable_label = linked_ind_roster_variable_label,
-      #     value_label    = linked_ind_roster_value_label
-      #   ),
-      #   list(
-      #     variable_map   = linked_ind_deaths_variable_map,
-      #     value_map      = linked_ind_deaths_value_map,
-      #     variable_label = linked_ind_deaths_variable_label,
-      #     value_label    = linked_ind_deaths_value_label
-      #   )
-      # )) {
-      #   if (!is.null(linked_maps$variable_map)) {
-      #     for (key in names(linked_maps$variable_map)) {
-      #       if (is.null(merged_variable_map[[key]])) {
-      #         merged_variable_map[[key]] <- linked_maps$variable_map[[key]]
-      #       }
-      #     }
-      #   }
-      #   if (!is.null(linked_maps$value_map)) {
-      #     for (key in names(linked_maps$value_map)) {
-      #       if (is.null(merged_value_map[[key]])) {
-      #         merged_value_map[[key]] <- linked_maps$value_map[[key]]
-      #       }
-      #     }
-      #   }
-      #   if (!is.null(linked_maps$variable_label)) {
-      #     for (key in names(linked_maps$variable_label)) {
-      #       if (is.null(merged_variable_label[[key]])) {
-      #         merged_variable_label[[key]] <- linked_maps$variable_label[[key]]
-      #       }
-      #     }
-      #   }
-      #   if (!is.null(linked_maps$value_label)) {
-      #     for (key in names(linked_maps$value_label)) {
-      #       if (is.null(merged_value_label[[key]])) {
-      #         merged_value_label[[key]] <- linked_maps$value_label[[key]]
-      #       }
-      #     }
-      #   }
-      # }
 
       super$initialize(
         data = data,
@@ -189,181 +141,142 @@ MortalityDataAnalytics <- R6::R6Class(
         quality_schema = quality_schema
       )
 
-      private$..linked_ind_roster_data              <- linked_ind_roster_data
-      private$..linked_ind_roster_data_stage_name   <- linked_ind_roster_data_stage_name
-      private$..linked_ind_roster_data_hash         <- linked_ind_roster_data_hash
-      private$..linked_ind_roster_variable_map      <- linked_ind_roster_variable_map
-      private$..linked_ind_roster_value_map         <- linked_ind_roster_value_map
-      private$..linked_ind_roster_variable_label    <- linked_ind_roster_variable_label
-      private$..linked_ind_roster_value_label       <- linked_ind_roster_value_label
+      # Step 2: Set fields
+      result <- phrutils::phr_try_step(
+        {
+          self$set(field = "..linked_ind_roster_data", value = linked_ind_roster_data)
+          self$set(field = "..linked_ind_roster_data_stage_name", value = linked_ind_roster_data_stage_name)
+          self$set(field = "..linked_ind_roster_data_hash", value = linked_ind_roster_data_hash)
+          self$set(field = "..linked_ind_roster_variable_map", value = linked_ind_roster_variable_map)
+          self$set(field = "..linked_ind_roster_value_map", value = linked_ind_roster_value_map)
+          self$set(field = "..linked_ind_roster_variable_label", value = linked_ind_roster_variable_label)
+          self$set(field = "..linked_ind_roster_value_label", value = linked_ind_roster_value_label)
 
-      private$..linked_ind_deaths_data              <- linked_ind_deaths_data
-      private$..linked_ind_deaths_data_stage_name   <- linked_ind_deaths_data_stage_name
-      private$..linked_ind_deaths_data_hash         <- linked_ind_deaths_data_hash
-      private$..linked_ind_deaths_variable_map      <- linked_ind_deaths_variable_map
-      private$..linked_ind_deaths_value_map         <- linked_ind_deaths_value_map
-      private$..linked_ind_deaths_variable_label    <- linked_ind_deaths_variable_label
-      private$..linked_ind_deaths_value_label       <- linked_ind_deaths_value_label
+          self$set(field = "..linked_ind_deaths_data", value = linked_ind_deaths_data)
+          self$set(field = "..linked_ind_deaths_data_stage_name", value = linked_ind_deaths_data_stage_name)
+          self$set(field = "..linked_ind_deaths_data_hash", value = linked_ind_deaths_data_hash)
+          self$set(field = "..linked_ind_deaths_variable_map", value = linked_ind_deaths_variable_map)
+          self$set(field = "..linked_ind_deaths_value_map", value = linked_ind_deaths_value_map)
+          self$set(field = "..linked_ind_deaths_variable_label", value = linked_ind_deaths_variable_label)
+          self$set(field = "..linked_ind_deaths_value_label", value = linked_ind_deaths_value_label)
 
-      private$..load_default_schema(
-        filename = private$..default_analysis_schema_roster_filename,
-        target_field = "..analysis_schema_roster",
-        required_cols = c(
-          "indicator_name",
-          "calculation",
-          "var_name",
-          "denom_var",
-          "disaggregation",
-          "multiplier",
-          "indicator_unit"
-        ),
-        schema_name = "analysis_roster",
-        dataset_name = private$..dataset_name
+        },
+        step = phrutils::phr_txt("Set initial fields for DataAnalytics class"),
+        hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
       )
-
-      private$..load_default_schema(
-        filename = private$..default_outputs_schema_roster_filename,
-        target_field = "..outputs_schema_roster",
-        required_cols = c(
-          "output_title",
-          "output_name",
-          "output_subtitle",
-          "variables",
-          "disaggregation",
-          "output_func_name",
-          "test_params",
-          "output_type",
-          "outputs_group",
-          "outputs_per_group",
-          "dataset_type",
-          "output_title_english",
-          "output_title_french",
-          "output_title_arabic"
-        ),
-        schema_name = "outputs_roster",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_analysis_schema_deaths_filename,
-        target_field = "..analysis_schema_deaths",
-        required_cols = c(
-          "indicator_name",
-          "calculation",
-          "var_name",
-          "denom_var",
-          "disaggregation",
-          "multiplier",
-          "indicator_unit"
-        ),
-        schema_name = "analysis_deaths",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_outputs_schema_deaths_filename,
-        target_field = "..outputs_schema_deaths",
-        required_cols = c(
-          "output_title",
-          "output_name",
-          "output_subtitle",
-          "variables",
-          "disaggregation",
-          "output_func_name",
-          "test_params",
-          "output_type",
-          "outputs_group",
-          "outputs_per_group",
-          "dataset_type",
-          "output_title_english",
-          "output_title_french",
-          "output_title_arabic"
-        ),
-        schema_name = "outputs_deaths",
-        dataset_name = private$..dataset_name
-      )
-
-      # Generate per-dataset analysis plans for roster and deaths
-      private$..data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
-        log_df   = NULL,
-        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
-      )
-      private$..data_analysis_plan_deaths <- QuantDataAnalysisPlanLog$new(
-        log_df   = NULL,
-        log_name = phrutils::phr_txt("Quant Data Analysis Plan (Deaths)")
-      )
-
-      # Build the DAP for roster dataset from available columns and analysis_schema_roster
-      if (!is.null(linked_ind_roster_data)) {
-
-        result <- private$..build_dap_from_schema(
-          analysis_schema = private$..analysis_schema_roster,
-          variable_map    = private$..variable_map_roster %||% list(),
-          available_vars  = names(private$..linked_ind_roster_data),
-          dataset_label   = "roster"
-        )
-
-        private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
-
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      # Build the DAP for deaths dataset from available columns and analysis_schema_deaths
-      if (!is.null(linked_ind_deaths_data)) {
-
-        result <- private$..build_dap_from_schema(
-          analysis_schema = private$..analysis_schema_deaths,
-          variable_map    = private$..variable_map_deaths %||% list(),
-          available_vars  = names(private$..linked_ind_deaths_data),
-          dataset_label   = "deaths"
-        )
-
-        private$..data_analysis_plan_deaths$set(field = "log_df", value = result$dap_df)
-
+      # Step 3: Load quality, analysis, and outputs schema for mortality
+      result <- phrutils::phr_try_step(
+        {
+          private$..initialize_load_schemas_mortality()
+        },
+        step = phrutils::phr_txt("Set initial fields for DataAnalytics class"),
+        hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      # Create and store per-dataset survey designs for roster and deaths
-      if (!is.null(linked_ind_roster_data)) {
-        private$..base_survey_design_roster <- phrutils::phr_try(
-          srvyr::as_survey_design(.data = linked_ind_roster_data, ids = 1),
-          on_error = "warn",
-          origin   = paste0(dataset_name, "$initialize"),
-          hint     = "Could not create base (unweighted) survey design for roster data."
-        )
-        private$..survey_design_roster <- private$..create_survey_design_for_dataset(
-          data         = linked_ind_roster_data,
-          variable_map = linked_ind_roster_variable_map %||% merged_variable_map,
-          origin       = paste0(dataset_name, "$initialize")
-        )
+      # Step 4: Create initial data analysis plans for roster and deaths
+      result <- phrutils::phr_try_step(
+        {
+          # Generate per-dataset analysis plans for roster and deaths
+          private$..data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
+            log_df   = NULL,
+            log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+          )
+          private$..data_analysis_plan_deaths <- QuantDataAnalysisPlanLog$new(
+            log_df   = NULL,
+            log_name = phrutils::phr_txt("Quant Data Analysis Plan (Deaths)")
+          )
+          # Build the DAP for roster dataset from available columns and analysis_schema_roster
+          if (!is.null(linked_ind_roster_data)) {
+
+            result <- private$..build_dap_from_schema(
+              analysis_schema = private$..analysis_schema_roster,
+              variable_map    = private$..variable_map_roster %||% list(),
+              available_vars  = names(private$..linked_ind_roster_data),
+              dataset_label   = "roster"
+            )
+
+            private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+
+          }
+
+          # Build the DAP for deaths dataset from available columns and analysis_schema_deaths
+          if (!is.null(linked_ind_deaths_data)) {
+
+            result <- private$..build_dap_from_schema(
+              analysis_schema = private$..analysis_schema_deaths,
+              variable_map    = private$..variable_map_deaths %||% list(),
+              available_vars  = names(private$..linked_ind_deaths_data),
+              dataset_label   = "deaths"
+            )
+
+            private$..data_analysis_plan_deaths$set(field = "log_df", value = result$dap_df)
+
+          }
+        },
+        step = phrutils::phr_txt("Create initial roster and death specific data analysis plans"),
+        hint = phrutils::phr_txt("Check analysis schemas for roster and deaths.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
-      if (!is.null(linked_ind_deaths_data)) {
-        private$..base_survey_design_deaths <- phrutils::phr_try(
-          srvyr::as_survey_design(.data = linked_ind_deaths_data, ids = 1),
-          on_error = "warn",
-          origin   = paste0(dataset_name, "$initialize"),
-          hint     = "Could not create base (unweighted) survey design for deaths data."
-        )
-        private$..survey_design_deaths <- private$..create_survey_design_for_dataset(
-          data         = linked_ind_deaths_data,
-          variable_map = linked_ind_deaths_variable_map %||% merged_variable_map,
-          origin       = paste0(dataset_name, "$initialize")
-        )
+      # Step 5: Create survey design objects for roster and deaths
+      result <- phrutils::phr_try_step(
+        {
+          # Create and store per-dataset survey designs for roster and deaths
+          if (!is.null(linked_ind_roster_data)) {
+
+            self$set(field = "..base_survey_design_roster", value = srvyr::as_survey_design(.data = linked_ind_roster_data, ids = 1))
+            self$set(field = "..survey_design_roster",
+                    value = private$..create_survey_design_for_dataset(
+                      data         = linked_ind_roster_data,
+                      variable_map = linked_ind_roster_variable_map %||% merged_variable_map,
+                      origin       = paste0(dataset_name, "$initialize")
+            ))
+          }
+
+          if (!is.null(linked_ind_deaths_data)) {
+
+            self$set(field = "..base_survey_design_deaths", value = srvyr::as_survey_design(.data = linked_ind_deaths_data, ids = 1))
+
+            self$set(field = "..survey_design_deaths",
+                     value = private$..create_survey_design_for_dataset(
+                       data         = linked_ind_deaths_data,
+                       variable_map = linked_ind_deaths_variable_map %||% merged_variable_map,
+                       origin       = paste0(dataset_name, "$initialize")
+                     ))
+            }
+        },
+        step = phrutils::phr_txt("Create initial roster and death specific data analysis plans"),
+        hint = phrutils::phr_txt("Check analysis schemas for roster and deaths.")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
       }
 
       msg_parts <- c()
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
       if (!is.null(linked_ind_deaths_data)) msg_parts <- c(msg_parts, "deaths")
       if (length(msg_parts) > 0) {
-        phrutils::phr_message(
-          phr_txt(glue::glue(
-            "MortalityDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data."
-          ))
-        )
+        msg <- "MortalityDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data."
       } else {
-        phrutils::phr_message(
-          phr_txt(glue::glue("{dataset_name} initialized as MortalityDataAnalytics object."))
-        )
+        msg <- "{dataset_name} initialized as MortalityDataAnalytics object."
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = dataset_name,
+        message = phrutils::phr_txt(paste0(origin, msg))
+      )
+
     }
   ),
 
@@ -459,6 +372,96 @@ MortalityDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_mortality_deaths_template.xlsx"
     ),
 
+    #' Initialize Default Schemas
+    #'
+    #' @description
+    #' Loads the default quality, analysis, and outputs schemas into
+    #' their corresponding private fields.
+    #'
+    #' @return Invisibly returns TRUE.
+    ..initialize_load_schemas_mortality = function() {
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_roster_filename,
+        target_field = "..analysis_schema_roster",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_roster_filename,
+        target_field = "..outputs_schema_roster",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_deaths_filename,
+        target_field = "..analysis_schema_deaths",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_deaths",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_outputs_schema_deaths_filename,
+        target_field = "..outputs_schema_deaths",
+        required_cols = c(
+          "output_title",
+          "output_name",
+          "output_subtitle",
+          "variables",
+          "disaggregation",
+          "output_func_name",
+          "test_params",
+          "output_type",
+          "outputs_group",
+          "outputs_per_group",
+          "dataset_type",
+          "output_title_english",
+          "output_title_french",
+          "output_title_arabic"
+        ),
+        schema_name = "outputs_deaths",
+        dataset_name = private$..dataset_name
+      )
+
+      invisible(TRUE)
+    },
+
     #' @description
     #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
     #'
@@ -490,7 +493,7 @@ MortalityDataAnalytics <- R6::R6Class(
       # )
 
       if (!is.null(private$..linked_ind_roster_data)) {
-        if (is.null(private$..data_analysis_plan_rosterget(field = "log_df"))) {
+        if (!is.null(private$..data_analysis_plan_roster$get(field = "log_df"))) {
           sets$roster <- list(
             data = "..linked_ind_roster_data",
             survey_design = "..survey_design_roster",
@@ -502,7 +505,7 @@ MortalityDataAnalytics <- R6::R6Class(
       }
 
       if (!is.null(private$..linked_ind_deaths_data)) {
-        if (is.null(private$..data_analysis_plan_deathsget(field = "log_df"))) {
+        if (!is.null(private$..data_analysis_plan_deaths$get(field = "log_df"))) {
           sets$deaths <- list(
             data = "..linked_ind_deaths_data",
             survey_design = "..survey_design_deaths",
