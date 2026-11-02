@@ -98,6 +98,11 @@ drc_mort$add_linked_dataset(
 # write.csv(x = drc_mort$export_variable_schema(), file = "hh_variable_schema.csv")
 # write.csv(x = drc_mort$linked_objects$deaths$object$export_variable_schema(), file = "deaths_variable_schema.csv")
 
+# Validate
+
+# drc_mort$validate()
+# drc_mort$get("..validated")
+
 # Standardize and Transform Data
 
 drc_mort$standardize()

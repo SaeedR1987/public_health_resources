@@ -549,7 +549,7 @@ HouseholdData <- R6::R6Class(
       }
 
       phrutils::phr_message(phrutils::phr_txt(
-        "Post-validation for {nm} complete."
+        "Post-validation for {private$..dataset_name} complete."
       ))
 
       # Return TRUE (good) or FALSE (warnings occurred)

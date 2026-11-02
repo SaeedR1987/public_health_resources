@@ -406,10 +406,12 @@ Data <- R6::R6Class(
 
           result <- phrutils::phr_try_step(
             {
-              private$..validate_core_checks(
+              had_warnings <- private$..validate_core_checks(
                 df = df,
                 had_warnings = had_warnings
               )
+
+              had_warnings
             },
             step = phrutils::phr_txt("core validation checks"),
             hint = phrutils::phr_txt("Check the format and content of the raw data.")
@@ -419,6 +421,7 @@ Data <- R6::R6Class(
           }
 
           had_warnings <- result
+          # phrutils::phr_message(paste0("Step 3 ", had_warnings))
 
           # Step 4: Variable Map Checks
 
@@ -436,6 +439,9 @@ Data <- R6::R6Class(
                 )
                 had_warnings <- TRUE
               }
+
+              had_warnings
+
             },
             step = phrutils::phr_txt("pre validate hook"),
             hint = phrutils::phr_txt("Check sub class specific pre hook validation")
@@ -445,6 +451,9 @@ Data <- R6::R6Class(
           }
 
           had_warnings <- result
+          phrutils::phr_message(paste0("Step 4 ", had_warnings))
+          print(class(had_warnings))
+          print(summary(had_warnings))
 
           # Step 5: Value Map Checks
 
@@ -463,8 +472,11 @@ Data <- R6::R6Class(
             return(result)
           }
 
-          had_warnings <- result
 
+          had_warnings <- result
+          phrutils::phr_message(paste0("Step 5 ", had_warnings))
+          print(class(had_warnings))
+          print(summary(had_warnings))
           # Step 6: Post validation hook
 
           result <- phrutils::phr_try_step(
@@ -479,12 +491,18 @@ Data <- R6::R6Class(
             if (phrutils::phr_failed(result)) {
               return(result)
             }
-
+          phrutils::phr_message("I am here in validate 0")
+          phrutils::phr_message(result)
             pv <- result
+            phrutils::phr_message(pv)
+            phrutils::phr_message(had_warnings)
+            phrutils::phr_message("I am here in validate 1")
 
           # Combine everything
           validated <- (!had_warnings) && pv
+          phrutils::phr_message("I am here in validate 2")
           private$..validated <- validated
+          phrutils::phr_message("I am here in validate 3")
 
           private$..touch(
             log = TRUE,
@@ -492,6 +510,7 @@ Data <- R6::R6Class(
             name = private$..dataset_name,
             message = phrutils::phr_txt("{private$..dataset_name} validation complete.")
           )
+          phrutils::phr_message("I am here in validate 4")
 
         },
         on_error = "abort",
@@ -625,6 +644,8 @@ Data <- R6::R6Class(
                 col <- data_copy[[nm]]
                 origin_tag <- paste0(private$..dataset_name, "$standardize$", nm)
 
+                phrutils::phr_message(paste0("standardize type conversion 0", nm, " ", nrow(data_copy)))
+
                 # (a) SCHEMA TYPE CONVERSION
                 type_result <- private$..standardize_type_conversion(
                   nm = nm,
@@ -637,6 +658,8 @@ Data <- R6::R6Class(
                   next
                 }
 
+                phrutils::phr_message("standardize type conversion")
+
                 # (b) INFERENCE-BASED COERCION (non-schema columns only)
                 new <- private$..standardize_inference_conversion(
                       nm = nm,
@@ -645,6 +668,8 @@ Data <- R6::R6Class(
 
                 data_copy[[nm]] <- new
 
+                phrutils::phr_message("standardize type conversion 2")
+
                 # (c) DETECT LIKELY "OTHER" COLUMNS and REGISTER (non-schema columns only)
 
                 private$..standardize_register_inferred_other_column(
@@ -652,7 +677,15 @@ Data <- R6::R6Class(
                   col = new,
                   data = data_copy
                 )
+
+                phrutils::phr_message("standardize type conversion 3")
+
               }
+
+
+              data_copy
+
+
             },
             step = phrutils::phr_txt("Column type conversions"),
             hint = phrutils::phr_txt("Check expected types in the variable schema vs. what is in the target dataset column {nm}.")
@@ -660,6 +693,8 @@ Data <- R6::R6Class(
             if (phrutils::phr_failed(result)) {
               return(result)
             }
+
+          data_copy <- result
 
           # Step 8: Process Select Multiple Column handling (incl. select multiple related other columns)
 
