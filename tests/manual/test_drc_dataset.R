@@ -106,7 +106,7 @@ drc_mort$add_linked_dataset(
 # Standardize and Transform Data
 
 drc_mort$standardize()
-
+drc_mort$get("..standardized")
 # Check Mappings
 
 View(drc_mort$data_diagnose(stage = "raw"))
