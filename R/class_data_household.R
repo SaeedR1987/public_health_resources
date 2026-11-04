@@ -887,7 +887,7 @@ HouseholdData <- R6::R6Class(
             linked_hh_col <- linked_obj$get(
               field = "..variable_map"
             )$hh_uuid %||%
-              linked_obj$get(field = "..variable_map")$household_uuid %||%
+              linked_obj$get(field = "..variable_map")$hh_uuid %||%
               "hh_uuid"
 
             if (!linked_hh_col %in% names(linked_data)) {

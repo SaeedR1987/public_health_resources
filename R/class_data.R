@@ -625,6 +625,10 @@ Data <- R6::R6Class(
           var_schema <- result$var_schema
           other_col_patterns <- result$other_col_patterns
 
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", class(data_copy)))
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", nrow(data_copy)))
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", summary(data_copy)))
+
           # Step 5-7: For Loop - Schema type conversion and inferred other column registration
 
           result <- phrutils::phr_try_step(
@@ -676,6 +680,10 @@ Data <- R6::R6Class(
 
           data_copy <- result
 
+          phrutils::phr_message(paste0("SECOND rows ..standardized data: ", class(data_copy)))
+          phrutils::phr_message(paste0("SECOND rows ..standardized data: ", nrow(data_copy)))
+          phrutils::phr_message(paste0("SECOND rows ..standardized data: ", summary(data_copy)))
+
           # Step 8: Process Select Multiple Column handling (incl. select multiple related other columns)
 
           result <- phrutils::phr_try_step(
@@ -686,6 +694,8 @@ Data <- R6::R6Class(
                   data = data_copy,
                   schema = var_schema
                 )
+
+                data_copy
             },
             step = phrutils::phr_txt("Process select_multiple columns"),
             hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
@@ -695,6 +705,10 @@ Data <- R6::R6Class(
           }
 
           data_copy <- result
+
+          phrutils::phr_message(paste0("A rows ..standardized data: ", class(data_copy)))
+          phrutils::phr_message(paste0("A rows ..standardized data: ", nrow(data_copy)))
+          phrutils::phr_message(paste0("A rows ..standardized data: ", summary(data_copy)))
 
           # Step 9: Register Schema Identified Other Columns, if not already added
           # This step shouldnt return anything in result, the private helper
@@ -747,6 +761,8 @@ Data <- R6::R6Class(
           # Update data_copy with result from step
           data_copy <- result
 
+          phrutils::phr_message(paste0("0 rows ..standardized data: ", nrow(data_copy)))
+
           # Step 11: Generate cluster_id_numeric from cluster_id, if mapped
           result <- phrutils::phr_try_step(
             {
@@ -762,18 +778,23 @@ Data <- R6::R6Class(
             return(result)
           }
 
+          phrutils::phr_message(paste0("0.1 rows ..standardized data: ", nrow(data_copy)))
+
           # Update data_copy with result from step
           data_copy <- result
+
+
 
           # Step 12: Set standardized data
           result <- phrutils::phr_try_step(
             {
 
-              phrutils::phr_message(paste0("rows ..standardized data: ", nrow(self$get(field = "..standardized_data"))))
+              phrutils::phr_message(paste0("1 rows ..standardized data: ", nrow(data_copy)))
 
               self$set(field = "..standardized_data", value = data_copy)
 
-              phrutils::phr_message(paste0("rows ..standardized data: ", nrow(self$get(field = "..standardized_data"))))
+              phrutils::phr_message(paste0("2 rows ..standardized data: ", nrow(data_copy)))
+              phrutils::phr_message(paste0("3 rows ..standardized data: ", nrow(self$get(field = "..standardized_data"))))
 
               private$..standardized <- TRUE
               phrutils::phr_message(phrutils::phr_txt(
@@ -842,7 +863,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("{dataset_name} was standardized and stored in ..standardized_data .")
+            message = phrutils::phr_txt("{private$..dataset_name} was standardized and stored in ..standardized_data .")
           )
 
         },
@@ -1035,7 +1056,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Cleaning log for {dataset_name} was successfully generated and stored in ..cleaning_log.")
+            message = phrutils::phr_txt("Cleaning log for {private$..dataset_name} was successfully generated and stored in ..cleaning_log.")
           )
 
           invisible(private$..cleaning_log)
@@ -2706,7 +2727,7 @@ Data <- R6::R6Class(
     schema
     ) {
 
-      result <- phrutils::phr_try_step(
+      result <- phrutils::phr_try(
         {
           if (
             !is.null(schema) &&
@@ -2719,7 +2740,7 @@ Data <- R6::R6Class(
             if (length(sm_result$expanded_columns) > 0) {
               phrutils::phr_message(
                 phrutils::phr_txt(
-                  "Expanded {nrow(sm_result$expanded_columns)} dummy columns from select_multiple questions."
+                  "Expanded {length(sm_result$expanded_columns)} dummy columns from select_multiple questions."
                 )
               )
             }
@@ -2780,14 +2801,11 @@ Data <- R6::R6Class(
             data
           }
         },
-        step = "Process select_multiple columns",
-        hint = phrutils::phr_txt(
-          "Check select_multiple schema and expansion logic"
+        on_error = "abort",
+        origin = paste0(private$..dataset_name, "$..standardize_process_select_multiple_columns")
         )
-      )
-      if (phrutils::phr_failed(result)) {
-        return(result)
-      }
+
+
     },
 
     #' Identify and expand all select_multiple columns in a dataset
@@ -2806,6 +2824,9 @@ Data <- R6::R6Class(
     #'
     #' @keywords internal
     ..st_process_select_multiple_columns = function(data, schema) {
+
+      phrutils::phr_try({
+
       result <- list(
         data = data,
         expanded_columns = character(0),
@@ -2815,14 +2836,15 @@ Data <- R6::R6Class(
       # Check if schema has question_types
       if (
         is.null(schema) ||
-        is.null(schema$question_types) ||
-        length(schema$question_types) == 0
+        !("question_type" %in% names(schema)) ||
+        is.null(schema$question_type) ||
+        length(schema$question_type) == 0
       ) {
         return(result)
       }
 
       # Find select_multiple columns
-      question_types <- schema$question_types
+      question_types <- schema$question_type
       select_mult_vars <- names(question_types)[
         question_types == "select_multiple"
       ]
@@ -2885,6 +2907,11 @@ Data <- R6::R6Class(
       if (length(dummy_df_list) > 0) {
         result$data <- do.call(cbind, c(list(result$data), dummy_df_list))
       }
+
+      },
+      on_error = "abort",
+      origin = paste0(private$..dataset_name, "$..st_process_select_multiple_columns")
+      )
 
       return(result)
     },

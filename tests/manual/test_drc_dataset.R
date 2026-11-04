@@ -107,9 +107,18 @@ drc_mort$add_linked_dataset(
 
 drc_mort$standardize()
 drc_mort$get("..standardized")
+head(drc_mort$get_data(stage = "standardized"))
+View(drc_mort$get(field = "..standardized_data"))
+
+a <- drc_mort$get(field = "..linked_objects", role = "roster", role2 = "object")
+View(a$object$get(field = "..raw_data"))
+
+a$standardize()
+View(a$get(field = "..standardized_data"))
 # Check Mappings
 
 View(drc_mort$data_diagnose(stage = "raw"))
+drc_mort$get(field = "..data_diagnostics")
 View(drc_mort$linked_objects$roster$object$data_diagnose(stage = "raw"))
 View(drc_mort$linked_objects$deaths$object$data_diagnose(stage = "raw"))
 
