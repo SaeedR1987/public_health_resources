@@ -645,7 +645,7 @@ HouseholdData <- R6::R6Class(
             phrutils::phr_message(phrutils::phr_txt(
               "Checking standardization status of linked dataset '{link_name}'..."
             ))
-            if (!linked_obj$standardized) {
+            if (!isTRUE(linked_obj$get(field = "..standardized"))) {
               phrutils::phr_message(phrutils::phr_txt(
                 "Linked dataset '{link_name}' is not standardized. Running standardize()..."
               ))
@@ -725,7 +725,7 @@ HouseholdData <- R6::R6Class(
     ) {
       phrutils::phr_try(
         {
-          if (length(self$linked_objects) == 0) {
+          if (length(private$..linked_objects) == 0) {
             return(invisible(NULL))
           }
 
@@ -739,7 +739,7 @@ HouseholdData <- R6::R6Class(
 
             if (!inherits(linked_obj, "Data")) {
               phrutils::phr_warning(
-                self$dataset_name,
+                private$..dataset_name,
                 phrutils::phr_txt(
                   "Linked object '{link_name}' is not a Data class object. Skipping."
                 )
