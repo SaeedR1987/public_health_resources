@@ -1861,3 +1861,62 @@ test_that("household variables merge when the linkage column is named 'uuid'", {
     c("2025-02-01", "2025-02-01", "2025-02-02")
   )
 })
+
+test_that("standardize() merges, standardizes and aggregates linked roster and deaths datasets", {
+  skip_if_not_installed("phrindicators")
+  withr::local_package("phrindicators")
+
+  hh <- suppressMessages(suppressWarnings(HouseholdData$new(
+    data = tibble::tibble(
+      uuid = paste0("h", 1:4),
+      today = as.Date("2026-03-01"),
+      enum_id = "e1",
+      cluster_id = c(1, 1, 2, 2)
+    ),
+    dataset_name = "HH"
+  )))
+  roster <- suppressMessages(suppressWarnings(IndividualData$new(
+    data = tibble::tibble(
+      uuid = paste0("p", 1:8),
+      hh_uuid = rep(paste0("h", 1:4), 2),
+      age_years = c(1, 5, 20, 40, 70, 3, 12, 33)
+    ),
+    dataset_name = "Roster",
+    uuid = "uuid"
+  )))
+  deaths <- suppressMessages(suppressWarnings(DeathIndividualData$new(
+    data = tibble::tibble(
+      index = c("d1", "d2"),
+      hh_uuid = c("h1", "h2"),
+      sex_died = c("m", "f")
+    ),
+    recall_date = "2026-01-01",
+    dataset_name = "Deaths",
+    uuid = "index"
+  )))
+
+  suppressMessages(suppressWarnings({
+    hh$add_linked_dataset("roster", roster, "uuid", "hh_uuid")
+    hh$add_linked_dataset("deaths", deaths, "uuid", "hh_uuid")
+    hh$standardize()
+  }))
+
+  # Household variables are merged into the linked raw data
+  expect_true("date_survey" %in% names(roster$get_data("raw")))
+  expect_true("date_survey" %in% names(deaths$get_data("raw")))
+
+  # Both linked datasets are standardized with all rows retained
+  expect_true(roster$get(field = "..standardized"))
+  expect_true(deaths$get(field = "..standardized"))
+  expect_equal(nrow(roster$get_data("standardized")), 8)
+  expect_equal(nrow(deaths$get_data("standardized")), 2)
+
+  # Indicators with required variables / schema arguments are computed
+  expect_true("calc_age_years" %in% names(roster$get_data("standardized")))
+  expect_true("death" %in% names(deaths$get_data("standardized")))
+
+  # Linked data is aggregated back to the household
+  hh_cols <- names(hh$get_data("standardized"))
+  expect_true("linked_roster_household_size" %in% hh_cols)
+  expect_true("linked_deaths_death" %in% hh_cols)
+})

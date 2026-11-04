@@ -307,14 +307,10 @@ Data <- R6::R6Class(
           }
 
           # Try each stage in priority order
+          # Data payloads live in private storage (no public fields or active
+          # bindings), so they must be read through get_data().
           for (stage_name in priority_order) {
-            data <- switch(
-              stage_name,
-              "clean" = data_obj$clean_data,
-              "standardized" = data_obj$standardized_data,
-              "raw" = data_obj$raw_data,
-              NULL
-            )
+            data <- data_obj$get_data(stage = stage_name)
 
             if (!is.null(data) && is.data.frame(data) && nrow(data) > 0) {
               return(list(data = data, stage = stage_name))
@@ -3019,7 +3015,7 @@ Data <- R6::R6Class(
     indicator_row
     ) {
 
-      ind_name <- indicator_row$indicator[[1]]
+      ind_name <- (indicator_row$indicator_name %||% indicator_row$indicator)[[1]]
 
       # Check required variables from indicator schema, if not in data then skip
       required_vars <- indicator_row$variables[[1]]
@@ -3038,10 +3034,9 @@ Data <- R6::R6Class(
 
         for (var in required_vars) {
 
-          resolved_col <- private$..resolve_column(
-            role = var,
-            stage = "standardized"
-          )
+          # Resolve against working_data: the stored standardized_data is not
+          # yet populated (first run) or is stale (re-runs) at this point.
+          resolved_col <- private$..variable_map[[var]] %||% var
 
           if (
             is.null(resolved_col) ||
@@ -3061,138 +3056,116 @@ Data <- R6::R6Class(
           )
           return(working_data)
         }
+      }
 
-        # Get function name
+      # Get function name
 
-        func_name <- indicator_row$function_name[[1]]
+      func_name <- indicator_row$function_name[[1]]
 
-        if (
-          is.null(func_name) ||
-          func_name == "" ||
-          is.na(func_name)
-        ) {
+      if (
+        is.null(func_name) ||
+        func_name == "" ||
+        is.na(func_name)
+      ) {
 
-          phrutils::phr_warning(
-            private$..dataset_name,
-            phrutils::phr_txt(
-              "Indicator '{ind_name}' has no function_name specified. Skipping."
-            )
+        phrutils::phr_warning(
+          private$..dataset_name,
+          phrutils::phr_txt(
+            "Indicator '{ind_name}' has no function_name specified. Skipping."
           )
+        )
 
-          return(working_data)
+        return(working_data)
 
-        }
+      }
 
-        # Check if function exists
+      # Check if function exists
 
-        if (!exists(func_name, mode = "function")) {
+      if (!exists(func_name, mode = "function")) {
 
-          phrutils::phr_warning(
-            private$..dataset_name,
-            phrutils::phr_txt(
-              "Function '{func_name}' for indicator '{ind_name}' not found. Skipping."
-            )
+        phrutils::phr_warning(
+          private$..dataset_name,
+          phrutils::phr_txt(
+            "Function '{func_name}' for indicator '{ind_name}' not found. Skipping."
           )
+        )
 
-          return(working_data)
+        return(working_data)
 
-        }
+      }
 
-        # Prepare arguments for the function call
+      # Resolve indicator arguments (always includes .dataset, even when the
+      # schema row specifies no additional arguments)
+      func_args <- private$..st_build_indicator_arguments(
+        working_data = working_data,
+        indicator_row = indicator_row
+      )
 
-        # func_args <- list(
-        #   .dataset = working_data
-        # )
+      # Call indicator function
 
-        # Resolve indicator arguments
-        # (move existing argument-resolution block here,
-        # or preferably into a future helper such as
-        # private$..standardize_build_indicator_arguments())
+      phrutils::phr_message(
+        phrutils::phr_txt(
+          "Calling {func_name} for indicator '{ind_name}'..."
+        )
+      )
 
-        if (
-          "arguments" %in% names(indicator_row) &&
-          !is.null(indicator_row$arguments[[1]]) &&
-          !is.na(indicator_row$arguments[[1]]) &&
-          indicator_row$arguments[[1]] != ""
-        ) {
+      ind_result <- do.call(
+        func_name,
+        func_args
+      )
 
-          # Existing argument parsing / resolution code goes here
+      if (is.data.frame(ind_result)) {
 
-          func_args <- private$..st_build_indicator_arguments(
-            working_data = working_data,
-            ind_name = ind_name,
-            indicator_row = indicator_row
-          )
-
-        }
-
-        # Call indicator function
+        working_data <- ind_result
 
         phrutils::phr_message(
           phrutils::phr_txt(
-            "Calling {func_name} for indicator '{ind_name}'..."
+            "Indicator '{ind_name}' computed successfully."
           )
         )
 
-        ind_result <- do.call(
-          func_name,
-          func_args
+        # Refresh mappings after indicator creation
+
+        temp_standardized <- private$..standardized_data
+
+        self$set(
+          field = "..standardized_data",
+          value = working_data
         )
 
-        if (is.data.frame(ind_result)) {
-
-          working_data <- ind_result
-
-          phrutils::phr_message(
-            phrutils::phr_txt(
-              "Indicator '{ind_name}' computed successfully."
+        phrutils::phr_try(
+          {
+            private$..map_schema_vars(
+              stage = "standardized"
             )
-          )
 
-          # Refresh mappings after indicator creation
-
-          temp_standardized <- private$..standardized_data
-
-          self$set(
-            field = "..standardized_data",
-            value = working_data
-          )
-
-          phrutils::phr_try(
-            {
-              private$..map_schema_vars(
-                stage = "standardized"
-              )
-
-              private$..map_schema_labels()
-            },
-            on_error = "warn",
-            origin = paste0(
-              private$..dataset_name,
-              "$standardize$map_vars_",
-              ind_name
-            )
-          )
-
-          self$set(
-            field = "..standardized_data",
-            value = temp_standardized
-          )
-
-        } else {
-
-          phrutils::phr_warning(
+            private$..map_schema_labels()
+          },
+          on_error = "warn",
+          origin = paste0(
             private$..dataset_name,
-            phrutils::phr_txt(
-              "Function '{func_name}' did not return a data frame. Result ignored."
-            )
+            "$standardize$map_vars_",
+            ind_name
           )
+        )
 
-        }
+        self$set(
+          field = "..standardized_data",
+          value = temp_standardized
+        )
 
-        working_data
+      } else {
+
+        phrutils::phr_warning(
+          private$..dataset_name,
+          phrutils::phr_txt(
+            "Function '{func_name}' did not return a data frame. Result ignored."
+          )
+        )
 
       }
+
+      working_data
 
     },
     #' Build Indicator Function Arguments
@@ -3210,7 +3183,7 @@ Data <- R6::R6Class(
     indicator_row
     ) {
 
-      ind_name <- indicator_row$indicator[[1]]
+      ind_name <- (indicator_row$indicator_name %||% indicator_row$indicator)[[1]]
 
       func_args <- list(
         .dataset = working_data
@@ -3227,7 +3200,23 @@ Data <- R6::R6Class(
 
       arguments <- indicator_row$arguments[[1]]
 
-      parsed_args <- private$..parse_indicator_arguments(arguments)
+      # ..parse_indicator_arguments() returns unnamed "name=value" strings;
+      # split them into a named list keyed by argument name.
+      parsed_args <- list()
+      for (arg_string in private$..parse_indicator_arguments(arguments)) {
+        eq_pos <- regexpr("=", arg_string, fixed = TRUE)
+        if (eq_pos < 1) {
+          phrutils::phr_warning(
+            private$..dataset_name,
+            phrutils::phr_txt(
+              "Argument '{arg_string}' for indicator '{ind_name}' is not in 'name=value' form. Skipping."
+            )
+          )
+          next
+        }
+        parsed_args[[trimws(substr(arg_string, 1, eq_pos - 1))]] <-
+          trimws(substr(arg_string, eq_pos + 1, nchar(arg_string)))
+      }
 
       for (arg_name in names(parsed_args)) {
 
@@ -3255,12 +3244,12 @@ Data <- R6::R6Class(
 
             elem <- trimws(elem)
 
-            var_ref <- private$..resolve_variable_map_reference(
+            var_ref <- private$..st_resolve_variable_map_reference(
               elem,
               tags = TRUE
             )
 
-            val_ref <- private$..resolve_value_map_reference(
+            val_ref <- private$..st_resolve_value_map_reference(
               elem,
               tags = TRUE
             )
@@ -3384,7 +3373,7 @@ Data <- R6::R6Class(
           grepl("^@variable_map\\$", arg_value)
         ) {
 
-          var_ref <- private$..resolve_variable_map_reference(
+          var_ref <- private$..st_resolve_variable_map_reference(
             arg_value,
             tags = TRUE
           )
@@ -3415,7 +3404,7 @@ Data <- R6::R6Class(
           grepl("^@value_map\\$", arg_value)
         ) {
 
-          val_ref <- private$..resolve_value_map_reference(
+          val_ref <- private$..st_resolve_value_map_reference(
             arg_value,
             tags = TRUE
           )
@@ -5887,7 +5876,7 @@ Data <- R6::R6Class(
     ..validate_links = function(stage_self = "clean", stage_other = "clean") {
       phrutils::phr_try(
         {
-          if (length(self$linked_objects) == 0) {
+          if (length(private$..linked_objects) == 0) {
             phrutils::phr_message(phrutils::phr_txt(
               "No linked objects to validate for {private$..dataset_name}."
             ))
@@ -5896,8 +5885,8 @@ Data <- R6::R6Class(
 
           problems <- list()
 
-          for (nm in names(self$linked_objects)) {
-            link <- self$linked_objects[[nm]]
+          for (nm in names(private$..linked_objects)) {
+            link <- private$..linked_objects[[nm]]
             other <- link$object
 
             # 1. Resolve COLUMN NAMES
