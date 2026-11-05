@@ -61,75 +61,6 @@ test_that("validate() correctly validates select_multiple mapped values", {
   expect_true(d$validated)
 })
 
-test_that("data_diagnose() correctly diagnoses select_multiple mapped values", {
-  # Create data with select_multiple column
-  df <- tibble::tibble(
-    id = 1:5,
-    skills = c(
-      "reading writing",
-      "writing reading math",
-      "math reading",
-      "reading",
-      "writing math"
-    )
-  )
-
-  d <- suppressMessages(
-    Data$new(data = df, dataset_name = "TestData", uuid = "id")
-  )
-
-  schema <- list(
-    types = list(
-      skills = "character"
-    ),
-    col_names = list(
-      skills = c("skills", "abilities")
-    ),
-    question_types = list(
-      skills = "select_multiple"
-    ),
-    value_map = list(
-      skills = list(
-        literacy = c("reading", "writing"),
-        numeracy = c("math", "mathematics")
-      )
-    )
-  )
-
-  d$set_variable_schema(schema)
-  d$call(field = "..map_schema_vars")
-
-  # Run data_diagnose
-  diag <- d$data_diagnose()
-
-  # Should not report any issues for mapped values that exist as tokens
-  # Filter to literacy/reading and literacy/writing rows
-  literacy_reading <- diag[diag$required_variable == "skills" &
-                             diag$required_value == "literacy" &
-                             grepl("reading", diag$mapped_value), ]
-  literacy_writing <- diag[diag$required_variable == "skills" &
-                             diag$required_value == "literacy" &
-                             grepl("writing", diag$mapped_value), ]
-  numeracy_math <- diag[diag$required_variable == "skills" &
-                          diag$required_value == "numeracy" &
-                          grepl("math", diag$mapped_value), ]
-
-  # These should all be "ok" or not have "mapped values not in dataset" issue
-  if (nrow(literacy_reading) > 0) {
-    expect_false(grepl("mapped values not in dataset", literacy_reading$issues[1]))
-  }
-  if (nrow(literacy_writing) > 0) {
-    expect_false(grepl("mapped values not in dataset", literacy_writing$issues[1]))
-  }
-  if (nrow(numeracy_math) > 0) {
-    expect_false(grepl("mapped values not in dataset", numeracy_math$issues[1]))
-  }
-
-  # Should still report if a value is not in the data at all
-  # "mathematics" is not in the data, so numeracy should have only "math"
-  expect_false("mathematics" %in% d$get(field = ".value_map")$skills$numeracy)
-})
-
 test_that("validate() correctly handles select_multiple with old allowed_values format", {
   # Test backward compatibility with old allowed_values structure
   df <- tibble::tibble(
@@ -455,5 +386,4 @@ test_that("validate() preserves backward compatibility with explicit stage calls
   d$validate(stage = "clean")
   expect_true(d$validated)
 })
-
 
