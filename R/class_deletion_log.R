@@ -131,7 +131,7 @@ DeletionLog <- R6::R6Class(
         super_issues <- super$validate()
         if (is.null(super_issues)) super_issues <- list()
 
-        df <- self$log_df
+        df <- private$..log_df
 
 
         # ---- 2. Deletion-log completeness rules ----
@@ -199,7 +199,7 @@ DeletionLog <- R6::R6Class(
     post_validate = function(data_obj, stage = "clean") {
 
       # If log is empty, nothing to validate
-      if (nrow(self$log_df) == 0) {
+      if (nrow(private$..log_df) == 0) {
         return(list())   # no issues
       }
 
@@ -207,7 +207,7 @@ DeletionLog <- R6::R6Class(
 
       phrutils::phr_try({
 
-        df <- self$log_df
+        df <- private$..log_df
 
         # Get data from the specified stage
         data_df <- data_obj$get_data(stage)

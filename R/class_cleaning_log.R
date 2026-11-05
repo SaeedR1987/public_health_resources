@@ -119,7 +119,7 @@ CleaningLog <- R6::R6Class(
             super_issues <- list()
           }
 
-          df <- private$log_df
+          df <- private$..log_df
 
           # 2. Cleaning-log specific completeness
           #    Always require uuid, question.name, and changed to be present.
@@ -204,13 +204,13 @@ CleaningLog <- R6::R6Class(
     #' All issues are returned as warnings, not errors, to allow inspection.
     post_validate = function(data_obj, stage = "clean") {
       # If log is empty, nothing to validate
-      if (nrow(self$log_df) == 0) {
+      if (nrow(private$..log_df) == 0) {
         return(list()) # no issues
       }
 
       issues <- list()
 
-      df_log <- private$log_df
+      df_log <- private$..log_df
       df <- data_obj$get_data(stage)
 
       # catastrophic error only

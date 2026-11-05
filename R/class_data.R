@@ -908,6 +908,8 @@ Data <- R6::R6Class(
             return(result)
           }
 
+          df <- result
+
           # Step 2: Pre-generate cleaning log hook
 
           result <- phrutils::phr_try_step({
@@ -950,9 +952,14 @@ Data <- R6::R6Class(
             enum_id_col <- private$..variable_map$enum_id %||% NA_character_
             device_id_col <- private$..variable_map$device_id %||% NA_character_
 
-            entries_added <- 0
-            deletions_added <- 0
+            results<- list(
+              flag_df = flag_df,
+              flag_cols = flag_cols,
+              enum_id_col = enum_id_col,
+              device_id_col = device_id_col
+            )
 
+            results
 
           },
           step = phrutils::phr_txt("setup for generate cleaning log"),
@@ -961,6 +968,14 @@ Data <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+          flag_df <- result$flag_df
+          flag_cols <- result$flag_cols
+          enum_id_col <- result$enum_id_col
+          device_id_col <- result$device_id_col
+
+          entries_added <- 0
+          deletions_added <- 0
 
           # Step 4: Generate cleaning log entries from data quality flags
           # Data quality flags are generated during the 'standardize' step
@@ -989,6 +1004,13 @@ Data <- R6::R6Class(
               )
             )
 
+            results <- list(
+              entries_added = res$entries_added,
+              deletions_added = res$deletions_added
+            )
+
+            results
+
           },
           step = phrutils::phr_txt("generating cleaning log entries from data quality flags"),
           hint = phrutils::phr_txt("Check definition of rules in dependency schema. ")
@@ -997,11 +1019,14 @@ Data <- R6::R6Class(
             return(result)
           }
 
+          entries_added <- result$entried_added
+          deletions_added <- result$deletions_added
+
           # Step 5: Process Other Columns
 
           result <- phrutils::phr_try_step({
 
-            other_entries_added <- private$..generate_cleaning_log_other_columns(
+            private$..generate_cleaning_log_other_columns(
               df = df,
               enum_id_col = enum_id_col,
               device_id_col = device_id_col
@@ -4866,7 +4891,7 @@ Data <- R6::R6Class(
             question.name = var_actual_col,
             issue = col,
             feedback = paste0(
-              "Auto-flagged by quality check: ",
+              phrutils::phr_txt("Auto-flagged by quality check: "),
               col
             ),
             changed = changed_val,
@@ -4931,6 +4956,7 @@ Data <- R6::R6Class(
         origin = paste0(private$..dataset_name, "$get_flag_action_from_schema")
       )
     },
+
     #' @description
     #' Helper function to look up variables for a flag from schema dependencies.
     #'
@@ -4941,39 +4967,23 @@ Data <- R6::R6Class(
         {
           # Check separate dependency_schema first (stored as a flat data
           # frame; convert to the nested list view on demand).
-          dep_schema_list <- private$..as_dependency_schema_list()
-          if (length(dep_schema_list) > 0) {
-            # Check hard dependencies
-            if (flag_name %in% names(dep_schema_list$dependencies)) {
-              dep <- dep_schema_list$dependencies[[flag_name]]
-              variables <- dep[["variables"]] %||% NULL
-              return(variables)
-            }
-            # Check soft dependencies
-            if (flag_name %in% names(dep_schema_list$soft_dependencies)) {
-              dep <- dep_schema_list$soft_dependencies[[flag_name]]
-              variables <- dep[["variables"]] %||% NULL
+          dep_schema <- private$..dependency_schema
+          if (!is.null(dep_schema) &&
+              is.data.frame(dep_schema) &&
+              nrow(dep_schema) > 0) {
+
+            dep_row <- dep_schema[dep_schema$dep_name == flag_name, ]
+
+            if (nrow(dep_row) > 0) {
+              variables <- dep_row$variables[[1]] %||% NULL
               return(variables)
             }
           }
 
-          # Fall back to variable_schema dependencies for backward compatibility
-          if (
-            !is.null(private$..variable_schema) &&
-            !is.null(private$..variable_schema$dependencies)
-          ) {
-            if (flag_name %in% names(private$..variable_schema$dependencies)) {
-              dep <- private$..variable_schema$dependencies[[flag_name]]
-              variables <- dep[["variables"]] %||% NULL
-              return(variables)
-            }
-          }
-
-          # No match found: either not a dependency check, or dependency has no variables field
           return(NULL)
         },
         on_error = "warn",
-        origin = paste0(private$..dataset_name, "$get_flag_variables_from_schema")
+        origin = paste0(private$..dataset_name, "$..gen_cl_get_flag_variables_from_schema")
       )
     },
 
@@ -5122,18 +5132,30 @@ Data <- R6::R6Class(
 
       unique_deletions_added <- 0
 
-      var_schema_list_for_unique <- private$..as_variable_schema_list()
+      var_schema_for_unique <- private$..variable_schema
 
       if (
-        !is.null(var_schema_list_for_unique) &&
-        !is.null(var_schema_list_for_unique$unique) &&
-        length(var_schema_list_for_unique$unique) > 0
+        !is.null(var_schema_for_unique) &&
+        is.data.frame(var_schema_for_unique) &&
+        "unique" %in% names(var_schema_for_unique) &&
+        "variable" %in% names(var_schema_for_unique)
       ) {
 
-        for (var_canonical in var_schema_list_for_unique$unique) {
+        unique_vars <- var_schema_for_unique$var_name[
+          isTRUE(var_schema_for_unique$unique) |
+            (!is.na(var_schema_for_unique$unique) &
+               var_schema_for_unique$unique %in% c(TRUE, "TRUE", "true", 1))
+        ]
+
+        if (!is.null(unique_vars) && length(unique_vars) > 0) {
+
+        }
+
+        for (var_canonical in unique_vars) {
 
           # Resolve canonical variable name to the actual dataset column name
           # using the variable_map (same approach as the rest of generate_cleaning_log)
+
           var_col <- suppressWarnings(
             private$..resolve_column(
               var_canonical,
@@ -5142,6 +5164,7 @@ Data <- R6::R6Class(
           )
 
           # Skip if column not found in dataset
+
           if (is.null(var_col) || !var_col %in% names(df)) {
             next
           }
@@ -5149,6 +5172,7 @@ Data <- R6::R6Class(
           vals <- df[[var_col]]
 
           # Flag rows that are duplicates (not the first occurrence) and not NA
+
           dup_idx <- which(
             duplicated(vals) & !is.na(vals)
           )
@@ -5163,15 +5187,19 @@ Data <- R6::R6Class(
               dup_device_id_val <- NA_character_
 
               if (!is.na(enum_id_col) && enum_id_col %in% names(df)) {
+
                 dup_enum_id_val <- as.character(
                   df[[enum_id_col]][idx]
                 )
+
               }
 
               if (!is.na(device_id_col) && device_id_col %in% names(df)) {
+
                 dup_device_id_val <- as.character(
                   df[[device_id_col]][idx]
                 )
+
               }
 
               private$..deletion_log$add_deletion(
@@ -5191,8 +5219,11 @@ Data <- R6::R6Class(
               )
 
               unique_deletions_added <- unique_deletions_added + 1
+
             }
+
           }
+
         }
 
         if (unique_deletions_added > 0) {
