@@ -23,7 +23,7 @@
 #' * old.value: Current value in the dataset
 #' * new.value: Proposed new value
 #'
-#' @keywords internal
+#' @export
 CleaningLog <- R6::R6Class(
   classname = "CleaningLog",
   inherit = Log,

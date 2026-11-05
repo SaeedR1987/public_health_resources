@@ -2115,23 +2115,21 @@ test_that("generate_cleaning_log uses actual column names from variable_map", {
   )
 
   suppressMessages(d$set_variable_schema(
-    data_table_to_schema(
-      data.frame(
-        rule_type = c("variable", "variable", "variable", "variable"),
-        variable = c("uuid_col", "my_enum", "my_device", "person_age"),
-        value = c(NA, NA, NA, NA),
-        required = c(TRUE, FALSE, FALSE, FALSE),
-        type = c("character", "character", "character", "numeric"),
-        question_type = c(NA, NA, NA, NA),
-        is_other = c(NA, NA, NA, NA),
-        other_column_link = c(NA, NA, NA, NA),
-        allowed = c(NA, NA, NA, NA),
-        col_names = c("uuid_col", "my_enum", "my_device", "person_age"),
-        unique = c(TRUE, FALSE, FALSE, FALSE),
-        label = c(NA, NA, NA, NA),
-        comment = c(NA, NA, NA, NA),
-        stringsAsFactors = FALSE
-      )
+    data.frame(
+      rule_type = c("variable", "variable", "variable", "variable"),
+      variable = c("uuid_col", "my_enum", "my_device", "person_age"),
+      value = c(NA, NA, NA, NA),
+      required = c(TRUE, FALSE, FALSE, FALSE),
+      type = c("character", "character", "character", "numeric"),
+      question_type = c(NA, NA, NA, NA),
+      is_other = c(NA, NA, NA, NA),
+      other_column_link = c(NA, NA, NA, NA),
+      allowed = c(NA, NA, NA, NA),
+      col_names = c("uuid_col", "my_enum", "my_device", "person_age"),
+      unique = c(TRUE, FALSE, FALSE, FALSE),
+      label = c(NA, NA, NA, NA),
+      comment = c(NA, NA, NA, NA),
+      stringsAsFactors = FALSE
     )
   ))
 
@@ -2177,23 +2175,21 @@ test_that("generate_cleaning_log adds entries for all variables in dependency ch
   )
 
   suppressMessages(d$set_variable_schema(
-    data_table_to_schema(
-      data.frame(
-        rule_type = c("variable", "variable", "variable", "variable"),
-        variable = c("id", "fever_status", "temperature", "medication"),
-        value = c(NA, "yes,no", NA, NA),
-        required = c(TRUE, FALSE, FALSE, FALSE),
-        type = c("character", "character", "numeric", "character"),
-        question_type = c(NA, NA, NA, NA),
-        is_other = c(NA, NA, NA, NA),
-        other_column_link = c(NA, NA, NA, NA),
-        allowed = c(NA, NA, NA, NA),
-        col_names = c("id", "fever_status", "temperature", "medication"),
-        unique = c(TRUE, FALSE, FALSE, FALSE),
-        label = c(NA, NA, NA, NA),
-        comment = c(NA, NA, NA, NA),
-        stringsAsFactors = FALSE
-      )
+    data.frame(
+      rule_type = c("variable", "variable", "variable", "variable"),
+      variable = c("id", "fever_status", "temperature", "medication"),
+      value = c(NA, "yes,no", NA, NA),
+      required = c(TRUE, FALSE, FALSE, FALSE),
+      type = c("character", "character", "numeric", "character"),
+      question_type = c(NA, NA, NA, NA),
+      is_other = c(NA, NA, NA, NA),
+      other_column_link = c(NA, NA, NA, NA),
+      allowed = c(NA, NA, NA, NA),
+      col_names = c("id", "fever_status", "temperature", "medication"),
+      unique = c(TRUE, FALSE, FALSE, FALSE),
+      label = c(NA, NA, NA, NA),
+      comment = c(NA, NA, NA, NA),
+      stringsAsFactors = FALSE
     )
   ))
 
