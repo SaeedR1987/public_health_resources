@@ -43,7 +43,7 @@
 #' @field cleaning_log CleaningLog R6 object for tracking data corrections
 #' @field deletion_log DeletionLog R6 object for tracking deletions
 #' @field data_quality_flags Data frame storing quality flags per row
-#' @field data_diagnostics List of diagnostic results
+#' @field data_diagnostics Diagnostic data frame, retrieved with `get(field = "..data_diagnostics")`
 #' @field cleaning_log_issues Data frame of cleaning log rows that could not be applied (e.g. coercion failures)
 #' @field autosave Logical for automatic saving (if TRUE, snapshots on key steps)
 #' @field linked_objects List of linked Data objects with linkage specifications
@@ -1273,14 +1273,18 @@ Data <- R6::R6Class(
     #'
     #' @param stage Character string: "raw", "standardized", or "clean"
     #'
-    #' @return Data frame with diagnostic results (variable, expected_type, actual_type, type_ok, values_ok, issues)
+    #' @return Data frame with columns `required_variable`, `required_value`,
+    #'   `required_type`, `mapped_variable`, `mapped_value`, `safely_coercible`,
+    #'   `comment`, and `issues`. The same table is stored privately and can be
+    #'   retrieved with `get(field = "..data_diagnostics")`.
     #'
     #' @details
     #' For each variable in the schema:
     #' * Checks if type matches expected type
     #' * Validates values against allowed_values (if defined)
     #' * Reports all issues found
-    #' Returns NULL if no schema is defined or no data available.
+    #' Returns NULL if no schema is defined or no data available, leaving any
+    #' previously stored diagnostics unchanged.
     data_diagnose = function(stage = c("raw", "standardized", "clean")) {
 
       stage <- match.arg(stage)
@@ -1359,12 +1363,6 @@ Data <- R6::R6Class(
           }
 
 
-          # Helper: return the first non-missing/non-empty value in a vector
-          first_non_empty <- function(x) {
-            x <- x[!is.na(x) & x != ""]
-            if (length(x) == 0) NA_character_ else as.character(x[[1]])
-          }
-
           # Step 3. Build diagnostic table
           result <- phrutils::phr_try_step({
 
@@ -1387,7 +1385,7 @@ Data <- R6::R6Class(
             diagnostic_rows
 
           },
-          step = phrutils::phr_txt("Getting data for data diagnose"),
+          step = phrutils::phr_txt("Build diagnostic rows"),
           hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
           )
           if (phrutils::phr_failed(result)) {
@@ -1432,22 +1430,24 @@ Data <- R6::R6Class(
               )
             }
           },
-          step = phrutils::phr_txt("Getting data for data diagnose"),
+          step = phrutils::phr_txt("Convert diagnostic rows to data frame"),
           hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
           }
 
-          # Step 5. Convert diagnostic rows to dataframe
+          diagnostics <- result
+
+          # Step 5. Store diagnostic table
           result <- phrutils::phr_try_step({
 
               # Store in data_diagnostics field
-              self$set(field = "..data_diagnostics", value = result)
+              self$set(field = "..data_diagnostics", value = diagnostics)
 
             },
-            step = phrutils::phr_txt("Getting data for data diagnose"),
-            hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
+            step = phrutils::phr_txt("Store diagnostic table"),
+            hint = phrutils::phr_txt("Check access to the private ..data_diagnostics field.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1457,11 +1457,11 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Generated diagnostic table with {nrow(result)} row(s) for {private$..dataset_name}.")
+            message = phrutils::phr_txt("Generated diagnostic table with {nrow(diagnostics)} row(s) for {private$..dataset_name}.")
           )
 
           # Return the table
-          return(result)
+          return(diagnostics)
         },
         on_error = "abort",
         origin = paste0(private$..dataset_name, "$data_diagnose")
@@ -1778,7 +1778,7 @@ Data <- R6::R6Class(
     # @keywords internal
     ..data_quality_flags = NULL,
 
-    # @field ..data_diagnostics List of diagnostic results.
+    # @field ..data_diagnostics Diagnostic data frame.
     # @keywords internal
     ..data_diagnostics = NULL,
 
@@ -5329,6 +5329,11 @@ Data <- R6::R6Class(
     vmap,
     df
     ) {
+
+      first_non_empty <- function(x) {
+        x <- x[!is.na(x) & x != ""]
+        if (length(x) == 0) NA_character_ else as.character(x[[1]])
+      }
 
       diagnostic_rows <- list()
 

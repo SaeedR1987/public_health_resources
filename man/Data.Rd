@@ -263,7 +263,7 @@ Save Data Object to File
 
     \item{\code{data_quality_flags}}{Data frame storing quality flags per row}
 
-    \item{\code{data_diagnostics}}{List of diagnostic results}
+    \item{\code{data_diagnostics}}{Diagnostic data frame, retrieved with \code{get(field = "..data_diagnostics")}}
 
     \item{\code{cleaning_log_issues}}{Data frame of cleaning log rows that could not be applied (e.g. coercion failures)}
 
@@ -1040,7 +1040,10 @@ Resolve Column from Role
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Data frame with diagnostic results (variable, expected_type, actual_type, type_ok, values_ok, issues)
+    Data frame with columns \code{required_variable}, \code{required_value},
+    \code{required_type}, \code{mapped_variable}, \code{mapped_value}, \code{safely_coercible},
+    \code{comment}, and \code{issues}. The same table is stored privately and can be
+    retrieved with \code{get(field = "..data_diagnostics")}.
   }
 }
 
