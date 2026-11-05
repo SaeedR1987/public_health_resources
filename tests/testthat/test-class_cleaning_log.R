@@ -361,7 +361,7 @@ test_that("CleaningLog ignores enum_id validations if no mapping exists", {
 
   suppressMessages(log <- CleaningLog$new(df_log))
   d <- MockData$new(df_data)
-  d$set(field = ".variable_map", value = list() # no enum_id mapping)
+  d$set(field = ".variable_map", value = list()) # no enum_id mapping
 
   expect_silent(log$post_validate(d))
 })

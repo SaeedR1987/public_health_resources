@@ -18,7 +18,7 @@
 #' * issue: Description of why the record should be deleted
 #' * feedback: Additional comments or resolution notes
 #'
-#' @keywords internal
+#' @export
 DeletionLog <- R6::R6Class(
   classname = "DeletionLog",
   inherit = Log,

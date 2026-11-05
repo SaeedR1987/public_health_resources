@@ -149,7 +149,7 @@ test_that("other_columns used in generate_cleaning_log correctly", {
   expect_true(grepl("Spring water", hh002_entries$old.value[1]))
 
   # Should also have linked column entries
-  water_source_entries <- log_df[log_df$question.name == "water_source" & log_df$get(field = "..uuid") == "HH002", ]
+  water_source_entries <- log_df[log_df$question.name == "water_source" & log_df$uuid == "HH002", ]
   expect_true(nrow(water_source_entries) > 0)
   expect_equal(water_source_entries$issue[1], "has_other_response")
 })
@@ -1094,7 +1094,7 @@ test_that("process_select_multiple_columns detects 'other' in responses", {
 })
 
 
-test_that("standardize() adds 'other' columns to self$get(field = "..other_columns") as list structure", {
+test_that("standardize() adds 'other' columns to ..other_columns as list structure", {
 
   test_df <- tibble::tibble(
     uuid = c("id_1", "id_2", "id_3"),
@@ -1167,7 +1167,7 @@ test_that("generate_cleaning_log creates entries for 'other' columns and linked 
 
   # Should have entries for id_2 (row with "other" text)
   # One for text column, plus one each for linked columns
-  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$uuid == "id_2", ]
   expect_gte(nrow(id2_entries), 3)  # At least 3 entries
 
   # Check that entries exist for each column
@@ -1238,7 +1238,7 @@ test_that("generate_cleaning_log handles missing text column with dummy column",
   log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have entries for id_2 where dummy column = 1
-  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$uuid == "id_2", ]
   expect_gte(nrow(id2_entries), 2)  # At least 2 (dummy + original)
 })
 

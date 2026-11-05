@@ -66,6 +66,11 @@ Log <- R6::R6Class(
         )
       }
 
+      # `log_df` is stored privately as `..log_df`
+      if (field == "log_df") {
+        field <- "..log_df"
+      }
+
       return(private[[field]])
     },
     #' Accessible Fields Hook
@@ -163,7 +168,10 @@ Log <- R6::R6Class(
         )
       }
 
-      private[[field]] <- value
+      # `log_df` is stored privately as `..log_df`
+      internal_field <- if (field == "log_df") "..log_df" else field
+
+      private[[internal_field]] <- value
       private$..touch()
 
       phrutils::phr_message(phr_txt(glue::glue(
@@ -225,7 +233,7 @@ Log <- R6::R6Class(
         drop = FALSE
       ]
 
-      private$log_df <- tibble::as_tibble(log_df)
+      private$..log_df <- tibble::as_tibble(log_df)
 
       # guarantee metadata exists
       timestamp <- Sys.time()
@@ -285,13 +293,13 @@ Log <- R6::R6Class(
           # 1. BASIC STRUCTURAL VALIDATION
 
           phrutils::phr_validate_dataframe(
-            private$log_df,
+            private$..log_df,
             origin = private$log_name,
             soft = TRUE
           )
 
           # Required columns must exist
-          missing_req <- setdiff(private$required_columns, names(private$log_df))
+          missing_req <- setdiff(private$required_columns, names(private$..log_df))
           if (length(missing_req) > 0) {
             issues$missing_required_columns <- missing_req
           }
@@ -302,36 +310,36 @@ Log <- R6::R6Class(
             # ---- TYPE CHECKS
             if (!is.null(schema_to_use$types)) {
               for (nm in names(schema_to_use$types)) {
-                if (!nm %in% names(private$log_df)) {
+                if (!nm %in% names(private$..log_df)) {
                   next
                 }
 
                 want <- schema_to_use$types[[nm]]
-                got <- class(private$log_df[[nm]])[1]
+                got <- class(private$..log_df[[nm]])[1]
 
                 # Safe coercion classification
-                coercible <- phrutils::is_safely_coercible(private$log_df[[nm]], want)
+                coercible <- phrutils::is_safely_coercible(private$..log_df[[nm]], want)
 
                 # Soft-coercion when safe
                 if (!identical(got, want) && coercible) {
                   new_vec <- tryCatch(
                     {
                       if (want == "numeric") {
-                        suppressWarnings(as.numeric(private$log_df[[nm]]))
+                        suppressWarnings(as.numeric(private$..log_df[[nm]]))
                       } else if (want == "character") {
-                        as.character(private$log_df[[nm]])
+                        as.character(private$..log_df[[nm]])
                       } else if (want == "logical") {
-                        suppressWarnings(as.logical(private$log_df[[nm]]))
+                        suppressWarnings(as.logical(private$..log_df[[nm]]))
                       } else if (want == "date" || want == "Date") {
-                        phrutils::phr_convert_date(private$log_df[[nm]])
+                        phrutils::phr_convert_date(private$..log_df[[nm]])
                       } else {
-                        private$log_df[[nm]]
+                        private$..log_df[[nm]]
                       }
                     },
-                    error = function(e) private$log_df[[nm]]
+                    error = function(e) private$..log_df[[nm]]
                   )
 
-                  private$log_df[[nm]] <- new_vec
+                  private$..log_df[[nm]] <- new_vec
 
                   phrutils::phr_message(
                     phr_txt(glue::glue(
@@ -341,7 +349,7 @@ Log <- R6::R6Class(
                 }
 
                 # Re-check type after possible coercion
-                final_type <- class(private$log_df[[nm]])[1]
+                final_type <- class(private$..log_df[[nm]])[1]
 
                 if (!identical(final_type, want)) {
                   issues$type_mismatch[[nm]] <- paste0(
@@ -357,12 +365,12 @@ Log <- R6::R6Class(
             # ---- ALLOWED VALUES CHECK
             if (!is.null(schema_to_use$allowed_values)) {
               for (nm in names(schema_to_use$allowed_values)) {
-                if (!nm %in% names(private$log_df)) {
+                if (!nm %in% names(private$..log_df)) {
                   next
                 }
 
                 allowed <- schema_to_use$allowed_values[[nm]]
-                vals <- unique(private$log_df[[nm]])
+                vals <- unique(private$..log_df[[nm]])
 
                 bad <- setdiff(vals, allowed)
 
@@ -431,7 +439,7 @@ Log <- R6::R6Class(
 
       # align names
       df_row <- as.data.frame(row_list, stringsAsFactors = FALSE)
-      private$log_df <- dplyr::bind_rows(private$log_df, df_row)
+      private$..log_df <- dplyr::bind_rows(private$..log_df, df_row)
 
       private$..touch()
 
@@ -450,7 +458,7 @@ Log <- R6::R6Class(
     #' Keeps column structure intact but sets row count to 0.
     #' Updates metadata timestamp.
     clear = function() {
-      private$log_df <- private$log_df[0, , drop = FALSE]
+      private$..log_df <- private$..log_df[0, , drop = FALSE]
       private$..touch()
       phrutils::phr_message(phr_txt(glue::glue("{private$log_name} cleared.")))
       invisible(TRUE)
@@ -477,10 +485,10 @@ Log <- R6::R6Class(
       phrutils::phr_try(
         {
           if (format == "csv") {
-            utils::write.csv(private$log_df, path, row.names = FALSE)
+            utils::write.csv(private$..log_df, path, row.names = FALSE)
           }
           if (format == "rds") {
-            saveRDS(private$log_df, path)
+            saveRDS(private$..log_df, path)
           }
           if (format == "xlsx") {
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
@@ -489,7 +497,7 @@ Log <- R6::R6Class(
                 phr_txt("Package 'openxlsx' is required for XLSX export.")
               )
             }
-            openxlsx::write.xlsx(private$log_df, file = path)
+            openxlsx::write.xlsx(private$..log_df, file = path)
           }
 
           phrutils::phr_message(phr_txt(glue::glue(
@@ -521,7 +529,7 @@ Log <- R6::R6Class(
           phr_txt("Package 'digest' is required for hashing.")
         )
       }
-      digest::digest(private$log_df)
+      digest::digest(private$..log_df)
     },
 
     #' Get Summary
@@ -540,8 +548,8 @@ Log <- R6::R6Class(
     summary = function() {
       list(
         log_name = private$log_name,
-        n_entries = nrow(private$log_df),
-        n_columns = ncol(private$log_df),
+        n_entries = nrow(private$..log_df),
+        n_columns = ncol(private$..log_df),
         validated = private$validated,
         required_columns = private$required_columns,
         schema_attached = !is.null(private$schema),
@@ -568,7 +576,9 @@ Log <- R6::R6Class(
 
   private = list(
     # Private fields
-    log_df = NULL,
+    # `log_df` is stored privately as `..log_df` and exposed publicly via
+    # the read/write `log_df` active binding and the `get()`/`set()` API.
+    ..log_df = NULL,
     log_name = NULL,
     required_columns = NULL,
     schema = NULL,
@@ -618,6 +628,27 @@ Log <- R6::R6Class(
     ..touch = function() {
       private$metadata$modified_datetime <- Sys.time()
       invisible(NULL)
+    }
+  ),
+
+  active = list(
+    #' @field log_df Tibble of log entries. Read/write active binding over
+    #'   the private `..log_df` field; assignment validates the value is a
+    #'   data frame (unless NULL) and updates the modified timestamp.
+    log_df = function(value) {
+      if (missing(value)) {
+        return(private$..log_df)
+      }
+      if (!is.null(value)) {
+        phrutils::phr_validate_dataframe(
+          value,
+          origin = "Log$log_df",
+          soft = FALSE
+        )
+      }
+      private$..log_df <- value
+      private$..touch()
+      value
     }
   )
 )
