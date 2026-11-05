@@ -107,7 +107,7 @@ SamplingFrame <- R6::R6Class(
     #' @param seed Integer random seed.
     #' @return Invisibly returns \code{self}.
     draw_sample = function(strata_table = NULL, seed = 43) {
-      frame <- private$log_df
+      frame <- private$..log_df
 
       phrutils::phr_validate_dataframe(
         frame,
@@ -323,7 +323,7 @@ SamplingFrame <- R6::R6Class(
     #'
     #' @return Invisibly returns \code{self} for method chaining.
     sort_psu_by_population = function() {
-      df <- private$log_df
+      df <- private$..log_df
       if (is.null(df) || nrow(df) == 0) {
         return(invisible(self))
       }
@@ -336,7 +336,7 @@ SamplingFrame <- R6::R6Class(
         ,
         drop = FALSE
       ]
-      private$log_df <- df
+      private$..log_df <- df
       invisible(self)
     }
   ),

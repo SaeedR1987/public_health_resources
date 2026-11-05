@@ -1069,7 +1069,7 @@ test_that("generate_cleaning_log creates entries for other columns", {
   d$standardize()
 
   # Generate cleaning log (without quality flags, only other columns)
-  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$get(field = "..uuid"))  # Empty flags)
+  d$set(field = "..data_quality_flags", value = data.frame(uuid = test_df$uuid))  # Empty flags
   d$generate_cleaning_log(stage = "standardized", overwrite = TRUE)
 
   log_df <- d$get(field = "..cleaning_log")$log_df
@@ -1079,7 +1079,7 @@ test_that("generate_cleaning_log creates entries for other columns", {
   expect_gte(nrow(log_df), 2)
 
   # Check that entries exist for the row with "other" text
-  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$uuid == "id_2", ]
   expect_gte(nrow(id2_entries), 2)
 
   # One entry should be for water_source_other column
@@ -1436,7 +1436,7 @@ test_that("generate_cleaning_log uses new list structure correctly", {
   log_df <- d$get(field = "..cleaning_log")$log_df
 
   # Should have 2 entries for id_2 (one for water_source_other, one for water_source)
-  id2_entries <- log_df[log_df$get(field = "..uuid") == "id_2", ]
+  id2_entries <- log_df[log_df$uuid == "id_2", ]
   expect_equal(nrow(id2_entries), 2)
 
   # Check question names
@@ -1575,13 +1575,13 @@ test_that("indicator with unresolved @variable_map$ reference passes NULL", {
   )
 
   # Set variable map (only map 'age', not 'age_months')
-  test_data$set(field = ".variable_map", value = list()
+  test_data$set(field = ".variable_map", value = list(
     uuid = "uuid",
     age_years = "age"
-  )
+  ))
 
   # Set indicator schema that references a non-existent variable map role
-  test_data$set(field = "..indicator_schema", value = list()
+  test_data$set(field = "..indicator_schema", value = list(
     test_indicator = list(
       indicator_name = "test_indicator",
       function_name = "add_standardized_age",
@@ -1591,7 +1591,7 @@ test_that("indicator with unresolved @variable_map$ reference passes NULL", {
         age_months_col = "@variable_map$age_months"  # This role doesn't exist
       )
     )
-  )
+  ))
 
   # Run standardize - should warn about age_months not found but pass NULL
   expect_warning(
@@ -1621,14 +1621,14 @@ test_that("indicator with all resolved @variable_map$ references works", {
   )
 
   # Set variable map with both roles
-  test_data$set(field = ".variable_map", value = list()
+  test_data$set(field = ".variable_map", value = list(
     uuid = "uuid",
     age_years = "age",
     age_months = "months"
-  )
+  ))
 
   # Set indicator schema that references existing variable map roles
-  test_data$set(field = "..indicator_schema", value = list()
+  test_data$set(field = "..indicator_schema", value = list(
     test_indicator = list(
       indicator_name = "test_indicator",
       function_name = "add_standardized_age",
@@ -1638,7 +1638,7 @@ test_that("indicator with all resolved @variable_map$ references works", {
         age_months_col = "@variable_map$age_months"
       )
     )
-  )
+  ))
 
   # Run standardize - should work without warnings
   suppressWarnings(test_data$standardize())

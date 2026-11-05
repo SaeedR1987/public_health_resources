@@ -426,7 +426,7 @@ Asset <- R6::R6Class(
 
           private$..assign_field_scope(
             scope = resolved$scope,
-            field = field,
+            field = resolved$field,
             value = container
           )
 
@@ -833,12 +833,15 @@ Asset <- R6::R6Class(
 
     # @description Resolve which scope ("public" or "private") owns a
     #   top-level field, so that `get()`/`call()`/`set()` can safely
-    #   read/write fields regardless of visibility.
+    #   read/write fields regardless of visibility. A field with a single
+    #   leading dot (e.g. ".variable_map") is resolved as an alias for the
+    #   corresponding double-dot private field (e.g. "..variable_map") when
+    #   no field with the literal name exists.
     # @param field Character scalar naming the field to resolve.
     # @param origin Character scalar identifying the calling context for
     #   error messages.
-    # @return A list with `scope` ("public" or "private") and `value` (the
-    #   field's current value).
+    # @return A list with `scope` ("public" or "private"), `field` (the
+    #   resolved field name) and `value` (the field's current value).
     # @keywords internal
     ..resolve_field_scope = function(field, origin = "Asset$set") {
       phrutils::phr_assert(
@@ -848,10 +851,19 @@ Asset <- R6::R6Class(
       )
 
       if (field %in% names(self)) {
-        return(list(scope = "public", value = self[[field]]))
+        return(list(scope = "public", field = field, value = self[[field]]))
       }
       if (field %in% names(private)) {
-        return(list(scope = "private", value = private[[field]]))
+        return(list(scope = "private", field = field, value = private[[field]]))
+      }
+
+      # Single-dot alias for a double-dot private field, e.g.
+      # ".variable_map" -> "..variable_map".
+      if (grepl("^\\.[^.]", field)) {
+        aliased <- paste0(".", field)
+        if (aliased %in% names(private)) {
+          return(list(scope = "private", field = aliased, value = private[[aliased]]))
+        }
       }
 
       phrutils::phr_assert(

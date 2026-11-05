@@ -116,10 +116,10 @@ test_that("validate() still catches truly missing values in select_multiple", {
   )
 
   # Set minimal schema for the helper method to work
-  d$set(field = "..variable_schema", value = list()
+  d$set(field = "..variable_schema", value = list(
     types = list(food = "character"),
     question_types = list(food = "select_multiple")
-  )
+  ))
 
   # Run validate - should produce warnings about missing values
   d$validate()
@@ -161,13 +161,13 @@ test_that(".is_select_multiple helper works correctly", {
   expect_false(d$call(field = "..is_select_multiple", "any_var"))
 
   # With schema but no question_types
-  d$set(field = "..variable_schema", value = list()
+  d$set(field = "..variable_schema", value = list(
     types = list(var1 = "character")
-  )
+  ))
   expect_false(d$call(field = "..is_select_multiple", "var1"))
 
   # With schema and select_multiple question type
-  d$set(field = "..variable_schema", value = list()
+  d$set(field = "..variable_schema", value = list(
     types = list(
       var1 = "character",
       var2 = "character"
@@ -176,7 +176,7 @@ test_that(".is_select_multiple helper works correctly", {
       var1 = "select_multiple",
       var2 = "select_one"
     )
-  )
+  ))
   expect_true(d$call(field = "..is_select_multiple", "var1"))
   expect_false(d$call(field = "..is_select_multiple", "var2"))
   expect_false(d$call(field = "..is_select_multiple", "var3"))

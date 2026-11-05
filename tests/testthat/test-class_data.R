@@ -2022,16 +2022,16 @@ test_that("generate_cleaning_log handles 'other' columns", {
   suppressWarnings(suppressMessages(d$standardize()))
 
   # Set up other_columns
-  d$set(field = "..other_columns", value = list()
+  d$set(field = "..other_columns", value = list(
     choice_other_text = list(
       other_column = "choice_other_text",
       other_linked_columns = c("choice")
     )
-  )
+  ))
 
-  d$set(field = "..data_quality_flags", value = data.frame()
+  d$set(field = "..data_quality_flags", value = data.frame(
     id = 1:3
-  )
+  ))
 
   suppressWarnings(suppressMessages(d$generate_cleaning_log(
     stage = "standardized"
@@ -2066,12 +2066,12 @@ test_that("generate_cleaning_log uses enum_id and device_id when available", {
     )
   )
   suppressMessages(d$set_variable_schema(schema))
-  d$set(field = ".variable_map", value = list()
+  d$set(field = ".variable_map", value = list(
     id = "id",
     age = "age",
     enum_id = "enum_id",
     device_id = "device_id"
-  )
+  ))
 
   suppressWarnings(suppressMessages(d$validate()))
   suppressWarnings(suppressMessages(d$standardize()))
@@ -2219,7 +2219,7 @@ test_that("generate_cleaning_log adds entries for all variables in dependency ch
   expect_gt(nrow(d$get(field = "..cleaning_log")$log_df), 0)
 
   # Get entries for one of the flagged rows (e.g., row 2)
-  row2_entries <- d$get(field = "..cleaning_log")$log_df[d$get(field = "..cleaning_log")$log_df$get(field = "..uuid") == 2, ]
+  row2_entries <- d$get(field = "..cleaning_log")$log_df[d$get(field = "..cleaning_log")$log_df$uuid == 2, ]
 
   # Should have entries for all 3 variables mentioned in the dependency
   expect_equal(nrow(row2_entries), 3)
@@ -2310,7 +2310,7 @@ test_that("generate_cleaning_log handles unmapped canonical names gracefully", {
   expect_gt(nrow(d$get(field = "..cleaning_log")$log_df), 0)
 
   # When no mapping exists, should fall back to using canonical name as-is
-  row1_entries <- d$get(field = "..cleaning_log")$log_df[d$get(field = "..cleaning_log")$log_df$get(field = "..uuid") == 1, ]
+  row1_entries <- d$get(field = "..cleaning_log")$log_df[d$get(field = "..cleaning_log")$log_df$uuid == 1, ]
   expect_true(all(row1_entries$question.name %in% c("fever", "temp")))
 })
 
@@ -2343,7 +2343,7 @@ test_that("generate_cleaning_log adds flagged records to deletion log for flag_d
 
   # Records with invalid status should be in deletion log
   expect_equal(nrow(d$get(field = "..deletion_log")$log_df), 2)
-  expect_true(all(d$get(field = "..deletion_log")$log_df$get(field = "..uuid") %in% c("2", "4")))
+  expect_true(all(d$get(field = "..deletion_log")$log_df$uuid %in% c("2", "4")))
   expect_true(all(d$get(field = "..deletion_log")$log_df$issue == "flag_invalid_status"))
 })
 
@@ -2375,7 +2375,7 @@ test_that("generate_cleaning_log does not add flag_delete records to cleaning lo
 
   # Deletion log should have the flagged record
   expect_equal(nrow(d$get(field = "..deletion_log")$log_df), 1)
-  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$get(field = "..uuid")), "2")
+  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$uuid), "2")
 
   # Cleaning log should NOT have any entries for this flag
   flag_entries <- d$get(field = "..cleaning_log")$log_df[
@@ -2394,11 +2394,11 @@ test_that("generate_cleaning_log flag_delete populates enum_id and device_id in 
   d <- suppressMessages(
     Data$new(data = df, uuid = "id")
   )
-  d$set(field = ".variable_map", value = list()
+  d$set(field = ".variable_map", value = list(
     uuid = "id",
     enum_id = "enum_id",
     device_id = "device_id"
-  )
+  ))
 
   suppressMessages(suppressWarnings(d$set_dependency_schema(list(
     dependencies = list(
@@ -2549,7 +2549,7 @@ test_that("generate_cleaning_log routes flag_delete (condition_if only) rows to 
   )))
 
   expect_equal(nrow(d$get(field = "..deletion_log")$log_df), 1)
-  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$get(field = "..uuid")), "2")
+  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$uuid), "2")
   expect_equal(
     nrow(d$get(field = "..cleaning_log")$log_df[
       d$get(field = "..cleaning_log")$log_df$issue == "flag_low_score",
@@ -2581,7 +2581,7 @@ test_that("generate_cleaning_log adds duplicate unique-variable rows to deletion
 
   # Row 3 is the duplicate (second occurrence of "A001")
   expect_equal(nrow(d$get(field = "..deletion_log")$log_df), 1)
-  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$get(field = "..uuid")), "3")
+  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$uuid), "3")
   expect_true(grepl("survey_code", d$get(field = "..deletion_log")$log_df$issue))
   expect_true(grepl("A001", d$get(field = "..deletion_log")$log_df$feedback))
 })
@@ -2606,7 +2606,7 @@ test_that("generate_cleaning_log handles multiple duplicates in unique variable"
 
   # Rows 3 and 5 are duplicates of "X"
   expect_equal(nrow(d$get(field = "..deletion_log")$log_df), 2)
-  expect_true(all(d$get(field = "..deletion_log")$log_df$get(field = "..uuid") %in% c("3", "5")))
+  expect_true(all(d$get(field = "..deletion_log")$log_df$uuid %in% c("3", "5")))
 })
 
 test_that("generate_cleaning_log does not flag NAs as duplicates in unique variable", {
@@ -2649,18 +2649,18 @@ test_that("generate_cleaning_log uses variable_map to resolve unique variable co
     unique = c("q_code")
   ))))
   # Map canonical "q_code" → actual column "q_code", and set up enum_id
-  d$set(field = ".variable_map", value = list()
+  d$set(field = ".variable_map", value = list(
     uuid = "survey_id",
     enum_id = "enumerator",
     q_code = "q_code"
-  )
+  ))
   suppressMessages(suppressWarnings(d$standardize()))
   suppressMessages(suppressWarnings(d$generate_cleaning_log(
     stage = "standardized"
   )))
 
   expect_equal(nrow(d$get(field = "..deletion_log")$log_df), 1)
-  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$get(field = "..uuid")), "3")
+  expect_equal(as.character(d$get(field = "..deletion_log")$log_df$uuid), "3")
   expect_equal(d$get(field = "..deletion_log")$log_df$enum_id, "E1")
 })
 
@@ -2901,12 +2901,12 @@ test_that("Full integration: end-to-end with dependency checks", {
 
   suppressMessages(suppressWarnings(d$set_variable_schema(var_schema)))
   suppressMessages(suppressWarnings(d$set_dependency_schema(dep_schema)))
-  d$set(field = ".variable_map", value = list()
+  d$set(field = ".variable_map", value = list(
     id = "id",
     age = "age",
     has_consent = "has_consent",
     consent_date = "consent_date"
-  )
+  ))
 
   # Run pipeline
   suppressMessages(suppressWarnings(d$validate()))
@@ -2993,13 +2993,13 @@ test_that("Full integration: value_map is used during quality checks", {
   suppressMessages(suppressWarnings(d$set_variable_schema(var_schema)))
   suppressMessages(suppressWarnings(d$set_dependency_schema(dep_schema)))
   d$set(field = ".variable_map", value = list(id = "id", status = "status"))
-  d$set(field = ".value_map", value = list()
+  d$set(field = ".value_map", value = list(
     status = list(
       active = c("A"),
       inactive = c("I"),
       pending = c("P")
     )
-  )
+  ))
 
   suppressMessages(suppressWarnings(d$validate()))
   suppressMessages(suppressWarnings(d$standardize()))

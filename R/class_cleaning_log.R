@@ -119,7 +119,7 @@ CleaningLog <- R6::R6Class(
             super_issues <- list()
           }
 
-          df <- private$log_df
+          df <- private$..log_df
 
           # 2. Cleaning-log specific completeness
           #    Always require uuid, question.name, and changed to be present.
@@ -210,7 +210,7 @@ CleaningLog <- R6::R6Class(
 
       issues <- list()
 
-      df_log <- private$log_df
+      df_log <- private$..log_df
       df <- data_obj$get_data(stage)
 
       # catastrophic error only

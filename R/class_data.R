@@ -899,27 +899,27 @@ Data <- R6::R6Class(
                 phrutils::phr_txt("No data available at stage '{stage}'.")
               )
             }
-            df
+            invisible(NULL)
           },
           step = phrutils::phr_txt("Load data for generating cleaning log"),
           hint = phrutils::phr_txt("Check if standardized data is available. Should use standardized data for cleaning log generation.")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           # Step 2: Pre-generate cleaning log hook
 
           result <- phrutils::phr_try_step({
 
-          private$..pre_generate_cleaning_log(stage = stage)
+          private$..pre_generate_cleaning_log(stage = stage, overwrite = overwrite)
 
           },
           step = phrutils::phr_txt("pre generate cleaning log hook"),
           hint = phrutils::phr_txt("Check any subclass specific handling for generating cleaning logs")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           # Step 3: Setup for Generate Cleaning Log
@@ -959,7 +959,7 @@ Data <- R6::R6Class(
           hint = phrutils::phr_txt("check if cleaning log exists in the data object, if ..data_quality_flags exist, or if enumerator or device id are appropraitely set in the variabale map.")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           # Step 4: Generate cleaning log entries from data quality flags
@@ -994,7 +994,7 @@ Data <- R6::R6Class(
           hint = phrutils::phr_txt("Check definition of rules in dependency schema. ")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           # Step 5: Process Other Columns
@@ -1012,7 +1012,7 @@ Data <- R6::R6Class(
           hint = phrutils::phr_txt("Check other columns in datasets and listed in variable schema.")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           # Step 6: Process Unique Variable Constraints
@@ -1031,7 +1031,7 @@ Data <- R6::R6Class(
           hint = phrutils::phr_txt("Check unique variable constraints from variable schema")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           # Step 7: Post Generate Cleaning Log Hook
@@ -1045,7 +1045,7 @@ Data <- R6::R6Class(
           hint = phrutils::phr_txt("Check subclass specific post generate cleaning log hook for issues.")
           )
           if (phrutils::phr_failed(result)) {
-            return(result)
+            stop(result$error, call. = FALSE)
           }
 
           private$..touch(
@@ -5212,25 +5212,164 @@ Data <- R6::R6Class(
 
 
 
+    #' Dependency Schema as Nested List
+    #'
+    #' @description
+    #' Returns the dependency schema as the nested list view
+    #' (`list(dependencies = ..., soft_dependencies = ...)`) used by the
+    #' cleaning log generation helpers. The schema may be stored either as
+    #' the flat data frame read from the dependency schema xlsx template
+    #' (one row per dependency rule) or already as a nested list (legacy
+    #' form); both are handled.
+    #'
+    #' @return A list with `dependencies` and `soft_dependencies` elements
+    #'   (either may be an empty list). Returns an empty list when no
+    #'   dependency schema is available.
+    ..as_dependency_schema_list = function() {
+
+      sch <- private$..dependency_schema
+
+      if (is.null(sch)) {
+        return(list())
+      }
+
+      # Legacy nested list form: pass through, normalizing the two
+      # expected top-level elements.
+      if (!is.data.frame(sch) && is.list(sch)) {
+        return(list(
+          dependencies = sch$dependencies %||% list(),
+          soft_dependencies = sch$soft_dependencies %||% list()
+        ))
+      }
+
+      if (!is.data.frame(sch) || nrow(sch) == 0) {
+        return(list())
+      }
+
+      # Read a single schema cell as a character scalar, normalizing
+      # NA/"NA"/missing columns to an empty string.
+      cell_value <- function(row_i, col) {
+        if (!col %in% names(sch)) {
+          return("")
+        }
+        val <- sch[[col]][row_i]
+        if (is.null(val) || length(val) == 0 || is.na(val)) {
+          return("")
+        }
+        val <- trimws(as.character(val))
+        if (val == "NA") {
+          return("")
+        }
+        val
+      }
+
+      rule_types <- if ("rule_type" %in% names(sch)) {
+        as.character(sch$rule_type)
+      } else {
+        rep("dependency", nrow(sch))
+      }
+
+      dependencies <- list()
+
+      for (i in seq_len(nrow(sch))) {
+
+        if (is.na(rule_types[i]) || rule_types[i] != "dependency") {
+          next
+        }
+
+        dep_name <- cell_value(i, "dep_name")
+        if (dep_name == "") {
+          next
+        }
+
+        vars_raw <- cell_value(i, "variables")
+        variables <- character(0)
+        if (vars_raw != "") {
+          variables <- trimws(strsplit(vars_raw, ",")[[1]])
+          variables <- variables[variables != ""]
+        }
+
+        dependencies[[dep_name]] <- list(
+          variables = variables,
+          condition_if = cell_value(i, "condition_if"),
+          then = cell_value(i, "then"),
+          action = cell_value(i, "action")
+        )
+      }
+
+      list(
+        dependencies = dependencies,
+        soft_dependencies = list()
+      )
+    },
+
+    #' Variable Schema as Nested List
+    #'
+    #' @description
+    #' Returns the variable schema as the nested list view used by the
+    #' cleaning log generation helpers (currently only the `unique`
+    #' element, listing canonical variable names marked as unique). The
+    #' schema may be stored either as the flat data frame read from the
+    #' variable schema xlsx template (one row per variable/value) or
+    #' already as a nested list (legacy form); both are handled.
+    #'
+    #' @return A list with a `unique` character vector element, or NULL
+    #'   when no variable schema is available.
+    ..as_variable_schema_list = function() {
+
+      sch <- private$..variable_schema
+
+      if (is.null(sch)) {
+        return(NULL)
+      }
+
+      # Legacy nested list form already exposes elements such as
+      # `unique`, `types`, etc.
+      if (!is.data.frame(sch) && is.list(sch)) {
+        return(sch)
+      }
+
+      if (!is.data.frame(sch) || nrow(sch) == 0) {
+        return(NULL)
+      }
+
+      unique_vars <- character(0)
+
+      if (all(c("variable", "unique") %in% names(sch))) {
+        flags <- tolower(trimws(as.character(sch$unique)))
+        is_unique <- !is.na(flags) & flags %in% c("true", "t", "yes", "y", "1")
+        vars <- as.character(sch$variable)
+        unique_vars <- unique(vars[is_unique & !is.na(vars) & vars != ""])
+      }
+
+      list(unique = unique_vars)
+    },
+
     #' Pre-generate cleaning log Hook
     #'
     #' @description
     #' Hook method called before generate_cleaning_log begins. Override in subclasses for custom pre-processing.
     #'
     #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #' @param overwrite Logical; if TRUE, linked objects clear their existing cleaning log before generating new entries
     #'
     #' @return NULL (default implementation does nothing)
     ..pre_generate_cleaning_log = function(
-    stage = c("clean", "standardized", "raw")
-    ) {}, # subclass hook - called before standardization begins
+    stage = c("clean", "standardized", "raw"),
+    overwrite = FALSE
+    ) {}, # subclass hook - called before cleaning log generation begins
 
     #' Post-generate cleaning log Hook
     #'
     #' @description
     #' Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
     #'
+    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #'
     #' @return NULL (default implementation does nothing)
-    ..post_generate_cleaning_log = function() {}, # subclass hook
+    ..post_generate_cleaning_log = function(
+    stage = c("clean", "standardized", "raw")
+    ) {}, # subclass hook
 
     #' Setup Cleaning Dataset
     #'
