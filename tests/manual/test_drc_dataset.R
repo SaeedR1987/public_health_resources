@@ -78,14 +78,14 @@ drc_mort$add_linked_dataset(
   name = "roster",
   other_object = roster,
   by_self_role = "uuid",
-  by_other_role = "hh_uuid"
+  by_other_role = "uuid"
 )
 
 drc_mort$add_linked_dataset(
   name = "deaths",
   other_object = deaths,
   by_self_role = "uuid",
-  by_other_role = "hh_uuid"
+  by_other_role = "uuid"
 )
 
 
@@ -111,7 +111,10 @@ head(drc_mort$get_data(stage = "standardized"))
 View(drc_mort$get(field = "..standardized_data"))
 
 a <- drc_mort$get(field = "..linked_objects", role = "roster", role2 = "object")
-View(a$object$get(field = "..raw_data"))
+View(a$get(field = "..standardized_data"))
+
+b <- drc_mort$get(field = "..linked_objects", role = "deaths", role2 = "object")
+View(b$get(field = "..standardized_data"))
 
 a$standardize()
 View(a$get(field = "..standardized_data"))
@@ -125,10 +128,10 @@ View(drc_mort$linked_objects$deaths$object$data_diagnose(stage = "raw"))
 drc_mort$standardize()
 
 View(drc_mort$data_diagnose(stage = "standardized"))
-View(drc_mort$linked_objects$roster$object$data_diagnose(
+View(drc_mort$get(field = "..linked_objects")$roster$object$data_diagnose(
   stage = "standardized"
 ))
-View(drc_mort$linked_objects$deaths$object$data_diagnose(
+View(drc_mort$get(field = "..linked_objects")$deaths$object$data_diagnose(
   stage = "standardized"
 ))
 
@@ -138,9 +141,11 @@ View(drc_mort$linked_objects$deaths$object$standardized_data)
 
 drc_mort$generate_cleaning_log()
 
-View(drc_mort$cleaning_log$get(field = "log_df"))
-View(drc_mort$linked_objects$roster$object$cleaning_log$get(field = "log_df"))
-View(drc_mort$linked_objects$deaths$object$cleaning_log$get(field = "log_df"))
+View(drc_mort$get(field = "..cleaning_log")$get(field = "..log_df"))
+View(drc_mort$get(field = "..deletion_log")$get(field = "..log_df"))
+View(drc_mort$linked_objects$roster$object$cleaning_log$get(field = "..log_df"))
+View(drc_mort$linked_objects$deaths$object$cleaning_log$get(field = "..log_df"))
+
 
 drc_mort$clean()
 

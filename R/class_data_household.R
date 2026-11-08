@@ -454,6 +454,45 @@ HouseholdData <- R6::R6Class(
 
     ..sampling_frame = NULL, # optional SamplingFrame for generate_weights()
 
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        "..sampling_frame"
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        "generate_weights"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        "..sampling_frame"
+      )
+    },
+
     #' Post-Validation Hook for Household Data
     #'
     #' @description

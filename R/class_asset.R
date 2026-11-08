@@ -22,6 +22,9 @@ Asset <- R6::R6Class(
     #' @return A new Asset object.
     initialize = function(name = NULL) {
 
+      phrutils::phr_try({
+
+
       timestamp <- Sys.time()
 
       private$..name <- if (is.null(name)) {"NewObject"} else {name}
@@ -38,6 +41,12 @@ Asset <- R6::R6Class(
                       touch = TRUE,
                       name = name,
                       message = phrutils::phr_txt("Initialization for completed successfully."))
+
+      },
+      on_error = "abort",
+      origin = "Asset$initialize"
+      )
+
       invisible(self)
     },
 
@@ -126,6 +135,18 @@ Asset <- R6::R6Class(
     ) {
       phrutils::phr_try(
         {
+
+          allowed_fields <- private$..allowed_get_fields()
+
+          if (!field %in% allowed_fields) {
+            phrutils::phr_error(
+              "Asset$get",
+              phrutils::phr_txt(
+                "Field '{field}' is not accessible. Allowed fields: {paste(allowed_fields, collapse=', ')}"
+              )
+            )
+          }
+
           target <- private$..resolve_nested_target(
             field = field,
             role = role,
@@ -199,6 +220,18 @@ Asset <- R6::R6Class(
     ) {
       phrutils::phr_try(
         {
+
+          allowed_fields <- private$..allowed_call_fields()
+
+          if (!field %in% allowed_fields) {
+            phrutils::phr_error(
+              "Asset$call",
+              phrutils::phr_txt(
+                "Field '{field}' is not accessible. Allowed fields: {paste(allowed_fields, collapse=', ')}"
+              )
+            )
+          }
+
           target <- private$..resolve_nested_target(
             field = field,
             role = role,
@@ -287,6 +320,18 @@ Asset <- R6::R6Class(
     ) {
       phrutils::phr_try(
         {
+
+          allowed_fields <- private$..allowed_set_fields()
+
+          if (!field %in% allowed_fields) {
+            phrutils::phr_error(
+              "Asset$set",
+              phrutils::phr_txt(
+                "Field '{field}' is not settable. Allowed fields: {paste(allowed_fields, collapse=', ')}"
+              )
+            )
+          }
+
           phrutils::phr_assert(
             !(is.null(role) && !is.null(role2)),
             message = phrutils::phr_txt(
@@ -480,7 +525,7 @@ Asset <- R6::R6Class(
     #   through to \code{..track()} when \code{log} is \code{TRUE}.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
-    ..touch = function(log = FALSE, touch = TRUE, name = NULL, message = NULL) {
+    ..touch = function(log = FALSE, touch = TRUE, name = NULL, display = FALSE, message = NULL) {
       if (is.null(private$..metadata) || !is.list(private$..metadata)) {
         private$..metadata <- list()
       }
@@ -493,6 +538,10 @@ Asset <- R6::R6Class(
 
       if (isTRUE(log)) {
         private$..track(name = name, message = message)
+      }
+
+      if (isTRUE(display)) {
+        phrutils::phr_message(message)
       }
 
       invisible(NULL)
@@ -545,6 +594,86 @@ Asset <- R6::R6Class(
         snapshot[[nm]] <- val
       }
       digest::digest(snapshot, algo = "md5")
+    },
+
+    #' Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields accessible via get().
+    #' Subclasses can override to expose additional fields.
+    #'
+    #' @return Character vector of allowed field names
+    ..allowed_get_fields = function() {
+      c(
+        "..name",
+        "..metadata",
+        "..change_log",
+        private$..additional_get_fields()
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      character(0)
+    },
+
+    #' Callable Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields that may be modified via `call()`.`.
+    #'
+    #' @return Character vector of field names.
+    ..allowed_call_fields = function() {
+      c(
+        "get",
+        "call",
+        "set",
+        "..touch",
+        "..track",
+        "..compute_hash_id",
+        "..sync_state",
+        private$..additional_call_fields()
+      )
+    },
+
+    #' Additional Callable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `call()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      character(0)
+    },
+
+    #' Settable Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..allowed_set_fields = function() {
+      c(
+        "..name",
+        "..metadata",
+        "..change_log",
+        private$..additional_set_fields()
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      character(0)
     },
 
     # @description Synchronize asset state.
