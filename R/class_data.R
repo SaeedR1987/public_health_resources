@@ -1163,12 +1163,20 @@ Data <- R6::R6Class(
               inherits(private$..cleaning_log, "CleaningLog")
             ) {
 
+          phrutils::phr_message("I AM HERE CL VALIDATE 1")
+
+
             # validation (internal + schema)
-            private$..cleaning_log$validate()
+            private$..cleaning_log$validate(self, stage = "clean")
+
+            phrutils::phr_message("I AM HERE CL VALIDATE 2")
 
             # post-validate: check cleaning log against dataset
-            private$..cleaning_log$..post_validate(self, stage = "clean")
+            # private$..cleaning_log$..post_validate(self, stage = "clean")
             }
+
+            phrutils::phr_message("I AM HERE CL VALIDATE 3")
+
 
           },
           step = phrutils::phr_txt("Validate cleaning log"),
@@ -1187,13 +1195,13 @@ Data <- R6::R6Class(
             ) {
 
               # apply changes (authoritative mode option A)
-              if (nrow(private$..cleaning_log$log_df) > 0) {
+              if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
 
                 self$set(
                   field = "..clean_data",
                   value = private$..clean_apply_cleaning_changes(
                     df = private$..clean_data,
-                    log_df = private$..cleaning_log$log_df,
+                    log_df = private$..cleaning_log$get(field = "..log_df"),
                     uuid_col = private$..uuid
                   )
                 )
@@ -1215,7 +1223,7 @@ Data <- R6::R6Class(
               inherits(private$..deletion_log, "DeletionLog")
             ) {
               private$..deletion_log$validate()
-              private$..deletion_log$post_validate(self, stage = "clean")
+              # private$..deletion_log$..post_validate(self, stage = "clean")
             }
           },
           step = phrutils::phr_txt("Apply deletion log"),
@@ -1234,8 +1242,8 @@ Data <- R6::R6Class(
             ) {
 
               # apply deletions
-              if (nrow(private$..deletion_log$log_df) > 0) {
-                delete_ids <- as.character(private$..deletion_log$log_df$uuid)
+              if (nrow(private$..deletion_log$get(field = "..log_df")) > 0) {
+                delete_ids <- as.character(private$..deletion_log$get(field = "..log_df")$uuid)
 
                 self$set(
                   field = "..clean_data",
@@ -1248,8 +1256,8 @@ Data <- R6::R6Class(
 
             }
           },
-          step = phrutils::phr_txt("Apply cleaning log"),
-          hint = phrutils::phr_txt("Check cleaning log has valid inputs.")
+          step = phrutils::phr_txt("Apply deletion log"),
+          hint = phrutils::phr_txt("Check deletion log has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -5219,7 +5227,7 @@ Data <- R6::R6Class(
         "variable" %in% names(var_schema_for_unique)
       ) {
 
-        unique_vars <- var_schema_for_unique$var_name[
+        unique_vars <- var_schema_for_unique$variable[
           isTRUE(var_schema_for_unique$unique) |
             (!is.na(var_schema_for_unique$unique) &
                var_schema_for_unique$unique %in% c(TRUE, "TRUE", "true", 1))
@@ -5782,11 +5790,19 @@ Data <- R6::R6Class(
       }
 
       # Store any issues for user follow-up
+
+      phrutils::phr_message("I am here apply cleaning 1")
+
       if (length(issues) > 0) {
+
+        phrutils::phr_message("I am here apply cleaning 2")
+
         self$set(
           field = "..cleaning_log_issues",
           value = do.call(rbind, issues)
         )
+
+        phrutils::phr_message("I am here apply cleaning 3")
       }
 
       df

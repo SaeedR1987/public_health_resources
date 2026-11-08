@@ -174,8 +174,6 @@ CleaningLog <- R6::R6Class(
 
           super_issues <- result
 
-
-
           # 2. Cleaning-log specific completeness
           #    Always require uuid, question.name, and changed to be present.
           #    Require old.value only for rows where changed == "yes" — we need to
@@ -187,6 +185,7 @@ CleaningLog <- R6::R6Class(
           result <- phrutils::phr_try_step({
 
             required_always <- c("uuid", "question.name", "changed")
+
 
             df <- private$..log_df
 
