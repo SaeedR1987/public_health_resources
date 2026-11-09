@@ -146,7 +146,6 @@ View(drc_mort$get(field = "..deletion_log")$get(field = "..log_df"))
 View(drc_mort$linked_objects$roster$object$cleaning_log$get(field = "..log_df"))
 View(drc_mort$linked_objects$deaths$object$cleaning_log$get(field = "..log_df"))
 
-
 drc_mort$clean()
 
 drc_mort$get(field = "..cleaned")

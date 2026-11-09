@@ -864,10 +864,7 @@ DataAnalytics <- R6::R6Class(
           # Step 1: Setup steps for outputs diagnose
           setup <- phrutils::phr_try_step(
             {
-              private$..outputs_diagnose_setup(
-                origin = origin,
-                schema_name = schema_name
-              )
+              private$..outputs_diagnose_setup()
             },
             step = phrutils::phr_txt("Setup outputs diagnose"),
             hint = phrutils::phr_txt(
@@ -1012,6 +1009,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
+        super$additional_get_fields(),
         "..data",
         "..parent_data_object",
         "..dataset_name",
@@ -1044,6 +1042,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
+        super$additional_call_fields(),
         "summary",
         "run_quality_checks",
         "run_outputs",
@@ -1063,6 +1062,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
+        super$additional_set_fields(),
         "..data",
         "..parent_data_object",
         "..dataset_name",
@@ -1967,10 +1967,7 @@ DataAnalytics <- R6::R6Class(
     #' @param schema_name Character string used in warning messages.
     #'
     #' @return A list containing `empty_result` and a `proceed` flag.
-    ..outputs_diagnose_setup = function(
-    origin,
-    schema_name
-    ) {
+    ..outputs_diagnose_setup = function() {
 
       empty_result <- tibble::tibble(
         output_title = character(),
@@ -1994,9 +1991,9 @@ DataAnalytics <- R6::R6Class(
 
         phrutils::phr_warning(
           message = phrutils::phr_txt(
-            "No {schema_name} defined. Cannot diagnose."
+            "No outputs schema defined. Cannot diagnose."
           ),
-          origin = origin
+          origin = paste0(private$..dataset_name, "$..outputs_diagnose_setup")
         )
 
         private$..outputs_issues_log <- empty_result
