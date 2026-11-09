@@ -988,22 +988,6 @@ DataAnalytics <- R6::R6Class(
     ..analysis_plan_issues_log = NULL,
     ..outputs_issues_log = NULL,
 
-    # Data fields (non-function private members prefixed with "..") exposed
-    # through get()/set(), including those declared by subclasses.
-    ..analytics_data_fields = function() {
-      nms <- names(private)
-      nms <- nms[startsWith(nms, "..")]
-      nms[!vapply(nms, function(nm) is.function(private[[nm]]), logical(1))]
-    },
-
-    ..additional_get_fields = function() {
-      private$..analytics_data_fields()
-    },
-
-    ..additional_set_fields = function() {
-      private$..analytics_data_fields()
-    },
-
     # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
     # Should be a two element character vector with the folder and filename.
     # @keywords internal
@@ -1166,6 +1150,8 @@ DataAnalytics <- R6::R6Class(
       phrutils::phr_try(
         {
 
+          phrutils::phr_message("I am here ..load schemas")
+
           df_schema <- tryCatch(
             readxl::read_xlsx(
               do.call(
@@ -1193,6 +1179,8 @@ DataAnalytics <- R6::R6Class(
             }
           )
 
+          phrutils::phr_message("I am here ..load schemas 2")
+
           # Header-only templates are valid (just empty); validation aborts on
           # zero-row data frames, so check required columns directly for them.
           schema_ok <- if (
@@ -1219,6 +1207,8 @@ DataAnalytics <- R6::R6Class(
               error = function(e) FALSE
             )
           }
+
+          phrutils::phr_message("I am here ..load schemas 3")
 
           if (schema_ok) {
 
@@ -1276,6 +1266,8 @@ DataAnalytics <- R6::R6Class(
               )
             )
           }
+
+          phrutils::phr_message("I am here ..load schemas 4")
 
         },
         on_error = "warn",
@@ -1361,6 +1353,8 @@ DataAnalytics <- R6::R6Class(
     #' @return Invisibly returns TRUE.
     ..initialize_load_schemas = function() {
 
+      phrutils::phr_message("I am here ..initialize_load_schemas 1")
+
       # Loading quality schema
       private$..load_default_schema(
         filename = private$..default_quality_schema_filename,
@@ -1378,7 +1372,7 @@ DataAnalytics <- R6::R6Class(
         schema_name = "quality",
         dataset_name = private$..dataset_name
       )
-
+      phrutils::phr_message("I am here ..initialize_load_schemas 2")
       # Loading analysis schema
       private$..load_default_schema(
         filename = private$..default_analysis_schema_filename,
@@ -1395,6 +1389,7 @@ DataAnalytics <- R6::R6Class(
         schema_name = "analysis",
         dataset_name = private$..dataset_name
       )
+      phrutils::phr_message("I am here ..initialize_load_schemas 3")
 
       # Loading outputs schema
       private$..load_default_schema(
@@ -1419,6 +1414,8 @@ DataAnalytics <- R6::R6Class(
         schema_name = "outputs",
         dataset_name = private$..dataset_name
       )
+
+      phrutils::phr_message("I am here ..initialize_load_schemas 4")
 
       invisible(TRUE)
     },
