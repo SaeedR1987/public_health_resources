@@ -1004,6 +1004,89 @@ DataAnalytics <- R6::R6Class(
     ..outputs_schema_valid_output_types = c("visualization", "table"),
     ..outputs_schema_valid_dataset_types = c("base", "survey_design"),
 
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        "..data",
+        "..parent_data_object",
+        "..dataset_name",
+        "..data_stage_name",
+        "..data_hash",
+        "..variable_map",
+        "..value_map",
+        "..variable_label",
+        "..value_label",
+        "..data_analysis_plan",
+        "..survey_design",
+        "..base_survey_design",
+        "..analysis_results",
+        "..analysis_schema",
+        "..quality_schema",
+        "..plausibility_results",
+        "..overall_score",
+        "..outputs_schema",
+        "..quality_issues_log",
+        "..analysis_plan_issues_log",
+        "..outputs_issues_log"
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        "summary",
+        "run_quality_checks",
+        "run_outputs",
+        "add_all_to_dap",
+        "run_analysis",
+        "quality_diagnose",
+        "analysis_diagnose",
+        "outputs_diagnose"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        "..data",
+        "..parent_data_object",
+        "..dataset_name",
+        "..data_stage_name",
+        "..data_hash",
+        "..variable_map",
+        "..value_map",
+        "..variable_label",
+        "..value_label",
+        "..data_analysis_plan",
+        "..survey_design",
+        "..base_survey_design",
+        "..analysis_results",
+        "..analysis_schema",
+        "..quality_schema",
+        "..plausibility_results",
+        "..overall_score",
+        "..outputs_schema",
+        "..quality_issues_log",
+        "..analysis_plan_issues_log",
+        "..outputs_issues_log"
+      )
+    },
+
 
     #' Load, validate, and assign a default schema.
     #'

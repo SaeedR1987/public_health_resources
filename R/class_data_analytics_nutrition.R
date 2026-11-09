@@ -684,7 +684,6 @@ NutritionDataAnalytics <- R6::R6Class(
 
     # iycf-specific quality schema fields
     ..quality_schema_iycf      = NULL,
-
     ..data_analysis_plan_muac = NULL,
 
     # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
@@ -726,6 +725,46 @@ NutritionDataAnalytics <- R6::R6Class(
       "resources",
       "CDC_MUACAssessment_Template.xlsx"
     ),
+
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        "..quality_schema_iycf",
+        "..data_analysis_plan_muac",
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        super$..additional_call_fields(),
+        "export_cdc_muac_file",
+        "export_ena_anthro_file"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        super$..additional_set_fields(),
+        "..quality_schema_iycf",
+        "..data_analysis_plan_muac"
+      )
+    },
 
     #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
     #'

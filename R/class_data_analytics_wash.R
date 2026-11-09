@@ -257,6 +257,54 @@ WASHDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_water_container_template.xlsx"
     ),
 
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        "..linked_containers_data",
+        "..linked_containers_data_stage_name",
+        "..linked_containers_data_hash",
+        "..linked_containers_variable_map",
+        "..linked_containers_value_map",
+        "..linked_containers_variable_label",
+        "..linked_containers_value_label",
+        "..data_analysis_plan_water_container",
+        "..analysis_schema_water_container",
+        "..outputs_schema_water_container",
+        "..base_survey_design_water_container",
+        "..survey_design_water_container"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        super$..additional_set_fields(),
+        "..linked_containers_data",
+        "..linked_containers_data_stage_name",
+        "..linked_containers_data_hash",
+        "..linked_containers_variable_map",
+        "..linked_containers_value_map",
+        "..linked_containers_variable_label",
+        "..linked_containers_value_label",
+        "..data_analysis_plan_water_container",
+        "..analysis_schema_water_container",
+        "..outputs_schema_water_container",
+        "..base_survey_design_water_container",
+        "..survey_design_water_container"
+      )
+    },
+
     #' Initialize Default Schemas
     #'
     #' @description

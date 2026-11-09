@@ -372,6 +372,96 @@ MortalityDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_mortality_deaths_template.xlsx"
     ),
 
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        # Fields for linked roster data
+        "..linked_ind_roster_data",
+        "..linked_ind_roster_data_stage_name",
+        "..linked_ind_roster_data_hash",
+        "..linked_ind_roster_variable_map",
+        "..linked_ind_roster_value_map",
+        "..linked_ind_roster_variable_label",
+        "..linked_ind_roster_value_label",
+
+        # Fields for linked deaths data
+        "..linked_ind_deaths_data",
+        "..linked_ind_deaths_data_stage_name",
+        "..linked_ind_deaths_data_hash",
+        "..linked_ind_deaths_variable_map",
+        "..linked_ind_deaths_value_map",
+        "..linked_ind_deaths_variable_label",
+        "..linked_ind_deaths_value_label",
+
+        # Per-dataset schemas for roster and deaths
+        "..analysis_schema_roster",
+        "..analysis_schema_deaths",
+        "..outputs_schema_roster",
+        "..outputs_schema_deaths",
+
+        # Per-dataset data analysis plans
+        "..data_analysis_plan_roster",
+        "..data_analysis_plan_deaths",
+
+        # Per-dataset survey design objects
+        "..survey_design_roster",
+        "..survey_design_deaths",
+        "..base_survey_design_roster",
+        "..base_survey_design_deaths"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        super$..additional_set_fields(),
+        # Fields for linked roster data
+        "..linked_ind_roster_data",
+        "..linked_ind_roster_data_stage_name",
+        "..linked_ind_roster_data_hash",
+        "..linked_ind_roster_variable_map",
+        "..linked_ind_roster_value_map",
+        "..linked_ind_roster_variable_label",
+        "..linked_ind_roster_value_label",
+
+        # Fields for linked deaths data
+        "..linked_ind_deaths_data",
+        "..linked_ind_deaths_data_stage_name",
+        "..linked_ind_deaths_data_hash",
+        "..linked_ind_deaths_variable_map",
+        "..linked_ind_deaths_value_map",
+        "..linked_ind_deaths_variable_label",
+        "..linked_ind_deaths_value_label",
+
+        # Per-dataset schemas for roster and deaths
+        "..analysis_schema_roster",
+        "..analysis_schema_deaths",
+        "..outputs_schema_roster",
+        "..outputs_schema_deaths",
+
+        # Per-dataset data analysis plans
+        "..data_analysis_plan_roster",
+        "..data_analysis_plan_deaths",
+
+        # Per-dataset survey design objects
+        "..survey_design_roster",
+        "..survey_design_deaths",
+        "..base_survey_design_roster",
+        "..base_survey_design_deaths"
+      )
+    },
+
     #' Initialize Default Schemas
     #'
     #' @description

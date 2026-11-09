@@ -149,6 +149,8 @@ View(drc_mort$linked_objects$deaths$object$cleaning_log$get(field = "..log_df"))
 
 drc_mort$clean()
 
+drc_mort$get(field = "..cleaned")
+
 # Produce Data Analytics
 
 mortality_analytics <- drc_mort$generate_data_analytics(
