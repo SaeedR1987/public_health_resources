@@ -161,6 +161,7 @@ mortality_analytics <- drc_mort$generate_data_analytics(
 mortality_analytics$analysis_diagnose()
 
 mortality_analytics$get(field = "..analysis_schema")
+mortality_analytics$get(field = "..analysis_plan_issues_log")
 
 head(mortality_analytics$analysis_plan_issues_log)
 head(mortality_analytics$analysis_schema)

@@ -2765,9 +2765,9 @@ DataAnalytics <- R6::R6Class(
     ..pre_add_all_to_dap = function() {
       list(
         main = list(
-          data = "data",
-          variable_map = "variable_map",
-          data_analysis_plan = "data_analysis_plan"
+          data = "..data",
+          variable_map = "..variable_map",
+          data_analysis_plan = "..data_analysis_plan"
         )
       )
     },
