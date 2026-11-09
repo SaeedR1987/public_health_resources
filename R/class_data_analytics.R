@@ -655,13 +655,15 @@ DataAnalytics <- R6::R6Class(
             step = phrutils::phr_txt("Setup for quality diagnose"),
             hint = phrutils::phr_txt("Check the quality schema for issues.")
           )
-          if (phrutils::phr_failed(result)) {
+          if (!is.data.frame(result) && phrutils::phr_failed(result)) {
             return(result)
           }
 
           if (is.data.frame(result) && nrow(result) == 0) {
             return(invisible(result))
           }
+
+          schema <- result
 
           # Step 2: Rowwise checks against quality schema
           result <- phrutils::phr_try_step(
@@ -675,7 +677,7 @@ DataAnalytics <- R6::R6Class(
 
               rows <- list()
 
-              for (check_name in names(private$..quality_schema)) {
+              for (check_name in unique(schema$check_name)) {
 
                 rows[[length(rows) + 1]] <- private$..quality_diagnose_verify_schema(
                   check_name = check_name,
@@ -792,8 +794,7 @@ DataAnalytics <- R6::R6Class(
 
                   private$..analysis_diagnose_verify_schema(
                     row = schema_df[i, ],
-                    available_vars = available_vars,
-                    valid_calcs = valid_calcs
+                    available_vars = available_vars
                   )
                 }
               )
@@ -814,11 +815,12 @@ DataAnalytics <- R6::R6Class(
             {
               result <- dplyr::bind_rows(rows)
               self$set(field = "..analysis_plan_issues_log", value = result)
+              result
             },
             step = phrutils::phr_txt("Setup for quality diagnose"),
             hint = phrutils::phr_txt("Check the quality schema for issues.")
           )
-          if (phrutils::phr_failed(result)) {
+          if (!is.data.frame(result) && phrutils::phr_failed(result)) {
             return(result)
           }
 
@@ -879,8 +881,18 @@ DataAnalytics <- R6::R6Class(
             return(invisible(setup$empty_result))
           }
 
+          empty_result <- setup$empty_result
+
+          data_cols <- if (!is.null(private$..survey_design)) {
+            names(private$..survey_design$variables)
+          } else if (!is.null(private$..data)) {
+            names(private$..data)
+          } else {
+            character(0)
+          }
+
           # Step 2: Check output schema rows
-          result <- phrutils::phr_try_step(
+          rows <- phrutils::phr_try_step(
             {
               rows <- list()
 
@@ -892,14 +904,16 @@ DataAnalytics <- R6::R6Class(
                     data_cols = data_cols
                   )
               }
+
+              rows
             },
             step = phrutils::phr_txt("Check output schema rows"),
             hint = phrutils::phr_txt(
               "Check outputs schema content."
             )
           )
-          if (phrutils::phr_failed(setup)) {
-            return(setup)
+          if (!is.data.frame(rows) && phrutils::phr_failed(rows)) {
+            return(rows)
           }
 
           # Step 3: Set output log issues
@@ -911,13 +925,14 @@ DataAnalytics <- R6::R6Class(
                 empty_result
               }
 
-              self$set(field = "..outputs_log_issues", value = result)
+              self$set(field = "..outputs_issues_log", value = result)
+              result
             },
-            step = phrutils::phr_txt("Check output schema rows"),
+            step = phrutils::phr_txt("Store outputs diagnose results"),
             hint = phrutils::phr_txt("Check outputs schema content.")
           )
-          if (phrutils::phr_failed(setup)) {
-            return(setup)
+          if (!is.data.frame(result) && phrutils::phr_failed(result)) {
+            return(result)
           }
 
           n_issues <- sum(result$status != "ok", na.rm = TRUE)
@@ -926,7 +941,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("{schema_name} diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+            message = phrutils::phr_txt("outputs_diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
 
           invisible(result)
@@ -972,6 +987,22 @@ DataAnalytics <- R6::R6Class(
     ..quality_issues_log = NULL,
     ..analysis_plan_issues_log = NULL,
     ..outputs_issues_log = NULL,
+
+    # Data fields (non-function private members prefixed with "..") exposed
+    # through get()/set(), including those declared by subclasses.
+    ..analytics_data_fields = function() {
+      nms <- names(private)
+      nms <- nms[startsWith(nms, "..")]
+      nms[!vapply(nms, function(nm) is.function(private[[nm]]), logical(1))]
+    },
+
+    ..additional_get_fields = function() {
+      private$..analytics_data_fields()
+    },
+
+    ..additional_set_fields = function() {
+      private$..analytics_data_fields()
+    },
 
     # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
     # Should be a two element character vector with the folder and filename.
@@ -1162,19 +1193,34 @@ DataAnalytics <- R6::R6Class(
             }
           )
 
-          if (
-            isTRUE(
-              private$..validate_table_schema(
-                df_schema,
-                required_cols = required_cols,
-                origin = paste0(
-                  "DataAnalytics$validate_",
-                  schema_name,
-                  "_schema"
-                )
-              )
-            )
+          # Header-only templates are valid (just empty); validation aborts on
+          # zero-row data frames, so check required columns directly for them.
+          schema_ok <- if (
+            is.data.frame(df_schema) &&
+              nrow(df_schema) == 0 &&
+              all(required_cols %in% names(df_schema))
           ) {
+            TRUE
+          } else {
+            # ..validate_table_schema aborts on failure; never let that skip
+            # storing the fallback schema below.
+            tryCatch(
+              isTRUE(
+                private$..validate_table_schema(
+                  df_schema,
+                  required_cols = required_cols,
+                  origin = paste0(
+                    "DataAnalytics$validate_",
+                    schema_name,
+                    "_schema"
+                  )
+                )
+              ),
+              error = function(e) FALSE
+            )
+          }
+
+          if (schema_ok) {
 
             self$set(
               field = target_field,
@@ -1520,7 +1566,8 @@ DataAnalytics <- R6::R6Class(
 
       if (
         is.null(private$..quality_schema) ||
-        length(private$..quality_schema) == 0
+        !is.data.frame(private$..quality_schema) ||
+        nrow(private$..quality_schema) == 0
       ) {
 
         phrutils::phr_warning(
@@ -1571,19 +1618,44 @@ DataAnalytics <- R6::R6Class(
 
 
 
-      check <- private$..quality_schema[[check_name]]
+      rows <- private$..quality_schema[
+        private$..quality_schema$check_name %in% check_name,
+        ,
+        drop = FALSE
+      ]
+
+      first_val <- function(col) {
+        if (!col %in% names(rows) || nrow(rows) == 0) {
+          return(NA_character_)
+        }
+        v <- rows[[col]][!is.na(rows[[col]])]
+        if (length(v) == 0) NA_character_ else as.character(v[[1]])
+      }
 
       # --- basic fields
-      check_group <- check$check_group %||% NA_character_
-      check_label <- check$check_label %||% NA_character_
-      statistical_test <- check$statistical_test %||% NA_character_
-      variables <- check$variables %||% character(0)
-      test_params <- check$test_params %||% list()
-      thresholds <- check$thresholds %||% list()
+      check_group <- first_val("check_group")
+      check_label <- first_val("check_label")
+      statistical_test <- first_val("statistical_test")
+      variables <- private$..outputs_parse_list_field(first_val("variables")) %||%
+        character(0)
+      test_params_str <- first_val("test_params")
+      thresholds <- if ("threshold_expression" %in% names(rows)) {
+        lapply(
+          rows$threshold_expression[
+            !is.na(rows$threshold_expression) &
+              nzchar(as.character(rows$threshold_expression))
+          ],
+          function(e) list(threshold_expression = as.character(e))
+        )
+      } else {
+        list()
+      }
 
       # --- 1. variables present in data
+      literal_vars <- variables[!grepl("^@", variables)]
+
       mapped_vars <- private$..translate_canonical_to_actual_vars(
-        variables
+        literal_vars
       )
 
       missing_vars <- setdiff(
@@ -1720,16 +1792,7 @@ DataAnalytics <- R6::R6Class(
           collapse = ", "
         ),
         statistical_test = statistical_test %||% NA_character_,
-        test_params = if (length(test_params) > 0) {
-          paste(
-            names(test_params),
-            test_params,
-            sep = "=",
-            collapse = ", "
-          )
-        } else {
-          NA_character_
-        },
+        test_params = test_params_str,
         n_thresholds = length(thresholds),
         variables_in_data = vars_in_data,
         missing_variables = if (length(missing_vars) > 0) {
