@@ -2285,7 +2285,7 @@ HouseholdData <- R6::R6Class(
                          analysis_config,
                          parent) {
 
-            water_containers <- parent$linked_objects$water_containers$object
+            water_containers <- parent$get(field = "..linked_objects")$water_containers$object
             water_containers_data <- water_containers$get_data_with_fallback(self, stage)
             varm <- water_containers$get(field = "..variable_map")
             valm <- water_containers$get(field = "..value_map")
@@ -2359,11 +2359,11 @@ HouseholdData <- R6::R6Class(
                             analysis_config,
                             parent) {
 
-            roster <- parent$linked_objects$roster$object
+            roster <- parent$get(field = "..linked_objects")$roster$object
             roster_data <- roster$get_data_with_fallback(self, stage)
 
-            health_ind <- parent$linked_objects$health$object
-            health_ind_data <- water_containers$get_data_with_fallback(self, stage)
+            health_ind <- parent$get(field = "..linked_objects")$health$object
+            health_ind_data <- health_ind$get_data_with_fallback(self, stage)
 
               HealthDataAnalytics$new(
                 data = data,
@@ -2442,10 +2442,10 @@ HouseholdData <- R6::R6Class(
                                analysis_config,
                                parent) {
 
-            roster <- parent$linked_objects$roster$object
+            roster <- parent$get(field = "..linked_objects")$roster$object
             roster_data <- roster$get_data_with_fallback(self, stage)
 
-            deaths <- parent$linked_objects$deaths$object
+            deaths <- parent$get(field = "..linked_objects")$deaths$object
             deaths_data <- deaths$get_data_with_fallback(self, stage)
 
               MortalityDataAnalytics$new(

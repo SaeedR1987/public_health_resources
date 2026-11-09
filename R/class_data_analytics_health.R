@@ -267,6 +267,96 @@ HealthDataAnalytics <- R6::R6Class(
     ..base_survey_design_roster = NULL,
     ..base_survey_design_health = NULL,
 
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        # Fields for linked roster data
+        "..linked_ind_roster_data",
+        "..linked_ind_roster_data_stage_name",
+        "..linked_ind_roster_data_hash",
+        "..linked_ind_roster_variable_map",
+        "..linked_ind_roster_value_map",
+        "..linked_ind_roster_variable_label",
+        "..linked_ind_roster_value_label",
+
+        # Fields for linked deaths data
+        "..linked_ind_health_data",
+        "..linked_ind_health_data_stage_name",
+        "..linked_ind_health_data_hash",
+        "..linked_ind_health_variable_map",
+        "..linked_ind_health_value_map",
+        "..linked_ind_health_variable_label",
+        "..linked_ind_health_value_label",
+
+        # Per-dataset schemas for roster and deaths
+        "..analysis_schema_roster",
+        "..analysis_schema_health",
+        "..outputs_schema_roster",
+        "..outputs_schema_health" ,
+
+        # Per-dataset data analysis plans
+        "..data_analysis_plan_roster",
+        "..data_analysis_plan_health",
+
+        # Per-dataset survey design objects
+        "..survey_design_roster",
+        "..survey_design_health",
+        "..base_survey_design_roster",
+        "..base_survey_design_health"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        super$..additional_set_fields(),
+        # Fields for linked roster data
+        "..linked_ind_roster_data",
+        "..linked_ind_roster_data_stage_name",
+        "..linked_ind_roster_data_hash",
+        "..linked_ind_roster_variable_map",
+        "..linked_ind_roster_value_map",
+        "..linked_ind_roster_variable_label",
+        "..linked_ind_roster_value_label",
+
+        # Fields for linked deaths data
+        "..linked_ind_health_data",
+        "..linked_ind_health_data_stage_name",
+        "..linked_ind_health_data_hash",
+        "..linked_ind_health_variable_map",
+        "..linked_ind_health_value_map",
+        "..linked_ind_health_variable_label",
+        "..linked_ind_health_value_label",
+
+        # Per-dataset schemas for roster and deaths
+        "..analysis_schema_roster",
+        "..analysis_schema_health",
+        "..outputs_schema_roster",
+        "..outputs_schema_health" ,
+
+        # Per-dataset data analysis plans
+        "..data_analysis_plan_roster",
+        "..data_analysis_plan_health",
+
+        # Per-dataset survey design objects
+        "..survey_design_roster",
+        "..survey_design_health",
+        "..base_survey_design_roster",
+        "..base_survey_design_health"
+      )
+    },
+
     # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
     # Should be a two element character vector with the folder and filename.
     # @keywords internal

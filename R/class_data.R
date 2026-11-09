@@ -1163,20 +1163,11 @@ Data <- R6::R6Class(
               inherits(private$..cleaning_log, "CleaningLog")
             ) {
 
-          phrutils::phr_message("I AM HERE CL VALIDATE 1")
-
-
             # validation (internal + schema)
-            private$..cleaning_log$validate(self, stage = "clean")
+            private$..cleaning_log$validate()
+            private$..cleaning_log$validate_cl_against_dataset(self, stage = "clean")
 
-            phrutils::phr_message("I AM HERE CL VALIDATE 2")
-
-            # post-validate: check cleaning log against dataset
-            # private$..cleaning_log$..post_validate(self, stage = "clean")
             }
-
-            phrutils::phr_message("I AM HERE CL VALIDATE 3")
-
 
           },
           step = phrutils::phr_txt("Validate cleaning log"),
@@ -1195,7 +1186,15 @@ Data <- R6::R6Class(
             ) {
 
               # apply changes (authoritative mode option A)
-              if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
+              # if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
+
+                if (is.null(private$..cleaning_log$get(field = "..log_df"))) {
+                  private$..clean_apply_cleaning_changes(
+                    df = private$..clean_data,
+                    log_df = NULL,
+                    uuid_col = private$..uuid
+                  )
+                } else if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
 
                 self$set(
                   field = "..clean_data",
@@ -1223,7 +1222,7 @@ Data <- R6::R6Class(
               inherits(private$..deletion_log, "DeletionLog")
             ) {
               private$..deletion_log$validate()
-              # private$..deletion_log$..post_validate(self, stage = "clean")
+              private$..deletion_log$validate_dl_against_dataset(self, stage = "clean")
             }
           },
           step = phrutils::phr_txt("Apply deletion log"),
@@ -1253,7 +1252,6 @@ Data <- R6::R6Class(
                   ]
                 )
               }
-
             }
           },
           step = phrutils::phr_txt("Apply deletion log"),
@@ -1652,7 +1650,7 @@ Data <- R6::R6Class(
           if (is.null(builder)) {
             phrutils::phr_error(
               message = paste(
-                "Unknown analytics type:",
+                phrutils::phr_txt("Unknown analytics type:"),
                 type
               )
             )
@@ -1824,6 +1822,7 @@ Data <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
+        super$..additional_get_fields(),
         "..dataset_name",
         "..validated",
         "..standardized",
@@ -1858,6 +1857,7 @@ Data <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
+        super$..additional_call_fields(),
         "summary",
         "get_data",
         "get_data_with_fallback",
@@ -1880,6 +1880,7 @@ Data <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
+        super$..additional_set_fields(),
         "..dataset_name",
         "..validated",
         "..standardized",
@@ -5657,6 +5658,17 @@ Data <- R6::R6Class(
     #'
     #' @return Modified data frame with cleaning changes applied
     ..clean_apply_cleaning_changes = function(df, log_df, uuid_col) {
+
+      phrutils::phr_try({
+
+        if (is.null(log_df)) {
+          phrutils::phr_warning(
+            message = phrutils::phr_txt("No cleaning log information has been set. Please run generate_cleaning_log or import a cleaning log first."),
+            origin = paste0(private$..dataset_name, phrutils::phr_txt("$..clean_apply_cleaning_changes"))
+          )
+          return(df)
+        }
+
       issues <- list()
 
       for (i in seq_len(nrow(log_df))) {
@@ -5791,19 +5803,19 @@ Data <- R6::R6Class(
 
       # Store any issues for user follow-up
 
-      phrutils::phr_message("I am here apply cleaning 1")
-
       if (length(issues) > 0) {
-
-        phrutils::phr_message("I am here apply cleaning 2")
 
         self$set(
           field = "..cleaning_log_issues",
           value = do.call(rbind, issues)
         )
 
-        phrutils::phr_message("I am here apply cleaning 3")
       }
+
+      },
+      on_error = "abort",
+      origin = paste0(private$..dataset_name, "$..clean_apply_cleaning_changes")
+      )
 
       df
     },
