@@ -1009,7 +1009,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
-        super$additional_get_fields(),
+        super$..additional_get_fields(),
         "..data",
         "..parent_data_object",
         "..dataset_name",
@@ -1042,7 +1042,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
-        super$additional_call_fields(),
+        super$..additional_call_fields(),
         "summary",
         "run_quality_checks",
         "run_outputs",
@@ -1062,7 +1062,7 @@ DataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
-        super$additional_set_fields(),
+        super$..additional_set_fields(),
         "..data",
         "..parent_data_object",
         "..dataset_name",

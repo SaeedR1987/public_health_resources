@@ -275,6 +275,7 @@ HealthDataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
+        super$..additional_get_fields(),
         # Fields for linked roster data
         "..linked_ind_roster_data",
         "..linked_ind_roster_data_stage_name",
@@ -319,6 +320,7 @@ HealthDataAnalytics <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
+        super$..additional_set_fields(),
         # Fields for linked roster data
         "..linked_ind_roster_data",
         "..linked_ind_roster_data_stage_name",

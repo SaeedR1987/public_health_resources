@@ -159,11 +159,13 @@ mortality_analytics <- drc_mort$generate_data_analytics(
 
 # testing analysis
 mortality_analytics$analysis_diagnose()
+
+
 head(mortality_analytics$analysis_plan_issues_log)
 head(mortality_analytics$analysis_schema)
 head(mortality_analytics$analysis_schema_roster)
 head(mortality_analytics$analysis_schema_deaths)
-head(mortality_analytics$data_analysis_plan$get(field = "log_df"))
+head(mortality_analytics$get(field = "..data_analysis_plan")$get(field = "..log_df"))
 mortality_analytics$run_analysis()
 
 head(mortality_analytics$analysis_results$household$base)

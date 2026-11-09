@@ -1822,6 +1822,7 @@ Data <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
+        super$..additional_get_fields(),
         "..dataset_name",
         "..validated",
         "..standardized",
@@ -1856,6 +1857,7 @@ Data <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
+        super$..additional_call_fields(),
         "summary",
         "get_data",
         "get_data_with_fallback",
@@ -1878,6 +1880,7 @@ Data <- R6::R6Class(
     #' @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
+        super$..additional_set_fields(),
         "..dataset_name",
         "..validated",
         "..standardized",
