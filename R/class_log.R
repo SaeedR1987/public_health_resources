@@ -62,19 +62,19 @@ Log <- R6::R6Class(
 
         # Step 1: Super Initalize
 
-        phrutils::phr_try_step({
+        result <- phrutils::phr_try_step({
           super$initialize(name = log_name)
         },
         step = phrutils::phr_txt("Log$initialize - super$initialize"),
         hint = phrutils::phr_txt("Check whether a valid log_name was passed on initialization.")
         )
         if (phrutils::phr_failed(result)) {
-          return(result)
+          phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
 
         # Step 2: Set fields
 
-        phrutils::phr_try_step({
+        result <- phrutils::phr_try_step({
           self$set(field = "..log_name", value = log_name)
           self$set(field = "..required_columns", value = required_columns %||% character(0))
           self$set(field = "..schema", value = schema %||% list())
@@ -84,15 +84,15 @@ Log <- R6::R6Class(
         hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
         )
         if (phrutils::phr_failed(result)) {
-          return(result)
+          phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
 
         # Step 3: Check and Set log_df
 
-        phrutils::phr_try_step({
+        result <- phrutils::phr_try_step({
 
           if (is.null(log_df)) {
-            self$set(field = "..log_df", value = private$..empty_log_template())
+            log_df <- private$..empty_log_template()
           }
 
           phrutils::phr_validate_dataframe(
@@ -104,7 +104,7 @@ Log <- R6::R6Class(
           # ---- Ensure required columns exist (add empty ones if missing)
           for (col in private$..required_columns) {
             if (!col %in% names(log_df)) {
-              log_df[[col]] <- NA_character_
+              log_df[[col]] <- rep(NA_character_, nrow(log_df))
             }
           }
 
@@ -121,12 +121,12 @@ Log <- R6::R6Class(
         hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
         )
         if (phrutils::phr_failed(result)) {
-          return(result)
+          phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
 
         private$..touch(log = TRUE,
                         touch = TRUE,
-                        name = name,
+                        name = log_name,
                         message = phrutils::phr_txt("{log_name} initialized with {nrow(log_df)} entries."))
 
       },
@@ -606,7 +606,7 @@ Log <- R6::R6Class(
         # If schema has types, use them for empty vectors
         if (!is.null(private$..schema$types)) {
           df <- lapply(cols, function(col) {
-            type <- private$schema$types[[col]] %||% "character"
+            type <- private$..schema$types[[col]] %||% "character"
 
             if (type == "numeric") {
               return(numeric())

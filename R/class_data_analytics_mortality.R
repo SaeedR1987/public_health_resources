@@ -23,6 +23,12 @@
 #' designs, analysis plan) per available dataset; the inherited \code{run_analysis()}
 #' and \code{run_outputs()} iterate over these sets.
 #'
+#' Linked datasets are read from their own Data objects, using
+#' \code{get_data_with_fallback()} to select an available stage. Their actual
+#' stages, hashes, mappings, and labels are retained independently of the
+#' household data. Inspect private fields through \code{get(field = "..data")}
+#' or \code{get(field = "..linked_ind_roster_data")}.
+#'
 #' @field linked_ind_roster_data Optional linked roster dataframe
 #' @field linked_ind_roster_data_stage_name Name of linked roster data stage
 #' @field linked_ind_roster_data_hash Hash of linked roster data
@@ -165,7 +171,7 @@ MortalityDataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 3: Load quality, analysis, and outputs schema for mortality
@@ -177,7 +183,7 @@ MortalityDataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 4: Create initial data analysis plans for roster and deaths
@@ -197,12 +203,12 @@ MortalityDataAnalytics <- R6::R6Class(
 
             result <- private$..build_dap_from_schema(
               analysis_schema = private$..analysis_schema_roster,
-              variable_map    = private$..variable_map_roster %||% list(),
+              variable_map    = private$..linked_ind_roster_variable_map %||% list(),
               available_vars  = names(private$..linked_ind_roster_data),
               dataset_label   = "roster"
             )
 
-            private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+            private$..data_analysis_plan_roster$set(field = "..log_df", value = result$dap_df)
 
           }
 
@@ -211,12 +217,12 @@ MortalityDataAnalytics <- R6::R6Class(
 
             result <- private$..build_dap_from_schema(
               analysis_schema = private$..analysis_schema_deaths,
-              variable_map    = private$..variable_map_deaths %||% list(),
+              variable_map    = private$..linked_ind_deaths_variable_map %||% list(),
               available_vars  = names(private$..linked_ind_deaths_data),
               dataset_label   = "deaths"
             )
 
-            private$..data_analysis_plan_deaths$set(field = "log_df", value = result$dap_df)
+            private$..data_analysis_plan_deaths$set(field = "..log_df", value = result$dap_df)
 
           }
         },
@@ -224,7 +230,7 @@ MortalityDataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check analysis schemas for roster and deaths.")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 5: Create survey design objects for roster and deaths
@@ -237,7 +243,7 @@ MortalityDataAnalytics <- R6::R6Class(
             self$set(field = "..survey_design_roster",
                     value = private$..create_survey_design_for_dataset(
                       data         = linked_ind_roster_data,
-                      variable_map = linked_ind_roster_variable_map %||% merged_variable_map,
+                      variable_map = linked_ind_roster_variable_map %||% list(),
                       origin       = paste0(dataset_name, "$initialize")
             ))
           }
@@ -249,7 +255,7 @@ MortalityDataAnalytics <- R6::R6Class(
             self$set(field = "..survey_design_deaths",
                      value = private$..create_survey_design_for_dataset(
                        data         = linked_ind_deaths_data,
-                       variable_map = linked_ind_deaths_variable_map %||% merged_variable_map,
+                       variable_map = linked_ind_deaths_variable_map %||% list(),
                        origin       = paste0(dataset_name, "$initialize")
                      ))
             }
@@ -258,7 +264,7 @@ MortalityDataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check analysis schemas for roster and deaths.")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       msg_parts <- c()
@@ -583,7 +589,7 @@ MortalityDataAnalytics <- R6::R6Class(
       # )
 
       if (!is.null(private$..linked_ind_roster_data)) {
-        if (!is.null(private$..data_analysis_plan_roster$get(field = "log_df"))) {
+        if (!is.null(private$..data_analysis_plan_roster$get(field = "..log_df"))) {
           sets$roster <- list(
             data = "..linked_ind_roster_data",
             survey_design = "..survey_design_roster",
@@ -595,7 +601,7 @@ MortalityDataAnalytics <- R6::R6Class(
       }
 
       if (!is.null(private$..linked_ind_deaths_data)) {
-        if (!is.null(private$..data_analysis_plan_deaths$get(field = "log_df"))) {
+        if (!is.null(private$..data_analysis_plan_deaths$get(field = "..log_df"))) {
           sets$deaths <- list(
             data = "..linked_ind_deaths_data",
             survey_design = "..survey_design_deaths",

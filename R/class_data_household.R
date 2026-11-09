@@ -2443,10 +2443,14 @@ HouseholdData <- R6::R6Class(
                                parent) {
 
             roster <- parent$get(field = "..linked_objects")$roster$object
-            roster_data <- roster$get_data_with_fallback(self, stage)
+            roster_data <- if (!is.null(roster)) {
+              parent$get_data_with_fallback(roster, stage)
+            }
 
             deaths <- parent$get(field = "..linked_objects")$deaths$object
-            deaths_data <- deaths$get_data_with_fallback(self, stage)
+            deaths_data <- if (!is.null(deaths)) {
+              parent$get_data_with_fallback(deaths, stage)
+            }
 
               MortalityDataAnalytics$new(
                 data = data,
@@ -2457,96 +2461,44 @@ HouseholdData <- R6::R6Class(
                   "_MortalityDataAnalytics"
                 ),
                 data_stage_name = stage,
-                data_hash = parent$get(field = "..metadata", role = "hash_id"),
+                data_hash = parent$get(field = "..metadata", member = "hash_id"),
                 variable_map = parent$get(field = "..variable_map"),
                 value_map = parent$get(field = "..value_map"),
                 variable_label = parent$get(field = "..variable_label"),
                 value_label = parent$get(field = "..value_label"),
-                linked_ind_roster_data = if (!is.null(roster_data$data)) {
-                  roster_data$data
-                } else {
-                  NULL
+                linked_ind_roster_data = roster_data$data,
+                linked_ind_roster_data_stage_name = roster_data$stage,
+                linked_ind_roster_data_hash = if (!is.null(roster)) {
+                  roster$get(field = "..metadata", member = "hash_id")
                 },
-                linked_ind_roster_data_stage_name = if (
-                  !is.null(roster_data$stage_name)
-                ) {
-                  roster_data$stage_name
-                } else {
-                  NULL
-                },
-                linked_ind_roster_data_hash = if (!is.null(roster$get(field = "..metadata", role = "hash_id"))) {
-                  roster$get(field = "..metadata", role = "hash_id")
-                } else {
-                  NULL
-                },
-                linked_ind_roster_variable_map = if (
-                  !is.null(roster$get(field = "..variable_map"))
-                ) {
+                linked_ind_roster_variable_map = if (!is.null(roster)) {
                   roster$get(field = "..variable_map")
-                } else {
-                  NULL
                 },
-                linked_ind_roster_value_map = if (!is.null(roster$get(field = "..value_map"))) {
+                linked_ind_roster_value_map = if (!is.null(roster)) {
                   roster$get(field = "..value_map")
-                } else {
-                  NULL
                 },
-                linked_ind_roster_variable_label = if (
-                  !is.null(roster$get(field = "..variable_label"))
-                ) {
+                linked_ind_roster_variable_label = if (!is.null(roster)) {
                   roster$get(field = "..variable_label")
-                } else {
-                  NULL
                 },
-                linked_ind_roster_value_label = if (
-                  !is.null(roster$get(field = "value_label"))
-                ) {
+                linked_ind_roster_value_label = if (!is.null(roster)) {
                   roster$get(field = "..value_label")
-                } else {
-                  NULL
                 },
-                linked_ind_deaths_data = if (!is.null(deaths_data$data)) {
-                  deaths_data$data
-                } else {
-                  NULL
+                linked_ind_deaths_data = deaths_data$data,
+                linked_ind_deaths_data_stage_name = deaths_data$stage,
+                linked_ind_deaths_data_hash = if (!is.null(deaths)) {
+                  deaths$get(field = "..metadata", member = "hash_id")
                 },
-                linked_ind_deaths_data_stage_name = if (
-                  !is.null(deaths_data$stage_name)
-                ) {
-                  deaths_data$stage_name
-                } else {
-                  NULL
-                },
-                linked_ind_deaths_data_hash = if (!is.null(deaths$get(field = "..metadata", role = "hash_id"))) {
-                  deaths$get(field = "..metadata", role = "hash_id")
-                } else {
-                  NULL
-                },
-                linked_ind_deaths_variable_map = if (
-                  !is.null(deaths$get(field = "..variable_map"))
-                ) {
+                linked_ind_deaths_variable_map = if (!is.null(deaths)) {
                   deaths$get(field = "..variable_map")
-                } else {
-                  NULL
                 },
-                linked_ind_deaths_value_map = if (!is.null(deaths$get(field = "..value_map"))) {
+                linked_ind_deaths_value_map = if (!is.null(deaths)) {
                   deaths$get(field = "..value_map")
-                } else {
-                  NULL
                 },
-                linked_ind_deaths_variable_label = if (
-                  !is.null(deaths$get(field = "..variable_label"))
-                ) {
+                linked_ind_deaths_variable_label = if (!is.null(deaths)) {
                   deaths$get(field = "..variable_label")
-                } else {
-                  NULL
                 },
-                linked_ind_deaths_value_label = if (
-                  !is.null(deaths$get(field = "..value_label"))
-                ) {
+                linked_ind_deaths_value_label = if (!is.null(deaths)) {
                   deaths$get(field = "..value_label")
-                } else {
-                  NULL
                 }
               )
 

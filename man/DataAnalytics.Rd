@@ -30,6 +30,9 @@ Key design principles:
   datasets/schemas (e.g. [MortalityDataAnalytics]) override them so the
   inherited `run_quality_checks()`, `run_analysis()` and `run_outputs()`
   iterate over each set and store results under the set's role name
+
+Initialization errors abort construction rather than returning a partially
+initialized R6 object. The Data generation hook reports these as warnings.
 }
 \seealso{
 [FSLDataAnalytics]

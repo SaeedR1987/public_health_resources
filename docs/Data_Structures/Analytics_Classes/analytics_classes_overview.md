@@ -133,6 +133,28 @@ Analytics for demographic and household data.
 
 Analytics for mortality and death data.
 
+Generate it from a `HouseholdData` object with
+`household$generate_data_analytics(stage = "standardized", type = "mortality")`.
+The household data is required; linked `roster` and `deaths` datasets are
+optional. Each linked dataset uses its own data, hash, mappings, and labels.
+When its requested stage is unavailable, the existing data-stage fallback
+selects an available stage and records that actual stage in the analytics object.
+
+Inspect stored fields using the inherited accessor:
+
+```r
+mortality_analytics$summary()
+mortality_analytics$get(field = "..data")
+mortality_analytics$get(field = "..linked_ind_roster_data")
+mortality_analytics$get(field = "..linked_ind_deaths_data_stage_name")
+mortality_analytics$get(field = "..data_analysis_plan")$get(field = "..log_df")
+```
+
+Constructor failures now raise an error instead of returning an empty or
+partially initialized R6 object. `generate_data_analytics()` retains its
+warning-based error handling; resolve any reported initialization failure
+before inspecting its return value.
+
 **Quality checks**: CDR plausibility, recall period validation, age-at-death distribution.
 
 **Analysis indicators**: Crude Death Rate (CDR), Under-5 Death Rate (U5DR), cause-specific mortality.
