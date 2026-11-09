@@ -27,6 +27,9 @@
 #'   inherited `run_quality_checks()`, `run_analysis()` and `run_outputs()`
 #'   iterate over each set and store results under the set's role name
 #'
+#' Initialization errors abort construction rather than returning a partially
+#' initialized R6 object. The Data generation hook reports these as warnings.
+#'
 #' @field data Data frame containing the dataset (standardized or clean data, not raw)
 #' @field parent_data_object Reference to the parent Data object
 #' @field dataset_name Character name for identifying this analytics object
@@ -114,7 +117,7 @@ DataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 2: Set fields
@@ -137,7 +140,7 @@ DataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 3: Load quality, analysis, and outputs schemas
@@ -149,7 +152,7 @@ DataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 4: Create survey design objects (base and full)
@@ -164,7 +167,7 @@ DataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       # Step 5: Create data analysis plan from analysis schema
@@ -176,7 +179,7 @@ DataAnalytics <- R6::R6Class(
         hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
-        return(result)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       private$..touch(
@@ -200,7 +203,7 @@ DataAnalytics <- R6::R6Class(
         n_results = length(private$..plausibility_results),
         overall_score = private$..overall_score,
         parent_object = if (!is.null(private$..parent_data_object)) {
-          private$..parent_data_object$dataset_name
+          private$..parent_data_object$get(field = "..dataset_name")
         } else {
           NULL
         },
@@ -1171,7 +1174,7 @@ DataAnalytics <- R6::R6Class(
                   "_schema"
                 ),
                 message = phrutils::phr_txt(
-                  phrutils::phr_txt("Failed to read {filename}: {e$message}")
+                  phrutils::phr_txt("Failed to read {paste(filename, collapse = '/')}: {e$message}")
                 )
               )
 
@@ -1311,17 +1314,17 @@ DataAnalytics <- R6::R6Class(
     ) {
 
       self$set(field = "..parent_data_object", value = parent_data_object)
-      self$set(field = "..parent_dataset_name", value = dataset_name)
-      self$set(field = "..parent_data_stage_name", value = data_stage_name)
-      self$set(field = "..parent_data_hash", value = data_hash)
+      self$set(field = "..dataset_name", value = dataset_name)
+      self$set(field = "..data_stage_name", value = data_stage_name)
+      self$set(field = "..data_hash", value = data_hash)
 
       self$set(field = "..variable_map", value = variable_map %||% list())
       self$set(field = "..value_map", value = value_map %||% list())
       self$set(field = "..variable_label", value = variable_label %||% list())
       self$set(field = "..value_label", value = value_label %||% list())
 
-      self$set(field = "visualizations", value = list())
-      self$set(field = "tables", value = list())
+      self$visualizations <- list()
+      self$tables <- list()
 
       # --- Quality-specific initialization
       if (!is.null(data)) {
@@ -1456,7 +1459,7 @@ DataAnalytics <- R6::R6Class(
           )
 
           private$..data_analysis_plan$set(
-            field = "log_df",
+            field = "..log_df",
             value = result$dap_df
           )
 
