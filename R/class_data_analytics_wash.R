@@ -43,6 +43,8 @@ WASHDataAnalytics <- R6::R6Class(
     #' @param linked_containers_data_hash Hash of linked containers data
     #' @param linked_containers_variable_map Variable mappings for linked containers data
     #' @param linked_containers_value_map Value mappings for linked containers data
+    #' @param linked_containers_variable_label Variable labels for linked containers data
+    #' @param linked_containers_value_label Value labels for linked containers data
     #' @return A new WASHDataAnalytics object
     initialize = function(data = NULL,
                           dap = NULL,
@@ -59,7 +61,9 @@ WASHDataAnalytics <- R6::R6Class(
                           linked_containers_data_stage_name = NULL,
                           linked_containers_data_hash = NULL,
                           linked_containers_variable_map = NULL,
-                          linked_containers_value_map = NULL) {
+                          linked_containers_value_map = NULL,
+                          linked_containers_variable_label = NULL,
+                          linked_containers_value_label = NULL) {
 
       private$..touch(
         log = TRUE,
@@ -103,6 +107,8 @@ WASHDataAnalytics <- R6::R6Class(
             self$set(field = "..linked_containers_data_hash", value = linked_containers_data_hash)
             self$set(field = "..linked_containers_variable_map", value = linked_containers_variable_map)
             self$set(field = "..linked_containers_value_map", value = linked_containers_value_map)
+            self$set(field = "..linked_containers_variable_label", value = linked_containers_variable_label)
+            self$set(field = "..linked_containers_value_label", value = linked_containers_value_label)
           }
         },
       step = phrutils::phr_txt("Loading WASH specific fields in initialize"),
@@ -138,16 +144,16 @@ WASHDataAnalytics <- R6::R6Class(
                    ))
 
           # Build the DAP for roster dataset from available columns and analysis_schema_roster
-          if (!is.null(linked_container_data)) {
+          if (!is.null(linked_containers_data)) {
 
             result <- private$..build_dap_from_schema(
               analysis_schema = private$..analysis_schema_water_container,
-              variable_map    = private$..variable_map_water_container %||% list(),
+              variable_map    = private$..linked_containers_variable_map %||% list(),
               available_vars  = names(private$..linked_containers_data),
               dataset_label   = "water_containers"
             )
 
-            private$..data_analysis_plan_roster$set(field = "..log_df", value = result$dap_df)
+            private$..data_analysis_plan_water_container$set(field = "..log_df", value = result$dap_df)
 
           }
         },

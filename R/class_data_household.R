@@ -2286,11 +2286,26 @@ HouseholdData <- R6::R6Class(
                          parent) {
 
             water_containers <- parent$get(field = "..linked_objects")$water_containers$object
-            water_containers_data <- water_containers$get_data_with_fallback(self, stage)
-            varm <- water_containers$get(field = "..variable_map")
-            valm <- water_containers$get(field = "..value_map")
-            varlab <- water_containers$get(field = "..variable_label")
-            vallab <- water_containers$get(field = "..value_label")
+
+            wc_data <- NULL
+            wc_hash <- NULL
+            varm <- valm <- varlab <- vallab <- NULL
+
+            if (is.null(water_containers)) {
+              phrutils::phr_warning(
+                origin = paste0(private$..dataset_name, "$generate_data_analytics"),
+                message = phrutils::phr_txt(
+                  "No linked water_containers data found. WASH analytics will use only household data."
+                )
+              )
+            } else {
+              wc_data <- water_containers$get_data_with_fallback(water_containers, stage)
+              wc_hash <- water_containers$get(field = "..metadata", role = "hash_id")
+              varm <- water_containers$get(field = "..variable_map")
+              valm <- water_containers$get(field = "..value_map")
+              varlab <- water_containers$get(field = "..variable_label")
+              vallab <- water_containers$get(field = "..value_label")
+            }
 
             WASHDataAnalytics$new(
                 data = data,
@@ -2303,53 +2318,13 @@ HouseholdData <- R6::R6Class(
                 value_map = parent$get(field = "..value_map"),
                 variable_label = parent$get(field = "..variable_label"),
                 value_label = parent$get(field = "..value_label"),
-                linked_containers_data = if (!is.null(water_containers_data$data)) {
-                  water_containers_data$data
-                } else {
-                  NULL
-                },
-                linked_containers_data_stage_name = if (
-                  !is.null(water_containers_data$stage_name)
-                ) {
-                  water_containers_data$stage_name
-                } else {
-                  NULL
-                },
-                linked_containers_data_hash = if (
-                  !is.null(water_containers$get(field = "..metadata", role = "hash_id"))
-                ) {
-                  water_containers$get(field = "..metadata", role = "hash_id")
-                } else {
-                  NULL
-                },
-                linked_containers_variable_map = if (
-                  !is.null(varm)
-                ) {
-                  varm
-                } else {
-                  NULL
-                },
-                linked_containers_value_map = if (
-                  !is.null(valm)
-                ) {
-                  valm
-                } else {
-                  NULL
-                },
-                linked_containers_variable_label = if (
-                  !is.null(varlab)
-                ) {
-                  varlab
-                } else {
-                  NULL
-                },
-                linked_containers_value_label = if (
-                  !is.null(vallab)
-                ) {
-                  vallab
-                } else {
-                  NULL
-                }
+                linked_containers_data = wc_data$data,
+                linked_containers_data_stage_name = wc_data$stage,
+                linked_containers_data_hash = wc_hash,
+                linked_containers_variable_map = varm,
+                linked_containers_value_map = valm,
+                linked_containers_variable_label = varlab,
+                linked_containers_value_label = vallab
               )
 
           },
