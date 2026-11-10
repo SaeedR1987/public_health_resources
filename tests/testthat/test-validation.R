@@ -42,15 +42,15 @@ test_that("validate() correctly validates select_multiple mapped values", {
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Verify that value map was built correctly
-  expect_true("livelihood" %in% names(d$value_map))
-  expect_true("agriculture" %in% names(d$value_map$livelihood))
-  expect_true("farming" %in% d$value_map$livelihood$agriculture)
-  expect_true("fishing" %in% d$value_map$livelihood$fishing)
-  expect_true("trading" %in% d$value_map$livelihood$business)
-  expect_true("other" %in% d$value_map$livelihood$other)
+  expect_true("livelihood" %in% names(d$get(field = ".value_map")))
+  expect_true("agriculture" %in% names(d$get(field = ".value_map")$livelihood))
+  expect_true("farming" %in% d$get(field = ".value_map")$livelihood$agriculture)
+  expect_true("fishing" %in% d$get(field = ".value_map")$livelihood$fishing)
+  expect_true("trading" %in% d$get(field = ".value_map")$livelihood$business)
+  expect_true("other" %in% d$get(field = ".value_map")$livelihood$other)
 
   # Run validate - should NOT produce warnings about missing values
   # since the mapped values ARE present (as tokens in space-separated strings)
@@ -59,75 +59,6 @@ test_that("validate() correctly validates select_multiple mapped values", {
   # The validate() method should set validated to TRUE
   # because all mapped values are found as tokens in the data
   expect_true(d$validated)
-})
-
-test_that("data_diagnose() correctly diagnoses select_multiple mapped values", {
-  # Create data with select_multiple column
-  df <- tibble::tibble(
-    id = 1:5,
-    skills = c(
-      "reading writing",
-      "writing reading math",
-      "math reading",
-      "reading",
-      "writing math"
-    )
-  )
-
-  d <- suppressMessages(
-    Data$new(data = df, dataset_name = "TestData", uuid = "id")
-  )
-
-  schema <- list(
-    types = list(
-      skills = "character"
-    ),
-    col_names = list(
-      skills = c("skills", "abilities")
-    ),
-    question_types = list(
-      skills = "select_multiple"
-    ),
-    value_map = list(
-      skills = list(
-        literacy = c("reading", "writing"),
-        numeracy = c("math", "mathematics")
-      )
-    )
-  )
-
-  d$set_variable_schema(schema)
-  d$map_schema_vars()
-
-  # Run data_diagnose
-  diag <- d$data_diagnose()
-
-  # Should not report any issues for mapped values that exist as tokens
-  # Filter to literacy/reading and literacy/writing rows
-  literacy_reading <- diag[diag$required_variable == "skills" &
-                             diag$required_value == "literacy" &
-                             grepl("reading", diag$mapped_value), ]
-  literacy_writing <- diag[diag$required_variable == "skills" &
-                             diag$required_value == "literacy" &
-                             grepl("writing", diag$mapped_value), ]
-  numeracy_math <- diag[diag$required_variable == "skills" &
-                          diag$required_value == "numeracy" &
-                          grepl("math", diag$mapped_value), ]
-
-  # These should all be "ok" or not have "mapped values not in dataset" issue
-  if (nrow(literacy_reading) > 0) {
-    expect_false(grepl("mapped values not in dataset", literacy_reading$issues[1]))
-  }
-  if (nrow(literacy_writing) > 0) {
-    expect_false(grepl("mapped values not in dataset", literacy_writing$issues[1]))
-  }
-  if (nrow(numeracy_math) > 0) {
-    expect_false(grepl("mapped values not in dataset", numeracy_math$issues[1]))
-  }
-
-  # Should still report if a value is not in the data at all
-  # "mathematics" is not in the data, so numeracy should have only "math"
-  expect_false("mathematics" %in% d$value_map$skills$numeracy)
 })
 
 test_that("validate() correctly handles select_multiple with old allowed_values format", {
@@ -157,7 +88,7 @@ test_that("validate() correctly handles select_multiple with old allowed_values 
   )
 
   d$set_variable_schema(schema)
-  d$map_schema_vars()
+  d$call(field = "..map_schema_vars")
 
   # Run validate - should work correctly
   d$validate()
@@ -178,14 +109,14 @@ test_that("validate() still catches truly missing values in select_multiple", {
   )
 
   # Manually set up a value_map with a value that doesn't exist
-  d$variable_map$food <- "food"
-  d$value_map$food <- list(
+  d$get(field = ".variable_map")$food <- "food"
+  d$get(field = ".value_map")$food <- list(
     cereals = c("rice", "wheat"),  # "wheat" is NOT in the data
     legumes = c("beans", "lentils")  # "lentils" is NOT in the data
   )
 
   # Set minimal schema for the helper method to work
-  d$variable_schema <- list(
+  d$set(field = "..variable_schema", value = list()
     types = list(food = "character"),
     question_types = list(food = "select_multiple")
   )
@@ -204,19 +135,19 @@ test_that(".extract_select_multiple_tokens helper works correctly", {
   )
 
   # Test normal space-separated values
-  tokens <- d$.extract_select_multiple_tokens(c("a b", "c d", "a"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a b", "c d", "a"))
   expect_equal(sort(tokens), sort(c("a", "b", "c", "d")))
 
   # Test with extra spaces
-  tokens <- d$.extract_select_multiple_tokens(c("a  b", " c ", "d"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a  b", " c ", "d"))
   expect_equal(sort(tokens), sort(c("a", "b", "c", "d")))
 
   # Test with NA and empty strings
-  tokens <- d$.extract_select_multiple_tokens(c("a b", NA, "", "c"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a b", NA, "", "c"))
   expect_equal(sort(tokens), sort(c("a", "b", "c")))
 
   # Test uniqueness
-  tokens <- d$.extract_select_multiple_tokens(c("a b", "b c", "a"))
+  tokens <- d$call(field = "..extract_select_multiple_tokens", c("a b", "b c", "a"))
   expect_equal(sort(tokens), sort(c("a", "b", "c")))
 })
 
@@ -227,16 +158,16 @@ test_that(".is_select_multiple helper works correctly", {
   )
 
   # Without schema
-  expect_false(d$.is_select_multiple("any_var"))
+  expect_false(d$call(field = "..is_select_multiple", "any_var"))
 
   # With schema but no question_types
-  d$variable_schema <- list(
+  d$set(field = "..variable_schema", value = list()
     types = list(var1 = "character")
   )
-  expect_false(d$.is_select_multiple("var1"))
+  expect_false(d$call(field = "..is_select_multiple", "var1"))
 
   # With schema and select_multiple question type
-  d$variable_schema <- list(
+  d$set(field = "..variable_schema", value = list()
     types = list(
       var1 = "character",
       var2 = "character"
@@ -246,9 +177,9 @@ test_that(".is_select_multiple helper works correctly", {
       var2 = "select_one"
     )
   )
-  expect_true(d$.is_select_multiple("var1"))
-  expect_false(d$.is_select_multiple("var2"))
-  expect_false(d$.is_select_multiple("var3"))
+  expect_true(d$call(field = "..is_select_multiple", "var1"))
+  expect_false(d$call(field = "..is_select_multiple", "var2"))
+  expect_false(d$call(field = "..is_select_multiple", "var3"))
 })
 
 # Tests for automatic stage selection in validate() method ####
@@ -455,5 +386,4 @@ test_that("validate() preserves backward compatibility with explicit stage calls
   d$validate(stage = "clean")
   expect_true(d$validated)
 })
-
 

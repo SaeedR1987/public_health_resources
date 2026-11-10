@@ -36,3 +36,5 @@ tests/manual/output/01_basic_zscore_plot.png
 tests/testthat/Data_standardized.csv
 .posit/assistant
 REACH_DRC2603_Dataset_MSNA_2026.xlsx
+roster_variable_schema.csv
+hh_variable_schema.csv

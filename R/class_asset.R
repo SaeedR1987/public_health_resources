@@ -16,19 +16,37 @@
 Asset <- R6::R6Class(
   "Asset",
   public = list(
+
     #' @description
     #' Creates a new Asset object.
     #' @return A new Asset object.
-    initialize = function() {
+    initialize = function(name = NULL) {
+
+      phrutils::phr_try({
+
+
       timestamp <- Sys.time()
-      private$..metadata <- list(
-        created_datetime = timestamp,
-        modified_datetime = timestamp,
-        version = 0L,
-        hash_id = NA_character_
+
+      private$..name <- if (is.null(name)) {"NewObject"} else {name}
+
+      self$set(field = "..metadata",
+               value = list(
+                 created_datetime = timestamp,
+                 modified_datetime = timestamp,
+                 version = 0L,
+                 hash_id = private$..compute_hash_id()
+               ))
+
+      private$..touch(log = TRUE,
+                      touch = TRUE,
+                      name = name,
+                      message = phrutils::phr_txt("Initialization for completed successfully."))
+
+      },
+      on_error = "abort",
+      origin = "Asset$initialize"
       )
-      private$..metadata$hash_id <- private$..compute_hash_id()
-      private$..touch()
+
       invisible(self)
     },
 
@@ -36,14 +54,12 @@ Asset <- R6::R6Class(
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
     #' @param target_field Optional destination field path.
-    #' @param name Optional named list entry inside \code{field}.
     #' @param role Optional role-based list resolution key.
     #' @return Invisibly returns \code{NULL}.
     pre_sync_state = function(
       field = NULL,
       member = NULL,
       target_field = NULL,
-      name = NULL,
       role = NULL
     ) {
       invisible(NULL)
@@ -53,14 +69,12 @@ Asset <- R6::R6Class(
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
     #' @param target_field Optional destination field path.
-    #' @param name Optional named list entry inside \code{field}.
     #' @param role Optional role-based list resolution key.
     #' @return Invisibly returns \code{NULL}.
     post_sync_state = function(
       field = NULL,
       member = NULL,
       target_field = NULL,
-      name = NULL,
       role = NULL
     ) {
       invisible(NULL)
@@ -70,21 +84,18 @@ Asset <- R6::R6Class(
     #' @param field Optional top-level field name.
     #' @param member Optional nested member name.
     #' @param target_field Optional destination field path.
-    #' @param name Optional named list entry inside \code{field}.
     #' @param role Optional role-based list resolution key.
     #' @return Invisibly returns \code{self}.
     sync_state = function(
       field = NULL,
       member = NULL,
       target_field = NULL,
-      name = NULL,
       role = NULL
     ) {
       private$..sync_state(
         field = field,
         member = member,
         target_field = target_field,
-        name = name,
         role = role
       )
       invisible(self)
@@ -95,38 +106,51 @@ Asset <- R6::R6Class(
     #' on a nested object.
     #'
     #' Resolves a top-level field (public or private; for example
-    #' \code{tools} or \code{framework}), optionally resolves a named or
-    #' role-matched element if the field is a list, and returns a field or
+    #' \code{tools} or \code{framework}), optionally resolves a
+    #' role-matched 1st level list element (and, with \code{role2}, a 2nd
+    #' level role-matched element nested within it), and returns a field or
     #' list member value. Unlike \code{call()}, \code{get()} refuses to
     #' return a function; use \code{call()} to invoke nested methods.
     #'
     #' @param field Character scalar naming a public or private top-level
     #'   field on this object.
-    #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
     #' @param member Optional character scalar naming a public or private
     #'   field on the resolved target. When \code{NULL}, the resolved target
     #'   itself is returned.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name (for example \code{"household"} for
-    #'   \code{"tool_household_iphra_v2"}).
+    #' @param role Optional character scalar used to resolve a 1st level list
+    #'   element in \code{field} by role-like name (for example
+    #'   \code{"household"} for \code{"tool_household_iphra_v2"}).
+    #' @param role2 Optional character scalar used to resolve a 2nd level list
+    #'   element nested within the \code{role}-resolved element.
     #' @param update_sync Logical indicating whether to synchronize state after access.
     #' @param update_modified Logical indicating whether to update the modified timestamp.
     #' @return The requested field or member value.
     get = function(
       field,
-      name = NULL,
       member = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = FALSE
     ) {
       phrutils::phr_try(
         {
+
+          allowed_fields <- private$..allowed_get_fields()
+
+          if (!field %in% allowed_fields) {
+            phrutils::phr_error(
+              "Asset$get",
+              phrutils::phr_txt(
+                "{private$..field_error_message(field, allowed_fields, 'accessible')}"
+              )
+            )
+          }
+
           target <- private$..resolve_nested_target(
             field = field,
-            name = name,
-            role = role
+            role = role,
+            role2 = role2
           )
 
           out <- if (is.null(member)) {
@@ -134,7 +158,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phr_txt("member must be a non-empty character string."),
+              message = phrutils::phr_txt("member must be a non-empty character string."),
               origin = "Asset$get"
             )
             private$..resolve_member_value(target, member)
@@ -142,7 +166,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             !is.function(out),
-            message = phr_txt(
+            message = phrutils::phr_txt(
               "Member '{member}' resolves to a function; use call() instead of get()."
             ),
             origin = "Asset$get"
@@ -166,39 +190,52 @@ Asset <- R6::R6Class(
     #' object.
     #'
     #' Resolves a top-level field (public or private), optionally resolves a
-    #' named or role-matched element if the field is a list, and invokes
+    #' role-matched 1st level list element (and, with \code{role2},
+    #' a 2nd level role-matched element nested within it), and invokes
     #' \code{member} as a function on the resolved target. Unlike
     #' \code{get()}, \code{call()} requires \code{member} to resolve to a
     #' function.
     #'
     #' @param field Character scalar naming a public or private top-level
     #'   field on this object.
-    #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
     #' @param member Optional character scalar naming a method on the
     #'   resolved target. When \code{NULL}, the resolved target itself is
     #'   invoked as a function.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name.
+    #' @param role Optional character scalar used to resolve a 1st level list
+    #'   element in \code{field} by role-like name.
+    #' @param role2 Optional character scalar used to resolve a 2nd level list
+    #'   element nested within the \code{role}-resolved element.
     #' @param update_sync Logical indicating whether to synchronize state after the call.
     #' @param update_modified Logical indicating whether to update the modified timestamp.
     #' @param ... Arguments passed to the resolved method.
     #' @return The result of invoking the resolved method.
     call = function(
       field,
-      name = NULL,
       member = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = TRUE,
       ...
     ) {
       phrutils::phr_try(
         {
+
+          allowed_fields <- private$..allowed_call_fields()
+
+          if (!field %in% allowed_fields) {
+            phrutils::phr_error(
+              "Asset$call",
+              phrutils::phr_txt(
+                "{private$..field_error_message(field, allowed_fields, 'accessible')}"
+              )
+            )
+          }
+
           target <- private$..resolve_nested_target(
             field = field,
-            name = name,
-            role = role
+            role = role,
+            role2 = role2
           )
 
           value <- if (is.null(member)) {
@@ -206,7 +243,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phr_txt("member must be a non-empty character string."),
+              message = phrutils::phr_txt("member must be a non-empty character string."),
               origin = "Asset$call"
             )
             private$..resolve_member_value(target, member)
@@ -214,7 +251,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             is.function(value),
-            message = phr_txt(
+            message = phrutils::phr_txt(
               "Member '{member}' does not resolve to a function; use get() instead of call()."
             ),
             origin = "Asset$call"
@@ -238,12 +275,16 @@ Asset <- R6::R6Class(
     #' @description
     #' Generalized, scope-safe field setter.
     #'
-    #' Mirrors \code{get()}'s \code{field}/\code{name}/\code{role}/
+    #' Mirrors \code{get()}'s \code{field}/\code{role}/\code{role2}/
     #' \code{member} arguments, but safely writes \code{value} instead of
     #' reading. \code{field} may resolve to either a public or a private
     #' field, and \code{member} is optional: when omitted, \code{value}
-    #' replaces the resolved top-level (or name/role-resolved) target
-    #' directly. Writing to a resolved member or target that currently holds
+    #' replaces the resolved top-level (or role/role2-resolved) target
+    #' directly. If the \code{role} (and/or \code{role2}) list element does
+    #' not yet exist, it is created (using \code{role}/\code{role2} as the
+    #' literal new element name) rather than raising an error, so that
+    #' \code{set()} can be used to populate a new list or nested list
+    #' element. Writing to a resolved member or target that currently holds
     #' a function is rejected, to avoid accidentally clobbering methods. When
     #' the resolved target is itself an R6 object exposing its own
     #' \code{set()} method (for example a nested \code{Asset} or \code{Log}),
@@ -258,10 +299,11 @@ Asset <- R6::R6Class(
     #' @param member Optional character scalar naming a writable field on the
     #'   resolved target. When \code{NULL}, \code{value} is assigned directly
     #'   to the resolved target.
-    #' @param name Optional character scalar naming a list element in
-    #'   \code{field}.
-    #' @param role Optional character scalar used to resolve a list element in
-    #'   \code{field} by role-like name.
+    #' @param role Optional character scalar used to resolve (or create) a
+    #'   1st level list element in \code{field} by role-like name.
+    #' @param role2 Optional character scalar used to resolve (or create) a
+    #'   2nd level list element nested within the \code{role}-resolved
+    #'   element. Cannot be supplied without \code{role}.
     #' @param update_sync Logical indicating whether to synchronize state
     #'   after the assignment.
     #' @param update_modified Logical indicating whether to update the
@@ -271,13 +313,34 @@ Asset <- R6::R6Class(
       field,
       value,
       member = NULL,
-      name = NULL,
       role = NULL,
+      role2 = NULL,
       update_sync = FALSE,
       update_modified = TRUE
     ) {
       phrutils::phr_try(
         {
+
+          allowed_fields <- private$..allowed_set_fields()
+
+          if (!field %in% allowed_fields) {
+            phrutils::phr_error(
+              "Asset$set",
+              phrutils::phr_txt(
+                "{private$..field_error_message(field, allowed_fields, 'settable')}"
+              )
+            )
+          }
+
+          phrutils::phr_assert(
+            !(is.null(role) && !is.null(role2)),
+            message = phrutils::phr_txt(
+              "Cannot provide 2nd level list element (role2) without a 1st level list element (role)."
+            ),
+            origin = "Asset$set"
+          )
+
+          # Handles whether field is a public or private and returns the field.
           resolved <- private$..resolve_field_scope(
             field = field,
             origin = "Asset$set"
@@ -285,27 +348,54 @@ Asset <- R6::R6Class(
           container <- resolved$value
 
           key <- NULL
-          if (!is.null(name) || !is.null(role)) {
-            phrutils::phr_assert(
-              !(!is.null(name) && !is.null(role)),
-              message = phr_txt("Provide only one of name or role."),
-              origin = "Asset$set"
-            )
+          key2 <- NULL
+          # `level1` holds the (possibly newly created) 1st level list
+          # element resolved by `role`, before any `role2` resolution.
+          level1 <- NULL
+
+          if (!is.null(role)) {
+
             key <- private$..resolve_list_key(
               container = container,
               field = field,
-              name = name,
               role = role,
+              create_if_missing = TRUE,
               origin = "Asset$set"
             )
+
+            level1 <- if (is.null(container)) NULL else container[[key]]
+
+            if (!is.null(role2)) {
+              phrutils::phr_assert(
+                is.null(level1) || is.list(level1),
+                message = phrutils::phr_txt(
+                  "role2 can only be resolved from a list returned by role."
+                ),
+                origin = "Asset$set"
+              )
+
+              key2 <- private$..resolve_list_key(
+                container = level1,
+                field = field,
+                role = role2,
+                create_if_missing = TRUE,
+                origin = "Asset$set"
+              )
+            }
           }
 
-          target <- if (is.null(key)) container else container[[key]]
+          target <- if (!is.null(role) && !is.null(role2)) {
+            if (is.null(level1)) NULL else level1[[key2]]
+          } else if (!is.null(role)) {
+            level1
+          } else {
+            container
+          }
 
           if (is.null(member)) {
             phrutils::phr_assert(
               !is.function(target),
-              message = phr_txt(
+              message = phrutils::phr_txt(
                 "Refusing to overwrite function member '{field}'."
               ),
               origin = "Asset$set"
@@ -314,12 +404,20 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phr_txt("member must be a non-empty character string."),
+              message = phrutils::phr_txt("member must be a non-empty character string."),
               origin = "Asset$set"
             )
+
+            # Auto-vivify: a `role`/`role2`-resolved target that does not
+            # yet exist is NULL; treat it as a new, empty list so that a
+            # member can be set on it instead of erroring.
+            if (is.null(target)) {
+              target <- list()
+            }
+
             phrutils::phr_assert(
               is.list(target) || is.environment(target),
-              message = phr_txt(
+              message = phrutils::phr_txt(
                 "Resolved target for field '{field}' must be a list or environment to set member '{member}'."
               ),
               origin = "Asset$set"
@@ -338,7 +436,7 @@ Asset <- R6::R6Class(
               # by attempting to add a new binding to a locked environment.
               phrutils::phr_assert(
                 !is.function(private$..resolve_member_value(target, member)),
-                message = phr_txt(
+                message = phrutils::phr_txt(
                   "Refusing to overwrite function member '{member}'."
                 ),
                 origin = "Asset$set"
@@ -347,7 +445,7 @@ Asset <- R6::R6Class(
             } else {
               phrutils::phr_assert(
                 !is.function(target[[member]]),
-                message = phr_txt(
+                message = phrutils::phr_txt(
                   "Refusing to overwrite function member '{member}'."
                 ),
                 origin = "Asset$set"
@@ -357,10 +455,18 @@ Asset <- R6::R6Class(
             new_target <- target
           }
 
-          if (is.null(key)) {
+          if (is.null(role)) {
+
             container <- new_target
-          } else {
+
+          } else if (is.null(role2)) {
+
             container[[key]] <- new_target
+
+          } else {
+
+            level1[[key2]] <- new_target
+            container[[key]] <- level1
           }
 
           private$..assign_field_scope(
@@ -373,7 +479,12 @@ Asset <- R6::R6Class(
             private$..sync_state()
           }
           if (update_modified) {
-            private$..touch()
+            private$..touch(
+              log = TRUE,
+              touch = TRUE,
+              name = private$..name,
+              message = phrutils::phr_txt("Started initialization for {private$..name} as Data object.")
+            )
           }
         },
         on_error = "abort",
@@ -384,6 +495,11 @@ Asset <- R6::R6Class(
   ),
 
   private = list(
+
+    # @field name Character name of the Asset object.
+    # @keywords internal
+    ..name = NULL,
+
     # @field ..metadata List containing private asset metadata, including
     #   `created_datetime`, `modified_datetime`, `version`, and `hash_id`.
     # @keywords internal
@@ -394,16 +510,65 @@ Asset <- R6::R6Class(
       hash_id = NA_character_
     ),
 
+    # @field ..change_log Data frame log of changes made to this object, with
+    #   columns `id`, `version`, `name`, `datetime`, and `log_message`.
+    # @keywords internal
+    ..change_log = NULL,
+
     # @description Update modified timestamp, bump the version counter, and
     #   recompute the hash_id fingerprint metadata.
+    # @param log Logical indicating whether to also append a row to the
+    #   change log via \code{..track()}. Defaults to \code{FALSE}.
+    # @param name Optional character scalar identifying the change, passed
+    #   through to \code{..track()} when \code{log} is \code{TRUE}.
+    # @param message Optional character scalar describing the change, passed
+    #   through to \code{..track()} when \code{log} is \code{TRUE}.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
-    ..touch = function() {
+    ..touch = function(log = FALSE, touch = TRUE, name = NULL, display = FALSE, message = NULL) {
       if (is.null(private$..metadata) || !is.list(private$..metadata)) {
         private$..metadata <- list()
       }
-      private$..metadata$modified_datetime <- Sys.time()
-      private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
+
+      if(isTRUE(touch)) {
+        private$..metadata$modified_datetime <- Sys.time()
+        private$..metadata$version <- (private$..metadata$version %||% 0L) + 1L
+
+      }
+
+      if (isTRUE(log)) {
+        private$..track(name = name, message = message)
+      }
+
+      if (isTRUE(display)) {
+        phrutils::phr_message(message)
+      }
+
+      invisible(NULL)
+    },
+
+    # @description Append a row to the private change log, recording the
+    #   current `hash_id`/`version` metadata alongside a name and message
+    #   describing the change.
+    # @param name Character scalar identifying the change (for example, the
+    #   field or method that was updated).
+    # @param message Character scalar describing the change in more detail.
+    # @return Invisibly returns \code{NULL}.
+    # @keywords internal
+    ..track = function(name = NULL, message = NULL) {
+      entry <- tibble::tibble(
+        id = private$..metadata$hash_id %||% NA_character_,
+        version = private$..metadata$version %||% NA_integer_,
+        name = name %||% NA_character_,
+        datetime = Sys.time(),
+        log_message = message %||% NA_character_
+      )
+
+      private$..change_log <- if (is.null(private$..change_log)) {
+        entry
+      } else {
+        dplyr::bind_rows(entry, private$..change_log)
+      }
 
       invisible(NULL)
     },
@@ -431,6 +596,146 @@ Asset <- R6::R6Class(
       digest::digest(snapshot, algo = "md5")
     },
 
+    #' Build Field Access Error Message
+    #'
+    #' @description
+    #' Distinguishes a field that exists on this object but is not permitted
+    #' for the requested operation from a field that does not exist at all.
+    #'
+    #' @param field Requested field name.
+    #' @param allowed_fields Character vector of permitted field names.
+    #' @param kind Either \code{"accessible"} or \code{"settable"}.
+    #' @return Character scalar.
+    ..field_error_message = function(field, allowed_fields, kind) {
+      exists_on_object <- is.character(field) &&
+        length(field) == 1L &&
+        (field %in% ls(private, all.names = TRUE) ||
+           field %in% ls(self, all.names = TRUE))
+      allowed <- private$..format_allowed_fields(allowed_fields)
+      if (exists_on_object) {
+        paste0(
+          "Field '", field, "' exists but is not ", kind,
+          " via this method. Allowed fields: ", allowed
+        )
+      } else {
+        paste0(
+          "Field '", field, "' does not exist on this object. ",
+          "Allowed fields: ", allowed
+        )
+      }
+    },
+
+    #' Format Allowed Fields for Error Messages
+    #'
+    #' @description
+    #' Collapses allowed field names into a short string. Long messages break
+    #' downstream condition handling ("class name too long"), so the list is
+    #' truncated to a character budget.
+    #'
+    #' @param fields Character vector of field names.
+    #' @param max_chars Maximum number of characters to list.
+    #' @return Character scalar.
+    ..format_allowed_fields = function(fields, max_chars = 150L) {
+      fields <- unique(as.character(fields))
+      out <- character(0)
+      used <- 0L
+      for (f in fields) {
+        used <- used + nchar(f) + 2L
+        if (used > max_chars) break
+        out <- c(out, f)
+      }
+      txt <- paste(out, collapse = ", ")
+      if (length(out) < length(fields)) {
+        txt <- paste0(
+          txt, ", ... (", length(fields) - length(out), " more)"
+        )
+      }
+      txt
+    },
+
+    #' Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields accessible via get().
+    #' Subclasses can override to expose additional fields.
+    #'
+    #' @return Character vector of allowed field names
+    ..allowed_get_fields = function() {
+      c(
+        "..name",
+        "..metadata",
+        "..change_log",
+        private$..additional_get_fields()
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      character(0)
+    },
+
+    #' Callable Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields that may be modified via `call()`.`.
+    #'
+    #' @return Character vector of field names.
+    ..allowed_call_fields = function() {
+      c(
+        "get",
+        "call",
+        "set",
+        "..touch",
+        "..track",
+        "..compute_hash_id",
+        "..sync_state",
+        "..allowed_get_fields",
+        "..allowed_call_fields",
+        "..allowed_set_fields",
+        private$..additional_call_fields()
+      )
+    },
+
+    #' Additional Callable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `call()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      character(0)
+    },
+
+    #' Settable Fields Hook
+    #'
+    #' @description
+    #' Returns the list of fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..allowed_set_fields = function() {
+      c(
+        "..name",
+        "..metadata",
+        "..change_log",
+        private$..additional_set_fields()
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      character(0)
+    },
+
     # @description Synchronize asset state.
     #
     # When \code{field/member} are provided, returns the resolved nested value
@@ -439,7 +744,6 @@ Asset <- R6::R6Class(
     # @param field Optional top-level field name.
     # @param member Optional nested member name.
     # @param target_field Optional destination field path (supports \code{$}).
-    # @param name Optional named list entry inside \code{field}.
     # @param role Optional role-based list resolution key.
     # @return Invisibly returns resolved value (targeted mode) or \code{NULL}.
     # @keywords internal
@@ -447,41 +751,37 @@ Asset <- R6::R6Class(
       field = NULL,
       member = NULL,
       target_field = NULL,
-      name = NULL,
       role = NULL
     ) {
       self$pre_sync_state(
         field = field,
         member = member,
         target_field = target_field,
-        name = name,
         role = role
       )
       if (
         !is.null(field) ||
           !is.null(member) ||
           !is.null(target_field) ||
-          !is.null(name) ||
           !is.null(role)
       ) {
         phrutils::phr_assert(
           is.character(field) && length(field) == 1L && nzchar(field),
-          message = phr_txt("field must be a non-empty character string."),
+          message = phrutils::phr_txt("field must be a non-empty character string."),
           origin = "Asset$sync_state"
         )
         phrutils::phr_assert(
           is.character(member) && length(member) == 1L && nzchar(member),
-          message = phr_txt("member must be a non-empty character string."),
+          message = phrutils::phr_txt("member must be a non-empty character string."),
           origin = "Asset$sync_state"
         )
         target <- private$..resolve_nested_target(
           field = field,
-          name = name,
           role = role
         )
         phrutils::phr_assert(
           !is.null(target[[member]]),
-          message = phr_txt(
+          message = phrutils::phr_txt(
             "Member '{member}' does not exist on the resolved target."
           ),
           origin = "Asset$sync_state"
@@ -500,7 +800,6 @@ Asset <- R6::R6Class(
           field = field,
           member = member,
           target_field = target_field,
-          name = name,
           role = role
         )
         return(invisible(value))
@@ -515,7 +814,6 @@ Asset <- R6::R6Class(
           field = field,
           member = member,
           target_field = target_field,
-          name = name,
           role = role
         )
         return(invisible(NULL))
@@ -530,7 +828,6 @@ Asset <- R6::R6Class(
           field = field,
           member = member,
           target_field = target_field,
-          name = name,
           role = role
         )
         return(invisible(NULL))
@@ -545,7 +842,6 @@ Asset <- R6::R6Class(
         field = field,
         member = member,
         target_field = target_field,
-        name = name,
         role = role
       )
       invisible(NULL)
@@ -553,35 +849,55 @@ Asset <- R6::R6Class(
 
     # @description Resolve a top-level or nested target object.
     # @param field Top-level field name.
-    # @param name Optional exact list element name.
-    # @param role Optional role-style key for list lookup.
+    # @param role Optional role-style key for fuzzy list lookup.
+    # @param role2 Optional role-style key for a 2nd level list lookup,
+    #   nested within the `role`-resolved element.
     # @return Resolved object.
     # @keywords internal
-    ..resolve_nested_target = function(field, name = NULL, role = NULL) {
+    ..resolve_nested_target = function(
+      field,
+      role = NULL,
+      role2 = NULL
+    ) {
       resolved <- private$..resolve_field_scope(
         field = field,
-        origin = "Asset$.resolve_nested_target"
+        origin = "Asset$..resolve_nested_target"
       )
-      container <- resolved$value
+      target <- resolved$value
 
       phrutils::phr_assert(
-        !(!is.null(name) && !is.null(role)),
-        message = phr_txt("Provide only one of name or role."),
+        !(is.null(role) && !is.null(role2)),
+        message = phrutils::phr_txt("Cannot provide 2nd level list element (role2) without a 1st level list element (role)."),
         origin = "Asset$.resolve_nested_target"
       )
 
-      if (is.null(name) && is.null(role)) {
-        return(container)
+      if (is.null(role) && is.null(role2)) {
+        return(target)
       }
 
-      key <- private$..resolve_list_key(
-        container = container,
-        field = field,
-        name = name,
-        role = role,
-        origin = "Asset$.resolve_nested_target"
-      )
-      container[[key]]
+      if (!is.null(role)) {
+        key <- private$..resolve_list_key(
+          container = target,
+          field = field,
+          role = role,
+          origin = "Asset$.resolve_nested_target"
+        )
+        target <- target[[key]]
+      }
+
+      if (!is.null(role2)) {
+        phrutils::phr_assert(
+          is.list(target),
+          message = phrutils::phr_txt(
+            "role2 can only be resolved from a list returned by role."
+          ),
+          origin = "Asset$..resolve_nested_target"
+        )
+        target <- target[[role2]]
+      }
+
+      target
+
     },
 
     # @description Resolve a public or private member value on a resolved
@@ -606,13 +922,20 @@ Asset <- R6::R6Class(
     },
 
     # @description Resolve the list index/name identifying an element within
-    #   \code{container}, using either an exact \code{name} or a role-like
-    #   \code{role} lookup. Shared by \code{..resolve_nested_target()} and
-    #   \code{set()}.
-    # @param container A list to search within.
+    #   \code{container}, using a role-like \code{role} lookup. Shared by
+    #   \code{..resolve_nested_target()} and \code{set()}. When
+    #   \code{create_if_missing} is \code{TRUE}, \code{container} may be
+    #   \code{NULL} or an empty/unnamed list (e.g. when creating the very
+    #   first element of a new list field), and a missing \code{role}
+    #   returns the literal \code{role} string as the new element's key
+    #   instead of raising an error.
+    # @param container A list to search within (or \code{NULL} when the
+    #   field has not yet been initialized as a list).
     # @param field Top-level field name (used only for error messages).
-    # @param name Optional exact list element name.
-    # @param role Optional role-style key for list lookup.
+    # @param role Role-style key for list lookup.
+    # @param create_if_missing Logical; when \code{TRUE}, an unresolved
+    #   \code{role} returns the literal key to create instead of raising an
+    #   error.
     # @param origin Character scalar identifying the calling context for
     #   error messages.
     # @return The resolved list key (character name or integer index).
@@ -620,52 +943,43 @@ Asset <- R6::R6Class(
     ..resolve_list_key = function(
       container,
       field,
-      name = NULL,
-      role = NULL,
-      origin = "Asset$.resolve_list_key"
+      role,
+      create_if_missing = FALSE,
+      origin = "Asset$..resolve_list_key"
     ) {
       phrutils::phr_assert(
-        is.list(container),
-        message = phr_txt(
-          "Field '{field}' must be a list when resolving name/role."
+        is.null(container) || is.list(container),
+        message = phrutils::phr_txt(
+          "Field '{field}' must be a list when resolving role."
         ),
         origin = origin
       )
 
-      if (!is.null(name)) {
-        phrutils::phr_assert(
-          is.character(name) && length(name) == 1L && nzchar(name),
-          message = phr_txt(
-            "name must be a non-empty character string when provided."
-          ),
-          origin = origin
-        )
-        phrutils::phr_assert(
-          !is.null(container[[name]]),
-          message = phr_txt("Name '{name}' was not found in field '{field}'."),
-          origin = origin
-        )
-        return(name)
-      }
+      nms <- if (is.null(container)) NULL else names(container)
 
       phrutils::phr_assert(
         is.character(role) && length(role) == 1L && nzchar(role),
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "role must be a non-empty character string when provided."
         ),
         origin = origin
       )
 
-      nms <- names(container)
-      phrutils::phr_assert(
-        !is.null(nms) && length(nms) > 0L,
-        message = phr_txt(
-          "Field '{field}' has no named elements for role-based lookup."
-        ),
-        origin = origin
-      )
+      if (is.null(nms) || length(nms) == 0L) {
+        if (isTRUE(create_if_missing)) {
+          return(role)
+        }
+        phrutils::phr_assert(
+          FALSE,
+          message = phrutils::phr_txt(
+            "Field '{field}' has no named elements for role-based lookup."
+          ),
+          origin = origin
+        )
+      }
 
       role_key <- private$..normalize_role_name(role)
+
       normalized_names <- vapply(
         nms,
         private$..normalize_role_name,
@@ -680,16 +994,30 @@ Asset <- R6::R6Class(
         )
       }
 
+      if (length(idx) == 1L) {
+        return(idx)
+      }
+
       phrutils::phr_assert(
-        length(idx) == 1L,
-        message = if (length(idx) == 0L) {
-          phr_txt("Role '{role}' was not found in field '{field}'.")
-        } else {
-          phr_txt("Role '{role}' matched multiple elements in field '{field}'.")
-        },
+        !(length(idx) > 1L),
+        message = phrutils::phr_txt(
+          "Role '{role}' matched multiple elements in field '{field}'."
+        ),
         origin = origin
       )
-      idx
+
+      if (isTRUE(create_if_missing)) {
+        return(role)
+      }
+
+      phrutils::phr_assert(
+        FALSE,
+        message = phrutils::phr_txt(
+          "Role '{role}' was not found in field '{field}'."
+        ),
+        origin = origin
+      )
+
     },
 
     # @description Resolve which scope ("public" or "private") owns a
@@ -704,7 +1032,7 @@ Asset <- R6::R6Class(
     ..resolve_field_scope = function(field, origin = "Asset$set") {
       phrutils::phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
-        message = phr_txt("field must be a non-empty character string."),
+        message = phrutils::phr_txt("field must be a non-empty character string."),
         origin = origin
       )
 
@@ -717,7 +1045,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         FALSE,
-        message = phr_txt(
+        message = phrutils::phr_txt(
           "Field '{field}' is not available on this object."
         ),
         origin = origin
@@ -750,6 +1078,46 @@ Asset <- R6::R6Class(
       x <- gsub("_iphra(_v[0-9]+)?$", "", x)
       x <- gsub("_v[0-9]+$", "", x)
       x
+    },
+
+    # @description Generalized validation for the flat schema tables (one
+    #   row per variable/indicator/dependency rule) read from the variable,
+    #   indicator, and dependency xlsx templates. Consolidates the previous
+    #   standalone `data_validate_table_to_schema()` /
+    #   `indicator_validate_table_to_schema()` /
+    #   `dependency_validate_table_to_schema()` utility functions into a
+    #   single private method: validates that `df` is a non-empty data
+    #   frame/tibble, then checks that all `required_cols` are present.
+    # @param df A data frame or tibble to validate.
+    # @param required_cols Character vector of column names that must be
+    #   present in `df` (e.g. the variable, indicator, or dependency schema
+    #   table columns).
+    # @param origin Character scalar used as the error/warning origin label.
+    # @return `TRUE` (invisibly, via `phrutils::phr_try`) if validation
+    #   passes; aborts with a descriptive error otherwise.
+    # @keywords internal
+    ..validate_table_schema = function(
+    df,
+    required_cols,
+    origin = "..validate_table_schema"
+    ) {
+      phrutils::phr_try(
+        {
+          phrutils::phr_validate_dataframe(df, origin = origin, soft = FALSE)
+
+          phrutils::phr_validate_columns(
+            df,
+            required_cols = required_cols,
+            origin = origin,
+            hint = "Schema table missing required columns.",
+            soft = FALSE
+          )
+
+          TRUE
+        },
+        on_error = "abort",
+        origin = origin
+      )
     },
 
     # @description Assign synchronized values to a target field path.

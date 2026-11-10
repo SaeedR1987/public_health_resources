@@ -54,14 +54,14 @@ test_that("WomenIndividualData loads default schemas on initialization", {
   ))
 
   # Should have variable schema
-  expect_true(length(women$variable_schema) > 0)
+  expect_true(length(women$get(field = "..variable_schema")) > 0)
 
   # Check that indicator schema was loaded if available
   # (it may be empty if the template has no indicators)
-  expect_true(is.list(women$indicator_schema))
+  expect_true(is.list(women$get(field = "..indicator_schema")))
 
   # Check that dependency schema was loaded
-  expect_true(is.list(women$dependency_schema))
+  expect_true(is.list(women$get(field = "..dependency_schema")))
 })
 
 
@@ -90,7 +90,7 @@ test_that("WomenIndividualData can link to HouseholdData", {
   hh_df <- generate_household_dataset(n = 10)
   women_df <- tibble::tibble(
     person_id = paste0("woman_", 1:30),
-    hh_uuid = rep(hh_df$uuid, length.out = 30),
+    hh_uuid = rep(hh_df$get(field = "..uuid"), length.out = 30),
     sex = rep("female", 30),
     age = sample(15:49, 30, replace = TRUE)
   )

@@ -44,6 +44,12 @@ DeletionLog <- R6::R6Class(
                           required_columns = NULL,
                           schema = NULL) {
 
+      phrutils::phr_try({
+
+        # Step 1: Setting default inputs
+
+        result <- phrutils::phr_try_step({
+
       required_columns <- required_columns %||% c(
         "uuid",
         "enum_id",
@@ -61,12 +67,45 @@ DeletionLog <- R6::R6Class(
           feedback  = "character"
         )
       )
+      results <- list(
+        required_columns = required_columns,
+        schema = schema
+      )
+      results
+
+        },
+      step = phrutils::phr_txt("Setting default required columns and schema - DeletionLog$initialize"),
+      hint = phrutils::phr_txt("check for improper inputs for required columns or schema.")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+        required_columns <- result$required_columns
+        schema <- result$schema
+
+        # Step 2: Super initialize
+
+        result <- phrutils::phr_try_step({
 
       super$initialize(
         log_df = log_df,
         log_name = log_name,
         required_columns = required_columns,
         schema = schema
+      )
+
+        },
+      step = phrutils::phr_txt("Super initialize - DeletionLog$initialize"),
+      hint = phrutils::phr_txt("check for improper inputs for required columns or schema.")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+      },
+      on_error = "abort",
+      origin = paste0(log_name, " - DeletionLog$initialize")
       )
     },
 
@@ -91,6 +130,8 @@ DeletionLog <- R6::R6Class(
                             issue,
                             feedback  = NA_character_) {
 
+      phrutils::phr_try({
+
       entry <- list(
         uuid      = as.character(uuid),
         enum_id   = as.character(enum_id),
@@ -100,87 +141,14 @@ DeletionLog <- R6::R6Class(
       )
 
       self$append_entry(entry)
+
+      },
+      on_error = "warn",
+      origin = paste0(private$..log_name, " - DeletionLog$add_deletion")
+      )
     },
 
-
-
-    #' Validate Deletion Log
-    #'
-    #' @description
-    #' Validates deletion log structure and optionally checks alignment with dataset
-    #'
-    #' @param check_against Optional Data object to validate log entries against
-    #' @param stage Character; data stage to validate against ("raw", "standardized", "clean")
-    #'
-    #' @return Invisible list of validation issues (empty if valid)
-    #'
-    #' @details
-    #' Validation steps:
-    #' 1. Calls parent Log$validate() for basic structure and schema validation
-    #' 2. Checks that critical fields (uuid, issue) are non-empty
-    #' 3. If check_against provided, validates that:
-    #'    - UUIDs in deletion log exist in the dataset
-    #'    - Issues are recorded for each deletion
-    #'
-    #' Sets self$validated and self$issues based on results.
-    validate = function(check_against = NULL, stage = "clean") {
-
-      phrutils::phr_try({
-
-        # ---- 1. Run base Log validation first ----
-        super_issues <- super$validate()
-        if (is.null(super_issues)) super_issues <- list()
-
-        df <- self$log_df
-
-
-        # ---- 2. Deletion-log completeness rules ----
-        required_nonempty <- c("uuid", "issue")
-
-        incomplete_cols <- c()
-        for (col in required_nonempty) {
-          if (any(is.na(df[[col]]) | trimws(df[[col]]) == "")) {
-            incomplete_cols <- c(incomplete_cols, col)
-          }
-        }
-
-        if (length(incomplete_cols) > 0) {
-          super_issues$missing_or_empty <- incomplete_cols
-
-          phrutils::phr_warning(
-            self$log_name,
-            phr_txt(
-              "Deletion log contains missing or empty values in: {paste(incomplete_cols, collapse=', ')}."
-            )
-          )
-        }
-
-
-        # ---- 3. POST VALIDATE (dataset alignment), optional
-        if (!is.null(check_against)) {
-
-          post_issues <- self$post_validate(check_against, stage = stage)
-
-          # integrate issues (post_validate returns list or NULL)
-          if (!is.null(post_issues)) {
-            for (nm in names(post_issues)) {
-              super_issues[[nm]] <- post_issues[[nm]]
-            }
-          }
-        }
-
-
-        # ---- 4. Store issues + update validated flag
-        self$issues <- super_issues
-        self$validated <- length(self$issues) == 0
-
-        invisible(self$issues)
-
-      }, on_error = "abort", origin = "DeletionLog$validate")
-
-    },
-
-    #' Post-Validate Against Dataset
+    #' Validate Deletion Log Against Dataset
     #'
     #' @description
     #' Validates deletion log entries against an actual dataset
@@ -196,46 +164,202 @@ DeletionLog <- R6::R6Class(
     #'
     #' Helps identify if the deletion log references records that are already removed
     #' or never existed. Issues are returned as warnings for review.
-    post_validate = function(data_obj, stage = "clean") {
-
-      # If log is empty, nothing to validate
-      if (nrow(self$log_df) == 0) {
-        return(list())   # no issues
-      }
-
-      out <- list()
+    validate_dl_against_dataset = function(data_obj, stage = "clean") {
 
       phrutils::phr_try({
 
-        df <- self$log_df
-
-        # Get data from the specified stage
-        data_df <- data_obj$get_data(stage)
-
-        # ---- Dataset must have UUID column
-        if (!data_obj$uuid %in% names(data_df)) {
-          phr_error(
-            message = paste0("UUID column '", data_obj$uuid, "' not found in dataset."),
-            origin = "DeletionLog$post_validate"
-          )
+        # If log is empty, nothing to validate
+        if (nrow(private$..log_df) == 0) {
+          return(list())   # no issues
         }
 
-        # ---- Check missing UUIDs
-        missing_uuid <- setdiff(df$uuid, unique(as.character(data_df[[data_obj$uuid]])))
-        if (length(missing_uuid) > 0) {
-          out$missing_uuid <- missing_uuid
+        issues <- list()
+
+        # 1. POST VALIDATE Setup
+
+        result <- phrutils::phr_try_step({
+
+          df_log <- private$..log_df
+          data_df <- data_obj$get_data(stage)
+
+          # ---- Dataset must have UUID column
+          uuid_col <- data_obj$get(field = "..uuid")
+          if (!uuid_col %in% names(data_df)) {
+            phrutils::phr_error(
+              message = paste0("UUID column '", uuid_col, "' not found in dataset."),
+              origin = "DeletionLog$validate_dl_against_dataset"
+            )
+          }
+          results <- list(
+            df_log = df_log,
+            df = data_df
+          )
+
+          results
+        },
+        step = paste0("Post-validate setup - ", private$..log_name, "$validate_dl_against_dataset"),
+        hint =  phrutils::phr_txt("Check that data_obj is a valid Data object and that the specified stage exists in the dataset.")
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+        df_log <- result$df_log
+        df <- result$data_df
+
+
+
+        # 2. UUID CHECKS
+
+        result <- phrutils::phr_try_step({
+          missing_uuid <- setdiff(df_log$uuid, unique(as.character(data_df[[uuid_col]])))
+          if (length(missing_uuid) > 0) {
+            issues$missing_uuid <- missing_uuid
+
+            phrutils::phr_warning(
+              "DeletionLog",
+              phrutils::phr_txt(
+                "The following UUIDs in deletion log do not exist in dataset: {paste(missing_uuid, collapse=', ')}"
+              )
+            )
+          }
+
+          issues
+        },
+        step = "UUID checks - DeletionLog$validate_dl_against_dataset",
+        hint =  "Check that data_obj is a valid Data object, mapped uuid exists in the dataset, and that the specified stage exists in the dataset."
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+        issues <- result
+
+        invisible(issues)
+
+      },
+      on_error = "abort",
+      origin = paste0(private$..log_name, "$validate_dl_against_dataset"))
+    }
+  ),
+
+  private = list(
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        "..issues",
+        "..log_df",
+        "..log_name",
+        "..required_columns",
+        "..schema",
+        "..validated"
+      )
+    },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        super$..additional_call_fields(),
+        "add_deletion"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        "..issues",
+        "..log_df",
+        "..log_name",
+        "..required_columns",
+        "..schema",
+        "..validated"
+      )
+    },
+
+    # Deletion-log specific checks (completeness + dataset alignment) and
+    # state update. Returns invisible issues list, or a failed step result.
+    ..post_validate = function() {
+
+      issues <- list()
+
+      phrutils::phr_try({
+
+      # 2. Validate deletion log rows
+      result <- phrutils::phr_try_step({
+
+        df <- private$..log_df
+        required_nonempty <- c("uuid", "issue")
+
+        incomplete_cols <- c()
+        for (col in required_nonempty) {
+          if (any(is.na(df[[col]]) | trimws(df[[col]]) == "")) {
+            incomplete_cols <- c(incomplete_cols, col)
+          }
+        }
+
+        if (length(incomplete_cols) > 0) {
+          issues$missing_or_empty <- incomplete_cols
 
           phrutils::phr_warning(
-            "DeletionLog",
-            phr_txt(
-              "The following UUIDs in deletion log do not exist in dataset: {paste(missing_uuid, collapse=', ')}"
+            private$..log_name,
+            phrutils::phr_txt(
+              "Deletion log contains missing or empty values in: {paste(incomplete_cols, collapse=', ')}."
             )
           )
         }
 
-        invisible(out)
+        issues
+      },
+      step = paste0("Deletion-log specific completeness - ", private$..log_name, "$validate"),
+      hint = phrutils::phr_txt("check for missing/empty values in required fields (uuid, issue)")
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+      issues <- result
 
-      }, on_error = "abort", origin = "DeletionLog$post_validate")
+      # 4. Set fields
+      result <- phrutils::phr_try_step({
+
+        existing_issues <- self$get(field = "..issues")
+
+        all_issues <- issues
+
+        if (!is.null(existing_issues) && length(existing_issues) > 0) {
+          all_issues <- c(existing_issues, issues)
+        }
+
+        self$set(field = "..issues", value = all_issues)
+        self$set(field = "..validated", value = length(all_issues) == 0)
+
+      },
+      step = paste0("Deletion-log set state - ", private$..log_name, "$..post_validate"),
+      hint = "Failed to set ..issues / ..validated fields"
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+      },
+      on_error = "abort",
+      origin = paste0(private$..log_name, "$..post_validate"))
+
+      invisible(private$..issues)
     }
   )
 )

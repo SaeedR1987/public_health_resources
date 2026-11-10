@@ -26,6 +26,12 @@ named sub-list. This is driven by the \code{pre_run_analysis()} and
 \code{pre_run_outputs()} hooks, which return one input set (data, schema, survey
 designs, analysis plan) per available dataset; the inherited \code{run_analysis()}
 and \code{run_outputs()} iterate over these sets.
+
+Linked datasets are read from their own Data objects, using
+\code{get_data_with_fallback()} to select an available stage. Their actual
+stages, hashes, mappings, and labels are retained independently of the
+household data. Inspect private fields through \code{get(field = "..data")}
+or \code{get(field = "..linked_ind_roster_data")}.
 }
 \seealso{
 [DataAnalytics]
@@ -68,9 +74,9 @@ and \code{run_outputs()} iterate over these sets.
 
     \item{\code{analysis_schema_deaths}}{Analysis schema for linked deaths dataset}
 
-    \item{\code{outputs_schema_roster}}{Outputs schema for linked roster dataset}
+    \item{\code{outputs_schema_roster}}{Outputs schema (data frame) for linked roster dataset}
 
-    \item{\code{outputs_schema_deaths}}{Outputs schema for linked deaths dataset}
+    \item{\code{outputs_schema_deaths}}{Outputs schema (data frame) for linked deaths dataset}
 
     \item{\code{data_analysis_plan_roster}}{Data analysis plan for linked roster dataset}
 

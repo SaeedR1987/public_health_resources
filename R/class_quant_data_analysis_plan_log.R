@@ -1,7 +1,7 @@
 #' QuantDataAnalysisPlanLog: Quant Data Analysis Plan Log Class
 #'
 #' @description
-#' A specialized Log class for managing quantitative data analysis plans. 
+#' A specialized Log class for managing quantitative data analysis plans.
 #' Enforces the column structure defined in phr_analysis_plan_template.csv
 #' and provides validation for analysis plan entries.
 #'
@@ -79,86 +79,136 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
       )
     },
 
-
-
-    #' Validate Analysis Plan Log
+    #' Validate Quant Data Analysis Plan Log against Dataset
     #'
     #' @description
-    #' Validates analysis plan log structure and calculation types
+    #' Validates quant data analysis plan log entries against an actual dataset to ensure integrity
     #'
-    #' @return Invisible list of validation issues (empty if valid)
+    #' @param data_obj Data object containing the dataset to validate against
+    #' @param stage Character; which data stage to use ("raw", "standardized", "clean")
+    #'
+    #' @return List of validation issues (empty list if no issues)
     #'
     #' @details
-    #' Validation steps:
-    #' 1. Calls parent Log$validate() for basic structure and schema validation
-    #' 2. Checks that critical fields (indicator_name, calculation, var_name)
-    #'    are non-empty
-    #' 3. Validates that multiplier is positive
-    #' 4. Checks that calculation types are valid
+    #' For the `var_name`, `denom_var` and `disaggregation` columns, checks that:
+    #' * each referenced variable is mapped in the data object's variable map
+    #' * the mapped column exists in the dataset at the requested stage
     #'
-    #' Sets self$validated and self$issues based on results.
-    validate = function() {
+    #' `denom_var` and `disaggregation` may be missing (skipped); multiple
+    #' disaggregation variables may be separated by commas or semicolons.
+    #' All issues are returned as warnings, not errors, to allow inspection.
+    validate_dap_against_dataset = function(data_obj, stage = "clean") {
 
       phrutils::phr_try({
 
-
-        # 1. Start with super validation
-
-        super_issues <- super$validate()
-        if (is.null(super_issues)) super_issues <- list()
-
-        df <- self$log_df
-
-
-        # 2. Analysis plan specific completeness
-
-        required_nonempty <- c("indicator_name", "calculation", "var_name")
-
-        incomplete_cols <- vapply(
-          required_nonempty,
-          function(col) any(is.na(df[[col]]) | trimws(df[[col]]) == ""),
-          logical(1)
-        )
-
-        if (any(incomplete_cols)) {
-          bad_cols <- required_nonempty[incomplete_cols]
-
-          super_issues$missing_or_empty <- bad_cols
-
-          phrutils::phr_warning(
-            self$log_name,
-            phr_txt(glue::glue("Analysis plan contains missing/empty values in: {paste(bad_cols, collapse=', ')}."))
-          )
+        # If log is empty, nothing to validate
+        if (nrow(private$..log_df) == 0) {
+          return(list()) # no issues
         }
 
+        issues <- list()
 
-        # 3. Validate multiplier is positive (if present and not NA)
+        # 1. POST VALIDATE Setup
 
-        if ("multiplier" %in% names(df)) {
-          invalid_mult <- which(!is.na(df$multiplier) & df$multiplier <= 0)
-          
-          if (length(invalid_mult) > 0) {
-            super_issues$invalid_multiplier <- invalid_mult
-            
-            phrutils::phr_warning(
-              self$log_name,
-              phr_txt(glue::glue("Analysis plan contains non-positive multipliers at rows: {paste(invalid_mult, collapse=', ')}."))
+        result <- phrutils::phr_try_step({
+
+          df_log <- private$..log_df
+          df <- data_obj$get_data(stage)
+
+          # catastrophic error only
+          if (is.null(df)) {
+            phrutils::phr_error(
+              "Dataset is NULL — cannot validate QuantDataAnalysisPlanLog against dataset.",
+              origin = "QuantDataAnalysisPlanLog$validate_dap_against_dataset"
             )
           }
+
+          results <- list(
+            df_log = df_log,
+            df = df
+          )
+
+          results
+
+        },
+        step = "Post-validate setup - QuantDataAnalysisPlanLog$validate_dap_against_dataset",
+        hint =  "Check that data_obj is a valid Data object and that the specified stage exists in the dataset."
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
         }
 
+        df_log <- result$df_log
+        df <- result$df
 
-        # 4. Merge issues and update state
 
-        self$issues <- super_issues
-        self$validated <- length(self$issues) == 0
 
-        invisible(self$issues)
+        # VARIABLE MAP + DATASET CHECKS for var_name, denom_var, disaggregation
+        result <- phrutils::phr_try_step({
 
-      }, on_error = "abort", origin = "QuantDataAnalysisPlanLog$validate")
+          variable_map <- data_obj$get(field = "..variable_map")
+          issues <- list()
+
+          for (col in c("var_name", "denom_var", "disaggregation")) {
+            if (!col %in% names(df_log)) next
+
+            vars <- unique(trimws(unlist(
+              strsplit(as.character(df_log[[col]]), "[,;]")
+            )))
+            vars <- vars[!is.na(vars) & nzchar(vars)]
+            if (length(vars) == 0) next
+
+            mapped <- vapply(
+              vars,
+              function(v) {
+                if (is.null(variable_map) || !v %in% names(variable_map)) {
+                  return(NA_character_)
+                }
+                as.character(variable_map[[v]])[1]
+              },
+              character(1)
+            )
+
+            unmapped <- vars[is.na(mapped)]
+            if (length(unmapped) > 0) {
+              issues[[paste0("unmapped_", col)]] <- unmapped
+              phrutils::phr_warning(
+                private$..log_name,
+                phrutils::phr_txt(
+                  "{col} values not mapped in variable map: {paste(unmapped, collapse=', ')}"
+                )
+              )
+            }
+
+            mapped_ok <- mapped[!is.na(mapped)]
+            missing_in_data <- vars[!is.na(mapped)][!mapped_ok %in% names(df)]
+            if (length(missing_in_data) > 0) {
+              issues[[paste0("missing_in_data_", col)]] <- missing_in_data
+              phrutils::phr_warning(
+                private$..log_name,
+                phrutils::phr_txt(
+                  "{col} values whose mapped column is not in the dataset: {paste(missing_in_data, collapse=', ')}"
+                )
+              )
+            }
+          }
+
+          issues
+        },
+        step = "Variable map and dataset checks - QuantDataAnalysisPlanLog$validate_dap_against_dataset",
+        hint =  "Check that var_name, denom_var and disaggregation values are mapped in the variable map and that the mapped columns exist in the dataset."
+        )
+        if (phrutils::phr_failed(result)) {
+          return(result)
+        }
+
+        result
+
+      },
+      on_error = "abort",
+      origin = "QuantDataAnalysisPlanLog$validate_dap_against_dataset"
+      )
     },
-
-
 
     #' Add Analysis Plan Entry
     #'
@@ -197,6 +247,148 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
 
       self$append_entry(entry)
     }
+  ),
+
+  private = list(
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        super$..additional_call_fields(),
+        "add_indicator"
+      )
+    },
+
+    # Quant data analysis plan-log specific checks (indicator_name, calculation,
+    # multiplier, indicator_unit) and state update. Dataset/variable-map checks
+    # live in validate_dap_against_dataset(). Returns invisible issues list,
+    # or a failed step result.
+    ..post_validate = function() {
+
+      df <- private$..log_df
+      valid_calculations <- c(
+        "prop", "mean", "median", "ratio", "cat", "categorical", "select_multiple_cat"
+      )
+
+      # indicator_name / indicator_unit: non-missing, valid character values
+      result <- phrutils::phr_try_step({
+
+        issues <- list()
+
+        for (col in c("indicator_name", "indicator_unit")) {
+          if (!col %in% names(df)) next
+          x <- df[[col]]
+          bad <- if (!is.character(x)) seq_along(x) else which(is.na(x) | trimws(x) == "")
+
+          if (length(bad) > 0) {
+            issues[[paste0("invalid_", col)]] <- bad
+            phrutils::phr_warning(
+              private$..log_name,
+              phrutils::phr_txt(glue::glue("Analysis plan has missing/invalid {col} at rows: {paste(bad, collapse=', ')}."))
+            )
+          }
+        }
+
+        issues
+      },
+      step = "Indicator name/unit checks - QuantDataAnalysisPlanLog$..post_validate",
+      hint = "Check that indicator_name and indicator_unit are non-missing character values."
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+      issues <- result
+
+      # calculation: must be one of the allowed values
+      result <- phrutils::phr_try_step({
+
+        if ("calculation" %in% names(df)) {
+          calc <- as.character(df$calculation)
+          bad <- which(is.na(calc) | !calc %in% valid_calculations)
+
+          if (length(bad) > 0) {
+            issues$invalid_calculation <- bad
+            phrutils::phr_warning(
+              private$..log_name,
+              phrutils::phr_txt(glue::glue("Analysis plan has invalid calculation at rows: {paste(bad, collapse=', ')}. Allowed: {paste(valid_calculations, collapse=', ')}."))
+            )
+          }
+        }
+
+        issues
+      },
+      step = "Calculation checks - QuantDataAnalysisPlanLog$..post_validate",
+      hint = "Check that calculation is one of the allowed values."
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+      issues <- result
+
+      # multiplier: numeric, non-missing and positive
+      result <- phrutils::phr_try_step({
+
+        if ("multiplier" %in% names(df)) {
+          mult <- suppressWarnings(as.numeric(df$multiplier))
+          invalid_mult <- which(is.na(mult) | mult <= 0)
+
+          if (length(invalid_mult) > 0) {
+            issues$invalid_multiplier <- invalid_mult
+
+            phrutils::phr_warning(
+              private$..log_name,
+              phrutils::phr_txt(glue::glue("Analysis plan contains missing or non-positive multipliers at rows: {paste(invalid_mult, collapse=', ')}."))
+            )
+          }
+        }
+
+        issues
+
+      },
+      step = "Multiplier checks - QuantDataAnalysisPlanLog$..post_validate",
+      hint = "Check that multiplier is a positive number."
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+      issues <- result
+
+      # 3. Dataset alignment + 4. merge issues and update state
+      result <- phrutils::phr_try_step({
+
+        existing_issues <- self$get(field = "..issues")
+
+        all_issues <- issues
+
+        if (!is.null(existing_issues) && length(existing_issues) > 0) {
+          all_issues <- c(existing_issues, issues)
+        }
+
+        self$set(field = "..issues", value = all_issues)
+        self$set(field = "..validated", value = length(all_issues) == 0)
+
+      },
+      step = "Setting issues and validation status - QuantDataAnalysisPlanLog$..post_validate",
+      hint = "Issue merging with issues from previous validation steps."
+      )
+      if (phrutils::phr_failed(result)) {
+        return(result)
+      }
+
+
+
+      invisible(private$..issues)
+
+    }
+
   )
 )
 

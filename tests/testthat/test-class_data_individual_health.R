@@ -34,10 +34,16 @@ test_that("HealthIndividualData supports multiple schemas and validations", {
     HealthIndividualData$new(data = df)
   ))
 
-  # Export schemas
-  var_schema <- suppressWarnings(suppressMessages(health$export_variable_schema()))
-  dep_schema <- suppressWarnings(suppressMessages(health$export_dependency_schema()))
-  ind_schema <- suppressWarnings(suppressMessages(health$export_indicator_schema()))
+  # Export schemas via inherited call()
+  var_schema <- suppressWarnings(suppressMessages(
+    health$call(field = "..export_schema_to_table", schema_type = "variable")
+  ))
+  dep_schema <- suppressWarnings(suppressMessages(
+    health$call(field = "..export_schema_to_table", schema_type = "dependency")
+  ))
+  ind_schema <- suppressWarnings(suppressMessages(
+    health$call(field = "..export_schema_to_table", schema_type = "indicator")
+  ))
 
   # Define specific tests for each schema
 
@@ -89,7 +95,7 @@ test_that("HealthIndividualData completes full pipeline", {
 test_that("HealthIndividualData can link to HouseholdData", {
 
   hh_df <- generate_household_dataset(n = 10)
-  ind_df <- generate_health_ind_dataset(roster_data_or_n = 30, hh_uuids = hh_df$uuid)
+  ind_df <- generate_health_ind_dataset(roster_data_or_n = 30, hh_uuids = hh_df$get(field = "..uuid"))
 
   hh <- suppressWarnings(suppressMessages(
     HouseholdData$new(data = hh_df)

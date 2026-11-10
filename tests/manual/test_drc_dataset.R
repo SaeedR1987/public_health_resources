@@ -1,98 +1,290 @@
-
 rm(list = ls())
 
+
+library(tibble)
+library(dplyr)
+library(phrutils)
+library(phrindicators)
 devtools::load_all()
 
 #Install and setup
 
-df_hh <- readxl::read_xlsx("REACH_DRC2603_Dataset_MSNA_2026.xlsx", sheet = "hh clean data")
+df_hh <- readxl::read_xlsx(
+  "REACH_DRC2603_Dataset_MSNA_2026.xlsx",
+  sheet = "hh clean data"
+) |>
+  dplyr::mutate(
+    today = phrutils::phr_convert_date(today),
+    start = phrutils::phr_convert_datetime(start),
+    end = phrutils::phr_convert_datetime(end)
+  )
 
-df_roster <- readxl::read_xlsx("REACH_DRC2603_Dataset_MSNA_2026.xlsx", sheet = "demo clean data") |>
-  dplyr::mutate(ind_gender = dplyr::case_when(
-    ind_gender == "male" ~ "m",
-    ind_gender == "female" ~ "f",
-    TRUE ~ NA_character_
-  ))
 
-df_death <- readxl::read_xlsx("REACH_DRC2603_Dataset_MSNA_2026.xlsx", sheet = "died clean data") |>
-  dplyr::mutate(sex_died = dplyr::case_when(
-    sex_died == "male" ~ "m",
-    sex_died == "female" ~ "f",
-    TRUE ~ NA_character_
-  ))
+df_roster <- readxl::read_xlsx(
+  "REACH_DRC2603_Dataset_MSNA_2026.xlsx",
+  sheet = "demo clean data"
+) |>
+  dplyr::mutate(
+    ind_gender = dplyr::case_when(
+      ind_gender == "male" ~ "m",
+      ind_gender == "female" ~ "f",
+      TRUE ~ NA_character_
+    )
+  )
 
-drc_mort <- phr::HouseholdData$new(data = df_hh, dataset_name = "DRC MSNA 2026 Household")
+df_death <- readxl::read_xlsx(
+  "REACH_DRC2603_Dataset_MSNA_2026.xlsx",
+  sheet = "died clean data"
+) |>
+  dplyr::mutate(
+    sex_died = dplyr::case_when(
+      sex_died == "m" ~ "m",
+      sex_died == "f" ~ "f",
+      TRUE ~ NA_character_
+    )
+  )
+
+drc_mort <- phr::HouseholdData$new(
+  data = df_hh,
+  dataset_name = "DRC MSNA 2026 Household"
+)
+
+# write.csv(x = drc_mort$export_variable_schema(), file = "hh_variable_schema.csv")
+
+drc_mort$set(
+  field = "..variable_schema",
+  value = read.csv(file = "hh_variable_schema.csv")
+)
 
 roster <- phr::IndividualData$new(
   data = df_roster,
-  dataset_name = "DRC MSNA 2026 Roster",
-  variable_map = list(
-    sex = "ind_gender",
-    age_years = "ind_age",
-    know_dob = "ind_under5_date_know",
-    dob_exact = "ind_under5_date",
-    dob_approx = "ind_under5_event",
-    dob_final = "ind_dob_final"
-  ))
+  dataset_name = "DRC MSNA 2026 Roster"
+)
 
-roster$import_variable_schema(df = read.csv(file = "roster_variable_schema.csv"))
-
-View(roster$data_diagnose(stage = "raw"))
-
-roster$standardize()
-
-View(roster$data_diagnose(stage = "standardized"))
-
-
-roster$export
+roster$set(
+  field = "..variable_schema",
+  value = read.csv(file = "roster_variable_schema.csv")
+)
 
 deaths <- DeathIndividualData$new(
   data = df_death,
   recall_date = "2026-01-01",
   dataset_name = "DRC MSNA 2026 Deaths",
-  variable_map = list(
-    uuid = "index",
-    date_recall = "recall_date")
+  uuid = "index"
 )
+
 
 drc_mort$add_linked_dataset(
   name = "roster",
-  data_object = roster
+  other_object = roster,
+  by_self_role = "uuid",
+  by_other_role = "uuid"
 )
 
 drc_mort$add_linked_dataset(
   name = "deaths",
-  data_object = deaths
+  other_object = deaths,
+  by_self_role = "uuid",
+  by_other_role = "uuid"
 )
 
+
+# write.csv(x = roster$export_variable_schema(), file = "roster_variable_schema.csv")
+# View(roster$export_indicator_schema())
+# View(roster$export_variable_schema())
+# View(roster$data_diagnose(stage = "raw"))
+# roster$standardize()
+# View(roster$data_diagnose(stage = "standardized"))
 # write.csv(x = drc_mort$export_variable_schema(), file = "hh_variable_schema.csv")
-#
-# write.csv(x = drc_mort$linked_objects$roster$object$export_variable_schema(), file = "roster_variable_schema.csv")
-#
 # write.csv(x = drc_mort$linked_objects$deaths$object$export_variable_schema(), file = "deaths_variable_schema.csv")
 
+# Validate
 
+# drc_mort$validate()
+# drc_mort$get("..validated")
 
 # Standardize and Transform Data
 
 drc_mort$standardize()
+drc_mort$get("..standardized")
+head(drc_mort$get_data(stage = "standardized"))
+View(drc_mort$get(field = "..standardized_data"))
 
+a <- drc_mort$get(field = "..linked_objects", role = "roster", role2 = "object")
+View(a$get(field = "..standardized_data"))
+
+b <- drc_mort$get(field = "..linked_objects", role = "deaths", role2 = "object")
+View(b$get(field = "..standardized_data"))
+
+a$standardize()
+View(a$get(field = "..standardized_data"))
 # Check Mappings
 
 View(drc_mort$data_diagnose(stage = "raw"))
+drc_mort$get(field = "..data_diagnostics")
 View(drc_mort$linked_objects$roster$object$data_diagnose(stage = "raw"))
 View(drc_mort$linked_objects$deaths$object$data_diagnose(stage = "raw"))
 
 drc_mort$standardize()
 
 View(drc_mort$data_diagnose(stage = "standardized"))
-View(drc_mort$linked_objects$roster$object$data_diagnose(stage = "standardized"))
-View(drc_mort$linked_objects$deaths$object$data_diagnose(stage = "standardized"))
+View(drc_mort$get(field = "..linked_objects")$roster$object$data_diagnose(
+  stage = "standardized"
+))
+View(drc_mort$get(field = "..linked_objects")$deaths$object$data_diagnose(
+  stage = "standardized"
+))
 
+View(drc_mort$linked_objects$deaths$object$standardized_data)
 
+# Cleaning
+
+drc_mort$generate_cleaning_log()
+
+View(drc_mort$get(field = "..cleaning_log")$get(field = "..log_df"))
+View(drc_mort$get(field = "..deletion_log")$get(field = "..log_df"))
+View(drc_mort$linked_objects$roster$object$cleaning_log$get(field = "..log_df"))
+View(drc_mort$linked_objects$deaths$object$cleaning_log$get(field = "..log_df"))
+
+drc_mort$clean()
+
+drc_mort$get(field = "..cleaned")
 
 # Produce Data Analytics
 
+mortality_analytics <- drc_mort$generate_data_analytics(
+  stage = "standardized",
+  type = "mortality"
+)
+
+# testing analysis
+mortality_analytics$analysis_diagnose()
+
+mortality_analytics$get(field = "..analysis_schema")
+mortality_analytics$get(field = "..analysis_plan_issues_log")
+mortality_analytics$get(field = "..analysis_schema_roster")
+mortality_analytics$get(field = "..data_analysis_plan_roster", member = "..log_df")
 
 
 
+
+head(mortality_analytics$analysis_schema_roster)
+head(mortality_analytics$analysis_schema_deaths)
+head(mortality_analytics$get(field = "..data_analysis_plan")$get(field = "..log_df"))
+mortality_analytics$run_analysis()
+
+test <- mortality_analytics$get(field = "..analysis_results")
+
+View(mortality_analytics$get(field = "..analysis_results")$main$base)
+head(mortality_analytics$get(field = "..analysis_results")$main$survey_design)
+
+head(mortality_analytics$analysis_results$roster$base)
+head(mortality_analytics$analysis_results$roster$survey_design)
+
+View(mortality_analytics$analysis_results$deaths$base)
+View(mortality_analytics$analysis_results$deaths$survey_design)
+
+# testing plausibility
+mortality_analytics$quality_diagnose()
+head(mortality_analytics$get(field = "..quality_issues_log"))
+
+head(mortality_analytics$quality_issues_log)
+head(mortality_analytics$quality_schema)
+
+mortality_analytics$run_quality_checks()
+
+mortality_analytics$tables$plausibility$penalty_summary
+mortality_analytics$tables$plausibility$penalty_summary_by_enum_id
+mortality_analytics$tables$plausibility$penalty_summary_stratum_aru
+
+mortality_analytics$tables$plausibility$penalty_summary
+mortality_analytics$tables$plausibility$penalty_summary_stratum_aru
+
+# testing outputs
+
+mortality_analytics$outputs_diagnose()
+head(mortality_analytics$outputs_issues_log)
+head(mortality_analytics$outputs_schema)
+
+head(mortality_analytics$default_outputs_schema())
+head(mortality_analytics$outputs_schema_roster)
+head(mortality_analytics$outputs_schema_deaths)
+
+mortality_analytics$run_outputs()
+
+test <- mortality_analytics$get(field = "..linked_ind_roster_value_map")
+
+test$sex
+
+mortality_analytics$tables$deaths$unweighted$basic_death_demo_table_strata2
+
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted1
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted2
+
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted1
+mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted4
+
+mortality_analytics$visualizations$roster$unweighted$age_months_cat_donut_unweighted5
+mortality_analytics$visualizations$roster$unweighted$age_months_distribution_unweighted3
+
+mortality_analytics$visualizations$roster$weighted$age_pyramid_overall_weighted2
+
+mortality_analytics$visualizations$roster$weighted$age_months_distribution_weighted4
+
+mortality_analytics$tables$roster$unweighted$basic_demo_table_strata8
+
+mortality_analytics$tables$roster$unweighted$basic_demo_table_weighted9
+mortality_analytics$tables$roster$unweighted$basic_demo_table_strata_weighted10
+mortality_analytics$tables$roster$unweighted$sex_age_cat_demo_table11
+mortality_analytics$tables$roster$unweighted$sex_age_months_cat_demo_table12
+
+mortality_analytics$visualizations$roster$unweighted$age_pyramid_overall_unweighted
+mortality_analytics$visualizations$roster$unweighted$age_months_distribution_unweighted
+mortality_analytics$visualizations$roster$unweighted$age_months_cat_donut_unweighted
+
+mortality_analytics$tables$deaths$unweighted$basic_death_demo_table_strata1
+mortality_analytics$tables$deaths$weighted$basic_death_demo_table_strata3
+
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted1
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted2
+
+mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted3
+mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted4
+
+# Produce FSL Data Analytics
+
+fsl_analytics <- drc_mort$generate_data_analytics(
+  stage = "standardized",
+  type = "fsl"
+)
+
+fsl_analytics$run_analysis()
+
+View(fsl_analytics$get(field = "..analysis_results")$base)
+
+fsl_analytics$run_quality_checks()
+
+fsl_analytics$tables$plausibility$penalty_summary
+
+fsl_analytics$run_outputs()
+
+fsl_analytics$visualizations$overall$rcsi_score_overall
+fsl_analytics$visualizations$strata$hhs_ipc_by_strata
+# Produce WASH Data Analytics
+
+wash_analytics <- drc_mort$generate_data_analytics(
+  stage = "standardized",
+  type = "wash"
+)
+
+wash_analytics$run_analysis()
+
+View(wash_analytics$get(field = "..analysis_results")$base)
+
+wash_analytics$run_quality_checks()
+
+wash_analytics$tables$plausibility$penalty_summary
+
+wash_analytics$run_outputs()
+
+wash_analytics$visualizations$overall$fcs_overall

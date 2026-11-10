@@ -23,155 +23,16 @@
 #' * validated: Logical indicating if log has passed validation
 #' * metadata: List of metadata including update timestamps
 #'
-#' @field autosave Logical for automatic saving (not yet implemented)
 #' @field issues List of validations issues found
 #'
 #' @importFrom R6 R6Class
 #' @export
 Log <- R6::R6Class(
   classname = "Log",
+  inherit = Asset,
 
   public = list(
     # Fields
-
-    autosave = FALSE,
-
-    issues = NULL, # <- must be declared here
-
-    #' @title Get Field Value
-    #'
-    #' @description
-    #' Safely retrieves a private field value
-    #'
-    #' @param field Character name of the field to retrieve.
-    #'   Must be one of: "log_df", "log_name", "required_columns", "schema", "validated", "metadata"
-    #'
-    #' @return The value of the requested field
-    #'
-    #' @examples
-    #' \dontrun{
-    #' log <- Log$new()
-    #' log$get("log_df")
-    #' log$get("log_name")
-    #' }
-    get = function(field) {
-      allowed_fields <- self$allowed_get_fields()
-
-      if (!field %in% allowed_fields) {
-        phrutils::phr_error(
-          "Log",
-          phr_txt(glue::glue(
-            "Field '{field}' is not accessible. Allowed fields: {paste(allowed_fields, collapse=', ')}"
-          ))
-        )
-      }
-
-      return(private[[field]])
-    },
-    #' Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns the list of fields accessible via get().
-    #' Subclasses can override to expose additional fields.
-    #'
-    #' @return Character vector of allowed field names
-    allowed_get_fields = function() {
-      c(
-        "log_df",
-        "log_name",
-        "required_columns",
-        "schema",
-        "validated",
-        "metadata",
-        self$additional_get_fields()
-      )
-    },
-
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
-    additional_get_fields = function() {
-      character(0)
-    },
-
-    #' Settable Fields Hook
-    #'
-    #' @description
-    #' Returns the list of fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
-    allowed_set_fields = function() {
-      c(
-        "log_df",
-        "log_name",
-        "required_columns",
-        "schema",
-        "validated",
-        "metadata",
-        self$additional_set_fields()
-      )
-    },
-
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
-    additional_set_fields = function() {
-      character(0)
-    },
-
-    #' Set Field Value
-    #'
-    #' @description
-    #' Safely sets a private field value
-    #'
-    #' @param field Character name of the field to set.
-    #'   Must be one of: "log_df", "log_name", "required_columns", "schema", "validated", "metadata"
-    #' @param value The value to assign to the field
-    #'
-    #' @return Invisible TRUE
-    #'
-    #' @examples
-    #' \dontrun{
-    #' log <- Log$new()
-    #' log$set("log_name", "My Custom Log")
-    #' log$set("validated", TRUE)
-    #' }
-    set = function(field, value) {
-      allowed_fields <- self$allowed_set_fields()
-
-      if (!field %in% allowed_fields) {
-        phrutils::phr_error(
-          "Log",
-          phr_txt(glue::glue(
-            "Field '{field}' is not settable. Allowed fields: {paste(allowed_fields, collapse=', ')}"
-          ))
-        )
-      }
-
-      # Validation for specific fields
-      if (field == "log_df" && !is.null(value)) {
-        phrutils::phr_validate_dataframe(
-          value,
-          origin = "Log$set",
-          soft = FALSE
-        )
-      }
-
-      private[[field]] <- value
-      private$..touch()
-
-      phrutils::phr_message(phr_txt(glue::glue(
-        "Field '{field}' updated in {private$log_name}."
-      )))
-
-      invisible(TRUE)
-    },
 
     #' @description
     #' Creates a new Log object with optional initial data, required columns, and schema
@@ -196,66 +57,83 @@ Log <- R6::R6Class(
       required_columns = NULL,
       schema = NULL
     ) {
-      private$log_name <- log_name
-      private$required_columns <- required_columns %||% character(0)
-      private$schema <- schema %||% list()
 
-      # ---- CREATE BLANK LOG IF NONE PROVIDED
-      if (is.null(log_df)) {
-        log_df <- private$empty_log_template()
-      }
+      phrutils::phr_try({
 
-      # ---- VALIDATION: must be a data.frame
-      phrutils::phr_validate_dataframe(
-        log_df,
-        origin = paste0(log_name, "$initialize"),
-        soft = FALSE
+        # Step 1: Super Initalize
+
+        result <- phrutils::phr_try_step({
+          super$initialize(name = log_name)
+        },
+        step = phrutils::phr_txt("Log$initialize - super$initialize"),
+        hint = phrutils::phr_txt("Check whether a valid log_name was passed on initialization.")
+        )
+        if (phrutils::phr_failed(result)) {
+          phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
+        }
+
+        # Step 2: Set fields
+
+        result <- phrutils::phr_try_step({
+          self$set(field = "..log_name", value = log_name)
+          self$set(field = "..required_columns", value = required_columns %||% character(0))
+          self$set(field = "..schema", value = schema %||% list())
+          self$set(field = "..issues", value = list())
+        },
+        step = phrutils::phr_txt("Log$initialize - set fields"),
+        hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+        )
+        if (phrutils::phr_failed(result)) {
+          phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
+        }
+
+        # Step 3: Check and Set log_df
+
+        result <- phrutils::phr_try_step({
+
+          if (is.null(log_df)) {
+            log_df <- private$..empty_log_template()
+          }
+
+          phrutils::phr_validate_dataframe(
+            log_df,
+            origin = paste0(log_name, "$initialize"),
+            soft = FALSE
+          )
+
+          # ---- Ensure required columns exist (add empty ones if missing)
+          for (col in private$..required_columns) {
+            if (!col %in% names(log_df)) {
+              log_df[[col]] <- rep(NA_character_, nrow(log_df))
+            }
+          }
+
+          # reorder columns (required first)
+          log_df <- log_df[,
+                           unique(c(private$..required_columns, names(log_df))),
+                           drop = FALSE
+          ]
+
+          self$set(field = "..log_df", value = tibble::as_tibble(log_df))
+
+        },
+        step = phrutils::phr_txt("Log$initialize - set fields"),
+        hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+        )
+        if (phrutils::phr_failed(result)) {
+          phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
+        }
+
+        private$..touch(log = TRUE,
+                        touch = TRUE,
+                        name = log_name,
+                        message = phrutils::phr_txt("{log_name} initialized with {nrow(log_df)} entries."))
+
+      },
+      on_error = "abort",
+      origin = paste0(log_name, "$initialize")
       )
 
-      # ---- Ensure required columns exist (add empty ones if missing)
-      for (col in private$required_columns) {
-        if (!col %in% names(log_df)) {
-          log_df[[col]] <- NA_character_
-        }
-      }
-
-      # reorder columns (required first)
-      log_df <- log_df[,
-        unique(c(private$required_columns, names(log_df))),
-        drop = FALSE
-      ]
-
-      private$log_df <- tibble::as_tibble(log_df)
-
-      # guarantee metadata exists
-      timestamp <- Sys.time()
-      private$metadata$created_datetime <- timestamp
-      private$metadata$modified_datetime <- timestamp
-
-      self$issues <- list()
-
-      phrutils::phr_message(phr_txt(glue::glue(
-        "{log_name} initialized with {nrow(log_df)} entries."
-      )))
-    },
-
-    #' Set Schema
-    #'
-    #' @description
-    #' Assigns a validation schema to the log
-    #'
-    #' @param schema_list List with 'types' and/or 'allowed_values' elements
-    #'
-    #' @return Invisible TRUE
-    #'
-    #' @details
-    #' Schema format:
-    #' * types: named list of column_name = "character"/"numeric"/"logical"/"date"
-    #' * allowed_values: named list of column_name = vector of allowed values
-    set_schema = function(schema_list) {
-      private$schema <- schema_list
-      phrutils::phr_message(phr_txt(glue::glue("Schema attached to {private$log_name}.")))
-      invisible(TRUE)
     },
 
     #' Validate Log
@@ -279,120 +157,203 @@ Log <- R6::R6Class(
     validate = function(schema_override = NULL) {
       phrutils::phr_try(
         {
-          schema_to_use <- schema_override %||% private$schema
+          schema_to_use <- schema_override %||% private$..schema
           issues <- list()
 
           # 1. BASIC STRUCTURAL VALIDATION
 
-          phrutils::phr_validate_dataframe(
-            private$log_df,
-            origin = private$log_name,
-            soft = TRUE
+          result <- phrutils::phr_try_step({
+            phrutils::phr_validate_dataframe(
+              private$..log_df,
+              origin = private$..log_name,
+              soft = TRUE
+            )
+
+            # Required columns must exist
+            missing_req <- setdiff(private$..required_columns, names(private$..log_df))
+            if (length(missing_req) > 0) {
+              issues$missing_required_columns <- missing_req
+            }
+
+            issues
+          },
+          step = phrutils::phr_txt("Basic structural checks - Log$validate"),
+          hint = phrutils::phr_txt("Check if log_df is a valid data.frame and contains all required columns.")
           )
-
-          # Required columns must exist
-          missing_req <- setdiff(private$required_columns, names(private$log_df))
-          if (length(missing_req) > 0) {
-            issues$missing_required_columns <- missing_req
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
-          # 2. SCHEMA VALIDATION (types + allowed_values)
+          issues <- result
 
-          if (!is.null(schema_to_use) && length(schema_to_use) > 0) {
-            # ---- TYPE CHECKS
-            if (!is.null(schema_to_use$types)) {
-              for (nm in names(schema_to_use$types)) {
-                if (!nm %in% names(private$log_df)) {
-                  next
+
+          # 2. Pre Validation Hook
+
+          result <- phrutils::phr_try_step({
+
+          private$..pre_validate()
+
+          },
+          step = phrutils::phr_txt("Pre-validation hook - Log$validate"),
+          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          pre_issues <- result
+
+          if (!is.null(pre_issues) && length(pre_issues) > 0) {
+            issues <- c(issues, pre_issues)
+          }
+
+          # 3. SCHEMA VALIDATION (types + allowed_values)
+
+          result <- phrutils::phr_try_step({
+
+            if (!is.null(schema_to_use) && length(schema_to_use) > 0) {
+              # ---- TYPE CHECKS
+              if (!is.null(schema_to_use$types)) {
+                for (nm in names(schema_to_use$types)) {
+                  if (!nm %in% names(private$..log_df)) {
+                    next
+                  }
+
+                  want <- schema_to_use$types[[nm]]
+                  got <- class(private$..log_df[[nm]])[1]
+
+                  # Safe coercion classification
+                  coercible <- phrutils::is_safely_coercible(private$..log_df[[nm]], want)
+
+                  # Soft-coercion when safe
+                  if (!identical(got, want) && coercible) {
+                    new_vec <- tryCatch(
+                      {
+                        if (want == "numeric") {
+                          suppressWarnings(as.numeric(private$..log_df[[nm]]))
+                        } else if (want == "character") {
+                          as.character(private$..log_df[[nm]])
+                        } else if (want == "logical") {
+                          suppressWarnings(as.logical(private$..log_df[[nm]]))
+                        } else if (want == "date" || want == "Date") {
+                          phrutils::phr_convert_date(private$..log_df[[nm]])
+                        } else {
+                          private$..log_df[[nm]]
+                        }
+                      },
+                      error = function(e) private$..log_df[[nm]]
+                    )
+
+                    private$..log_df[[nm]] <- new_vec
+
+                    phrutils::phr_message(
+                      phrutils::phr_txt(
+                        "Coerced column '{nm}' to type '{want}'."
+                      )
+                    )
+                  }
+
+                  # Re-check type after possible coercion
+                  final_type <- class(private$..log_df[[nm]])[1]
+
+                  if (!identical(final_type, want)) {
+                    issues$type_mismatch[[nm]] <- paste0(
+                      "want=",
+                      want,
+                      ", got=",
+                      final_type
+                    )
+                  }
                 }
+              }
 
-                want <- schema_to_use$types[[nm]]
-                got <- class(private$log_df[[nm]])[1]
+              # ---- ALLOWED VALUES CHECK
+              if (!is.null(schema_to_use$allowed_values)) {
+                for (nm in names(schema_to_use$allowed_values)) {
+                  if (!nm %in% names(private$..log_df)) {
+                    next
+                  }
 
-                # Safe coercion classification
-                coercible <- phrutils::is_safely_coercible(private$log_df[[nm]], want)
+                  allowed <- schema_to_use$allowed_values[[nm]]
+                  vals <- unique(private$..log_df[[nm]])
 
-                # Soft-coercion when safe
-                if (!identical(got, want) && coercible) {
-                  new_vec <- tryCatch(
-                    {
-                      if (want == "numeric") {
-                        suppressWarnings(as.numeric(private$log_df[[nm]]))
-                      } else if (want == "character") {
-                        as.character(private$log_df[[nm]])
-                      } else if (want == "logical") {
-                        suppressWarnings(as.logical(private$log_df[[nm]]))
-                      } else if (want == "date" || want == "Date") {
-                        phrutils::phr_convert_date(private$log_df[[nm]])
-                      } else {
-                        private$log_df[[nm]]
-                      }
-                    },
-                    error = function(e) private$log_df[[nm]]
-                  )
+                  bad <- setdiff(vals, allowed)
 
-                  private$log_df[[nm]] <- new_vec
-
-                  phrutils::phr_message(
-                    phr_txt(glue::glue(
-                      "Coerced column '{nm}' to type '{want}'."
-                    ))
-                  )
-                }
-
-                # Re-check type after possible coercion
-                final_type <- class(private$log_df[[nm]])[1]
-
-                if (!identical(final_type, want)) {
-                  issues$type_mismatch[[nm]] <- paste0(
-                    "want=",
-                    want,
-                    ", got=",
-                    final_type
-                  )
+                  if (length(bad) > 0) {
+                    issues$disallowed_values[[nm]] <- bad
+                  }
                 }
               }
             }
-
-            # ---- ALLOWED VALUES CHECK
-            if (!is.null(schema_to_use$allowed_values)) {
-              for (nm in names(schema_to_use$allowed_values)) {
-                if (!nm %in% names(private$log_df)) {
-                  next
-                }
-
-                allowed <- schema_to_use$allowed_values[[nm]]
-                vals <- unique(private$log_df[[nm]])
-
-                bad <- setdiff(vals, allowed)
-
-                if (length(bad) > 0) {
-                  issues$disallowed_values[[nm]] <- bad
-                }
-              }
-            }
+            issues
+          },
+          step = phrutils::phr_txt("Pre-validation hook - Log$validate"),
+          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
           }
 
-          # 3. FINALIZE
+          issues <- result
+
+          # 4. Post Validation Hook
+          result <- phrutils::phr_try_step({
+
+          private$..post_validate()
+
+          },
+          step = phrutils::phr_txt("Post-validation hook - Log$validate"),
+          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          post_issues <- result
+
+          if (!is.null(post_issues) && length(post_issues) > 0) {
+            issues <- c(issues, pre_issues)
+          }
+
+          # 5. FINALIZE and Set Fields
+          result <- phrutils::phr_try_step({
+
+            self$set(field = "..validated", value = length(issues) == 0)
+            self$set(field = "..issues", value = issues %||% list())
+
+          },
+          step = phrutils::phr_txt("Finalize and set fields - Log$validate"),
+          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          )
+          if (phrutils::phr_failed(result)) {
+            return(result)
+          }
+
+          issues <- result
 
           if (length(issues) > 0) {
+
+            msg <- glue::glue("Log validation completed with issues: {paste(names(issues), collapse=', ')}")
+
             phrutils::phr_warning(
-              private$log_name,
-              phr_txt(glue::glue(
-                "Log validation completed with issues: {paste(names(issues), collapse=', ')}"
-              ))
+              private$..log_name,
+              phrutils::phr_txt(
+                msg
+              )
             )
+          } else {
+            msg <- glue::glue("Log validation completed successfully with no issues.")
           }
 
-          private$validated <- length(issues) == 0
-          self$issues <- issues %||% list()
-
-          private$..touch()
+          private$..touch(log = TRUE,
+                          touch = TRUE,
+                          name = private$..log_name,
+                          message = phrutils::phr_txt(msg))
 
           invisible(issues)
         },
         on_error = "abort",
-        origin = paste0(private$log_name, "$validate")
+        origin = paste0(private$..log_name, "$validate")
       )
     },
 
@@ -410,30 +371,41 @@ Log <- R6::R6Class(
     #' Converts list to data.frame row and appends via dplyr::bind_rows().
     #' Updates metadata timestamp.
     append_entry = function(row_list) {
+
+      phrutils::phr_try({
+
       if (!is.list(row_list)) {
         phrutils::phr_error(
-          private$log_name,
-          phr_txt("append_entry() requires a named list.")
+          private$..log_name,
+          phrutils::phr_txt("append_entry() requires a named list.")
         )
       }
 
-      missing_cols <- setdiff(private$required_columns, names(row_list))
+      missing_cols <- setdiff(private$..required_columns, names(row_list))
       if (length(missing_cols) > 0) {
         phrutils::phr_error(
-          private$log_name,
-          phr_txt(glue::glue(
+          private$..log_name,
+          phrutils::phr_txt(
             "Missing required fields in new log entry: {paste(missing_cols, collapse=', ')}"
-          ))
+          )
         )
       }
 
       # align names
       df_row <- as.data.frame(row_list, stringsAsFactors = FALSE)
-      private$log_df <- dplyr::bind_rows(private$log_df, df_row)
 
-      private$..touch()
+      self$set(field = "..log_df", value = dplyr::bind_rows(private$..log_df, df_row))
 
-      phrutils::phr_message(phr_txt(glue::glue("Added new entry to {private$log_name}.")))
+      private$..touch(log = TRUE,
+                      touch = TRUE,
+                      name = private$..log_name,
+                      message = phrutils::phr_txt("Added new entry."))
+
+      },
+      on_error = "abort",
+      origin = "Log$append_entry"
+      )
+
       invisible(TRUE)
     },
 
@@ -448,10 +420,23 @@ Log <- R6::R6Class(
     #' Keeps column structure intact but sets row count to 0.
     #' Updates metadata timestamp.
     clear = function() {
-      private$log_df <- private$log_df[0, , drop = FALSE]
-      private$..touch()
-      phrutils::phr_message(phr_txt(glue::glue("{private$log_name} cleared.")))
+
+      phrutils::phr_try({
+
+      self$set(field = "..log_df", value = private$..log_df[0, , drop = FALSE])
+
+      private$..touch(log = TRUE,
+                      touch = TRUE,
+                      name = private$..log_name,
+                      message = phrutils::phr_txt("{private$..log_name} cleared."))
+
       invisible(TRUE)
+
+      },
+      on_error = "abort",
+      origin = paste0(private$..log_name, "$clear")
+      )
+
     },
 
     #' Export Log
@@ -475,51 +460,29 @@ Log <- R6::R6Class(
       phrutils::phr_try(
         {
           if (format == "csv") {
-            utils::write.csv(private$log_df, path, row.names = FALSE)
+            utils::write.csv(private$..log_df, path, row.names = FALSE)
           }
           if (format == "rds") {
-            saveRDS(private$log_df, path)
+            saveRDS(private$..log_df, path)
           }
           if (format == "xlsx") {
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
               phrutils::phr_error(
-                private$log_name,
-                phr_txt("Package 'openxlsx' is required for XLSX export.")
+                private$..log_name,
+                phrutils::phr_txt("Package 'openxlsx' is required for XLSX export.")
               )
             }
-            openxlsx::write.xlsx(private$log_df, file = path)
+            openxlsx::write.xlsx(private$..log_df, file = path)
           }
 
-          phrutils::phr_message(phr_txt(glue::glue(
-            "Exported {private$log_name} to {path}."
-          )))
+          phrutils::phr_message(phrutils::phr_txt(
+            "Exported {private$..log_name} to {path}."
+          ))
           invisible(path)
         },
         on_error = "abort",
-        origin = paste0(private$log_name, "$export")
+        origin = paste0(private$..log_name, "$export")
       )
-    },
-
-    #' Get Hash Fingerprint
-    #'
-    #' @description
-    #' Computes a hash of the log data for integrity checking
-    #'
-    #' @return Character hash digest of log_df
-    #'
-    #' @details
-    #' Uses digest package to create a unique fingerprint of the log contents.
-    #' Useful for detecting changes or verifying data integrity.
-    #'
-    #' @note Requires digest package
-    get_hash = function() {
-      if (!requireNamespace("digest", quietly = TRUE)) {
-        phrutils::phr_error(
-          private$log_name,
-          phr_txt("Package 'digest' is required for hashing.")
-        )
-      }
-      digest::digest(private$log_df)
     },
 
     #' Get Summary
@@ -537,44 +500,94 @@ Log <- R6::R6Class(
     #'   * last_updated: Timestamp of last modification
     summary = function() {
       list(
-        log_name = private$log_name,
-        n_entries = nrow(private$log_df),
-        n_columns = ncol(private$log_df),
-        validated = private$validated,
-        required_columns = private$required_columns,
-        schema_attached = !is.null(private$schema),
-        last_updated = private$metadata$modified_datetime
+        log_name = private$..log_name,
+        n_entries = nrow(private$..log_df),
+        n_columns = ncol(private$..log_df),
+        validated = private$..validated,
+        required_columns = private$..required_columns,
+        schema_attached = !is.null(private$..schema),
+        last_updated = private$..metadata$modified_datetime
+      )
+    }
+    ),
+
+  private = list(
+    # Private fields
+    ..issues = NULL,
+    ..log_df = NULL,
+    ..log_name = NULL,
+    ..required_columns = NULL,
+    ..schema = NULL,
+    ..validated = FALSE,
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        "..issues",
+        "..log_df",
+        "..log_name",
+        "..required_columns",
+        "..schema",
+        "..validated"
       )
     },
+
+    #' Additional Accessible Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields accessible via `get()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        "validate",
+        "append_entry",
+        "clear",
+        "export",
+        "summary"
+      )
+    },
+
+    #' Additional Settable Fields Hook
+    #'
+    #' @description
+    #' Returns subclass-specific fields that may be modified via `set()`.
+    #'
+    #' @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        "..issues",
+        "..log_df",
+        "..log_name",
+        "..required_columns",
+        "..schema",
+        "..validated"
+      )
+    },
+
 
     #' Pre-Validation Hook
     #'
     #' @description
     #' Hook method called before validation; override in subclasses for custom logic
+    #' Should return a list of issues.
     #'
     #' @return NULL (default implementation is empty)
-    pre_validate = function() {},
+    ..pre_validate = function() {},
 
     #' Post-Validation Hook
     #'
     #' @description
     #' Hook method called after validation; override in subclasses for custom logic
+    #' Should return a list of issues.
     #'
     #' @return NULL (default implementation is empty)
-    post_validate = function() {}
-  ),
-
-  private = list(
-    # Private fields
-    log_df = NULL,
-    log_name = NULL,
-    required_columns = NULL,
-    schema = NULL,
-    validated = FALSE,
-    metadata = list(
-      created_datetime = NULL,
-      modified_datetime = NULL
-    ),
+    ..post_validate = function() {},
 
     # Build Empty Log Template
     #
@@ -584,38 +597,40 @@ Log <- R6::R6Class(
     #
     # Uses schema$types to create appropriately typed empty vectors for each
     # required column. Defaults to character type if no schema type specified.
-    empty_log_template = function() {
-      cols <- private$required_columns %||% character(0)
+    ..empty_log_template = function() {
 
-      # If schema has types, use them for empty vectors
-      if (!is.null(private$schema$types)) {
-        df <- lapply(cols, function(col) {
-          type <- private$schema$types[[col]] %||% "character"
+      phrutils::phr_try({
 
-          if (type == "numeric") {
-            return(numeric())
-          } else if (type == "logical") {
-            return(logical())
-          } else if (type == "date") {
-            return(as.Date(character()))
-          } else {
-            return(character())
-          }
-        })
-      } else {
-        # default all-character template
-        df <- lapply(cols, function(col) character())
-      }
+        cols <- private$..required_columns %||% character(0)
 
-      names(df) <- cols
-      tibble::as_tibble(df)
-    },
-    # @description Update modified timestamp.
-    # @return Invisibly returns NULL.
-    # @keywords internal
-    ..touch = function() {
-      private$metadata$modified_datetime <- Sys.time()
-      invisible(NULL)
+        # If schema has types, use them for empty vectors
+        if (!is.null(private$..schema$types)) {
+          df <- lapply(cols, function(col) {
+            type <- private$..schema$types[[col]] %||% "character"
+
+            if (type == "numeric") {
+              return(numeric())
+            } else if (type == "logical") {
+              return(logical())
+            } else if (type == "date") {
+              return(as.Date(character()))
+            } else {
+              return(character())
+            }
+          })
+        } else {
+          # default all-character template
+          df <- lapply(cols, function(col) character())
+        }
+
+        names(df) <- cols
+        tibble::as_tibble(df)
+
+      },
+      on_error = "abort",
+      origin = paste0(private$..log_name, "$..empty_log_template")
+      )
     }
   )
+
 )
