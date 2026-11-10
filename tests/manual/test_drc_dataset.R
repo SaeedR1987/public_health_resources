@@ -212,7 +212,22 @@ head(mortality_analytics$outputs_schema_deaths)
 
 mortality_analytics$run_outputs()
 
-mortality_analytics$tables$roster$unweighted$sex_age_cat_demo_table11
+test <- mortality_analytics$get(field = "..linked_ind_roster_value_map")
+
+test$sex
+
+mortality_analytics$tables$deaths$unweighted$basic_death_demo_table_strata2
+
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted1
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted2
+
+mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_weighted1
+mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted4
+
+mortality_analytics$visualizations$roster$unweighted$age_months_cat_donut_unweighted5
+mortality_analytics$visualizations$roster$unweighted$age_months_distribution_unweighted3
+
+mortality_analytics$visualizations$roster$weighted$age_pyramid_overall_weighted2
 
 mortality_analytics$visualizations$roster$weighted$age_months_distribution_weighted4
 
@@ -235,3 +250,41 @@ mortality_analytics$visualizations$deaths$unweighted$age_pyramid_deaths_overall_
 
 mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted3
 mortality_analytics$visualizations$deaths$weighted$age_pyramid_deaths_overall_weighted4
+
+# Produce FSL Data Analytics
+
+fsl_analytics <- drc_mort$generate_data_analytics(
+  stage = "standardized",
+  type = "fsl"
+)
+
+fsl_analytics$run_analysis()
+
+View(fsl_analytics$get(field = "..analysis_results")$base)
+
+fsl_analytics$run_quality_checks()
+
+fsl_analytics$tables$plausibility$penalty_summary
+
+fsl_analytics$run_outputs()
+
+fsl_analytics$visualizations$overall$rcsi_score_overall
+fsl_analytics$visualizations$strata$hhs_ipc_by_strata
+# Produce WASH Data Analytics
+
+wash_analytics <- drc_mort$generate_data_analytics(
+  stage = "standardized",
+  type = "wash"
+)
+
+wash_analytics$run_analysis()
+
+View(wash_analytics$get(field = "..analysis_results")$base)
+
+wash_analytics$run_quality_checks()
+
+wash_analytics$tables$plausibility$penalty_summary
+
+wash_analytics$run_outputs()
+
+wash_analytics$visualizations$overall$fcs_overall

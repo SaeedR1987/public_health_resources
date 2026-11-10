@@ -417,7 +417,10 @@ WASHDataAnalytics <- R6::R6Class(
             outputs_schema = "..outputs_schema_water_container",
             base_survey_design = "..base_survey_design_water_container",
             survey_design = "..survey_design_water_container",
-            variable_map = "..linked_containers_variable_map"
+            variable_map = "..linked_containers_variable_map",
+            value_map = "..linked_containers_value_map",
+            variable_label = "..linked_containers_variable_label",
+            value_label = "..linked_containers_value_label"
           )
         } else {
           phrutils::phr_message(origin, "Linked water container data present but outputs_schema_water_container is empty. Skipping water container outputs.")

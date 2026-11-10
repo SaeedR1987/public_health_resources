@@ -2307,6 +2307,10 @@ DataAnalytics <- R6::R6Class(
       weighted_design <- inputs$survey_design
 
       vm <- inputs$variable_map %||% private$..variable_map %||% list()
+      value_map_set <- inputs$value_map %||% private$..value_map %||% list()
+      variable_label_set <- inputs$variable_label %||%
+        private$..variable_label %||% list()
+      value_label_set <- inputs$value_label %||% private$..value_label %||% list()
 
       # Resolve the plausibility results for this set (used by @results_table).
       plaus_results <- private$..plausibility_results
@@ -2442,7 +2446,10 @@ DataAnalytics <- R6::R6Class(
                 test_params = test_params,
                 out_name = out_name,
                 skip_results_table = TRUE,
-                variable_map = vm
+                variable_map = vm,
+                value_map = value_map_set,
+                variable_label = variable_label_set,
+                value_label = value_label_set
               )
             }
 
@@ -2711,7 +2718,10 @@ DataAnalytics <- R6::R6Class(
           outputs_schema = "..outputs_schema",
           base_survey_design = "..base_survey_design",
           survey_design = "..survey_design",
-          variable_map = "..variable_map"
+          variable_map = "..variable_map",
+          value_map = "..value_map",
+          variable_label = "..variable_label",
+          value_label = "..value_label"
         )
       )
     },
@@ -4571,15 +4581,26 @@ DataAnalytics <- R6::R6Class(
     #   linked roster / deaths) must pass the map belonging to the input set
     #   being processed, otherwise @variable_map$ references resolve against the
     #   wrong dataset's columns.
+    # @param value_map Named list of value mappings for the input set being
+    #   processed. Defaults to private$..value_map; linked datasets must pass
+    #   their own map so @value_map$ references resolve correctly.
+    # @param variable_label,value_label Named lists of labels for the input
+    #   set being processed. Default to the private household labels.
     # @return Updated func_args list.
     ..resolve_output_params = function(
       func_args,
       test_params,
       out_name,
       skip_results_table = FALSE,
-      variable_map = NULL
+      variable_map = NULL,
+      value_map = NULL,
+      variable_label = NULL,
+      value_label = NULL
     ) {
       variable_map <- variable_map %||% private$..variable_map %||% list()
+      value_map <- value_map %||% private$..value_map %||% list()
+      variable_label <- variable_label %||% private$..variable_label %||% list()
+      value_label <- value_label %||% private$..value_label %||% list()
 
       for (arg_name in names(test_params)) {
         arg_value <- test_params[[arg_name]]
@@ -4609,23 +4630,23 @@ DataAnalytics <- R6::R6Class(
               parts <- strsplit(sub("^@value_map\\$", "", elem), "\\$")[[1]]
               if (length(parts) >= 1) {
                 role <- parts[1]
-                if (!is.null(private$..value_map[[role]])) {
+                if (!is.null(value_map[[role]])) {
                   if (length(parts) == 2) {
-                    resolved <- private$..value_map[[role]][[parts[2]]]
+                    resolved <- value_map[[role]][[parts[2]]]
                     if (!is.null(resolved)) {
                       resolved_elements <- c(resolved_elements, resolved)
                     }
                   } else {
                     resolved_elements <- c(
                       resolved_elements,
-                      unlist(private$..value_map[[role]], use.names = FALSE)
+                      unlist(value_map[[role]], use.names = FALSE)
                     )
                   }
                 }
               }
             } else if (grepl("^@variable_label\\$", elem)) {
               role <- sub("^@variable_label\\$", "", elem)
-              resolved <- private$..variable_label[[role]]
+              resolved <- variable_label[[role]]
               if (!is.null(resolved)) {
                 resolved_elements <- c(resolved_elements, resolved)
               } else {
@@ -4640,9 +4661,9 @@ DataAnalytics <- R6::R6Class(
               parts <- strsplit(sub("^@value_label\\$", "", elem), "\\$")[[1]]
               if (length(parts) >= 1) {
                 role <- parts[1]
-                if (!is.null(private$..value_label[[role]])) {
+                if (!is.null(value_label[[role]])) {
                   if (length(parts) == 2) {
-                    resolved <- private$..value_label[[role]][[parts[2]]]
+                    resolved <- value_label[[role]][[parts[2]]]
                     if (!is.null(resolved)) {
                       resolved_elements <- c(resolved_elements, resolved)
                     } else {
@@ -4656,7 +4677,7 @@ DataAnalytics <- R6::R6Class(
                   } else {
                     resolved_elements <- c(
                       resolved_elements,
-                      unlist(private$..value_label[[role]], use.names = FALSE)
+                      unlist(value_label[[role]], use.names = FALSE)
                     )
                   }
                 } else {
@@ -4691,7 +4712,7 @@ DataAnalytics <- R6::R6Class(
           is.character(arg_value) && grepl("^@variable_label\\$", arg_value)
         ) {
           role <- sub("^@variable_label\\$", "", arg_value)
-          resolved <- private$..variable_label[[role]]
+          resolved <- variable_label[[role]]
           if (!is.null(resolved)) {
             func_args[[arg_name]] <- resolved
           } else {
@@ -4713,14 +4734,28 @@ DataAnalytics <- R6::R6Class(
           parts <- strsplit(sub("^@value_label\\$", "", arg_value), "\\$")[[1]]
           if (length(parts) >= 1) {
             role <- parts[1]
-            if (!is.null(private$..value_label[[role]])) {
+            if (!is.null(value_label[[role]])) {
               resolved <- if (length(parts) == 2) {
-                private$..value_label[[role]][[parts[2]]]
+                value_label[[role]][[parts[2]]]
               } else {
-                private$..value_label[[role]]
+                value_label[[role]]
+              }
+              if (is.null(resolved)) {
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(
+                    "Value label reference '{arg_value}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
+                  ),
+                  origin = private$..dataset_name
+                )
               }
               func_args[[arg_name]] <- resolved %||% arg_value
             } else {
+              phrutils::phr_warning(
+                message = phrutils::phr_txt(
+                  "Value label role '{role}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
+                ),
+                origin = private$..dataset_name
+              )
               func_args[[arg_name]] <- arg_value
             }
           }
@@ -4736,14 +4771,28 @@ DataAnalytics <- R6::R6Class(
           parts <- strsplit(sub("^@value_map\\$", "", arg_value), "\\$")[[1]]
           if (length(parts) >= 1) {
             role <- parts[1]
-            if (!is.null(private$..value_map[[role]])) {
+            if (!is.null(value_map[[role]])) {
               resolved <- if (length(parts) == 2) {
-                private$..value_map[[role]][[parts[2]]]
+                value_map[[role]][[parts[2]]]
               } else {
-                private$..value_map[[role]]
+                value_map[[role]]
+              }
+              if (is.null(resolved)) {
+                phrutils::phr_warning(
+                  message = phrutils::phr_txt(
+                    "Value map reference '{arg_value}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
+                  ),
+                  origin = private$..dataset_name
+                )
               }
               func_args[[arg_name]] <- resolved %||% arg_value
             } else {
+              phrutils::phr_warning(
+                message = phrutils::phr_txt(
+                  "Value map role '{role}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
+                ),
+                origin = private$..dataset_name
+              )
               func_args[[arg_name]] <- arg_value
             }
           }
