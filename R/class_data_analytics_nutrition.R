@@ -155,7 +155,7 @@ NutritionDataAnalytics <- R6::R6Class(
               dataset_label   = "muac"
             )
 
-            private$..data_analysis_plan_muac$set(field = "log_df", value = result$dap_df)
+            private$..data_analysis_plan_muac$set(field = "..log_df", value = result$dap_df)
 
           }
         },
@@ -824,7 +824,7 @@ NutritionDataAnalytics <- R6::R6Class(
       sets <- super$..pre_run_analysis()
 
       if (!is.null(private$..data)) {
-        if (is.null(private$..data_analysis_plan_muac$get(field = "log_df"))) {
+        if (is.null(private$..data_analysis_plan_muac$get(field = "..log_df"))) {
           sets$muac_alt <- list(
             data = "..data",
             survey_design = "..survey_design_muac",

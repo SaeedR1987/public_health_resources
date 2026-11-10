@@ -147,7 +147,7 @@ WASHDataAnalytics <- R6::R6Class(
               dataset_label   = "water_containers"
             )
 
-            private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+            private$..data_analysis_plan_roster$set(field = "..log_df", value = result$dap_df)
 
           }
         },
@@ -376,7 +376,7 @@ WASHDataAnalytics <- R6::R6Class(
       sets <- super$..pre_run_analysis()
 
       if (!is.null(private$..linked_containers_data)) {
-        if (!is.null(private$..data_analysis_plan_water_container$get(field = "log_df"))) {
+        if (!is.null(private$..data_analysis_plan_water_container$get(field = "..log_df"))) {
           sets$water_container <- list(
             data = "..linked_containers_data",
             survey_design = "..survey_design_water_container",

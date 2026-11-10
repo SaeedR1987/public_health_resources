@@ -162,16 +162,21 @@ mortality_analytics$analysis_diagnose()
 
 mortality_analytics$get(field = "..analysis_schema")
 mortality_analytics$get(field = "..analysis_plan_issues_log")
+mortality_analytics$get(field = "..analysis_schema_roster")
+mortality_analytics$get(field = "..data_analysis_plan_roster", member = "..log_df")
 
-head(mortality_analytics$analysis_plan_issues_log)
-head(mortality_analytics$analysis_schema)
+
+
+
 head(mortality_analytics$analysis_schema_roster)
 head(mortality_analytics$analysis_schema_deaths)
 head(mortality_analytics$get(field = "..data_analysis_plan")$get(field = "..log_df"))
 mortality_analytics$run_analysis()
 
-head(mortality_analytics$analysis_results$household$base)
-head(mortality_analytics$analysis_results$household$survey_design)
+test <- mortality_analytics$get(field = "..analysis_results")
+
+View(mortality_analytics$get(field = "..analysis_results")$main$base)
+head(mortality_analytics$get(field = "..analysis_results")$main$survey_design)
 
 head(mortality_analytics$analysis_results$roster$base)
 head(mortality_analytics$analysis_results$roster$survey_design)
@@ -181,10 +186,16 @@ View(mortality_analytics$analysis_results$deaths$survey_design)
 
 # testing plausibility
 mortality_analytics$quality_diagnose()
+head(mortality_analytics$get(field = "..quality_issues_log"))
+
 head(mortality_analytics$quality_issues_log)
 head(mortality_analytics$quality_schema)
 
 mortality_analytics$run_quality_checks()
+
+mortality_analytics$tables$plausibility$penalty_summary
+mortality_analytics$tables$plausibility$penalty_summary_by_enum_id
+mortality_analytics$tables$plausibility$penalty_summary_stratum_aru
 
 mortality_analytics$tables$plausibility$penalty_summary
 mortality_analytics$tables$plausibility$penalty_summary_stratum_aru
@@ -201,7 +212,10 @@ head(mortality_analytics$outputs_schema_deaths)
 
 mortality_analytics$run_outputs()
 
-mortality_analytics$tables$roster$unweighted$basic_demo_table7
+mortality_analytics$tables$roster$unweighted$sex_age_cat_demo_table11
+
+mortality_analytics$visualizations$roster$weighted$age_months_distribution_weighted4
+
 mortality_analytics$tables$roster$unweighted$basic_demo_table_strata8
 
 mortality_analytics$tables$roster$unweighted$basic_demo_table_weighted9

@@ -281,11 +281,12 @@ DataAnalytics <- R6::R6Class(
           # Step 3: Storing plausibility results
           result <- phrutils::phr_try_step(
             {
-              self$plausibility_results <- if (nested) {
-                all_results
-              } else {
-                all_results[[1]]
-              }
+              self$set(field = "..plausibility_results",
+                       value = if (nested) {
+                         all_results
+                       } else {
+                         all_results[[1]]
+                       })
             },
             step = phrutils::phr_txt("store quality checks results."),
             hint = phrutils::phr_txt("Check the parameters for each set.")
@@ -741,7 +742,7 @@ DataAnalytics <- R6::R6Class(
     #' @description
     #' Diagnose issues in the data analysis plan against the current dataset.
     #'
-    #' For every indicator row in \code{self$data_analysis_plan$get("log_df")}, this
+    #' For every indicator row in \code{self$data_analysis_plan$get("..log_df")}, this
     #' method verifies that the primary variable (\code{var_name}), the
     #' denominator variable (\code{denom_var}), and the disaggregation variable
     #' exist in the dataset (or survey design), and that the \code{calculation}
@@ -2406,8 +2407,8 @@ DataAnalytics <- R6::R6Class(
 
             # Determine first positional argument based on dataset_type column.
             # Supported values:
-            #   "base"          – base_design (unweighted); also the default
-            #   "survey_design" – weighted_design (weighted)
+            #   "base"          â€“ base_design (unweighted); also the default
+            #   "survey_design" â€“ weighted_design (weighted)
             dataset_type <- cell("dataset_type", i) %||% "base"
 
             first_arg <- switch(
@@ -2786,7 +2787,7 @@ DataAnalytics <- R6::R6Class(
         return(NULL)
       }
 
-      pairs <- .parse_indicator_arguments(as.character(x))
+      pairs <- private$..parse_indicator_arguments(as.character(x))
       params <- list()
 
       for (pair in pairs) {
@@ -2873,7 +2874,7 @@ DataAnalytics <- R6::R6Class(
         return(result)
       }
 
-      # Short-circuit when test_statistic is NA — threshold evaluation is meaningless
+      # Short-circuit when test_statistic is NA â€” threshold evaluation is meaningless
       if (
         (length(test_statistic) == 1 && is.na(test_statistic)) ||
         all(is.na(test_statistic))
@@ -2945,7 +2946,8 @@ DataAnalytics <- R6::R6Class(
     },
 
     #' @description Execute a single quality check using statistical tests
-    #' @param check A single check definition from the schema
+    #' @param check Data frame holding the rows of the flat quality schema for
+    #'   a single check (one row per threshold).
     #' @param survey_design Optional srvyr survey design to use. Defaults to
     #'   \code{private$..base_survey_design} (or \code{private$..survey_design} as fallback)
     #'   when \code{NULL}.
@@ -2964,10 +2966,18 @@ DataAnalytics <- R6::R6Class(
         {
           check_data <- data %||% private$..data
 
+          first_val <- function(col) {
+            if (!col %in% names(check)) {
+              return(NA_character_)
+            }
+            v <- check[[col]][!is.na(check[[col]])]
+            if (length(v) == 0) NA_character_ else as.character(v[[1]])
+          }
+
           result <- list(
-            check_name = check$check_name %||% "unknown",
-            check_label = check$check_label %||% "",
-            check_group = check$check_group %||% NA_character_,
+            check_name = first_val("check_name") %||% "unknown",
+            check_label = first_val("check_label") %||% "",
+            check_group = first_val("check_group"),
             test_statistic = NA,
             p_value = NA,
             penalty = 0,
@@ -2976,10 +2986,29 @@ DataAnalytics <- R6::R6Class(
             message = ""
           )
 
-          test_name <- check$statistical_test
-          variables <- check$variables
-          thresholds <- check$thresholds
-          test_params <- check$test_params
+          test_name <- first_val("statistical_test")
+          variables <- private$..outputs_parse_list_field(first_val("variables"))
+          test_params <- private$..outputs_parse_test_params(
+            first_val("test_params")
+          )
+          thresholds <- list()
+          if ("threshold_expression" %in% names(check)) {
+            for (i in seq_len(nrow(check))) {
+              expr <- as.character(check$threshold_expression[[i]])
+              if (is.na(expr) || !nzchar(trimws(expr))) {
+                next
+              }
+              pen <- if ("penalty_score" %in% names(check)) {
+                suppressWarnings(as.numeric(check$penalty_score[[i]]))
+              } else {
+                0
+              }
+              thresholds[[length(thresholds) + 1]] <- list(
+                expression = expr,
+                penalty = if (is.na(pen)) 0 else pen
+              )
+            }
+          }
 
           if (is.null(variables) || length(variables) == 0) {
             result$message <- "No variables specified"
@@ -3290,9 +3319,9 @@ DataAnalytics <- R6::R6Class(
             )
 
             group_rows <- lapply(
-              names(schema),
+              unique(schema$check_name),
               function(check_name) {
-                check <- schema[[check_name]]
+                check <- schema[schema$check_name %in% check_name, , drop = FALSE]
                 result <- private$..execute_check(
                   check,
                   survey_design = subset_design,
@@ -3419,7 +3448,7 @@ DataAnalytics <- R6::R6Class(
               indicator_unit = .data$indicator_unit
             )
 
-          private$..data_analysis_plan$set(field = "log_df", value = dap_df)
+          private$..data_analysis_plan$set(field = "..log_df", value = dap_df)
 
           if (nrow(issues) > 0) {
             private$..analysis_plan_issues_log <- dplyr::bind_rows(
@@ -4006,7 +4035,7 @@ DataAnalytics <- R6::R6Class(
     ..run_quality_checks_for_set = function(inputs, set_role, nested) {
       quality_schema <- inputs$quality_schema
 
-      if (is.null(quality_schema) || length(quality_schema) == 0) {
+      if (is.null(quality_schema) || nrow(quality_schema) == 0) {
         phrutils::phr_warning(
           message = phrutils::phr_txt(
             "No quality checks defined in schema for '{set_role}'."
@@ -4036,8 +4065,12 @@ DataAnalytics <- R6::R6Class(
 
       results <- list()
 
-      for (check_name in names(quality_schema)) {
-        check <- quality_schema[[check_name]]
+      for (check_name in unique(quality_schema$check_name)) {
+        check <- quality_schema[
+          quality_schema$check_name %in% check_name,
+          ,
+          drop = FALSE
+        ]
         result <- private$..execute_check(
           check,
           survey_design = effective_design,
@@ -4174,8 +4207,8 @@ DataAnalytics <- R6::R6Class(
       dap <- inputs$data_analysis_plan
       dap_df <- if (is.data.frame(dap)) {
         dap
-      } else if (!is.null(dap) && !is.null(dap$get("log_df"))) {
-        dap$get("log_df")
+      } else if (!is.null(dap) && !is.null(dap$get("..log_df"))) {
+        dap$get("..log_df")
       } else {
         NULL
       }
@@ -4413,7 +4446,7 @@ DataAnalytics <- R6::R6Class(
 
       dap_vars <- character(0)
       if (!is.null(dap)) {
-        dap_df <- dap$get("log_df")
+        dap_df <- dap$get("..log_df")
         if (
           !is.null(dap_df) &&
             nrow(dap_df) > 0 &&
@@ -4914,14 +4947,14 @@ DataAnalytics <- R6::R6Class(
         {
           if (
             is.null(private$..data_analysis_plan) ||
-            nrow(private$..data_analysis_plan$get("log_df")) == 0
+            nrow(private$..data_analysis_plan$get("..log_df")) == 0
           ) {
             phrutils::phr_warning(origin, phrutils::phr_txt("No data_analysis_plan loaded."))
             return(invisible(self))
           }
-          dap_df <- private$..data_analysis_plan$get("log_df")
+          dap_df <- private$..data_analysis_plan$get("..log_df")
           private$..data_analysis_plan$set(
-            field = "log_df",
+            field = "..log_df",
             value = dap_df[dap_df$indicator_name != indicator_name, ]
           )
           phrutils::phr_message(

@@ -155,7 +155,7 @@ HealthDataAnalytics <- R6::R6Class(
               available_vars  = names(private$..linked_ind_roster_data),
               dataset_label   = "roster"
             )
-            private$..data_analysis_plan_roster$set(field = "log_df", value = result$dap_df)
+            private$..data_analysis_plan_roster$set(field = "..log_df", value = result$dap_df)
           }
 
           # Build the DAP for deaths dataset from available columns and analysis_schema_deaths
@@ -166,7 +166,7 @@ HealthDataAnalytics <- R6::R6Class(
               available_vars  = names(private$..linked_ind_health_data),
               dataset_label   = "health"
             )
-            private$..data_analysis_plan_health$set(field = "log_df", value = result$dap_df)
+            private$..data_analysis_plan_health$set(field = "..log_df", value = result$dap_df)
           }
         },
         step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
@@ -404,7 +404,7 @@ HealthDataAnalytics <- R6::R6Class(
       sets <- super$pre_run_analysis()
 
       if (!is.null(private$..linked_ind_roster_data)) {
-        if (is.null(private$..data_analysis_plan_roster$get(field = "log_df"))) {
+        if (is.null(private$..data_analysis_plan_roster$get(field = "..log_df"))) {
           sets$roster <- list(
             data = "linked_ind_roster_data",
             survey_design = "survey_design_roster",
@@ -416,7 +416,7 @@ HealthDataAnalytics <- R6::R6Class(
       }
 
       if (!is.null(private$..linked_ind_health_data)) {
-        if (is.null(private$..data_analysis_plan_health$get(field = "log_df"))) {
+        if (is.null(private$..data_analysis_plan_health$get(field = "..log_df"))) {
           sets$health <- list(
             data = "linked_ind_health_data",
             survey_design = "survey_design_health",

@@ -142,7 +142,7 @@ Asset <- R6::R6Class(
             phrutils::phr_error(
               "Asset$get",
               phrutils::phr_txt(
-                "Field '{field}' is not accessible. Allowed fields: {paste(allowed_fields, collapse=', ')}"
+                "{private$..field_error_message(field, allowed_fields, 'accessible')}"
               )
             )
           }
@@ -227,7 +227,7 @@ Asset <- R6::R6Class(
             phrutils::phr_error(
               "Asset$call",
               phrutils::phr_txt(
-                "Field '{field}' is not accessible. Allowed fields: {paste(allowed_fields, collapse=', ')}"
+                "{private$..field_error_message(field, allowed_fields, 'accessible')}"
               )
             )
           }
@@ -327,7 +327,7 @@ Asset <- R6::R6Class(
             phrutils::phr_error(
               "Asset$set",
               phrutils::phr_txt(
-                "Field '{field}' is not settable. Allowed fields: {paste(allowed_fields, collapse=', ')}"
+                "{private$..field_error_message(field, allowed_fields, 'settable')}"
               )
             )
           }
@@ -596,6 +596,63 @@ Asset <- R6::R6Class(
       digest::digest(snapshot, algo = "md5")
     },
 
+    #' Build Field Access Error Message
+    #'
+    #' @description
+    #' Distinguishes a field that exists on this object but is not permitted
+    #' for the requested operation from a field that does not exist at all.
+    #'
+    #' @param field Requested field name.
+    #' @param allowed_fields Character vector of permitted field names.
+    #' @param kind Either \code{"accessible"} or \code{"settable"}.
+    #' @return Character scalar.
+    ..field_error_message = function(field, allowed_fields, kind) {
+      exists_on_object <- is.character(field) &&
+        length(field) == 1L &&
+        (field %in% ls(private, all.names = TRUE) ||
+           field %in% ls(self, all.names = TRUE))
+      allowed <- private$..format_allowed_fields(allowed_fields)
+      if (exists_on_object) {
+        paste0(
+          "Field '", field, "' exists but is not ", kind,
+          " via this method. Allowed fields: ", allowed
+        )
+      } else {
+        paste0(
+          "Field '", field, "' does not exist on this object. ",
+          "Allowed fields: ", allowed
+        )
+      }
+    },
+
+    #' Format Allowed Fields for Error Messages
+    #'
+    #' @description
+    #' Collapses allowed field names into a short string. Long messages break
+    #' downstream condition handling ("class name too long"), so the list is
+    #' truncated to a character budget.
+    #'
+    #' @param fields Character vector of field names.
+    #' @param max_chars Maximum number of characters to list.
+    #' @return Character scalar.
+    ..format_allowed_fields = function(fields, max_chars = 150L) {
+      fields <- unique(as.character(fields))
+      out <- character(0)
+      used <- 0L
+      for (f in fields) {
+        used <- used + nchar(f) + 2L
+        if (used > max_chars) break
+        out <- c(out, f)
+      }
+      txt <- paste(out, collapse = ", ")
+      if (length(out) < length(fields)) {
+        txt <- paste0(
+          txt, ", ... (", length(fields) - length(out), " more)"
+        )
+      }
+      txt
+    },
+
     #' Accessible Fields Hook
     #'
     #' @description
@@ -637,6 +694,9 @@ Asset <- R6::R6Class(
         "..track",
         "..compute_hash_id",
         "..sync_state",
+        "..allowed_get_fields",
+        "..allowed_call_fields",
+        "..allowed_set_fields",
         private$..additional_call_fields()
       )
     },
