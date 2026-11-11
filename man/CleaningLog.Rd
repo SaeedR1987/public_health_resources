@@ -27,34 +27,31 @@ Required columns:
 * new.value: Proposed new value
 }
 \keyword{internal}
-\section{Super class}{
-\code{\link[phr:Log]{Log}} -> \code{CleaningLog}
+\section{Super classes}{
+\code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Log]{Log}} -> \code{CleaningLog}
 }
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-CleaningLog-initialize}{\code{CleaningLog$new()}}
-    \item \href{#method-CleaningLog-validate}{\code{CleaningLog$validate()}}
-    \item \href{#method-CleaningLog-post_validate}{\code{CleaningLog$post_validate()}}
+    \item \href{#method-CleaningLog-validate_cl_against_dataset}{\code{CleaningLog$validate_cl_against_dataset()}}
     \item \href{#method-CleaningLog-add_change}{\code{CleaningLog$add_change()}}
     \item \href{#method-CleaningLog-clone}{\code{CleaningLog$clone()}}
   }
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_get_fields"><a href='../../phr/html/Log.html#method-Log-additional_get_fields'><code>Log$additional_get_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_set_fields"><a href='../../phr/html/Log.html#method-Log-additional_set_fields'><code>Log$additional_set_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_get_fields"><a href='../../phr/html/Log.html#method-Log-allowed_get_fields'><code>Log$allowed_get_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_set_fields"><a href='../../phr/html/Log.html#method-Log-allowed_set_fields'><code>Log$allowed_set_fields()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>Log$append_entry()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>Log$clear()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>Log$export()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get"><a href='../../phr/html/Log.html#method-Log-get'><code>Log$get()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get_hash"><a href='../../phr/html/Log.html#method-Log-get_hash'><code>Log$get_hash()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="pre_validate"><a href='../../phr/html/Log.html#method-Log-pre_validate'><code>Log$pre_validate()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set"><a href='../../phr/html/Log.html#method-Log-set'><code>Log$set()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set_schema"><a href='../../phr/html/Log.html#method-Log-set_schema'><code>Log$set_schema()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="summary"><a href='../../phr/html/Log.html#method-Log-summary'><code>Log$summary()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="validate"><a href='../../phr/html/Log.html#method-Log-validate'><code>Log$validate()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}
@@ -85,7 +82,7 @@ Required columns:
   \subsection{Details}{
     Sets up default schema with all character types and "changed" restricted to "yes"/"no".
 Calls parent Log$initialize() to complete setup.
-Validate Cleaning Log
+Validate Cleaning Log against Dataset
   }
   \subsection{Returns}{
     A new CleaningLog R6 object
@@ -93,50 +90,13 @@ Validate Cleaning Log
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-CleaningLog-validate"></a>}}
-\if{latex}{\out{\hypertarget{method-CleaningLog-validate}{}}}
-\subsection{\code{CleaningLog$validate()}}{
-  Validates cleaning log structure and optionally checks alignment with dataset
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{CleaningLog$validate(data_obj = NULL, stage = "clean")}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{data_obj}}{Optional Data object to validate log entries against}
-      \item{\code{stage}}{Character; data stage to validate against ("raw", "standardized", "clean")}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Details}{
-    Validation steps:
-1. Calls parent Log$validate() for basic structure and schema validation
-2. Checks that critical fields (uuid, question.name, changed, old.value, new.value)
-   are non-empty
-3. If data_obj provided, validates that:
-   - UUIDs exist in the dataset
-   - enum_id values exist (if mapped)
-   - question.name columns exist in dataset
-   - old.value matches current dataset values
-
-Sets self$validated and self$issues based on results.
-Post-Validate Against Dataset
-  }
-  \subsection{Returns}{
-    Invisible list of validation issues (empty if valid)
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-CleaningLog-post_validate"></a>}}
-\if{latex}{\out{\hypertarget{method-CleaningLog-post_validate}{}}}
-\subsection{\code{CleaningLog$post_validate()}}{
+\if{html}{\out{<a id="method-CleaningLog-validate_cl_against_dataset"></a>}}
+\if{latex}{\out{\hypertarget{method-CleaningLog-validate_cl_against_dataset}{}}}
+\subsection{\code{CleaningLog$validate_cl_against_dataset()}}{
   Validates cleaning log entries against an actual dataset to ensure integrity
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{CleaningLog$post_validate(data_obj, stage = "clean")}
+    \preformatted{CleaningLog$validate_cl_against_dataset(data_obj, stage = "clean")}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
@@ -200,6 +160,7 @@ Add Change Entry
   \subsection{Details}{
     Coerces all inputs to character and calls append_entry() to add to log.
 Normalizes 'changed' to lowercase for consistency.
+Additional Accessible Fields Hook
   }
   \subsection{Returns}{
     Invisible TRUE

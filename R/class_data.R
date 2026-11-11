@@ -621,6 +621,10 @@ Data <- R6::R6Class(
           var_schema <- result$var_schema
           other_col_patterns <- result$other_col_patterns
 
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", class(data_copy)))
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", nrow(data_copy)))
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", summary(data_copy)))
+
           # Step 5-7: For Loop - Schema type conversion and inferred other column registration
 
           result <- phrutils::phr_try_step(
@@ -693,10 +697,6 @@ Data <- R6::R6Class(
           }
 
           data_copy <- result
-
-          phrutils::phr_message(paste0("A rows ..standardized data: ", class(data_copy)))
-          phrutils::phr_message(paste0("A rows ..standardized data: ", nrow(data_copy)))
-          phrutils::phr_message(paste0("A rows ..standardized data: ", summary(data_copy)))
 
           # Step 9: Register Schema Identified Other Columns, if not already added
           # This step shouldnt return anything in result, the private helper
@@ -991,9 +991,10 @@ Data <- R6::R6Class(
             }
 
             phrutils::phr_message(
-              paste0(private$..dataset_name,
-                     phrutils::phr_txt(" - Generated {entries_added} cleaning log entries and {deletions_added} deletion log entries from quality flags.")
-            ))
+              phrutils::phr_txt(
+                "Generated {entries_added} cleaning log entries and {deletions_added} deletion log entries from quality flags."
+              )
+            )
 
             results <- list(
               entries_added = res$entries_added,
@@ -1165,8 +1166,9 @@ Data <- R6::R6Class(
 
             # validation (internal + schema)
             private$..cleaning_log$validate()
-            private$..cleaning_log$validate_cl_against_dataset(self, stage = "clean")
 
+            # post-validate: check cleaning log against dataset
+            private$..cleaning_log$post_validate(self, stage = "clean")
             }
 
           },
@@ -1186,21 +1188,13 @@ Data <- R6::R6Class(
             ) {
 
               # apply changes (authoritative mode option A)
-              # if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
-
-                if (is.null(private$..cleaning_log$get(field = "..log_df"))) {
-                  private$..clean_apply_cleaning_changes(
-                    df = private$..clean_data,
-                    log_df = NULL,
-                    uuid_col = private$..uuid
-                  )
-                } else if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
+              if (nrow(private$..cleaning_log$log_df) > 0) {
 
                 self$set(
                   field = "..clean_data",
                   value = private$..clean_apply_cleaning_changes(
                     df = private$..clean_data,
-                    log_df = private$..cleaning_log$get(field = "..log_df"),
+                    log_df = private$..cleaning_log$log_df,
                     uuid_col = private$..uuid
                   )
                 )
@@ -1222,7 +1216,7 @@ Data <- R6::R6Class(
               inherits(private$..deletion_log, "DeletionLog")
             ) {
               private$..deletion_log$validate()
-              private$..deletion_log$validate_dl_against_dataset(self, stage = "clean")
+              private$..deletion_log$post_validate(self, stage = "clean")
             }
           },
           step = phrutils::phr_txt("Apply deletion log"),
@@ -1241,8 +1235,8 @@ Data <- R6::R6Class(
             ) {
 
               # apply deletions
-              if (nrow(private$..deletion_log$get(field = "..log_df")) > 0) {
-                delete_ids <- as.character(private$..deletion_log$get(field = "..log_df")$uuid)
+              if (nrow(private$..deletion_log$log_df) > 0) {
+                delete_ids <- as.character(private$..deletion_log$log_df$uuid)
 
                 self$set(
                   field = "..clean_data",
@@ -1252,10 +1246,11 @@ Data <- R6::R6Class(
                   ]
                 )
               }
+
             }
           },
-          step = phrutils::phr_txt("Apply deletion log"),
-          hint = phrutils::phr_txt("Check deletion log has valid inputs.")
+          step = phrutils::phr_txt("Apply cleaning log"),
+          hint = phrutils::phr_txt("Check cleaning log has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1650,7 +1645,7 @@ Data <- R6::R6Class(
           if (is.null(builder)) {
             phrutils::phr_error(
               message = paste(
-                phrutils::phr_txt("Unknown analytics type:"),
+                "Unknown analytics type:",
                 type
               )
             )
@@ -1813,99 +1808,6 @@ Data <- R6::R6Class(
     #   to this data object.
     # @keywords internal
     ..linked_objects = list(), # For dependency linking (name -> list(obj, by_self, by_other))
-
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
-    ..additional_get_fields = function() {
-      c(
-        super$..additional_get_fields(),
-        "..dataset_name",
-        "..validated",
-        "..standardized",
-        "..cleaned",
-        "..raw_data",
-        "..standardized_data",
-        "..clean_data",
-        "..uuid",
-        "..required_columns",
-        "..other_columns",
-        "..variable_map",
-        "..value_map",
-        "..variable_label",
-        "..value_label",
-        "..variable_schema",
-        "..indicator_schema",
-        "..dependency_schema",
-        "..cleaning_log",
-        "..deletion_log",
-        "..data_quality_flags",
-        "..data_diagnostics",
-        "..cleaning_log_issues",
-        "..linked_objects"
-      )
-    },
-
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
-    ..additional_call_fields = function() {
-      c(
-        super$..additional_call_fields(),
-        "summary",
-        "get_data",
-        "get_data_with_fallback",
-        "validate",
-        "standardize",
-        "generate_cleaning_log",
-        "clean",
-        "data_diagnose",
-        "export_data",
-        "add_linked_dataset",
-        "generate_data_analytics"
-      )
-    },
-
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
-    ..additional_set_fields = function() {
-      c(
-        super$..additional_set_fields(),
-        "..dataset_name",
-        "..validated",
-        "..standardized",
-        "..cleaned",
-        "..raw_data",
-        "..standardized_data",
-        "..clean_data",
-        "..uuid",
-        "..required_columns",
-        "..other_columns",
-        "..variable_map",
-        "..value_map",
-        "..variable_label",
-        "..value_label",
-        "..variable_schema",
-        "..indicator_schema",
-        "..dependency_schema",
-        "..cleaning_log",
-        "..deletion_log",
-        "..data_quality_flags",
-        "..data_diagnostics",
-        "..cleaning_log_issues",
-        "..linked_objects"
-      )
-    },
 
     # @field ..data_registry List of data object types and associated types
     # that are allowable for add_linked_object
@@ -4905,11 +4807,6 @@ Data <- R6::R6Class(
       skipped_self_ref <- character(0)
       skipped_missing_cols <- character(0)
 
-      variables_to_log <- trimws(
-        unlist(strsplit(variables_to_log, ","))
-      )
-      variables_to_log <- variables_to_log[nzchar(variables_to_log)]
-
       for (var_canonical in variables_to_log) {
 
         var_actual_col <- private$..resolve_column(
@@ -5016,31 +4913,39 @@ Data <- R6::R6Class(
         {
           # Check separate dependency_schema first (stored as a flat data
           # frame; convert to the nested list view on demand).
-          dep_schema <- private$..dependency_schema
-          if (!is.null(dep_schema) &&
-              nrow(dep_schema) > 0 &&
-              "dep_name" %in% names(dep_schema) &&
-              "action" %in% names(dep_schema)) {
-
-            dep_row <- dep_schema[
-              dep_schema$dep_name == flag_name,
-              ,
-              drop = FALSE
-            ]
-
-            if (nrow(dep_row) > 0) {
-              return(dep_row$action[[1]] %||% "")
+          dep_schema_list <- private$..as_dependency_schema_list()
+          if (length(dep_schema_list) > 0) {
+            # Check hard dependencies
+            if (flag_name %in% names(dep_schema_list$dependencies)) {
+              dep <- dep_schema_list$dependencies[[flag_name]]
+              action <- dep[["action"]] %||% ""
+              return(action)
             }
+            # Check soft dependencies
+            if (flag_name %in% names(dep_schema_list$soft_dependencies)) {
+              dep <- dep_schema_list$soft_dependencies[[flag_name]]
+              action <- dep[["action"]] %||% ""
+              return(action)
+            }
+          }
 
-            # No match found
-            ""
+          # Fall back to variable_schema dependencies for backward compatibility
+          if (
+            !is.null(private$..variable_schema) &&
+            !is.null(private$..variable_schema$dependencies)
+          ) {
+            if (flag_name %in% names(private$..variable_schema$dependencies)) {
+              dep <- private$..variable_schema$dependencies[[flag_name]]
+              action <- dep[["action"]] %||% ""
+              return(action)
+            }
           }
 
           # No match found
           return("")
         },
         on_error = "warn",
-        origin = paste0(private$..dataset_name, "$..gen_cl_get_flag_action_from_schema")
+        origin = paste0(private$..dataset_name, "$get_flag_action_from_schema")
       )
     },
 
@@ -5228,7 +5133,7 @@ Data <- R6::R6Class(
         "variable" %in% names(var_schema_for_unique)
       ) {
 
-        unique_vars <- var_schema_for_unique$variable[
+        unique_vars <- var_schema_for_unique$var_name[
           isTRUE(var_schema_for_unique$unique) |
             (!is.na(var_schema_for_unique$unique) &
                var_schema_for_unique$unique %in% c(TRUE, "TRUE", "true", 1))
@@ -5348,9 +5253,7 @@ Data <- R6::R6Class(
     #' Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
     #'
     #' @return NULL (default implementation does nothing)
-    ..post_generate_cleaning_log = function(
-    stage = c("clean", "standardized", "raw")
-    ) {}, # subclass hook
+    ..post_generate_cleaning_log = function() {}, # subclass hook
 
     #' Setup Cleaning Dataset
     #'
@@ -5658,17 +5561,6 @@ Data <- R6::R6Class(
     #'
     #' @return Modified data frame with cleaning changes applied
     ..clean_apply_cleaning_changes = function(df, log_df, uuid_col) {
-
-      phrutils::phr_try({
-
-        if (is.null(log_df)) {
-          phrutils::phr_warning(
-            message = phrutils::phr_txt("No cleaning log information has been set. Please run generate_cleaning_log or import a cleaning log first."),
-            origin = paste0(private$..dataset_name, phrutils::phr_txt("$..clean_apply_cleaning_changes"))
-          )
-          return(df)
-        }
-
       issues <- list()
 
       for (i in seq_len(nrow(log_df))) {
@@ -5802,20 +5694,12 @@ Data <- R6::R6Class(
       }
 
       # Store any issues for user follow-up
-
       if (length(issues) > 0) {
-
         self$set(
           field = "..cleaning_log_issues",
           value = do.call(rbind, issues)
         )
-
       }
-
-      },
-      on_error = "abort",
-      origin = paste0(private$..dataset_name, "$..clean_apply_cleaning_changes")
-      )
 
       df
     },

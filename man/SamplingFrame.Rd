@@ -28,8 +28,8 @@ A \code{SamplingFrame} can be initialised with an existing data frame
 (e.g. a pre-built frame loaded from a file) or left empty for later
 population via \code{\link[=SurveyProtocol]{SurveyProtocol$set_sampling_frame()}}.
 }
-\section{Super class}{
-\code{\link[phr:Log]{Log}} -> \code{SamplingFrame}
+\section{Super classes}{
+\code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Log]{Log}} -> \code{SamplingFrame}
 }
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
@@ -53,18 +53,15 @@ population via \code{\link[=SurveyProtocol]{SurveyProtocol$set_sampling_frame()}
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_set_fields"><a href='../../phr/html/Log.html#method-Log-additional_set_fields'><code>Log$additional_set_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_get_fields"><a href='../../phr/html/Log.html#method-Log-allowed_get_fields'><code>Log$allowed_get_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_set_fields"><a href='../../phr/html/Log.html#method-Log-allowed_set_fields'><code>Log$allowed_set_fields()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>Log$append_entry()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>Log$clear()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>Log$export()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get"><a href='../../phr/html/Log.html#method-Log-get'><code>Log$get()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get_hash"><a href='../../phr/html/Log.html#method-Log-get_hash'><code>Log$get_hash()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="post_validate"><a href='../../phr/html/Log.html#method-Log-post_validate'><code>Log$post_validate()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="pre_validate"><a href='../../phr/html/Log.html#method-Log-pre_validate'><code>Log$pre_validate()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set"><a href='../../phr/html/Log.html#method-Log-set'><code>Log$set()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set_schema"><a href='../../phr/html/Log.html#method-Log-set_schema'><code>Log$set_schema()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="summary"><a href='../../phr/html/Log.html#method-Log-summary'><code>Log$summary()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="validate"><a href='../../phr/html/Log.html#method-Log-validate'><code>Log$validate()</code></a></span></li>
 </ul>

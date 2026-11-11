@@ -2,7 +2,7 @@
 % Please edit documentation in R/class_data_analytics_nutrition.R
 \name{NutritionDataAnalytics}
 \alias{NutritionDataAnalytics}
-\title{IPHRA Nutrition Data Analytics Class}
+\title{IPHRA IYCF Data Analytics Class}
 \description{
 This class provides Nutrition-specific (including anthropometric) functionality:
 * Quantitative analysis indicators via analysis_schema
@@ -13,98 +13,83 @@ This class provides Nutrition-specific (including anthropometric) functionality:
 * Optional MUAC age-adjusted analysis via \code{post_run_analysis(muac_age_weights = TRUE)}
 }
 \details{
-The `NutritionDataAnalytics` R6 class extends `DataAnalytics` for
-Nutrition-specific quantitative analysis, including anthropometric data.
+The `NutritionDataAnalytics` R6 class extends `DataAnalytics` to provide
+Infant and Young Child Feeding specific quality checks in a unified
+analytics object.
+
+
+The method loads the CDC MUAC assessment template distributed with the
+package, writes summary counts into the designated cells of the
+`"MUAC Analysis"` worksheet, and saves the completed workbook to
+`output_file`. All other worksheets, formulas, cell formatting, and
+workbook structure are preserved.
+
+If an oedema variable is available, children with oedema are included in
+the SAM category regardless of MUAC. If no oedema variable is available,
+SAM classification is based solely on MUAC < 115 mm.
+
+
+
+Variable names are resolved from the object's variable map using the
+following canonical variables:
+
+\itemize{
+  \item \code{date_survey -> SURVDATE}
+  \item \code{cluster_id_numeric} or \code{cluster_id -> CLUSTER}
+  \item \code{enum_id -> TEAM}
+  \item \code{sex -> SEX}
+  \item \code{dob_final -> BIRTHDAT}
+  \item \code{age_months -> MONTHS}
+  \item \code{nut_weight -> WEIGHT}
+  \item \code{nut_height -> HEIGHT}
+  \item \code{nut_edema_confirm} or \code{nut_edema -> EDEMA}
+  \item \code{nut_muac_mm} or \code{nut_muac_cm -> MUAC}
+}
 }
 \seealso{
 [DataAnalytics]
+
+\code{\link[openxlsx]{loadWorkbook}},
+  \code{\link[openxlsx]{saveWorkbook}}
+
+\code{\link[utils]{write.csv}},
+  \code{\link[openxlsx]{write.xlsx}}
 }
-\section{Super class}{
-\code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{NutritionDataAnalytics}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{quality_schema_anthro}}{Quality check schema for anthropometric data}
-
-    \item{\code{quality_schema_iycf}}{Quality check schema for IYCF data}
-
-    \item{\code{plausibility_results_anthro}}{Results of anthropometric quality checks}
-
-    \item{\code{plausibility_results_iycf}}{Results of IYCF quality checks}
-  }
-  \if{html}{\out{</div>}}
+\section{Super classes}{
+\code{\link[phr:Asset]{Asset}} -> \code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{NutritionDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-NutritionDataAnalytics-initialize}{\code{NutritionDataAnalytics$new()}}
-    \item \href{#method-NutritionDataAnalytics-post_run_analysis}{\code{NutritionDataAnalytics$post_run_analysis()}}
-    \item \href{#method-NutritionDataAnalytics-quality_diagnose}{\code{NutritionDataAnalytics$quality_diagnose()}}
-    \item \href{#method-NutritionDataAnalytics-default_quality_anthro_schema}{\code{NutritionDataAnalytics$default_quality_anthro_schema()}}
-    \item \href{#method-NutritionDataAnalytics-default_quality_iycf_schema}{\code{NutritionDataAnalytics$default_quality_iycf_schema()}}
-    \item \href{#method-NutritionDataAnalytics-pre_run_quality_checks}{\code{NutritionDataAnalytics$pre_run_quality_checks()}}
-    \item \href{#method-NutritionDataAnalytics-run_quality_checks}{\code{NutritionDataAnalytics$run_quality_checks()}}
-    \item \href{#method-NutritionDataAnalytics-default_analysis_schema}{\code{NutritionDataAnalytics$default_analysis_schema()}}
-    \item \href{#method-NutritionDataAnalytics-default_outputs_schema}{\code{NutritionDataAnalytics$default_outputs_schema()}}
+    \item \href{#method-NutritionDataAnalytics-export_cdc_muac_file}{\code{NutritionDataAnalytics$export_cdc_muac_file()}}
+    \item \href{#method-NutritionDataAnalytics-export_ena_anthro_file}{\code{NutritionDataAnalytics$export_ena_anthro_file()}}
     \item \href{#method-NutritionDataAnalytics-clone}{\code{NutritionDataAnalytics$clone()}}
   }
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id=".compute_results_by_group"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-.compute_results_by_group'><code>DataAnalytics$.compute_results_by_group()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id=".translate_canonical_to_actual_vars"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-.translate_canonical_to_actual_vars'><code>DataAnalytics$.translate_canonical_to_actual_vars()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="add_all_to_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-add_all_to_dap'><code>DataAnalytics$add_all_to_dap()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="add_indicator_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-add_indicator_dap'><code>DataAnalytics$add_indicator_dap()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="analysis_diagnose"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-analysis_diagnose'><code>DataAnalytics$analysis_diagnose()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="calculate_overall_score"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-calculate_overall_score'><code>DataAnalytics$calculate_overall_score()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="create_survey_design"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-create_survey_design'><code>DataAnalytics$create_survey_design()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="default_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-default_quality_schema'><code>DataAnalytics$default_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="evaluate_threshold_expressions"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-evaluate_threshold_expressions'><code>DataAnalytics$evaluate_threshold_expressions()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="execute_check"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-execute_check'><code>DataAnalytics$execute_check()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_analysis_schema'><code>DataAnalytics$export_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_outputs_schema'><code>DataAnalytics$export_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_quality_schema'><code>DataAnalytics$export_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_results"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_results'><code>DataAnalytics$export_results()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_state_object"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_state_object'><code>DataAnalytics$export_state_object()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="generate_dap_from_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-generate_dap_from_schema'><code>DataAnalytics$generate_dap_from_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="generate_plausibility_report"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-generate_plausibility_report'><code>DataAnalytics$generate_plausibility_report()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="generate_report"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-generate_report'><code>DataAnalytics$generate_report()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_analysis_schema'><code>DataAnalytics$get_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_outputs_schema'><code>DataAnalytics$get_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_quality_schema'><code>DataAnalytics$get_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_results"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_results'><code>DataAnalytics$get_results()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_variable"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_variable'><code>DataAnalytics$get_variable()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_analysis_schema'><code>DataAnalytics$import_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_outputs_schema'><code>DataAnalytics$import_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_quality_schema'><code>DataAnalytics$import_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_schema_from_table"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_schema_from_table'><code>DataAnalytics$import_schema_from_table()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="load_state_object"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-load_state_object'><code>DataAnalytics$load_state_object()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="outputs_diagnose"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-outputs_diagnose'><code>DataAnalytics$outputs_diagnose()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_add_all_to_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_add_all_to_dap'><code>DataAnalytics$pre_add_all_to_dap()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_run_analysis"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_run_analysis'><code>DataAnalytics$pre_run_analysis()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_run_outputs"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_run_outputs'><code>DataAnalytics$pre_run_outputs()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="remove_indicator_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-remove_indicator_dap'><code>DataAnalytics$remove_indicator_dap()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="results_to_table"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-results_to_table'><code>DataAnalytics$results_to_table()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="quality_diagnose"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-quality_diagnose'><code>DataAnalytics$quality_diagnose()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="run_analysis"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-run_analysis'><code>DataAnalytics$run_analysis()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="run_outputs"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-run_outputs'><code>DataAnalytics$run_outputs()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="schema_to_table"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-schema_to_table'><code>DataAnalytics$schema_to_table()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="set_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-set_analysis_schema'><code>DataAnalytics$set_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="set_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-set_outputs_schema'><code>DataAnalytics$set_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="set_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-set_quality_schema'><code>DataAnalytics$set_quality_schema()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="run_quality_checks"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-run_quality_checks'><code>DataAnalytics$run_quality_checks()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="summary"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-summary'><code>DataAnalytics$summary()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="to_list_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-to_list_schema'><code>DataAnalytics$to_list_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="validate_plan"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-validate_plan'><code>DataAnalytics$validate_plan()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="validate_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-validate_quality_schema'><code>DataAnalytics$validate_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="validate_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-validate_schema'><code>DataAnalytics$validate_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="visualize"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-visualize'><code>DataAnalytics$visualize()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-NutritionDataAnalytics-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-initialize}{}}}
 \subsection{\code{NutritionDataAnalytics$new()}}{
-  Initialize a new NutritionDataAnalytics object
+  Initialize a new IYCFDataAnalytics object
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{NutritionDataAnalytics$new(
@@ -117,14 +102,15 @@ Nutrition-specific quantitative analysis, including anthropometric data.
   variable_map = NULL,
   value_map = NULL,
   variable_label = NULL,
-  value_label = NULL
+  value_label = NULL,
+  quality_schema = NULL
 )}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{data}}{A data frame (standardized or clean nutrition data)}
+      \item{\code{data}}{A data frame (standardized or clean IYCF data)}
       \item{\code{dap}}{Optional data analysis plan (tibble)}
       \item{\code{parent_data_object}}{The Data object that generated this}
       \item{\code{dataset_name}}{A name for this analytics assessment}
@@ -134,187 +120,82 @@ Nutrition-specific quantitative analysis, including anthropometric data.
       \item{\code{value_map}}{Value mappings from Data object}
       \item{\code{variable_label}}{Variable labels from Data object}
       \item{\code{value_label}}{Value labels from Data object}
+      \item{\code{quality_schema}}{Optional quality check schema}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A new NutritionDataAnalytics object
+    A new IYCFDataAnalytics object
+Export CDC MUAC assessment workbook
+
+Summarizes MUAC screening results by age group, sex, and nutritional
+status, populates the corresponding cells in the CDC MUAC assessment
+Excel template, and exports a completed workbook while preserving all
+existing worksheets, formulas, formatting, and calculated fields.
+
+Children are classified into the following categories:
+\itemize{
+  \item SAM: MUAC < 115 mm and/or oedema present.
+  \item MAM: MUAC >= 115 mm and < 125 mm.
+  \item Normal: MUAC >= 125 mm.
+}
+
+Results are summarized separately for males and females aged
+6--23 months and 24--59 months and written to the
+`"MUAC Analysis"` worksheet of the CDC MUAC template.
   }
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-post_run_analysis"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-post_run_analysis}{}}}
-\subsection{\code{NutritionDataAnalytics$post_run_analysis()}}{
-  Post-analysis hook for MUAC age-adjustment.
-
-Called automatically at the end of \code{run_analysis()}.  When
-\code{muac_age_weights = TRUE} this method:
-\enumerate{
-  \item Filters the data analysis plan to rows whose \code{var_name}
-        contains \code{"muac"}.
-  \item If no such rows exist, returns silently.
-  \item Computes MUAC age-adjustment weights (expected proportion of
-        0–23 month children defaults to \code{1/3}; 24–59 month
-        children receive the complementary expected proportion \code{2/3}).
-  \item Multiplies the MUAC age-adjustment weight by the existing
-        survey weight (if present) to form a composite weight column.
-  \item Creates a temporary survey design object using the composite
-        weight.
-  \item Runs the filtered analysis plan against the modified design and
-        stores results in \code{self$analysis_results[["muac_weighted"]]}.
-}
-
-When \code{muac_age_weights = FALSE} (default) the method returns
-immediately without performing any additional analysis.
+\if{html}{\out{<a id="method-NutritionDataAnalytics-export_cdc_muac_file"></a>}}
+\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-export_cdc_muac_file}{}}}
+\subsection{\code{NutritionDataAnalytics$export_cdc_muac_file()}}{
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$post_run_analysis(
-  muac_age_weights = FALSE,
-  expected_prop_0_23 = 1/3
+    \preformatted{NutritionDataAnalytics$export_cdc_muac_file(data, output_file)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{data}}{A data frame containing individual-level MUAC screening data.
+Variable names and coded values are resolved using the object's
+variable and value maps.}
+      \item{\code{output_file}}{Character. Path to the output Excel workbook to create.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Invisibly returns a named list containing the counts written to the
+  CDC MUAC template cells.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-NutritionDataAnalytics-export_ena_anthro_file"></a>}}
+\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-export_ena_anthro_file}{}}}
+\subsection{\code{NutritionDataAnalytics$export_ena_anthro_file()}}{
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{NutritionDataAnalytics$export_ena_anthro_file(
+  data,
+  output_file,
+  format = "csv"
 )}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{muac_age_weights}}{Logical (default \code{FALSE}).  Set to
-\code{TRUE} to compute and apply MUAC age-adjustment weights.}
-      \item{\code{expected_prop_0_23}}{Numeric in (0, 1); expected proportion of
-children aged 0–23 months among all 0–59 month children.
-Defaults to \code{1/3} (i.e. 1/3 of children are expected to be 0–23
-months and 2/3 are expected to be 24–59 months).}
+      \item{\code{data}}{A data frame containing child anthropometry data.}
+      \item{\code{output_file}}{Character. Path to the file to be created.}
+      \item{\code{format}}{Character. Export format. One of
+\code{"csv"} or \code{"xlsx"}. Defaults to \code{"csv"}.}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Invisibly returns \code{self}.
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-quality_diagnose"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-quality_diagnose}{}}}
-\subsection{\code{NutritionDataAnalytics$quality_diagnose()}}{
-  Diagnose issues in both anthropometric and IYCF quality schemas.
-
-Runs the standard quality_diagnose logic on both \code{quality_schema_anthro}
-and \code{quality_schema_iycf} and returns a combined tibble with a
-\code{schema_type} column indicating which schema each check belongs to.
-Results are stored in \code{self$quality_issues_log}.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$quality_diagnose()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A tibble (invisibly) with one row per quality check, covering
-  both anthropometric and IYCF schemas.
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-default_quality_anthro_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-default_quality_anthro_schema}{}}}
-\subsection{\code{NutritionDataAnalytics$default_quality_anthro_schema()}}{
-  Load the default anthropometric quality schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$default_quality_anthro_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A list of anthropometric quality checks
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-default_quality_iycf_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-default_quality_iycf_schema}{}}}
-\subsection{\code{NutritionDataAnalytics$default_quality_iycf_schema()}}{
-  Load the default IYCF quality schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$default_quality_iycf_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A list of IYCF quality checks
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-pre_run_quality_checks"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-pre_run_quality_checks}{}}}
-\subsection{\code{NutritionDataAnalytics$pre_run_quality_checks()}}{
-  Pre-hook providing the input sets used by the inherited
-\code{run_quality_checks()}.
-
-Returns one input set per nutrition quality schema (both operating on
-the same data): \code{anthro} (using \code{quality_schema_anthro}) and
-\code{iycf} (using \code{quality_schema_iycf}). Penalty tables are
-stored under \code{tables$anthro$plausibility} and
-\code{tables$iycf$plausibility}.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$pre_run_quality_checks()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A named list of field sets.
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-run_quality_checks"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-run_quality_checks}{}}}
-\subsection{\code{NutritionDataAnalytics$run_quality_checks()}}{
-  Run quality checks for both anthropometric and IYCF schemas
-
-Uses the inherited \code{run_quality_checks()} with the input sets from
-\code{pre_run_quality_checks()}, then mirrors the per-schema results
-into `plausibility_results_anthro` and `plausibility_results_iycf`.
-Combined results are also written to `plausibility_results` so that
-inherited helpers (e.g. `calculate_overall_score`, `results_to_table`)
-continue to work as expected.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$run_quality_checks()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A named list with elements `anthro` and `iycf`, each containing
-  the check results for that schema (invisibly)
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-default_analysis_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-default_analysis_schema}{}}}
-\subsection{\code{NutritionDataAnalytics$default_analysis_schema()}}{
-  Load the default Nutrition analysis schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$default_analysis_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A tibble containing the Nutrition analysis schema
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-NutritionDataAnalytics-default_outputs_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-default_outputs_schema}{}}}
-\subsection{\code{NutritionDataAnalytics$default_outputs_schema()}}{
-  Load the default Nutrition unified outputs schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{NutritionDataAnalytics$default_outputs_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A list of Nutrition-specific outputs definitions
+    Invisibly returns the exported data frame.
   }
 }
 

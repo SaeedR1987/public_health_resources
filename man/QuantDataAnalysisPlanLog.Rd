@@ -4,7 +4,7 @@
 \alias{QuantDataAnalysisPlanLog}
 \title{QuantDataAnalysisPlanLog: Quant Data Analysis Plan Log Class}
 \description{
-A specialized Log class for managing quantitative data analysis plans. 
+A specialized Log class for managing quantitative data analysis plans.
 Enforces the column structure defined in phr_analysis_plan_template.csv
 and provides validation for analysis plan entries.
 }
@@ -25,34 +25,31 @@ Required columns (matching phr_analysis_plan_template.csv):
 * indicator_unit: Unit of measurement for the indicator
 }
 \keyword{internal}
-\section{Super class}{
-\code{\link[phr:Log]{Log}} -> \code{QuantDataAnalysisPlanLog}
+\section{Super classes}{
+\code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Log]{Log}} -> \code{QuantDataAnalysisPlanLog}
 }
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-QuantDataAnalysisPlanLog-initialize}{\code{QuantDataAnalysisPlanLog$new()}}
-    \item \href{#method-QuantDataAnalysisPlanLog-validate}{\code{QuantDataAnalysisPlanLog$validate()}}
+    \item \href{#method-QuantDataAnalysisPlanLog-validate_dap_against_dataset}{\code{QuantDataAnalysisPlanLog$validate_dap_against_dataset()}}
     \item \href{#method-QuantDataAnalysisPlanLog-add_indicator}{\code{QuantDataAnalysisPlanLog$add_indicator()}}
     \item \href{#method-QuantDataAnalysisPlanLog-clone}{\code{QuantDataAnalysisPlanLog$clone()}}
   }
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_get_fields"><a href='../../phr/html/Log.html#method-Log-additional_get_fields'><code>Log$additional_get_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="additional_set_fields"><a href='../../phr/html/Log.html#method-Log-additional_set_fields'><code>Log$additional_set_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_get_fields"><a href='../../phr/html/Log.html#method-Log-allowed_get_fields'><code>Log$allowed_get_fields()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="allowed_set_fields"><a href='../../phr/html/Log.html#method-Log-allowed_set_fields'><code>Log$allowed_set_fields()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>Log$append_entry()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>Log$clear()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>Log$export()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get"><a href='../../phr/html/Log.html#method-Log-get'><code>Log$get()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="get_hash"><a href='../../phr/html/Log.html#method-Log-get_hash'><code>Log$get_hash()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="post_validate"><a href='../../phr/html/Log.html#method-Log-post_validate'><code>Log$post_validate()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="pre_validate"><a href='../../phr/html/Log.html#method-Log-pre_validate'><code>Log$pre_validate()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set"><a href='../../phr/html/Log.html#method-Log-set'><code>Log$set()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="set_schema"><a href='../../phr/html/Log.html#method-Log-set_schema'><code>Log$set_schema()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="summary"><a href='../../phr/html/Log.html#method-Log-summary'><code>Log$summary()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="validate"><a href='../../phr/html/Log.html#method-Log-validate'><code>Log$validate()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}
@@ -83,7 +80,7 @@ Required columns (matching phr_analysis_plan_template.csv):
   \subsection{Details}{
     Sets up default schema with appropriate types for each column.
 Calls parent Log$initialize() to complete setup.
-Validate Analysis Plan Log
+Validate Quant Data Analysis Plan Log against Dataset
   }
   \subsection{Returns}{
     A new QuantDataAnalysisPlanLog R6 object
@@ -91,28 +88,38 @@ Validate Analysis Plan Log
 }
 
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-QuantDataAnalysisPlanLog-validate"></a>}}
-\if{latex}{\out{\hypertarget{method-QuantDataAnalysisPlanLog-validate}{}}}
-\subsection{\code{QuantDataAnalysisPlanLog$validate()}}{
-  Validates analysis plan log structure and calculation types
+\if{html}{\out{<a id="method-QuantDataAnalysisPlanLog-validate_dap_against_dataset"></a>}}
+\if{latex}{\out{\hypertarget{method-QuantDataAnalysisPlanLog-validate_dap_against_dataset}{}}}
+\subsection{\code{QuantDataAnalysisPlanLog$validate_dap_against_dataset()}}{
+  Validates quant data analysis plan log entries against an actual dataset to ensure integrity
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{QuantDataAnalysisPlanLog$validate()}
+    \preformatted{QuantDataAnalysisPlanLog$validate_dap_against_dataset(
+  data_obj,
+  stage = "clean"
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{data_obj}}{Data object containing the dataset to validate against}
+      \item{\code{stage}}{Character; which data stage to use ("raw", "standardized", "clean")}
+    }
     \if{html}{\out{</div>}}
   }
   \subsection{Details}{
-    Validation steps:
-1. Calls parent Log$validate() for basic structure and schema validation
-2. Checks that critical fields (indicator_name, calculation, var_name)
-   are non-empty
-3. Validates that multiplier is positive
-4. Checks that calculation types are valid
+    For the `var_name`, `denom_var` and `disaggregation` columns, checks that:
+* each referenced variable is mapped in the data object's variable map
+* the mapped column exists in the dataset at the requested stage
 
-Sets self$validated and self$issues based on results.
+`denom_var` and `disaggregation` may be missing (skipped); multiple
+disaggregation variables may be separated by commas or semicolons.
+All issues are returned as warnings, not errors, to allow inspection.
 Add Analysis Plan Entry
   }
   \subsection{Returns}{
-    Invisible list of validation issues (empty if valid)
+    List of validation issues (empty list if no issues)
   }
 }
 
@@ -149,6 +156,7 @@ Add Analysis Plan Entry
   }
   \subsection{Details}{
     Validates inputs and calls append_entry() to add to log.
+Additional Accessible Fields Hook
   }
   \subsection{Returns}{
     Invisible TRUE
