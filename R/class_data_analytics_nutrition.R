@@ -213,8 +213,6 @@ NutritionDataAnalytics <- R6::R6Class(
     #'
     #' @seealso \code{\link[openxlsx]{loadWorkbook}},
     #'   \code{\link[openxlsx]{saveWorkbook}}
-    #'
-    #' @export
     export_cdc_muac_file = function(data, output_file) {
 
       private$..touch(

@@ -22,31 +22,9 @@
 #' * Hash fingerprinting for data integrity
 #' * Cross-object linking and validation
 #'
-#' @field raw_data Original imported data frame (immutable)
-#' @field standardized_data Data frame after standardization of names, types, and values
-#' @field clean_data Data frame after cleaning operations
-#' @field dataset_name Character name of the dataset
-#' @field metadata List of metadata attributes
-#' @field uuid Character name of the UUID column
-#' @field validated Logical indicating if data has been validated
-#' @field standardized Logical indicating if data has been standardized
-#' @field cleaned Logical indicating if data has been cleaned
-#' @field required_columns Character vector of required column names
-#' @field other_columns List of other (non-required) column names
-#' @field variable_map List mapping variable roles to column names
-#' @field value_map List mapping canonical values to dataset values
-#' @field variable_label Named list of presentation-ready variable labels (populated by map_schema_labels)
-#' @field value_label Named list of presentation-ready value labels for categorical variables (populated by map_schema_labels)
-#' @field variable_schema Variable schema with types and allowed values
-#' @field indicator_schema Schema for indicator calculations
-#' @field dependency_schema Schema for variable dependencies
-#' @field cleaning_log CleaningLog R6 object for tracking data corrections
-#' @field deletion_log DeletionLog R6 object for tracking deletions
-#' @field data_quality_flags Data frame storing quality flags per row
-#' @field data_diagnostics Diagnostic data frame, retrieved with `get(field = "..data_diagnostics")`
-#' @field cleaning_log_issues Data frame of cleaning log rows that could not be applied (e.g. coercion failures)
-#' @field autosave Logical for automatic saving (if TRUE, snapshots on key steps)
-#' @field linked_objects List of linked Data objects with linkage specifications
+#' State (data stages, maps, labels, schemas, logs, linked objects) is held in
+#' private fields and accessed through `get()` / `set()` and the dataset
+#' accessors rather than as public fields.
 #'
 #' @examples
 #' \dontrun{
@@ -1877,9 +1855,6 @@ Data <- R6::R6Class(
     #' If validation fails, an empty tibble is generated with one zero-length
     #' character column for each value in `required_cols`. This ensures downstream
     #' code always receives a valid schema object with the expected structure.
-    #'
-    #' @keywords internal
-    #' @noRd
     ..load_default_schema = function(
     filename,
     target_field,
@@ -2834,8 +2809,6 @@ Data <- R6::R6Class(
     #' @return A list with 'data' (modified data frame), 'expanded_columns' (character
     #'   vector of new column names), and 'other_related_columns' (list tracking columns
     #'   related to "other" responses in select_multiple questions)
-    #'
-    #' @keywords internal
     ..st_process_select_multiple_columns = function(data, schema) {
 
       phrutils::phr_try({
@@ -5775,8 +5748,6 @@ Data <- R6::R6Class(
     #' @param separator The separator used in the select_multiple values (default: " ")
     #'
     #' @return A data frame of 0/1 dummy columns, one per unique token found in `column`
-    #'
-    #' @keywords internal
     ..expand_select_multiple = function(column, column_name, separator = " ") {
       # Handle NA and empty values
       column <- ifelse(is.na(column) | column == "", NA_character_, column)
@@ -5837,7 +5808,6 @@ Data <- R6::R6Class(
     #'
     #' @param arg_string Character string containing arguments
     #' @return Character vector of argument pairs
-    #' @keywords internal
     ..parse_indicator_arguments = function(arg_string) {
       if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
         return(character(0))

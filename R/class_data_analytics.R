@@ -1140,9 +1140,6 @@ DataAnalytics <- R6::R6Class(
     #' If validation fails, an empty tibble is generated with one zero-length
     #' character column for each value in `required_cols`. This ensures downstream
     #' code always receives a valid schema object with the expected structure.
-    #'
-    #' @keywords internal
-    #' @noRd
     ..load_default_schema = function(
     filename,
     target_field,
@@ -3673,7 +3670,6 @@ DataAnalytics <- R6::R6Class(
     #'
     #' @return A tibble of analysis results, one row per indicator (or one row per
     #'   disaggregation group when disaggregation is specified).
-    #' @noRd
     ..phr_calc_survey_from_plan = function(
       design,
       analysis_plan,
