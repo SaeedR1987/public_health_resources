@@ -10,16 +10,17 @@
 #' * Quantitative analysis indicators via analysis_schema
 #' * All visualizations/tables (quality and analysis) via outputs_schema
 #'
-#' @field linked_ind_roster_data Optional linked roster dataframe
-#' @field linked_ind_roster_data_stage_name Name of linked roster data stage
-#' @field linked_ind_roster_data_hash Hash of linked roster data
-#' @field linked_ind_roster_variable_map Variable mappings for linked roster data
-#' @field linked_ind_roster_value_map Value mappings for linked roster data
-#' @field linked_ind_woman_data Optional linked woman individual dataframe
-#' @field linked_ind_woman_data_stage_name Name of linked woman individual data stage
-#' @field linked_ind_woman_data_hash Hash of linked woman individual data
-#' @field linked_ind_woman_variable_map Variable mappings for linked woman individual data
-#' @field linked_ind_woman_value_map Value mappings for linked woman individual data
+#' @section Accessible fields:
+#' * `linked_ind_roster_data`: Optional linked roster dataframe
+#' * `linked_ind_roster_data_stage_name`: Name of linked roster data stage
+#' * `linked_ind_roster_data_hash`: Hash of linked roster data
+#' * `linked_ind_roster_variable_map`: Variable mappings for linked roster data
+#' * `linked_ind_roster_value_map`: Value mappings for linked roster data
+#' * `linked_ind_woman_data`: Optional linked woman individual dataframe
+#' * `linked_ind_woman_data_stage_name`: Name of linked woman individual data stage
+#' * `linked_ind_woman_data_hash`: Hash of linked woman individual data
+#' * `linked_ind_woman_variable_map`: Variable mappings for linked woman individual data
+#' * `linked_ind_woman_value_map`: Value mappings for linked woman individual data
 #'
 #' @seealso [DataAnalytics]
 #' @export

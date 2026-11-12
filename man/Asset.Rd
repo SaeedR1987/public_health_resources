@@ -34,7 +34,14 @@ of their subclasses) inherit from \code{Asset}.
   Creates a new Asset object.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{Asset$new()}
+    \preformatted{Asset$new(name = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{name}}{Optional character name for the asset.}
+    }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
@@ -53,7 +60,6 @@ of their subclasses) inherit from \code{Asset}.
   field = NULL,
   member = NULL,
   target_field = NULL,
-  name = NULL,
   role = NULL
 )}
     \if{html}{\out{</div>}}
@@ -64,7 +70,6 @@ of their subclasses) inherit from \code{Asset}.
       \item{\code{field}}{Optional top-level field name.}
       \item{\code{member}}{Optional nested member name.}
       \item{\code{target_field}}{Optional destination field path.}
-      \item{\code{name}}{Optional named list entry inside \code{field}.}
       \item{\code{role}}{Optional role-based list resolution key.}
     }
     \if{html}{\out{</div>}}
@@ -85,7 +90,6 @@ of their subclasses) inherit from \code{Asset}.
   field = NULL,
   member = NULL,
   target_field = NULL,
-  name = NULL,
   role = NULL
 )}
     \if{html}{\out{</div>}}
@@ -96,7 +100,6 @@ of their subclasses) inherit from \code{Asset}.
       \item{\code{field}}{Optional top-level field name.}
       \item{\code{member}}{Optional nested member name.}
       \item{\code{target_field}}{Optional destination field path.}
-      \item{\code{name}}{Optional named list entry inside \code{field}.}
       \item{\code{role}}{Optional role-based list resolution key.}
     }
     \if{html}{\out{</div>}}
@@ -113,13 +116,7 @@ of their subclasses) inherit from \code{Asset}.
   Synchronize asset state.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
-    \preformatted{Asset$sync_state(
-  field = NULL,
-  member = NULL,
-  target_field = NULL,
-  name = NULL,
-  role = NULL
-)}
+    \preformatted{Asset$sync_state(field = NULL, member = NULL, target_field = NULL, role = NULL)}
     \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
@@ -128,7 +125,6 @@ of their subclasses) inherit from \code{Asset}.
       \item{\code{field}}{Optional top-level field name.}
       \item{\code{member}}{Optional nested member name.}
       \item{\code{target_field}}{Optional destination field path.}
-      \item{\code{name}}{Optional named list entry inside \code{field}.}
       \item{\code{role}}{Optional role-based list resolution key.}
     }
     \if{html}{\out{</div>}}
@@ -146,17 +142,18 @@ of their subclasses) inherit from \code{Asset}.
 on a nested object.
 
 Resolves a top-level field (public or private; for example
-\code{tools} or \code{framework}), optionally resolves a named or
-role-matched element if the field is a list, and returns a field or
+\code{tools} or \code{framework}), optionally resolves a
+role-matched 1st level list element (and, with \code{role2}, a 2nd
+level role-matched element nested within it), and returns a field or
 list member value. Unlike \code{call()}, \code{get()} refuses to
 return a function; use \code{call()} to invoke nested methods.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{Asset$get(
   field,
-  name = NULL,
   member = NULL,
   role = NULL,
+  role2 = NULL,
   update_sync = FALSE,
   update_modified = FALSE
 )}
@@ -167,14 +164,14 @@ return a function; use \code{call()} to invoke nested methods.
     \describe{
       \item{\code{field}}{Character scalar naming a public or private top-level
 field on this object.}
-      \item{\code{name}}{Optional character scalar naming a list element in
-\code{field}.}
       \item{\code{member}}{Optional character scalar naming a public or private
 field on the resolved target. When \code{NULL}, the resolved target
 itself is returned.}
-      \item{\code{role}}{Optional character scalar used to resolve a list element in
-\code{field} by role-like name (for example \code{"household"} for
-\code{"tool_household_iphra_v2"}).}
+      \item{\code{role}}{Optional character scalar used to resolve a 1st level list
+element in \code{field} by role-like name (for example
+\code{"household"} for \code{"tool_household_iphra_v2"}).}
+      \item{\code{role2}}{Optional character scalar used to resolve a 2nd level list
+element nested within the \code{role}-resolved element.}
       \item{\code{update_sync}}{Logical indicating whether to synchronize state after access.}
       \item{\code{update_modified}}{Logical indicating whether to update the modified timestamp.}
     }
@@ -193,7 +190,8 @@ itself is returned.}
 object.
 
 Resolves a top-level field (public or private), optionally resolves a
-named or role-matched element if the field is a list, and invokes
+role-matched 1st level list element (and, with \code{role2},
+a 2nd level role-matched element nested within it), and invokes
 \code{member} as a function on the resolved target. Unlike
 \code{get()}, \code{call()} requires \code{member} to resolve to a
 function.
@@ -201,9 +199,9 @@ function.
     \if{html}{\out{<div class="r">}}
     \preformatted{Asset$call(
   field,
-  name = NULL,
   member = NULL,
   role = NULL,
+  role2 = NULL,
   update_sync = FALSE,
   update_modified = TRUE,
   ...
@@ -215,13 +213,13 @@ function.
     \describe{
       \item{\code{field}}{Character scalar naming a public or private top-level
 field on this object.}
-      \item{\code{name}}{Optional character scalar naming a list element in
-\code{field}.}
       \item{\code{member}}{Optional character scalar naming a method on the
 resolved target. When \code{NULL}, the resolved target itself is
 invoked as a function.}
-      \item{\code{role}}{Optional character scalar used to resolve a list element in
-\code{field} by role-like name.}
+      \item{\code{role}}{Optional character scalar used to resolve a 1st level list
+element in \code{field} by role-like name.}
+      \item{\code{role2}}{Optional character scalar used to resolve a 2nd level list
+element nested within the \code{role}-resolved element.}
       \item{\code{update_sync}}{Logical indicating whether to synchronize state after the call.}
       \item{\code{update_modified}}{Logical indicating whether to update the modified timestamp.}
       \item{\code{...}}{Arguments passed to the resolved method.}
@@ -239,12 +237,16 @@ invoked as a function.}
 \subsection{\code{Asset$set()}}{
   Generalized, scope-safe field setter.
 
-Mirrors \code{get()}'s \code{field}/\code{name}/\code{role}/
+Mirrors \code{get()}'s \code{field}/\code{role}/\code{role2}/
 \code{member} arguments, but safely writes \code{value} instead of
 reading. \code{field} may resolve to either a public or a private
 field, and \code{member} is optional: when omitted, \code{value}
-replaces the resolved top-level (or name/role-resolved) target
-directly. Writing to a resolved member or target that currently holds
+replaces the resolved top-level (or role/role2-resolved) target
+directly. If the \code{role} (and/or \code{role2}) list element does
+not yet exist, it is created (using \code{role}/\code{role2} as the
+literal new element name) rather than raising an error, so that
+\code{set()} can be used to populate a new list or nested list
+element. Writing to a resolved member or target that currently holds
 a function is rejected, to avoid accidentally clobbering methods. When
 the resolved target is itself an R6 object exposing its own
 \code{set()} method (for example a nested \code{Asset} or \code{Log}),
@@ -258,8 +260,8 @@ are respected.
   field,
   value,
   member = NULL,
-  name = NULL,
   role = NULL,
+  role2 = NULL,
   update_sync = FALSE,
   update_modified = TRUE
 )}
@@ -274,10 +276,11 @@ field on this object.}
       \item{\code{member}}{Optional character scalar naming a writable field on the
 resolved target. When \code{NULL}, \code{value} is assigned directly
 to the resolved target.}
-      \item{\code{name}}{Optional character scalar naming a list element in
-\code{field}.}
-      \item{\code{role}}{Optional character scalar used to resolve a list element in
-\code{field} by role-like name.}
+      \item{\code{role}}{Optional character scalar used to resolve (or create) a
+1st level list element in \code{field} by role-like name.}
+      \item{\code{role2}}{Optional character scalar used to resolve (or create) a
+2nd level list element nested within the \code{role}-resolved
+element. Cannot be supplied without \code{role}.}
       \item{\code{update_sync}}{Logical indicating whether to synchronize state
 after the assignment.}
       \item{\code{update_modified}}{Logical indicating whether to update the

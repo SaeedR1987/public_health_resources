@@ -2,15 +2,12 @@
 % Please edit documentation in R/class_log.R
 \name{Log}
 \alias{Log}
-\title{Get Field Value}
+\title{Log: Log Base Class}
 \description{
 A foundational R6 class for managing structured log data with validation, schema enforcement,
 and export capabilities. Used as a base class for specialized logs (CleaningLog, DeletionLog).
 }
 \details{
-Log: Log Base Class
-
-
 The Log class provides:
 * Storage and management of structured log entries in a data.frame
 * Schema definition and validation (column types, allowed values)
@@ -28,250 +25,37 @@ Private fields (accessible via get() and set() methods):
 * schema: List with 'types' and 'allowed_values' for validation
 * validated: Logical indicating if log has passed validation
 * metadata: List of metadata including update timestamps
-
-
-
-Initialization process:
-1. Creates empty log template if log_df is NULL
-2. Validates that log_df is a data.frame
-3. Adds missing required columns (filled with NA)
-4. Reorders columns (required columns first)
-5. Initializes metadata with current timestamp
-Set Schema
-
-
-
-Schema format:
-* types: named list of column_name = "character"/"numeric"/"logical"/"date"
-* allowed_values: named list of column_name = vector of allowed values
-Validate Log
-
-
-
-Validation steps:
-1. Checks log_df is a valid data.frame
-2. Verifies all required columns exist
-3. Type checking and safe coercion for schema types
-4. Allowed values checking for categorical columns
-
-Sets self$validated to TRUE if no issues found, updates self$issues.
-Attempts safe type coercion (e.g., "123" to 123) when possible.
-Append Log Entry
-
-
-
-Validates that all required columns are present in row_list.
-Converts list to data.frame row and appends via dplyr::bind_rows().
-Updates metadata timestamp.
-Clear Log
-
-
-
-Keeps column structure intact but sets row count to 0.
-Updates metadata timestamp.
-Export Log
-
-
-
-Supported formats:
-* csv: Comma-separated values via utils::write.csv
-* rds: R data structure via saveRDS
-* xlsx: Excel workbook via openxlsx (requires openxlsx package)
-Get Hash Fingerprint
-
-
-
-Uses digest package to create a unique fingerprint of the log contents.
-Useful for detecting changes or verifying data integrity.
 }
-\note{
-Requires digest package
-Get Summary
+\section{Accessible fields}{
+
+* `issues`: List of validations issues found
 }
-\examples{
 
-## ------------------------------------------------
-## Method `Log$get()`
-## ------------------------------------------------
-
-\dontrun{
-log <- Log$new()
-log$get("log_df")
-log$get("log_name")
-}
-Accessible Fields Hook
-
-
-## ------------------------------------------------
-## Method `Log$set()`
-## ------------------------------------------------
-
-\dontrun{
-log <- Log$new()
-log$set("log_name", "My Custom Log")
-log$set("validated", TRUE)
-}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{autosave}}{Logical for automatic saving (not yet implemented)}
-
-    \item{\code{issues}}{List of validations issues found}
-  }
-  \if{html}{\out{</div>}}
+\section{Super class}{
+\code{\link[phr:Asset]{Asset}} -> \code{Log}
 }
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{
-    \item \href{#method-Log-get}{\code{Log$get()}}
-    \item \href{#method-Log-allowed_get_fields}{\code{Log$allowed_get_fields()}}
-    \item \href{#method-Log-additional_get_fields}{\code{Log$additional_get_fields()}}
-    \item \href{#method-Log-allowed_set_fields}{\code{Log$allowed_set_fields()}}
-    \item \href{#method-Log-additional_set_fields}{\code{Log$additional_set_fields()}}
-    \item \href{#method-Log-set}{\code{Log$set()}}
     \item \href{#method-Log-initialize}{\code{Log$new()}}
-    \item \href{#method-Log-set_schema}{\code{Log$set_schema()}}
     \item \href{#method-Log-validate}{\code{Log$validate()}}
     \item \href{#method-Log-append_entry}{\code{Log$append_entry()}}
     \item \href{#method-Log-clear}{\code{Log$clear()}}
     \item \href{#method-Log-export}{\code{Log$export()}}
-    \item \href{#method-Log-get_hash}{\code{Log$get_hash()}}
     \item \href{#method-Log-summary}{\code{Log$summary()}}
-    \item \href{#method-Log-pre_validate}{\code{Log$pre_validate()}}
-    \item \href{#method-Log-post_validate}{\code{Log$post_validate()}}
     \item \href{#method-Log-clone}{\code{Log$clone()}}
   }
 }
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-get"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-get}{}}}
-\subsection{\code{Log$get()}}{
-  Safely retrieves a private field value
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$get(field)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{field}}{Character name of the field to retrieve.
-Must be one of: "log_df", "log_name", "required_columns", "schema", "validated", "metadata"}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    The value of the requested field
-  }
-  \subsection{Examples}{
-    \if{html}{\out{<div class="r example copy">}}
-    \preformatted{log <- Log$new()
-log$get("log_df")
-log$get("log_name")
-Accessible Fields Hook
-}
-    \if{html}{\out{</div>}}
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-allowed_get_fields"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-allowed_get_fields}{}}}
-\subsection{\code{Log$allowed_get_fields()}}{
-  Returns the list of fields accessible via get().
-Subclasses can override to expose additional fields.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$allowed_get_fields()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Character vector of allowed field names
-Additional Accessible Fields Hook
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-additional_get_fields"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-additional_get_fields}{}}}
-\subsection{\code{Log$additional_get_fields()}}{
-  Returns subclass-specific fields accessible via `get()`.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$additional_get_fields()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Character vector of field names.
-Settable Fields Hook
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-allowed_set_fields"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-allowed_set_fields}{}}}
-\subsection{\code{Log$allowed_set_fields()}}{
-  Returns the list of fields that may be modified via `set()`.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$allowed_set_fields()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Character vector of field names.
-Additional Settable Fields Hook
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-additional_set_fields"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-additional_set_fields}{}}}
-\subsection{\code{Log$additional_set_fields()}}{
-  Returns subclass-specific fields that may be modified via `set()`.
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$additional_set_fields()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Character vector of field names.
-Set Field Value
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-set"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-set}{}}}
-\subsection{\code{Log$set()}}{
-  Safely sets a private field value
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$set(field, value)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{field}}{Character name of the field to set.
-Must be one of: "log_df", "log_name", "required_columns", "schema", "validated", "metadata"}
-      \item{\code{value}}{The value to assign to the field}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Invisible TRUE
-  }
-  \subsection{Examples}{
-    \if{html}{\out{<div class="r example copy">}}
-    \preformatted{log <- Log$new()
-log$set("log_name", "My Custom Log")
-log$set("validated", TRUE)
-}
-    \if{html}{\out{</div>}}
-  }
-}
-
+\if{html}{\out{<details><summary>Inherited methods</summary>
+<ul>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
+</ul>
+</details>}}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-Log-initialize"></a>}}
 \if{latex}{\out{\hypertarget{method-Log-initialize}{}}}
@@ -297,30 +81,17 @@ log$set("validated", TRUE)
     }
     \if{html}{\out{</div>}}
   }
+  \subsection{Details}{
+    Initialization process:
+1. Creates empty log template if log_df is NULL
+2. Validates that log_df is a data.frame
+3. Adds missing required columns (filled with NA)
+4. Reorders columns (required columns first)
+5. Initializes metadata with current timestamp
+Validate Log
+  }
   \subsection{Returns}{
     A new Log R6 object
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-set_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-set_schema}{}}}
-\subsection{\code{Log$set_schema()}}{
-  Assigns a validation schema to the log
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$set_schema(schema_list)}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Arguments}{
-    \if{html}{\out{<div class="arguments">}}
-    \describe{
-      \item{\code{schema_list}}{List with 'types' and/or 'allowed_values' elements}
-    }
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Invisible TRUE
   }
 }
 
@@ -340,6 +111,17 @@ log$set("validated", TRUE)
       \item{\code{schema_override}}{Optional schema list to use instead of self$schema}
     }
     \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    Validation steps:
+1. Checks log_df is a valid data.frame
+2. Verifies all required columns exist
+3. Type checking and safe coercion for schema types
+4. Allowed values checking for categorical columns
+
+Sets self$validated to TRUE if no issues found, updates self$issues.
+Attempts safe type coercion (e.g., "123" to 123) when possible.
+Append Log Entry
   }
   \subsection{Returns}{
     Invisible list of validation issues (empty list if valid)
@@ -363,6 +145,12 @@ log$set("validated", TRUE)
     }
     \if{html}{\out{</div>}}
   }
+  \subsection{Details}{
+    Validates that all required columns are present in row_list.
+Converts list to data.frame row and appends via dplyr::bind_rows().
+Updates metadata timestamp.
+Clear Log
+  }
   \subsection{Returns}{
     Invisible TRUE
   }
@@ -377,6 +165,11 @@ log$set("validated", TRUE)
     \if{html}{\out{<div class="r">}}
     \preformatted{Log$clear()}
     \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    Keeps column structure intact but sets row count to 0.
+Updates metadata timestamp.
+Export Log
   }
   \subsection{Returns}{
     Invisible TRUE
@@ -401,23 +194,15 @@ log$set("validated", TRUE)
     }
     \if{html}{\out{</div>}}
   }
+  \subsection{Details}{
+    Supported formats:
+* csv: Comma-separated values via utils::write.csv
+* rds: R data structure via saveRDS
+* xlsx: Excel workbook via openxlsx (requires openxlsx package)
+Get Summary
+  }
   \subsection{Returns}{
     Invisible path to exported file
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-get_hash"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-get_hash}{}}}
-\subsection{\code{Log$get_hash()}}{
-  Computes a hash of the log data for integrity checking
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$get_hash()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    Character hash digest of log_df
   }
 }
 
@@ -440,38 +225,6 @@ log$set("validated", TRUE)
   * required_columns: Vector of required column names
   * schema_attached: Whether schema is defined
   * last_updated: Timestamp of last modification
-Pre-Validation Hook
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-pre_validate"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-pre_validate}{}}}
-\subsection{\code{Log$pre_validate()}}{
-  Hook method called before validation; override in subclasses for custom logic
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$pre_validate()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    NULL (default implementation is empty)
-Post-Validation Hook
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-Log-post_validate"></a>}}
-\if{latex}{\out{\hypertarget{method-Log-post_validate}{}}}
-\subsection{\code{Log$post_validate()}}{
-  Hook method called after validation; override in subclasses for custom logic
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{Log$post_validate()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    NULL (default implementation is empty)
   }
 }
 

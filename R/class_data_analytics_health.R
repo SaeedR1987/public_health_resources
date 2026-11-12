@@ -10,16 +10,17 @@
 #' * Quantitative analysis indicators via analysis_schema
 #' * All visualizations/tables (quality and analysis) via outputs_schema
 #'
-#' @field linked_ind_roster_data Optional linked roster dataframe
-#' @field linked_ind_roster_data_stage_name Name of linked roster data stage
-#' @field linked_ind_roster_data_hash Hash of linked roster data
-#' @field linked_ind_roster_variable_map Variable mappings for linked roster data
-#' @field linked_ind_roster_value_map Value mappings for linked roster data
-#' @field linked_ind_health_data Optional linked health individual dataframe
-#' @field linked_ind_health_data_stage_name Name of linked health individual data stage
-#' @field linked_ind_health_data_hash Hash of linked health individual data
-#' @field linked_ind_health_variable_map Variable mappings for linked health individual data
-#' @field linked_ind_health_value_map Value mappings for linked health individual data
+#' @section Accessible fields:
+#' * `linked_ind_roster_data`: Optional linked roster dataframe
+#' * `linked_ind_roster_data_stage_name`: Name of linked roster data stage
+#' * `linked_ind_roster_data_hash`: Hash of linked roster data
+#' * `linked_ind_roster_variable_map`: Variable mappings for linked roster data
+#' * `linked_ind_roster_value_map`: Value mappings for linked roster data
+#' * `linked_ind_health_data`: Optional linked health individual dataframe
+#' * `linked_ind_health_data_stage_name`: Name of linked health individual data stage
+#' * `linked_ind_health_data_hash`: Hash of linked health individual data
+#' * `linked_ind_health_variable_map`: Variable mappings for linked health individual data
+#' * `linked_ind_health_value_map`: Value mappings for linked health individual data
 #'
 #' @seealso [DataAnalytics]
 #' @export
@@ -267,12 +268,12 @@ HealthDataAnalytics <- R6::R6Class(
     ..base_survey_design_roster = NULL,
     ..base_survey_design_health = NULL,
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -312,12 +313,12 @@ HealthDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         super$..additional_set_fields(),
@@ -381,23 +382,23 @@ HealthDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_health_template.xlsx"
     ),
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
-    #'
-    #' Returns one input set per available mortality dataset:
-    #' \describe{
-    #'   \item{household}{Always included, using the core \code{data},
-    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
-    #'     stored in \code{analysis_results$household}.}
-    #'   \item{roster}{Included when \code{linked_ind_roster_data} is available and
-    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$roster}.}
-    #'   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
-    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$deaths}.}
-    #' }
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
+    #
+    # Returns one input set per available mortality dataset:
+    # \describe{
+    #   \item{household}{Always included, using the core \code{data},
+    #     \code{survey_design} and \code{data_analysis_plan} fields. Results
+    #     stored in \code{analysis_results$household}.}
+    #   \item{roster}{Included when \code{linked_ind_roster_data} is available and
+    #     \code{data_analysis_plan_roster} contains at least one indicator. Results
+    #     stored in \code{analysis_results$roster}.}
+    #   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
+    #     \code{data_analysis_plan_deaths} contains at least one indicator. Results
+    #     stored in \code{analysis_results$deaths}.}
+    # }
+    #
+    # @return A named list of field sets.
     ..pre_run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_analysis")
 
@@ -430,21 +431,21 @@ HealthDataAnalytics <- R6::R6Class(
       sets
     },
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
-    #'
-    #' Returns one input set per available mortality dataset so that outputs are
-    #' generated independently for each dataset and stored in named sub-lists
-    #' (\code{visualizations$household} / \code{tables$household},
-    #' \code{visualizations$roster} / \code{tables$roster},
-    #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
-    #' the appropriate survey design objects for the dataset, so output entries
-    #' with \code{dataset_type = "survey_design"} receive the weighted design and
-    #' \code{"base"} entries receive the unweighted base design. Each set also
-    #' names the dataset's own variable map, so \code{@variable_map$} references
-    #' in \code{test_params} resolve against the correct dataset.
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
+    #
+    # Returns one input set per available mortality dataset so that outputs are
+    # generated independently for each dataset and stored in named sub-lists
+    # (\code{visualizations$household} / \code{tables$household},
+    # \code{visualizations$roster} / \code{tables$roster},
+    # \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
+    # the appropriate survey design objects for the dataset, so output entries
+    # with \code{dataset_type = "survey_design"} receive the weighted design and
+    # \code{"base"} entries receive the unweighted base design. Each set also
+    # names the dataset's own variable map, so \code{@variable_map$} references
+    # in \code{test_params} resolve against the correct dataset.
+    #
+    # @return A named list of field sets.
     ..pre_run_outputs = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_outputs")
 
@@ -489,13 +490,13 @@ HealthDataAnalytics <- R6::R6Class(
       sets
     },
 
-    #' Initialize Default Schemas for HealthAnalytics
-    #'
-    #' @description
-    #' Loads the default quality, analysis, and outputs schemas into
-    #' their corresponding private fields.
-    #'
-    #' @return Invisibly returns TRUE.
+    # Initialize Default Schemas for HealthAnalytics
+    #
+    # @description
+    # Loads the default quality, analysis, and outputs schemas into
+    # their corresponding private fields.
+    #
+    # @return Invisibly returns TRUE.
     ..initialize_load_schemas_health = function() {
 
       private$..load_default_schema(

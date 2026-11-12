@@ -10,11 +10,12 @@
 #' * Quantitative analysis indicators via analysis_schema
 #' * All visualizations/tables (quality and analysis) via outputs_schema
 #'
-#' @field linked_containers_data Optional linked WaterContainerData dataframe
-#' @field linked_containers_data_stage_name Name of linked containers data stage
-#' @field linked_containers_data_hash Hash of linked containers data
-#' @field linked_containers_variable_map Variable mappings for linked containers data
-#' @field linked_containers_value_map Value mappings for linked containers data
+#' @section Accessible fields:
+#' * `linked_containers_data`: Optional linked WaterContainerData dataframe
+#' * `linked_containers_data_stage_name`: Name of linked containers data stage
+#' * `linked_containers_data_hash`: Hash of linked containers data
+#' * `linked_containers_variable_map`: Variable mappings for linked containers data
+#' * `linked_containers_value_map`: Value mappings for linked containers data
 #'
 #' @seealso [DataAnalytics]
 #' @export
@@ -263,12 +264,12 @@ WASHDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_water_container_template.xlsx"
     ),
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -287,12 +288,12 @@ WASHDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         super$..additional_set_fields(),
@@ -311,13 +312,13 @@ WASHDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Initialize Default Schemas
-    #'
-    #' @description
-    #' Loads the default quality, analysis, and outputs schemas into
-    #' their corresponding private fields.
-    #'
-    #' @return Invisibly returns TRUE.
+    # Initialize Default Schemas
+    #
+    # @description
+    # Loads the default quality, analysis, and outputs schemas into
+    # their corresponding private fields.
+    #
+    # @return Invisibly returns TRUE.
     ..initialize_load_schemas_wash = function() {
 
       private$..load_default_schema(
@@ -362,20 +363,20 @@ WASHDataAnalytics <- R6::R6Class(
       invisible(TRUE)
     },
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
-    #'
-    #' Returns one input set per available mortality dataset:
-    #' \describe{
-    #'   \item{household}{Always included, using the core \code{data},
-    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
-    #'     stored in \code{analysis_results$household}.}
-    #'   \item{water_container}{Included when \code{linked_ind_container_data} is available and
-    #'     \code{data_analysis_plan_water_container} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$water_container}.}
-    #' }
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
+    #
+    # Returns one input set per available mortality dataset:
+    # \describe{
+    #   \item{household}{Always included, using the core \code{data},
+    #     \code{survey_design} and \code{data_analysis_plan} fields. Results
+    #     stored in \code{analysis_results$household}.}
+    #   \item{water_container}{Included when \code{linked_ind_container_data} is available and
+    #     \code{data_analysis_plan_water_container} contains at least one indicator. Results
+    #     stored in \code{analysis_results$water_container}.}
+    # }
+    #
+    # @return A named list of field sets.
     ..pre_run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_analysis")
 
@@ -396,21 +397,21 @@ WASHDataAnalytics <- R6::R6Class(
       sets
     },
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
-    #'
-    #' Returns one input set per available WASH dataset so that outputs are
-    #' generated independently for each dataset and stored in named sub-lists
-    #' (\code{visualizations$household} / \code{tables$household},
-    #' \code{visualizations$roster} / \code{tables$roster},
-    #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
-    #' the appropriate survey design objects for the dataset, so output entries
-    #' with \code{dataset_type = "survey_design"} receive the weighted design and
-    #' \code{"base"} entries receive the unweighted base design. Each set also
-    #' names the dataset's own variable map, so \code{@variable_map$} references
-    #' in \code{test_params} resolve against the correct dataset.
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
+    #
+    # Returns one input set per available WASH dataset so that outputs are
+    # generated independently for each dataset and stored in named sub-lists
+    # (\code{visualizations$household} / \code{tables$household},
+    # \code{visualizations$roster} / \code{tables$roster},
+    # \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
+    # the appropriate survey design objects for the dataset, so output entries
+    # with \code{dataset_type = "survey_design"} receive the weighted design and
+    # \code{"base"} entries receive the unweighted base design. Each set also
+    # names the dataset's own variable map, so \code{@variable_map$} references
+    # in \code{test_params} resolve against the correct dataset.
+    #
+    # @return A named list of field sets.
     ..pre_run_outputs = function() {
       origin <- paste0(private$..dataset_name, "$..pre_run_outputs")
 

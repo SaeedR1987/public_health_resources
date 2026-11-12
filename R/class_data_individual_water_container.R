@@ -12,8 +12,9 @@
 #' * Water quality testing results
 #' * Risk assessment calculations
 #'
-#' @field household_link Optional linkage back to a HouseholdData object
-#' @field optional_columns Character vector of optional columns for water container data
+#' @section Accessible fields:
+#' * `household_link`: Optional linkage back to a HouseholdData object
+#' * `optional_columns`: Character vector of optional columns for water container data
 #'
 #' @seealso [Data], [HouseholdData]
 #' @export
@@ -30,6 +31,8 @@ WaterContainerData <- R6::R6Class(
     #' @param dataset_name A name for this dataset
     #' @param metadata Optional list of metadata
     #' @param variable_map Optional named list mapping standard variable names to data columns
+    #' @param uuid Character name of the unique ID column
+    #' @param hh_uuid Character name of the household linkage column
     #' @return A new WaterContainerData object
     initialize = function(data,
                           dataset_name = "WaterContainerData",

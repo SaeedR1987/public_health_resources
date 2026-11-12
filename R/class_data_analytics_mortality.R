@@ -29,30 +29,31 @@
 #' household data. Inspect private fields through \code{get(field = "..data")}
 #' or \code{get(field = "..linked_ind_roster_data")}.
 #'
-#' @field linked_ind_roster_data Optional linked roster dataframe
-#' @field linked_ind_roster_data_stage_name Name of linked roster data stage
-#' @field linked_ind_roster_data_hash Hash of linked roster data
-#' @field linked_ind_roster_variable_map Variable mappings for linked roster data
-#' @field linked_ind_roster_value_map Value mappings for linked roster data
-#' @field linked_ind_roster_variable_label Variable labels for linked roster data
-#' @field linked_ind_roster_value_label Value labels for linked roster data
-#' @field linked_ind_deaths_data Optional linked deaths dataframe
-#' @field linked_ind_deaths_data_stage_name Name of linked deaths data stage
-#' @field linked_ind_deaths_data_hash Hash of linked deaths data
-#' @field linked_ind_deaths_variable_map Variable mappings for linked deaths data
-#' @field linked_ind_deaths_value_map Value mappings for linked deaths data
-#' @field linked_ind_deaths_variable_label Variable labels for linked deaths data
-#' @field linked_ind_deaths_value_label Value labels for linked deaths data
-#' @field analysis_schema_roster Analysis schema for linked roster dataset
-#' @field analysis_schema_deaths Analysis schema for linked deaths dataset
-#' @field outputs_schema_roster Outputs schema (data frame) for linked roster dataset
-#' @field outputs_schema_deaths Outputs schema (data frame) for linked deaths dataset
-#' @field data_analysis_plan_roster Data analysis plan for linked roster dataset
-#' @field data_analysis_plan_deaths Data analysis plan for linked deaths dataset
-#' @field survey_design_roster srvyr survey design object for the linked roster dataset
-#' @field survey_design_deaths srvyr survey design object for the linked deaths dataset
-#' @field base_survey_design_roster Unfiltered base srvyr survey design object for the linked roster dataset
-#' @field base_survey_design_deaths Unfiltered base srvyr survey design object for the linked deaths dataset
+#' @section Accessible fields:
+#' * `linked_ind_roster_data`: Optional linked roster dataframe
+#' * `linked_ind_roster_data_stage_name`: Name of linked roster data stage
+#' * `linked_ind_roster_data_hash`: Hash of linked roster data
+#' * `linked_ind_roster_variable_map`: Variable mappings for linked roster data
+#' * `linked_ind_roster_value_map`: Value mappings for linked roster data
+#' * `linked_ind_roster_variable_label`: Variable labels for linked roster data
+#' * `linked_ind_roster_value_label`: Value labels for linked roster data
+#' * `linked_ind_deaths_data`: Optional linked deaths dataframe
+#' * `linked_ind_deaths_data_stage_name`: Name of linked deaths data stage
+#' * `linked_ind_deaths_data_hash`: Hash of linked deaths data
+#' * `linked_ind_deaths_variable_map`: Variable mappings for linked deaths data
+#' * `linked_ind_deaths_value_map`: Value mappings for linked deaths data
+#' * `linked_ind_deaths_variable_label`: Variable labels for linked deaths data
+#' * `linked_ind_deaths_value_label`: Value labels for linked deaths data
+#' * `analysis_schema_roster`: Analysis schema for linked roster dataset
+#' * `analysis_schema_deaths`: Analysis schema for linked deaths dataset
+#' * `outputs_schema_roster`: Outputs schema (data frame) for linked roster dataset
+#' * `outputs_schema_deaths`: Outputs schema (data frame) for linked deaths dataset
+#' * `data_analysis_plan_roster`: Data analysis plan for linked roster dataset
+#' * `data_analysis_plan_deaths`: Data analysis plan for linked deaths dataset
+#' * `survey_design_roster`: srvyr survey design object for the linked roster dataset
+#' * `survey_design_deaths`: srvyr survey design object for the linked deaths dataset
+#' * `base_survey_design_roster`: Unfiltered base srvyr survey design object for the linked roster dataset
+#' * `base_survey_design_deaths`: Unfiltered base srvyr survey design object for the linked deaths dataset
 #'
 #' @seealso [DataAnalytics]
 #' @export
@@ -378,12 +379,12 @@ MortalityDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_mortality_deaths_template.xlsx"
     ),
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -423,12 +424,12 @@ MortalityDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         super$..additional_set_fields(),
@@ -468,13 +469,13 @@ MortalityDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Initialize Default Schemas
-    #'
-    #' @description
-    #' Loads the default quality, analysis, and outputs schemas into
-    #' their corresponding private fields.
-    #'
-    #' @return Invisibly returns TRUE.
+    # Initialize Default Schemas
+    #
+    # @description
+    # Loads the default quality, analysis, and outputs schemas into
+    # their corresponding private fields.
+    #
+    # @return Invisibly returns TRUE.
     ..initialize_load_schemas_mortality = function() {
 
       private$..load_default_schema(
@@ -558,23 +559,23 @@ MortalityDataAnalytics <- R6::R6Class(
       invisible(TRUE)
     },
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
-    #'
-    #' Returns one input set per available mortality dataset:
-    #' \describe{
-    #'   \item{household}{Always included, using the core \code{data},
-    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
-    #'     stored in \code{analysis_results$household}.}
-    #'   \item{roster}{Included when \code{linked_ind_roster_data} is available and
-    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$roster}.}
-    #'   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
-    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$deaths}.}
-    #' }
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
+    #
+    # Returns one input set per available mortality dataset:
+    # \describe{
+    #   \item{household}{Always included, using the core \code{data},
+    #     \code{survey_design} and \code{data_analysis_plan} fields. Results
+    #     stored in \code{analysis_results$household}.}
+    #   \item{roster}{Included when \code{linked_ind_roster_data} is available and
+    #     \code{data_analysis_plan_roster} contains at least one indicator. Results
+    #     stored in \code{analysis_results$roster}.}
+    #   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
+    #     \code{data_analysis_plan_deaths} contains at least one indicator. Results
+    #     stored in \code{analysis_results$deaths}.}
+    # }
+    #
+    # @return A named list of field sets.
     ..pre_run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_analysis")
 
@@ -615,21 +616,21 @@ MortalityDataAnalytics <- R6::R6Class(
       sets
     },
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
-    #'
-    #' Returns one input set per available mortality dataset so that outputs are
-    #' generated independently for each dataset and stored in named sub-lists
-    #' (\code{visualizations$household} / \code{tables$household},
-    #' \code{visualizations$roster} / \code{tables$roster},
-    #' \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
-    #' the appropriate survey design objects for the dataset, so output entries
-    #' with \code{dataset_type = "survey_design"} receive the weighted design and
-    #' \code{"base"} entries receive the unweighted base design. Each set also
-    #' names the dataset's own variable map, so \code{@variable_map$} references
-    #' in \code{test_params} resolve against the correct dataset.
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_outputs()}.
+    #
+    # Returns one input set per available mortality dataset so that outputs are
+    # generated independently for each dataset and stored in named sub-lists
+    # (\code{visualizations$household} / \code{tables$household},
+    # \code{visualizations$roster} / \code{tables$roster},
+    # \code{visualizations$deaths} / \code{tables$deaths}). Each set passes
+    # the appropriate survey design objects for the dataset, so output entries
+    # with \code{dataset_type = "survey_design"} receive the weighted design and
+    # \code{"base"} entries receive the unweighted base design. Each set also
+    # names the dataset's own variable map, so \code{@variable_map$} references
+    # in \code{test_params} resolve against the correct dataset.
+    #
+    # @return A named list of field sets.
     ..pre_run_outputs = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_outputs")
 

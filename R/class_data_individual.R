@@ -13,8 +13,9 @@
 #' * Schema-based validation of column types and value domains
 #' * Optional linkage back to a Household dataset
 #'
-#' @field household_link Optional linkage back to a HouseholdData object
-#' @field optional_columns Character vector of optional columns for individual data
+#' @section Accessible fields:
+#' * `household_link`: Optional linkage back to a HouseholdData object
+#' * `optional_columns`: Character vector of optional columns for individual data
 #'
 #' @seealso [Data], [HouseholdData]
 #' @export
@@ -32,6 +33,8 @@ IndividualData <- R6::R6Class(
     #' @param metadata Optional list of metadata attributes
     #' @param variable_map Optional named list mapping variable roles to column names.
     #'   Common roles: uuid (person_id), hh_uuid, sex, age, est_dob, exact_dob, age_months, age_days, joined_hh
+    #' @param uuid Character name of the person-level unique ID column (defaults to "person_id")
+    #' @param hh_uuid Character name of the household linkage column (defaults to "hh_uuid")
     #'
     #' @return A new IndividualData R6 object
     #'
@@ -183,20 +186,20 @@ IndividualData <- R6::R6Class(
       "indicator_schema_data_individual_roster_template.xlsx"
     ),
 
-    #' Post-Validation Hook for Individual Data
-    #'
-    #' @description
-    #' Hook method called after core validation completes. Performs individual-specific validation checks.
-    #'
-    #' @param df Data frame that was validated. If NULL, uses raw data from self$get_data("raw")
-    #'
-    #' @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
-    #'
-    #' @details
-    #' Performs individual-specific checks:
-    #' * Household linkage validation (informational - duplicate hh_uuid expected for multi-member households)
-    #' * Age validation (checks for negative ages)
-    #' * Optional household link integrity check if household_link field is set
+    # Post-Validation Hook for Individual Data
+    #
+    # @description
+    # Hook method called after core validation completes. Performs individual-specific validation checks.
+    #
+    # @param df Data frame that was validated. If NULL, uses raw data from self$get_data("raw")
+    #
+    # @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
+    #
+    # @details
+    # Performs individual-specific checks:
+    # * Household linkage validation (informational - duplicate hh_uuid expected for multi-member households)
+    # * Age validation (checks for negative ages)
+    # * Optional household link integrity check if household_link field is set
     ..post_validate = function(df = NULL) {
 
       nm <- private$..dataset_name

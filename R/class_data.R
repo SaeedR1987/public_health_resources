@@ -22,31 +22,9 @@
 #' * Hash fingerprinting for data integrity
 #' * Cross-object linking and validation
 #'
-#' @field raw_data Original imported data frame (immutable)
-#' @field standardized_data Data frame after standardization of names, types, and values
-#' @field clean_data Data frame after cleaning operations
-#' @field dataset_name Character name of the dataset
-#' @field metadata List of metadata attributes
-#' @field uuid Character name of the UUID column
-#' @field validated Logical indicating if data has been validated
-#' @field standardized Logical indicating if data has been standardized
-#' @field cleaned Logical indicating if data has been cleaned
-#' @field required_columns Character vector of required column names
-#' @field other_columns List of other (non-required) column names
-#' @field variable_map List mapping variable roles to column names
-#' @field value_map List mapping canonical values to dataset values
-#' @field variable_label Named list of presentation-ready variable labels (populated by map_schema_labels)
-#' @field value_label Named list of presentation-ready value labels for categorical variables (populated by map_schema_labels)
-#' @field variable_schema Variable schema with types and allowed values
-#' @field indicator_schema Schema for indicator calculations
-#' @field dependency_schema Schema for variable dependencies
-#' @field cleaning_log CleaningLog R6 object for tracking data corrections
-#' @field deletion_log DeletionLog R6 object for tracking deletions
-#' @field data_quality_flags Data frame storing quality flags per row
-#' @field data_diagnostics Diagnostic data frame, retrieved with `get(field = "..data_diagnostics")`
-#' @field cleaning_log_issues Data frame of cleaning log rows that could not be applied (e.g. coercion failures)
-#' @field autosave Logical for automatic saving (if TRUE, snapshots on key steps)
-#' @field linked_objects List of linked Data objects with linkage specifications
+#' State (data stages, maps, labels, schemas, logs, linked objects) is held in
+#' private fields and accessed through `get()` / `set()` and the dataset
+#' accessors rather than as public fields.
 #'
 #' @examples
 #' \dontrun{
@@ -621,6 +599,10 @@ Data <- R6::R6Class(
           var_schema <- result$var_schema
           other_col_patterns <- result$other_col_patterns
 
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", class(data_copy)))
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", nrow(data_copy)))
+          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", summary(data_copy)))
+
           # Step 5-7: For Loop - Schema type conversion and inferred other column registration
 
           result <- phrutils::phr_try_step(
@@ -693,10 +675,6 @@ Data <- R6::R6Class(
           }
 
           data_copy <- result
-
-          phrutils::phr_message(paste0("A rows ..standardized data: ", class(data_copy)))
-          phrutils::phr_message(paste0("A rows ..standardized data: ", nrow(data_copy)))
-          phrutils::phr_message(paste0("A rows ..standardized data: ", summary(data_copy)))
 
           # Step 9: Register Schema Identified Other Columns, if not already added
           # This step shouldnt return anything in result, the private helper
@@ -991,9 +969,10 @@ Data <- R6::R6Class(
             }
 
             phrutils::phr_message(
-              paste0(private$..dataset_name,
-                     phrutils::phr_txt(" - Generated {entries_added} cleaning log entries and {deletions_added} deletion log entries from quality flags.")
-            ))
+              phrutils::phr_txt(
+                "Generated {entries_added} cleaning log entries and {deletions_added} deletion log entries from quality flags."
+              )
+            )
 
             results <- list(
               entries_added = res$entries_added,
@@ -1165,8 +1144,9 @@ Data <- R6::R6Class(
 
             # validation (internal + schema)
             private$..cleaning_log$validate()
-            private$..cleaning_log$validate_cl_against_dataset(self, stage = "clean")
 
+            # post-validate: check cleaning log against dataset
+            private$..cleaning_log$post_validate(self, stage = "clean")
             }
 
           },
@@ -1186,21 +1166,13 @@ Data <- R6::R6Class(
             ) {
 
               # apply changes (authoritative mode option A)
-              # if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
-
-                if (is.null(private$..cleaning_log$get(field = "..log_df"))) {
-                  private$..clean_apply_cleaning_changes(
-                    df = private$..clean_data,
-                    log_df = NULL,
-                    uuid_col = private$..uuid
-                  )
-                } else if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
+              if (nrow(private$..cleaning_log$log_df) > 0) {
 
                 self$set(
                   field = "..clean_data",
                   value = private$..clean_apply_cleaning_changes(
                     df = private$..clean_data,
-                    log_df = private$..cleaning_log$get(field = "..log_df"),
+                    log_df = private$..cleaning_log$log_df,
                     uuid_col = private$..uuid
                   )
                 )
@@ -1222,7 +1194,7 @@ Data <- R6::R6Class(
               inherits(private$..deletion_log, "DeletionLog")
             ) {
               private$..deletion_log$validate()
-              private$..deletion_log$validate_dl_against_dataset(self, stage = "clean")
+              private$..deletion_log$post_validate(self, stage = "clean")
             }
           },
           step = phrutils::phr_txt("Apply deletion log"),
@@ -1241,8 +1213,8 @@ Data <- R6::R6Class(
             ) {
 
               # apply deletions
-              if (nrow(private$..deletion_log$get(field = "..log_df")) > 0) {
-                delete_ids <- as.character(private$..deletion_log$get(field = "..log_df")$uuid)
+              if (nrow(private$..deletion_log$log_df) > 0) {
+                delete_ids <- as.character(private$..deletion_log$log_df$uuid)
 
                 self$set(
                   field = "..clean_data",
@@ -1252,10 +1224,11 @@ Data <- R6::R6Class(
                   ]
                 )
               }
+
             }
           },
-          step = phrutils::phr_txt("Apply deletion log"),
-          hint = phrutils::phr_txt("Check deletion log has valid inputs.")
+          step = phrutils::phr_txt("Apply cleaning log"),
+          hint = phrutils::phr_txt("Check cleaning log has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1622,6 +1595,8 @@ Data <- R6::R6Class(
     #' overridden by subclasses to return sector-specific DataAnalytics subclasses.
     #'
     #' @param stage The data stage to use ("standardized" or "clean")
+    #' @param type Character type of analytics object to generate (default "general");
+    #'   subclasses map this to sector-specific DataAnalytics classes
     #' @param analysis_config Optional analysis configuration (data analysis plan tibble)
     #' @return A DataAnalytics object or NULL
     generate_data_analytics = function(
@@ -1650,7 +1625,7 @@ Data <- R6::R6Class(
           if (is.null(builder)) {
             phrutils::phr_error(
               message = paste(
-                phrutils::phr_txt("Unknown analytics type:"),
+                "Unknown analytics type:",
                 type
               )
             )
@@ -1814,99 +1789,6 @@ Data <- R6::R6Class(
     # @keywords internal
     ..linked_objects = list(), # For dependency linking (name -> list(obj, by_self, by_other))
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
-    ..additional_get_fields = function() {
-      c(
-        super$..additional_get_fields(),
-        "..dataset_name",
-        "..validated",
-        "..standardized",
-        "..cleaned",
-        "..raw_data",
-        "..standardized_data",
-        "..clean_data",
-        "..uuid",
-        "..required_columns",
-        "..other_columns",
-        "..variable_map",
-        "..value_map",
-        "..variable_label",
-        "..value_label",
-        "..variable_schema",
-        "..indicator_schema",
-        "..dependency_schema",
-        "..cleaning_log",
-        "..deletion_log",
-        "..data_quality_flags",
-        "..data_diagnostics",
-        "..cleaning_log_issues",
-        "..linked_objects"
-      )
-    },
-
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
-    ..additional_call_fields = function() {
-      c(
-        super$..additional_call_fields(),
-        "summary",
-        "get_data",
-        "get_data_with_fallback",
-        "validate",
-        "standardize",
-        "generate_cleaning_log",
-        "clean",
-        "data_diagnose",
-        "export_data",
-        "add_linked_dataset",
-        "generate_data_analytics"
-      )
-    },
-
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
-    ..additional_set_fields = function() {
-      c(
-        super$..additional_set_fields(),
-        "..dataset_name",
-        "..validated",
-        "..standardized",
-        "..cleaned",
-        "..raw_data",
-        "..standardized_data",
-        "..clean_data",
-        "..uuid",
-        "..required_columns",
-        "..other_columns",
-        "..variable_map",
-        "..value_map",
-        "..variable_label",
-        "..value_label",
-        "..variable_schema",
-        "..indicator_schema",
-        "..dependency_schema",
-        "..cleaning_log",
-        "..deletion_log",
-        "..data_quality_flags",
-        "..data_diagnostics",
-        "..cleaning_log_issues",
-        "..linked_objects"
-      )
-    },
-
     # @field ..data_registry List of data object types and associated types
     # that are allowable for add_linked_object
     # @keywords internal
@@ -1942,42 +1824,40 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Load, validate, and assign a default schema.
-    #'
-    #' Internal helper used during object initialization to load a schema
-    #' definition from an Excel file, validate its structure against a set of
-    #' required columns, and store the result in the specified active binding or
-    #' field. If the schema cannot be loaded or fails validation, an empty tibble
-    #' containing the required columns is created and stored instead.
-    #'
-    #' Validation is performed using `private$..validate_table_schema()`. Any
-    #' errors encountered during loading or validation are captured and reported
-    #' through `phrutils::phr_warning()`.
-    #'
-    #' @param filename A list or character vector of arguments passed to
-    #'   [system.file()] identifying the schema file to load from the package
-    #'   resources.
-    #' @param target_field A character string giving the name of the field or
-    #'   active binding where the validated schema should be stored via
-    #'   `self$set()`.
-    #' @param required_cols A character vector of column names required for the
-    #'   schema to be considered valid.
-    #' @param schema_name A character string identifying the schema type (e.g.
-    #'   `"variable"`, `"dependency"`, `"indicator"`). Used to construct warning and
-    #'   logging origins.
-    #' @param dataset_name Optional character string identifying the dataset type.
-    #'   When supplied, it is prefixed to warning and initialization origins.
-    #'
-    #' @return Invisibly updates the specified field on the object. No value is
-    #'   returned.
-    #'
-    #' @details
-    #' If validation fails, an empty tibble is generated with one zero-length
-    #' character column for each value in `required_cols`. This ensures downstream
-    #' code always receives a valid schema object with the expected structure.
-    #'
-    #' @keywords internal
-    #' @noRd
+    # Load, Validate, and Assign a Default Schema
+    #
+    # @description
+    # Internal helper used during object initialization to load a schema
+    # definition from an Excel file, validate its structure against a set of
+    # required columns, and store the result in the specified active binding or
+    # field. If the schema cannot be loaded or fails validation, an empty tibble
+    # containing the required columns is created and stored instead.
+    #
+    # Validation is performed using `private$..validate_table_schema()`. Any
+    # errors encountered during loading or validation are captured and reported
+    # through `phrutils::phr_warning()`.
+    #
+    # @param filename A list or character vector of arguments passed to
+    #   [system.file()] identifying the schema file to load from the package
+    #   resources.
+    # @param target_field A character string giving the name of the field or
+    #   active binding where the validated schema should be stored via
+    #   `self$set()`.
+    # @param required_cols A character vector of column names required for the
+    #   schema to be considered valid.
+    # @param schema_name A character string identifying the schema type (e.g.
+    #   `"variable"`, `"dependency"`, `"indicator"`). Used to construct warning and
+    #   logging origins.
+    # @param dataset_name Optional character string identifying the dataset type.
+    #   When supplied, it is prefixed to warning and initialization origins.
+    #
+    # @return Invisibly updates the specified field on the object. No value is
+    #   returned.
+    #
+    # @details
+    # If validation fails, an empty tibble is generated with one zero-length
+    # character column for each value in `required_cols`. This ensures downstream
+    # code always receives a valid schema object with the expected structure.
     ..load_default_schema = function(
     filename,
     target_field,
@@ -2096,17 +1976,17 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Run Core Initialization Checks
-    #'
-    #' @description
-    #' Validates required inputs and dataset structure before object
-    #' initialization.
-    #'
-    #' @param data Input dataset.
-    #' @param uuid UUID column name.
-    #' @param dataset_name Dataset name used for logging and errors.
-    #'
-    #' @return Invisibly
+    # Run Core Initialization Checks
+    #
+    # @description
+    # Validates required inputs and dataset structure before object
+    # initialization.
+    #
+    # @param data Input dataset.
+    # @param uuid UUID column name.
+    # @param dataset_name Dataset name used for logging and errors.
+    #
+    # @return Invisibly
     ..initialize_core_checks = function(
     data,
     uuid,
@@ -2156,17 +2036,17 @@ Data <- R6::R6Class(
       TRUE
     },
 
-    #' Initialize Core Data Fields
-    #'
-    #' @description
-    #' Initializes core dataset fields, maps, and log objects during
-    #' Data object setup.
-    #'
-    #' @param data Raw dataset.
-    #' @param dataset_name Dataset name.
-    #' @param uuid UUID column name.
-    #'
-    #' @return Invisibly updates object fields.
+    # Initialize Core Data Fields
+    #
+    # @description
+    # Initializes core dataset fields, maps, and log objects during
+    # Data object setup.
+    #
+    # @param data Raw dataset.
+    # @param dataset_name Dataset name.
+    # @param uuid UUID column name.
+    #
+    # @return Invisibly updates object fields.
     ..initialize_set_fields = function(
     data,
     dataset_name,
@@ -2248,13 +2128,13 @@ Data <- R6::R6Class(
 
     },
 
-    #' Load Default Schemas
-    #'
-    #' @description
-    #' Loads the default variable, dependency, and indicator schemas into
-    #' the corresponding private fields.
-    #'
-    #' @return Invisibly returns `TRUE`.
+    # Load Default Schemas
+    #
+    # @description
+    # Loads the default variable, dependency, and indicator schemas into
+    # the corresponding private fields.
+    #
+    # @return Invisibly returns `TRUE`.
     ..initialize_load_schemas = function() {
 
       private$..load_default_schema(
@@ -2315,17 +2195,17 @@ Data <- R6::R6Class(
 
     },
 
-    #' Run Core Validation Checks
-    #'
-    #' @description
-    #' Runs core dataset validation checks including dataframe structure,
-    #' required columns, UUID presence, missing values, and uniqueness.
-    #'
-    #' @param df Dataset.
-    #' @param had_warnings Logical flag indicating whether warnings have
-    #' already been encountered.
-    #'
-    #' @return Updated `had_warnings` logical value.
+    # Run Core Validation Checks
+    #
+    # @description
+    # Runs core dataset validation checks including dataframe structure,
+    # required columns, UUID presence, missing values, and uniqueness.
+    #
+    # @param df Dataset.
+    # @param had_warnings Logical flag indicating whether warnings have
+    # already been encountered.
+    #
+    # @return Updated `had_warnings` logical value.
     ..validate_core_checks = function(
     df,
     had_warnings = FALSE
@@ -2385,16 +2265,16 @@ Data <- R6::R6Class(
 
     },
 
-    #' Run Value Map Validation Checks
-    #'
-    #' @description
-    #' Validates value map entries against the variable map and dataset values.
-    #'
-    #' @param df Dataset.
-    #' @param had_warnings Logical flag indicating whether warnings have
-    #' already been encountered.
-    #'
-    #' @return Updated `had_warnings` logical value.
+    # Run Value Map Validation Checks
+    #
+    # @description
+    # Validates value map entries against the variable map and dataset values.
+    #
+    # @param df Dataset.
+    # @param had_warnings Logical flag indicating whether warnings have
+    # already been encountered.
+    #
+    # @return Updated `had_warnings` logical value.
     ..validate_value_map_checks = function(
     df,
     had_warnings = FALSE
@@ -2513,34 +2393,34 @@ Data <- R6::R6Class(
 
     },
 
-    #' Pre-validation Hook
-    #'
-    #' @description
-    #' Hook method called before validation begins. Override in subclasses for custom pre-validation logic.
-    #'
-    #' @return NULL (default implementation does nothing)
+    # Pre-validation Hook
+    #
+    # @description
+    # Hook method called before validation begins. Override in subclasses for custom pre-validation logic.
+    #
+    # @return NULL (default implementation does nothing)
     ..pre_validate = function() {}, # subclass hook
 
-    #' Post-validation Hook
-    #'
-    #' @description
-    #' Hook method called after core validation completes. Override in subclasses for additional validation.
-    #'
-    #' @param df Data frame that was validated
-    #'
-    #' @return Logical indicating validation success (TRUE by default)
+    # Post-validation Hook
+    #
+    # @description
+    # Hook method called after core validation completes. Override in subclasses for additional validation.
+    #
+    # @param df Data frame that was validated
+    #
+    # @return Logical indicating validation success (TRUE by default)
     ..post_validate = function(df) {
       # Default: no additional post-validation in base class
       return(TRUE)
     },
 
-    #' Check Standardization Preconditions
-    #'
-    #' @description
-    #' Ensures that the dataset is in a valid state for standardization.
-    #' Currently verifies that raw data exists.
-    #'
-    #' @return A `phr_try_step()` result object.
+    # Check Standardization Preconditions
+    #
+    # @description
+    # Ensures that the dataset is in a valid state for standardization.
+    # Currently verifies that raw data exists.
+    #
+    # @return A `phr_try_step()` result object.
     ..standardize_check_prerequisites = function() {
 
       phrutils::phr_try({
@@ -2591,18 +2471,18 @@ Data <- R6::R6Class(
       result
     },
 
-    #' Standardize Column Type from Schema
-    #'
-    #' @description
-    #' Applies schema-defined type conversion to a column when a matching
-    #' variable and type are present in the variable schema.
-    #'
-    #' @param nm Column name.
-    #' @param col Column values.
-    #' @param schema Data frame containing `variable` and `type` columns.
-    #' @param variable_map .
-    #'
-    #' @return A list containing `handled` and `value`.
+    # Standardize Column Type from Schema
+    #
+    # @description
+    # Applies schema-defined type conversion to a column when a matching
+    # variable and type are present in the variable schema.
+    #
+    # @param nm Column name.
+    # @param col Column values.
+    # @param schema Data frame containing `variable` and `type` columns.
+    # @param variable_map .
+    #
+    # @return A list containing `handled` and `value`.
     ..standardize_type_conversion = function(nm, col, schema, variable_map) {
 
       canonical_name <- private$..get_canonical_variable(
@@ -2688,15 +2568,15 @@ Data <- R6::R6Class(
       }
     },
 
-    #' Standardize Column Using Type Inference
-    #'
-    #' @description
-    #' Infers a column type and applies appropriate type coercion.
-    #'
-    #' @param nm Column name.
-    #' @param col Column values.
-    #'
-    #' @return A standardized column vector.
+    # Standardize Column Using Type Inference
+    #
+    # @description
+    # Infers a column type and applies appropriate type coercion.
+    #
+    # @param nm Column name.
+    # @param col Column values.
+    #
+    # @return A standardized column vector.
     ..standardize_inference_conversion = function(nm, col) {
 
       inferred <- tryCatch(
@@ -2748,17 +2628,17 @@ Data <- R6::R6Class(
 
     },
 
-    #' Register Inferred Other Column
-    #'
-    #' @description
-    #' Detects and registers likely "other" text columns based on
-    #' common naming patterns.
-    #'
-    #' @param nm Column name.
-    #' @param col Standardized column values.
-    #' @param data Dataset.
-    #'
-    #' @return Invisibly registers entries in `..other_columns`.
+    # Register Inferred Other Column
+    #
+    # @description
+    # Detects and registers likely "other" text columns based on
+    # common naming patterns.
+    #
+    # @param nm Column name.
+    # @param col Standardized column values.
+    # @param data Dataset.
+    #
+    # @return Invisibly registers entries in `..other_columns`.
     ..standardize_register_inferred_other_column = function(
     nm,
     col,
@@ -2823,16 +2703,16 @@ Data <- R6::R6Class(
 
     },
 
-    #' Process Select Multiple Columns
-    #'
-    #' @description
-    #' Expands select_multiple variables and registers any associated
-    #' "other" response columns.
-    #'
-    #' @param data Dataset.
-    #' @param schema Variable schema.
-    #'
-    #' @return Modified dataset.
+    # Process Select Multiple Columns
+    #
+    # @description
+    # Expands select_multiple variables and registers any associated
+    # "other" response columns.
+    #
+    # @param data Dataset.
+    # @param schema Variable schema.
+    #
+    # @return Modified dataset.
     ..standardize_process_select_multiple_columns = function(
     data,
     schema
@@ -2919,21 +2799,19 @@ Data <- R6::R6Class(
 
     },
 
-    #' Identify and expand all select_multiple columns in a dataset
-    #'
-    #' @description
-    #' Helper function that processes a dataset based on schema question_types,
-    #' identifying select_multiple columns and expanding them into dummy variables.
-    #'
-    #' @param data A data frame to process
-    #' @param schema A schema list with question_types field (can be NULL or without
-    #'   question_types, in which case the function returns the original data unchanged)
-    #'
-    #' @return A list with 'data' (modified data frame), 'expanded_columns' (character
-    #'   vector of new column names), and 'other_related_columns' (list tracking columns
-    #'   related to "other" responses in select_multiple questions)
-    #'
-    #' @keywords internal
+    # Identify and expand all select_multiple columns in a dataset
+    #
+    # @description
+    # Helper function that processes a dataset based on schema question_types,
+    # identifying select_multiple columns and expanding them into dummy variables.
+    #
+    # @param data A data frame to process
+    # @param schema A schema list with question_types field (can be NULL or without
+    #   question_types, in which case the function returns the original data unchanged)
+    #
+    # @return A list with 'data' (modified data frame), 'expanded_columns' (character
+    #   vector of new column names), and 'other_related_columns' (list tracking columns
+    #   related to "other" responses in select_multiple questions)
     ..st_process_select_multiple_columns = function(data, schema) {
 
       phrutils::phr_try({
@@ -3027,16 +2905,16 @@ Data <- R6::R6Class(
       return(result)
     },
 
-    #' Register Schema Other Columns
-    #'
-    #' @description
-    #' Registers columns identified as "other" in the variable schema.
-    #'
-    #' @param data Dataset.
-    #' @param schema Variable schema.
-    #' @param stage The stage of the data being processed (raw, standardized, clean)
-    #'
-    #' @return Invisibly updates `..other_columns`.
+    # Register Schema Other Columns
+    #
+    # @description
+    # Registers columns identified as "other" in the variable schema.
+    #
+    # @param data Dataset.
+    # @param schema Variable schema.
+    # @param stage The stage of the data being processed (raw, standardized, clean)
+    #
+    # @return Invisibly updates `..other_columns`.
     ..standardize_register_schema_other_columns = function(
     data,
     schema,
@@ -3115,16 +2993,16 @@ Data <- R6::R6Class(
 
       },
 
-    #' Process Indicator Schema Row
-    #'
-    #' @description
-    #' Processes a single indicator definition from the indicator schema
-    #' and updates the working dataset.
-    #'
-    #' @param working_data Current working dataset.
-    #' @param indicator_row Single-row indicator schema data frame.
-    #'
-    #' @return Updated dataset.
+    # Process Indicator Schema Row
+    #
+    # @description
+    # Processes a single indicator definition from the indicator schema
+    # and updates the working dataset.
+    #
+    # @param working_data Current working dataset.
+    # @param indicator_row Single-row indicator schema data frame.
+    #
+    # @return Updated dataset.
     ..standardize_process_indicator_schema = function(
     working_data,
     indicator_row
@@ -3283,16 +3161,16 @@ Data <- R6::R6Class(
       working_data
 
     },
-    #' Build Indicator Function Arguments
-    #'
-    #' @description
-    #' Resolves indicator arguments from the indicator schema,
-    #' including @variable_map, @value_map, and vector expressions.
-    #'
-    #' @param working_data Current working dataset.
-    #' @param indicator_row Single-row indicator schema data frame.
-    #'
-    #' @return Named list of arguments for use with `do.call()`.
+    # Build Indicator Function Arguments
+    #
+    # @description
+    # Resolves indicator arguments from the indicator schema,
+    # including @variable_map, @value_map, and vector expressions.
+    #
+    # @param working_data Current working dataset.
+    # @param indicator_row Single-row indicator schema data frame.
+    #
+    # @return Named list of arguments for use with `do.call()`.
     ..st_build_indicator_arguments = function(
     working_data,
     indicator_row
@@ -3574,27 +3452,27 @@ Data <- R6::R6Class(
 
 
 
-    #' @description
-    #' Resolve a "@variable_map$role" schema reference (or a bare role name)
-    #' to its mapped dataset column name.
-    #'
-    #' Centralizes the parsing/lookup logic used when indicator schema
-    #' arguments (single values or elements of a `c(...)` vector) reference
-    #' `variable_map` using the `@variable_map$role` tag syntax.
-    #'
-    #' @param ref Character string to check/resolve. When `tags = TRUE`,
-    #'   this is expected to be a `@variable_map$role` tag (e.g.
-    #'   "@variable_map$fever"). When `tags = FALSE`, `ref` is treated
-    #'   directly as the role name, with no `@` stripping.
-    #' @param tags Logical. If `TRUE`, `ref` is parsed as a `@variable_map$role`
-    #'   tag. If `FALSE` (default), `ref` is resolved directly as a role name.
-    #'
-    #' @return A list with:
-    #'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
-    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
-    #'   * `role` - the extracted role name (NULL if not a reference).
-    #'   * `value` - the resolved column name, or NULL if the role is not
-    #'     mapped (or not a valid/non-empty mapping).
+    # @description
+    # Resolve a "@variable_map$role" schema reference (or a bare role name)
+    # to its mapped dataset column name.
+    #
+    # Centralizes the parsing/lookup logic used when indicator schema
+    # arguments (single values or elements of a `c(...)` vector) reference
+    # `variable_map` using the `@variable_map$role` tag syntax.
+    #
+    # @param ref Character string to check/resolve. When `tags = TRUE`,
+    #   this is expected to be a `@variable_map$role` tag (e.g.
+    #   "@variable_map$fever"). When `tags = FALSE`, `ref` is treated
+    #   directly as the role name, with no `@` stripping.
+    # @param tags Logical. If `TRUE`, `ref` is parsed as a `@variable_map$role`
+    #   tag. If `FALSE` (default), `ref` is resolved directly as a role name.
+    #
+    # @return A list with:
+    #   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
+    #     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
+    #   * `role` - the extracted role name (NULL if not a reference).
+    #   * `value` - the resolved column name, or NULL if the role is not
+    #     mapped (or not a valid/non-empty mapping).
     ..st_resolve_variable_map_reference = function(ref, tags = FALSE) {
       if (!is.character(ref) || length(ref) != 1) {
         return(list(is_reference = FALSE, role = NULL, value = NULL))
@@ -3618,34 +3496,34 @@ Data <- R6::R6Class(
       list(is_reference = TRUE, role = role, value = value)
     },
 
-    #' @description
-    #' Resolve a "@value_map$role" or "@value_map$role$canonical_value"
-    #' schema reference (or a bare "role"/"role$canonical_value" string) to
-    #' its mapped dataset value(s).
-    #'
-    #' Centralizes the parsing/lookup logic used when indicator schema
-    #' arguments (single values or elements of a `c(...)` vector) reference
-    #' `value_map` using the `@value_map$role` or
-    #' `@value_map$role$canonical_value` tag syntax.
-    #'
-    #' @param ref Character string to check/resolve. When `tags = TRUE`,
-    #'   this is expected to be a `@value_map$role` or
-    #'   `@value_map$role$canonical_value` tag (e.g.
-    #'   "@value_map$status$yes"). When `tags = FALSE`, `ref` is treated
-    #'   directly as "role" or "role$canonical_value", with no `@` stripping.
-    #' @param tags Logical. If `TRUE`, `ref` is parsed as a `@value_map$...`
-    #'   tag. If `FALSE` (default), `ref` is resolved directly.
-    #'
-    #' @return A list with:
-    #'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
-    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
-    #'   * `role` - the extracted role name (NULL if not a reference).
-    #'   * `canonical_value` - the extracted canonical value name, if provided
-    #'     (NULL otherwise).
-    #'   * `role_found` - TRUE if `role` exists in `value_map`.
-    #'   * `value` - the resolved value(s): a single mapping (when
-    #'     `canonical_value` is given), the entire role's value map (when it
-    #'     is not), or NULL if the role/canonical value could not be resolved.
+    # @description
+    # Resolve a "@value_map$role" or "@value_map$role$canonical_value"
+    # schema reference (or a bare "role"/"role$canonical_value" string) to
+    # its mapped dataset value(s).
+    #
+    # Centralizes the parsing/lookup logic used when indicator schema
+    # arguments (single values or elements of a `c(...)` vector) reference
+    # `value_map` using the `@value_map$role` or
+    # `@value_map$role$canonical_value` tag syntax.
+    #
+    # @param ref Character string to check/resolve. When `tags = TRUE`,
+    #   this is expected to be a `@value_map$role` or
+    #   `@value_map$role$canonical_value` tag (e.g.
+    #   "@value_map$status$yes"). When `tags = FALSE`, `ref` is treated
+    #   directly as "role" or "role$canonical_value", with no `@` stripping.
+    # @param tags Logical. If `TRUE`, `ref` is parsed as a `@value_map$...`
+    #   tag. If `FALSE` (default), `ref` is resolved directly.
+    #
+    # @return A list with:
+    #   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
+    #     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
+    #   * `role` - the extracted role name (NULL if not a reference).
+    #   * `canonical_value` - the extracted canonical value name, if provided
+    #     (NULL otherwise).
+    #   * `role_found` - TRUE if `role` exists in `value_map`.
+    #   * `value` - the resolved value(s): a single mapping (when
+    #     `canonical_value` is given), the entire role's value map (when it
+    #     is not), or NULL if the role/canonical value could not be resolved.
     ..st_resolve_value_map_reference = function(ref, tags = FALSE) {
       if (!is.character(ref) || length(ref) != 1) {
         return(list(
@@ -3700,16 +3578,16 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Generate Numeric Cluster Identifier
-    #'
-    #' @description
-    #' Creates a numeric cluster identifier from the mapped cluster ID
-    #' variable and registers it in the variable map.
-    #'
-    #' @param data Dataset.
-    #' @param variable_map Variable map.
-    #'
-    #' @return Dataset with `cluster_id_numeric` added when applicable.
+    # Generate Numeric Cluster Identifier
+    #
+    # @description
+    # Creates a numeric cluster identifier from the mapped cluster ID
+    # variable and registers it in the variable map.
+    #
+    # @param data Dataset.
+    # @param variable_map Variable map.
+    #
+    # @return Dataset with `cluster_id_numeric` added when applicable.
     ..standardize_cluster_id_numeric = function(
     data,
     variable_map
@@ -3756,21 +3634,21 @@ Data <- R6::R6Class(
 
     },
 
-    #' Run Data Quality Checks
-    #'
-    #' @description
-    #' Executes data quality checks defined in dependency_schema and generates quality flags
-    #'
-    #' @param stage Character string: "standardized" (default) or "clean"
-    #'
-    #' @return A list containing check results and flags, or NULL if no dependency schema
-    #'
-    #' @details
-    #' Quality checks include:
-    #' * Dependency validations (e.g., if A is answered, B must be answered)
-    #' * Range checks and logical consistency
-    #' * Custom validation rules from dependency_schema
-    #' Results are stored in private$..data_quality_flags for later use.
+    # Run Data Quality Checks
+    #
+    # @description
+    # Executes data quality checks defined in dependency_schema and generates quality flags
+    #
+    # @param stage Character string: "standardized" (default) or "clean"
+    #
+    # @return A list containing check results and flags, or NULL if no dependency schema
+    #
+    # @details
+    # Quality checks include:
+    # * Dependency validations (e.g., if A is answered, B must be answered)
+    # * Range checks and logical consistency
+    # * Custom validation rules from dependency_schema
+    # Results are stored in private$..data_quality_flags for later use.
     ..standardize_run_quality_checks = function(stage = "standardized") {
       phrutils::phr_try(
         {
@@ -4256,36 +4134,36 @@ Data <- R6::R6Class(
       )
     },
 
-    #' INTERNAL HELPER -- translate expression to use mapped column names and values
-    #'
-    #' @description
-    #' Internal helper to translate quality check expressions from canonical names/values
-    #' to dataset-specific names/values using variable_map and value_map.
-    #'
-    #' Translation occurs in two steps:
-    #' 1. Replace canonical variable names (roles) with dataset column names from variable_map
-    #' 2. Replace canonical values with dataset values from value_map
-    #'
-    #'
-    #' @param expr Character string containing the R expression to translate
-    #' @param stage Data stage to use for validation ("raw", "standardized", "clean")
-    #'
-    #' @return Translated expression as a character string
-    #'
-    #' @details
-    #' Supported operators for value translation:
-    #' - Equality: `var == 'value'` or `'value' == var`
-    #' - Inequality: `var != 'value'` or `'value' != var`
-    #' - Set membership: `var %in% c('value1', 'value2', ...)`
-    #'
-    #' For single dataset values: Uses simple equality (`var == 'value'`)
-    #' For multiple dataset values: Uses membership (`var %in% c('val1', 'val2')`)
-    #' For %in% expressions: Expands each canonical value to its dataset values
-    #'
-    #' @note
-    #' - Other operators (<, >, <=, >=, etc.) are not currently translated for values
-    #' - Variable names in functions (e.g., is.na(var)) are translated
-    #' - Special regex characters in names/values are automatically escaped
+    # INTERNAL HELPER -- translate expression to use mapped column names and values
+    #
+    # @description
+    # Internal helper to translate quality check expressions from canonical names/values
+    # to dataset-specific names/values using variable_map and value_map.
+    #
+    # Translation occurs in two steps:
+    # 1. Replace canonical variable names (roles) with dataset column names from variable_map
+    # 2. Replace canonical values with dataset values from value_map
+    #
+    #
+    # @param expr Character string containing the R expression to translate
+    # @param stage Data stage to use for validation ("raw", "standardized", "clean")
+    #
+    # @return Translated expression as a character string
+    #
+    # @details
+    # Supported operators for value translation:
+    # - Equality: `var == 'value'` or `'value' == var`
+    # - Inequality: `var != 'value'` or `'value' != var`
+    # - Set membership: `var %in% c('value1', 'value2', ...)`
+    #
+    # For single dataset values: Uses simple equality (`var == 'value'`)
+    # For multiple dataset values: Uses membership (`var %in% c('val1', 'val2')`)
+    # For %in% expressions: Expands each canonical value to its dataset values
+    #
+    # @note
+    # - Other operators (<, >, <=, >=, etc.) are not currently translated for values
+    # - Variable names in functions (e.g., is.na(var)) are translated
+    # - Special regex characters in names/values are automatically escaped
     ..st_translate_expression = function(expr, stage = "standardized") {
       if (is.null(expr) || expr == "") {
         return(expr)
@@ -4597,15 +4475,15 @@ Data <- R6::R6Class(
       return(translated)
     },
 
-    #' INTERNAL HELPER -- provide hints for expression parse errors
-    #'
-    #' @description
-    #' Internal helper to provide helpful hints for common syntax errors in dependency expressions.
-    #'
-    #' @param expr Character string containing the R expression that failed to parse
-    #' @param error_msg Character string containing the error message from parse attempt
-    #'
-    #' @return Character string with a helpful error message including hints
+    # INTERNAL HELPER -- provide hints for expression parse errors
+    #
+    # @description
+    # Internal helper to provide helpful hints for common syntax errors in dependency expressions.
+    #
+    # @param expr Character string containing the R expression that failed to parse
+    # @param error_msg Character string containing the error message from parse attempt
+    #
+    # @return Character string with a helpful error message including hints
     ..st_get_expression_parse_hint = function(expr, error_msg) {
       # Provide helpful hints for common syntax errors in dependency expressions
 
@@ -4655,35 +4533,35 @@ Data <- R6::R6Class(
       ))
     },
 
-    #' Pre-standardization Hook
-    #'
-    #' @description
-    #' Hook method called before standardization begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
+    # Pre-standardization Hook
+    #
+    # @description
+    # Hook method called before standardization begins. Override in subclasses for custom pre-processing.
+    #
+    # @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #
+    # @return NULL (default implementation does nothing)
     ..pre_standardize = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
 
-    #' Post-standardization Hook
-    #'
-    #' @description
-    #' Hook method called after standardization completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
+    # Post-standardization Hook
+    #
+    # @description
+    # Hook method called after standardization completes. Override in subclasses for custom post-processing.
+    #
+    # @return NULL (default implementation does nothing)
     ..post_standardize = function() {}, # subclass hook
 
-    #' Resolve Canonical Variable Name
-    #'
-    #' @description
-    #' Resolves a dataset column name to its canonical variable name
-    #' using the variable map.
-    #'
-    #' @param dataset_variable Dataset column name.
-    #' @param variable_map Named list of canonical-to-dataset mappings.
-    #'
-    #' @return Character scalar containing the canonical variable name,
-    #' or `NULL` if no mapping exists.
+    # Resolve Canonical Variable Name
+    #
+    # @description
+    # Resolves a dataset column name to its canonical variable name
+    # using the variable map.
+    #
+    # @param dataset_variable Dataset column name.
+    # @param variable_map Named list of canonical-to-dataset mappings.
+    #
+    # @return Character scalar containing the canonical variable name,
+    # or `NULL` if no mapping exists.
     ..get_canonical_variable = function(
     dataset_variable,
     variable_map
@@ -4701,21 +4579,21 @@ Data <- R6::R6Class(
 
     },
 
-    #' Resolve Column from Role
-    #'
-    #' @description
-    #' Resolves a semantic role to its column name and optionally retrieves mapped values and data diagnostics
-    #'
-    #' @param role Character string with semantic role or direct column name
-    #' @param stage Character string specifying data stage: "raw", "standardized", or "clean" (default: "raw")
-    #' @param values Logical; if TRUE, returns list with column and mapped values
-    #' @param full Logical; if TRUE, returns full diagnostic information including values in data
-    #'
-    #' @return Character string (column name), list (if values=TRUE or full=TRUE), or NULL if not found
-    #'
-    #' @details
-    #' Resolution priority: variable_map role lookup, then direct column name fallback.
-    #' With full=TRUE, returns: role, column, values, exists_in_data, values_in_data.
+    # Resolve Column from Role
+    #
+    # @description
+    # Resolves a semantic role to its column name and optionally retrieves mapped values and data diagnostics
+    #
+    # @param role Character string with semantic role or direct column name
+    # @param stage Character string specifying data stage: "raw", "standardized", or "clean" (default: "raw")
+    # @param values Logical; if TRUE, returns list with column and mapped values
+    # @param full Logical; if TRUE, returns full diagnostic information including values in data
+    #
+    # @return Character string (column name), list (if values=TRUE or full=TRUE), or NULL if not found
+    #
+    # @details
+    # Resolution priority: variable_map role lookup, then direct column name fallback.
+    # With full=TRUE, returns: role, column, values, exists_in_data, values_in_data.
     ..resolve_column = function(
     role,
     stage = "raw",
@@ -4785,22 +4663,22 @@ Data <- R6::R6Class(
       ))
     },
 
-    #' Process Cleaning Log Flag
-    #'
-    #' @description
-    #' Processes a single quality flag column and creates corresponding
-    #' cleaning log or deletion log entries.
-    #'
-    #' @param col Flag column name.
-    #' @param flag_df Data frame containing quality flag columns.
-    #' @param df Dataset.
-    #' @param stage Data stage.
-    #' @param enum_id_col Enumerator ID column.
-    #' @param device_id_col Device ID column.
-    #' @param entries_added Current cleaning log entry count.
-    #' @param deletions_added Current deletion log entry count.
-    #'
-    #' @return List containing updated `entries_added` and `deletions_added`.
+    # Process Cleaning Log Flag
+    #
+    # @description
+    # Processes a single quality flag column and creates corresponding
+    # cleaning log or deletion log entries.
+    #
+    # @param col Flag column name.
+    # @param flag_df Data frame containing quality flag columns.
+    # @param df Dataset.
+    # @param stage Data stage.
+    # @param enum_id_col Enumerator ID column.
+    # @param device_id_col Device ID column.
+    # @param entries_added Current cleaning log entry count.
+    # @param deletions_added Current deletion log entry count.
+    #
+    # @return List containing updated `entries_added` and `deletions_added`.
     ..generate_cleaning_log_process_flag = function(
     col,
     flag_df,
@@ -4905,11 +4783,6 @@ Data <- R6::R6Class(
       skipped_self_ref <- character(0)
       skipped_missing_cols <- character(0)
 
-      variables_to_log <- trimws(
-        unlist(strsplit(variables_to_log, ","))
-      )
-      variables_to_log <- variables_to_log[nzchar(variables_to_log)]
-
       for (var_canonical in variables_to_log) {
 
         var_actual_col <- private$..resolve_column(
@@ -5006,49 +4879,57 @@ Data <- R6::R6Class(
 
     },
 
-    #' @description
-    #' Helper function to look up action for a flag from schema dependencies.
-    #'
-    #' @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
-    #' @return Character string with action ("flag_autoclean", "flag_warning", etc.) or empty string
+    # @description
+    # Helper function to look up action for a flag from schema dependencies.
+    #
+    # @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
+    # @return Character string with action ("flag_autoclean", "flag_warning", etc.) or empty string
     ..gen_cl_get_flag_action_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
           # Check separate dependency_schema first (stored as a flat data
           # frame; convert to the nested list view on demand).
-          dep_schema <- private$..dependency_schema
-          if (!is.null(dep_schema) &&
-              nrow(dep_schema) > 0 &&
-              "dep_name" %in% names(dep_schema) &&
-              "action" %in% names(dep_schema)) {
-
-            dep_row <- dep_schema[
-              dep_schema$dep_name == flag_name,
-              ,
-              drop = FALSE
-            ]
-
-            if (nrow(dep_row) > 0) {
-              return(dep_row$action[[1]] %||% "")
+          dep_schema_list <- private$..as_dependency_schema_list()
+          if (length(dep_schema_list) > 0) {
+            # Check hard dependencies
+            if (flag_name %in% names(dep_schema_list$dependencies)) {
+              dep <- dep_schema_list$dependencies[[flag_name]]
+              action <- dep[["action"]] %||% ""
+              return(action)
             }
+            # Check soft dependencies
+            if (flag_name %in% names(dep_schema_list$soft_dependencies)) {
+              dep <- dep_schema_list$soft_dependencies[[flag_name]]
+              action <- dep[["action"]] %||% ""
+              return(action)
+            }
+          }
 
-            # No match found
-            ""
+          # Fall back to variable_schema dependencies for backward compatibility
+          if (
+            !is.null(private$..variable_schema) &&
+            !is.null(private$..variable_schema$dependencies)
+          ) {
+            if (flag_name %in% names(private$..variable_schema$dependencies)) {
+              dep <- private$..variable_schema$dependencies[[flag_name]]
+              action <- dep[["action"]] %||% ""
+              return(action)
+            }
           }
 
           # No match found
           return("")
         },
         on_error = "warn",
-        origin = paste0(private$..dataset_name, "$..gen_cl_get_flag_action_from_schema")
+        origin = paste0(private$..dataset_name, "$get_flag_action_from_schema")
       )
     },
 
-    #' @description
-    #' Helper function to look up variables for a flag from schema dependencies.
-    #'
-    #' @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
-    #' @return Character vector of canonical variable names involved in the dependency, or NULL
+    # @description
+    # Helper function to look up variables for a flag from schema dependencies.
+    #
+    # @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
+    # @return Character vector of canonical variable names involved in the dependency, or NULL
     ..gen_cl_get_flag_variables_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
@@ -5074,17 +4955,17 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Generate Cleaning Log Entries for Other Columns
-    #'
-    #' @description
-    #' Generates cleaning log entries for detected "other" response columns
-    #' and any linked columns recorded in `..other_columns`.
-    #'
-    #' @param df Dataset.
-    #' @param enum_id_col Enumerator ID column name.
-    #' @param device_id_col Device ID column name.
-    #'
-    #' @return Number of cleaning log entries generated.
+    # Generate Cleaning Log Entries for Other Columns
+    #
+    # @description
+    # Generates cleaning log entries for detected "other" response columns
+    # and any linked columns recorded in `..other_columns`.
+    #
+    # @param df Dataset.
+    # @param enum_id_col Enumerator ID column name.
+    # @param device_id_col Device ID column name.
+    #
+    # @return Number of cleaning log entries generated.
     ..generate_cleaning_log_other_columns = function(
     df,
     enum_id_col,
@@ -5198,18 +5079,18 @@ Data <- R6::R6Class(
 
     },
 
-    #' Generate Cleaning Log Entries for Unique Constraints
-    #'
-    #' @description
-    #' Checks variables marked as unique in the variable schema and adds
-    #' duplicate records to the deletion log.
-    #'
-    #' @param df Dataset.
-    #' @param enum_id_col Enumerator ID column name.
-    #' @param device_id_col Device ID column name.
-    #' @param stage Data stage.
-    #'
-    #' @return Number of deletion log entries added.
+    # Generate Cleaning Log Entries for Unique Constraints
+    #
+    # @description
+    # Checks variables marked as unique in the variable schema and adds
+    # duplicate records to the deletion log.
+    #
+    # @param df Dataset.
+    # @param enum_id_col Enumerator ID column name.
+    # @param device_id_col Device ID column name.
+    # @param stage Data stage.
+    #
+    # @return Number of deletion log entries added.
     ..generate_cleaning_log_unique_constraints = function(
     df,
     enum_id_col,
@@ -5228,7 +5109,7 @@ Data <- R6::R6Class(
         "variable" %in% names(var_schema_for_unique)
       ) {
 
-        unique_vars <- var_schema_for_unique$variable[
+        unique_vars <- var_schema_for_unique$var_name[
           isTRUE(var_schema_for_unique$unique) |
             (!is.na(var_schema_for_unique$unique) &
                var_schema_for_unique$unique %in% c(TRUE, "TRUE", "true", 1))
@@ -5330,35 +5211,33 @@ Data <- R6::R6Class(
 
 
 
-    #' Pre-generate cleaning log Hook
-    #'
-    #' @description
-    #' Hook method called before generate_cleaning_log begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
+    # Pre-generate cleaning log Hook
+    #
+    # @description
+    # Hook method called before generate_cleaning_log begins. Override in subclasses for custom pre-processing.
+    #
+    # @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #
+    # @return NULL (default implementation does nothing)
     ..pre_generate_cleaning_log = function(
     stage = c("clean", "standardized", "raw")
     ) {}, # subclass hook - called before standardization begins
 
-    #' Post-generate cleaning log Hook
-    #'
-    #' @description
-    #' Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
-    ..post_generate_cleaning_log = function(
-    stage = c("clean", "standardized", "raw")
-    ) {}, # subclass hook
+    # Post-generate cleaning log Hook
+    #
+    # @description
+    # Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
+    #
+    # @return NULL (default implementation does nothing)
+    ..post_generate_cleaning_log = function() {}, # subclass hook
 
-    #' Setup Cleaning Dataset
-    #'
-    #' @description
-    #' Initializes the clean dataset and applies fallback logic when
-    #' standardized data is unavailable.
-    #'
-    #' @return Invisibly updates `..clean_data`.
+    # Setup Cleaning Dataset
+    #
+    # @description
+    # Initializes the clean dataset and applies fallback logic when
+    # standardized data is unavailable.
+    #
+    # @return Invisibly updates `..clean_data`.
     ..clean_setup = function() {
 
       if (!private$..standardized) {
@@ -5410,38 +5289,38 @@ Data <- R6::R6Class(
 
     },
 
-    #' Pre-clean Hook
-    #'
-    #' @description
-    #' Hook method called before clean begins. Override in subclasses for custom pre-processing.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (default implementation does nothing)
+    # Pre-clean Hook
+    #
+    # @description
+    # Hook method called before clean begins. Override in subclasses for custom pre-processing.
+    #
+    # @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #
+    # @return NULL (default implementation does nothing)
     ..pre_clean = function(stage = c("clean", "standardized", "raw")) {}, # subclass hook - called before standardization begins
 
-    #' Post-clean Hook
-    #'
-    #' @description
-    #' Hook method called after clean completes. Override in subclasses for custom post-processing.
-    #'
-    #' @return NULL (default implementation does nothing)
+    # Post-clean Hook
+    #
+    # @description
+    # Hook method called after clean completes. Override in subclasses for custom post-processing.
+    #
+    # @return NULL (default implementation does nothing)
     ..post_clean = function() {}, # subclass hook
 
-    #' Build Diagnostic Rows for a Variable
-    #'
-    #' @description
-    #' Builds one or more diagnostic table rows for a schema variable,
-    #' including variable mappings, value mappings, type checks, and
-    #' validation issues.
-    #'
-    #' @param var_role Canonical variable name.
-    #' @param sch_vars Variable schema data frame.
-    #' @param vm Variable map.
-    #' @param vmap Value map.
-    #' @param df Dataset.
-    #'
-    #' @return A list of diagnostic row entries.
+    # Build Diagnostic Rows for a Variable
+    #
+    # @description
+    # Builds one or more diagnostic table rows for a schema variable,
+    # including variable mappings, value mappings, type checks, and
+    # validation issues.
+    #
+    # @param var_role Canonical variable name.
+    # @param sch_vars Variable schema data frame.
+    # @param vm Variable map.
+    # @param vmap Value map.
+    # @param df Dataset.
+    #
+    # @return A list of diagnostic row entries.
     ..data_diagnose_build_table = function(
     var_role,
     sch_vars,
@@ -5647,28 +5526,17 @@ Data <- R6::R6Class(
 
 
 
-    #' INTERNAL HELPER -- apply cleaning log changes (option A authoritative mode)
-    #'
-    #' @description
-    #' Internal helper to apply cleaning changes from a log data frame to a dataset
-    #'
-    #' @param df Data frame to modify
-    #' @param log_df Data frame containing cleaning log entries
-    #' @param uuid_col Character name of UUID column in df
-    #'
-    #' @return Modified data frame with cleaning changes applied
+    # INTERNAL HELPER -- apply cleaning log changes (option A authoritative mode)
+    #
+    # @description
+    # Internal helper to apply cleaning changes from a log data frame to a dataset
+    #
+    # @param df Data frame to modify
+    # @param log_df Data frame containing cleaning log entries
+    # @param uuid_col Character name of UUID column in df
+    #
+    # @return Modified data frame with cleaning changes applied
     ..clean_apply_cleaning_changes = function(df, log_df, uuid_col) {
-
-      phrutils::phr_try({
-
-        if (is.null(log_df)) {
-          phrutils::phr_warning(
-            message = phrutils::phr_txt("No cleaning log information has been set. Please run generate_cleaning_log or import a cleaning log first."),
-            origin = paste0(private$..dataset_name, phrutils::phr_txt("$..clean_apply_cleaning_changes"))
-          )
-          return(df)
-        }
-
       issues <- list()
 
       for (i in seq_len(nrow(log_df))) {
@@ -5802,32 +5670,24 @@ Data <- R6::R6Class(
       }
 
       # Store any issues for user follow-up
-
       if (length(issues) > 0) {
-
         self$set(
           field = "..cleaning_log_issues",
           value = do.call(rbind, issues)
         )
-
       }
-
-      },
-      on_error = "abort",
-      origin = paste0(private$..dataset_name, "$..clean_apply_cleaning_changes")
-      )
 
       df
     },
-    #' INTERNAL HELPER -- extract tokens from select_multiple values
-    #'
-    #' @description
-    #' Internal helper to extract individual tokens from space-separated values
-    #' in select_multiple columns.
-    #'
-    #' @param values Character vector containing space-separated values
-    #'
-    #' @return Character vector of unique tokens
+    # INTERNAL HELPER -- extract tokens from select_multiple values
+    #
+    # @description
+    # Internal helper to extract individual tokens from space-separated values
+    # in select_multiple columns.
+    #
+    # @param values Character vector containing space-separated values
+    #
+    # @return Character vector of unique tokens
     ..extract_select_multiple_tokens = function(values) {
       # Use lapply for efficient token collection
       token_list <- lapply(values, function(val) {
@@ -5843,15 +5703,15 @@ Data <- R6::R6Class(
       # Flatten and return unique tokens
       unique(unlist(token_list, use.names = FALSE))
     },
-    #' INTERNAL HELPER -- check if variable is select_multiple type
-    #'
-    #' @description
-    #' Internal helper to check if a variable role is marked as select_multiple
-    #' in the schema.
-    #'
-    #' @param var_role Variable role name
-    #'
-    #' @return Logical indicating if variable is select_multiple
+    # INTERNAL HELPER -- check if variable is select_multiple type
+    #
+    # @description
+    # Internal helper to check if a variable role is marked as select_multiple
+    # in the schema.
+    #
+    # @param var_role Variable role name
+    #
+    # @return Logical indicating if variable is select_multiple
     ..is_select_multiple = function(var_role) {
       sch <- private$..variable_schema
       if (is.null(sch)) {
@@ -5880,19 +5740,17 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Expand select_multiple column into 0/1 dummy variables
-    #'
-    #' @description
-    #' Takes a select_multiple column (with space-separated values) and expands it
-    #' into multiple dummy columns, one for each unique response option found.
-    #'
-    #' @param column A character vector containing space-separated values
-    #' @param column_name The name of the original column (used for naming dummies)
-    #' @param separator The separator used in the select_multiple values (default: " ")
-    #'
-    #' @return A data frame of 0/1 dummy columns, one per unique token found in `column`
-    #'
-    #' @keywords internal
+    # Expand select_multiple column into 0/1 dummy variables
+    #
+    # @description
+    # Takes a select_multiple column (with space-separated values) and expands it
+    # into multiple dummy columns, one for each unique response option found.
+    #
+    # @param column A character vector containing space-separated values
+    # @param column_name The name of the original column (used for naming dummies)
+    # @param separator The separator used in the select_multiple values (default: " ")
+    #
+    # @return A data frame of 0/1 dummy columns, one per unique token found in `column`
     ..expand_select_multiple = function(column, column_name, separator = " ") {
       # Handle NA and empty values
       column <- ifelse(is.na(column) | column == "", NA_character_, column)
@@ -5939,21 +5797,20 @@ Data <- R6::R6Class(
       return(dummy_df)
     },
 
-    #' Parse indicator arguments string respecting parentheses and quoted strings
-    #'
-    #' Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
-    #' properly by respecting parentheses and quoted strings so that c(...) vectors
-    #' and quoted values containing commas are not split incorrectly.
-    #'
-    #' This function is intentionally called twice during indicator processing:
-    #' 1. First call: Parse the full argument string into individual argument pairs
-    #' 2. Second call: Parse the content inside c(...) vectors into individual elements
-    #' This two-stage parsing is necessary because arguments and vector elements have
-    #' different semantic meanings and resolution rules.
-    #'
-    #' @param arg_string Character string containing arguments
-    #' @return Character vector of argument pairs
-    #' @keywords internal
+    # Parse indicator arguments string respecting parentheses and quoted strings
+    #
+    # Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
+    # properly by respecting parentheses and quoted strings so that c(...) vectors
+    # and quoted values containing commas are not split incorrectly.
+    #
+    # This function is intentionally called twice during indicator processing:
+    # 1. First call: Parse the full argument string into individual argument pairs
+    # 2. Second call: Parse the content inside c(...) vectors into individual elements
+    # This two-stage parsing is necessary because arguments and vector elements have
+    # different semantic meanings and resolution rules.
+    #
+    # @param arg_string Character string containing arguments
+    # @return Character vector of argument pairs
     ..parse_indicator_arguments = function(arg_string) {
       if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
         return(character(0))
@@ -6002,21 +5859,21 @@ Data <- R6::R6Class(
       result
     },
 
-    #' Validate Linked Objects
-    #'
-    #' @description
-    #' Validates foreign key relationships with all linked objects
-    #'
-    #' @param stage_self Character string specifying data stage for this object (default: "clean")
-    #' @param stage_other Character string specifying data stage for linked objects (default: "clean")
-    #'
-    #' @return Logical TRUE (invisibly) if all links valid, or list of missing foreign keys if problems found
-    #'
-    #' @details
-    #' For each linked object:
-    #' * Resolves key columns from roles
-    #' * Checks for missing foreign key values
-    #' * Reports orphaned records
+    # Validate Linked Objects
+    #
+    # @description
+    # Validates foreign key relationships with all linked objects
+    #
+    # @param stage_self Character string specifying data stage for this object (default: "clean")
+    # @param stage_other Character string specifying data stage for linked objects (default: "clean")
+    #
+    # @return Logical TRUE (invisibly) if all links valid, or list of missing foreign keys if problems found
+    #
+    # @details
+    # For each linked object:
+    # * Resolves key columns from roles
+    # * Checks for missing foreign key values
+    # * Reports orphaned records
     ..validate_links = function(stage_self = "clean", stage_other = "clean") {
       phrutils::phr_try(
         {
@@ -6086,20 +5943,20 @@ Data <- R6::R6Class(
       )
     },
 
-    #' @description
-    #' Automatically map schema variables to dataset columns and values.
-    #'
-    #' This method searches for default column names in the dataset as referenced
-    #' in the schema's `col_names` field. If a matching column is found, it is
-    #' added to the variable_map. For variables with value_map (non-numeric),
-    #' it checks which canonical values' allowed dataset values exist in the data
-    #' and builds the corresponding nested value_map structure.
-    #'
-    #' This is a "soft" search - found matches are added to maps, but no error
-    #' is thrown if a variable or value is not found.
-    #'
-    #' @param stage The data stage to search in ("raw", "standardized", or "clean")
-    #' @return Invisible self for method chaining
+    # @description
+    # Automatically map schema variables to dataset columns and values.
+    #
+    # This method searches for default column names in the dataset as referenced
+    # in the schema's `col_names` field. If a matching column is found, it is
+    # added to the variable_map. For variables with value_map (non-numeric),
+    # it checks which canonical values' allowed dataset values exist in the data
+    # and builds the corresponding nested value_map structure.
+    #
+    # This is a "soft" search - found matches are added to maps, but no error
+    # is thrown if a variable or value is not found.
+    #
+    # @param stage The data stage to search in ("raw", "standardized", or "clean")
+    # @return Invisible self for method chaining
     ..map_schema_vars = function(stage = "raw") {
       phrutils::phr_try(
         {
@@ -6251,28 +6108,28 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Process Schema Variable Mapping
-    #'
-    #' @description
-    #' Processes a single schema variable, updating the variable map and
-    #' value map where applicable.
-    #'
-    #' @param var_role Canonical variable name (schema `variable` column).
-    #' @param col_names_map Named list of candidate dataset columns per variable
-    #'   (parsed from the schema `col_names` column).
-    #' @param data_cols Dataset column names.
-    #' @param df Dataset.
-    #' @param schema_value_map Named list per variable of canonical `value` ->
-    #'   allowed dataset values (parsed from the schema `allowed` column).
-    #' @param allowed_vals Named list of allowed values for variables without
-    #'   canonical `value` rows.
-    #' @param types Named list of variable types (schema `type` column).
-    #' @param question_types Named list of question types (schema
-    #'   `question_type` column).
-    #' @param vars_mapped Current variable mapping count.
-    #' @param vals_mapped Current value mapping count.
-    #'
-    #' @return List containing updated `vars_mapped` and `vals_mapped`.
+    # Process Schema Variable Mapping
+    #
+    # @description
+    # Processes a single schema variable, updating the variable map and
+    # value map where applicable.
+    #
+    # @param var_role Canonical variable name (schema `variable` column).
+    # @param col_names_map Named list of candidate dataset columns per variable
+    #   (parsed from the schema `col_names` column).
+    # @param data_cols Dataset column names.
+    # @param df Dataset.
+    # @param schema_value_map Named list per variable of canonical `value` ->
+    #   allowed dataset values (parsed from the schema `allowed` column).
+    # @param allowed_vals Named list of allowed values for variables without
+    #   canonical `value` rows.
+    # @param types Named list of variable types (schema `type` column).
+    # @param question_types Named list of question types (schema
+    #   `question_type` column).
+    # @param vars_mapped Current variable mapping count.
+    # @param vals_mapped Current value mapping count.
+    #
+    # @return List containing updated `vars_mapped` and `vals_mapped`.
     ..map_sch_vrs_iteration = function(
     var_role,
     col_names_map,
@@ -6579,30 +6436,30 @@ Data <- R6::R6Class(
 
     },
 
-    #' Map Schema Labels to variable_label and value_label
-    #'
-    #' @description
-    #' Reads the current `variable_map` and `value_map`, then populates the
-    #' `variable_label` and `value_label` fields from the labels stored in
-    #' the variable schema for the requested language. Only variables and
-    #' values that are currently in `variable_map` / `value_map` are labelled.
-    #'
-    #' This method is called automatically after every `map_schema_vars()` call.
-    #' It can also be called manually to switch languages.
-    #'
-    #' @param language Character string: one of `"english"` (default), `"french"`, or `"arabic"`.
-    #'
-    #' @return Invisible self (for method chaining)
-    #'
-    #' @details
-    #' Labels are sourced from the flat variable schema table columns:
-    #' * `variable_label_en / _fr / _ar` -- one label per variable
-    #'   (first non-empty row of the variable)
-    #' * `value_label_en / _fr / _ar` -- one label per canonical `value` row,
-    #'   stored as a named character vector (canonical value -> label)
-    #'
-    #' These columns are loaded from the xlsx variable schema template
-    #' (e.g. `inst/resources/variable_schema_data_household_template.xlsx`).
+    # Map Schema Labels to variable_label and value_label
+    #
+    # @description
+    # Reads the current `variable_map` and `value_map`, then populates the
+    # `variable_label` and `value_label` fields from the labels stored in
+    # the variable schema for the requested language. Only variables and
+    # values that are currently in `variable_map` / `value_map` are labelled.
+    #
+    # This method is called automatically after every `map_schema_vars()` call.
+    # It can also be called manually to switch languages.
+    #
+    # @param language Character string: one of `"english"` (default), `"french"`, or `"arabic"`.
+    #
+    # @return Invisible self (for method chaining)
+    #
+    # @details
+    # Labels are sourced from the flat variable schema table columns:
+    # * `variable_label_en / _fr / _ar` -- one label per variable
+    #   (first non-empty row of the variable)
+    # * `value_label_en / _fr / _ar` -- one label per canonical `value` row,
+    #   stored as a named character vector (canonical value -> label)
+    #
+    # These columns are loaded from the xlsx variable schema template
+    # (e.g. `inst/resources/variable_schema_data_household_template.xlsx`).
     ..map_schema_labels = function(language = "english") {
       phrutils::phr_try(
         {
@@ -6687,23 +6544,23 @@ Data <- R6::R6Class(
       )
     },
 
-    #' Variable Schema Lookup
-    #'
-    #' @description
-    #' Builds a named lookup from the flat variable schema table
-    #' (`private$..variable_schema`), keyed by the `variable` column. Only
-    #' `rule_type == "variable"` rows (when present) with a non-empty value in
-    #' `column` are used.
-    #'
-    #' @param column Name of the schema column to read (e.g. `"col_names"`,
-    #'   `"type"`, `"allowed"`, `"variable_label_en"`).
-    #' @param split Logical; if `TRUE`, split comma-separated cell values into
-    #'   a trimmed character vector.
-    #' @param per_value Logical; if `TRUE`, return a nested list keyed by
-    #'   variable then by canonical `value` (rows without a `value` are
-    #'   skipped). Otherwise the first non-empty entry per variable is used.
-    #'
-    #' @return A named list. Empty if the schema or column is unavailable.
+    # Variable Schema Lookup
+    #
+    # @description
+    # Builds a named lookup from the flat variable schema table
+    # (`private$..variable_schema`), keyed by the `variable` column. Only
+    # `rule_type == "variable"` rows (when present) with a non-empty value in
+    # `column` are used.
+    #
+    # @param column Name of the schema column to read (e.g. `"col_names"`,
+    #   `"type"`, `"allowed"`, `"variable_label_en"`).
+    # @param split Logical; if `TRUE`, split comma-separated cell values into
+    #   a trimmed character vector.
+    # @param per_value Logical; if `TRUE`, return a nested list keyed by
+    #   variable then by canonical `value` (rows without a `value` are
+    #   skipped). Otherwise the first non-empty entry per variable is used.
+    #
+    # @return A named list. Empty if the schema or column is unavailable.
     ..variable_schema_lookup = function(
     column,
     split = FALSE,

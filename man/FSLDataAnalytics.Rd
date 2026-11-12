@@ -17,70 +17,32 @@ analysis in a single integrated object.
 \seealso{
 [DataAnalytics]
 }
-\section{Super class}{
-\code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{FSLDataAnalytics}
+\section{Super classes}{
+\code{\link[phr:Asset]{Asset}} -> \code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{FSLDataAnalytics}
 }
 \section{Methods}{
 \subsection{Public methods}{
   \itemize{
     \item \href{#method-FSLDataAnalytics-initialize}{\code{FSLDataAnalytics$new()}}
-    \item \href{#method-FSLDataAnalytics-default_quality_schema}{\code{FSLDataAnalytics$default_quality_schema()}}
-    \item \href{#method-FSLDataAnalytics-default_outputs_schema}{\code{FSLDataAnalytics$default_outputs_schema()}}
-    \item \href{#method-FSLDataAnalytics-default_analysis_schema}{\code{FSLDataAnalytics$default_analysis_schema()}}
     \item \href{#method-FSLDataAnalytics-clone}{\code{FSLDataAnalytics$clone()}}
   }
 }
 \if{html}{\out{<details><summary>Inherited methods</summary>
 <ul>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id=".compute_results_by_group"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-.compute_results_by_group'><code>DataAnalytics$.compute_results_by_group()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id=".translate_canonical_to_actual_vars"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-.translate_canonical_to_actual_vars'><code>DataAnalytics$.translate_canonical_to_actual_vars()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="call"><a href='../../phr/html/Asset.html#method-Asset-call'><code>Asset$call()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="get"><a href='../../phr/html/Asset.html#method-Asset-get'><code>Asset$get()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="post_sync_state"><a href='../../phr/html/Asset.html#method-Asset-post_sync_state'><code>Asset$post_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="add_all_to_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-add_all_to_dap'><code>DataAnalytics$add_all_to_dap()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="add_indicator_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-add_indicator_dap'><code>DataAnalytics$add_indicator_dap()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="analysis_diagnose"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-analysis_diagnose'><code>DataAnalytics$analysis_diagnose()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="calculate_overall_score"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-calculate_overall_score'><code>DataAnalytics$calculate_overall_score()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="create_survey_design"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-create_survey_design'><code>DataAnalytics$create_survey_design()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="evaluate_threshold_expressions"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-evaluate_threshold_expressions'><code>DataAnalytics$evaluate_threshold_expressions()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="execute_check"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-execute_check'><code>DataAnalytics$execute_check()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_analysis_schema'><code>DataAnalytics$export_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_outputs_schema'><code>DataAnalytics$export_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_quality_schema'><code>DataAnalytics$export_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_results"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_results'><code>DataAnalytics$export_results()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="export_state_object"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-export_state_object'><code>DataAnalytics$export_state_object()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="generate_dap_from_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-generate_dap_from_schema'><code>DataAnalytics$generate_dap_from_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="generate_plausibility_report"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-generate_plausibility_report'><code>DataAnalytics$generate_plausibility_report()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="generate_report"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-generate_report'><code>DataAnalytics$generate_report()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_analysis_schema'><code>DataAnalytics$get_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_outputs_schema'><code>DataAnalytics$get_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_quality_schema'><code>DataAnalytics$get_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_results"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_results'><code>DataAnalytics$get_results()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="get_variable"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-get_variable'><code>DataAnalytics$get_variable()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_analysis_schema'><code>DataAnalytics$import_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_outputs_schema'><code>DataAnalytics$import_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_quality_schema'><code>DataAnalytics$import_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="import_schema_from_table"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-import_schema_from_table'><code>DataAnalytics$import_schema_from_table()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="load_state_object"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-load_state_object'><code>DataAnalytics$load_state_object()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="outputs_diagnose"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-outputs_diagnose'><code>DataAnalytics$outputs_diagnose()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="post_run_analysis"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-post_run_analysis'><code>DataAnalytics$post_run_analysis()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_add_all_to_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_add_all_to_dap'><code>DataAnalytics$pre_add_all_to_dap()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_run_analysis"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_run_analysis'><code>DataAnalytics$pre_run_analysis()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_run_outputs"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_run_outputs'><code>DataAnalytics$pre_run_outputs()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="pre_run_quality_checks"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-pre_run_quality_checks'><code>DataAnalytics$pre_run_quality_checks()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="quality_diagnose"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-quality_diagnose'><code>DataAnalytics$quality_diagnose()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="remove_indicator_dap"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-remove_indicator_dap'><code>DataAnalytics$remove_indicator_dap()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="results_to_table"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-results_to_table'><code>DataAnalytics$results_to_table()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="run_analysis"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-run_analysis'><code>DataAnalytics$run_analysis()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="run_outputs"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-run_outputs'><code>DataAnalytics$run_outputs()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="run_quality_checks"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-run_quality_checks'><code>DataAnalytics$run_quality_checks()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="schema_to_table"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-schema_to_table'><code>DataAnalytics$schema_to_table()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="set_analysis_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-set_analysis_schema'><code>DataAnalytics$set_analysis_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="set_outputs_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-set_outputs_schema'><code>DataAnalytics$set_outputs_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="set_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-set_quality_schema'><code>DataAnalytics$set_quality_schema()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="summary"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-summary'><code>DataAnalytics$summary()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="to_list_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-to_list_schema'><code>DataAnalytics$to_list_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="validate_plan"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-validate_plan'><code>DataAnalytics$validate_plan()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="validate_quality_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-validate_quality_schema'><code>DataAnalytics$validate_quality_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="validate_schema"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-validate_schema'><code>DataAnalytics$validate_schema()</code></a></span></li>
-  <li><span class="pkg-link" data-pkg="phr" data-topic="DataAnalytics" data-id="visualize"><a href='../../phr/html/DataAnalytics.html#method-DataAnalytics-visualize'><code>DataAnalytics$visualize()</code></a></span></li>
 </ul>
 </details>}}
 \if{html}{\out{<hr>}}
@@ -124,51 +86,6 @@ analysis in a single integrated object.
   }
   \subsection{Returns}{
     A new FSLDataAnalytics object
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FSLDataAnalytics-default_quality_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-FSLDataAnalytics-default_quality_schema}{}}}
-\subsection{\code{FSLDataAnalytics$default_quality_schema()}}{
-  Load the default FSL quality schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{FSLDataAnalytics$default_quality_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A list of FSL-specific quality checks
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FSLDataAnalytics-default_outputs_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-FSLDataAnalytics-default_outputs_schema}{}}}
-\subsection{\code{FSLDataAnalytics$default_outputs_schema()}}{
-  Load the default FSL unified outputs schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{FSLDataAnalytics$default_outputs_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A list of FSL-specific outputs definitions (quality and analysis combined)
-  }
-}
-
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-FSLDataAnalytics-default_analysis_schema"></a>}}
-\if{latex}{\out{\hypertarget{method-FSLDataAnalytics-default_analysis_schema}{}}}
-\subsection{\code{FSLDataAnalytics$default_analysis_schema()}}{
-  Load the default FSL analysis schema from template file
-  \subsection{Usage}{
-    \if{html}{\out{<div class="r">}}
-    \preformatted{FSLDataAnalytics$default_analysis_schema()}
-    \if{html}{\out{</div>}}
-  }
-  \subsection{Returns}{
-    A tibble containing the FSL analysis schema
   }
 }
 

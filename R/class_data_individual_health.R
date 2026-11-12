@@ -19,6 +19,7 @@ HealthIndividualData <- R6::R6Class(
     #' @param data A data frame containing individual health records
     #' @param dataset_name A name for this dataset
     #' @param uuid column name for uuid in the dataset
+    #' @param hh_uuid Character name of the household linkage column
     #' @return A new HealthIndividualData object
     initialize = function(data,
                           dataset_name = "HealthIndividualData",

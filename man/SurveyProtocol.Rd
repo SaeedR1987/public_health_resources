@@ -617,7 +617,6 @@ strata consistency checks to \code{self$issues_coherence}.
   field = NULL,
   member = NULL,
   target_field = NULL,
-  name = NULL,
   role = NULL
 )}
     \if{html}{\out{</div>}}
@@ -628,7 +627,6 @@ strata consistency checks to \code{self$issues_coherence}.
       \item{\code{field}}{Optional top-level field name.}
       \item{\code{member}}{Optional nested member name.}
       \item{\code{target_field}}{Optional destination field path.}
-      \item{\code{name}}{Optional named list entry inside \code{field}.}
       \item{\code{role}}{Optional role-based list resolution key.}
     }
     \if{html}{\out{</div>}}
