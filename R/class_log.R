@@ -23,7 +23,8 @@
 #' * validated: Logical indicating if log has passed validation
 #' * metadata: List of metadata including update timestamps
 #'
-#' @field issues List of validations issues found
+#' @section Accessible fields:
+#' * `issues`: List of validations issues found
 #'
 #' @importFrom R6 R6Class
 #' @export
@@ -520,12 +521,12 @@ Log <- R6::R6Class(
     ..schema = NULL,
     ..validated = FALSE,
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         "..issues",
@@ -537,12 +538,12 @@ Log <- R6::R6Class(
       )
     },
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
         "validate",
@@ -553,12 +554,12 @@ Log <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         "..issues",
@@ -571,22 +572,22 @@ Log <- R6::R6Class(
     },
 
 
-    #' Pre-Validation Hook
-    #'
-    #' @description
-    #' Hook method called before validation; override in subclasses for custom logic
-    #' Should return a list of issues.
-    #'
-    #' @return NULL (default implementation is empty)
+    # Pre-Validation Hook
+    #
+    # @description
+    # Hook method called before validation; override in subclasses for custom logic
+    # Should return a list of issues.
+    #
+    # @return NULL (default implementation is empty)
     ..pre_validate = function() {},
 
-    #' Post-Validation Hook
-    #'
-    #' @description
-    #' Hook method called after validation; override in subclasses for custom logic
-    #' Should return a list of issues.
-    #'
-    #' @return NULL (default implementation is empty)
+    # Post-Validation Hook
+    #
+    # @description
+    # Hook method called after validation; override in subclasses for custom logic
+    # Should return a list of issues.
+    #
+    # @return NULL (default implementation is empty)
     ..post_validate = function() {},
 
     # Build Empty Log Template

@@ -33,123 +33,46 @@ Key design principles:
 
 Initialization errors abort construction rather than returning a partially
 initialized R6 object. The Data generation hook reports these as warnings.
-
-
-
-If validation fails, an empty tibble is generated with one zero-length
-character column for each value in `required_cols`. This ensures downstream
-code always receives a valid schema object with the expected structure.
 }
+\section{Accessible fields}{
+
+* `data`: Data frame containing the dataset (standardized or clean data, not raw)
+* `parent_data_object`: Reference to the parent Data object
+* `dataset_name`: Character name for identifying this analytics object
+* `data_stage_name`: Name of the data stage (e.g., "standardized", "clean")
+* `data_hash`: Hash of the data from parent Data object
+* `variable_map`: Variable mappings from Data object
+* `value_map`: Value mappings from Data object
+* `variable_label`: Named list of variable labels
+* `value_label`: Named list of value labels
+* `quality_schema`: Quality check schema with test definitions, thresholds, and penalty scores
+* `analysis_schema`: Analysis schema (catalog of possible indicators)
+* `outputs_schema`: Unified outputs schema (data frame) for all visualizations and tables
+* `plausibility_results`: Results of quality checks execution
+* `analysis_results`: Results of quantitative analysis (named list: survey_design, base)
+* `data_analysis_plan`: QuantDataAnalysisPlanLog object holding the analysis plan
+* `survey_design`: srvyr survey design object
+* `base_survey_design`: Unfiltered base srvyr survey design object (used internally for analysis)
+* `quality_issues_log`: Tibble of quality schema diagnostic results from quality_diagnose()
+* `analysis_plan_issues_log`: Tibble of analysis plan validation issues and diagnostic
+  results from analysis_diagnose()
+* `outputs_issues_log`: Tibble of outputs schema diagnostic results from outputs_diagnose()
+* `overall_score`: Overall data quality score
+* `metadata`: Free-form metadata list
+}
+
 \seealso{
 [FSLDataAnalytics]
 }
-\keyword{internal}
 \section{Super class}{
 \code{\link[phr:Asset]{Asset}} -> \code{DataAnalytics}
 }
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{data}}{Data frame containing the dataset (standardized or clean data, not raw)}
-
-    \item{\code{parent_data_object}}{Reference to the parent Data object}
-
-    \item{\code{dataset_name}}{Character name for identifying this analytics object}
-
-    \item{\code{data_stage_name}}{Name of the data stage (e.g., "standardized", "clean")}
-
-    \item{\code{data_hash}}{Hash of the data from parent Data object}
-
-    \item{\code{variable_map}}{Variable mappings from Data object}
-
-    \item{\code{value_map}}{Value mappings from Data object}
-
-    \item{\code{variable_label}}{Named list of variable labels}
-
-    \item{\code{value_label}}{Named list of value labels}
-
-    \item{\code{quality_schema}}{Quality check schema with test definitions, thresholds, and penalty scores}
-
-    \item{\code{analysis_schema}}{Analysis schema (catalog of possible indicators)}
-
-    \item{\code{outputs_schema}}{Unified outputs schema (data frame) for all visualizations and tables}
-
     \item{\code{visualizations}}{List of ggplot2 graphics/visualizations (shared)}
 
     \item{\code{tables}}{List of dataframes or formatted table objects (shared)}
-
-    \item{\code{plausibility_results}}{Results of quality checks execution}
-
-    \item{\code{analysis_results}}{Results of quantitative analysis (named list: survey_design, base)}
-
-    \item{\code{data_analysis_plan}}{QuantDataAnalysisPlanLog object holding the analysis plan}
-
-    \item{\code{survey_design}}{srvyr survey design object}
-
-    \item{\code{base_survey_design}}{Unfiltered base srvyr survey design object (used internally for analysis)}
-
-    \item{\code{analysis_plan_issues_log}}{Tibble of plan validation issues (internal)}
-
-    \item{\code{quality_issues_log}}{Tibble of quality schema diagnostic results from quality_diagnose()}
-
-    \item{\code{analysis_plan_issues_log}}{Tibble of analysis plan diagnostic results from analysis_diagnose()}
-
-    \item{\code{outputs_issues_log}}{Tibble of outputs schema diagnostic results from outputs_diagnose()}
-
-    \item{\code{overall_score}}{Overall data quality score}
-
-    \item{\code{metadata}}{Free-form metadata list}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{data}}{Data frame containing the dataset (standardized or clean data, not raw)}
-
-    \item{\code{parent_data_object}}{Reference to the parent Data object}
-
-    \item{\code{dataset_name}}{Character name for identifying this analytics object}
-
-    \item{\code{data_stage_name}}{Name of the data stage (e.g., "standardized", "clean")}
-
-    \item{\code{data_hash}}{Hash of the data from parent Data object}
-
-    \item{\code{variable_map}}{Variable mappings from Data object}
-
-    \item{\code{value_map}}{Value mappings from Data object}
-
-    \item{\code{variable_label}}{Named list of variable labels}
-
-    \item{\code{value_label}}{Named list of value labels}
-
-    \item{\code{quality_schema}}{Quality check schema with test definitions, thresholds, and penalty scores}
-
-    \item{\code{analysis_schema}}{Analysis schema (catalog of possible indicators)}
-
-    \item{\code{outputs_schema}}{Unified outputs schema (data frame) for all visualizations and tables}
-
-    \item{\code{plausibility_results}}{Results of quality checks execution}
-
-    \item{\code{analysis_results}}{Results of quantitative analysis (named list: survey_design, base)}
-
-    \item{\code{data_analysis_plan}}{QuantDataAnalysisPlanLog object holding the analysis plan}
-
-    \item{\code{survey_design}}{srvyr survey design object}
-
-    \item{\code{base_survey_design}}{Unfiltered base srvyr survey design object (used internally for analysis)}
-
-    \item{\code{analysis_plan_issues_log}}{Tibble of plan validation issues (internal)}
-
-    \item{\code{quality_issues_log}}{Tibble of quality schema diagnostic results from quality_diagnose()}
-
-    \item{\code{analysis_plan_issues_log}}{Tibble of analysis plan diagnostic results from analysis_diagnose()}
-
-    \item{\code{outputs_issues_log}}{Tibble of outputs schema diagnostic results from outputs_diagnose()}
-
-    \item{\code{overall_score}}{Overall data quality score}
-
-    \item{\code{metadata}}{Free-form metadata list}
   }
   \if{html}{\out{</div>}}
 }
@@ -440,7 +363,6 @@ non-empty. The results mirror the outputs schema table and add a
   }
   \subsection{Returns}{
     A tibble (invisibly) with one row per output definition.
-Additional Accessible Fields Hook
   }
 }
 

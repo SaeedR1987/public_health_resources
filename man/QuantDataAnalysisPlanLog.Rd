@@ -156,7 +156,6 @@ Add Analysis Plan Entry
   }
   \subsection{Details}{
     Validates inputs and calls append_entry() to add to log.
-Additional Accessible Fields Hook
   }
   \subsection{Returns}{
     Invisible TRUE

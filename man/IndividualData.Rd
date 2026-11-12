@@ -26,38 +26,18 @@ Initialization process:
 5. Loads and merges individual-specific variable schema
 6. Loads default indicator and dependency schemas
 7. Auto-maps schema variables based on column names
-Post-Validation Hook for Individual Data
-
-
-
-Performs individual-specific checks:
-* Household linkage validation (informational - duplicate hh_uuid expected for multi-member households)
-* Age validation (checks for negative ages)
-* Optional household link integrity check if household_link field is set
 }
+\section{Accessible fields}{
+
+* `household_link`: Optional linkage back to a HouseholdData object
+* `optional_columns`: Character vector of optional columns for individual data
+}
+
 \seealso{
 [Data], [HouseholdData]
 }
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Data]{Data}} -> \code{IndividualData}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{household_link}}{Optional linkage back to a HouseholdData object}
-
-    \item{\code{optional_columns}}{Character vector of optional columns for individual data}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{household_link}}{Optional linkage back to a HouseholdData object}
-
-    \item{\code{optional_columns}}{Character vector of optional columns for individual data}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -107,7 +87,8 @@ Performs individual-specific checks:
     \describe{
       \item{\code{data}}{Data frame containing individual-level survey data}
       \item{\code{dataset_name}}{Character name for the dataset (default: "IndividualData")}
-      \item{\code{uuid}}{Character name of the UUID column (required)}
+      \item{\code{uuid}}{Character name of the person-level unique ID column (defaults to "person_id")}
+      \item{\code{hh_uuid}}{Character name of the household linkage column (defaults to "hh_uuid")}
       \item{\code{metadata}}{Optional list of metadata attributes}
       \item{\code{variable_map}}{Optional named list mapping variable roles to column names.
 Common roles: uuid (person_id), hh_uuid, sex, age, est_dob, exact_dob, age_months, age_days, joined_hh}

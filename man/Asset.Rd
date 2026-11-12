@@ -37,6 +37,13 @@ of their subclasses) inherit from \code{Asset}.
     \preformatted{Asset$new(name = NULL)}
     \if{html}{\out{</div>}}
   }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{name}}{Optional character name for the asset.}
+    }
+    \if{html}{\out{</div>}}
+  }
   \subsection{Returns}{
     A new Asset object.
   }
@@ -283,7 +290,6 @@ modified timestamp.}
   }
   \subsection{Returns}{
     Invisibly returns \code{self}.
-Build Field Access Error Message
   }
 }
 

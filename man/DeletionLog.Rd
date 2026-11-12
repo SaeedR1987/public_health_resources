@@ -144,7 +144,6 @@ Validate Deletion Log Against Dataset
 
 Helps identify if the deletion log references records that are already removed
 or never existed. Issues are returned as warnings for review.
-Additional Accessible Fields Hook
   }
   \subsection{Returns}{
     List of validation issues (empty list if no issues)

@@ -61,6 +61,7 @@ chronic conditions, disability status, and vaccination.
       \item{\code{data}}{A data frame containing individual health records}
       \item{\code{dataset_name}}{A name for this dataset}
       \item{\code{uuid}}{column name for uuid in the dataset}
+      \item{\code{hh_uuid}}{Character name of the household linkage column}
     }
     \if{html}{\out{</div>}}
   }

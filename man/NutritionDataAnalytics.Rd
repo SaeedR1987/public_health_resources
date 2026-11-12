@@ -30,30 +30,46 @@ SAM classification is based solely on MUAC < 115 mm.
 
 
 
+The exported dataset contains the following variables:
+\code{SURVDATE}, \code{CLUSTER}, \code{TEAM}, \code{ID}, \code{HH},
+\code{SEX}, \code{BIRTHDAT}, \code{MONTHS}, \code{WEIGHT},
+\code{HEIGHT}, \code{EDEMA}, and \code{MUAC}.
+
+Missing source variables are retained in the output as empty columns.
+
+If \code{MONTHS} is unavailable but both survey date and date of birth
+are available, age in months is calculated automatically and rounded
+down to the nearest whole month.
+
+If MUAC is available only in centimetres, values are converted to
+millimetres prior to export.
+
+Records with confirmed age greater than 59 months are excluded from the
+exported dataset.
+
 Variable names are resolved from the object's variable map using the
 following canonical variables:
-
 \itemize{
-  \item \code{date_survey -> SURVDATE}
-  \item \code{cluster_id_numeric} or \code{cluster_id -> CLUSTER}
-  \item \code{enum_id -> TEAM}
-  \item \code{sex -> SEX}
-  \item \code{dob_final -> BIRTHDAT}
-  \item \code{age_months -> MONTHS}
-  \item \code{nut_weight -> WEIGHT}
-  \item \code{nut_height -> HEIGHT}
-  \item \code{nut_edema_confirm} or \code{nut_edema -> EDEMA}
-  \item \code{nut_muac_mm} or \code{nut_muac_cm -> MUAC}
+  \item \code{date_survey} maps to \code{SURVDATE}
+  \item \code{cluster_id_numeric} or \code{cluster_id} maps to \code{CLUSTER}
+  \item \code{enum_id} maps to \code{TEAM}
+  \item \code{sex} maps to \code{SEX}
+  \item \code{dob_final} maps to \code{BIRTHDAT}
+  \item \code{age_months} maps to \code{MONTHS}
+  \item \code{nut_weight} maps to \code{WEIGHT}
+  \item \code{nut_height} maps to \code{HEIGHT}
+  \item \code{nut_edema_confirm} or \code{nut_edema} maps to \code{EDEMA}
+  \item \code{nut_muac_mm} or \code{nut_muac_cm} maps to \code{MUAC}
 }
+
+Files are written with \code{utils::write.csv()} (CSV) or
+\code{openxlsx::write.xlsx()} (Excel).
 }
 \seealso{
 [DataAnalytics]
 
 \code{\link[openxlsx]{loadWorkbook}},
   \code{\link[openxlsx]{saveWorkbook}}
-
-\code{\link[utils]{write.csv}},
-  \code{\link[openxlsx]{write.xlsx}}
 }
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{NutritionDataAnalytics}
@@ -175,6 +191,11 @@ variable and value maps.}
 \if{html}{\out{<a id="method-NutritionDataAnalytics-export_ena_anthro_file"></a>}}
 \if{latex}{\out{\hypertarget{method-NutritionDataAnalytics-export_ena_anthro_file}{}}}
 \subsection{\code{NutritionDataAnalytics$export_ena_anthro_file()}}{
+  Exports a standardized child anthropometry dataset in a structure
+compatible with ENA for SMART and related nutrition analysis workflows.
+Variables are identified using the object's variable map, reordered,
+renamed to the required ENA field names, and exported as either a CSV
+or an Excel file.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{NutritionDataAnalytics$export_ena_anthro_file(
@@ -189,8 +210,8 @@ variable and value maps.}
     \describe{
       \item{\code{data}}{A data frame containing child anthropometry data.}
       \item{\code{output_file}}{Character. Path to the file to be created.}
-      \item{\code{format}}{Character. Export format. One of
-\code{"csv"} or \code{"xlsx"}. Defaults to \code{"csv"}.}
+      \item{\code{format}}{Character. Export format, either \code{"csv"} or
+\code{"xlsx"}. Defaults to \code{"csv"}.}
     }
     \if{html}{\out{</div>}}
   }

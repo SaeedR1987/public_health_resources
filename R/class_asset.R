@@ -19,6 +19,7 @@ Asset <- R6::R6Class(
 
     #' @description
     #' Creates a new Asset object.
+    #' @param name Optional character name for the asset.
     #' @return A new Asset object.
     initialize = function(name = NULL) {
 

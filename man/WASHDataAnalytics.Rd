@@ -14,41 +14,20 @@ The `WASHDataAnalytics` R6 class extends `DataAnalytics` to provide
 Water, Sanitation and Hygiene specific quality checks and quantitative
 analysis in a single integrated object.
 }
+\section{Accessible fields}{
+
+* `linked_containers_data`: Optional linked WaterContainerData dataframe
+* `linked_containers_data_stage_name`: Name of linked containers data stage
+* `linked_containers_data_hash`: Hash of linked containers data
+* `linked_containers_variable_map`: Variable mappings for linked containers data
+* `linked_containers_value_map`: Value mappings for linked containers data
+}
+
 \seealso{
 [DataAnalytics]
 }
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{WASHDataAnalytics}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{linked_containers_data}}{Optional linked WaterContainerData dataframe}
-
-    \item{\code{linked_containers_data_stage_name}}{Name of linked containers data stage}
-
-    \item{\code{linked_containers_data_hash}}{Hash of linked containers data}
-
-    \item{\code{linked_containers_variable_map}}{Variable mappings for linked containers data}
-
-    \item{\code{linked_containers_value_map}}{Value mappings for linked containers data}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{linked_containers_data}}{Optional linked WaterContainerData dataframe}
-
-    \item{\code{linked_containers_data_stage_name}}{Name of linked containers data stage}
-
-    \item{\code{linked_containers_data_hash}}{Hash of linked containers data}
-
-    \item{\code{linked_containers_variable_map}}{Variable mappings for linked containers data}
-
-    \item{\code{linked_containers_value_map}}{Value mappings for linked containers data}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -130,7 +109,6 @@ analysis in a single integrated object.
   }
   \subsection{Returns}{
     A new WASHDataAnalytics object
-Additional Accessible Fields Hook
   }
 }
 

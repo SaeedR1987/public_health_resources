@@ -40,6 +40,8 @@ DeathIndividualData <- R6::R6Class(
     #' @param dataset_name A name for this dataset
     #' @param variable_map Optional named list mapping standard variable names to data columns
     #' @param recall_date Reference date for mortality recall period (required, e.g., '2025-01-01')
+    #' @param uuid Character name of the person-level unique ID column
+    #' @param hh_uuid Character name of the household linkage column
     #' @return A new DeathIndividualData object
     initialize = function(data,
                           dataset_name = "DeathIndividualData",

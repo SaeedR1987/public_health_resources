@@ -63,7 +63,8 @@ provides data quality checks and visualization capabilities.
     \describe{
       \item{\code{data}}{A data frame containing individual nutrition/anthropometry records}
       \item{\code{dataset_name}}{A name for this dataset}
-      \item{\code{uuid}}{Character name of the UUID column (required)}
+      \item{\code{uuid}}{Character name of the person-level unique ID column}
+      \item{\code{hh_uuid}}{Character name of the household linkage column}
       \item{\code{metadata}}{Optional list of metadata}
       \item{\code{variable_map}}{Optional named list mapping standard variable names to data columns}
     }

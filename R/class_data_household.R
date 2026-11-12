@@ -60,8 +60,9 @@
 #'
 #' Utility methods such as `summarize_weights()` provide quick field diagnostics.
 #'
-#' @field optional_columns Character vector of optional columns commonly present in household data
-#' @field sampling_frame Optional \code{\link{SamplingFrame}} object used by \code{generate_weights()}
+#' @section Accessible fields:
+#' * `optional_columns`: Character vector of optional columns commonly present in household data
+#' * `sampling_frame`: Optional \code{\link{SamplingFrame}} object used by \code{generate_weights()}
 #'   to derive survey weights from population totals per stratum.
 #'
 #' @seealso [Data], [IndividualData], [DeathIndividualData], [WaterContainerData],
@@ -454,12 +455,12 @@ HouseholdData <- R6::R6Class(
 
     ..sampling_frame = NULL, # optional SamplingFrame for generate_weights()
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -467,12 +468,12 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -480,12 +481,12 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -493,21 +494,21 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Post-Validation Hook for Household Data
-    #'
-    #' @description
-    #' Hook method called after core validation completes. Performs household-specific validation checks.
-    #'
-    #' @param df Data frame that was validated
-    #'
-    #' @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
-    #'
-    #' @details
-    #' Performs household-specific checks:
-    #' * GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
-    #' * Weight distribution checks (negative or zero weights)
-    #' * Interview date validity checks
-    #' * Consent field validation
+    # Post-Validation Hook for Household Data
+    #
+    # @description
+    # Hook method called after core validation completes. Performs household-specific validation checks.
+    #
+    # @param df Data frame that was validated
+    #
+    # @return Logical indicating validation success (TRUE if no issues, FALSE if warnings occurred)
+    #
+    # @details
+    # Performs household-specific checks:
+    # * GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
+    # * Weight distribution checks (negative or zero weights)
+    # * Interview date validity checks
+    # * Consent field validation
     ..post_validate = function(df) {
       nm <- private$..dataset_name
 
@@ -595,33 +596,33 @@ HouseholdData <- R6::R6Class(
       return(!had_issues)
     },
 
-    #' Pre-Standardize Hook for Household Data
-    #'
-    #' @description
-    #' Hook method called before standardization begins. Generates survey weights
-    #' (if a SamplingFrame and stratum mapping are available), then checks linked
-    #' datasets and aggregates data from them.
-    #'
-    #' @param stage Character string specifying source stage: "clean", "standardized", or "raw"
-    #'
-    #' @return NULL (modifies household data in place by adding aggregated columns)
-    #'
-    #' @details
-    #' This hook performs four key operations:
-    #' 1. Generates survey weights via \code{generate_weights()} when a
-    #'    \code{SamplingFrame} is stored in \code{self$sampling_frame} and a
-    #'    stratum role is mapped in \code{variable_map}; skipped silently otherwise.
-    #' 2. Merges household-level variables to linked datasets using their canonical
-    #'    role names (enum_id, device_id, date_survey, date_recall, weight, stratum,
-    #'    cluster_id, site, admin1-admin4) and registers those roles in each linked
-    #'    object's \code{variable_map}
-    #' 3. Standardizes each linked dataset. Datasets that were already standardized
-    #'    are standardized again when household variables were merged into them, so
-    #'    that indicators depending on the merged columns (e.g. person-time, which
-    #'    needs \code{date_survey} and \code{date_recall}) are recalculated
-    #' 4. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
-    #'
-    #' Supported aggregations vary by dataset type (see class documentation for details)
+    # Pre-Standardize Hook for Household Data
+    #
+    # @description
+    # Hook method called before standardization begins. Generates survey weights
+    # (if a SamplingFrame and stratum mapping are available), then checks linked
+    # datasets and aggregates data from them.
+    #
+    # @param stage Character string specifying source stage: "clean", "standardized", or "raw"
+    #
+    # @return NULL (modifies household data in place by adding aggregated columns)
+    #
+    # @details
+    # This hook performs four key operations:
+    # 1. Generates survey weights via \code{generate_weights()} when a
+    #    \code{SamplingFrame} is stored in \code{self$sampling_frame} and a
+    #    stratum role is mapped in \code{variable_map}; skipped silently otherwise.
+    # 2. Merges household-level variables to linked datasets using their canonical
+    #    role names (enum_id, device_id, date_survey, date_recall, weight, stratum,
+    #    cluster_id, site, admin1-admin4) and registers those roles in each linked
+    #    object's \code{variable_map}
+    # 3. Standardizes each linked dataset. Datasets that were already standardized
+    #    are standardized again when household variables were merged into them, so
+    #    that indicators depending on the merged columns (e.g. person-time, which
+    #    needs \code{date_survey} and \code{date_recall}) are recalculated
+    # 4. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
+    #
+    # Supported aggregations vary by dataset type (see class documentation for details)
     ..pre_standardize = function(stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
@@ -743,21 +744,21 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Sub Class Specific Pre Generate Cleaning Log for Linked Datasets
-    #'
-    #' @description
-    #' The household data class specific post generate cleaning log will iterate
-    #' through  dataset by calling the parent
-    #' implementation, then propagates the call to all linked data objects so
-    #' that each linked dataset produces its own cleaning log entries.
-    #'
-    #' @param stage Character string specifying the data stage to use:
-    #'   "standardized" (default), "clean", or "raw"
-    #' @param overwrite Logical; if TRUE, clears the existing cleaning log before
-    #'   generating new entries (default: FALSE)
-    #'
-    #' @return NULL (invisibly). Side effect: populates cleaning logs on the
-    #'   household object and on every linked data object.
+    # Sub Class Specific Pre Generate Cleaning Log for Linked Datasets
+    #
+    # @description
+    # The household data class specific post generate cleaning log will iterate
+    # through  dataset by calling the parent
+    # implementation, then propagates the call to all linked data objects so
+    # that each linked dataset produces its own cleaning log entries.
+    #
+    # @param stage Character string specifying the data stage to use:
+    #   "standardized" (default), "clean", or "raw"
+    # @param overwrite Logical; if TRUE, clears the existing cleaning log before
+    #   generating new entries (default: FALSE)
+    #
+    # @return NULL (invisibly). Side effect: populates cleaning logs on the
+    #   household object and on every linked data object.
     ..pre_generate_cleaning_log = function(
     stage = "standardized",
     overwrite = FALSE
@@ -800,13 +801,13 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Pre clean for HouseholdData object
-    #'
-    #' @description
-    #' Runs clean on all linked Data Objects in the Household Data object.
-    #'
-    #' @return NULL (invisibly). Side effect: sets \code{clean_data}
-    #'   on every linked data object.
+    # Pre clean for HouseholdData object
+    #
+    # @description
+    # Runs clean on all linked Data Objects in the Household Data object.
+    #
+    # @return NULL (invisibly). Side effect: sets \code{clean_data}
+    #   on every linked data object.
     ..pre_clean = function() {
       # Run parent implementation for the household dataset itself
 
@@ -846,21 +847,21 @@ HouseholdData <- R6::R6Class(
     },
 
 
-    #' Aggregate Linked Dataset Data
-    #'
-    #' @description
-    #' Internal helper that processes linked datasets and adds aggregated columns to household data
-    #'
-    #'
-    #' @param hh_data Data frame of household data to augment with aggregated columns
-    #' @param stage Character string specifying data stage: "clean", "standardized", or "raw"
-    #'
-    #' @return Modified household data frame with additional aggregated columns
-    #'
-    #' @details
-    #' For each linked dataset, performs type-specific aggregations and adds columns with
-    #' naming convention "linked_<name>_<column>". See class documentation for specific
-    #' aggregation rules by dataset type.
+    # Aggregate Linked Dataset Data
+    #
+    # @description
+    # Internal helper that processes linked datasets and adds aggregated columns to household data
+    #
+    #
+    # @param hh_data Data frame of household data to augment with aggregated columns
+    # @param stage Character string specifying data stage: "clean", "standardized", or "raw"
+    #
+    # @return Modified household data frame with additional aggregated columns
+    #
+    # @details
+    # For each linked dataset, performs type-specific aggregations and adds columns with
+    # naming convention "linked_<name>_<column>". See class documentation for specific
+    # aggregation rules by dataset type.
     ..aggregate_linked_data = function(
       hh_data,
       stage = c("clean", "standardized", "raw")
@@ -1044,26 +1045,26 @@ HouseholdData <- R6::R6Class(
       return(result)
     },
 
-    #' Aggregate Deaths Data from Linked Dataset
-    #'
-    #' @description
-    #' Internal helper that aggregates death and person_time data from linked DeathIndividualData
-    #'
-    #' @param hh_data Data frame of household data to augment
-    #' @param deaths_data Data frame of deaths data from linked dataset
-    #' @param hh_uuid_col Column name for household UUID in household data
-    #' @param linked_hh_col Column name for household foreign key in deaths data
-    #' @param link_name Character name of the link
-    #' @param linked_obj The linked Data object
-    #'
-    #'
-    #' @return Modified household data frame with aggregated death columns
-    #'
-    #' @details
-    #' Sums canonical death and person_time columns by household: death, death_under5, death_male,
-    #' death_female, death_non_trauma, death_trauma, death_other, death_current_location,
-    #' death_migration, death_last_location, death_birth, person_time, person_time_under5,
-    #' person_time_male, person_time_female
+    # Aggregate Deaths Data from Linked Dataset
+    #
+    # @description
+    # Internal helper that aggregates death and person_time data from linked DeathIndividualData
+    #
+    # @param hh_data Data frame of household data to augment
+    # @param deaths_data Data frame of deaths data from linked dataset
+    # @param hh_uuid_col Column name for household UUID in household data
+    # @param linked_hh_col Column name for household foreign key in deaths data
+    # @param link_name Character name of the link
+    # @param linked_obj The linked Data object
+    #
+    #
+    # @return Modified household data frame with aggregated death columns
+    #
+    # @details
+    # Sums canonical death and person_time columns by household: death, death_under5, death_male,
+    # death_female, death_non_trauma, death_trauma, death_other, death_current_location,
+    # death_migration, death_last_location, death_birth, person_time, person_time_under5,
+    # person_time_male, person_time_female
     ..aggregate_deaths_data = function(
       hh_data,
       deaths_data,
@@ -1207,23 +1208,23 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Aggregate Water Container Data from Linked Dataset
-    #'
-    #' @description
-    #' Internal helper that aggregates water container data from linked WaterContainerData
-    #'
-    #' @param hh_data Data frame of household data to augment
-    #' @param water_data Data frame of water container data from linked dataset
-    #' @param hh_uuid_col Column name for household UUID in household data
-    #' @param linked_hh_col Column name for household foreign key in water data
-    #' @param link_name Character name of the link
-    #' @param linked_obj The linked Data object
-    #'
-    #'
-    #' @return Modified household data frame with aggregated water container columns
-    #'
-    #' @details
-    #' Sums total liters by household and counts number of containers
+    # Aggregate Water Container Data from Linked Dataset
+    #
+    # @description
+    # Internal helper that aggregates water container data from linked WaterContainerData
+    #
+    # @param hh_data Data frame of household data to augment
+    # @param water_data Data frame of water container data from linked dataset
+    # @param hh_uuid_col Column name for household UUID in household data
+    # @param linked_hh_col Column name for household foreign key in water data
+    # @param link_name Character name of the link
+    # @param linked_obj The linked Data object
+    #
+    #
+    # @return Modified household data frame with aggregated water container columns
+    #
+    # @details
+    # Sums total liters by household and counts number of containers
     ..aggregate_water_container_data = function(
       hh_data,
       water_data,
@@ -1329,25 +1330,25 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Aggregate Roster Data from Linked Dataset
-    #'
-    #' @description
-    #' Internal helper that aggregates roster (individual) data from linked IndividualData
-    #'
-    #' @param hh_data Data frame of household data to augment
-    #' @param roster_data Data frame of roster data from linked dataset
-    #' @param hh_uuid_col Column name for household UUID in household data
-    #' @param linked_hh_col Column name for household foreign key in roster data
-    #' @param link_name Character name of the link
-    #' @param linked_obj The linked Data object
-    #'
-    #'
-    #' @return Modified household data frame with aggregated roster columns
-    #'
-    #' @details
-    #' Calculates household demographics: household_size, num_children, num_male, num_female,
-    #' num_women_15to49, and person_time columns by household. If calc_date_birth_final is
-    #' available and recall/survey dates exist, also counts births in recall period.
+    # Aggregate Roster Data from Linked Dataset
+    #
+    # @description
+    # Internal helper that aggregates roster (individual) data from linked IndividualData
+    #
+    # @param hh_data Data frame of household data to augment
+    # @param roster_data Data frame of roster data from linked dataset
+    # @param hh_uuid_col Column name for household UUID in household data
+    # @param linked_hh_col Column name for household foreign key in roster data
+    # @param link_name Character name of the link
+    # @param linked_obj The linked Data object
+    #
+    #
+    # @return Modified household data frame with aggregated roster columns
+    #
+    # @details
+    # Calculates household demographics: household_size, num_children, num_male, num_female,
+    # num_women_15to49, and person_time columns by household. If calc_date_birth_final is
+    # available and recall/survey dates exist, also counts births in recall period.
     ..aggregate_roster_data = function(
       hh_data,
       roster_data,
@@ -1543,23 +1544,23 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Aggregate Nutrition Data from Linked Dataset
-    #'
-    #' @description
-    #' Internal helper that aggregates nutrition data from linked NutritionIndividualData
-    #'
-    #' @param hh_data Data frame of household data to augment
-    #' @param nutrition_data Data frame of nutrition data from linked dataset
-    #' @param hh_uuid_col Column name for household UUID in household data
-    #' @param linked_hh_col Column name for household foreign key in nutrition data
-    #' @param link_name Character name of the link
-    #' @param linked_obj The linked Data object
-    #'
-    #'
-    #' @return Modified household data frame with aggregated nutrition columns
-    #'
-    #' @details
-    #' Aggregates by age groups: children_under2, children_2to5, children_under5 based on age in months
+    # Aggregate Nutrition Data from Linked Dataset
+    #
+    # @description
+    # Internal helper that aggregates nutrition data from linked NutritionIndividualData
+    #
+    # @param hh_data Data frame of household data to augment
+    # @param nutrition_data Data frame of nutrition data from linked dataset
+    # @param hh_uuid_col Column name for household UUID in household data
+    # @param linked_hh_col Column name for household foreign key in nutrition data
+    # @param link_name Character name of the link
+    # @param linked_obj The linked Data object
+    #
+    #
+    # @return Modified household data frame with aggregated nutrition columns
+    #
+    # @details
+    # Aggregates by age groups: children_under2, children_2to5, children_under5 based on age in months
     ..aggregate_nutrition_data = function(
       hh_data,
       nutrition_data,
@@ -1695,23 +1696,23 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Aggregate Health Data from Linked Dataset
-    #'
-    #' @description
-    #' Internal helper that aggregates health data from linked HealthIndividualData
-    #'
-    #' @param hh_data Data frame of household data to augment
-    #' @param health_data Data frame of health data from linked dataset
-    #' @param hh_uuid_col Column name for household UUID in household data
-    #' @param linked_hh_col Column name for household foreign key in health data
-    #' @param link_name Character name of the link
-    #' @param linked_obj The linked Data object
-    #'
-    #'
-    #' @return Modified household data frame with aggregated health columns
-    #'
-    #' @details
-    #' Counts total number of people recorded (rows) per household
+    # Aggregate Health Data from Linked Dataset
+    #
+    # @description
+    # Internal helper that aggregates health data from linked HealthIndividualData
+    #
+    # @param hh_data Data frame of household data to augment
+    # @param health_data Data frame of health data from linked dataset
+    # @param hh_uuid_col Column name for household UUID in household data
+    # @param linked_hh_col Column name for household foreign key in health data
+    # @param link_name Character name of the link
+    # @param linked_obj The linked Data object
+    #
+    #
+    # @return Modified household data frame with aggregated health columns
+    #
+    # @details
+    # Counts total number of people recorded (rows) per household
     ..aggregate_health_data = function(
       hh_data,
       health_data,
@@ -1780,23 +1781,23 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Aggregate Women Data from Linked Dataset
-    #'
-    #' @description
-    #' Internal helper that aggregates women data from linked WomenIndividualData
-    #'
-    #' @param hh_data Data frame of household data to augment
-    #' @param women_data Data frame of women data from linked dataset
-    #' @param hh_uuid_col Column name for household UUID in household data
-    #' @param linked_hh_col Column name for household foreign key in women data
-    #' @param link_name Character name of the link
-    #' @param linked_obj The linked Data object
-    #'
-    #'
-    #' @return Modified household data frame with aggregated women columns
-    #'
-    #' @details
-    #' Counts women aged 15-49 per household (all rows in WomenIndividualData represent eligible women)
+    # Aggregate Women Data from Linked Dataset
+    #
+    # @description
+    # Internal helper that aggregates women data from linked WomenIndividualData
+    #
+    # @param hh_data Data frame of household data to augment
+    # @param women_data Data frame of women data from linked dataset
+    # @param hh_uuid_col Column name for household UUID in household data
+    # @param linked_hh_col Column name for household foreign key in women data
+    # @param link_name Character name of the link
+    # @param linked_obj The linked Data object
+    #
+    #
+    # @return Modified household data frame with aggregated women columns
+    #
+    # @details
+    # Counts women aged 15-49 per household (all rows in WomenIndividualData represent eligible women)
     ..aggregate_women_data = function(
       hh_data,
       women_data,
@@ -1866,41 +1867,41 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Merge Household Variables to Linked Datasets
-    #'
-    #' @description
-    #' Internal helper that merges key household-level variables to linked datasets
-    #'
-    #' @param linked_obj The linked Data object to receive merged variables
-    #' @param link_name Character name of the link
-    #' @param hh_stage Character string specifying household data stage: "clean", "standardized", or "raw"
-    #' @param linked_stage Character string specifying linked data stage: "clean", "standardized", or "raw"
-    #'
-    #' @return TRUE invisibly on success, NULL on failure
-    #'
-    #' @details
-    #' Merges household variables to linked datasets: enum_id, device_id, date_survey,
-    #' date_recall, weight, stratum, cluster_id, site, admin1, admin2, admin3, admin4.
-    #'
-    #' Merged columns are written to the linked dataset using their *canonical role
-    #' names* (for example the household column `today` is merged as `date_survey`),
-    #' and the role is registered in the linked object's `variable_map` so that
-    #' indicator functions such as `add_persontime()` can resolve
-    #' `@variable_map$date_survey` / `@variable_map$date_recall` afterwards.
-    #' Any existing column of the same name in the linked dataset is overwritten.
-    #'
-    #' The merge is applied to every populated stage of the linked dataset (raw,
-    #' standardized and clean) rather than a single fallback stage, because
-    #' `standardize()` always rebuilds its output from `raw_data`; merging into
-    #' `clean_data` or `standardized_data` alone would be discarded on the next
-    #' standardization pass.
-    #'
-    #' The household linkage column of the linked dataset is resolved from its
-    #' `variable_map` (`hh_uuid` / `household_uuid`), falling back to the
-    #' `col_names` aliases declared in its variable schema and finally to the
-    #' role name used as a literal column name. Only candidates that actually
-    #' exist in the data are accepted, so an unmapped or stale `variable_map`
-    #' cannot make the merge target a non-existent column.
+    # Merge Household Variables to Linked Datasets
+    #
+    # @description
+    # Internal helper that merges key household-level variables to linked datasets
+    #
+    # @param linked_obj The linked Data object to receive merged variables
+    # @param link_name Character name of the link
+    # @param hh_stage Character string specifying household data stage: "clean", "standardized", or "raw"
+    # @param linked_stage Character string specifying linked data stage: "clean", "standardized", or "raw"
+    #
+    # @return TRUE invisibly on success, NULL on failure
+    #
+    # @details
+    # Merges household variables to linked datasets: enum_id, device_id, date_survey,
+    # date_recall, weight, stratum, cluster_id, site, admin1, admin2, admin3, admin4.
+    #
+    # Merged columns are written to the linked dataset using their *canonical role
+    # names* (for example the household column `today` is merged as `date_survey`),
+    # and the role is registered in the linked object's `variable_map` so that
+    # indicator functions such as `add_persontime()` can resolve
+    # `@variable_map$date_survey` / `@variable_map$date_recall` afterwards.
+    # Any existing column of the same name in the linked dataset is overwritten.
+    #
+    # The merge is applied to every populated stage of the linked dataset (raw,
+    # standardized and clean) rather than a single fallback stage, because
+    # `standardize()` always rebuilds its output from `raw_data`; merging into
+    # `clean_data` or `standardized_data` alone would be discarded on the next
+    # standardization pass.
+    #
+    # The household linkage column of the linked dataset is resolved from its
+    # `variable_map` (`hh_uuid` / `household_uuid`), falling back to the
+    # `col_names` aliases declared in its variable schema and finally to the
+    # role name used as a literal column name. Only candidates that actually
+    # exist in the data are accepted, so an unmapped or stale `variable_map`
+    # cannot make the merge target a non-existent column.
     ..merge_household_vars_to_linked = function(
       linked_obj,
       link_name,
@@ -2150,29 +2151,29 @@ HouseholdData <- R6::R6Class(
       )
     },
 
-    #' Resolve the household linkage column of a linked dataset
-    #'
-    #' Determines which column of a linked dataset (roster, deaths, ...) holds the
-    #' parent household identifier. Resolution order:
-    #' 1. the column mapped to the `hh_uuid` / `household_uuid` role in the linked
-    #'    object's `variable_map`;
-    #' 2. the `col_names` aliases declared for those roles in the linked object's
-    #'    variable schema (in schema preference order);
-    #' 3. the role names themselves used as literal column names.
-    #'
-    #' Candidates are only accepted when the column is actually present in
-    #' `data_cols`, so a stale or unmapped `variable_map` cannot make the lookup
-    #' fall back to a column that does not exist.
-    #'
-    #' @param linked_obj A `Data` object linked to a `HouseholdData` object.
-    #' @param data_cols Character vector of column names of the linked dataset.
-    #' @param roles Character vector of variable roles to try, in order of preference.
-    #'
-    #' @return A list with `column` (the resolved column name, or `NULL` when no
-    #'   candidate exists in the data), `role` (the role it was resolved from) and
-    #'   `candidates` (every candidate that was considered).
-    #'
-    #' @keywords internal
+    # Resolve the household linkage column of a linked dataset
+    #
+    # Determines which column of a linked dataset (roster, deaths, ...) holds the
+    # parent household identifier. Resolution order:
+    # 1. the column mapped to the `hh_uuid` / `household_uuid` role in the linked
+    #    object's `variable_map`;
+    # 2. the `col_names` aliases declared for those roles in the linked object's
+    #    variable schema (in schema preference order);
+    # 3. the role names themselves used as literal column names.
+    #
+    # Candidates are only accepted when the column is actually present in
+    # `data_cols`, so a stale or unmapped `variable_map` cannot make the lookup
+    # fall back to a column that does not exist.
+    #
+    # @param linked_obj A `Data` object linked to a `HouseholdData` object.
+    # @param data_cols Character vector of column names of the linked dataset.
+    # @param roles Character vector of variable roles to try, in order of preference.
+    #
+    # @return A list with `column` (the resolved column name, or `NULL` when no
+    #   candidate exists in the data), `role` (the role it was resolved from) and
+    #   `candidates` (every candidate that was considered).
+    #
+    # @keywords internal
     ..resolve_linked_hh_column = function(
     linked_obj,
     data_cols,

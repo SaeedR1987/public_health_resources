@@ -14,61 +14,25 @@ The `WomanDataAnalytics` R6 class extends `DataAnalytics` to provide
 Maternal health-specific quality checks and quantitative analysis in a single
 integrated object.
 }
+\section{Accessible fields}{
+
+* `linked_ind_roster_data`: Optional linked roster dataframe
+* `linked_ind_roster_data_stage_name`: Name of linked roster data stage
+* `linked_ind_roster_data_hash`: Hash of linked roster data
+* `linked_ind_roster_variable_map`: Variable mappings for linked roster data
+* `linked_ind_roster_value_map`: Value mappings for linked roster data
+* `linked_ind_woman_data`: Optional linked woman individual dataframe
+* `linked_ind_woman_data_stage_name`: Name of linked woman individual data stage
+* `linked_ind_woman_data_hash`: Hash of linked woman individual data
+* `linked_ind_woman_variable_map`: Variable mappings for linked woman individual data
+* `linked_ind_woman_value_map`: Value mappings for linked woman individual data
+}
+
 \seealso{
 [DataAnalytics]
 }
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{WomanDataAnalytics}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{linked_ind_roster_data}}{Optional linked roster dataframe}
-
-    \item{\code{linked_ind_roster_data_stage_name}}{Name of linked roster data stage}
-
-    \item{\code{linked_ind_roster_data_hash}}{Hash of linked roster data}
-
-    \item{\code{linked_ind_roster_variable_map}}{Variable mappings for linked roster data}
-
-    \item{\code{linked_ind_roster_value_map}}{Value mappings for linked roster data}
-
-    \item{\code{linked_ind_woman_data}}{Optional linked woman individual dataframe}
-
-    \item{\code{linked_ind_woman_data_stage_name}}{Name of linked woman individual data stage}
-
-    \item{\code{linked_ind_woman_data_hash}}{Hash of linked woman individual data}
-
-    \item{\code{linked_ind_woman_variable_map}}{Variable mappings for linked woman individual data}
-
-    \item{\code{linked_ind_woman_value_map}}{Value mappings for linked woman individual data}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{linked_ind_roster_data}}{Optional linked roster dataframe}
-
-    \item{\code{linked_ind_roster_data_stage_name}}{Name of linked roster data stage}
-
-    \item{\code{linked_ind_roster_data_hash}}{Hash of linked roster data}
-
-    \item{\code{linked_ind_roster_variable_map}}{Variable mappings for linked roster data}
-
-    \item{\code{linked_ind_roster_value_map}}{Value mappings for linked roster data}
-
-    \item{\code{linked_ind_woman_data}}{Optional linked woman individual dataframe}
-
-    \item{\code{linked_ind_woman_data_stage_name}}{Name of linked woman individual data stage}
-
-    \item{\code{linked_ind_woman_data_hash}}{Hash of linked woman individual data}
-
-    \item{\code{linked_ind_woman_variable_map}}{Variable mappings for linked woman individual data}
-
-    \item{\code{linked_ind_woman_value_map}}{Value mappings for linked woman individual data}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{

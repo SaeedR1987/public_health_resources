@@ -86,7 +86,8 @@ rates and validating death timing information.
       \item{\code{data}}{A data frame containing individual death records}
       \item{\code{dataset_name}}{A name for this dataset}
       \item{\code{recall_date}}{Reference date for mortality recall period (required, e.g., '2025-01-01')}
-      \item{\code{uuid}}{Character name of the UUID column (required)}
+      \item{\code{uuid}}{Character name of the person-level unique ID column}
+      \item{\code{hh_uuid}}{Character name of the household linkage column}
       \item{\code{variable_map}}{Optional named list mapping standard variable names to data columns}
     }
     \if{html}{\out{</div>}}

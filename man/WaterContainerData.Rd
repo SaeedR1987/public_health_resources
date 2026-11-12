@@ -16,29 +16,17 @@ The `WaterContainerData` R6 class extends the base [Data] class to represent
 water container assessment data. Each record corresponds to one water container
 within a household.
 }
+\section{Accessible fields}{
+
+* `household_link`: Optional linkage back to a HouseholdData object
+* `optional_columns`: Character vector of optional columns for water container data
+}
+
 \seealso{
 [Data], [HouseholdData]
 }
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Data]{Data}} -> \code{WaterContainerData}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{household_link}}{Optional linkage back to a HouseholdData object}
-
-    \item{\code{optional_columns}}{Character vector of optional columns for water container data}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{household_link}}{Optional linkage back to a HouseholdData object}
-
-    \item{\code{optional_columns}}{Character vector of optional columns for water container data}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -88,7 +76,8 @@ within a household.
     \describe{
       \item{\code{data}}{A data frame containing water container assessment records}
       \item{\code{dataset_name}}{A name for this dataset}
-      \item{\code{uuid}}{Character name of the UUID column (required)}
+      \item{\code{uuid}}{Character name of the unique ID column}
+      \item{\code{hh_uuid}}{Character name of the household linkage column}
       \item{\code{metadata}}{Optional list of metadata}
       \item{\code{variable_map}}{Optional named list mapping standard variable names to data columns}
     }

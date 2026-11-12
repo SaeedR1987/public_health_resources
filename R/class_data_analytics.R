@@ -30,31 +30,33 @@
 #' Initialization errors abort construction rather than returning a partially
 #' initialized R6 object. The Data generation hook reports these as warnings.
 #'
-#' @field data Data frame containing the dataset (standardized or clean data, not raw)
-#' @field parent_data_object Reference to the parent Data object
-#' @field dataset_name Character name for identifying this analytics object
-#' @field data_stage_name Name of the data stage (e.g., "standardized", "clean")
-#' @field data_hash Hash of the data from parent Data object
-#' @field variable_map Variable mappings from Data object
-#' @field value_map Value mappings from Data object
-#' @field variable_label Named list of variable labels
-#' @field value_label Named list of value labels
-#' @field quality_schema Quality check schema with test definitions, thresholds, and penalty scores
-#' @field analysis_schema Analysis schema (catalog of possible indicators)
-#' @field outputs_schema Unified outputs schema (data frame) for all visualizations and tables
+#' @section Accessible fields:
+#' * `data`: Data frame containing the dataset (standardized or clean data, not raw)
+#' * `parent_data_object`: Reference to the parent Data object
+#' * `dataset_name`: Character name for identifying this analytics object
+#' * `data_stage_name`: Name of the data stage (e.g., "standardized", "clean")
+#' * `data_hash`: Hash of the data from parent Data object
+#' * `variable_map`: Variable mappings from Data object
+#' * `value_map`: Value mappings from Data object
+#' * `variable_label`: Named list of variable labels
+#' * `value_label`: Named list of value labels
+#' * `quality_schema`: Quality check schema with test definitions, thresholds, and penalty scores
+#' * `analysis_schema`: Analysis schema (catalog of possible indicators)
+#' * `outputs_schema`: Unified outputs schema (data frame) for all visualizations and tables
+#' * `plausibility_results`: Results of quality checks execution
+#' * `analysis_results`: Results of quantitative analysis (named list: survey_design, base)
+#' * `data_analysis_plan`: QuantDataAnalysisPlanLog object holding the analysis plan
+#' * `survey_design`: srvyr survey design object
+#' * `base_survey_design`: Unfiltered base srvyr survey design object (used internally for analysis)
+#' * `quality_issues_log`: Tibble of quality schema diagnostic results from quality_diagnose()
+#' * `analysis_plan_issues_log`: Tibble of analysis plan validation issues and diagnostic
+#'   results from analysis_diagnose()
+#' * `outputs_issues_log`: Tibble of outputs schema diagnostic results from outputs_diagnose()
+#' * `overall_score`: Overall data quality score
+#' * `metadata`: Free-form metadata list
+#'
 #' @field visualizations List of ggplot2 graphics/visualizations (shared)
 #' @field tables List of dataframes or formatted table objects (shared)
-#' @field plausibility_results Results of quality checks execution
-#' @field analysis_results Results of quantitative analysis (named list: survey_design, base)
-#' @field data_analysis_plan QuantDataAnalysisPlanLog object holding the analysis plan
-#' @field survey_design srvyr survey design object
-#' @field base_survey_design Unfiltered base srvyr survey design object (used internally for analysis)
-#' @field analysis_plan_issues_log Tibble of plan validation issues (internal)
-#' @field quality_issues_log Tibble of quality schema diagnostic results from quality_diagnose()
-#' @field analysis_plan_issues_log Tibble of analysis plan diagnostic results from analysis_diagnose()
-#' @field outputs_issues_log Tibble of outputs schema diagnostic results from outputs_diagnose()
-#' @field overall_score Overall data quality score
-#' @field metadata Free-form metadata list
 #'
 #' @seealso [FSLDataAnalytics]
 #' @export
@@ -1020,12 +1022,12 @@ DataAnalytics <- R6::R6Class(
     ..outputs_schema_valid_output_types = c("visualization", "table"),
     ..outputs_schema_valid_dataset_types = c("base", "survey_design"),
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -1053,12 +1055,12 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
         super$..additional_call_fields(),
@@ -1073,12 +1075,12 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         super$..additional_set_fields(),
@@ -1107,39 +1109,39 @@ DataAnalytics <- R6::R6Class(
     },
 
 
-    #' Load, validate, and assign a default schema.
-    #'
-    #' Internal helper used during object initialization to load a schema
-    #' definition from an Excel file, validate its structure against a set of
-    #' required columns, and store the result in the specified active binding or
-    #' field. If the schema cannot be loaded or fails validation, an empty tibble
-    #' containing the required columns is created and stored instead.
-    #'
-    #' Validation is performed using `private$..validate_table_schema()`. Any
-    #' errors encountered during loading or validation are captured and reported
-    #' through `phrutils::phr_warning()`.
-    #'
-    #' @param filename A list or character vector of arguments passed to
-    #'   [system.file()] identifying the schema file to load from the package
-    #'   resources.
-    #' @param target_field A character string giving the name of the field or
-    #'   active binding where the validated schema should be stored via
-    #'   `self$set()`.
-    #' @param required_cols A character vector of column names required for the
-    #'   schema to be considered valid.
-    #' @param schema_name A character string identifying the schema type (e.g.
-    #'   `"quality"`, `"analysis"`, `"outputs"`). Used to construct warning and
-    #'   logging origins.
-    #' @param dataset_name Optional character string identifying the dataset type.
-    #'   When supplied, it is prefixed to warning and initialization origins.
-    #'
-    #' @return Invisibly updates the specified field on the object. No value is
-    #'   returned.
-    #'
-    #' @details
-    #' If validation fails, an empty tibble is generated with one zero-length
-    #' character column for each value in `required_cols`. This ensures downstream
-    #' code always receives a valid schema object with the expected structure.
+    # Load, validate, and assign a default schema.
+    #
+    # Internal helper used during object initialization to load a schema
+    # definition from an Excel file, validate its structure against a set of
+    # required columns, and store the result in the specified active binding or
+    # field. If the schema cannot be loaded or fails validation, an empty tibble
+    # containing the required columns is created and stored instead.
+    #
+    # Validation is performed using `private$..validate_table_schema()`. Any
+    # errors encountered during loading or validation are captured and reported
+    # through `phrutils::phr_warning()`.
+    #
+    # @param filename A list or character vector of arguments passed to
+    #   [system.file()] identifying the schema file to load from the package
+    #   resources.
+    # @param target_field A character string giving the name of the field or
+    #   active binding where the validated schema should be stored via
+    #   `self$set()`.
+    # @param required_cols A character vector of column names required for the
+    #   schema to be considered valid.
+    # @param schema_name A character string identifying the schema type (e.g.
+    #   `"quality"`, `"analysis"`, `"outputs"`). Used to construct warning and
+    #   logging origins.
+    # @param dataset_name Optional character string identifying the dataset type.
+    #   When supplied, it is prefixed to warning and initialization origins.
+    #
+    # @return Invisibly updates the specified field on the object. No value is
+    #   returned.
+    #
+    # @details
+    # If validation fails, an empty tibble is generated with one zero-length
+    # character column for each value in `required_cols`. This ensures downstream
+    # code always receives a valid schema object with the expected structure.
     ..load_default_schema = function(
     filename,
     target_field,
@@ -1281,23 +1283,23 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Initialize Quality Fields
-    #'
-    #' @description
-    #' Initializes object fields during construction.
-    #'
-    #' @param parent_data_object Parent data object.
-    #' @param dataset_name Dataset name.
-    #' @param data_stage_name Data stage name.
-    #' @param data_hash Data hash.
-    #' @param variable_map Variable mapping list.
-    #' @param value_map Value mapping list.
-    #' @param variable_label Variable label list.
-    #' @param value_label Value label list.
-    #' @param data Optional dataframe.
-    #' @param origin Origin string for validation messages.
-    #'
-    #' @return NULL. Called for side effects.
+    # Initialize Quality Fields
+    #
+    # @description
+    # Initializes object fields during construction.
+    #
+    # @param parent_data_object Parent data object.
+    # @param dataset_name Dataset name.
+    # @param data_stage_name Data stage name.
+    # @param data_hash Data hash.
+    # @param variable_map Variable mapping list.
+    # @param value_map Value mapping list.
+    # @param variable_label Variable label list.
+    # @param value_label Value label list.
+    # @param data Optional dataframe.
+    # @param origin Origin string for validation messages.
+    #
+    # @return NULL. Called for side effects.
     ..initialize_set_fields = function(
     parent_data_object,
     dataset_name,
@@ -1345,13 +1347,13 @@ DataAnalytics <- R6::R6Class(
       invisible(NULL)
     },
 
-    #' Initialize Default Schemas
-    #'
-    #' @description
-    #' Loads the default quality, analysis, and outputs schemas into
-    #' their corresponding private fields.
-    #'
-    #' @return Invisibly returns TRUE.
+    # Initialize Default Schemas
+    #
+    # @description
+    # Loads the default quality, analysis, and outputs schemas into
+    # their corresponding private fields.
+    #
+    # @return Invisibly returns TRUE.
     ..initialize_load_schemas = function() {
 
       phrutils::phr_message("I am here ..initialize_load_schemas 1")
@@ -1421,16 +1423,16 @@ DataAnalytics <- R6::R6Class(
       invisible(TRUE)
     },
 
-    #' Initialize Data Analysis Plan
-    #'
-    #' @description
-    #' Initializes and populates the data analysis plan log. If a DAP
-    #' data frame is provided, it is used directly. Otherwise, an empty
-    #' log is created and optionally populated from the analysis schema.
-    #'
-    #' @param dap Optional data analysis plan data frame.
-    #'
-    #' @return Invisibly returns the data analysis plan object.
+    # Initialize Data Analysis Plan
+    #
+    # @description
+    # Initializes and populates the data analysis plan log. If a DAP
+    # data frame is provided, it is used directly. Otherwise, an empty
+    # log is created and optionally populated from the analysis schema.
+    #
+    # @param dap Optional data analysis plan data frame.
+    #
+    # @return Invisibly returns the data analysis plan object.
     ..initialize_populate_dap = function(dap = NULL) {
 
       if (!is.null(dap)) {
@@ -1467,15 +1469,15 @@ DataAnalytics <- R6::R6Class(
       invisible(private$..data_analysis_plan)
     },
 
-    #' Process Quality Check Input Sets
-    #'
-    #' @description
-    #' Resolves quality check input sets and runs quality checks for each set,
-    #' aggregating both per-set and combined results.
-    #'
-    #' @param sets List of quality check input sets.
-    #'
-    #' @return A list containing `all_results`, `combined_results`, and `nested`.
+    # Process Quality Check Input Sets
+    #
+    # @description
+    # Resolves quality check input sets and runs quality checks for each set,
+    # aggregating both per-set and combined results.
+    #
+    # @param sets List of quality check input sets.
+    #
+    # @return A list containing `all_results`, `combined_results`, and `nested`.
     ..run_quality_checks_process_sets = function(sets) {
 
       set_names <- names(sets) %||% rep("", length(sets))
@@ -1523,22 +1525,22 @@ DataAnalytics <- R6::R6Class(
 
     },
 
-    #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{quality_schema},
-    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
-    #' fields. Subclasses that hold multiple datasets or quality schemas can
-    #' override this method to return one entry per dataset/schema. Each entry
-    #' must be a named list whose elements give the names of the public fields
-    #' holding the respective inputs.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), quality results are stored under the set's role name in
-    #' \code{plausibility_results} and penalty tables under
-    #' \code{tables[[role]][["plausibility"]]}.
-    #'
-    #' @return A named list of field sets.
+    # @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
+    #
+    # The default implementation returns a single set (named \code{main})
+    # pointing at the core \code{data}, \code{quality_schema},
+    # \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    # fields. Subclasses that hold multiple datasets or quality schemas can
+    # override this method to return one entry per dataset/schema. Each entry
+    # must be a named list whose elements give the names of the public fields
+    # holding the respective inputs.
+    #
+    # When more than one set is returned (or the single set is not named
+    # \code{main}), quality results are stored under the set's role name in
+    # \code{plausibility_results} and penalty tables under
+    # \code{tables[[role]][["plausibility"]]}.
+    #
+    # @return A named list of field sets.
     ..pre_run_quality_checks = function() {
       list(
         main = list(
@@ -1551,15 +1553,15 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Setup Quality Diagnosis
-    #'
-    #' @description
-    #' Validates that a quality schema is available before running
-    #' quality diagnosis and initializes an empty issues log if not.
-    #'
-    #' @param origin Origin string used for logging.
-    #'
-    #' @return Quality schema if available; otherwise an empty tibble.
+    # Setup Quality Diagnosis
+    #
+    # @description
+    # Validates that a quality schema is available before running
+    # quality diagnosis and initializes an empty issues log if not.
+    #
+    # @param origin Origin string used for logging.
+    #
+    # @return Quality schema if available; otherwise an empty tibble.
     ..quality_diagnose_setup = function(origin) {
 
       if (
@@ -1599,16 +1601,16 @@ DataAnalytics <- R6::R6Class(
 
     },
 
-    #' Verify Quality Schema Check
-    #'
-    #' @description
-    #' Validates a single quality check definition and returns a
-    #' diagnostic summary row.
-    #'
-    #' @param check_name Name of the quality check.
-    #' @param data_cols Character vector of dataset column names.
-    #'
-    #' @return A one-row tibble containing diagnostic information.
+    # Verify Quality Schema Check
+    #
+    # @description
+    # Validates a single quality check definition and returns a
+    # diagnostic summary row.
+    #
+    # @param check_name Name of the quality check.
+    # @param data_cols Character vector of dataset column names.
+    #
+    # @return A one-row tibble containing diagnostic information.
     ..quality_diagnose_verify_schema = function(
     check_name,
     data_cols
@@ -1805,16 +1807,16 @@ DataAnalytics <- R6::R6Class(
 
     },
 
-    #' Setup Analysis Diagnosis
-    #'
-    #' @description
-    #' Initializes analysis diagnosis objects and validates that an
-    #' analysis schema is available.
-    #'
-    #' @param origin Character string used for logging.
-    #'
-    #' @return A list containing `empty_result`, `schema_df`, and
-    #' `available_vars`.
+    # Setup Analysis Diagnosis
+    #
+    # @description
+    # Initializes analysis diagnosis objects and validates that an
+    # analysis schema is available.
+    #
+    # @param origin Character string used for logging.
+    #
+    # @return A list containing `empty_result`, `schema_df`, and
+    # `available_vars`.
     ..analysis_diagnose_setup = function(origin) {
 
       empty_result <- tibble::tibble(
@@ -1881,16 +1883,16 @@ DataAnalytics <- R6::R6Class(
 
     },
 
-    #' Verify Analysis Schema Row
-    #'
-    #' @description
-    #' Validates a single analysis schema row against available variables
-    #' and allowed calculation types.
-    #'
-    #' @param row Single-row analysis schema data frame.
-    #' @param available_vars Character vector of available dataset variables.
-    #'
-    #' @return A one-row tibble containing diagnostic results.
+    # Verify Analysis Schema Row
+    #
+    # @description
+    # Validates a single analysis schema row against available variables
+    # and allowed calculation types.
+    #
+    # @param row Single-row analysis schema data frame.
+    # @param available_vars Character vector of available dataset variables.
+    #
+    # @return A one-row tibble containing diagnostic results.
     ..analysis_diagnose_verify_schema = function(
     row,
     available_vars
@@ -2018,16 +2020,16 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Setup Outputs Diagnosis
-    #'
-    #' @description
-    #' Initializes outputs diagnosis objects and validates that an
-    #' outputs schema is available.
-    #'
-    #' @param origin Character string used for logging.
-    #' @param schema_name Character string used in warning messages.
-    #'
-    #' @return A list containing `empty_result` and a `proceed` flag.
+    # Setup Outputs Diagnosis
+    #
+    # @description
+    # Initializes outputs diagnosis objects and validates that an
+    # outputs schema is available.
+    #
+    # @param origin Character string used for logging.
+    # @param schema_name Character string used in warning messages.
+    #
+    # @return A list containing `empty_result` and a `proceed` flag.
     ..outputs_diagnose_setup = function() {
 
       empty_result <- tibble::tibble(
@@ -2073,16 +2075,16 @@ DataAnalytics <- R6::R6Class(
 
     },
 
-    #' Verify Outputs Schema Row
-    #'
-    #' @description
-    #' Validates a single outputs schema row and returns a diagnostic
-    #' summary row.
-    #'
-    #' @param i Row index in the outputs schema.
-    #' @param data_cols Character vector of dataset column names.
-    #'
-    #' @return A one-row tibble containing diagnostic results.
+    # Verify Outputs Schema Row
+    #
+    # @description
+    # Validates a single outputs schema row and returns a diagnostic
+    # summary row.
+    #
+    # @param i Row index in the outputs schema.
+    # @param data_cols Character vector of dataset column names.
+    #
+    # @return A one-row tibble containing diagnostic results.
     ..outputs_diagnose_verify_schema = function(
     i,
     data_cols
@@ -2670,14 +2672,14 @@ DataAnalytics <- R6::R6Class(
       invisible(NULL)
     },
 
-    #' Parse a comma-separated outputs schema cell into a character vector
-    #'
-    #' Used for the `variables` and `disaggregation` columns. Commas inside
-    #' parentheses or quotes are not treated as separators.
-    #'
-    #' @param x A single character value, or NA/NULL.
-    #' @return A character vector, or NULL when the cell is empty.
-    #' @export
+    # Parse a comma-separated outputs schema cell into a character vector
+    #
+    # Used for the `variables` and `disaggregation` columns. Commas inside
+    # parentheses or quotes are not treated as separators.
+    #
+    # @param x A single character value, or NA/NULL.
+    # @return A character vector, or NULL when the cell is empty.
+    # @export
     ..outputs_parse_list_field = function(x) {
       if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
         return(NULL)
@@ -2689,25 +2691,25 @@ DataAnalytics <- R6::R6Class(
       if (length(parts) == 0) NULL else parts
     },
 
-    #' @description Pre-hook providing the input sets used by \code{run_outputs()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{outputs_schema},
-    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
-    #' fields. Subclasses that hold multiple datasets (e.g. linked roster or
-    #' deaths data) can override this method to return one entry per dataset.
-    #' Each entry must be a named list whose elements give the names of the
-    #' public fields holding the respective inputs. The \code{variable_map}
-    #' entry is used to resolve \code{@variable_map$} references in each
-    #' output's \code{test_params}, so sets pointing at a linked dataset must
-    #' name that dataset's own variable map.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), outputs are stored under the set's role name in
-    #' \code{visualizations} and \code{tables} (e.g.
-    #' \code{visualizations$roster}, \code{tables$deaths}).
-    #'
-    #' @return A named list of field sets.
+    # @description Pre-hook providing the input sets used by \code{run_outputs()}.
+    #
+    # The default implementation returns a single set (named \code{main})
+    # pointing at the core \code{data}, \code{outputs_schema},
+    # \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    # fields. Subclasses that hold multiple datasets (e.g. linked roster or
+    # deaths data) can override this method to return one entry per dataset.
+    # Each entry must be a named list whose elements give the names of the
+    # public fields holding the respective inputs. The \code{variable_map}
+    # entry is used to resolve \code{@variable_map$} references in each
+    # output's \code{test_params}, so sets pointing at a linked dataset must
+    # name that dataset's own variable map.
+    #
+    # When more than one set is returned (or the single set is not named
+    # \code{main}), outputs are stored under the set's role name in
+    # \code{visualizations} and \code{tables} (e.g.
+    # \code{visualizations$roster}, \code{tables$deaths}).
+    #
+    # @return A named list of field sets.
     ..pre_run_outputs = function() {
       list(
         main = list(
@@ -2723,20 +2725,20 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description Pre-hook providing the input sets used by \code{run_analysis()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{survey_design} and
-    #' \code{data_analysis_plan} fields. Subclasses that hold multiple datasets
-    #' (e.g. linked roster or deaths data) can override this method to return
-    #' one entry per dataset. Each entry must be a named list whose elements
-    #' give the names of the public fields holding the respective inputs.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), analysis results are stored under the set's role name in
-    #' \code{analysis_results} (e.g. \code{analysis_results$roster}).
-    #'
-    #' @return A named list of field sets.
+    # @description Pre-hook providing the input sets used by \code{run_analysis()}.
+    #
+    # The default implementation returns a single set (named \code{main})
+    # pointing at the core \code{data}, \code{survey_design} and
+    # \code{data_analysis_plan} fields. Subclasses that hold multiple datasets
+    # (e.g. linked roster or deaths data) can override this method to return
+    # one entry per dataset. Each entry must be a named list whose elements
+    # give the names of the public fields holding the respective inputs.
+    #
+    # When more than one set is returned (or the single set is not named
+    # \code{main}), analysis results are stored under the set's role name in
+    # \code{analysis_results} (e.g. \code{analysis_results$roster}).
+    #
+    # @return A named list of field sets.
     ..pre_run_analysis = function() {
       list(
         main = list(
@@ -2747,29 +2749,29 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description Post-analysis hook called at the end of \code{run_analysis()}.
-    #'
-    #' The default implementation is a no-op.  Subclasses can override this
-    #' method to perform additional analysis steps after the standard analysis
-    #' plan has been executed and stored in \code{private$..analysis_results}.
-    #'
-    #' @return Invisibly returns self.
+    # @description Post-analysis hook called at the end of \code{run_analysis()}.
+    #
+    # The default implementation is a no-op.  Subclasses can override this
+    # method to perform additional analysis steps after the standard analysis
+    # plan has been executed and stored in \code{private$..analysis_results}.
+    #
+    # @return Invisibly returns self.
     ..post_run_analysis = function() {
       invisible(self)
     },
 
-    #' @description Pre-hook providing the field sets used by \code{add_all_to_dap()}.
-    #'
-    #' The default implementation returns a single set pointing at the core
-    #' \code{data}, \code{variable_map} and \code{data_analysis_plan} fields.
-    #' Subclasses that hold multiple datasets (e.g. linked roster or deaths
-    #' data) can override this method to return one entry per dataset. Each
-    #' entry must be a named list with elements \code{data},
-    #' \code{variable_map} and \code{data_analysis_plan}, giving the names of
-    #' the public fields that hold the dataset, its variable map, and its
-    #' data analysis plan respectively.
-    #'
-    #' @return A named list of field sets.
+    # @description Pre-hook providing the field sets used by \code{add_all_to_dap()}.
+    #
+    # The default implementation returns a single set pointing at the core
+    # \code{data}, \code{variable_map} and \code{data_analysis_plan} fields.
+    # Subclasses that hold multiple datasets (e.g. linked roster or deaths
+    # data) can override this method to return one entry per dataset. Each
+    # entry must be a named list with elements \code{data},
+    # \code{variable_map} and \code{data_analysis_plan}, giving the names of
+    # the public fields that hold the dataset, its variable map, and its
+    # data analysis plan respectively.
+    #
+    # @return A named list of field sets.
     ..pre_add_all_to_dap = function() {
       list(
         main = list(
@@ -2780,15 +2782,15 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Parse an outputs schema `test_params` cell into a named list
-    #'
-    #' Splits a `"key=value,key2=value2"` string into a named list, coercing
-    #' numeric and logical values. Commas inside parentheses (e.g. `c(a, b)`) or
-    #' quotes are preserved.
-    #'
-    #' @param x A single character value, or NA/NULL.
-    #' @return A named list of parameters, or NULL when the cell is empty.
-    #' @export
+    # Parse an outputs schema `test_params` cell into a named list
+    #
+    # Splits a `"key=value,key2=value2"` string into a named list, coercing
+    # numeric and logical values. Commas inside parentheses (e.g. `c(a, b)`) or
+    # quotes are preserved.
+    #
+    # @param x A single character value, or NA/NULL.
+    # @return A named list of parameters, or NULL when the cell is empty.
+    # @export
     ..outputs_parse_test_params = function(x) {
       if (is.null(x) || length(x) != 1 || is.na(x) || !nzchar(trimws(x))) {
         return(NULL)
@@ -2821,11 +2823,11 @@ DataAnalytics <- R6::R6Class(
       if (length(params) == 0) NULL else params
     },
 
-    #' @description Translate canonical variable names to actual column names using variable_map
-    #' @param canonical_vars Character vector of canonical variable names
-    #' @param variable_map Optional named list mapping canonical names to actual
-    #'   column names. Defaults to \code{private$..variable_map} when \code{NULL}.
-    #' @return Character vector of actual column names
+    # @description Translate canonical variable names to actual column names using variable_map
+    # @param canonical_vars Character vector of canonical variable names
+    # @param variable_map Optional named list mapping canonical names to actual
+    #   column names. Defaults to \code{private$..variable_map} when \code{NULL}.
+    # @return Character vector of actual column names
     ..translate_canonical_to_actual_vars = function(
     canonical_vars,
     variable_map = NULL
@@ -2860,11 +2862,11 @@ DataAnalytics <- R6::R6Class(
       return(actual_vars)
     },
 
-    #' @description Evaluate threshold expressions to determine penalty
-    #' @param test_statistic The test statistic value
-    #' @param p_value The p-value (if applicable)
-    #' @param thresholds List of threshold definitions with expression and penalty
-    #' @return List with penalty, max_penalty, threshold_expression, and message
+    # @description Evaluate threshold expressions to determine penalty
+    # @param test_statistic The test statistic value
+    # @param p_value The p-value (if applicable)
+    # @param thresholds List of threshold definitions with expression and penalty
+    # @return List with penalty, max_penalty, threshold_expression, and message
     ..evaluate_threshold_expressions = function(
     test_statistic,
     p_value,
@@ -2952,17 +2954,17 @@ DataAnalytics <- R6::R6Class(
       return(result)
     },
 
-    #' @description Execute a single quality check using statistical tests
-    #' @param check Data frame holding the rows of the flat quality schema for
-    #'   a single check (one row per threshold).
-    #' @param survey_design Optional srvyr survey design to use. Defaults to
-    #'   \code{private$..base_survey_design} (or \code{private$..survey_design} as fallback)
-    #'   when \code{NULL}.
-    #' @param data Optional data frame to check variables against. Defaults to
-    #'   \code{private$..data} when \code{NULL}.
-    #' @param variable_map Optional named list mapping canonical names to actual
-    #'   column names. Defaults to \code{private$..variable_map} when \code{NULL}.
-    #' @return A list containing the check result
+    # @description Execute a single quality check using statistical tests
+    # @param check Data frame holding the rows of the flat quality schema for
+    #   a single check (one row per threshold).
+    # @param survey_design Optional srvyr survey design to use. Defaults to
+    #   \code{private$..base_survey_design} (or \code{private$..survey_design} as fallback)
+    #   when \code{NULL}.
+    # @param data Optional data frame to check variables against. Defaults to
+    #   \code{private$..data} when \code{NULL}.
+    # @param variable_map Optional named list mapping canonical names to actual
+    #   column names. Defaults to \code{private$..variable_map} when \code{NULL}.
+    # @return A list containing the check result
     ..execute_check = function(
     check,
     survey_design = NULL,
@@ -3154,9 +3156,9 @@ DataAnalytics <- R6::R6Class(
 
     # Analysis Methods
 
-    #' @description
-    #' Create a survey design object from the stored data and variable_map.
-    #' @return A srvyr survey design object, or NULL
+    # @description
+    # Create a survey design object from the stored data and variable_map.
+    # @return A srvyr survey design object, or NULL
     ..create_survey_design = function() {
       origin <- paste0(private$..dataset_name, "$create_survey_design")
 
@@ -3234,10 +3236,10 @@ DataAnalytics <- R6::R6Class(
       return(design)
     },
 
-    #' @description Convert quality results to a tabular format
-    #' @param results Optional flat named list of check results to convert.
-    #'   Defaults to \code{private$..plausibility_results} when \code{NULL}.
-    #' @return A tibble with quality check results
+    # @description Convert quality results to a tabular format
+    # @param results Optional flat named list of check results to convert.
+    #   Defaults to \code{private$..plausibility_results} when \code{NULL}.
+    # @return A tibble with quality check results
     ..results_to_table = function(results = NULL) {
       phrutils::phr_try(
         {
@@ -3279,14 +3281,14 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description Run quality checks on data subsets for each unique value of a grouping column
-    #' @param group_col Character string. The actual column name in the data to group by.
-    #' @param data Optional data frame to subset. Defaults to \code{private$..data}.
-    #' @param quality_schema Optional quality schema to execute. Defaults to
-    #'   \code{private$..quality_schema}.
-    #' @param variable_map Optional named list mapping canonical names to actual
-    #'   column names. Defaults to \code{private$..variable_map}.
-    #' @return A tibble with per-group check results, or NULL
+    # @description Run quality checks on data subsets for each unique value of a grouping column
+    # @param group_col Character string. The actual column name in the data to group by.
+    # @param data Optional data frame to subset. Defaults to \code{private$..data}.
+    # @param quality_schema Optional quality schema to execute. Defaults to
+    #   \code{private$..quality_schema}.
+    # @param variable_map Optional named list mapping canonical names to actual
+    #   column names. Defaults to \code{private$..variable_map}.
+    # @return A tibble with per-group check results, or NULL
     ..compute_results_by_group = function(
     group_col,
     data = NULL,
@@ -3358,8 +3360,8 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description Generate the data analysis plan from the analysis schema
-    #' @return Invisibly returns self.
+    # @description Generate the data analysis plan from the analysis schema
+    # @return Invisibly returns self.
     ..generate_dap_from_schema = function() {
       origin <- paste0(private$..dataset_name, "$generate_dap_from_schema")
 
@@ -3484,33 +3486,33 @@ DataAnalytics <- R6::R6Class(
       invisible(self)
     },
 
-    #' @description
-    #' Resolve a "variable_map" role reference to its mapped dataset column name.
-    #'
-    #' Mirrors \code{Data$..resolve_variable_map_reference()}, but accepts an
-    #' explicit \code{variable_map} argument so that \code{DataAnalytics}
-    #' subclasses holding more than one variable map (e.g.
-    #' \code{linked_ind_roster_variable_map}, \code{linked_ind_health_variable_map})
-    #' can specify which map to resolve against.
-    #'
-    #' @param ref Character string to check/resolve. When \code{tags = TRUE},
-    #'   this is expected to be a \code{@variable_map$role} tag (e.g.
-    #'   "@variable_map$fever"). When \code{tags = FALSE}, \code{ref} is treated
-    #'   directly as the role name, with no \code{@} stripping.
-    #' @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
-    #'   \code{@variable_map$role} tag. If \code{FALSE} (default), \code{ref} is
-    #'   resolved directly as a role name.
-    #' @param variable_map Optional named list mapping canonical roles to actual
-    #'   column names. Defaults to \code{private$..variable_map} when \code{NULL},
-    #'   allowing callers to specify an alternative map (e.g. a linked dataset's
-    #'   variable map) when this class holds more than one.
-    #'
-    #' @return A list with:
-    #'   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
-    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
-    #'   * `role` - the extracted role name (NULL if not a reference).
-    #'   * `value` - the resolved column name, or NULL if the role is not
-    #'     mapped (or not a valid/non-empty mapping).
+    # @description
+    # Resolve a "variable_map" role reference to its mapped dataset column name.
+    #
+    # Mirrors \code{Data$..resolve_variable_map_reference()}, but accepts an
+    # explicit \code{variable_map} argument so that \code{DataAnalytics}
+    # subclasses holding more than one variable map (e.g.
+    # \code{linked_ind_roster_variable_map}, \code{linked_ind_health_variable_map})
+    # can specify which map to resolve against.
+    #
+    # @param ref Character string to check/resolve. When \code{tags = TRUE},
+    #   this is expected to be a \code{@variable_map$role} tag (e.g.
+    #   "@variable_map$fever"). When \code{tags = FALSE}, \code{ref} is treated
+    #   directly as the role name, with no \code{@} stripping.
+    # @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
+    #   \code{@variable_map$role} tag. If \code{FALSE} (default), \code{ref} is
+    #   resolved directly as a role name.
+    # @param variable_map Optional named list mapping canonical roles to actual
+    #   column names. Defaults to \code{private$..variable_map} when \code{NULL},
+    #   allowing callers to specify an alternative map (e.g. a linked dataset's
+    #   variable map) when this class holds more than one.
+    #
+    # @return A list with:
+    #   * `is_reference` - TRUE if `ref` uses the `@variable_map$` tag syntax
+    #     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
+    #   * `role` - the extracted role name (NULL if not a reference).
+    #   * `value` - the resolved column name, or NULL if the role is not
+    #     mapped (or not a valid/non-empty mapping).
     ..resolve_variable_map_reference = function(
       ref,
       tags = FALSE,
@@ -3540,40 +3542,40 @@ DataAnalytics <- R6::R6Class(
       list(is_reference = TRUE, role = role, value = value)
     },
 
-    #' @description
-    #' Resolve a "value_map" role (or "role$canonical_value") reference to its
-    #' mapped dataset value(s).
-    #'
-    #' Mirrors \code{Data$..resolve_value_map_reference()}, but accepts an
-    #' explicit \code{value_map} argument so that \code{DataAnalytics}
-    #' subclasses holding more than one value map (e.g.
-    #' \code{linked_ind_roster_value_map}, \code{linked_ind_health_value_map})
-    #' can specify which map to resolve against.
-    #'
-    #' @param ref Character string to check/resolve. When \code{tags = TRUE},
-    #'   this is expected to be a \code{@value_map$role} or
-    #'   \code{@value_map$role$canonical_value} tag (e.g.
-    #'   "@value_map$status$yes"). When \code{tags = FALSE}, \code{ref} is
-    #'   treated directly as "role" or "role$canonical_value", with no \code{@}
-    #'   stripping.
-    #' @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
-    #'   \code{@value_map$...} tag. If \code{FALSE} (default), \code{ref} is
-    #'   resolved directly.
-    #' @param value_map Optional named list mapping canonical roles to dataset
-    #'   value(s). Defaults to \code{private$..value_map} when \code{NULL}, allowing
-    #'   callers to specify an alternative map (e.g. a linked dataset's value
-    #'   map) when this class holds more than one.
-    #'
-    #' @return A list with:
-    #'   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
-    #'     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
-    #'   * `role` - the extracted role name (NULL if not a reference).
-    #'   * `canonical_value` - the extracted canonical value name, if provided
-    #'     (NULL otherwise).
-    #'   * `role_found` - TRUE if `role` exists in `value_map`.
-    #'   * `value` - the resolved value(s): a single mapping (when
-    #'     `canonical_value` is given), the entire role's value map (when it
-    #'     is not), or NULL if the role/canonical value could not be resolved.
+    # @description
+    # Resolve a "value_map" role (or "role$canonical_value") reference to its
+    # mapped dataset value(s).
+    #
+    # Mirrors \code{Data$..resolve_value_map_reference()}, but accepts an
+    # explicit \code{value_map} argument so that \code{DataAnalytics}
+    # subclasses holding more than one value map (e.g.
+    # \code{linked_ind_roster_value_map}, \code{linked_ind_health_value_map})
+    # can specify which map to resolve against.
+    #
+    # @param ref Character string to check/resolve. When \code{tags = TRUE},
+    #   this is expected to be a \code{@value_map$role} or
+    #   \code{@value_map$role$canonical_value} tag (e.g.
+    #   "@value_map$status$yes"). When \code{tags = FALSE}, \code{ref} is
+    #   treated directly as "role" or "role$canonical_value", with no \code{@}
+    #   stripping.
+    # @param tags Logical. If \code{TRUE}, \code{ref} is parsed as a
+    #   \code{@value_map$...} tag. If \code{FALSE} (default), \code{ref} is
+    #   resolved directly.
+    # @param value_map Optional named list mapping canonical roles to dataset
+    #   value(s). Defaults to \code{private$..value_map} when \code{NULL}, allowing
+    #   callers to specify an alternative map (e.g. a linked dataset's value
+    #   map) when this class holds more than one.
+    #
+    # @return A list with:
+    #   * `is_reference` - TRUE if `ref` uses the `@value_map$` tag syntax
+    #     (when `tags = TRUE`), or always TRUE (when `tags = FALSE`).
+    #   * `role` - the extracted role name (NULL if not a reference).
+    #   * `canonical_value` - the extracted canonical value name, if provided
+    #     (NULL otherwise).
+    #   * `role_found` - TRUE if `role` exists in `value_map`.
+    #   * `value` - the resolved value(s): a single mapping (when
+    #     `canonical_value` is given), the entire role's value map (when it
+    #     is not), or NULL if the role/canonical value could not be resolved.
     ..resolve_value_map_reference = function(
       ref,
       tags = FALSE,
@@ -3634,42 +3636,42 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description
-    #' Execute a data analysis plan against a survey design
-    #'
-    #' Loops through each row of \code{analysis_plan}, dispatches the appropriate
-    #' survey calculation function (\code{prop}, \code{mean}, \code{median},
-    #' \code{ratio}, or \code{categorical}), handles optional disaggregation, and
-    #' binds all results into a single tibble.
-    #'
-    #' Results columns are returned in the following order:
-    #' \code{plan_row}, \code{variable}, \code{indicator_name},
-    #' \code{indicator_unit}, \code{group_name}, \code{disaggregation_value},
-    #' \code{calculation}, \code{point.estimate}, \code{lower_ci},
-    #' \code{upper_ci}, \code{ci_method}, \code{n_unweighted},
-    #' \code{n_weighted}, \code{denom_unweighted}, \code{denom_weighted},
-    #' \code{n_eff}, \code{deff}, \code{note}.
-    #'
-    #' @param design A \code{srvyr} or \code{survey} design object.
-    #' @param analysis_plan A data frame with columns \code{indicator_name},
-    #'   \code{calculation}, \code{var_name}, \code{denom_var},
-    #'   \code{disaggregation}, \code{multiplier}, and \code{indicator_unit}.
-    #' @param high_design_complexity Logical; if \code{TRUE}, triggers stricter
-    #'   CI selection (e.g. logit-transformed CIs for proportions).
-    #' @param variable_map Optional named list mapping canonical variable roles to
-    #'   actual column names, used to resolve \code{var_name}, \code{denom_var}
-    #'   and \code{disaggregation} row values via
-    #'   \code{private$..resolve_variable_map_reference()}. Defaults to
-    #'   \code{private$..variable_map} when \code{NULL}.
-    #' @param value_map Optional named list mapping canonical value roles to
-    #'   dataset value(s), used as a fallback to resolve \code{var_name},
-    #'   \code{denom_var} and \code{disaggregation} row values via
-    #'   \code{private$..resolve_value_map_reference()} when they are not found
-    #'   in \code{private$..variable_map}. Defaults to \code{private$..value_map} when
-    #'   \code{NULL}.
-    #'
-    #' @return A tibble of analysis results, one row per indicator (or one row per
-    #'   disaggregation group when disaggregation is specified).
+    # @description
+    # Execute a data analysis plan against a survey design
+    #
+    # Loops through each row of \code{analysis_plan}, dispatches the appropriate
+    # survey calculation function (\code{prop}, \code{mean}, \code{median},
+    # \code{ratio}, or \code{categorical}), handles optional disaggregation, and
+    # binds all results into a single tibble.
+    #
+    # Results columns are returned in the following order:
+    # \code{plan_row}, \code{variable}, \code{indicator_name},
+    # \code{indicator_unit}, \code{group_name}, \code{disaggregation_value},
+    # \code{calculation}, \code{point.estimate}, \code{lower_ci},
+    # \code{upper_ci}, \code{ci_method}, \code{n_unweighted},
+    # \code{n_weighted}, \code{denom_unweighted}, \code{denom_weighted},
+    # \code{n_eff}, \code{deff}, \code{note}.
+    #
+    # @param design A \code{srvyr} or \code{survey} design object.
+    # @param analysis_plan A data frame with columns \code{indicator_name},
+    #   \code{calculation}, \code{var_name}, \code{denom_var},
+    #   \code{disaggregation}, \code{multiplier}, and \code{indicator_unit}.
+    # @param high_design_complexity Logical; if \code{TRUE}, triggers stricter
+    #   CI selection (e.g. logit-transformed CIs for proportions).
+    # @param variable_map Optional named list mapping canonical variable roles to
+    #   actual column names, used to resolve \code{var_name}, \code{denom_var}
+    #   and \code{disaggregation} row values via
+    #   \code{private$..resolve_variable_map_reference()}. Defaults to
+    #   \code{private$..variable_map} when \code{NULL}.
+    # @param value_map Optional named list mapping canonical value roles to
+    #   dataset value(s), used as a fallback to resolve \code{var_name},
+    #   \code{denom_var} and \code{disaggregation} row values via
+    #   \code{private$..resolve_value_map_reference()} when they are not found
+    #   in \code{private$..variable_map}. Defaults to \code{private$..value_map} when
+    #   \code{NULL}.
+    #
+    # @return A tibble of analysis results, one row per indicator (or one row per
+    #   disaggregation group when disaggregation is specified).
     ..phr_calc_survey_from_plan = function(
       design,
       analysis_plan,
@@ -4803,21 +4805,21 @@ DataAnalytics <- R6::R6Class(
       return(func_args)
     },
 
-    #' Parse indicator arguments string respecting parentheses and quoted strings
-    #'
-    #' Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
-    #' properly by respecting parentheses and quoted strings so that c(...) vectors
-    #' and quoted values containing commas are not split incorrectly.
-    #'
-    #' This function is intentionally called twice during indicator processing:
-    #' 1. First call: Parse the full argument string into individual argument pairs
-    #' 2. Second call: Parse the content inside c(...) vectors into individual elements
-    #' This two-stage parsing is necessary because arguments and vector elements have
-    #' different semantic meanings and resolution rules.
-    #'
-    #' @param arg_string Character string containing arguments
-    #' @return Character vector of argument pairs
-    #' @keywords internal
+    # Parse indicator arguments string respecting parentheses and quoted strings
+    #
+    # Internal helper to split argument strings like "arg1=val1,arg2=c(a,b,c),arg3=val3"
+    # properly by respecting parentheses and quoted strings so that c(...) vectors
+    # and quoted values containing commas are not split incorrectly.
+    #
+    # This function is intentionally called twice during indicator processing:
+    # 1. First call: Parse the full argument string into individual argument pairs
+    # 2. Second call: Parse the content inside c(...) vectors into individual elements
+    # This two-stage parsing is necessary because arguments and vector elements have
+    # different semantic meanings and resolution rules.
+    #
+    # @param arg_string Character string containing arguments
+    # @return Character vector of argument pairs
+    # @keywords internal
     ..parse_indicator_arguments = function(arg_string) {
       if (is.null(arg_string) || is.na(arg_string) || arg_string == "") {
         return(character(0))
@@ -4936,17 +4938,17 @@ DataAnalytics <- R6::R6Class(
       list(dap_df = dap_df, issues = issues)
     },
 
-    #' @description Add an indicator to the data analysis plan
-    #' @param indicator_name Character; human-readable label for the indicator.
-    #' @param calculation Character; one of "prop", "mean", "median", "ratio", or "categorical".
-    #' @param var_name Character; dataset column name for the primary variable.
-    #' @param denom_var Character or NULL; denominator column name.
-    #' @param disaggregation Character or NULL; column name to use for stratified analysis.
-    #' @param multiplier Numeric; scale factor for the point estimate.
-    #' @param indicator_unit Character; unit label.
-    #' @param high_design_complexity Logical; reserved for future use.
-    #' @param note Character or NULL; optional free-text note.
-    #' @return Invisibly returns self.
+    # @description Add an indicator to the data analysis plan
+    # @param indicator_name Character; human-readable label for the indicator.
+    # @param calculation Character; one of "prop", "mean", "median", "ratio", or "categorical".
+    # @param var_name Character; dataset column name for the primary variable.
+    # @param denom_var Character or NULL; denominator column name.
+    # @param disaggregation Character or NULL; column name to use for stratified analysis.
+    # @param multiplier Numeric; scale factor for the point estimate.
+    # @param indicator_unit Character; unit label.
+    # @param high_design_complexity Logical; reserved for future use.
+    # @param note Character or NULL; optional free-text note.
+    # @return Invisibly returns self.
     ..add_indicator_dap = function(
     indicator_name,
     calculation,
@@ -4982,9 +4984,9 @@ DataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description Remove an indicator from the data analysis plan
-    #' @param indicator_name Character; label of the indicator to remove.
-    #' @return Invisibly returns self.
+    # @description Remove an indicator from the data analysis plan
+    # @param indicator_name Character; label of the indicator to remove.
+    # @return Invisibly returns self.
     ..remove_indicator_dap = function(indicator_name) {
       origin <- paste0(private$..dataset_name, "DataAnalytics$remove_indicator_dap")
 

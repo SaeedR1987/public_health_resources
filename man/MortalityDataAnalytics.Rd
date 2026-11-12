@@ -33,117 +33,39 @@ stages, hashes, mappings, and labels are retained independently of the
 household data. Inspect private fields through \code{get(field = "..data")}
 or \code{get(field = "..linked_ind_roster_data")}.
 }
+\section{Accessible fields}{
+
+* `linked_ind_roster_data`: Optional linked roster dataframe
+* `linked_ind_roster_data_stage_name`: Name of linked roster data stage
+* `linked_ind_roster_data_hash`: Hash of linked roster data
+* `linked_ind_roster_variable_map`: Variable mappings for linked roster data
+* `linked_ind_roster_value_map`: Value mappings for linked roster data
+* `linked_ind_roster_variable_label`: Variable labels for linked roster data
+* `linked_ind_roster_value_label`: Value labels for linked roster data
+* `linked_ind_deaths_data`: Optional linked deaths dataframe
+* `linked_ind_deaths_data_stage_name`: Name of linked deaths data stage
+* `linked_ind_deaths_data_hash`: Hash of linked deaths data
+* `linked_ind_deaths_variable_map`: Variable mappings for linked deaths data
+* `linked_ind_deaths_value_map`: Value mappings for linked deaths data
+* `linked_ind_deaths_variable_label`: Variable labels for linked deaths data
+* `linked_ind_deaths_value_label`: Value labels for linked deaths data
+* `analysis_schema_roster`: Analysis schema for linked roster dataset
+* `analysis_schema_deaths`: Analysis schema for linked deaths dataset
+* `outputs_schema_roster`: Outputs schema (data frame) for linked roster dataset
+* `outputs_schema_deaths`: Outputs schema (data frame) for linked deaths dataset
+* `data_analysis_plan_roster`: Data analysis plan for linked roster dataset
+* `data_analysis_plan_deaths`: Data analysis plan for linked deaths dataset
+* `survey_design_roster`: srvyr survey design object for the linked roster dataset
+* `survey_design_deaths`: srvyr survey design object for the linked deaths dataset
+* `base_survey_design_roster`: Unfiltered base srvyr survey design object for the linked roster dataset
+* `base_survey_design_deaths`: Unfiltered base srvyr survey design object for the linked deaths dataset
+}
+
 \seealso{
 [DataAnalytics]
 }
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:DataAnalytics]{DataAnalytics}} -> \code{MortalityDataAnalytics}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{linked_ind_roster_data}}{Optional linked roster dataframe}
-
-    \item{\code{linked_ind_roster_data_stage_name}}{Name of linked roster data stage}
-
-    \item{\code{linked_ind_roster_data_hash}}{Hash of linked roster data}
-
-    \item{\code{linked_ind_roster_variable_map}}{Variable mappings for linked roster data}
-
-    \item{\code{linked_ind_roster_value_map}}{Value mappings for linked roster data}
-
-    \item{\code{linked_ind_roster_variable_label}}{Variable labels for linked roster data}
-
-    \item{\code{linked_ind_roster_value_label}}{Value labels for linked roster data}
-
-    \item{\code{linked_ind_deaths_data}}{Optional linked deaths dataframe}
-
-    \item{\code{linked_ind_deaths_data_stage_name}}{Name of linked deaths data stage}
-
-    \item{\code{linked_ind_deaths_data_hash}}{Hash of linked deaths data}
-
-    \item{\code{linked_ind_deaths_variable_map}}{Variable mappings for linked deaths data}
-
-    \item{\code{linked_ind_deaths_value_map}}{Value mappings for linked deaths data}
-
-    \item{\code{linked_ind_deaths_variable_label}}{Variable labels for linked deaths data}
-
-    \item{\code{linked_ind_deaths_value_label}}{Value labels for linked deaths data}
-
-    \item{\code{analysis_schema_roster}}{Analysis schema for linked roster dataset}
-
-    \item{\code{analysis_schema_deaths}}{Analysis schema for linked deaths dataset}
-
-    \item{\code{outputs_schema_roster}}{Outputs schema (data frame) for linked roster dataset}
-
-    \item{\code{outputs_schema_deaths}}{Outputs schema (data frame) for linked deaths dataset}
-
-    \item{\code{data_analysis_plan_roster}}{Data analysis plan for linked roster dataset}
-
-    \item{\code{data_analysis_plan_deaths}}{Data analysis plan for linked deaths dataset}
-
-    \item{\code{survey_design_roster}}{srvyr survey design object for the linked roster dataset}
-
-    \item{\code{survey_design_deaths}}{srvyr survey design object for the linked deaths dataset}
-
-    \item{\code{base_survey_design_roster}}{Unfiltered base srvyr survey design object for the linked roster dataset}
-
-    \item{\code{base_survey_design_deaths}}{Unfiltered base srvyr survey design object for the linked deaths dataset}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{linked_ind_roster_data}}{Optional linked roster dataframe}
-
-    \item{\code{linked_ind_roster_data_stage_name}}{Name of linked roster data stage}
-
-    \item{\code{linked_ind_roster_data_hash}}{Hash of linked roster data}
-
-    \item{\code{linked_ind_roster_variable_map}}{Variable mappings for linked roster data}
-
-    \item{\code{linked_ind_roster_value_map}}{Value mappings for linked roster data}
-
-    \item{\code{linked_ind_roster_variable_label}}{Variable labels for linked roster data}
-
-    \item{\code{linked_ind_roster_value_label}}{Value labels for linked roster data}
-
-    \item{\code{linked_ind_deaths_data}}{Optional linked deaths dataframe}
-
-    \item{\code{linked_ind_deaths_data_stage_name}}{Name of linked deaths data stage}
-
-    \item{\code{linked_ind_deaths_data_hash}}{Hash of linked deaths data}
-
-    \item{\code{linked_ind_deaths_variable_map}}{Variable mappings for linked deaths data}
-
-    \item{\code{linked_ind_deaths_value_map}}{Value mappings for linked deaths data}
-
-    \item{\code{linked_ind_deaths_variable_label}}{Variable labels for linked deaths data}
-
-    \item{\code{linked_ind_deaths_value_label}}{Value labels for linked deaths data}
-
-    \item{\code{analysis_schema_roster}}{Analysis schema for linked roster dataset}
-
-    \item{\code{analysis_schema_deaths}}{Analysis schema for linked deaths dataset}
-
-    \item{\code{outputs_schema_roster}}{Outputs schema (data frame) for linked roster dataset}
-
-    \item{\code{outputs_schema_deaths}}{Outputs schema (data frame) for linked deaths dataset}
-
-    \item{\code{data_analysis_plan_roster}}{Data analysis plan for linked roster dataset}
-
-    \item{\code{data_analysis_plan_deaths}}{Data analysis plan for linked deaths dataset}
-
-    \item{\code{survey_design_roster}}{srvyr survey design object for the linked roster dataset}
-
-    \item{\code{survey_design_deaths}}{srvyr survey design object for the linked deaths dataset}
-
-    \item{\code{base_survey_design_roster}}{Unfiltered base srvyr survey design object for the linked roster dataset}
-
-    \item{\code{base_survey_design_deaths}}{Unfiltered base srvyr survey design object for the linked deaths dataset}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -239,7 +161,6 @@ or \code{get(field = "..linked_ind_roster_data")}.
   }
   \subsection{Returns}{
     A new MortalityDataAnalytics object
-Additional Accessible Fields Hook
   }
 }
 

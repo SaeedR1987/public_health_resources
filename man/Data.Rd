@@ -26,6 +26,10 @@ Key functionalities include:
 * Hash fingerprinting for data integrity
 * Cross-object linking and validation
 
+State (data stages, maps, labels, schemas, logs, linked objects) is held in
+private fields and accessed through `get()` / `set()` and the dataset
+accessors rather than as public fields.
+
 
 
 Priority order depends on requested stage:
@@ -83,61 +87,6 @@ Add Linked Dataset
 
 
 Creates a foreign key relationship for use with validate_links().
-
-
-If validation fails, an empty tibble is generated with one zero-length
-character column for each value in `required_cols`. This ensures downstream
-code always receives a valid schema object with the expected structure.
-
-
-
-Quality checks include:
-* Dependency validations (e.g., if A is answered, B must be answered)
-* Range checks and logical consistency
-* Custom validation rules from dependency_schema
-Results are stored in private$..data_quality_flags for later use.
-INTERNAL HELPER -- translate expression to use mapped column names and values
-
-
-
-Supported operators for value translation:
-- Equality: `var == 'value'` or `'value' == var`
-- Inequality: `var != 'value'` or `'value' != var`
-- Set membership: `var %in% c('value1', 'value2', ...)`
-
-For single dataset values: Uses simple equality (`var == 'value'`)
-For multiple dataset values: Uses membership (`var %in% c('val1', 'val2')`)
-For %in% expressions: Expands each canonical value to its dataset values
-
-
-
-Resolution priority: variable_map role lookup, then direct column name fallback.
-With full=TRUE, returns: role, column, values, exists_in_data, values_in_data.
-Process Cleaning Log Flag
-
-
-
-For each linked object:
-* Resolves key columns from roles
-* Checks for missing foreign key values
-* Reports orphaned records
-
-
-Labels are sourced from the flat variable schema table columns:
-* `variable_label_en / _fr / _ar` -- one label per variable
-  (first non-empty row of the variable)
-* `value_label_en / _fr / _ar` -- one label per canonical `value` row,
-  stored as a named character vector (canonical value -> label)
-
-These columns are loaded from the xlsx variable schema template
-(e.g. `inst/resources/variable_schema_data_household_template.xlsx`).
-Variable Schema Lookup
-}
-\note{
-- Other operators (<, >, <=, >=, etc.) are not currently translated for values
-- Variable names in functions (e.g., is.na(var)) are translated
-- Special regex characters in names/values are automatically escaped
-INTERNAL HELPER -- provide hints for expression parse errors
 }
 \examples{
 \dontrun{
@@ -153,186 +102,8 @@ INTERNAL HELPER -- provide hints for expression parse errors
 \seealso{
 [HouseholdData], [MortalityHouseholdData], [RosterData]
 }
-\keyword{"arg1=val1,arg2=c(a,b,c),arg3=val3"}
-\keyword{1.}
-\keyword{2.}
-\keyword{Columns}
-\keyword{First}
-\keyword{Internal}
-\keyword{Linked}
-\keyword{Objects}
-\keyword{Other}
-\keyword{Parse}
-\keyword{Register}
-\keyword{Schema}
-\keyword{Second}
-\keyword{This}
-\keyword{Validate}
-\keyword{and}
-\keyword{are}
-\keyword{argument}
-\keyword{arguments}
-\keyword{because}
-\keyword{by}
-\keyword{c(...)}
-\keyword{call:}
-\keyword{called}
-\keyword{commas}
-\keyword{containing}
-\keyword{content}
-\keyword{different}
-\keyword{during}
-\keyword{elements}
-\keyword{full}
-\keyword{function}
-\keyword{have}
-\keyword{helper}
-\keyword{incorrectly.}
-\keyword{indicator}
-\keyword{individual}
-\keyword{inside}
-\keyword{intentionally}
-\keyword{internal}
-\keyword{into}
-\keyword{is}
-\keyword{like}
-\keyword{meanings}
-\keyword{necessary}
-\keyword{not}
-\keyword{pairs}
-\keyword{parentheses}
-\keyword{parsing}
-\keyword{processing:}
-\keyword{properly}
-\keyword{quoted}
-\keyword{resolution}
-\keyword{respecting}
-\keyword{rules.}
-\keyword{semantic}
-\keyword{so}
-\keyword{split}
-\keyword{string}
-\keyword{strings}
-\keyword{that}
-\keyword{the}
-\keyword{to}
-\keyword{twice}
-\keyword{two-stage}
-\keyword{values}
-\keyword{vector}
-\keyword{vectors}
 \section{Super class}{
 \code{\link[phr:Asset]{Asset}} -> \code{Data}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{raw_data}}{Original imported data frame (immutable)}
-
-    \item{\code{standardized_data}}{Data frame after standardization of names, types, and values}
-
-    \item{\code{clean_data}}{Data frame after cleaning operations}
-
-    \item{\code{dataset_name}}{Character name of the dataset}
-
-    \item{\code{metadata}}{List of metadata attributes}
-
-    \item{\code{uuid}}{Character name of the UUID column}
-
-    \item{\code{validated}}{Logical indicating if data has been validated}
-
-    \item{\code{standardized}}{Logical indicating if data has been standardized}
-
-    \item{\code{cleaned}}{Logical indicating if data has been cleaned}
-
-    \item{\code{required_columns}}{Character vector of required column names}
-
-    \item{\code{other_columns}}{List of other (non-required) column names}
-
-    \item{\code{variable_map}}{List mapping variable roles to column names}
-
-    \item{\code{value_map}}{List mapping canonical values to dataset values}
-
-    \item{\code{variable_label}}{Named list of presentation-ready variable labels (populated by map_schema_labels)}
-
-    \item{\code{value_label}}{Named list of presentation-ready value labels for categorical variables (populated by map_schema_labels)}
-
-    \item{\code{variable_schema}}{Variable schema with types and allowed values}
-
-    \item{\code{indicator_schema}}{Schema for indicator calculations}
-
-    \item{\code{dependency_schema}}{Schema for variable dependencies}
-
-    \item{\code{cleaning_log}}{CleaningLog R6 object for tracking data corrections}
-
-    \item{\code{deletion_log}}{DeletionLog R6 object for tracking deletions}
-
-    \item{\code{data_quality_flags}}{Data frame storing quality flags per row}
-
-    \item{\code{data_diagnostics}}{Diagnostic data frame, retrieved with `get(field = "..data_diagnostics")`}
-
-    \item{\code{cleaning_log_issues}}{Data frame of cleaning log rows that could not be applied (e.g. coercion failures)}
-
-    \item{\code{autosave}}{Logical for automatic saving (if TRUE, snapshots on key steps)}
-
-    \item{\code{linked_objects}}{List of linked Data objects with linkage specifications}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{raw_data}}{Original imported data frame (immutable)}
-
-    \item{\code{standardized_data}}{Data frame after standardization of names, types, and values}
-
-    \item{\code{clean_data}}{Data frame after cleaning operations}
-
-    \item{\code{dataset_name}}{Character name of the dataset}
-
-    \item{\code{metadata}}{List of metadata attributes}
-
-    \item{\code{uuid}}{Character name of the UUID column}
-
-    \item{\code{validated}}{Logical indicating if data has been validated}
-
-    \item{\code{standardized}}{Logical indicating if data has been standardized}
-
-    \item{\code{cleaned}}{Logical indicating if data has been cleaned}
-
-    \item{\code{required_columns}}{Character vector of required column names}
-
-    \item{\code{other_columns}}{List of other (non-required) column names}
-
-    \item{\code{variable_map}}{List mapping variable roles to column names}
-
-    \item{\code{value_map}}{List mapping canonical values to dataset values}
-
-    \item{\code{variable_label}}{Named list of presentation-ready variable labels (populated by map_schema_labels)}
-
-    \item{\code{value_label}}{Named list of presentation-ready value labels for categorical variables (populated by map_schema_labels)}
-
-    \item{\code{variable_schema}}{Variable schema with types and allowed values}
-
-    \item{\code{indicator_schema}}{Schema for indicator calculations}
-
-    \item{\code{dependency_schema}}{Schema for variable dependencies}
-
-    \item{\code{cleaning_log}}{CleaningLog R6 object for tracking data corrections}
-
-    \item{\code{deletion_log}}{DeletionLog R6 object for tracking deletions}
-
-    \item{\code{data_quality_flags}}{Data frame storing quality flags per row}
-
-    \item{\code{data_diagnostics}}{Diagnostic data frame, retrieved with `get(field = "..data_diagnostics")`}
-
-    \item{\code{cleaning_log_issues}}{Data frame of cleaning log rows that could not be applied (e.g. coercion failures)}
-
-    \item{\code{autosave}}{Logical for automatic saving (if TRUE, snapshots on key steps)}
-
-    \item{\code{linked_objects}}{List of linked Data objects with linkage specifications}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -645,23 +416,14 @@ overridden by subclasses to return sector-specific DataAnalytics subclasses.
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{stage}}{The data stage to use ("standardized" or "clean")}
+      \item{\code{type}}{Character type of analytics object to generate (default "general");
+subclasses map this to sector-specific DataAnalytics classes}
       \item{\code{analysis_config}}{Optional analysis configuration (data analysis plan tibble)}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
     A DataAnalytics object or NULL
-Load, validate, and assign a default schema.
-
-Internal helper used during object initialization to load a schema
-definition from an Excel file, validate its structure against a set of
-required columns, and store the result in the specified active binding or
-field. If the schema cannot be loaded or fails validation, an empty tibble
-containing the required columns is created and stored instead.
-
-Validation is performed using `private$..validate_table_schema()`. Any
-errors encountered during loading or validation are captured and reported
-through `phrutils::phr_warning()`.
   }
 }
 

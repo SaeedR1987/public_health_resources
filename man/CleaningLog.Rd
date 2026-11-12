@@ -160,7 +160,6 @@ Add Change Entry
   \subsection{Details}{
     Coerces all inputs to character and calls append_entry() to add to log.
 Normalizes 'changed' to lowercase for consistency.
-Additional Accessible Fields Hook
   }
   \subsection{Returns}{
     Invisible TRUE

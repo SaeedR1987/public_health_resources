@@ -88,201 +88,20 @@ Column selection priority for writing weights:
 
 Rows whose stratum value is \code{NA}, empty, or absent from the
 \code{SamplingFrame} receive \code{NA} weights and a warning is issued.
-Additional Accessible Fields Hook
-
-
-
-Performs household-specific checks:
-* GPS coordinate range validation (lat: -90 to 90, lon: -180 to 180)
-* Weight distribution checks (negative or zero weights)
-* Interview date validity checks
-* Consent field validation
-Pre-Standardize Hook for Household Data
-
-
-
-This hook performs four key operations:
-1. Generates survey weights via \code{generate_weights()} when a
-   \code{SamplingFrame} is stored in \code{self$sampling_frame} and a
-   stratum role is mapped in \code{variable_map}; skipped silently otherwise.
-2. Merges household-level variables to linked datasets using their canonical
-   role names (enum_id, device_id, date_survey, date_recall, weight, stratum,
-   cluster_id, site, admin1-admin4) and registers those roles in each linked
-   object's \code{variable_map}
-3. Standardizes each linked dataset. Datasets that were already standardized
-   are standardized again when household variables were merged into them, so
-   that indicators depending on the merged columns (e.g. person-time, which
-   needs \code{date_survey} and \code{date_recall}) are recalculated
-4. Aggregates data from linked datasets back to household level with prefix "linked_<name>_<column>"
-
-Supported aggregations vary by dataset type (see class documentation for details)
-Sub Class Specific Pre Generate Cleaning Log for Linked Datasets
-
-
-
-For each linked dataset, performs type-specific aggregations and adds columns with
-naming convention "linked_<name>_<column>". See class documentation for specific
-aggregation rules by dataset type.
-Aggregate Deaths Data from Linked Dataset
-
-
-
-Sums canonical death and person_time columns by household: death, death_under5, death_male,
-death_female, death_non_trauma, death_trauma, death_other, death_current_location,
-death_migration, death_last_location, death_birth, person_time, person_time_under5,
-person_time_male, person_time_female
-Aggregate Water Container Data from Linked Dataset
-
-
-
-Sums total liters by household and counts number of containers
-Aggregate Roster Data from Linked Dataset
-
-
-
-Calculates household demographics: household_size, num_children, num_male, num_female,
-num_women_15to49, and person_time columns by household. If calc_date_birth_final is
-available and recall/survey dates exist, also counts births in recall period.
-Aggregate Nutrition Data from Linked Dataset
-
-
-
-Aggregates by age groups: children_under2, children_2to5, children_under5 based on age in months
-Aggregate Health Data from Linked Dataset
-
-
-
-Counts total number of people recorded (rows) per household
-Aggregate Women Data from Linked Dataset
-
-
-
-Counts women aged 15-49 per household (all rows in WomenIndividualData represent eligible women)
-Merge Household Variables to Linked Datasets
-
-
-
-Merges household variables to linked datasets: enum_id, device_id, date_survey,
-date_recall, weight, stratum, cluster_id, site, admin1, admin2, admin3, admin4.
-
-Merged columns are written to the linked dataset using their *canonical role
-names* (for example the household column `today` is merged as `date_survey`),
-and the role is registered in the linked object's `variable_map` so that
-indicator functions such as `add_persontime()` can resolve
-`@variable_map$date_survey` / `@variable_map$date_recall` afterwards.
-Any existing column of the same name in the linked dataset is overwritten.
-
-The merge is applied to every populated stage of the linked dataset (raw,
-standardized and clean) rather than a single fallback stage, because
-`standardize()` always rebuilds its output from `raw_data`; merging into
-`clean_data` or `standardized_data` alone would be discarded on the next
-standardization pass.
-
-The household linkage column of the linked dataset is resolved from its
-`variable_map` (`hh_uuid` / `household_uuid`), falling back to the
-`col_names` aliases declared in its variable schema and finally to the
-role name used as a literal column name. Only candidates that actually
-exist in the data are accepted, so an unmapped or stale `variable_map`
-cannot make the merge target a non-existent column.
 }
+\section{Accessible fields}{
+
+* `optional_columns`: Character vector of optional columns commonly present in household data
+* `sampling_frame`: Optional \code{\link{SamplingFrame}} object used by \code{generate_weights()}
+  to derive survey weights from population totals per stratum.
+}
+
 \seealso{
 [Data], [IndividualData], [DeathIndividualData], [WaterContainerData],
   [NutritionIndividualData], [HealthIndividualData]
 }
-\keyword{(in}
-\keyword{(roster,}
-\keyword{...)}
-\keyword{/}
-\keyword{1.}
-\keyword{2.}
-\keyword{3.}
-\keyword{Candidates}
-\keyword{Determines}
-\keyword{Resolution}
-\keyword{Resolve}
-\keyword{`col_names`}
-\keyword{`data_cols`,}
-\keyword{`hh_uuid`}
-\keyword{`household_uuid`}
-\keyword{`variable_map`}
-\keyword{`variable_map`;}
-\keyword{a}
-\keyword{accepted}
-\keyword{actually}
-\keyword{aliases}
-\keyword{are}
-\keyword{as}
-\keyword{back}
-\keyword{cannot}
-\keyword{column}
-\keyword{dataset}
-\keyword{deaths,}
-\keyword{declared}
-\keyword{does}
-\keyword{exist.}
-\keyword{fall}
-\keyword{for}
-\keyword{holds}
-\keyword{household}
-\keyword{identifier.}
-\keyword{in}
-\keyword{internal}
-\keyword{is}
-\keyword{linkage}
-\keyword{linked}
-\keyword{literal}
-\keyword{lookup}
-\keyword{make}
-\keyword{mapped}
-\keyword{names}
-\keyword{names.}
-\keyword{not}
-\keyword{object's}
-\keyword{of}
-\keyword{only}
-\keyword{or}
-\keyword{order);}
-\keyword{order:}
-\keyword{parent}
-\keyword{preference}
-\keyword{present}
-\keyword{role}
-\keyword{roles}
-\keyword{schema}
-\keyword{so}
-\keyword{stale}
-\keyword{that}
-\keyword{the}
-\keyword{themselves}
-\keyword{those}
-\keyword{to}
-\keyword{unmapped}
-\keyword{used}
-\keyword{variable}
-\keyword{when}
-\keyword{which}
 \section{Super classes}{
 \code{\link[phr:Asset]{Asset}} -> \code{\link[phr:Data]{Data}} -> \code{HouseholdData}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{optional_columns}}{Character vector of optional columns commonly present in household data}
-
-    \item{\code{sampling_frame}}{Optional \code{\link{SamplingFrame}} object used by \code{generate_weights()}
-to derive survey weights from population totals per stratum.}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{optional_columns}}{Character vector of optional columns commonly present in household data}
-
-    \item{\code{sampling_frame}}{Optional \code{\link{SamplingFrame}} object used by \code{generate_weights()}
-to derive survey weights from population totals per stratum.}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{

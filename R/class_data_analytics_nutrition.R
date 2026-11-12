@@ -403,18 +403,18 @@ NutritionDataAnalytics <- R6::R6Class(
       invisible(values)
     },
 
-    #' Export ENA anthropometry dataset
-    #'
+    #' @description
     #' Exports a standardized child anthropometry dataset in a structure
     #' compatible with ENA for SMART and related nutrition analysis workflows.
     #' Variables are identified using the object's variable map, reordered,
-    #' renamed to the required ENA field names, and optionally exported as
-    #' either a CSV or Excel file.
+    #' renamed to the required ENA field names, and exported as either a CSV
+    #' or an Excel file.
     #'
+    #' @details
     #' The exported dataset contains the following variables:
-    #' \code{SURVDATE}, \code{CLUSTER}, \code{TEAM}, \code{ID},
-    #' \code{HH}, \code{SEX}, \code{BIRTHDAT}, \code{MONTHS},
-    #' \code{WEIGHT}, \code{HEIGHT}, \code{EDEMA}, and \code{MUAC}.
+    #' \code{SURVDATE}, \code{CLUSTER}, \code{TEAM}, \code{ID}, \code{HH},
+    #' \code{SEX}, \code{BIRTHDAT}, \code{MONTHS}, \code{WEIGHT},
+    #' \code{HEIGHT}, \code{EDEMA}, and \code{MUAC}.
     #'
     #' Missing source variables are retained in the output as empty columns.
     #'
@@ -422,39 +422,36 @@ NutritionDataAnalytics <- R6::R6Class(
     #' are available, age in months is calculated automatically and rounded
     #' down to the nearest whole month.
     #'
-    #' If MUAC is available only in centimetres
-    #' (\code{nut_muac_cm}), values are converted to millimetres prior to
-    #' export.
+    #' If MUAC is available only in centimetres, values are converted to
+    #' millimetres prior to export.
     #'
     #' Records with confirmed age greater than 59 months are excluded from the
     #' exported dataset.
     #'
-    #' @param data A data frame containing child anthropometry data.
-    #' @param output_file Character. Path to the file to be created.
-    #' @param format Character. Export format. One of
-    #'   \code{"csv"} or \code{"xlsx"}. Defaults to \code{"csv"}.
-    #'
-    #' @return Invisibly returns the exported data frame.
-    #'
-    #' @details
     #' Variable names are resolved from the object's variable map using the
     #' following canonical variables:
-    #'
     #' \itemize{
-    #'   \item \code{date_survey -> SURVDATE}
-    #'   \item \code{cluster_id_numeric} or \code{cluster_id -> CLUSTER}
-    #'   \item \code{enum_id -> TEAM}
-    #'   \item \code{sex -> SEX}
-    #'   \item \code{dob_final -> BIRTHDAT}
-    #'   \item \code{age_months -> MONTHS}
-    #'   \item \code{nut_weight -> WEIGHT}
-    #'   \item \code{nut_height -> HEIGHT}
-    #'   \item \code{nut_edema_confirm} or \code{nut_edema -> EDEMA}
-    #'   \item \code{nut_muac_mm} or \code{nut_muac_cm -> MUAC}
+    #'   \item \code{date_survey} maps to \code{SURVDATE}
+    #'   \item \code{cluster_id_numeric} or \code{cluster_id} maps to \code{CLUSTER}
+    #'   \item \code{enum_id} maps to \code{TEAM}
+    #'   \item \code{sex} maps to \code{SEX}
+    #'   \item \code{dob_final} maps to \code{BIRTHDAT}
+    #'   \item \code{age_months} maps to \code{MONTHS}
+    #'   \item \code{nut_weight} maps to \code{WEIGHT}
+    #'   \item \code{nut_height} maps to \code{HEIGHT}
+    #'   \item \code{nut_edema_confirm} or \code{nut_edema} maps to \code{EDEMA}
+    #'   \item \code{nut_muac_mm} or \code{nut_muac_cm} maps to \code{MUAC}
     #' }
     #'
-    #' @seealso \code{\link[utils]{write.csv}},
-    #'   \code{\link[openxlsx]{write.xlsx}}
+    #' Files are written with \code{utils::write.csv()} (CSV) or
+    #' \code{openxlsx::write.xlsx()} (Excel).
+    #'
+    #' @param data A data frame containing child anthropometry data.
+    #' @param output_file Character. Path to the file to be created.
+    #' @param format Character. Export format, either \code{"csv"} or
+    #'   \code{"xlsx"}. Defaults to \code{"csv"}.
+    #'
+    #' @return Invisibly returns the exported data frame.
     export_ena_anthro_file = function(
     data,
     output_file,
@@ -722,10 +719,10 @@ NutritionDataAnalytics <- R6::R6Class(
       "CDC_MUACAssessment_Template.xlsx"
     ),
 
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       c(
         super$..additional_get_fields(),
@@ -734,12 +731,12 @@ NutritionDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
         super$..additional_call_fields(),
@@ -748,12 +745,12 @@ NutritionDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
         super$..additional_set_fields(),
@@ -762,22 +759,22 @@ NutritionDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
-    #'
-    #' The default implementation returns a single set (named \code{main})
-    #' pointing at the core \code{data}, \code{quality_schema},
-    #' \code{base_survey_design}, \code{survey_design} and \code{variable_map}
-    #' fields. Subclasses that hold multiple datasets or quality schemas can
-    #' override this method to return one entry per dataset/schema. Each entry
-    #' must be a named list whose elements give the names of the public fields
-    #' holding the respective inputs.
-    #'
-    #' When more than one set is returned (or the single set is not named
-    #' \code{main}), quality results are stored under the set's role name in
-    #' \code{plausibility_results} and penalty tables under
-    #' \code{tables[[role]][["plausibility"]]}.
-    #'
-    #' @return A named list of field sets.
+    # @description Pre-hook providing the input sets used by \code{run_quality_checks()}.
+    #
+    # The default implementation returns a single set (named \code{main})
+    # pointing at the core \code{data}, \code{quality_schema},
+    # \code{base_survey_design}, \code{survey_design} and \code{variable_map}
+    # fields. Subclasses that hold multiple datasets or quality schemas can
+    # override this method to return one entry per dataset/schema. Each entry
+    # must be a named list whose elements give the names of the public fields
+    # holding the respective inputs.
+    #
+    # When more than one set is returned (or the single set is not named
+    # \code{main}), quality results are stored under the set's role name in
+    # \code{plausibility_results} and penalty tables under
+    # \code{tables[[role]][["plausibility"]]}.
+    #
+    # @return A named list of field sets.
     ..pre_run_quality_checks = function() {
       list(
         anthro = list(
@@ -797,23 +794,23 @@ NutritionDataAnalytics <- R6::R6Class(
       )
     },
 
-    #' @description
-    #' Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
-    #'
-    #' Returns one input set per available mortality dataset:
-    #' \describe{
-    #'   \item{household}{Always included, using the core \code{data},
-    #'     \code{survey_design} and \code{data_analysis_plan} fields. Results
-    #'     stored in \code{analysis_results$household}.}
-    #'   \item{roster}{Included when \code{linked_ind_roster_data} is available and
-    #'     \code{data_analysis_plan_roster} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$roster}.}
-    #'   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
-    #'     \code{data_analysis_plan_deaths} contains at least one indicator. Results
-    #'     stored in \code{analysis_results$deaths}.}
-    #' }
-    #'
-    #' @return A named list of field sets.
+    # @description
+    # Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
+    #
+    # Returns one input set per available mortality dataset:
+    # \describe{
+    #   \item{household}{Always included, using the core \code{data},
+    #     \code{survey_design} and \code{data_analysis_plan} fields. Results
+    #     stored in \code{analysis_results$household}.}
+    #   \item{roster}{Included when \code{linked_ind_roster_data} is available and
+    #     \code{data_analysis_plan_roster} contains at least one indicator. Results
+    #     stored in \code{analysis_results$roster}.}
+    #   \item{deaths}{Included when \code{linked_ind_deaths_data} is available and
+    #     \code{data_analysis_plan_deaths} contains at least one indicator. Results
+    #     stored in \code{analysis_results$deaths}.}
+    # }
+    #
+    # @return A named list of field sets.
     ..pre_run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_analysis")
 

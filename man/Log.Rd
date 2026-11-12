@@ -26,22 +26,13 @@ Private fields (accessible via get() and set() methods):
 * validated: Logical indicating if log has passed validation
 * metadata: List of metadata including update timestamps
 }
+\section{Accessible fields}{
+
+* `issues`: List of validations issues found
+}
+
 \section{Super class}{
 \code{\link[phr:Asset]{Asset}} -> \code{Log}
-}
-\section{Public fields}{
-  \if{html}{\out{<div class="r6-fields">}}
-  \describe{
-    \item{\code{issues}}{List of validations issues found}
-  }
-  \if{html}{\out{</div>}}
-}
-\section{Active bindings}{
-  \if{html}{\out{<div class="r6-active-bindings">}}
-  \describe{
-    \item{\code{issues}}{List of validations issues found}
-  }
-  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
@@ -234,7 +225,6 @@ Get Summary
   * required_columns: Vector of required column names
   * schema_attached: Whether schema is defined
   * last_updated: Timestamp of last modification
-Additional Accessible Fields Hook
   }
 }
 

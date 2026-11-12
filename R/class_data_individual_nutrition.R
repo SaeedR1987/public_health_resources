@@ -22,6 +22,8 @@ NutritionIndividualData <- R6::R6Class(
     #' @param dataset_name A name for this dataset
     #' @param metadata Optional list of metadata
     #' @param variable_map Optional named list mapping standard variable names to data columns
+    #' @param uuid Character name of the person-level unique ID column
+    #' @param hh_uuid Character name of the household linkage column
     #' @return A new NutritionIndividualData object
     initialize = function(data,
                           dataset_name = "NutritionIndividualData",
