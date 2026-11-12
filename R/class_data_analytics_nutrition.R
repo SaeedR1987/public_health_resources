@@ -455,8 +455,6 @@ NutritionDataAnalytics <- R6::R6Class(
     #'
     #' @seealso \code{\link[utils]{write.csv}},
     #'   \code{\link[openxlsx]{write.xlsx}}
-    #'
-    #' @export
     export_ena_anthro_file = function(
     data,
     output_file,
