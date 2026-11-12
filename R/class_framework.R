@@ -813,6 +813,22 @@ Framework <- R6::R6Class(
   ),
 
   private = list(
+    ..additional_get_fields = function() {
+      c(
+        "master_objectives_schema", "master_indicator_bank",
+        "modified_objectives_schema", "modified_indicator_bank",
+        "master_svg", "adjusted_svg",
+        "primary_objectives", "secondary_objectives",
+        "primary_indicator_codes", "secondary_indicator_codes",
+        "modified_primary_indicator_codes", "modified_secondary_indicator_codes",
+        "secondary_data_sources"
+      )
+    },
+
+    ..additional_set_fields = function() {
+      private$..additional_get_fields()
+    },
+
     # Rebuild modified indicator code fields from the current
     # modified_objectives_schema.
     .refresh_modified_indicator_codes = function() {

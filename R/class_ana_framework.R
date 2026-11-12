@@ -123,6 +123,14 @@ ANAFramework <- R6::R6Class(
   ),
 
   private = list(
+    ..additional_get_fields = function() {
+      c(super$..additional_get_fields(), "secondary_ana_goal")
+    },
+
+    ..additional_set_fields = function() {
+      c(super$..additional_set_fields(), "secondary_ana_goal")
+    },
+
     # Replace fill="..." on the primary <rect stroke="black"> inside each
     # named <g id="BLOCK_ID"> group.
     #

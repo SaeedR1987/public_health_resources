@@ -214,7 +214,7 @@ SurveyProtocol <- R6::R6Class(
 
           self$set(
             field = "sampling_frame",
-            member = "log_df",
+            member = "..log_df",
             value = tibble::as_tibble(frame)
           )
           private$..sync_state()
@@ -302,7 +302,7 @@ SurveyProtocol <- R6::R6Class(
     #'   the sampling frame is not set or the column does not exist.
     get_frame_column = function(col_name, strata = NULL, included_only = TRUE) {
       sf <- if (!is.null(self$sampling_frame)) {
-        self$sampling_frame$log_df
+        self$sampling_frame$get(field = "..log_df")
       } else {
         NULL
       }
@@ -334,10 +334,10 @@ SurveyProtocol <- R6::R6Class(
       if (
         !is.null(st) &&
           !is.null(self$sampling_frame) &&
-          nrow(self$sampling_frame$log_df) > 0
+          nrow(self$sampling_frame$get(field = "..log_df")) > 0
       ) {
         table_strata <- st$stratum_id
-        frame_strata <- unique(self$sampling_frame$log_df$stratum)
+        frame_strata <- unique(self$sampling_frame$get(field = "..log_df")$stratum)
 
         if (!setequal(table_strata, frame_strata)) {
           missing_in_frame <- setdiff(table_strata, frame_strata)
@@ -1490,7 +1490,7 @@ SurveyProtocol <- R6::R6Class(
         return(invisible(FALSE))
       }
 
-      sf_pop <- self$sampling_frame$get(field = "log_df")
+      sf_pop <- self$sampling_frame$get(field = "..log_df")
 
       if (
         !is.null(sf_pop) &&
@@ -1509,7 +1509,7 @@ SurveyProtocol <- R6::R6Class(
         return(invisible(FALSE))
       }
 
-      sf_pop <- self$sampling_frame$get(field = "log_df")
+      sf_pop <- self$sampling_frame$get(field = "..log_df")
 
       if (
         !is.null(sf_pop) &&
@@ -1529,7 +1529,7 @@ SurveyProtocol <- R6::R6Class(
       if (!missing(value)) {
         return(invisible(FALSE))
       }
-      sf_pop <- self$sampling_frame$get(field = "log_df")
+      sf_pop <- self$sampling_frame$get(field = "..log_df")
 
       if (
         !is.null(sf_pop) &&
@@ -1551,7 +1551,7 @@ SurveyProtocol <- R6::R6Class(
 
       tryCatch({
 
-        sf_pop <- self$sampling_frame$get(field = "log_df")
+        sf_pop <- self$sampling_frame$get(field = "..log_df")
 
         if (
           is.null(sf_pop) ||
@@ -2633,6 +2633,18 @@ SurveyProtocol <- R6::R6Class(
   ),
 
   private = list(
+    ..additional_get_fields = function() {
+      c(super$..additional_get_fields(), "sample_object", "sampling_frame")
+    },
+
+    ..additional_set_fields = function() {
+      c(super$..additional_set_fields(), "sample_object", "sampling_frame")
+    },
+
+    ..additional_call_fields = function() {
+      c(super$..additional_call_fields(), "sample_object", "sampling_frame")
+    },
+
     # @description Extract the sample table from the nested Sample object.
     #
     # Safely accesses the sample table via \code{call()}, returning
@@ -2965,7 +2977,7 @@ SurveyProtocol <- R6::R6Class(
       sf <- tryCatch(
         self$get(
           field = "sampling_frame",
-          member = "log_df",
+          member = "..log_df",
           update_modified = TRUE
         ),
         error = function(e) NULL
