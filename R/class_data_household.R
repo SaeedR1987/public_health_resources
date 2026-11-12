@@ -1901,8 +1901,6 @@ HouseholdData <- R6::R6Class(
     #' role name used as a literal column name. Only candidates that actually
     #' exist in the data are accepted, so an unmapped or stale `variable_map`
     #' cannot make the merge target a non-existent column.
-    #'
-    #' @keywords internal
     ..merge_household_vars_to_linked = function(
       linked_obj,
       link_name,

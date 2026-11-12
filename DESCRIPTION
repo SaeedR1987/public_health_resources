@@ -69,6 +69,7 @@ Collate:
     'class_data_analytics_mortality.R'
     'class_data_analytics_nutrition.R'
     'class_data_analytics_wash.R'
+    'class_data_analytics_women.R'
     'class_data_household.R'
     'class_data_household_optimized.R'
     'class_data_individual.R'

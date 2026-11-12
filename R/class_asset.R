@@ -596,16 +596,16 @@ Asset <- R6::R6Class(
       digest::digest(snapshot, algo = "md5")
     },
 
-    #' Build Field Access Error Message
-    #'
-    #' @description
-    #' Distinguishes a field that exists on this object but is not permitted
-    #' for the requested operation from a field that does not exist at all.
-    #'
-    #' @param field Requested field name.
-    #' @param allowed_fields Character vector of permitted field names.
-    #' @param kind Either \code{"accessible"} or \code{"settable"}.
-    #' @return Character scalar.
+    # Build Field Access Error Message
+    #
+    # @description
+    # Distinguishes a field that exists on this object but is not permitted
+    # for the requested operation from a field that does not exist at all.
+    #
+    # @param field Requested field name.
+    # @param allowed_fields Character vector of permitted field names.
+    # @param kind Either \code{"accessible"} or \code{"settable"}.
+    # @return Character scalar.
     ..field_error_message = function(field, allowed_fields, kind) {
       exists_on_object <- is.character(field) &&
         length(field) == 1L &&
@@ -625,16 +625,16 @@ Asset <- R6::R6Class(
       }
     },
 
-    #' Format Allowed Fields for Error Messages
-    #'
-    #' @description
-    #' Collapses allowed field names into a short string. Long messages break
-    #' downstream condition handling ("class name too long"), so the list is
-    #' truncated to a character budget.
-    #'
-    #' @param fields Character vector of field names.
-    #' @param max_chars Maximum number of characters to list.
-    #' @return Character scalar.
+    # Format Allowed Fields for Error Messages
+    #
+    # @description
+    # Collapses allowed field names into a short string. Long messages break
+    # downstream condition handling ("class name too long"), so the list is
+    # truncated to a character budget.
+    #
+    # @param fields Character vector of field names.
+    # @param max_chars Maximum number of characters to list.
+    # @return Character scalar.
     ..format_allowed_fields = function(fields, max_chars = 150L) {
       fields <- unique(as.character(fields))
       out <- character(0)
@@ -653,13 +653,13 @@ Asset <- R6::R6Class(
       txt
     },
 
-    #' Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns the list of fields accessible via get().
-    #' Subclasses can override to expose additional fields.
-    #'
-    #' @return Character vector of allowed field names
+    # Accessible Fields Hook
+    #
+    # @description
+    # Returns the list of fields accessible via get().
+    # Subclasses can override to expose additional fields.
+    #
+    # @return Character vector of allowed field names
     ..allowed_get_fields = function() {
       c(
         "..name",
@@ -669,22 +669,22 @@ Asset <- R6::R6Class(
       )
     },
 
-    #' Additional Accessible Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields accessible via `get()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
     ..additional_get_fields = function() {
       character(0)
     },
 
-    #' Callable Fields Hook
-    #'
-    #' @description
-    #' Returns the list of fields that may be modified via `call()`.`.
-    #'
-    #' @return Character vector of field names.
+    # Callable Fields Hook
+    #
+    # @description
+    # Returns the list of fields that may be modified via `call()`.
+    #
+    # @return Character vector of field names.
     ..allowed_call_fields = function() {
       c(
         "get",
@@ -701,22 +701,22 @@ Asset <- R6::R6Class(
       )
     },
 
-    #' Additional Callable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `call()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Callable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `call()`.
+    #
+    # @return Character vector of field names.
     ..additional_call_fields = function() {
       character(0)
     },
 
-    #' Settable Fields Hook
-    #'
-    #' @description
-    #' Returns the list of fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Settable Fields Hook
+    #
+    # @description
+    # Returns the list of fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..allowed_set_fields = function() {
       c(
         "..name",
@@ -726,12 +726,12 @@ Asset <- R6::R6Class(
       )
     },
 
-    #' Additional Settable Fields Hook
-    #'
-    #' @description
-    #' Returns subclass-specific fields that may be modified via `set()`.
-    #'
-    #' @return Character vector of field names.
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns subclass-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
     ..additional_set_fields = function() {
       character(0)
     },
