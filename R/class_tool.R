@@ -718,6 +718,21 @@ Tool <- R6::R6Class(
   ),
 
   private = list(
+    ..additional_get_fields = function() {
+      c(
+        "survey", "choices", "settings",
+        "selected_indicator_codes", "available_indicator_codes",
+        "selected_pillars", "available_pillars",
+        "selected_subpillars", "available_subpillars",
+        "selected_sectors", "available_sectors",
+        "revised_survey", "revised_choices", "revised_settings"
+      )
+    },
+
+    ..additional_set_fields = function() {
+      private$..additional_get_fields()
+    },
+
     .name = NULL,
     .tool_type = NULL,
     .selected_indicators = NULL,

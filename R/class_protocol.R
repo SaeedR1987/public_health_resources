@@ -965,6 +965,19 @@ Protocol <- R6::R6Class(
   ),
 
   private = list(
+    # Fields accessible via get()/set()/call() in addition to the Asset defaults.
+    ..additional_get_fields = function() {
+      c("tools", "framework")
+    },
+
+    ..additional_set_fields = function() {
+      c("tools", "framework")
+    },
+
+    ..additional_call_fields = function() {
+      c("tools", "framework")
+    },
+
     # @description Check whether a tool with a specific role exists.
     #   Uses \code{call()} to query tools by role and verify that
     #   a tool with that role exists and has a valid name.
