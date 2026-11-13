@@ -55,7 +55,7 @@ DeathIndividualData <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Starting initialization for Data object {dataset_name}.")
+          message = private$..phr_txt("Starting initialization for Data object {dataset_name}.")
         )
 
         # --- Default mapping for death-related variables
@@ -75,8 +75,8 @@ DeathIndividualData <- R6::R6Class(
               hh_uuid = if (is.null(hh_uuid)) {default_map$hh_uuid} else {hh_uuid}
             )
           },
-          step = phrutils::phr_txt("Super initialize of DeathIndividualData"),
-          hint = phrutils::phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
+          step = private$..phr_txt("Super initialize of DeathIndividualData"),
+          hint = private$..phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -88,8 +88,8 @@ DeathIndividualData <- R6::R6Class(
             # Re-map schema variables now that the death schema is loaded.
             private$..map_schema_vars(stage = "raw")
           },
-          step = phrutils::phr_txt("Map schema vars for individual death data"),
-          hint = phrutils::phr_txt("Check the variable schema for individual death data")
+          step = private$..phr_txt("Map schema vars for individual death data"),
+          hint = private$..phr_txt("Check the variable schema for individual death data")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -114,8 +114,8 @@ DeathIndividualData <- R6::R6Class(
             self$set(field = "..recall_date", value = recall_date)
 
           },
-        step = phrutils::phr_txt("Setting recall dates"),
-        hint = phrutils::phr_txt("Check for column with recall date in the dataset.")
+        step = private$..phr_txt("Setting recall dates"),
+        hint = private$..phr_txt("Check for column with recall date in the dataset.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -131,8 +131,8 @@ DeathIndividualData <- R6::R6Class(
             )))
 
           },
-        step = phrutils::phr_txt("Setting subclass specific required variables"),
-        hint = phrutils::phr_txt("Check for subclass specific required columns in the dataset.")
+        step = private$..phr_txt("Setting subclass specific required variables"),
+        hint = private$..phr_txt("Check for subclass specific required columns in the dataset.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -142,7 +142,7 @@ DeathIndividualData <- R6::R6Class(
           log = TRUE,
           touch = TRUE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Initializaiton of {dataset_name} as a DeathIndividualData object completed successfully with {nrow(data)} records.")
+          message = private$..phr_txt("Initializaiton of {dataset_name} as a DeathIndividualData object completed successfully with {nrow(data)} records.")
         )
 
       }, on_error = "abort", origin = "DeathIndividualData$initialize")

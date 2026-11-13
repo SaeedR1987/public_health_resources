@@ -58,7 +58,7 @@ IndividualData <- R6::R6Class(
           log = TRUE,
           touch = TRUE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Starting initialize for {dataset_name} as IndividualData object.")
+          message = private$..phr_txt("Starting initialize for {dataset_name} as IndividualData object.")
         )
 
         # Default mapping for individual-level data
@@ -77,8 +77,8 @@ IndividualData <- R6::R6Class(
               uuid         = if (is.null(uuid)) {default_map$uuid} else {uuid}
             )
           },
-        step = phrutils::phr_txt("Super initialize of IndividualData"),
-        hint = phrutils::phr_txt("Check initialization in parent Data or Asset classes.")
+        step = private$..phr_txt("Super initialize of IndividualData"),
+        hint = private$..phr_txt("Check initialization in parent Data or Asset classes.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -93,8 +93,8 @@ IndividualData <- R6::R6Class(
             # the first standardize() call.
             private$..map_schema_vars(stage = "raw")
           },
-          step = phrutils::phr_txt("Map schema vars for IndividualData"),
-          hint = phrutils::phr_txt("Check variable schema, variable or value maps.")
+          step = private$..phr_txt("Map schema vars for IndividualData"),
+          hint = private$..phr_txt("Check variable schema, variable or value maps.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -118,8 +118,8 @@ IndividualData <- R6::R6Class(
             self$set(field = "..required_columns", value = unique(c(private$..required_columns, ind_required)))
 
           },
-          step = phrutils::phr_txt("Set required columns for IndividualData"),
-          hint = phrutils::phr_txt("Check for presence of required variables: {ind_required}.")
+          step = private$..phr_txt("Set required columns for IndividualData"),
+          hint = private$..phr_txt("Check for presence of required variables: {ind_required}.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -137,8 +137,8 @@ IndividualData <- R6::R6Class(
               private$..variable_map$age_days
             ))
           },
-          step = phrutils::phr_txt("Setting optional columns for IndividualData"),
-          hint = phrutils::phr_txt("Check for presence of optional variables")
+          step = private$..phr_txt("Setting optional columns for IndividualData"),
+          hint = private$..phr_txt("Check for presence of optional variables")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -148,7 +148,7 @@ IndividualData <- R6::R6Class(
           log = TRUE,
           touch = TRUE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Initialization for {dataset_name} as IndividualData object completed successfully.")
+          message = private$..phr_txt("Initialization for {dataset_name} as IndividualData object completed successfully.")
         )
       }, on_error = "abort", origin = "IndividualData$initialize")
     }
@@ -216,7 +216,7 @@ IndividualData <- R6::R6Class(
         if (!is.null(hh_uuid_col) && hh_uuid_col %in% names(df)) {
           dup_hh <- df[[hh_uuid_col]][duplicated(df[[hh_uuid_col]])]
           if (length(dup_hh) > 0) {
-            phrutils::phr_message(nm, phrutils::phr_txt(
+            phrutils::phr_message(nm, private$..phr_txt(
               "Duplicate household linkages detected (expected for multi-member households)."
             ))
           }
@@ -226,17 +226,17 @@ IndividualData <- R6::R6Class(
         age_col <- private$..variable_map$age
         if (!is.null(age_col) && age_col %in% names(df)) {
           if (any(df[[age_col]] < 0, na.rm = TRUE)) {
-            phrutils::phr_warning(nm, phrutils::phr_txt("Negative ages detected."))
+            phrutils::phr_warning(nm, private$..phr_txt("Negative ages detected."))
             had_issues <- TRUE
           }
         }
 
         # Optional link integrity check
         if (!is.null(private$..household_link)) {
-          phrutils::phr_message(phrutils::phr_txt("Validating linked HouseholdData (placeholder)."))
+          phrutils::phr_message(private$..phr_txt("Validating linked HouseholdData (placeholder)."))
         }
 
-        phrutils::phr_message(phrutils::phr_txt("Post-validation for {nm} complete."))
+        phrutils::phr_message(private$..phr_txt("Post-validation for {nm} complete."))
 
       }, on_error = "warn", origin = paste0(private$..dataset_name, "$post_validate"))
 

@@ -52,7 +52,7 @@ NutritionDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("Started initialization for {dataset_name}.")
+        message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
       super$initialize(
@@ -89,8 +89,8 @@ NutritionDataAnalytics <- R6::R6Class(
             dataset_name = private$..dataset_name
           )
         },
-      step = phrutils::phr_txt("Loading iycf quality schema"),
-      hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+      step = private$..phr_txt("Loading iycf quality schema"),
+      hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -106,8 +106,8 @@ NutritionDataAnalytics <- R6::R6Class(
                   ))
 
         },
-        step = phrutils::phr_txt("Creating Muac age weighted survey design object"),
-        hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+        step = private$..phr_txt("Creating Muac age weighted survey design object"),
+        hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -123,8 +123,8 @@ NutritionDataAnalytics <- R6::R6Class(
                    ))
 
         },
-        step = phrutils::phr_txt("Loading iycf quality schema"),
-        hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+        step = private$..phr_txt("Loading iycf quality schema"),
+        hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -136,7 +136,7 @@ NutritionDataAnalytics <- R6::R6Class(
           # Generate per-dataset analysis plans for roster and deaths
           private$..data_analysis_plan_muac <- QuantDataAnalysisPlanLog$new(
             log_df   = NULL,
-            log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+            log_name = private$..phr_txt("Quant Data Analysis Plan (Roster)")
           )
 
           # Build the DAP for roster dataset from available columns and analysis_schema_roster
@@ -159,8 +159,8 @@ NutritionDataAnalytics <- R6::R6Class(
 
           }
         },
-        step = phrutils::phr_txt("creating data analysis plan for muac for alternative age weighting"),
-        hint = phrutils::phr_txt("check if nutrition analysis schema contains muac indicators.")
+        step = private$..phr_txt("creating data analysis plan for muac for alternative age weighting"),
+        hint = private$..phr_txt("check if nutrition analysis schema contains muac indicators.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -170,7 +170,7 @@ NutritionDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = TRUE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("{dataset_name} initialized successfully.")
+        message = private$..phr_txt("{dataset_name} initialized successfully.")
       )
     },
 
@@ -219,7 +219,7 @@ NutritionDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("Starting export for CDC MUAC excel file for {private$..dataset_name}.")
+        message = private$..phr_txt("Starting export for CDC MUAC excel file for {private$..dataset_name}.")
       )
 
       phrutils::phr_try({
@@ -234,8 +234,8 @@ NutritionDataAnalytics <- R6::R6Class(
             )
           )
         },
-        step = phrutils::phr_txt("Loading CDC MUAC excel template"),
-        hint = phrutils::phr_txt("Check if CDC MUAC template file exists in resources.")
+        step = private$..phr_txt("Loading CDC MUAC excel template"),
+        hint = private$..phr_txt("Check if CDC MUAC template file exists in resources.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -254,8 +254,8 @@ NutritionDataAnalytics <- R6::R6Class(
             muac_col = private$..variable_map[["nut_muac_mm"]]
           )
         },
-        step = phrutils::phr_txt("Retrieve column names and values from variable and value maps for sex, age_months, nut_muac_mm"),
-        hint = phrutils::phr_txt("Check whether sex, age, and muac have been appropriately mapped in variable and value map.")
+        step = private$..phr_txt("Retrieve column names and values from variable and value maps for sex, age_months, nut_muac_mm"),
+        hint = private$..phr_txt("Check whether sex, age, and muac have been appropriately mapped in variable and value map.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -281,8 +281,8 @@ NutritionDataAnalytics <- R6::R6Class(
           )
         },
         on_error = "warn",
-        step = phrutils::phr_txt("Retrieve column names and values from variable and value maps for nut_edema_confirm or nut_edema"),
-        hint = phrutils::phr_txt("Check whether nut_edema_confirm or nut_edema.")
+        step = private$..phr_txt("Retrieve column names and values from variable and value maps for nut_edema_confirm or nut_edema"),
+        hint = private$..phr_txt("Check whether nut_edema_confirm or nut_edema.")
       )
       if (!phrutils::phr_failed(result)) {
         oedema_col <- result$oedema_col
@@ -338,8 +338,8 @@ NutritionDataAnalytics <- R6::R6Class(
           values
         },
         on_error = "warn",
-        step = phrutils::phr_txt("Summing cell values for CDC MUAC template"),
-        hint = phrutils::phr_txt("Check for issues in sex, age_months, muac, or edema variables.")
+        step = private$..phr_txt("Summing cell values for CDC MUAC template"),
+        hint = private$..phr_txt("Check for issues in sex, age_months, muac, or edema variables.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -384,8 +384,8 @@ NutritionDataAnalytics <- R6::R6Class(
 
         },
         on_error = "warn",
-        step = phrutils::phr_txt("Exporting CDC MUAC workbook with new values"),
-        hint = phrutils::phr_txt("Check if issues with CDC MUAC template")
+        step = private$..phr_txt("Exporting CDC MUAC workbook with new values"),
+        hint = private$..phr_txt("Check if issues with CDC MUAC template")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -397,7 +397,7 @@ NutritionDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("CDC MUAC excel file for {private$..dataset_name} exported successfully.")
+        message = private$..phr_txt("CDC MUAC excel file for {private$..dataset_name} exported successfully.")
       )
 
       invisible(values)
@@ -462,7 +462,7 @@ NutritionDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("CDC MUAC excel file for {private$..dataset_name} exported successfully.")
+        message = private$..phr_txt("CDC MUAC excel file for {private$..dataset_name} exported successfully.")
       )
 
       phrutils::phr_try({
@@ -471,7 +471,7 @@ NutritionDataAnalytics <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Starting ENA formatted anthropometry data export for {private$..dataset_name}.")
+          message = private$..phr_txt("Starting ENA formatted anthropometry data export for {private$..dataset_name}.")
         )
 
       format <- match.arg(format)
@@ -523,8 +523,8 @@ NutritionDataAnalytics <- R6::R6Class(
           )
         },
         on_error = "warn",
-        step = phrutils::phr_txt("Retrieve variable names from variable map"),
-        hint = phrutils::phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
+        step = private$..phr_txt("Retrieve variable names from variable map"),
+        hint = private$..phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -620,8 +620,8 @@ NutritionDataAnalytics <- R6::R6Class(
           output
         },
         on_error = "warn",
-        step = phrutils::phr_txt("Retrieve variable names from variable map"),
-        hint = phrutils::phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
+        step = private$..phr_txt("Retrieve variable names from variable map"),
+        hint = private$..phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -651,8 +651,8 @@ NutritionDataAnalytics <- R6::R6Class(
           }
         },
         on_error = "warn",
-        step = phrutils::phr_txt("Retrieve variable names from variable map"),
-        hint = phrutils::phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
+        step = private$..phr_txt("Retrieve variable names from variable map"),
+        hint = private$..phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -664,7 +664,7 @@ NutritionDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("ENA formatted anthropometry data for {private$..dataset_name} exported successfully.")
+        message = private$..phr_txt("ENA formatted anthropometry data for {private$..dataset_name} exported successfully.")
       )
 
       invisible(output)
@@ -824,7 +824,7 @@ NutritionDataAnalytics <- R6::R6Class(
             data_analysis_plan = "..data_analysis_plan_muac"
           )
         } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Data present but data_analysis_plan_muac is empty. Skipping muac alt-weighting analysis."))
+          phrutils::phr_message(origin, private$..phr_txt("Data present but data_analysis_plan_muac is empty. Skipping muac alt-weighting analysis."))
         }
       }
 
@@ -891,7 +891,7 @@ NutritionDataAnalytics <- R6::R6Class(
         ),
         on_error = "warn",
         origin   = origin,
-        hint     = phrutils::phr_txt("Check that the composite weight column and cluster/strata columns contain valid data.")
+        hint     = private$..phr_txt("Check that the composite weight column and cluster/strata columns contain valid data.")
       )
 
       return(design)

@@ -176,7 +176,7 @@ Framework <- R6::R6Class(
           self$modified_primary_indicator_codes <- NULL
           self$modified_secondary_indicator_codes <- NULL
           phrutils::phr_message(
-            phr_txt("Framework initialized."),
+            private$..phr_txt("Framework initialized."),
             origin = "Framework$initialize"
           )
         },
@@ -200,7 +200,7 @@ Framework <- R6::R6Class(
           self$primary_objectives <- as.numeric(unlist(objective_codes))
           private$..touch()
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Primary objectives set ({length(self$primary_objectives)} code(s))."
             ),
             origin = "Framework$set_primary_objectives"
@@ -226,7 +226,7 @@ Framework <- R6::R6Class(
           self$secondary_objectives <- as.numeric(unlist(objective_codes))
           private$..touch()
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Secondary objectives set ({length(self$secondary_objectives)} code(s))."
             ),
             origin = "Framework$set_secondary_objectives"
@@ -254,7 +254,7 @@ Framework <- R6::R6Class(
           private$.refresh_modified_indicator_codes()
           private$..touch()
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Primary indicators set ({length(self$primary_indicator_codes)} code(s))."
             ),
             origin = "Framework$set_primary_indicators"
@@ -284,7 +284,7 @@ Framework <- R6::R6Class(
           private$.refresh_modified_indicator_codes()
           private$..touch()
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."
             ),
             origin = "Framework$set_secondary_indicators"
@@ -315,7 +315,7 @@ Framework <- R6::R6Class(
           )
           private$..touch()
           phrutils::phr_message(
-            phr_txt("Secondary data source added."),
+            private$..phr_txt("Secondary data source added."),
             origin = "Framework$set_secondary_data_source"
           )
         },
@@ -337,7 +337,7 @@ Framework <- R6::R6Class(
         {
           if (is.null(self$secondary_data_sources)) {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "No secondary data sources to remove."
               ),
               origin = "Framework$remove_secondary_data_source"
@@ -350,7 +350,7 @@ Framework <- R6::R6Class(
           )
           private$..touch()
           phrutils::phr_message(
-            phr_txt("Secondary data source removed."),
+            private$..phr_txt("Secondary data source removed."),
             origin = "Framework$remove_secondary_data_source"
           )
         },
@@ -379,7 +379,7 @@ Framework <- R6::R6Class(
             stringsAsFactors = FALSE
           )
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Master objectives schema set ({nrow(self$master_objectives_schema)} rows)."
             ),
             origin = "Framework$set_master_schema"
@@ -403,14 +403,14 @@ Framework <- R6::R6Class(
         {
           phrutils::phr_assert(
             is.character(svg_content) && length(svg_content) >= 1,
-            message = phr_txt(
+            message = private$..phr_txt(
               "svg_content must be a non-empty character string."
             ),
             origin = "Framework$set_master_svg"
           )
           self$master_svg <- svg_content
           phrutils::phr_message(
-            phr_txt("Master SVG set."),
+            private$..phr_txt("Master SVG set."),
             origin = "Framework$set_master_svg"
           )
         },
@@ -461,7 +461,7 @@ Framework <- R6::R6Class(
         {
           if (is.null(self$master_svg)) {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "master_svg is not set; skipping modify_adjusted_svg()."
               ),
               origin = "Framework$modify_adjusted_svg"
@@ -475,7 +475,7 @@ Framework <- R6::R6Class(
               nrow(self$master_objectives_schema) == 0
           ) {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "master_objectives_schema is not set; skipping modify_adjusted_svg()."
               ),
               origin = "Framework$modify_adjusted_svg"
@@ -485,7 +485,7 @@ Framework <- R6::R6Class(
 
           phrutils::phr_assert(
             "objective_code" %in% names(self$master_objectives_schema),
-            message = phr_txt(
+            message = private$..phr_txt(
               "master_objectives_schema must contain an 'objective_code' column for modify_adjusted_svg()."
             ),
             origin = "Framework$modify_adjusted_svg"
@@ -573,7 +573,7 @@ Framework <- R6::R6Class(
           self$adjusted_svg <- svg
           private$..touch()
           phrutils::phr_message(
-            phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
+            private$..phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
             origin = "Framework$modify_adjusted_svg"
           )
         },
@@ -608,7 +608,7 @@ Framework <- R6::R6Class(
             is.character(version) &&
               length(version) == 1 &&
               version %in% c("adjusted", "master"),
-            message = phr_txt("version must be 'adjusted' or 'master'."),
+            message = private$..phr_txt("version must be 'adjusted' or 'master'."),
             origin = "Framework$render_framework_svg"
           )
           svg_content <- if (version == "master") {
@@ -618,7 +618,7 @@ Framework <- R6::R6Class(
           }
           phrutils::phr_assert(
             !is.null(svg_content) && nzchar(svg_content),
-            message = phr_txt(
+            message = private$..phr_txt(
               "No SVG content available. Call modify_adjusted_schema() or set_master_svg() first."
             ),
             origin = "Framework$render_framework_svg"
@@ -635,12 +635,12 @@ Framework <- R6::R6Class(
             grid::grid.newpage()
             grid::grid.raster(native_raster)
             phrutils::phr_message(
-              phr_txt("Framework SVG rendered to the active graphics device."),
+              private$..phr_txt("Framework SVG rendered to the active graphics device."),
               origin = "Framework$render_framework_svg"
             )
           } else {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "Packages 'rsvg' and 'grid' are required to display the SVG in the plots window. SVG written to: {tmp_svg}"
               ),
               origin = "Framework$render_framework_svg"
@@ -685,7 +685,7 @@ Framework <- R6::R6Class(
             !is.null(self$master_objectives_schema) &&
               is.data.frame(self$master_objectives_schema) &&
               nrow(self$master_objectives_schema) > 0,
-            message = phr_txt(
+            message = private$..phr_txt(
               "master_objectives_schema must be set before calling modify_adjusted_schema()."
             ),
             origin = "Framework$modify_adjusted_schema"
@@ -726,7 +726,7 @@ Framework <- R6::R6Class(
           private$..touch()
 
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Modified objectives schema updated: {nrow(self$modified_objectives_schema)} of {nrow(self$master_objectives_schema)} rows selected."
             ),
             origin = "Framework$modify_adjusted_schema"
@@ -762,7 +762,7 @@ Framework <- R6::R6Class(
               !is.data.frame(self$master_indicator_bank)
           ) {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "master_indicator_bank is not set; skipping modify_indicator_bank()."
               ),
               origin = "Framework$modify_indicator_bank"
@@ -773,7 +773,7 @@ Framework <- R6::R6Class(
           if (is.null(objective_codes) || length(objective_codes) == 0) {
             self$modified_indicator_bank <- self$master_indicator_bank
             phrutils::phr_message(
-              phr_txt(
+              private$..phr_txt(
                 "Modified indicator bank reset to full master ({nrow(self$master_indicator_bank)} rows)."
               ),
               origin = "Framework$modify_indicator_bank"
@@ -783,7 +783,7 @@ Framework <- R6::R6Class(
 
           if (!"objective_code" %in% names(self$master_indicator_bank)) {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "master_indicator_bank does not contain an 'objective_code' column; skipping modify_indicator_bank()."
               ),
               origin = "Framework$modify_indicator_bank"
@@ -799,7 +799,7 @@ Framework <- R6::R6Class(
           ]
           private$..touch()
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
             ),
             origin = "Framework$modify_indicator_bank"

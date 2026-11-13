@@ -74,8 +74,8 @@ DeletionLog <- R6::R6Class(
       results
 
         },
-      step = phrutils::phr_txt("Setting default required columns and schema - DeletionLog$initialize"),
-      hint = phrutils::phr_txt("check for improper inputs for required columns or schema.")
+      step = private$..phr_txt("Setting default required columns and schema - DeletionLog$initialize"),
+      hint = private$..phr_txt("check for improper inputs for required columns or schema.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -96,8 +96,8 @@ DeletionLog <- R6::R6Class(
       )
 
         },
-      step = phrutils::phr_txt("Super initialize - DeletionLog$initialize"),
-      hint = phrutils::phr_txt("check for improper inputs for required columns or schema.")
+      step = private$..phr_txt("Super initialize - DeletionLog$initialize"),
+      hint = private$..phr_txt("check for improper inputs for required columns or schema.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -198,7 +198,7 @@ DeletionLog <- R6::R6Class(
           results
         },
         step = paste0("Post-validate setup - ", private$..log_name, "$validate_dl_against_dataset"),
-        hint =  phrutils::phr_txt("Check that data_obj is a valid Data object and that the specified stage exists in the dataset.")
+        hint =  private$..phr_txt("Check that data_obj is a valid Data object and that the specified stage exists in the dataset.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -218,7 +218,7 @@ DeletionLog <- R6::R6Class(
 
             phrutils::phr_warning(
               "DeletionLog",
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "The following UUIDs in deletion log do not exist in dataset: {paste(missing_uuid, collapse=', ')}"
               )
             )
@@ -317,7 +317,7 @@ DeletionLog <- R6::R6Class(
 
           phrutils::phr_warning(
             private$..log_name,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Deletion log contains missing or empty values in: {paste(incomplete_cols, collapse=', ')}."
             )
           )
@@ -326,7 +326,7 @@ DeletionLog <- R6::R6Class(
         issues
       },
       step = paste0("Deletion-log specific completeness - ", private$..log_name, "$validate"),
-      hint = phrutils::phr_txt("check for missing/empty values in required fields (uuid, issue)")
+      hint = private$..phr_txt("check for missing/empty values in required fields (uuid, issue)")
       )
       if (phrutils::phr_failed(result)) {
         return(result)

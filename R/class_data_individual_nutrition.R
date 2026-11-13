@@ -36,7 +36,7 @@ NutritionIndividualData <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Starting initialization for NutritionIndividualData object {dataset_name}.")
+          message = private$..phr_txt("Starting initialization for NutritionIndividualData object {dataset_name}.")
         )
 
         nutrition_map <- list(
@@ -56,8 +56,8 @@ NutritionIndividualData <- R6::R6Class(
               hh_uuid = if (is.null(hh_uuid)) {nutrition_map$hh_uuid} else {hh_uuid}
             )
           },
-          step = phrutils::phr_txt("Super initialize of NutritionIndividualData"),
-          hint = phrutils::phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
+          step = private$..phr_txt("Super initialize of NutritionIndividualData"),
+          hint = private$..phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -68,8 +68,8 @@ NutritionIndividualData <- R6::R6Class(
           {
             private$..map_schema_vars(stage = "raw")
           },
-          step = phrutils::phr_txt("Map schema vars for NutritionIndividualData"),
-          hint = phrutils::phr_txt("Check variable schema, variable or value maps.")
+          step = private$..phr_txt("Map schema vars for NutritionIndividualData"),
+          hint = private$..phr_txt("Check variable schema, variable or value maps.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -79,7 +79,7 @@ NutritionIndividualData <- R6::R6Class(
           log = TRUE,
           touch = TRUE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Initialization for {dataset_name} as NutritionIndividualData object completed successfully.")
+          message = private$..phr_txt("Initialization for {dataset_name} as NutritionIndividualData object completed successfully.")
         )
       }, on_error = "abort", origin = "NutritionIndividualData$initialize")
     }

@@ -71,7 +71,7 @@ WomanDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("Started initialization for {dataset_name}.")
+        message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
       super$initialize(
@@ -92,7 +92,7 @@ WomanDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("{dataset_name} initialized successfully.")
+        message = private$..phr_txt("{dataset_name} initialized successfully.")
       )
     }
   ),

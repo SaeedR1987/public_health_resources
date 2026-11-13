@@ -70,7 +70,7 @@ WASHDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("Started initialization for {dataset_name}.")
+        message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
       # Step 1: Set super initialize
@@ -92,8 +92,8 @@ WASHDataAnalytics <- R6::R6Class(
           )
 
         },
-      step = phrutils::phr_txt("Super initialize in {dataset_name}"),
-      hint = phrutils::phr_txt("Check the parent DataAnalytics class")
+      step = private$..phr_txt("Super initialize in {dataset_name}"),
+      hint = private$..phr_txt("Check the parent DataAnalytics class")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -112,8 +112,8 @@ WASHDataAnalytics <- R6::R6Class(
             self$set(field = "..linked_containers_value_label", value = linked_containers_value_label)
           }
         },
-      step = phrutils::phr_txt("Loading WASH specific fields in initialize"),
-      hint = phrutils::phr_txt("Check water container data and inputs")
+                  step = private$..phr_txt("Loading WASH specific fields in initialize"),
+                  hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -126,8 +126,8 @@ WASHDataAnalytics <- R6::R6Class(
             private$..initialize_load_schemas_wash()
           }
         },
-        step = phrutils::phr_txt("Loading WASH specific fields in initialize"),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+                    step = private$..phr_txt("Loading WASH specific fields in initialize"),
+                    hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -141,7 +141,7 @@ WASHDataAnalytics <- R6::R6Class(
           self$set(field = "..data_analysis_plan_water_container",
                    value = QuantDataAnalysisPlanLog$new(
                      log_df   = NULL,
-                     log_name = phrutils::phr_txt("Quant Data Analysis Plan (Water Container)")
+                     log_name = private$..phr_txt("Quant Data Analysis Plan (Water Container)")
                    ))
 
           # Build the DAP for roster dataset from available columns and analysis_schema_roster
@@ -158,8 +158,8 @@ WASHDataAnalytics <- R6::R6Class(
 
           }
         },
-        step = phrutils::phr_txt("Create water container specific data analysis plan"),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+        step = private$..phr_txt("Create water container specific data analysis plan"),
+        hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -182,24 +182,24 @@ WASHDataAnalytics <- R6::R6Class(
                      ))
           }
         },
-        step = phrutils::phr_txt("Create survey design objects for water containers."),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+        step = private$..phr_txt("Create survey design objects for water containers."),
+        hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
       }
 
       if (!is.null(linked_containers_data)) {
-        msg <- "{dataset_name} initialized successfully with linked water container data."
+        msg <- private$..phr_txt("{dataset_name} initialized successfully with linked water container data.")
       } else {
-        msg <- "{dataset_name} initialized successfully."
+        msg <- private$..phr_txt("{dataset_name} initialized successfully.")
       }
 
       private$..touch(
         log = TRUE,
         touch = TRUE,
         name = dataset_name,
-        message = phrutils::phr_txt(msg)
+        message = msg
       )
 
     }
@@ -390,7 +390,7 @@ WASHDataAnalytics <- R6::R6Class(
             data_analysis_plan = "..data_analysis_plan_water_container"
           )
         } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked water container data present but data_analysis_plan_water_container is empty. Skipping water container analysis."))
+          phrutils::phr_message(origin, private$..phr_txt("Linked water container data present but data_analysis_plan_water_container is empty. Skipping water container analysis."))
         }
       }
 

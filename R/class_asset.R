@@ -30,6 +30,8 @@ Asset <- R6::R6Class(
 
       private$..name <- if (is.null(name)) {"NewObject"} else {name}
 
+      private$..load_translations()
+
       self$set(field = "..metadata",
                value = list(
                  created_datetime = timestamp,
@@ -41,7 +43,7 @@ Asset <- R6::R6Class(
       private$..touch(log = TRUE,
                       touch = TRUE,
                       name = name,
-                      message = phrutils::phr_txt("Initialization for completed successfully."))
+                      message = private$..phr_txt("Initialization for completed successfully."))
 
       },
       on_error = "abort",
@@ -142,7 +144,7 @@ Asset <- R6::R6Class(
           if (!field %in% allowed_fields) {
             phrutils::phr_error(
               "Asset$get",
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "{private$..field_error_message(field, allowed_fields, 'accessible')}"
               )
             )
@@ -159,7 +161,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phrutils::phr_txt("member must be a non-empty character string."),
+              message = private$..phr_txt("member must be a non-empty character string."),
               origin = "Asset$get"
             )
             private$..resolve_member_value(target, member)
@@ -167,7 +169,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             !is.function(out),
-            message = phrutils::phr_txt(
+            message = private$..phr_txt(
               "Member '{member}' resolves to a function; use call() instead of get()."
             ),
             origin = "Asset$get"
@@ -227,7 +229,7 @@ Asset <- R6::R6Class(
           if (!field %in% allowed_fields) {
             phrutils::phr_error(
               "Asset$call",
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "{private$..field_error_message(field, allowed_fields, 'accessible')}"
               )
             )
@@ -244,7 +246,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phrutils::phr_txt("member must be a non-empty character string."),
+              message = private$..phr_txt("member must be a non-empty character string."),
               origin = "Asset$call"
             )
             private$..resolve_member_value(target, member)
@@ -252,7 +254,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             is.function(value),
-            message = phrutils::phr_txt(
+            message = private$..phr_txt(
               "Member '{member}' does not resolve to a function; use get() instead of call()."
             ),
             origin = "Asset$call"
@@ -327,7 +329,7 @@ Asset <- R6::R6Class(
           if (!field %in% allowed_fields) {
             phrutils::phr_error(
               "Asset$set",
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "{private$..field_error_message(field, allowed_fields, 'settable')}"
               )
             )
@@ -335,7 +337,7 @@ Asset <- R6::R6Class(
 
           phrutils::phr_assert(
             !(is.null(role) && !is.null(role2)),
-            message = phrutils::phr_txt(
+            message = private$..phr_txt(
               "Cannot provide 2nd level list element (role2) without a 1st level list element (role)."
             ),
             origin = "Asset$set"
@@ -369,7 +371,7 @@ Asset <- R6::R6Class(
             if (!is.null(role2)) {
               phrutils::phr_assert(
                 is.null(level1) || is.list(level1),
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "role2 can only be resolved from a list returned by role."
                 ),
                 origin = "Asset$set"
@@ -396,7 +398,7 @@ Asset <- R6::R6Class(
           if (is.null(member)) {
             phrutils::phr_assert(
               !is.function(target),
-              message = phrutils::phr_txt(
+              message = private$..phr_txt(
                 "Refusing to overwrite function member '{field}'."
               ),
               origin = "Asset$set"
@@ -405,7 +407,7 @@ Asset <- R6::R6Class(
           } else {
             phrutils::phr_assert(
               is.character(member) && length(member) == 1L && nzchar(member),
-              message = phrutils::phr_txt("member must be a non-empty character string."),
+              message = private$..phr_txt("member must be a non-empty character string."),
               origin = "Asset$set"
             )
 
@@ -418,7 +420,7 @@ Asset <- R6::R6Class(
 
             phrutils::phr_assert(
               is.list(target) || is.environment(target),
-              message = phrutils::phr_txt(
+              message = private$..phr_txt(
                 "Resolved target for field '{field}' must be a list or environment to set member '{member}'."
               ),
               origin = "Asset$set"
@@ -437,7 +439,7 @@ Asset <- R6::R6Class(
               # by attempting to add a new binding to a locked environment.
               phrutils::phr_assert(
                 !is.function(private$..resolve_member_value(target, member)),
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Refusing to overwrite function member '{member}'."
                 ),
                 origin = "Asset$set"
@@ -446,7 +448,7 @@ Asset <- R6::R6Class(
             } else {
               phrutils::phr_assert(
                 !is.function(target[[member]]),
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Refusing to overwrite function member '{member}'."
                 ),
                 origin = "Asset$set"
@@ -484,7 +486,7 @@ Asset <- R6::R6Class(
               log = TRUE,
               touch = TRUE,
               name = private$..name,
-              message = phrutils::phr_txt("Started initialization for {private$..name} as Data object.")
+              message = private$..phr_txt("Started initialization for {private$..name} as Data object.")
             )
           }
         },
@@ -500,6 +502,131 @@ Asset <- R6::R6Class(
     # @field name Character name of the Asset object.
     # @keywords internal
     ..name = NULL,
+
+    # @field ..lang Character code of the currently selected language
+    #   (default "en"), used by `..phr_txt()`.
+    # @keywords internal
+    ..lang = "en",
+
+    # @field ..translations Lazily loaded translations list (language ->
+    #   key -> text) read from `resources/translations.json`.
+    # @keywords internal
+    ..translations = NULL,
+
+    # @description Load the translations JSON from the package resources
+    #   folder into `..translations`. Called once from `initialize()`; stores
+    #   an empty English table if the file is unavailable.
+    # @return Invisibly returns `NULL`.
+    # @keywords internal
+    ..load_translations = function() {
+      path <- system.file("resources", "translations.json", package = "phr")
+      private$..translations <- if (nzchar(path)) {
+        jsonlite::fromJSON(path, simplifyVector = FALSE)
+      } else {
+        list(en = list())
+      }
+      invisible(NULL)
+    },
+
+    # @description Append translations from an additional JSON file (same
+    #   structure as `translations.json`: language -> key -> text) to
+    #   `..translations`. Intended for subclasses defined in other packages.
+    # @param path Full path to the JSON file. If `NULL`, `package` and `file`
+    #   are used with `system.file()`.
+    # @param package Package name containing the file (used when `path` is
+    #   `NULL`).
+    # @param file File name inside the package `resources` folder (default
+    #   "translations.json").
+    # @param overwrite Logical; if `TRUE` (default) new entries replace
+    #   existing ones with the same language and key.
+    # @return Invisibly returns `NULL`.
+    # @keywords internal
+    ..append_translations = function(
+      path = NULL,
+      package = NULL,
+      file = "translations.json",
+      overwrite = TRUE
+    ) {
+      if (is.null(path)) {
+        if (is.null(package)) {
+          rlang::abort("Provide either `path` or `package`.")
+        }
+        path <- system.file("resources", file, package = package)
+      }
+      if (!is.character(path) || length(path) != 1 || !nzchar(path) || !file.exists(path)) {
+        rlang::abort(paste0("Translations file not found: ", paste(path, collapse = "")))
+      }
+      new_tr <- jsonlite::fromJSON(path, simplifyVector = FALSE)
+      if (is.null(private$..translations)) {
+        private$..load_translations()
+      }
+      for (lang in names(new_tr)) {
+        current <- private$..translations[[lang]]
+        if (is.null(current)) {
+          current <- list()
+        }
+        add <- new_tr[[lang]]
+        if (!overwrite) {
+          add <- add[setdiff(names(add), names(current))]
+        }
+        current[names(add)] <- add
+        private$..translations[[lang]] <- current
+      }
+      invisible(NULL)
+    },
+
+    # @description Convert text to a translation lookup key.
+    # @param text Character string.
+    # @return Character lookup key.
+    # @keywords internal
+    ..phr_text_to_key = function(text) {
+      if (is.null(text) || text == "") {
+        return("")
+      }
+      key <- tolower(text)
+      key <- gsub("[^a-z0-9]", " ", key)
+      key <- gsub("\\s+", "_", trimws(key))
+      key <- gsub("^_+|_+$", "", key)
+      if (nchar(key) > 0 && grepl("^[0-9]", key)) {
+        key <- paste0("txt_", key)
+      }
+      if (nchar(key) > 100) {
+        char_sum <- sum(utf8ToInt(text))
+        hash_suffix <- sprintf("%x", char_sum %% 65536)
+        key <- paste0(substr(key, 1, 90), "_", hash_suffix)
+      }
+      key
+    },
+
+    # @description Translate text using the translations JSON, falling back to
+    #   English, then `default`, then the marked key. Glue expressions are
+    #   evaluated in the caller's environment.
+    # @param key Character text (English) used to look up the translation.
+    # @param lang Optional language code; defaults to the object's language.
+    # @param default Optional fallback text.
+    # @return Character string.
+    # @keywords internal
+    ..phr_txt = function(key, lang = NULL, default = NULL) {
+      if (is.null(private$..translations)) {
+        private$..load_translations()
+      }
+      translations <- private$..translations
+      if (is.null(lang)) {
+        lang <- private$..lang
+      }
+      if (is.null(lang) || !lang %in% names(translations)) {
+        lang <- "en"
+      }
+      lookup_key <- private$..phr_text_to_key(key)
+      value <- translations[[lang]][[lookup_key]]
+      if (is.null(value) && lang != "en") {
+        value <- translations[["en"]][[lookup_key]]
+      }
+      if (is.null(value) || value == "") {
+        value <- if (is.null(default)) paste0("\u29EB", key, "\u29EB") else default
+      }
+      as.character(glue::glue(value, .envir = parent.frame()))
+    },
 
     # @field ..metadata List containing private asset metadata, including
     #   `created_datetime`, `modified_datetime`, `version`, and `hash_id`.
@@ -664,6 +791,8 @@ Asset <- R6::R6Class(
     ..allowed_get_fields = function() {
       c(
         "..name",
+        "..lang",
+        "..translations",
         "..metadata",
         "..change_log",
         private$..additional_get_fields()
@@ -721,6 +850,8 @@ Asset <- R6::R6Class(
     ..allowed_set_fields = function() {
       c(
         "..name",
+        "..lang",
+        "..translations",
         "..metadata",
         "..change_log",
         private$..additional_set_fields()
@@ -768,12 +899,12 @@ Asset <- R6::R6Class(
       ) {
         phrutils::phr_assert(
           is.character(field) && length(field) == 1L && nzchar(field),
-          message = phrutils::phr_txt("field must be a non-empty character string."),
+          message = private$..phr_txt("field must be a non-empty character string."),
           origin = "Asset$sync_state"
         )
         phrutils::phr_assert(
           is.character(member) && length(member) == 1L && nzchar(member),
-          message = phrutils::phr_txt("member must be a non-empty character string."),
+          message = private$..phr_txt("member must be a non-empty character string."),
           origin = "Asset$sync_state"
         )
         target <- private$..resolve_nested_target(
@@ -782,7 +913,7 @@ Asset <- R6::R6Class(
         )
         phrutils::phr_assert(
           !is.null(target[[member]]),
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "Member '{member}' does not exist on the resolved target."
           ),
           origin = "Asset$sync_state"
@@ -868,7 +999,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         !(is.null(role) && !is.null(role2)),
-        message = phrutils::phr_txt("Cannot provide 2nd level list element (role2) without a 1st level list element (role)."),
+        message = private$..phr_txt("Cannot provide 2nd level list element (role2) without a 1st level list element (role)."),
         origin = "Asset$.resolve_nested_target"
       )
 
@@ -889,7 +1020,7 @@ Asset <- R6::R6Class(
       if (!is.null(role2)) {
         phrutils::phr_assert(
           is.list(target),
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "role2 can only be resolved from a list returned by role."
           ),
           origin = "Asset$..resolve_nested_target"
@@ -950,7 +1081,7 @@ Asset <- R6::R6Class(
     ) {
       phrutils::phr_assert(
         is.null(container) || is.list(container),
-        message = phrutils::phr_txt(
+        message = private$..phr_txt(
           "Field '{field}' must be a list when resolving role."
         ),
         origin = origin
@@ -960,7 +1091,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         is.character(role) && length(role) == 1L && nzchar(role),
-        message = phrutils::phr_txt(
+        message = private$..phr_txt(
           "role must be a non-empty character string when provided."
         ),
         origin = origin
@@ -972,7 +1103,7 @@ Asset <- R6::R6Class(
         }
         phrutils::phr_assert(
           FALSE,
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "Field '{field}' has no named elements for role-based lookup."
           ),
           origin = origin
@@ -1001,7 +1132,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         !(length(idx) > 1L),
-        message = phrutils::phr_txt(
+        message = private$..phr_txt(
           "Role '{role}' matched multiple elements in field '{field}'."
         ),
         origin = origin
@@ -1013,7 +1144,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         FALSE,
-        message = phrutils::phr_txt(
+        message = private$..phr_txt(
           "Role '{role}' was not found in field '{field}'."
         ),
         origin = origin
@@ -1033,7 +1164,7 @@ Asset <- R6::R6Class(
     ..resolve_field_scope = function(field, origin = "Asset$set") {
       phrutils::phr_assert(
         is.character(field) && length(field) == 1L && nzchar(field),
-        message = phrutils::phr_txt("field must be a non-empty character string."),
+        message = private$..phr_txt("field must be a non-empty character string."),
         origin = origin
       )
 
@@ -1046,7 +1177,7 @@ Asset <- R6::R6Class(
 
       phrutils::phr_assert(
         FALSE,
-        message = phrutils::phr_txt(
+        message = private$..phr_txt(
           "Field '{field}' is not available on this object."
         ),
         origin = origin
@@ -1131,7 +1262,7 @@ Asset <- R6::R6Class(
         is.character(target_field) &&
           length(target_field) == 1L &&
           nzchar(target_field),
-        message = phr_txt("target_field must be a non-empty character string."),
+        message = private$..phr_txt("target_field must be a non-empty character string."),
         origin = "Asset$.assign_sync_value"
       )
 
@@ -1139,7 +1270,7 @@ Asset <- R6::R6Class(
       path <- path[nzchar(path)]
       phrutils::phr_assert(
         length(path) >= 1L,
-        message = phr_txt("target_field path is invalid."),
+        message = private$..phr_txt("target_field path is invalid."),
         origin = "Asset$.assign_sync_value"
       )
 

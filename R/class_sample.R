@@ -172,7 +172,7 @@ Sample <- R6::R6Class(
 
       phrutils::phr_assert(
         !is.null(sampling_method_site),
-        message = phr_txt("sampling_method_site is required."),
+        message = private$..phr_txt("sampling_method_site is required."),
         origin = "Sample$add_stratum"
       )
 
@@ -187,7 +187,7 @@ Sample <- R6::R6Class(
       )
       phrutils::phr_assert(
         sampling_method_site %in% site_selection_methods,
-        message = phr_txt(
+        message = private$..phr_txt(
           "sampling_method_site must be one of: {paste(site_selection_methods, collapse=', ')}."
         ),
         origin = "Sample$add_stratum"
@@ -196,7 +196,7 @@ Sample <- R6::R6Class(
       # if (sampling_method_site %in% site_selection_methods) {
       #   phrutils::phr_assert(
       #     !is.null(n_sites) && !is.na(n_sites),
-      #     message = phr_txt(
+      #     message = private$..phr_txt(
       #       "n_sites is required for sampling_method '{sampling_method_site}'."
       #     ),
       #     origin = "Sample$add_stratum"
@@ -228,11 +228,11 @@ Sample <- R6::R6Class(
           stratum_id %in% self$sample_table$stratum_id
       ) {
         phrutils::phr_warning(
-          message = phr_txt(
+          message = private$..phr_txt(
             "Stratum ID '{stratum_id}' already exists and will be overwritten."
           ),
           origin = "Sample$add_stratum",
-          hint = phr_txt(
+          hint = private$..phr_txt(
             "The existing row for '{stratum_id}' will be replaced with new values."
           )
         )
@@ -295,11 +295,11 @@ Sample <- R6::R6Class(
       } else {
         if (stratum_id %in% self$sample_table$stratum_id) {
           phrutils::phr_warning(
-            message = phr_txt(
+            message = private$..phr_txt(
               "Stratum ID '{stratum_id}' already exists and will be overwritten."
             ),
             origin = "Sample$add_stratum",
-            hint = phr_txt(
+            hint = private$..phr_txt(
               "The existing row for '{stratum_id}' has been replaced with the new values."
             )
           )
@@ -323,7 +323,7 @@ Sample <- R6::R6Class(
         is.character(strata_name) &&
           length(strata_name) == 1L &&
           nzchar(strata_name),
-        message = phr_txt(
+        message = private$..phr_txt(
           "strata_name must be a single non-empty character value."
         ),
         origin = "Sample$remove_stratum"
@@ -337,7 +337,7 @@ Sample <- R6::R6Class(
       stratum_col <- private$..resolve_stratum_name_col(st)
       phrutils::phr_assert(
         !is.null(stratum_col),
-        message = phr_txt(
+        message = private$..phr_txt(
           "sample_table does not contain a stratum name column."
         ),
         origin = "Sample$remove_stratum"
@@ -362,7 +362,7 @@ Sample <- R6::R6Class(
     calculate_sample_sizes = function() {
       phrutils::phr_assert(
         !is.null(self$sample_table) && nrow(self$sample_table) > 0,
-        message = phr_txt("sample_table is empty. Call add_stratum() first."),
+        message = private$..phr_txt("sample_table is empty. Call add_stratum() first."),
         origin = "Sample$calculate_sample_sizes"
       )
       self$sample_table <- calculate_sample_size_strata_table(self$sample_table)

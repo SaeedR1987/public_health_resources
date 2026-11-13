@@ -107,7 +107,7 @@ DataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
+        message = private$..phr_txt("Starting initialization for {dataset_name}.")
       )
 
       # Step 1: Super-initialize
@@ -115,8 +115,8 @@ DataAnalytics <- R6::R6Class(
         {
           super$initialize()
         },
-        step = phrutils::phr_txt("Check raw data"),
-        hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+        step = private$..phr_txt("Check raw data"),
+        hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -138,8 +138,8 @@ DataAnalytics <- R6::R6Class(
             origin = origin
           )
         },
-        step = phrutils::phr_txt("Set initial fields for DataAnalytics class"),
-        hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
+        step = private$..phr_txt("Set initial fields for DataAnalytics class"),
+        hint = private$..phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -150,8 +150,8 @@ DataAnalytics <- R6::R6Class(
         {
           private$..initialize_load_schemas()
         },
-        step = phrutils::phr_txt("Load default quality, analysis, and outputs schemas"),
-        hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
+        step = private$..phr_txt("Load default quality, analysis, and outputs schemas"),
+        hint = private$..phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -165,8 +165,8 @@ DataAnalytics <- R6::R6Class(
             self$set(field = "..survey_design", value = private$..create_survey_design())
           }
         },
-        step = phrutils::phr_txt("Creating base and full survey design objects."),
-        hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
+        step = private$..phr_txt("Creating base and full survey design objects."),
+        hint = private$..phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -177,8 +177,8 @@ DataAnalytics <- R6::R6Class(
         {
           private$..initialize_populate_dap(dap)
         },
-        step = phrutils::phr_txt("Creating base and full survey design objects."),
-        hint = phrutils::phr_txt("Check content, location, and filepath names for schemas.")
+        step = private$..phr_txt("Creating base and full survey design objects."),
+        hint = private$..phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -188,7 +188,7 @@ DataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = TRUE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt(paste0(origin, " Initialization complete."))
+        message = paste0(origin, private$..phr_txt(" Initialization complete."))
       )
 
       invisible(self)
@@ -234,7 +234,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt(paste0(private$..dataset_name, " Initialization complete."))
+            message = paste0(private$..dataset_name, private$..phr_txt(" Initialization complete."))
           )
 
           # Step 1: Get sets from pre run quality checks
@@ -253,8 +253,8 @@ DataAnalytics <- R6::R6Class(
               sets
 
             },
-            step = phrutils::phr_txt("Getting sets of parameters for quality checks."),
-            hint = phrutils::phr_txt("Check set parameters in ..pre_run_quality_checks")
+            step = private$..phr_txt("Getting sets of parameters for quality checks."),
+            hint = private$..phr_txt("Check set parameters in ..pre_run_quality_checks")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -269,8 +269,8 @@ DataAnalytics <- R6::R6Class(
                 sets = sets
               )
             },
-            step = phrutils::phr_txt("Run quality checks for sets."),
-            hint = phrutils::phr_txt("Check the parameters for each set.")
+            step = private$..phr_txt("Run quality checks for sets."),
+            hint = private$..phr_txt("Check the parameters for each set.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -290,8 +290,8 @@ DataAnalytics <- R6::R6Class(
                          all_results[[1]]
                        })
             },
-            step = phrutils::phr_txt("store quality checks results."),
-            hint = phrutils::phr_txt("Check the parameters for each set.")
+            step =             private$..phr_txt("store quality checks results."),
+            hint = private$..phr_txt("Check the parameters for each set.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -301,7 +301,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Run quality checks complete. Ran {length(combined_results)} quality checks for {private$..dataset_name}.")
+            message = private$..phr_txt("Run quality checks complete. Ran {length(combined_results)} quality checks for {private$..dataset_name}.")
           )
 
           invisible(self$plausibility_results)
@@ -355,7 +355,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Starting run_outputs...")
+            message = private$..phr_txt("Starting run_outputs...")
           )
 
           # Step 1: Pre run outputs hook for specified sets
@@ -363,8 +363,8 @@ DataAnalytics <- R6::R6Class(
             {
               private$..pre_run_outputs()
             },
-            step = phrutils::phr_txt("get sets of parameters for run_outputs."),
-            hint = phrutils::phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
+            step =             private$..phr_txt("get sets of parameters for run_outputs."),
+            hint = private$..phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -374,7 +374,7 @@ DataAnalytics <- R6::R6Class(
 
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
-              message = phrutils::phr_txt("pre_run_outputs() returned no input sets."),
+              message = private$..phr_txt("pre_run_outputs() returned no input sets."),
               origin = private$..dataset_name
             )
             return(invisible(list(
@@ -406,8 +406,8 @@ DataAnalytics <- R6::R6Class(
               }
 
             },
-            step = phrutils::phr_txt("process output sets."),
-            hint = phrutils::phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
+            step =             private$..phr_txt("process output sets."),
+            hint = private$..phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -417,7 +417,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s).")
+            message = private$..phr_txt("run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s).")
           )
 
           invisible(list(
@@ -459,7 +459,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Starting add_all_to_dap for {private$..dataset_name}")
+            message = private$..phr_txt("Starting add_all_to_dap for {private$..dataset_name}")
           )
 
           # Step 1: Retrieve parameter sets for add_all_to_dap
@@ -467,8 +467,8 @@ DataAnalytics <- R6::R6Class(
             {
               private$..pre_add_all_to_dap()
             },
-            step = phrutils::phr_txt("process add_all_to_dap sets."),
-            hint = phrutils::phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+            step = private$..phr_txt("process add_all_to_dap sets."),
+            hint = private$..phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -479,7 +479,7 @@ DataAnalytics <- R6::R6Class(
           if (is.null(sets) || length(sets) == 0) {
             phrutils::phr_warning(
               origin,
-              phrutils::phr_txt("..pre_add_all_to_dap() returned no field sets. Nothing to do.")
+              private$..phr_txt("..pre_add_all_to_dap() returned no field sets. Nothing to do.")
             )
             return(invisible(self))
           }
@@ -498,8 +498,8 @@ DataAnalytics <- R6::R6Class(
                 private$..add_all_to_dap_single(sets[[i]], set_name, origin)
               }
             },
-            step = phrutils::phr_txt("process add_all_to_dap sets."),
-            hint = phrutils::phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+            step = private$..phr_txt("process add_all_to_dap sets."),
+            hint = private$..phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -509,13 +509,13 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Completing add_all_to_dap for {private$..dataset_name}")
+            message = private$..phr_txt("Completing add_all_to_dap for {private$..dataset_name}")
           )
 
         },
         on_error = "warn",
         origin = origin,
-        hint = phrutils::phr_txt("Check that pre_add_all_to_dap() returns valid field-name sets.")
+        hint = private$..phr_txt("Check that pre_add_all_to_dap() returns valid field-name sets.")
       )
 
       invisible(self)
@@ -545,7 +545,7 @@ DataAnalytics <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt(paste0(origin, ". Running analysis plan for {private$..dataset_name}"))
+          message = paste0(origin, private$..phr_txt(". Running analysis plan for {private$..dataset_name}"))
         )
 
         # Step 1: Retrieve parameter sets for analysis
@@ -553,8 +553,8 @@ DataAnalytics <- R6::R6Class(
           {
             private$..pre_run_analysis()
           },
-          step = phrutils::phr_txt("retrieving parameter sets from pre_run_analysis."),
-          hint = phrutils::phr_txt("check subclass specific sets for run_analysis defined in pre_run_analysis hook.")
+          step =           private$..phr_txt("retrieving parameter sets from pre_run_analysis."),
+          hint = private$..phr_txt("check subclass specific sets for run_analysis defined in pre_run_analysis hook.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -563,7 +563,7 @@ DataAnalytics <- R6::R6Class(
       sets <- result
 
       if (is.null(sets) || length(sets) == 0) {
-        phrutils::phr_error(origin, phrutils::phr_txt("pre_run_analysis() returned no input sets."))
+        phrutils::phr_error(origin, private$..phr_txt("pre_run_analysis() returned no input sets."))
         return(invisible(self))
       }
 
@@ -599,8 +599,8 @@ DataAnalytics <- R6::R6Class(
             all_results[[1]] %||% list(survey_design = NULL, base = NULL)
           }
         },
-        step = phrutils::phr_txt("process add_all_to_dap sets."),
-        hint = phrutils::phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+        step = private$..phr_txt("process add_all_to_dap sets."),
+        hint = private$..phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -612,8 +612,8 @@ DataAnalytics <- R6::R6Class(
           # Call the post-analysis hook so subclasses can perform additional steps.
           private$..post_run_analysis()
         },
-        step = phrutils::phr_txt("process add_all_to_dap sets."),
-        hint = phrutils::phr_txt("check subclass specific post run analysis hook.")
+        step =         private$..phr_txt("process add_all_to_dap sets."),
+                hint = private$..phr_txt("check subclass specific post run analysis hook.")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -623,7 +623,7 @@ DataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = TRUE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt(paste0(origin, ". Analysis completed successfully for {private$..dataset_name}"))
+        message = paste0(origin, private$..phr_txt(". Analysis completed successfully for {private$..dataset_name}"))
       )
 
       })
@@ -658,8 +658,8 @@ DataAnalytics <- R6::R6Class(
                 origin = origin
               )
             },
-            step = phrutils::phr_txt("Setup for quality diagnose"),
-            hint = phrutils::phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Setup for quality diagnose"),
+            hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (!is.data.frame(result) && phrutils::phr_failed(result)) {
             return(result)
@@ -695,8 +695,8 @@ DataAnalytics <- R6::R6Class(
               rows
 
             },
-            step = phrutils::phr_txt("Setup for quality diagnose"),
-            hint = phrutils::phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Setup for quality diagnose"),
+            hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -731,7 +731,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+            message = private$..phr_txt("quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
 
           invisible(result)
@@ -764,7 +764,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Starting analysis_diagnose for {private$..dataset_name}.")
+            message = private$..phr_txt("Starting analysis_diagnose for {private$..dataset_name}.")
           )
 
           # Step 1: Analysis diagnose setup
@@ -774,8 +774,8 @@ DataAnalytics <- R6::R6Class(
                 origin = origin
               )
             },
-            step = phrutils::phr_txt("Setup for quality diagnose"),
-            hint = phrutils::phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Setup for quality diagnose"),
+            hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -807,8 +807,8 @@ DataAnalytics <- R6::R6Class(
 
               rows
             },
-            step = phrutils::phr_txt("Setup for quality diagnose"),
-            hint = phrutils::phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Setup for quality diagnose"),
+            hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -823,8 +823,8 @@ DataAnalytics <- R6::R6Class(
               self$set(field = "..analysis_plan_issues_log", value = result)
               result
             },
-            step = phrutils::phr_txt("Setup for quality diagnose"),
-            hint = phrutils::phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Setup for quality diagnose"),
+            hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (!is.data.frame(result) && phrutils::phr_failed(result)) {
             return(result)
@@ -836,7 +836,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+            message = private$..phr_txt("analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
           invisible(result)
         },
@@ -866,7 +866,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Starting outputs diagnose...")
+            message = private$..phr_txt("Starting outputs diagnose...")
           )
 
           # Step 1: Setup steps for outputs diagnose
@@ -874,8 +874,8 @@ DataAnalytics <- R6::R6Class(
             {
               private$..outputs_diagnose_setup()
             },
-            step = phrutils::phr_txt("Setup outputs diagnose"),
-            hint = phrutils::phr_txt(
+            step =             private$..phr_txt("Setup outputs diagnose"),
+            hint = private$..phr_txt(
               "Check outputs schema availability."
             )
           )
@@ -913,8 +913,8 @@ DataAnalytics <- R6::R6Class(
 
               rows
             },
-            step = phrutils::phr_txt("Check output schema rows"),
-            hint = phrutils::phr_txt(
+            step =             private$..phr_txt("Check output schema rows"),
+            hint = private$..phr_txt(
               "Check outputs schema content."
             )
           )
@@ -934,8 +934,8 @@ DataAnalytics <- R6::R6Class(
               self$set(field = "..outputs_issues_log", value = result)
               result
             },
-            step = phrutils::phr_txt("Store outputs diagnose results"),
-            hint = phrutils::phr_txt("Check outputs schema content.")
+            step =             private$..phr_txt("Store outputs diagnose results"),
+            hint = private$..phr_txt("Check outputs schema content.")
           )
           if (!is.data.frame(result) && phrutils::phr_failed(result)) {
             return(result)
@@ -947,7 +947,7 @@ DataAnalytics <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("outputs_diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
+            message = private$..phr_txt("outputs_diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
 
           invisible(result)
@@ -1173,9 +1173,7 @@ DataAnalytics <- R6::R6Class(
                   schema_name,
                   "_schema"
                 ),
-                message = phrutils::phr_txt(
-                  phrutils::phr_txt("Failed to read {paste(filename, collapse = '/')}: {e$message}")
-                )
+                message = private$..phr_txt("Failed to read {paste(filename, collapse = '/')}: {e$message}")
               )
 
               return(NULL)
@@ -1240,22 +1238,22 @@ DataAnalytics <- R6::R6Class(
 
             if (is.null(df_schema)) {
               msg <- paste0(
-                phrutils::phr_txt("The loaded "),
+                private$..phr_txt("The loaded "),
                 schema_name,
-                phrutils::phr_txt(" schema was or coerced to NULL. "),
-                phrutils::phr_txt("A blank valid dataframe was stored instead.")
+                private$..phr_txt(" schema was or coerced to NULL. "),
+                private$..phr_txt("A blank valid dataframe was stored instead.")
               )
             } else {
               msg <- paste0(
-                phrutils::phr_txt("The loaded "),
+                private$..phr_txt("The loaded "),
                 schema_name,
-                phrutils::phr_txt(" schema did not have the correct required columns. "),
-                phrutils::phr_txt("A blank valid dataframe was stored instead.")
+                private$..phr_txt(" schema did not have the correct required columns. "),
+                private$..phr_txt("A blank valid dataframe was stored instead.")
               )
             }
 
             phrutils::phr_warning(
-              message = phrutils::phr_txt(msg),
+              message = msg,
               origin = paste0(
                 dataset_name,
                 "DataAnalytics$loading_",
@@ -1263,9 +1261,9 @@ DataAnalytics <- R6::R6Class(
                 "_schema"
               ),
               hint = paste0(
-                phrutils::phr_txt("Check required columns or format of the "),
+                private$..phr_txt("Check required columns or format of the "),
                 schema_name,
-                phrutils::phr_txt(" schema input file.")
+                private$..phr_txt(" schema input file.")
               )
             )
           }
@@ -1571,7 +1569,7 @@ DataAnalytics <- R6::R6Class(
       ) {
 
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "No quality_schema defined. Cannot diagnose."
           ),
           origin = origin
@@ -1746,7 +1744,7 @@ DataAnalytics <- R6::R6Class(
         issues <- c(
           issues,
           paste0(
-            phrutils::phr_txt("missing variables: "),
+            private$..phr_txt("missing variables: "),
             paste(missing_vars, collapse = ", ")
           )
         )
@@ -1758,7 +1756,7 @@ DataAnalytics <- R6::R6Class(
         issues <- c(
           issues,
           paste0(
-            phrutils::phr_txt("function not found: "),
+            private$..phr_txt("function not found: "),
             "quality_test_",
             statistical_test %||% "NA"
           )
@@ -1770,7 +1768,7 @@ DataAnalytics <- R6::R6Class(
 
         issues <- c(
           issues,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "invalid threshold expression(s)"
           )
         )
@@ -1843,7 +1841,7 @@ DataAnalytics <- R6::R6Class(
       if (is.null(schema_df) || nrow(schema_df) == 0) {
 
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "No analysis schema defined. Cannot diagnose."
           ),
           origin = origin
@@ -1960,7 +1958,7 @@ DataAnalytics <- R6::R6Class(
           paste0(
             "var_name '",
             row$var_name,
-            phrutils::phr_txt("' not found in data")
+            private$..phr_txt("' not found in data")
           )
         )
       }
@@ -1971,7 +1969,7 @@ DataAnalytics <- R6::R6Class(
           paste0(
             "denom_var '",
             row$denom_var,
-            phrutils::phr_txt("' not found in data")
+            private$..phr_txt("' not found in data")
           )
         )
       }
@@ -1980,9 +1978,9 @@ DataAnalytics <- R6::R6Class(
         issues <- c(
           issues,
           paste0(
-            phrutils::phr_txt("disaggregation '"),
+            private$..phr_txt("disaggregation '"),
             row$disaggregation,
-            phrutils::phr_txt("' not found in data")
+            private$..phr_txt("' not found in data")
           )
         )
       }
@@ -1991,7 +1989,7 @@ DataAnalytics <- R6::R6Class(
         issues <- c(
           issues,
           paste0(
-            phrutils::phr_txt("invalid calculation '"),
+            private$..phr_txt("invalid calculation '"),
             row$calculation %||% "NA",
             "'"
           )
@@ -2053,7 +2051,7 @@ DataAnalytics <- R6::R6Class(
       ) {
 
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "No outputs schema defined. Cannot diagnose."
           ),
           origin = paste0(private$..dataset_name, "$..outputs_diagnose_setup")
@@ -2282,7 +2280,7 @@ DataAnalytics <- R6::R6Class(
 
       if (is.null(outputs_schema) || nrow(outputs_schema) == 0) {
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "No outputs defined in outputs schema for '{set_role}'. Skipping."
           ),
           origin = private$..dataset_name
@@ -2297,7 +2295,7 @@ DataAnalytics <- R6::R6Class(
           on_error = "warn",
           origin = paste0(private$..dataset_name, "$run_outputs"),
           hint = paste0(
-            phrutils::phr_txt("Could not create base (unweighted) survey design for '"),
+            private$..phr_txt("Could not create base (unweighted) survey design for '"),
             set_role,
             "'."
           )
@@ -2322,7 +2320,7 @@ DataAnalytics <- R6::R6Class(
       }
 
       phrutils::phr_message(
-        phrutils::phr_txt(
+        private$..phr_txt(
           "Running {nrow(outputs_schema)} output(s) for {private$..dataset_name} ('{set_role}')..."
         ))
 
@@ -2352,7 +2350,7 @@ DataAnalytics <- R6::R6Class(
             func_name <- cell("output_func_name", i)
             if (is.null(func_name)) {
               phrutils::phr_warning(
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Output '{out_name}' has no output_func_name specified. Skipping."
                 ),
                 origin = private$..dataset_name
@@ -2400,7 +2398,7 @@ DataAnalytics <- R6::R6Class(
             }
             if (is.null(output_function)) {
               phrutils::phr_warning(
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Function '{func_name}' for output '{out_name}' not found. Skipping."
                 ),
                 origin = private$..dataset_name
@@ -2478,9 +2476,8 @@ DataAnalytics <- R6::R6Class(
               # output_group node, so bail out before any node is created.
               if (is.null(result)) {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
-                    "Output '{out_name}' returned NULL (the output function failed). ",
-                    "Nothing stored for '{key}'."
+                  message = private$..phr_txt(
+                    "Output '{out_name}' returned NULL (the output function failed). Nothing stored for '{key}'."
                   ),
                   origin = private$..dataset_name
                 )
@@ -2508,7 +2505,7 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$tables[[key]] <- result
                 }
-                phrutils::phr_message(phrutils::phr_txt(
+                phrutils::phr_message(private$..phr_txt(
                   "Table '{key}' stored successfully."
                 ))
               } else if (
@@ -2535,14 +2532,13 @@ DataAnalytics <- R6::R6Class(
                 } else {
                   self$visualizations[[key]] <- result
                 }
-                phrutils::phr_message(phrutils::phr_txt(
+                phrutils::phr_message(private$..phr_txt(
                   "Visualization '{key}' stored successfully."
                 ))
               } else {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
-                    "Output '{out_name}' has unrecognized output_type '{output_type}'. ",
-                    "Expected 'visualization' or 'table'. Result not stored."
+                  message = private$..phr_txt(
+                    "Output '{out_name}' has unrecognized output_type '{output_type}'. Expected 'visualization' or 'table'. Result not stored."
                   ),
                   origin = private$..dataset_name
                 )
@@ -2558,7 +2554,7 @@ DataAnalytics <- R6::R6Class(
                 var_label <- role
                 if (is.null(col_name)) {
                   phrutils::phr_warning(
-                    message = phrutils::phr_txt(
+                    message = private$..phr_txt(
                       "outputs_per_group role '{role}' not found in variable_map for output '{out_name}'. Skipping."
                     ),
                     origin = private$..dataset_name
@@ -2591,7 +2587,7 @@ DataAnalytics <- R6::R6Class(
                 unique_vals <- unique(source_df[[col_name]])
                 unique_vals <- unique_vals[!is.na(unique_vals)]
 
-                phrutils::phr_message(phrutils::phr_txt(
+                phrutils::phr_message(private$..phr_txt(
                   "Calling {func_name} for output '{out_name}' across {length(unique_vals)} group(s) of '{var_label}'..."
                 ))
 
@@ -2608,7 +2604,7 @@ DataAnalytics <- R6::R6Class(
                     ),
                     error = function(e) {
                       phrutils::phr_warning(
-                        message = phrutils::phr_txt(
+                        message = private$..phr_txt(
                           "Failed to filter survey design for '{var_label}' == '{val}': {e$message}"
                         ),
                         origin = private$..dataset_name
@@ -2645,14 +2641,14 @@ DataAnalytics <- R6::R6Class(
                 }
               } else if (!is.null(col_name)) {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
+                  message = private$..phr_txt(
                     "Column '{col_name}' for outputs_per_group not found in source data ({dataset_type}) for output '{out_name}'. Skipping."
                   ),
                   origin = private$..dataset_name
                 )
               }
             } else {
-              phrutils::phr_message(phrutils::phr_txt(
+              phrutils::phr_message(private$..phr_txt(
                 "Calling {func_name} for output '{out_name}'..."
               ))
               output_result <- do.call(output_function, func_args)
@@ -2922,16 +2918,16 @@ DataAnalytics <- R6::R6Class(
               result$penalty <- penalty
               result$threshold_expression <- expression
               result$message <- paste0(
-                phrutils::phr_txt("Threshold met: "),
+                private$..phr_txt("Threshold met: "),
                 expression,
-                phrutils::phr_txt(" (test_statistic="),
+                private$..phr_txt(" (test_statistic="),
                 round(test_statistic, 3),
                 if (!is.na(p_value)) {
                   paste0(", p_value=", round(p_value, 4))
                 } else {
                   ""
                 },
-                phrutils::phr_txt("), penalty="),
+                private$..phr_txt("), penalty="),
                 penalty
               )
               break
@@ -2944,7 +2940,7 @@ DataAnalytics <- R6::R6Class(
 
       if (result$threshold_expression == "none") {
         result$message <- paste0(
-          phrutils::phr_txt("No threshold met (test_statistic="),
+          private$..phr_txt("No threshold met (test_statistic="),
           round(test_statistic, 3),
           if (!is.na(p_value)) paste0(", p_value=", round(p_value, 4)) else "",
           ")"
@@ -3032,7 +3028,7 @@ DataAnalytics <- R6::R6Class(
           if (length(available_vars) != length(mapped_vars)) {
             missing_vars <- setdiff(mapped_vars, available_vars)
             result$message <- paste0(
-              phrutils::phr_txt("Required variables not found in data: "),
+              private$..phr_txt("Required variables not found in data: "),
               paste(missing_vars, collapse = ", ")
             )
             return(result)
@@ -3084,11 +3080,11 @@ DataAnalytics <- R6::R6Class(
 
           if (is.null(test_function)) {
             result$message <- paste0(
-              phrutils::phr_txt("Unknown test: "),
+              private$..phr_txt("Unknown test: "),
               test_name,
               " (function ",
               test_func_name,
-              phrutils::phr_txt(" not found)")
+              private$..phr_txt(" not found)")
             )
             return(result)
           }
@@ -3113,9 +3109,9 @@ DataAnalytics <- R6::R6Class(
 
           if (is.null(test_result)) {
             result$message <- paste0(
-              phrutils::phr_txt("Test function '"),
+              private$..phr_txt("Test function '"),
               test_func_name,
-              phrutils::phr_txt("' returned NULL (internal error occurred)")
+                            private$..phr_txt("' returned NULL (internal error occurred)")
             )
             return(result)
           }
@@ -3165,7 +3161,7 @@ DataAnalytics <- R6::R6Class(
       if (!requireNamespace("srvyr", quietly = TRUE)) {
         phrutils::phr_warning(
           origin,
-          phrutils::phr_txt("Package 'srvyr' must be installed to create survey design objects.")
+          private$..phr_txt("Package 'srvyr' must be installed to create survey design objects.")
         )
         return(NULL)
       }
@@ -3173,7 +3169,7 @@ DataAnalytics <- R6::R6Class(
       if (is.null(private$..data)) {
         phrutils::phr_warning(
           origin,
-          phrutils::phr_txt("No data available to create survey design.")
+          private$..phr_txt("No data available to create survey design.")
         )
         return(NULL)
       }
@@ -3206,7 +3202,7 @@ DataAnalytics <- R6::R6Class(
       if (is.null(cluster_col)) {
         phrutils::phr_message(
           origin,
-          phrutils::phr_txt("No cluster column found; using ids = 1 (simple random sample design).")
+          private$..phr_txt("No cluster column found; using ids = 1 (simple random sample design).")
         )
       }
 
@@ -3226,11 +3222,11 @@ DataAnalytics <- R6::R6Class(
         ),
         on_error = "warn",
         origin = origin,
-        hint = phrutils::phr_txt("Check that cluster_id_numeric (or cluster_id) and weight columns contain valid data.")
+        hint = private$..phr_txt("Check that cluster_id_numeric (or cluster_id) and weight columns contain valid data.")
       )
 
       if (!is.null(design)) {
-        phrutils::phr_message(origin, phrutils::phr_txt("Survey design created successfully."))
+        phrutils::phr_message(origin, private$..phr_txt("Survey design created successfully."))
       }
 
       return(design)
@@ -3324,7 +3320,7 @@ DataAnalytics <- R6::R6Class(
               srvyr::as_survey_design(.data = subset_data, ids = 1),
               on_error = "warn",
               origin = paste0(private$..dataset_name, "$compute_results_by_group"),
-              hint = paste0(phrutils::phr_txt("Could not create survey design for group: "), gv)
+              hint = paste0(private$..phr_txt("Could not create survey design for group: "), gv)
             )
 
             group_rows <- lapply(
@@ -3372,7 +3368,7 @@ DataAnalytics <- R6::R6Class(
           } else if (!is.null(private$..data)) {
             available_vars <- names(private$..data)
           } else {
-            phrutils::phr_error(origin, phrutils::phr_txt("Neither survey_design nor data is available."))
+            phrutils::phr_error(origin, private$..phr_txt("Neither survey_design nor data is available."))
             return(invisible(self))
           }
 
@@ -3397,7 +3393,7 @@ DataAnalytics <- R6::R6Class(
           ) {
             phrutils::phr_warning(
               origin,
-              phrutils::phr_txt("analysis_schema is empty; data_analysis_plan will remain empty.")
+              private$..phr_txt("analysis_schema is empty; data_analysis_plan will remain empty.")
             )
             return(invisible(self))
           }
@@ -3420,12 +3416,12 @@ DataAnalytics <- R6::R6Class(
             dplyr::transmute(
               indicator_name = .data$indicator_name,
               issue = paste0(
-                phrutils::phr_txt("Missing variable(s): "),
+                private$..phr_txt("Missing variable(s): "),
                 ifelse(
                   !.data$var_exists,
                   paste0(
                     .data$var_name,
-                    phrutils::phr_txt(" (maps to: "),
+                    private$..phr_txt(" (maps to: "),
                     .data$var_name_actual,
                     ")"
                   ),
@@ -3436,7 +3432,7 @@ DataAnalytics <- R6::R6Class(
                   paste0(
                     ", ",
                     .data$denom_var,
-                    phrutils::phr_txt(" (maps to: "),
+                    private$..phr_txt(" (maps to: "),
                     .data$denom_var_actual,
                     ")"
                   ),
@@ -3468,19 +3464,19 @@ DataAnalytics <- R6::R6Class(
               origin,
               paste0(
                 nrow(issues),
-                phrutils::phr_txt(" indicators skipped due to missing variables.")
+                private$..phr_txt(" indicators skipped due to missing variables.")
               )
             )
           } else {
             phrutils::phr_message(
               origin,
-              phrutils::phr_txt("All schema indicators found and added to data_analysis_plan.")
+              private$..phr_txt("All schema indicators found and added to data_analysis_plan.")
             )
           }
         },
         on_error = "warn",
         origin = origin,
-        hint = phrutils::phr_txt("Ensure survey_design$variables is accessible and schema structure is valid.")
+        hint = private$..phr_txt("Ensure survey_design$variables is accessible and schema structure is valid.")
       )
 
       invisible(self)
@@ -3682,17 +3678,17 @@ DataAnalytics <- R6::R6Class(
       origin <- "phr_calc_survey_from_plan"
       phrutils::phr_message(
         origin,
-        phrutils::phr_txt("Starting execution of data analysis plan...")
+        private$..phr_txt("Starting execution of data analysis plan...")
       )
 
       # --- Validation
       phrutils::phr_try(
         {
           if (is.null(design)) {
-            phr_error(origin, phrutils::phr_txt("Survey design object is NULL."))
+            phrutils::phr_error(origin, private$..phr_txt("Survey design object is NULL."))
           }
           if (!inherits(analysis_plan, "data.frame")) {
-            phrutils::phr_error(origin, phrutils::phr_txt("analysis_plan must be a data.frame or tibble."))
+            phrutils::phr_error(origin, private$..phr_txt("analysis_plan must be a data.frame or tibble."))
           }
 
           required_cols <- c(
@@ -3709,7 +3705,7 @@ DataAnalytics <- R6::R6Class(
             phrutils::phr_error(
               origin,
               paste(
-                phrutils::phr_txt("Analysis plan missing columns:"),
+                private$..phr_txt("Analysis plan missing columns:"),
                 paste(missing_cols, collapse = ", ")
               )
             )
@@ -3717,7 +3713,7 @@ DataAnalytics <- R6::R6Class(
         },
         on_error = "abort",
         origin = origin,
-        hint = phrutils::phr_txt("Check that your data_analysis_plan follows the expected template.")
+        hint = private$..phr_txt("Check that your data_analysis_plan follows the expected template.")
       )
 
       # --- Initialize results holder
@@ -3789,7 +3785,7 @@ DataAnalytics <- R6::R6Class(
         phrutils::phr_message(
           origin,
           paste0(
-            phrutils::phr_txt("Running ["),
+            private$..phr_txt("Running ["),
             i,
             "/",
             nrow(analysis_plan),
@@ -3872,7 +3868,7 @@ DataAnalytics <- R6::R6Class(
               } else {
                 phrutils::phr_warning(
                   origin,
-                  paste(phrutils::phr_txt("Unknown calculation type for indicator:"), indicator)
+                  paste(private$..phr_txt("Unknown calculation type for indicator:"), indicator)
                 )
                 tibble::tibble(
                   variable = var_name,
@@ -3889,18 +3885,18 @@ DataAnalytics <- R6::R6Class(
                   n_eff = NA_real_,
                   deff = NA_real_,
                   group_name = group_value,
-                  note = phrutils::phr_txt("unknown calculation type")
+                  note = private$..phr_txt("unknown calculation type")
                 )
               }
             },
             on_error = "warn",
             origin = paste0(origin, ":", indicator),
             hint = paste(
-              phrutils::phr_txt("Check variable"),
+              private$..phr_txt("Check variable"),
               var_name,
-              phrutils::phr_txt("and denominator"),
+              private$..phr_txt("and denominator"),
               denom_var,
-              phrutils::phr_txt("if applicable.")
+              private$..phr_txt("if applicable.")
             )
           )
 
@@ -3944,11 +3940,11 @@ DataAnalytics <- R6::R6Class(
           phrutils::phr_message(
             origin,
             paste(
-              phrutils::phr_txt("Disaggregating by:"),
+              private$..phr_txt("Disaggregating by:"),
               disagg,
               "(",
               length(group_levels),
-              phrutils::phr_txt("groups )")
+              private$..phr_txt("groups )")
             )
           )
 
@@ -3958,7 +3954,7 @@ DataAnalytics <- R6::R6Class(
               error = function(e) {
                 phrutils::phr_warning(
                   origin,
-                  paste(phrutils::phr_txt("Subset failed for"), disagg, "=", g)
+                  paste(private$..phr_txt("Subset failed for"), disagg, "=", g)
                 )
                 NULL
               }
@@ -3980,14 +3976,14 @@ DataAnalytics <- R6::R6Class(
       out <- tryCatch(
         dplyr::bind_rows(results),
         error = function(e) {
-          phrutils::phr_warning(origin, paste(phrutils::phr_txt("Binding failed:"), e$message))
+          phrutils::phr_warning(origin, paste(private$..phr_txt("Binding failed:"), e$message))
           dplyr::tibble()
         }
       )
 
       phrutils::phr_message(
         origin,
-        paste(phrutils::phr_txt("Completed"), nrow(analysis_plan), phrutils::phr_txt("indicators successfully."))
+        paste(private$..phr_txt("Completed"), nrow(analysis_plan), private$..phr_txt("indicators successfully."))
       )
       return(out)
     },
@@ -4045,7 +4041,7 @@ DataAnalytics <- R6::R6Class(
 
       if (is.null(quality_schema) || nrow(quality_schema) == 0) {
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "No quality checks defined in schema for '{set_role}'."
           ),
           origin = private$..dataset_name
@@ -4063,7 +4059,7 @@ DataAnalytics <- R6::R6Class(
           on_error = "warn",
           origin = paste0(private$..dataset_name, "$run_quality_checks"),
           hint = paste0(
-            phrutils::phr_txt("Could not create base (unweighted) survey design for '"),
+            private$..phr_txt("Could not create base (unweighted) survey design for '"),
             set_role,
             "'."
           )
@@ -4117,7 +4113,7 @@ DataAnalytics <- R6::R6Class(
       results_df <- private$..results_to_table(results = results)
       penalty_tbl <- table_quality_penalty_summary(
         results_df,
-        title_name = phrutils::phr_txt("Data Quality Penalty Summary")
+        title_name = private$..phr_txt("Data Quality Penalty Summary")
       )
       store_tbl("penalty_summary", penalty_tbl)
 
@@ -4138,14 +4134,14 @@ DataAnalytics <- R6::R6Class(
           if (!is.null(per_group_df) && nrow(per_group_df) > 0) {
             tbl_key <- paste0("penalty_summary_by_", vm_role)
             group_label <- if (vm_role == "enum_id") {
-              phrutils::phr_txt("Enumerator ID")
+              private$..phr_txt("Enumerator ID")
             } else {
-              phrutils::phr_txt("Stratum")
+              private$..phr_txt("Stratum")
             }
             tbl_title <- if (vm_role == "enum_id") {
-              phrutils::phr_txt("Data Quality Penalty Summary by Enumerator")
+              private$..phr_txt("Data Quality Penalty Summary by Enumerator")
             } else {
-              phrutils::phr_txt("Data Quality Penalty Summary by Stratum")
+              private$..phr_txt("Data Quality Penalty Summary by Stratum")
             }
             per_group_tbl <- table_quality_penalty_summary_by_group(
               per_group_df,
@@ -4164,11 +4160,11 @@ DataAnalytics <- R6::R6Class(
                 dplyr::select(-"group_value")
               gv_title <- if (vm_role == "enum_id") {
                 paste0(
-                  phrutils::phr_txt("Data Quality Penalty Summary - Enumerator: "),
+                  private$..phr_txt("Data Quality Penalty Summary - Enumerator: "),
                   gv_label
                 )
               } else {
-                paste0(phrutils::phr_txt("Data Quality Penalty Summary - Stratum: "), gv_label)
+                paste0(private$..phr_txt("Data Quality Penalty Summary - Stratum: "), gv_label)
               }
               gv_tbl_key <- paste0("penalty_summary_", vm_role, "_", gv_safe)
               gv_tbl <- table_quality_penalty_summary(
@@ -4202,12 +4198,12 @@ DataAnalytics <- R6::R6Class(
         if (nested) {
           phrutils::phr_warning(
             origin,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Survey design not set for '{set_role}'. Skipping."
             )
           )
         } else {
-          phrutils::phr_error(origin, phrutils::phr_txt("Survey design not set."))
+          phrutils::phr_error(origin, private$..phr_txt("Survey design not set."))
         }
         return(NULL)
       }
@@ -4225,12 +4221,12 @@ DataAnalytics <- R6::R6Class(
         if (nested) {
           phrutils::phr_warning(
             origin,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "No data_analysis_plan provided for '{set_role}'. Skipping."
             )
           )
         } else {
-          phrutils::phr_error(origin, phrutils::phr_txt("No data_analysis_plan provided."))
+          phrutils::phr_error(origin, private$..phr_txt("No data_analysis_plan provided."))
         }
         return(NULL)
       }
@@ -4243,7 +4239,7 @@ DataAnalytics <- R6::R6Class(
         ),
         on_error = "warn",
         origin = origin,
-        hint = phrutils::phr_txt("Verify all variables exist and analysis plan is valid.")
+        hint = private$..phr_txt("Verify all variables exist and analysis plan is valid.")
       )
 
       base_results <- NULL
@@ -4252,7 +4248,7 @@ DataAnalytics <- R6::R6Class(
           srvyr::as_survey_design(.data = inputs$data, ids = 1),
           on_error = "warn",
           origin = origin,
-          hint = phrutils::phr_txt("Could not create base (unweighted) survey design from the set's data.")
+          hint = private$..phr_txt("Could not create base (unweighted) survey design from the set's data.")
         )
 
         if (!is.null(base_design)) {
@@ -4264,7 +4260,7 @@ DataAnalytics <- R6::R6Class(
             ),
             on_error = "warn",
             origin = origin,
-            hint = phrutils::phr_txt("Verify all variables exist in the base (unweighted) design.")
+            hint = private$..phr_txt("Verify all variables exist in the base (unweighted) design.")
           )
         }
       }
@@ -4295,9 +4291,9 @@ DataAnalytics <- R6::R6Class(
         phrutils::phr_warning(
           origin,
           paste0(
-            phrutils::phr_txt("Field set '"),
+            private$..phr_txt("Field set '"),
             set_name,
-            phrutils::phr_txt("' must contain 'data', 'variable_map' and 'data_analysis_plan' field names. Skipping.")
+            private$..phr_txt("' must contain 'data', 'variable_map' and 'data_analysis_plan' field names. Skipping.")
           )
         )
         return(invisible(NULL))
@@ -4308,11 +4304,11 @@ DataAnalytics <- R6::R6Class(
         phrutils::phr_warning(
           origin,
           paste0(
-            phrutils::phr_txt("Field set '"),
+            private$..phr_txt("Field set '"),
             set_name,
-            phrutils::phr_txt("': field '"),
+            private$..phr_txt("': field '"),
             set$data,
-            phrutils::phr_txt("' is not a non-empty data frame. Skipping.")
+            private$..phr_txt("' is not a non-empty data frame. Skipping.")
           )
         )
         return(invisible(NULL))
@@ -4330,21 +4326,21 @@ DataAnalytics <- R6::R6Class(
       phrutils::phr_message(
         origin,
         paste0(
-          phrutils::phr_txt("Field set '"),
+          private$..phr_txt("Field set '"),
           set_name,
           "': ",
           length(status$all_cols),
-          phrutils::phr_txt(" column(s) in data. "),
+          private$..phr_txt(" column(s) in data. "),
           length(status$in_both),
-          phrutils::phr_txt(" already in variable_map and data_analysis_plan ("),
+          private$..phr_txt(" already in variable_map and data_analysis_plan ("),
           paste(status$in_both, collapse = ", "),
           "); ",
           length(status$in_map_not_dap),
-          phrutils::phr_txt(" in variable_map only ("),
+          private$..phr_txt(" in variable_map only ("),
           paste(status$in_map_not_dap, collapse = ", "),
           "); ",
           length(status$in_neither),
-          phrutils::phr_txt(" in neither ("),
+          private$..phr_txt(" in neither ("),
           paste(status$in_neither, collapse = ", "),
           ")."
         )
@@ -4390,9 +4386,9 @@ DataAnalytics <- R6::R6Class(
           phrutils::phr_message(
             origin,
             paste0(
-              phrutils::phr_txt("Skipping column '"),
+              private$..phr_txt("Skipping column '"),
               col,
-              phrutils::phr_txt("' (character with > 20 unique values; likely metadata or uuid).")
+              private$..phr_txt("' (character with > 20 unique values; likely metadata or uuid).")
             )
           )
           next
@@ -4412,9 +4408,9 @@ DataAnalytics <- R6::R6Class(
           phrutils::phr_message(
             origin,
             paste0(
-              phrutils::phr_txt("Skipping column '"),
+              private$..phr_txt("Skipping column '"),
               col,
-              phrutils::phr_txt("' (character with > 20 unique values; likely metadata or uuid).")
+              private$..phr_txt("' (character with > 20 unique values; likely metadata or uuid).")
             )
           )
           next
@@ -4618,7 +4614,7 @@ DataAnalytics <- R6::R6Class(
                 resolved_elements <- c(resolved_elements, resolved)
               } else {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
+                  message = private$..phr_txt(
                     "Variable map role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'."
                   ),
                   origin = private$..dataset_name
@@ -4649,7 +4645,7 @@ DataAnalytics <- R6::R6Class(
                 resolved_elements <- c(resolved_elements, resolved)
               } else {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
+                  message = private$..phr_txt(
                     "Variable label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'."
                   ),
                   origin = private$..dataset_name
@@ -4666,7 +4662,7 @@ DataAnalytics <- R6::R6Class(
                       resolved_elements <- c(resolved_elements, resolved)
                     } else {
                       phrutils::phr_warning(
-                        message = phrutils::phr_txt(
+                        message = private$..phr_txt(
                           "Value label '{elem}' not found in vector argument '{arg_name}' for output '{out_name}'."
                         ),
                         origin = private$..dataset_name
@@ -4680,7 +4676,7 @@ DataAnalytics <- R6::R6Class(
                   }
                 } else {
                   phrutils::phr_warning(
-                    message = phrutils::phr_txt(
+                    message = private$..phr_txt(
                       "Value label role '{role}' not found in vector argument '{arg_name}' for output '{out_name}'."
                     ),
                     origin = private$..dataset_name
@@ -4715,7 +4711,7 @@ DataAnalytics <- R6::R6Class(
             func_args[[arg_name]] <- resolved
           } else {
             phrutils::phr_warning(
-              message = phrutils::phr_txt(
+              message = private$..phr_txt(
                 "Variable label role '{role}' not found for output '{out_name}'. Skipping argument '{arg_name}'."
               ),
               origin = private$..dataset_name
@@ -4740,7 +4736,7 @@ DataAnalytics <- R6::R6Class(
               }
               if (is.null(resolved)) {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
+                  message = private$..phr_txt(
                     "Value label reference '{arg_value}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
                   ),
                   origin = private$..dataset_name
@@ -4749,7 +4745,7 @@ DataAnalytics <- R6::R6Class(
               func_args[[arg_name]] <- resolved %||% arg_value
             } else {
               phrutils::phr_warning(
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Value label role '{role}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
                 ),
                 origin = private$..dataset_name
@@ -4777,7 +4773,7 @@ DataAnalytics <- R6::R6Class(
               }
               if (is.null(resolved)) {
                 phrutils::phr_warning(
-                  message = phrutils::phr_txt(
+                  message = private$..phr_txt(
                     "Value map reference '{arg_value}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
                   ),
                   origin = private$..dataset_name
@@ -4786,7 +4782,7 @@ DataAnalytics <- R6::R6Class(
               func_args[[arg_name]] <- resolved %||% arg_value
             } else {
               phrutils::phr_warning(
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Value map role '{role}' not found for output '{out_name}'. Argument '{arg_name}' left unresolved."
                 ),
                 origin = private$..dataset_name
@@ -4975,12 +4971,12 @@ DataAnalytics <- R6::R6Class(
           )
           phrutils::phr_message(
             origin,
-            paste(phrutils::phr_txt("Added indicator:"), indicator_name)
+            paste(private$..phr_txt("Added indicator:"), indicator_name)
           )
         },
         on_error = "warn",
         origin = origin,
-        hint = phrutils::phr_txt("Check variable names and calculation type.")
+        hint = private$..phr_txt("Check variable names and calculation type.")
       )
     },
 
@@ -4996,7 +4992,7 @@ DataAnalytics <- R6::R6Class(
             is.null(private$..data_analysis_plan) ||
             nrow(private$..data_analysis_plan$get("..log_df")) == 0
           ) {
-            phrutils::phr_warning(origin, phrutils::phr_txt("No data_analysis_plan loaded."))
+            phrutils::phr_warning(origin, private$..phr_txt("No data_analysis_plan loaded."))
             return(invisible(self))
           }
           dap_df <- private$..data_analysis_plan$get("..log_df")
@@ -5006,12 +5002,12 @@ DataAnalytics <- R6::R6Class(
           )
           phrutils::phr_message(
             origin,
-            paste(phrutils::phr_txt("Removed indicator:"), indicator_name)
+            paste(private$..phr_txt("Removed indicator:"), indicator_name)
           )
         },
         on_error = "warn",
         origin = origin,
-        hint = phtutils::phr_txt("Ensure indicator_name exists in data_analysis_plan.")
+        hint = private$..phr_txt("Ensure indicator_name exists in data_analysis_plan.")
       )
     },
 
@@ -5033,7 +5029,7 @@ DataAnalytics <- R6::R6Class(
       origin <- origin %||% paste0(private$..dataset_name, "$.create_survey_design_for_dataset")
 
       if (is.null(data) || nrow(data) == 0) {
-        phrutils::phr_warning(origin, phrutils::phr_txt("No data available to create survey design for linked dataset."))
+        phrutils::phr_warning(origin, private$..phr_txt("No data available to create survey design for linked dataset."))
         return(NULL)
       }
 
@@ -5058,7 +5054,7 @@ DataAnalytics <- R6::R6Class(
       if (is.null(fpc_col) || !fpc_col %in% data_cols) fpc_col <- NULL
 
       if (is.null(cluster_col)) {
-        phrutils::phr_message(origin, phrutils::phr_txt("No cluster column found for linked dataset; using ids = 1 (simple random sample design)."))
+        phrutils::phr_message(origin, private$..phr_txt("No cluster column found for linked dataset; using ids = 1 (simple random sample design)."))
       }
 
       ids_sym    <- if (!is.null(cluster_col)) rlang::sym(cluster_col) else 1
@@ -5077,7 +5073,7 @@ DataAnalytics <- R6::R6Class(
         ),
         on_error = "warn",
         origin   = origin,
-        hint     = phrutils::phr_txt("Check that cluster_id_numeric (or cluster_id) and weight columns contain valid data in the linked dataset.")
+        hint     = private$..phr_txt("Check that cluster_id_numeric (or cluster_id) and weight columns contain valid data in the linked dataset.")
       )
 
       if (!is.null(design)) {

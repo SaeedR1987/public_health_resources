@@ -47,7 +47,7 @@ GeneralDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
+        message = private$..phr_txt("Starting initialization for {dataset_name}.")
       )
 
       super$initialize(
@@ -67,7 +67,7 @@ GeneralDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = TRUE,
         name = dataset_name,
-        message = phrutils::phr_txt("Initialization for {dataset_name} completed successfully.")
+        message = private$..phr_txt("Initialization for {dataset_name} completed successfully.")
       )
     }
 

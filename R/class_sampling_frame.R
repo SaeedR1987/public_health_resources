@@ -118,7 +118,7 @@ SamplingFrame <- R6::R6Class(
       if (is.null(strata_table)) {
         phrutils::phr_warning(
           origin = "strata_table",
-          message = phr_txt(
+          message = private$..phr_txt(
             "No strata table was provided. Strata-based processing will be skipped."
           )
         )
@@ -131,14 +131,14 @@ SamplingFrame <- R6::R6Class(
       )
       phrutils::phr_assert(
         "sampling_method_site" %in% names(strata_table),
-        message = phr_txt(
+        message = private$..phr_txt(
           "strata_table must contain a 'sampling_method_site' column."
         ),
         origin = "SamplingFrame$draw_sample"
       )
       phrutils::phr_assert(
         "sampling_method_hh" %in% names(strata_table),
-        message = phr_txt(
+        message = private$..phr_txt(
           "strata_table must contain a 'sampling_method_hh' column."
         ),
         origin = "SamplingFrame$draw_sample"
@@ -183,7 +183,7 @@ SamplingFrame <- R6::R6Class(
           st_eligible_rows <- which(eligible_frame$stratum == st_id)
           if (length(st_eligible_rows) == 0L) {
             phrutils::phr_warning(
-              message = phr_txt(
+              message = private$..phr_txt(
                 "Stratum '{st_id}' not found in sampling frame — skipping."
               ),
               origin = "SamplingFrame$draw_sample"
@@ -209,7 +209,7 @@ SamplingFrame <- R6::R6Class(
             ),
             error = function(e) {
               phrutils::phr_warning(
-                message = phr_txt(
+                message = private$..phr_txt(
                   "Sampling for stratum '{st_id}' failed and will be skipped: {conditionMessage(e)}"
                 ),
                 origin = "SamplingFrame$draw_sample"
@@ -280,7 +280,7 @@ SamplingFrame <- R6::R6Class(
           ),
           error = function(e) {
             phrutils::phr_warning(
-              message = phr_txt("Sampling failed: {conditionMessage(e)}"),
+              message = private$..phr_txt("Sampling failed: {conditionMessage(e)}"),
               origin = "Sample$draw_sample"
             )
             NULL
@@ -374,7 +374,7 @@ SamplingFrame <- R6::R6Class(
       )
       phrutils::phr_assert(
         method_site %in% valid_methods_site,
-        message = phr_txt(
+        message = private$..phr_txt(
           "Unknown sampling method '{method_site}' — must be one of: {paste(valid_methods_site, collapse=', ')}."
         ),
         origin = origin
@@ -384,7 +384,7 @@ SamplingFrame <- R6::R6Class(
         if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -398,7 +398,7 @@ SamplingFrame <- R6::R6Class(
         } else {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'simple_random_even' method_site — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -409,7 +409,7 @@ SamplingFrame <- R6::R6Class(
         if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'simple_random_rlc' method — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -423,7 +423,7 @@ SamplingFrame <- R6::R6Class(
         } else {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'simple_random_proportional' method_site — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -445,7 +445,7 @@ SamplingFrame <- R6::R6Class(
         if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_psu) && !is.na(n_psu),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_psu is required for the 'cluster' method_site — set the 'n_psu' column in the strata table."
             ),
             origin = origin
@@ -463,14 +463,14 @@ SamplingFrame <- R6::R6Class(
         } else {
           phrutils::phr_assert(
             !is.null(n_psu) && !is.na(n_psu),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_psu is required for the 'cluster' method_site — set the 'n_psu' column in the strata table."
             ),
             origin = origin
           )
           phrutils::phr_assert(
             !is.null(cluster_size) && !is.na(cluster_size),
-            message = phr_txt(
+            message = private$..phr_txt(
               "cluster_size is required for the 'cluster' method_site — set the 'cluster_size' column in the strata table."
             ),
             origin = origin
@@ -481,7 +481,7 @@ SamplingFrame <- R6::R6Class(
         if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -495,7 +495,7 @@ SamplingFrame <- R6::R6Class(
         } else {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -506,7 +506,7 @@ SamplingFrame <- R6::R6Class(
         if (method_hh == "rlc") {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'systematic_rlc' method — set the 'n_sites' column in the strata table."
             ),
             origin = origin
@@ -520,7 +520,7 @@ SamplingFrame <- R6::R6Class(
         } else {
           phrutils::phr_assert(
             !is.null(n_sites) && !is.na(n_sites),
-            message = phr_txt(
+            message = private$..phr_txt(
               "n_sites is required for the 'systematic' method — set the 'n_sites' column in the strata table."
             ),
             origin = origin

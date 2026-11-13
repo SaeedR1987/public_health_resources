@@ -124,13 +124,13 @@ MortalityDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("Started initialization for {dataset_name}.")
+        message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
       if (missing(data) || is.null(data)) {
         phrutils::phr_error(
           origin  = origin,
-          message = phrutils::phr_txt("The data parameter (household dataframe) is required to initialize MortalityDataAnalytics.")
+          message = private$..phr_txt("The data parameter (household dataframe) is required to initialize MortalityDataAnalytics.")
         )
       }
 
@@ -168,8 +168,8 @@ MortalityDataAnalytics <- R6::R6Class(
           self$set(field = "..linked_ind_deaths_value_label", value = linked_ind_deaths_value_label)
 
         },
-        step = phrutils::phr_txt("Set initial fields for DataAnalytics class"),
-        hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
+                  step = private$..phr_txt("Set initial fields for DataAnalytics class"),
+                  hint = private$..phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -180,8 +180,8 @@ MortalityDataAnalytics <- R6::R6Class(
         {
           private$..initialize_load_schemas_mortality()
         },
-        step = phrutils::phr_txt("Set initial fields for DataAnalytics class"),
-        hint = phrutils::phr_txt("Check initial arguments passed for DataAnalytics")
+                  step = private$..phr_txt("Set initial fields for DataAnalytics class"),
+                  hint = private$..phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -193,11 +193,11 @@ MortalityDataAnalytics <- R6::R6Class(
           # Generate per-dataset analysis plans for roster and deaths
           private$..data_analysis_plan_roster <- QuantDataAnalysisPlanLog$new(
             log_df   = NULL,
-            log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+            log_name = private$..phr_txt("Quant Data Analysis Plan (Roster)")
           )
           private$..data_analysis_plan_deaths <- QuantDataAnalysisPlanLog$new(
             log_df   = NULL,
-            log_name = phrutils::phr_txt("Quant Data Analysis Plan (Deaths)")
+            log_name = private$..phr_txt("Quant Data Analysis Plan (Deaths)")
           )
           # Build the DAP for roster dataset from available columns and analysis_schema_roster
           if (!is.null(linked_ind_roster_data)) {
@@ -227,8 +227,8 @@ MortalityDataAnalytics <- R6::R6Class(
 
           }
         },
-        step = phrutils::phr_txt("Create initial roster and death specific data analysis plans"),
-        hint = phrutils::phr_txt("Check analysis schemas for roster and deaths.")
+                    step = private$..phr_txt("Create initial roster and death specific data analysis plans"),
+                    hint = private$..phr_txt("Check analysis schemas for roster and deaths.")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -261,8 +261,8 @@ MortalityDataAnalytics <- R6::R6Class(
                      ))
             }
         },
-        step = phrutils::phr_txt("Create initial roster and death specific data analysis plans"),
-        hint = phrutils::phr_txt("Check analysis schemas for roster and deaths.")
+        step = private$..phr_txt("Create initial roster and death specific data analysis plans"),
+        hint = private$..phr_txt("Check analysis schemas for roster and deaths.")
       )
       if (phrutils::phr_failed(result)) {
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
@@ -272,16 +272,16 @@ MortalityDataAnalytics <- R6::R6Class(
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
       if (!is.null(linked_ind_deaths_data)) msg_parts <- c(msg_parts, "deaths")
       if (length(msg_parts) > 0) {
-        msg <- "MortalityDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data."
+        msg <- private$..phr_txt("MortalityDataAnalytics initialized with linked {paste(msg_parts, collapse=' and ')} data.")
       } else {
-        msg <- "{dataset_name} initialized as MortalityDataAnalytics object."
+        msg <- private$..phr_txt("{dataset_name} initialized as MortalityDataAnalytics object.")
       }
 
       private$..touch(
         log = TRUE,
         touch = TRUE,
         name = dataset_name,
-        message = phrutils::phr_txt(paste0(origin, msg))
+        message = paste0(origin, msg)
       )
 
     }
@@ -597,7 +597,7 @@ MortalityDataAnalytics <- R6::R6Class(
             data_analysis_plan = "..data_analysis_plan_roster"
           )
         } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
+          phrutils::phr_message(origin, private$..phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
         }
       }
 
@@ -609,7 +609,7 @@ MortalityDataAnalytics <- R6::R6Class(
             data_analysis_plan = "..data_analysis_plan_deaths"
           )
         } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked deaths data present but data_analysis_plan_deaths is empty. Skipping deaths analysis."))
+          phrutils::phr_message(origin, private$..phr_txt("Linked deaths data present but data_analysis_plan_deaths is empty. Skipping deaths analysis."))
         }
       }
 

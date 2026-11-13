@@ -21,6 +21,7 @@ Imports:
     flextable,
     ggplot2,
     glue,
+    jsonlite,
     lme4,
     officer,
     openxlsx,
