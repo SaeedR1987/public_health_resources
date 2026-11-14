@@ -94,8 +94,8 @@ CleaningLog <- R6::R6Class(
         results
 
         },
-        step = phrutils::phr_txt("Setting default required columns and schema - CleaningLog$initialize"),
-        hint = phrutils::phr_txt("check for improper inputs for required columns or schema.")
+        step = private$..phr_txt("Setting default required columns and schema - CleaningLog$initialize"),
+        hint = private$..phr_txt("check for improper inputs for required columns or schema.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -116,8 +116,8 @@ CleaningLog <- R6::R6Class(
         )
 
         },
-        step = phrutils::phr_txt("Super initialize - CleaningLog$initialize"),
-        hint = phrutils::phr_txt("check for improper inputs for required columns or schema.")
+        step = private$..phr_txt("Super initialize - CleaningLog$initialize"),
+        hint = private$..phr_txt("check for improper inputs for required columns or schema.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -210,7 +210,7 @@ CleaningLog <- R6::R6Class(
             issues$uuid_not_found <- missing_uuid
             phrutils::phr_warning(
               private$..log_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Unknown UUID(s) in cleaning log: {paste(missing_uuid, collapse=', ')}"
               )
             )
@@ -243,7 +243,7 @@ CleaningLog <- R6::R6Class(
                 issues$enum_id_not_found <- missing_enum
                 phrutils::phr_warning(
                   private$..log_name,
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "Unknown enum_id(s): {paste(missing_enum, collapse=', ')}"
                   )
                 )
@@ -270,7 +270,7 @@ CleaningLog <- R6::R6Class(
             issues$unknown_question_names <- missing_q
             phrutils::phr_warning(
               private$..log_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Unknown question.name columns: {paste(missing_q, collapse=', ')}"
               )
             )
@@ -315,7 +315,7 @@ CleaningLog <- R6::R6Class(
 
                 phrutils::phr_warning(
                   private$..log_name,
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "old.value mismatch for uuid {uuid_val}, column {col_name}: expected '{old_val}', found '{actual}'."
                   )
                 )
@@ -481,7 +481,7 @@ CleaningLog <- R6::R6Class(
           issues$missing_or_empty <- bad_cols
           phrutils::phr_warning(
             private$..log_name,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Cleaning log contains missing/empty values in: {paste(bad_cols, collapse=', ')}."
             )
           )

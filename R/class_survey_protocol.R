@@ -176,9 +176,9 @@ SurveyProtocol <- R6::R6Class(
           )
           phrutils::phr_assert(
             nrow(frame) > 0,
-            message = phr_txt("Sampling frame is empty."),
+            message = private$..phr_txt("Sampling frame is empty."),
             origin = "SurveyProtocol$set_sampling_frame",
-            hint = phr_txt("Provide a data frame with at least one PSU row.")
+            hint = private$..phr_txt("Provide a data frame with at least one PSU row.")
           )
 
           # 2. Run validate_sampling_frame — stops on hard issues
@@ -190,11 +190,11 @@ SurveyProtocol <- R6::R6Class(
             )]
             if (length(hard_issues) > 0) {
               phr_error(
-                message = phr_txt(
+                message = private$..phr_txt(
                   "Sampling frame validation failed: {paste(names(hard_issues), unlist(hard_issues), sep=': ', collapse='; ')}"
                 ),
                 origin = "SurveyProtocol$set_sampling_frame",
-                hint = phr_txt(
+                hint = private$..phr_txt(
                   "Ensure the frame has 'stratum', 'psu', and 'population_size' columns, and that any 'inclusion' column contains only TRUE/FALSE values."
                 )
               )
@@ -205,7 +205,7 @@ SurveyProtocol <- R6::R6Class(
           if (!"inclusion" %in% names(frame)) {
             frame$inclusion <- TRUE
             phrutils::phr_message(
-              phr_txt(
+              private$..phr_txt(
                 "'inclusion' column not found — defaulting all PSUs to TRUE."
               ),
               origin = "SurveyProtocol$set_sampling_frame"
@@ -221,7 +221,7 @@ SurveyProtocol <- R6::R6Class(
           private$..touch()
           self$diagnose_coherence()
           phrutils::phr_message(
-            phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
+            private$..phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
             origin = "SurveyProtocol$set_sampling_frame"
           )
         },

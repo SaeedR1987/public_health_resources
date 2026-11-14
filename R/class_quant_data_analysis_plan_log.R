@@ -174,7 +174,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
               issues[[paste0("unmapped_", col)]] <- unmapped
               phrutils::phr_warning(
                 private$..log_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "{col} values not mapped in variable map: {paste(unmapped, collapse=', ')}"
                 )
               )
@@ -186,7 +186,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
               issues[[paste0("missing_in_data_", col)]] <- missing_in_data
               phrutils::phr_warning(
                 private$..log_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "{col} values whose mapped column is not in the dataset: {paste(missing_in_data, collapse=', ')}"
                 )
               )
@@ -289,7 +289,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
             issues[[paste0("invalid_", col)]] <- bad
             phrutils::phr_warning(
               private$..log_name,
-              phrutils::phr_txt(glue::glue("Analysis plan has missing/invalid {col} at rows: {paste(bad, collapse=', ')}."))
+              private$..phr_txt("Analysis plan has missing/invalid {col} at rows: {paste(bad, collapse=', ')}.")
             )
           }
         }
@@ -316,7 +316,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
             issues$invalid_calculation <- bad
             phrutils::phr_warning(
               private$..log_name,
-              phrutils::phr_txt(glue::glue("Analysis plan has invalid calculation at rows: {paste(bad, collapse=', ')}. Allowed: {paste(valid_calculations, collapse=', ')}."))
+              private$..phr_txt("Analysis plan has invalid calculation at rows: {paste(bad, collapse=', ')}. Allowed: {paste(valid_calculations, collapse=', ')}.")
             )
           }
         }
@@ -344,7 +344,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
 
             phrutils::phr_warning(
               private$..log_name,
-              phrutils::phr_txt(glue::glue("Analysis plan contains missing or non-positive multipliers at rows: {paste(invalid_mult, collapse=', ')}."))
+              private$..phr_txt("Analysis plan contains missing or non-positive multipliers at rows: {paste(invalid_mult, collapse=', ')}.")
             )
           }
         }

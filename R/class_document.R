@@ -64,7 +64,7 @@ Document <- R6::R6Class(
 
           if (!file.exists(template_file)) {
             phr_error(
-              phr_txt("Quarto template file not found: {template_file}"),
+              private$..phr_txt("Quarto template file not found: {template_file}"),
               origin = "Document$generate_quarto_doc"
             )
           }
@@ -107,7 +107,7 @@ Document <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phr_txt("Quarto document saved to: {output_file}"),
+            private$..phr_txt("Quarto document saved to: {output_file}"),
             origin = "Document$generate_quarto_doc"
           )
 
@@ -159,7 +159,7 @@ Document <- R6::R6Class(
           }
           if (!file.exists(template_file)) {
             phr_error(
-              phr_txt("Quarto template file not found: {template_file}"),
+              private$..phr_txt("Quarto template file not found: {template_file}"),
               origin = "Document$generate_quarto_ppt"
             )
           }
@@ -216,7 +216,7 @@ Document <- R6::R6Class(
           }
 
           phrutils::phr_message(
-            phr_txt("Quarto presentation saved to: {output_file}"),
+            private$..phr_txt("Quarto presentation saved to: {output_file}"),
             origin = "Document$generate_quarto_ppt"
           )
 

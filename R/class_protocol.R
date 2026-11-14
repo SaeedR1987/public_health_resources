@@ -135,7 +135,7 @@ Protocol <- R6::R6Class(
             is.character(framework_type) &&
               length(framework_type) == 1 &&
               framework_type %in% valid_fw_types,
-            message = phr_txt(
+            message = private$..phr_txt(
               "framework_type must be one of: {paste(valid_fw_types, collapse=', ')}."
             ),
             origin = "Protocol$initialize"
@@ -237,7 +237,7 @@ Protocol <- R6::R6Class(
           private$..sync_state()
 
           phrutils::phr_message(
-            phr_txt("Protocol initialized."),
+            private$..phr_txt("Protocol initialized."),
             origin = "Protocol$initialize"
           )
         },
@@ -265,7 +265,7 @@ Protocol <- R6::R6Class(
           valid_types <- self$valid_tool_types %||% character(0)
           phrutils::phr_assert(
             tool_type %in% valid_types,
-            message = phr_txt(
+            message = private$..phr_txt(
               "tool_type must be one of: {paste(valid_types, collapse=', ')}."
             ),
             origin = "Protocol$add_tools"
@@ -302,7 +302,7 @@ Protocol <- R6::R6Class(
           private$..touch()
           self$diagnose_coherence()
           phrutils::phr_message(
-            phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
+            private$..phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
             origin = "Protocol$add_tools"
           )
         },
@@ -331,7 +331,7 @@ Protocol <- R6::R6Class(
             is.character(tool_name) &&
               length(tool_name) == 1 &&
               nzchar(tool_name),
-            message = phrutils::phr_txt("tool_name must be a non-empty character string."),
+            message = private$..phr_txt("tool_name must be a non-empty character string."),
             origin = origin
           )
 
@@ -339,7 +339,7 @@ Protocol <- R6::R6Class(
           if (is.null(self$tools) || !tool_name %in% names(self$tools)) {
             phrutils::phr_warning(
               origin = origin,
-              message = phr_txt("Tool '{tool_name}' is not registered; nothing to remove.")
+              message = private$..phr_txt("Tool '{tool_name}' is not registered; nothing to remove.")
             )
             return(invisible(self))
           }
@@ -355,7 +355,7 @@ Protocol <- R6::R6Class(
           self$diagnose_coherence()
 
           phrutils::phr_message(
-            phr_txt("Tool '{tool_name}' removed from protocol."),
+            private$..phr_txt("Tool '{tool_name}' removed from protocol."),
             origin = origin
           )
         },
@@ -415,15 +415,15 @@ Protocol <- R6::R6Class(
           if (is.null(schema) || !is.data.frame(schema)) {
             phrutils::phr_error(
               origin = origin,
-              message = phrutils::phr_txt("Objective schema must be a data frame."),
-              hint = phrutils::phr_txt(
+              message = private$..phr_txt("Objective schema must be a data frame."),
+                            hint = private$..phr_txt(
                 "Use load_objective_schema() to obtain the default schema."
               )
             )
           }
 
           if (nrow(schema) == 0) {
-            msg <- phr_txt("Objective schema is empty (zero rows).")
+            msg <- private$..phr_txt("Objective schema is empty (zero rows).")
             if (soft) {
               phrutils::phr_warning(origin = origin, message = msg)
               return(invisible(FALSE))
@@ -438,15 +438,11 @@ Protocol <- R6::R6Class(
           if (length(missing_cols) > 0) {
             phrutils::phr_error(
               origin = origin,
-              message = phrutils::phr_txt(
-                glue::glue(
-                  "Objective schema is missing required column(s): {paste(missing_cols, collapse = ', ')}"
-                )
+              message = private$..phr_txt(
+                "Objective schema is missing required column(s): {paste(missing_cols, collapse = ', ')}"
               ),
-              hint = phrutils::phr_txt(
-                glue::glue(
-                  "Required columns are: {paste(.objective_schema_required_cols, collapse = ', ')}"
-                )
+              hint = private$..phr_txt(
+                "Required columns are: {paste(.objective_schema_required_cols, collapse = ', ')}"
               )
             )
           }
@@ -454,14 +450,14 @@ Protocol <- R6::R6Class(
           if (all(is.na(schema$sector))) {
             phr_error(
               origin = origin,
-              message = phrutils::phr_txt(
+              message = private$..phr_txt(
                 "All 'sector' values in the objective schema are NA."
               )
             )
           }
 
           if (all(is.na(schema$short_objective))) {
-            msg <- phrutils::phr_txt(
+            msg <- private$..phr_txt(
               "All 'short_objective' values in the objective schema are NA."
             )
             if (soft) {
@@ -479,10 +475,8 @@ Protocol <- R6::R6Class(
               !is.factor(schema[[col]])
           })]
           if (length(bad_types) > 0) {
-            msg <- phrutils::phr_txt(
-              glue::glue(
-                "The following column(s) should be character (or factor): {paste(bad_types, collapse = ', ')}"
-              )
+            msg <- private$..phr_txt(
+              "The following column(s) should be character (or factor): {paste(bad_types, collapse = ', ')}"
             )
             if (soft) {
               phrutils::phr_warning(origin = origin, message = msg)
@@ -626,14 +620,14 @@ Protocol <- R6::R6Class(
 
       if (length(self$issues_coherence) == 0) {
         phrutils::phr_message(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Coherence validation passed: all objectives have tool coverage and all tool indicators match the schema."
           ),
           origin = "Protocol$diagnose_coherence"
         )
       } else {
         phrutils::phr_message(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Coherence validation found {length(self$issues_coherence)} issue(s). Check self$issues_coherence for details."
           ),
           origin = "Protocol$diagnose_coherence"
@@ -661,7 +655,7 @@ Protocol <- R6::R6Class(
             is.character(tool_name) &&
               length(tool_name) == 1 &&
               nzchar(tool_name),
-            message = phr_txt("tool_name must be a non-empty character  string"),
+            message = private$..phr_txt("tool_name must be a non-empty character  string"),
             origin = "Protocol$get_dap_table"
           )
 
@@ -1097,7 +1091,7 @@ Protocol <- R6::R6Class(
           nrow(revised_survey) == 0L
       ) {
         phrutils::phr_warning(
-          phrutils::phr_txt("Tool '{tool_name}' has no revised_survey data."),
+          private$..phr_txt("Tool '{tool_name}' has no revised_survey data."),
           origin = "Protocol$get_dap_table"
         )
         return(NULL)
@@ -1116,7 +1110,7 @@ Protocol <- R6::R6Class(
 
       if (!"indicator_code" %in% names(revised_survey)) {
         phrutils::phr_warning(
-          phrutils::phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
+          private$..phr_txt("Tool '{tool_name}' survey has no indicator_code column."),
           origin = "Protocol$get_dap_table"
         )
         return(NULL)
@@ -1215,7 +1209,7 @@ Protocol <- R6::R6Class(
       lang <- tolower(trimws(as.character(lang)))
       if (!lang %in% c("en", "fr", "es", "ar")) {
         phrutils::phr_warning(
-          phrutils::phr_txt("Invalid lang '{lang}' specified; defaulting to 'en'."),
+          private$..phr_txt("Invalid lang '{lang}' specified; defaulting to 'en'."),
           origin = "Protocol$get_dap_table"
         )
         lang <- "en"

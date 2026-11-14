@@ -66,8 +66,8 @@ Log <- R6::R6Class(
         result <- phrutils::phr_try_step({
           super$initialize(name = log_name)
         },
-        step = phrutils::phr_txt("Log$initialize - super$initialize"),
-        hint = phrutils::phr_txt("Check whether a valid log_name was passed on initialization.")
+        step = private$..phr_txt("Log$initialize - super$initialize"),
+        hint = private$..phr_txt("Check whether a valid log_name was passed on initialization.")
         )
         if (phrutils::phr_failed(result)) {
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
@@ -81,8 +81,8 @@ Log <- R6::R6Class(
           self$set(field = "..schema", value = schema %||% list())
           self$set(field = "..issues", value = list())
         },
-        step = phrutils::phr_txt("Log$initialize - set fields"),
-        hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+                  step = private$..phr_txt("Log$initialize - set fields"),
+                  hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
         )
         if (phrutils::phr_failed(result)) {
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
@@ -118,8 +118,8 @@ Log <- R6::R6Class(
           self$set(field = "..log_df", value = tibble::as_tibble(log_df))
 
         },
-        step = phrutils::phr_txt("Log$initialize - set fields"),
-        hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+        step = private$..phr_txt("Log$initialize - set fields"),
+        hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
         )
         if (phrutils::phr_failed(result)) {
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
@@ -128,7 +128,7 @@ Log <- R6::R6Class(
         private$..touch(log = TRUE,
                         touch = TRUE,
                         name = log_name,
-                        message = phrutils::phr_txt("{log_name} initialized with {nrow(log_df)} entries."))
+                        message = private$..phr_txt("{log_name} initialized with {nrow(log_df)} entries."))
 
       },
       on_error = "abort",
@@ -178,8 +178,8 @@ Log <- R6::R6Class(
 
             issues
           },
-          step = phrutils::phr_txt("Basic structural checks - Log$validate"),
-          hint = phrutils::phr_txt("Check if log_df is a valid data.frame and contains all required columns.")
+          step = private$..phr_txt("Basic structural checks - Log$validate"),
+          hint = private$..phr_txt("Check if log_df is a valid data.frame and contains all required columns.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -195,8 +195,8 @@ Log <- R6::R6Class(
           private$..pre_validate()
 
           },
-          step = phrutils::phr_txt("Pre-validation hook - Log$validate"),
-          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          step = private$..phr_txt("Pre-validation hook - Log$validate"),
+          hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -248,7 +248,7 @@ Log <- R6::R6Class(
                     private$..log_df[[nm]] <- new_vec
 
                     phrutils::phr_message(
-                      phrutils::phr_txt(
+                      private$..phr_txt(
                         "Coerced column '{nm}' to type '{want}'."
                       )
                     )
@@ -288,8 +288,8 @@ Log <- R6::R6Class(
             }
             issues
           },
-          step = phrutils::phr_txt("Pre-validation hook - Log$validate"),
-          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          step = private$..phr_txt("Pre-validation hook - Log$validate"),
+          hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -303,8 +303,8 @@ Log <- R6::R6Class(
           private$..post_validate()
 
           },
-          step = phrutils::phr_txt("Post-validation hook - Log$validate"),
-          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          step = private$..phr_txt("Post-validation hook - Log$validate"),
+          hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -323,8 +323,8 @@ Log <- R6::R6Class(
             self$set(field = "..issues", value = issues %||% list())
 
           },
-          step = phrutils::phr_txt("Finalize and set fields - Log$validate"),
-          hint = phrutils::phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
+          step = private$..phr_txt("Finalize and set fields - Log$validate"),
+          hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -334,22 +334,20 @@ Log <- R6::R6Class(
 
           if (length(issues) > 0) {
 
-            msg <- glue::glue("Log validation completed with issues: {paste(names(issues), collapse=', ')}")
+            msg <- private$..phr_txt("Log validation completed with issues: {paste(names(issues), collapse=', ')}")
 
             phrutils::phr_warning(
               private$..log_name,
-              phrutils::phr_txt(
-                msg
-              )
+              msg
             )
           } else {
-            msg <- glue::glue("Log validation completed successfully with no issues.")
+            msg <- private$..phr_txt("Log validation completed successfully with no issues.")
           }
 
           private$..touch(log = TRUE,
                           touch = TRUE,
                           name = private$..log_name,
-                          message = phrutils::phr_txt(msg))
+                          message = msg)
 
           invisible(issues)
         },
@@ -378,7 +376,7 @@ Log <- R6::R6Class(
       if (!is.list(row_list)) {
         phrutils::phr_error(
           private$..log_name,
-          phrutils::phr_txt("append_entry() requires a named list.")
+          private$..phr_txt("append_entry() requires a named list.")
         )
       }
 
@@ -386,7 +384,7 @@ Log <- R6::R6Class(
       if (length(missing_cols) > 0) {
         phrutils::phr_error(
           private$..log_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Missing required fields in new log entry: {paste(missing_cols, collapse=', ')}"
           )
         )
@@ -400,7 +398,7 @@ Log <- R6::R6Class(
       private$..touch(log = TRUE,
                       touch = TRUE,
                       name = private$..log_name,
-                      message = phrutils::phr_txt("Added new entry."))
+                      message = private$..phr_txt("Added new entry."))
 
       },
       on_error = "abort",
@@ -429,7 +427,7 @@ Log <- R6::R6Class(
       private$..touch(log = TRUE,
                       touch = TRUE,
                       name = private$..log_name,
-                      message = phrutils::phr_txt("{private$..log_name} cleared."))
+                      message = private$..phr_txt("{private$..log_name} cleared."))
 
       invisible(TRUE)
 
@@ -470,13 +468,13 @@ Log <- R6::R6Class(
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
               phrutils::phr_error(
                 private$..log_name,
-                phrutils::phr_txt("Package 'openxlsx' is required for XLSX export.")
+                private$..phr_txt("Package 'openxlsx' is required for XLSX export.")
               )
             }
             openxlsx::write.xlsx(private$..log_df, file = path)
           }
 
-          phrutils::phr_message(phrutils::phr_txt(
+          phrutils::phr_message(private$..phr_txt(
             "Exported {private$..log_name} to {path}."
           ))
           invisible(path)

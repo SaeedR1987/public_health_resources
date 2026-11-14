@@ -92,8 +92,8 @@ Data <- R6::R6Class(
             {
               super$initialize(name = dataset_name)
             },
-            step = phrutils::phr_txt("Check raw data"),
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            step = private$..phr_txt("Check raw data"),
+            hint = private$..phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -103,7 +103,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = dataset_name,
-            message = phrutils::phr_txt("Started initialization for {dataset_name} as Data object.")
+            message = private$..phr_txt("Started initialization for {dataset_name} as Data object.")
           )
 
           # Step 2: Core checks
@@ -115,8 +115,8 @@ Data <- R6::R6Class(
                 dataset_name = dataset_name
               )
             },
-            step = phrutils::phr_txt("Check raw data"),
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            step = private$..phr_txt("Check raw data"),
+            hint = private$..phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -124,7 +124,7 @@ Data <- R6::R6Class(
 
           if (is.null(data)) {
             phrutils::phr_error(
-              phrutils::phr_txt("No data provided for initialization."),
+              private$..phr_txt("No data provided for initialization."),
               origin = dataset_name
             )
           }
@@ -138,8 +138,8 @@ Data <- R6::R6Class(
                 uuid = if(!is.null(uuid) & is.character(uuid)) {uuid} else {"uuid"}
               )
             },
-            step = phrutils::phr_txt("Set initial fields for the Data object."),
-            hint = phrutils::phr_txt("Check the input arguments for Data object initialization.")
+            step = private$..phr_txt("Set initial fields for the Data object."),
+            hint = private$..phr_txt("Check the input arguments for Data object initialization.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -150,8 +150,8 @@ Data <- R6::R6Class(
             {
               private$..initialize_load_schemas()
             },
-            step = phrutils::phr_txt("Loading default variable, dependency, and indicator schemas."),
-            hint = phrutils::phr_txt("Check xlsx schema files content, location, or the private list for the file paths.")
+            step = private$..phr_txt("Loading default variable, dependency, and indicator schemas."),
+            hint = private$..phr_txt("Check xlsx schema files content, location, or the private list for the file paths.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -163,8 +163,8 @@ Data <- R6::R6Class(
               # Populate variable and value maps on initalization.
               private$..map_schema_vars(stage = "raw")
             },
-            step = phrutils::phr_txt("Map schema vars in initialize."),
-            hint = phrutils::phr_txt("Check the dataset or variable schema for corruption or other issues.")
+            step = private$..phr_txt("Map schema vars in initialize."),
+            hint = private$..phr_txt("Check the dataset or variable schema for corruption or other issues.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -174,7 +174,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("{dataset_name} initialized with {nrow(data)} records as Data object.")
+            message = private$..phr_txt("{dataset_name} initialized with {nrow(data)} records as Data object.")
           )
 
         },
@@ -196,7 +196,7 @@ Data <- R6::R6Class(
           if (is.null(private$..raw_data)) {
             phrutils::phr_warning(
               private$..dataset_name,
-              phrutils::phr_txt("No data loaded for summary.")
+              private$..phr_txt("No data loaded for summary.")
             )
             return(NULL)
           }
@@ -334,7 +334,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Starting validation for {private$..dataset_name}...")
+            message = private$..phr_txt("Starting validation for {private$..dataset_name}...")
           )
 
           # Step 1: Get data for validation
@@ -355,8 +355,8 @@ Data <- R6::R6Class(
 
               df <- self$get_data(stage)
             },
-            step = phrutils::phr_txt("Check raw data"),
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            step = private$..phr_txt("Check raw data"),
+            hint = private$..phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -369,8 +369,8 @@ Data <- R6::R6Class(
             {
               private$..pre_validate()
             },
-            step = phrutils::phr_txt("pre validate hook"),
-            hint = phrutils::phr_txt("Check sub class specific pre hook validation")
+            step = private$..phr_txt("pre validate hook"),
+            hint = private$..phr_txt("Check sub class specific pre hook validation")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -387,8 +387,8 @@ Data <- R6::R6Class(
 
               had_warnings
             },
-            step = phrutils::phr_txt("core validation checks"),
-            hint = phrutils::phr_txt("Check the format and content of the raw data.")
+            step = private$..phr_txt("core validation checks"),
+            hint = private$..phr_txt("Check the format and content of the raw data.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -406,7 +406,7 @@ Data <- R6::R6Class(
               if (length(missing_mapped) > 0) {
                 phrutils::phr_warning(
                   private$..dataset_name,
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "Mapped columns missing: {paste(missing_mapped, collapse=', ')}"
                   )
                 )
@@ -416,8 +416,8 @@ Data <- R6::R6Class(
               had_warnings
 
             },
-            step = phrutils::phr_txt("pre validate hook"),
-            hint = phrutils::phr_txt("Check sub class specific pre hook validation")
+            step = private$..phr_txt("pre validate hook"),
+            hint = private$..phr_txt("Check sub class specific pre hook validation")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -434,8 +434,8 @@ Data <- R6::R6Class(
                 had_warnings = had_warnings
               )
             },
-            step = phrutils::phr_txt("Run value map validation checks"),
-            hint = phrutils::phr_txt(
+            step = private$..phr_txt("Run value map validation checks"),
+            hint = private$..phr_txt(
               "Check value map roles, linked columns, and mapped values."
           ))
           if (phrutils::phr_failed(result)) {
@@ -453,8 +453,8 @@ Data <- R6::R6Class(
             {
               private$..post_validate(df)
             },
-            step = phrutils::phr_txt("Run value map validation checks"),
-            hint = phrutils::phr_txt(
+            step = private$..phr_txt("Run value map validation checks"),
+            hint = private$..phr_txt(
               "Check value map roles, linked columns, and mapped values."
               )
             )
@@ -473,7 +473,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("{private$..dataset_name} validation complete.")
+            message = private$..phr_txt("{private$..dataset_name} validation complete.")
           )
 
         },
@@ -513,7 +513,7 @@ Data <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("Standardization process for {private$..dataset_name} started...")
+        message = private$..phr_txt("Standardization process for {private$..dataset_name} started...")
       )
 
       phrutils::phr_try(
@@ -523,8 +523,8 @@ Data <- R6::R6Class(
             {
               private$..standardize_check_prerequisites()
             },
-            step = phrutils::phr_txt("Check raw data"),
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            step = private$..phr_txt("Check raw data"),
+            hint = private$..phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -536,8 +536,8 @@ Data <- R6::R6Class(
             {
               private$..pre_standardize(stage = stage)
             },
-            step = phrutils::phr_txt("Pre-standardize hook"),
-            hint = phrutils::phr_txt("Subclass-specific setup before standardization")
+            step = private$..phr_txt("Pre-standardize hook"),
+            hint = private$..phr_txt("Subclass-specific setup before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -552,8 +552,8 @@ Data <- R6::R6Class(
               private$..map_schema_vars(stage = "raw")
               private$..map_schema_labels()
             },
-            step = phrutils::phr_txt("Map schema variables"),
-            hint = phrutils::phr_txt("Auto-map schema variables to dataset columns")
+            step = private$..phr_txt("Map schema variables"),
+            hint = private$..phr_txt("Auto-map schema variables to dataset columns")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -564,7 +564,7 @@ Data <- R6::R6Class(
           result <- phrutils::phr_try_step(
             {
 
-              phrutils::phr_message(phrutils::phr_txt("Standardizing {private$..dataset_name}..."))
+              phrutils::phr_message(private$..phr_txt("Standardizing {private$..dataset_name}..."))
               data_copy <- private$..raw_data
               sch <- private$..variable_schema %||% data.frame()
               # reset other-columns tracker
@@ -587,8 +587,8 @@ Data <- R6::R6Class(
               )
 
             },
-            step = phrutils::phr_txt("Setup of main standardize process"),
-            hint = phrutils::phr_txt("")
+            step = private$..phr_txt("Setup of main standardize process"),
+            hint = private$..phr_txt("")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -645,8 +645,8 @@ Data <- R6::R6Class(
               data_copy
 
             },
-            step = phrutils::phr_txt("Column type conversions"),
-            hint = phrutils::phr_txt("Check expected types in the variable schema vs. what is in the target dataset column {nm}.")
+            step = private$..phr_txt("Column type conversions"),
+            hint = private$..phr_txt("Check expected types in the variable schema vs. what is in the target dataset column {nm}.")
             )
             if (phrutils::phr_failed(result)) {
               return(result)
@@ -667,8 +667,8 @@ Data <- R6::R6Class(
 
                 data_copy
             },
-            step = phrutils::phr_txt("Process select_multiple columns"),
-            hint = phrutils::phr_txt("Check formatting issues of select multiple columns in the dataset.")
+            step = private$..phr_txt("Process select_multiple columns"),
+            hint = private$..phr_txt("Check formatting issues of select multiple columns in the dataset.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -688,8 +688,8 @@ Data <- R6::R6Class(
               )
 
             },
-            step = phrutils::phr_txt("Process schema identified other columns"),
-            hint = phrutils::phr_txt("Check variables identified as other variables in the variable_schema.")
+            step = private$..phr_txt("Process schema identified other columns"),
+            hint = private$..phr_txt("Check variables identified as other variables in the variable_schema.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -703,7 +703,7 @@ Data <- R6::R6Class(
 
               if (nrow(private$..indicator_schema) > 0) {
                 phrutils::phr_message(
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "Processing {nrow(private$..indicator_schema)} indicator(s) from indicator schema..."
                   )
                 )
@@ -717,8 +717,8 @@ Data <- R6::R6Class(
               }
               working_data
             },
-            step = phrutils::phr_txt("Process indicator schema"),
-            hint = phrutils::phr_txt("Check content of indicator schema.")
+            step = private$..phr_txt("Process indicator schema"),
+            hint = private$..phr_txt("Check content of indicator schema.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -737,8 +737,8 @@ Data <- R6::R6Class(
                 variable_map = private$..variable_map
               )
             },
-            step = phrutils::phr_txt("Generate cluster_id_numeric if cluster_id exists"),
-            hint = phrutils::phr_txt("Check the content or presence of cluster_id.")
+            step = private$..phr_txt("Generate cluster_id_numeric if cluster_id exists"),
+            hint = private$..phr_txt("Check the content or presence of cluster_id.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -763,13 +763,13 @@ Data <- R6::R6Class(
               phrutils::phr_message(paste0("3 rows ..standardized data: ", nrow(self$get(field = "..standardized_data"))))
 
               private$..standardized <- TRUE
-              phrutils::phr_message(phrutils::phr_txt(
+              phrutils::phr_message(private$..phr_txt(
                 "{private$..dataset_name} standardization complete."
               ))
 
             },
-            step = phrutils::phr_txt("Set ..standardized data"),
-            hint = phrutils::phr_txt("Check if ..standardized data set properly.")
+            step = private$..phr_txt("Set ..standardized data"),
+            hint = private$..phr_txt("Check if ..standardized data set properly.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -784,7 +784,7 @@ Data <- R6::R6Class(
                 !is.null(private$..standardized_data) &&
                 !is.null(private$..variable_schema)
               ) {
-                phrutils::phr_message(phrutils::phr_txt(
+                phrutils::phr_message(private$..phr_txt(
                   "Running quality checks on {private$..dataset_name}..."
                 ))
                 private$..standardize_run_quality_checks(stage = "standardized")
@@ -792,7 +792,7 @@ Data <- R6::R6Class(
 
             },
             step = "Run quality checks",
-            hint = phrutils::phr_txt(
+            hint = private$..phr_txt(
               "Check dependency schema and type validations"
             )
           )
@@ -806,7 +806,7 @@ Data <- R6::R6Class(
               private$..post_standardize()
             },
             step = "Post-standardize hook",
-            hint = phrutils::phr_txt("Subclass-specific processing after standardization")
+            hint = private$..phr_txt("Subclass-specific processing after standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -818,8 +818,8 @@ Data <- R6::R6Class(
               private$..map_schema_vars(stage = "standardized")
               private$..map_schema_labels()
             },
-            step = phrutils::phr_txt("Update variable and value maps (final)"),
-            hint = phrutils::phr_txt("Final map update after post-standardize")
+            step = private$..phr_txt("Update variable and value maps (final)"),
+            hint = private$..phr_txt("Final map update after post-standardize")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -829,7 +829,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("{private$..dataset_name} was standardized and stored in ..standardized_data .")
+            message = private$..phr_txt("{private$..dataset_name} was standardized and stored in ..standardized_data .")
           )
 
         },
@@ -866,13 +866,13 @@ Data <- R6::R6Class(
             if (is.null(df)) {
               phrutils::phr_error(
                 private$..dataset_name,
-                phrutils::phr_txt("No data available at stage '{stage}'.")
+                private$..phr_txt("No data available at stage '{stage}'.")
               )
             }
             df
           },
-          step = phrutils::phr_txt("Load data for generating cleaning log"),
-          hint = phrutils::phr_txt("Check if standardized data is available. Should use standardized data for cleaning log generation.")
+          step = private$..phr_txt("Load data for generating cleaning log"),
+          hint = private$..phr_txt("Check if standardized data is available. Should use standardized data for cleaning log generation.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -887,8 +887,8 @@ Data <- R6::R6Class(
           private$..pre_generate_cleaning_log(stage = stage)
 
           },
-          step = phrutils::phr_txt("pre generate cleaning log hook"),
-          hint = phrutils::phr_txt("Check any subclass specific handling for generating cleaning logs")
+          step = private$..phr_txt("pre generate cleaning log hook"),
+          hint = private$..phr_txt("Check any subclass specific handling for generating cleaning logs")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -932,8 +932,8 @@ Data <- R6::R6Class(
             results
 
           },
-          step = phrutils::phr_txt("setup for generate cleaning log"),
-          hint = phrutils::phr_txt("check if cleaning log exists in the data object, if ..data_quality_flags exist, or if enumerator or device id are appropraitely set in the variabale map.")
+          step = private$..phr_txt("setup for generate cleaning log"),
+          hint = private$..phr_txt("check if cleaning log exists in the data object, if ..data_quality_flags exist, or if enumerator or device id are appropraitely set in the variabale map.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -969,7 +969,7 @@ Data <- R6::R6Class(
             }
 
             phrutils::phr_message(
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Generated {entries_added} cleaning log entries and {deletions_added} deletion log entries from quality flags."
               )
             )
@@ -982,8 +982,8 @@ Data <- R6::R6Class(
             results
 
           },
-          step = phrutils::phr_txt("generating cleaning log entries from data quality flags"),
-          hint = phrutils::phr_txt("Check definition of rules in dependency schema. ")
+          step = private$..phr_txt("generating cleaning log entries from data quality flags"),
+          hint = private$..phr_txt("Check definition of rules in dependency schema. ")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1003,8 +1003,8 @@ Data <- R6::R6Class(
             )
 
           },
-          step = phrutils::phr_txt("Adding other column cleaning entries"),
-          hint = phrutils::phr_txt("Check other columns in datasets and listed in variable schema.")
+          step = private$..phr_txt("Adding other column cleaning entries"),
+          hint = private$..phr_txt("Check other columns in datasets and listed in variable schema.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1022,8 +1022,8 @@ Data <- R6::R6Class(
             )
 
           },
-          step = phrutils::phr_txt("Adding cleaning log entries from unique variable constraints"),
-          hint = phrutils::phr_txt("Check unique variable constraints from variable schema")
+          step = private$..phr_txt("Adding cleaning log entries from unique variable constraints"),
+          hint = private$..phr_txt("Check unique variable constraints from variable schema")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1036,8 +1036,8 @@ Data <- R6::R6Class(
           private$..post_generate_cleaning_log(stage = stage)
 
           },
-          step = phrutils::phr_txt("post generate cleaning log hook"),
-          hint = phrutils::phr_txt("Check subclass specific post generate cleaning log hook for issues.")
+          step = private$..phr_txt("post generate cleaning log hook"),
+          hint = private$..phr_txt("Check subclass specific post generate cleaning log hook for issues.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1047,7 +1047,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Cleaning log for {private$..dataset_name} was successfully generated and stored in ..cleaning_log.")
+            message = private$..phr_txt("Cleaning log for {private$..dataset_name} was successfully generated and stored in ..cleaning_log.")
           )
 
           invisible(private$..cleaning_log)
@@ -1084,7 +1084,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Clean process started for {private$..dataset_name}")
+            message = private$..phr_txt("Clean process started for {private$..dataset_name}")
           )
 
           # Step 1: Check Validation
@@ -1096,7 +1096,7 @@ Data <- R6::R6Class(
 
             if (!private$..validated) {
               phrutils::phr_warning(
-                message = phrutils::phr_txt(
+                message = private$..phr_txt(
                   "Data validation failed. Proceeding with cleaning with caution."
                 ),
                 origin = paste0(private$..dataset_name, "$clean")
@@ -1104,8 +1104,8 @@ Data <- R6::R6Class(
             }
 
           },
-          step = phrutils::phr_txt("check validation in clean"),
-          hint = phrutils::phr_txt("Check the integrity and mapping of the variable and value maps. Possibly mapped values that do not exist in the dataset.")
+          step = private$..phr_txt("check validation in clean"),
+          hint = private$..phr_txt("Check the integrity and mapping of the variable and value maps. Possibly mapped values that do not exist in the dataset.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1115,8 +1115,8 @@ Data <- R6::R6Class(
           result <- phrutils::phr_try_step({
             private$..clean_setup()
           },
-          step = phrutils::phr_txt("Setup cleaning dataset"),
-          hint = phrutils::phr_txt("Check data availability and fallback logic")
+          step = private$..phr_txt("Setup cleaning dataset"),
+          hint = private$..phr_txt("Check data availability and fallback logic")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1127,8 +1127,8 @@ Data <- R6::R6Class(
             # Run any specified sub class pre cleaning
             private$..pre_clean()
           },
-          step = phrutils::phr_txt("Setup cleaning dataset"),
-          hint = phrutils::phr_txt("Check data availability and fallback logic")
+          step = private$..phr_txt("Setup cleaning dataset"),
+          hint = private$..phr_txt("Check data availability and fallback logic")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1150,8 +1150,8 @@ Data <- R6::R6Class(
             }
 
           },
-          step = phrutils::phr_txt("Validate cleaning log"),
-          hint = phrutils::phr_txt("Check the structure, validity, and content of the cleaning log")
+          step = private$..phr_txt("Validate cleaning log"),
+          hint = private$..phr_txt("Check the structure, validity, and content of the cleaning log")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1179,8 +1179,8 @@ Data <- R6::R6Class(
               }
             }
           },
-          step = phrutils::phr_txt("Apply cleaning log"),
-          hint = phrutils::phr_txt("Check cleaning log has valid inputs.")
+          step = private$..phr_txt("Apply cleaning log"),
+          hint = private$..phr_txt("Check cleaning log has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1197,8 +1197,8 @@ Data <- R6::R6Class(
               private$..deletion_log$post_validate(self, stage = "clean")
             }
           },
-          step = phrutils::phr_txt("Apply deletion log"),
-          hint = phrutils::phr_txt("Check deletion log has structure and if it has valid inputs.")
+          step = private$..phr_txt("Apply deletion log"),
+          hint = private$..phr_txt("Check deletion log has structure and if it has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1227,8 +1227,8 @@ Data <- R6::R6Class(
 
             }
           },
-          step = phrutils::phr_txt("Apply cleaning log"),
-          hint = phrutils::phr_txt("Check cleaning log has valid inputs.")
+          step = private$..phr_txt("Apply cleaning log"),
+                    hint = private$..phr_txt("Check cleaning log has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1238,8 +1238,8 @@ Data <- R6::R6Class(
           result <- phrutils::phr_try_step({
             private$..post_clean()
           },
-          step = phrutils::phr_txt("Post clean hook"),
-          hint = phrutils::phr_txt("Check subclass specific post hook handling.")
+          step = private$..phr_txt("Post clean hook"),
+          hint = private$..phr_txt("Check subclass specific post hook handling.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1251,7 +1251,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = TRUE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Data cleaning Complete. Cleaned data stored in ..clean_data")
+            message = private$..phr_txt("Data cleaning Complete. Cleaned data stored in ..clean_data")
           )
         },
         on_error = "abort",
@@ -1293,15 +1293,15 @@ Data <- R6::R6Class(
             if (is.null(df)) {
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "No data available at selected stage '{stage}'."
                 )
               )
               return(NULL)
             }
           },
-          step = phrutils::phr_txt("Getting data for data diagnose"),
-          hint = phrutils::phr_txt("Check availability of data at stage {stage}")
+          step = private$..phr_txt("Getting data for data diagnose"),
+          hint = private$..phr_txt("Check availability of data at stage {stage}")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1317,7 +1317,7 @@ Data <- R6::R6Class(
             ) {
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt("No variable schema defined.")
+                private$..phr_txt("No variable schema defined.")
               )
               return(NULL)
             }
@@ -1336,7 +1336,7 @@ Data <- R6::R6Class(
             if (nrow(sch_vars) == 0 || !"variable" %in% names(sch_vars)) {
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt("No variable schema defined.")
+                private$..phr_txt("No variable schema defined.")
               )
               return(NULL)
             }
@@ -1350,8 +1350,8 @@ Data <- R6::R6Class(
               !is.na(sch_vars$variable) & sch_vars$variable != ""
             ])
           },
-          step = phrutils::phr_txt("Setup for data diagnose"),
-          hint = phrutils::phr_txt("Check availability of data at stage {stage}")
+          step = private$..phr_txt("Setup for data diagnose"),
+          hint = private$..phr_txt("Check availability of data at stage {stage}")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1380,8 +1380,8 @@ Data <- R6::R6Class(
             diagnostic_rows
 
           },
-          step = phrutils::phr_txt("Build diagnostic rows"),
-          hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
+          step = private$..phr_txt("Build diagnostic rows"),
+          hint = private$..phr_txt("Check variable schema, variable and value maps.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1425,8 +1425,8 @@ Data <- R6::R6Class(
               )
             }
           },
-          step = phrutils::phr_txt("Convert diagnostic rows to data frame"),
-          hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
+          step = private$..phr_txt("Convert diagnostic rows to data frame"),
+          hint = private$..phr_txt("Check variable schema, variable and value maps.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1441,8 +1441,8 @@ Data <- R6::R6Class(
               self$set(field = "..data_diagnostics", value = diagnostics)
 
             },
-            step = phrutils::phr_txt("Store diagnostic table"),
-            hint = phrutils::phr_txt("Check access to the private ..data_diagnostics field.")
+            step = private$..phr_txt("Store diagnostic table"),
+            hint = private$..phr_txt("Check access to the private ..data_diagnostics field.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -1452,7 +1452,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Generated diagnostic table with {nrow(diagnostics)} row(s) for {private$..dataset_name}.")
+            message = private$..phr_txt("Generated diagnostic table with {nrow(diagnostics)} row(s) for {private$..dataset_name}.")
           )
 
           # Return the table
@@ -1489,7 +1489,7 @@ Data <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_error(
               private$..dataset_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "No data available at stage '{stage}' to export."
               )
             )
@@ -1505,7 +1505,7 @@ Data <- R6::R6Class(
             if (!requireNamespace("openxlsx", quietly = TRUE)) {
               phrutils::phr_error(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Package 'openxlsx' is required for XLSX export."
                 )
               )
@@ -1517,7 +1517,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Exported {stage} data to '{file_path}'")
+            message = private$..phr_txt("Exported {stage} data to '{file_path}'")
           )
 
           invisible(file_path)
@@ -1552,7 +1552,7 @@ Data <- R6::R6Class(
       if (missing(name) || !is.character(name) || length(name) != 1) {
         phrutils::phr_error(
           private$..dataset_name,
-          phrutils::phr_txt("Link 'name' must be a single character string.")
+          private$..phr_txt("Link 'name' must be a single character string.")
         )
       }
 
@@ -1560,13 +1560,13 @@ Data <- R6::R6Class(
       nms_allowed <- names(allowed)
 
       if(!(name %in% nms_allowed)) {
-        phrutils::phr_error(message = phrutils::phr_txt("The name '{name}' is not in the allowed list of data object types to link to this Data object. Allowed types include: {nms_allowed} "))
+        phrutils::phr_error(message = private$..phr_txt("The name '{name}' is not in the allowed list of data object types to link to this Data object. Allowed types include: {nms_allowed} "))
       }
 
       exp_class <- allowed[[name]]
 
       if(!inherits(x = other_object, what = allowed[[name]])) {
-        phrutils::phr_error(message = phrutils::phr_txt("The object does not match the expected class for the allowed data type to link to this Data object. For '{name} was expecting an object of class {exp_class}."))
+        phrutils::phr_error(message = private$..phr_txt("The object does not match the expected class for the allowed data type to link to this Data object. For '{name} was expecting an object of class {exp_class}."))
       }
 
       private$..linked_objects[[name]] <- list(
@@ -1579,7 +1579,7 @@ Data <- R6::R6Class(
         log = TRUE,
         touch = TRUE,
         name = private$..dataset_name,
-        message = phrutils::phr_txt("Linked '{name}' to {private$..dataset_name} (by {by_self_role} -> {by_other_role}).")
+        message = private$..phr_txt("Linked '{name}' to {private$..dataset_name} (by {by_self_role} -> {by_other_role}).")
       )
 
       invisible(TRUE)
@@ -1613,7 +1613,7 @@ Data <- R6::R6Class(
           if (is.null(df)) {
             phrutils::phr_warning(
               private$..dataset_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "No {stage} data available for DataAnalytics generation."
               )
             )
@@ -1643,7 +1643,7 @@ Data <- R6::R6Class(
             log = TRUE,
             touch = FALSE,
             name = private$..dataset_name,
-            message = phrutils::phr_txt("Generated DataAnalytics object for {private$..dataset_name}.")
+            message = private$..phr_txt("Generated DataAnalytics object for {private$..dataset_name}.")
           )
 
           return(analytics)
@@ -1887,9 +1887,7 @@ Data <- R6::R6Class(
                   schema_name,
                   "_schema"
                 ),
-                message = phrutils::phr_txt(
-                  phrutils::phr_txt("Failed to read {filename}: {e$message}")
-                )
+                message = private$..phr_txt("Failed to read {filename}: {e$message}")
               )
 
               return(NULL)
@@ -1935,22 +1933,22 @@ Data <- R6::R6Class(
 
             if (is.null(df_schema)) {
               msg <- paste0(
-                phrutils::phr_txt("The loaded "),
+                private$..phr_txt("The loaded "),
                 schema_name,
-                phrutils::phr_txt(" schema was or coerced to NULL. "),
-                phrutils::phr_txt("A blank valid dataframe was stored instead.")
+                private$..phr_txt(" schema was or coerced to NULL. "),
+                private$..phr_txt("A blank valid dataframe was stored instead.")
               )
             } else {
               msg <- paste0(
-                phrutils::phr_txt("The loaded "),
+                private$..phr_txt("The loaded "),
                 schema_name,
-                phrutils::phr_txt(" schema did not have the correct required columns. "),
-                phrutils::phr_txt("A blank valid dataframe was stored instead.")
+                private$..phr_txt(" schema did not have the correct required columns. "),
+                private$..phr_txt("A blank valid dataframe was stored instead.")
               )
             }
 
             phrutils::phr_warning(
-              message = phrutils::phr_txt(msg),
+              message = msg,
               origin = paste0(
                 dataset_name,
                 "Data$loading_",
@@ -1958,9 +1956,9 @@ Data <- R6::R6Class(
                 "_schema"
               ),
               hint = paste0(
-                phrutils::phr_txt("Check required columns or format of the "),
+                private$..phr_txt("Check required columns or format of the "),
                 schema_name,
-                phrutils::phr_txt(" schema input file.")
+                private$..phr_txt(" schema input file.")
               )
             )
           }
@@ -1995,7 +1993,7 @@ Data <- R6::R6Class(
 
       if (is.null(data)) {
         phrutils::phr_error(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "No data provided for initialization."
           ),
           origin = dataset_name
@@ -2011,7 +2009,7 @@ Data <- R6::R6Class(
 
         phrutils::phr_error(
           dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "You must supply a valid uuid column name when creating a Data object."
           )
         )
@@ -2028,7 +2026,7 @@ Data <- R6::R6Class(
 
         phrutils::phr_error(
           dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "UUID column '{uuid}' not found in provided data."
           )
         )
@@ -2233,7 +2231,7 @@ Data <- R6::R6Class(
       if (!private$..uuid %in% names(df)) {
         phrutils::phr_error(
           private$..dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "UUID column '{private$..uuid}' not found in dataset."
           )
         )
@@ -2291,7 +2289,7 @@ Data <- R6::R6Class(
 
             phrutils::phr_warning(
               private$..dataset_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Value map role '{var}' is not linked to any variable_map entry."
               )
             )
@@ -2306,7 +2304,7 @@ Data <- R6::R6Class(
 
             phrutils::phr_warning(
               private$..dataset_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Value map references column '{dataset_col}' which is missing."
               )
             )
@@ -2357,7 +2355,7 @@ Data <- R6::R6Class(
 
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Value map for role '{var}' has values not found in dataset: {paste(missing_vals, collapse=', ')}"
                 )
               )
@@ -2377,7 +2375,7 @@ Data <- R6::R6Class(
 
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Value map for role '{var}' has values not found in dataset: {paste(missing_vals, collapse=', ')}"
                 )
               )
@@ -2430,14 +2428,14 @@ Data <- R6::R6Class(
           {
             if (is.null(private$..raw_data)) {
               phrutils::phr_error(
-                phrutils::phr_txt("Raw data is NULL; cannot standardize."),
+                private$..phr_txt("Raw data is NULL; cannot standardize."),
                 origin = paste0(private$..dataset_name, "$standardize"),
-                hint = phrutils::phr_txt("Raw dataset has been removed or corrupted. Reinitialize the Data object.")
+                hint = private$..phr_txt("Raw dataset has been removed or corrupted. Reinitialize the Data object.")
               )
             }
           },
-          step = phrutils::phr_txt("Check raw data"),
-          hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+          step = private$..phr_txt("Check raw data"),
+          hint = private$..phr_txt("Ensure raw data exists before standardization")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -2451,14 +2449,14 @@ Data <- R6::R6Class(
             if (!private$..validated) {
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Data validation failed. Proceed with standardization with caution."
                 )
               )
             }
           },
-          step = phrutils::phr_txt("Validation"),
-          hint = phrutils::phr_txt(
+          step = private$..phr_txt("Validation"),
+          hint = private$..phr_txt(
             "Check data structure and required columns"
           )
         )
@@ -2556,7 +2554,7 @@ Data <- R6::R6Class(
 
         phrutils::phr_warning(
           private$..dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Column '{nm}' cannot be safely coerced to schema type '{want}'. Leaving as-is."
           )
         )
@@ -2730,7 +2728,7 @@ Data <- R6::R6Class(
 
             if (length(sm_result$expanded_columns) > 0) {
               phrutils::phr_message(
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Expanded {length(sm_result$expanded_columns)} dummy columns from select_multiple questions."
                 )
               )
@@ -2779,7 +2777,7 @@ Data <- R6::R6Class(
               }
 
               phrutils::phr_message(
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Tracked {length(sm_result$other_related_columns)} select_multiple column(s) with 'other' responses."
                 )
               )
@@ -2983,7 +2981,7 @@ Data <- R6::R6Class(
             }
 
             phrutils::phr_message(
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Added {nrow(schema_other_rows)} schema-identified 'other' columns."
               )
             )
@@ -3043,7 +3041,7 @@ Data <- R6::R6Class(
 
           phrutils::phr_warning(
             private$..dataset_name,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Indicator '{ind_name}' requires variables not available in the dataset: {paste(missing_vars, collapse=', ')}. Skipping."
             )
           )
@@ -3063,7 +3061,7 @@ Data <- R6::R6Class(
 
         phrutils::phr_warning(
           private$..dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Indicator '{ind_name}' has no function_name specified. Skipping."
           )
         )
@@ -3078,7 +3076,7 @@ Data <- R6::R6Class(
 
         phrutils::phr_warning(
           private$..dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Function '{func_name}' for indicator '{ind_name}' not found. Skipping."
           )
         )
@@ -3097,7 +3095,7 @@ Data <- R6::R6Class(
       # Call indicator function
 
       phrutils::phr_message(
-        phrutils::phr_txt(
+        private$..phr_txt(
           "Calling {func_name} for indicator '{ind_name}'..."
         )
       )
@@ -3112,7 +3110,7 @@ Data <- R6::R6Class(
         working_data <- ind_result
 
         phrutils::phr_message(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Indicator '{ind_name}' computed successfully."
           )
         )
@@ -3151,7 +3149,7 @@ Data <- R6::R6Class(
 
         phrutils::phr_warning(
           private$..dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Function '{func_name}' did not return a data frame. Result ignored."
           )
         )
@@ -3201,7 +3199,7 @@ Data <- R6::R6Class(
         if (eq_pos < 1) {
           phrutils::phr_warning(
             private$..dataset_name,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Argument '{arg_string}' for indicator '{ind_name}' is not in 'name=value' form. Skipping."
             )
           )
@@ -3260,7 +3258,7 @@ Data <- R6::R6Class(
 
                 phrutils::phr_warning(
                   private$..dataset_name,
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "Variable map role '{var_ref$role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
                   )
                 )
@@ -3284,7 +3282,7 @@ Data <- R6::R6Class(
 
                     phrutils::phr_warning(
                       private$..dataset_name,
-                      phrutils::phr_txt(
+                      private$..phr_txt(
                         "Value map '{elem}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
                       )
                     )
@@ -3309,7 +3307,7 @@ Data <- R6::R6Class(
 
                 phrutils::phr_warning(
                   private$..dataset_name,
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "Value map role '{val_ref$role}' not found in vector argument '{arg_name}' for indicator '{ind_name}'."
                   )
                 )
@@ -3379,7 +3377,7 @@ Data <- R6::R6Class(
 
             phrutils::phr_warning(
               private$..dataset_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Variable map role '{var_ref$role}' not found for indicator '{ind_name}'. Passing NULL for optional parameter '{arg_name}'."
               )
             )
@@ -3412,7 +3410,7 @@ Data <- R6::R6Class(
 
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Value map '{arg_value}' not found for indicator '{ind_name}'. Using original value."
                 )
               )
@@ -3425,7 +3423,7 @@ Data <- R6::R6Class(
 
             phrutils::phr_warning(
               private$..dataset_name,
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Value map role '{val_ref$role}' not found for indicator '{ind_name}'. Using original value."
               )
             )
@@ -3624,7 +3622,7 @@ Data <- R6::R6Class(
         )
 
         phrutils::phr_message(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Created cluster_id_numeric with {length(unique_clusters)} unique cluster(s)."
           )
         )
@@ -3662,7 +3660,7 @@ Data <- R6::R6Class(
 
           if (is.null(df)) {
             phrutils::phr_error(
-              message = phrutils::phr_txt(
+              message = private$..phr_txt(
                 "No dataset is available at the selected stage."
               ),
               origin = paste0(private$..dataset_name, "$..standardize_run_quality_checks")
@@ -3877,7 +3875,7 @@ Data <- R6::R6Class(
                         # Skip this dependency if any required variables are missing
                         if (length(missing_vars) > 0) {
                           phrutils::phr_message(
-                            phrutils::phr_txt(
+                            private$..phr_txt(
                               "Skipping dependency '{flag_name}': required variable(s) not present in dataset: {paste(missing_vars, collapse=', ')}"
                             )
                           )
@@ -3903,7 +3901,7 @@ Data <- R6::R6Class(
                         if (rule_if == "") {
                           phrutils::phr_warning(
                             private$..dataset_name,
-                            phrutils::phr_txt(
+                            private$..phr_txt(
                               "Invalid dependency rule structure for '{flag_name}': missing 'if/condition_if'."
                             )
                           )
@@ -3915,7 +3913,7 @@ Data <- R6::R6Class(
                           # which may use condition_if alone to identify rows for deletion
                           phrutils::phr_warning(
                             private$..dataset_name,
-                            phrutils::phr_txt(
+                            private$..phr_txt(
                               "Invalid dependency rule structure for '{flag_name}': missing 'then'."
                             )
                           )
@@ -4110,7 +4108,7 @@ Data <- R6::R6Class(
                   self$set(field = "..standardized_data", value = std)
 
                   phrutils::phr_message(
-                    phrutils::phr_txt(
+                    private$..phr_txt(
                       "Appended {ncol(flag_df)-1} data quality flag columns onto standardized dataset."
                     )
                   )
@@ -4122,7 +4120,7 @@ Data <- R6::R6Class(
           )
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Data quality check complete. {ncol(flag_df)-1} flag types generated."
             )
           )
@@ -4621,7 +4619,7 @@ Data <- R6::R6Class(
       if (!exists_in_data) {
         phrutils::phr_warning(
           private$..dataset_name,
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Column '{col}' not found in data (role='{role}')."
           )
         )
@@ -4818,7 +4816,7 @@ Data <- R6::R6Class(
 
       if (length(skipped_self_ref) > 0) {
         phrutils::phr_message(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Skipping self-referential cleaning log variable(s) for flag '{col}': {paste(skipped_self_ref, collapse=', ')}."
           )
         )
@@ -4826,7 +4824,7 @@ Data <- R6::R6Class(
 
       if (length(skipped_missing_cols) > 0) {
         phrutils::phr_message(
-          phrutils::phr_txt(
+          private$..phr_txt(
             "Skipping cleaning log variable(s) for flag '{col}' not found in dataset at stage '{stage}': {paste(skipped_missing_cols, collapse=', ')}."
           )
         )
@@ -4859,7 +4857,7 @@ Data <- R6::R6Class(
             question.name = var_actual_col,
             issue = col,
             feedback = paste0(
-              phrutils::phr_txt("Auto-flagged by quality check: "),
+              private$..phr_txt("Auto-flagged by quality check: "),
               col
             ),
             changed = changed_val,
@@ -5068,7 +5066,7 @@ Data <- R6::R6Class(
 
         if (other_entries_added > 0) {
           phrutils::phr_message(
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Generated {other_entries_added} cleaning log entries from 'other' columns."
             )
           )
@@ -5197,7 +5195,7 @@ Data <- R6::R6Class(
         if (unique_deletions_added > 0) {
 
           phrutils::phr_message(
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Generated {unique_deletions_added} deletion log entries from unique variable constraint checks."
             )
           )
@@ -5242,7 +5240,7 @@ Data <- R6::R6Class(
 
       if (!private$..standardized) {
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "Data should be standardized before cleaning. Using fallback."
           ),
           origin = paste0(private$..dataset_name, "$clean")
@@ -5250,7 +5248,7 @@ Data <- R6::R6Class(
       }
 
       phrutils::phr_message(
-        phrutils::phr_txt(
+        private$..phr_txt(
           "Starting cleaning for {private$..dataset_name}..."
         )
       )
@@ -5263,7 +5261,7 @@ Data <- R6::R6Class(
       if (is.null(data_result)) {
 
         phrutils::phr_error(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "No valid dataset available for cleaning."
           ),
           origin = paste0(private$..dataset_name, "$clean")
@@ -5274,7 +5272,7 @@ Data <- R6::R6Class(
       if (data_result$stage == "raw") {
 
         phrutils::phr_warning(
-          message = phrutils::phr_txt(
+          message = private$..phr_txt(
             "Standardized data is unavailable; falling back to raw data."
           ),
           origin = paste0(private$..dataset_name, "$clean")
@@ -5878,7 +5876,7 @@ Data <- R6::R6Class(
       phrutils::phr_try(
         {
           if (length(private$..linked_objects) == 0) {
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(private$..phr_txt(
               "No linked objects to validate for {private$..dataset_name}."
             ))
             return(invisible(TRUE))
@@ -5922,7 +5920,7 @@ Data <- R6::R6Class(
 
           # If no problems → TRUE
           if (length(problems) == 0) {
-            phrutils::phr_message(phrutils::phr_txt(
+            phrutils::phr_message(private$..phr_txt(
               "All links validated successfully for {private$..dataset_name}."
             ))
             return(invisible(TRUE))
@@ -5931,7 +5929,7 @@ Data <- R6::R6Class(
           # Otherwise return list of missing FKs
           phrutils::phr_warning(
             private$..dataset_name,
-            phrutils::phr_txt(
+            private$..phr_txt(
               "Link validation found missing foreign keys in: {paste(names(problems), collapse=', ')}"
             )
           )
@@ -5965,7 +5963,7 @@ Data <- R6::R6Class(
           # Early exit if no schema is defined
           if (is.null(sch) || nrow(sch) == 0) {
             phrutils::phr_message(
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "No variable schema defined for {private$..dataset_name}; skipping auto-mapping."
               )
             )
@@ -5980,7 +5978,7 @@ Data <- R6::R6Class(
               if (is.null(df)) {
                 phrutils::phr_warning(
                   private$..dataset_name,
-                  phrutils::phr_txt(
+                  private$..phr_txt(
                     "No {stage} data available for schema variable mapping."
                   )
                 )
@@ -5989,8 +5987,8 @@ Data <- R6::R6Class(
 
               list(df = df)
             },
-            step = phrutils::phr_txt("Check raw data"),
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            step = private$..phr_txt("Check raw data"),
+            hint = private$..phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -6038,8 +6036,8 @@ Data <- R6::R6Class(
               )
 
             },
-            step = phrutils::phr_txt("Read variable schema"),
-            hint = phrutils::phr_txt(
+            step = private$..phr_txt("Read variable schema"),
+            hint = private$..phr_txt(
               "Check the format of the variable schema table"
             )
           )
@@ -6083,8 +6081,8 @@ Data <- R6::R6Class(
                 vals_mapped = vals_mapped
               )
             },
-            step = phrutils::phr_txt("map schema vars iterations"),
-            hint = phrutils::phr_txt("Ensure raw data exists before standardization")
+            step = private$..phr_txt("map schema vars iterations"),
+            hint = private$..phr_txt("Ensure raw data exists before standardization")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -6095,7 +6093,7 @@ Data <- R6::R6Class(
 
           if (vars_mapped > 0 || vals_mapped > 0) {
             phrutils::phr_message(
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Auto-mapped {vars_mapped} variable(s) and {vals_mapped} value set(s) for {private$..dataset_name}."
               )
             )
@@ -6478,7 +6476,7 @@ Data <- R6::R6Class(
             {
               phrutils::phr_warning(
                 private$..dataset_name,
-                phrutils::phr_txt(
+                private$..phr_txt(
                   "Unknown language '{language}' in map_schema_labels(); defaulting to 'english'."
                 )
               )
@@ -6531,7 +6529,7 @@ Data <- R6::R6Class(
 
           if (vars_labelled > 0 || vals_labelled > 0) {
             phrutils::phr_message(
-              phrutils::phr_txt(
+              private$..phr_txt(
                 "Labelled {vars_labelled} variable(s) and {vals_labelled} value set(s) for {private$..dataset_name} ({language})."
               )
             )

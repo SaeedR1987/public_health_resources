@@ -30,7 +30,7 @@ WomanIndividualData <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = dataset_name,
-          message = phrutils::phr_txt("Starting initialization for WomanIndividualData object {dataset_name}.")
+          message = private$..phr_txt("Starting initialization for WomanIndividualData object {dataset_name}.")
         )
 
         woman_map <- list(
@@ -49,8 +49,8 @@ WomanIndividualData <- R6::R6Class(
               hh_uuid = if (is.null(hh_uuid)) {woman_map$hh_uuid} else {hh_uuid}
             )
           },
-          step = phrutils::phr_txt("Super initialize of WomanIndividualData"),
-          hint = phrutils::phr_txt("Check initialization in parent Asset, Data or IndividualData classes.")
+          step = private$..phr_txt("Super initialize of WomanIndividualData"),
+          hint = private$..phr_txt("Check initialization in parent Asset, Data or IndividualData classes.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -63,8 +63,8 @@ WomanIndividualData <- R6::R6Class(
                      value = c(private$..optional_columns, unlist(woman_map)))
 
           },
-          step = phrutils::phr_txt("Loading health specific fields in initialize"),
-          hint = phrutils::phr_txt("Check water container data and inputs")
+          step = private$..phr_txt("Loading health specific fields in initialize"),
+          hint = private$..phr_txt("Check water container data and inputs")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -75,8 +75,8 @@ WomanIndividualData <- R6::R6Class(
           {
             private$..map_schema_vars(stage = "raw")
           },
-          step = phrutils::phr_txt("Populate variable and value maps for woman data"),
-          hint = phrutils::phr_txt("Check variable and value maps for woman variables")
+          step = private$..phr_txt("Populate variable and value maps for woman data"),
+          hint = private$..phr_txt("Check variable and value maps for woman variables")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -86,7 +86,7 @@ WomanIndividualData <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = dataset_name,
-          message = phrutils::phr_txt("Initialization for {dataset_name} as WomanIndividualData object completed successfully with {nrow(data)} records.")
+          message = private$..phr_txt("Initialization for {dataset_name} as WomanIndividualData object completed successfully with {nrow(data)} records.")
         )
 
       }, on_error = "abort", origin = "WomanIndividualData$initialize")

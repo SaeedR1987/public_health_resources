@@ -45,7 +45,7 @@ WaterContainerData <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Starting initialization for WaterContainerData object {dataset_name}.")
+          message = private$..phr_txt("Starting initialization for WaterContainerData object {dataset_name}.")
         )
 
         # Default mapping for water container data
@@ -67,8 +67,8 @@ WaterContainerData <- R6::R6Class(
               hh_uuid = if (is.null(hh_uuid)) {default_map$hh_uuid} else {hh_uuid}
             )
           },
-          step = phrutils::phr_txt("Super initialize of WaterContainerData"),
-          hint = phrutils::phr_txt("Check initialization in parent Asset or Data classes.")
+          step = private$..phr_txt("Super initialize of WaterContainerData"),
+          hint = private$..phr_txt("Check initialization in parent Asset or Data classes.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -79,8 +79,8 @@ WaterContainerData <- R6::R6Class(
           {
             private$..map_schema_vars(stage = "raw")
           },
-          step = phrutils::phr_txt("Map schema vars for WaterContainerData"),
-          hint = phrutils::phr_txt("Check variable schema, variable or value maps.")
+          step = private$..phr_txt("Map schema vars for WaterContainerData"),
+          hint = private$..phr_txt("Check variable schema, variable or value maps.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -98,8 +98,8 @@ WaterContainerData <- R6::R6Class(
               private$..variable_map$container_capacity_liters
             ))
           },
-          step = phrutils::phr_txt("Setting optional columns for WaterContainerData"),
-          hint = phrutils::phr_txt("Check for presence of optional variables")
+          step = private$..phr_txt("Setting optional columns for WaterContainerData"),
+          hint = private$..phr_txt("Check for presence of optional variables")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -109,7 +109,7 @@ WaterContainerData <- R6::R6Class(
           log = TRUE,
           touch = TRUE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Initialization for {dataset_name} as WaterContainerData object completed successfully with {nrow(data)} records.")
+          message = private$..phr_txt("Initialization for {dataset_name} as WaterContainerData object completed successfully with {nrow(data)} records.")
         )
 
       }, on_error = "abort", origin = "WaterContainerData$initialize")

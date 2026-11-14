@@ -80,7 +80,7 @@ HealthDataAnalytics <- R6::R6Class(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt("Starting initialization for {dataset_name}.")
+        message = private$..phr_txt("Starting initialization for {dataset_name}.")
       )
 
       super$initialize(
@@ -112,8 +112,8 @@ HealthDataAnalytics <- R6::R6Class(
           self$set(field = "..linked_ind_health_variable_map", value = linked_ind_health_variable_map)
           self$set(field = "..linked_ind_health_value_map", value = linked_ind_health_value_map)
         },
-        step = phrutils::phr_txt("Loading health specific fields in initialize"),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+        step = private$..phr_txt("Loading health specific fields in initialize"),
+        hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -124,8 +124,8 @@ HealthDataAnalytics <- R6::R6Class(
         {
           private$..initialize_load_schemas_health()
         },
-        step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+        step = private$..phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -139,13 +139,13 @@ HealthDataAnalytics <- R6::R6Class(
           self$set(field = "..data_analysis_plan_roster",
                    value = QuantDataAnalysisPlanLog$new(
                      log_df   = NULL,
-                     log_name = phrutils::phr_txt("Quant Data Analysis Plan (Roster)")
+                     log_name = private$..phr_txt("Quant Data Analysis Plan (Roster)")
                    ))
 
           self$set(field = "..data_analysis_plan_health",
                    value = QuantDataAnalysisPlanLog$new(
                      log_df   = NULL,
-                     log_name = phrutils::phr_txt("Quant Data Analysis Plan (Health)")
+                     log_name = private$..phr_txt("Quant Data Analysis Plan (Health)")
                    ))
 
           # Build the DAP for roster dataset from available columns and analysis_schema_roster
@@ -170,8 +170,8 @@ HealthDataAnalytics <- R6::R6Class(
             private$..data_analysis_plan_health$set(field = "..log_df", value = result$dap_df)
           }
         },
-        step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+        step = private$..phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -207,8 +207,8 @@ HealthDataAnalytics <- R6::R6Class(
                      ))
           }
         },
-        step = phrutils::phr_txt("Loading health specific quality, analysis, and outputs schemas"),
-        hint = phrutils::phr_txt("Check water container data and inputs")
+        step = private$..phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
         return(result)
@@ -218,16 +218,16 @@ HealthDataAnalytics <- R6::R6Class(
       if (!is.null(linked_ind_roster_data)) msg_parts <- c(msg_parts, "roster")
       if (!is.null(linked_ind_health_data))  msg_parts <- c(msg_parts, "health individual")
       if (length(msg_parts) > 0) {
-        msg <- "{dataset_name} initialized with linked {paste(msg_parts, collapse=' and ')} data."
+        msg <- private$..phr_txt("{dataset_name} initialized with linked {paste(msg_parts, collapse=' and ')} data.")
       } else {
-        msg <- "{dataset_name} initialized as HealthDataAnalytics object."
+        msg <- private$..phr_txt("{dataset_name} initialized as HealthDataAnalytics object.")
       }
 
       private$..touch(
         log = TRUE,
         touch = FALSE,
         name = dataset_name,
-        message = phrutils::phr_txt(msg)
+        message = msg
       )
     }
   ),
@@ -412,7 +412,7 @@ HealthDataAnalytics <- R6::R6Class(
             data_analysis_plan = "data_analysis_plan_roster"
           )
         } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
+          phrutils::phr_message(origin, private$..phr_txt("Linked roster data present but data_analysis_plan_roster is empty. Skipping roster analysis."))
         }
       }
 
@@ -424,7 +424,7 @@ HealthDataAnalytics <- R6::R6Class(
             data_analysis_plan = "data_analysis_plan_health"
           )
         } else {
-          phrutils::phr_message(origin, phrutils::phr_txt("Linked health data present but data_analysis_plan_health is empty. Skipping health analysis."))
+          phrutils::phr_message(origin, private$..phr_txt("Linked health data present but data_analysis_plan_health is empty. Skipping health analysis."))
         }
       }
 

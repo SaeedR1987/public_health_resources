@@ -48,18 +48,18 @@ ANAFramework <- R6::R6Class(
         if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
           self$master_objectives_schema <- objectives
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "ANAFramework: master objectives schema loaded ({nrow(objectives)} rows)."
             ),
             origin = "ANAFramework$initialize"
           )
         } else {
           phrutils::phr_warning(
-            message = phr_txt(
+            message = private$..phr_txt(
               "ANAFramework: reference_objectives.xlsx could not be loaded; master_objectives_schema is NULL."
             ),
             origin = "ANAFramework$initialize",
-            hint   = phr_txt(
+            hint   = private$..phr_txt(
               "Ensure reference_objectives.xlsx is present in the package resources folder."
             )
           )
@@ -73,18 +73,18 @@ ANAFramework <- R6::R6Class(
           self$master_indicator_bank   <- indicators
           self$modified_indicator_bank <- indicators
           phrutils::phr_message(
-            phr_txt(
+            private$..phr_txt(
               "ANAFramework: indicator bank loaded ({nrow(indicators)} rows)."
             ),
             origin = "ANAFramework$initialize"
           )
         } else {
           phrutils::phr_warning(
-            message = phr_txt(
+            message = private$..phr_txt(
               "ANAFramework: reference_indicator_bank.xlsx could not be loaded; master_indicator_bank is NULL."
             ),
             origin = "ANAFramework$initialize",
-            hint   = phr_txt(
+            hint   = private$..phr_txt(
               "Ensure reference_indicator_bank.xlsx is present in the package resources folder."
             )
           )
@@ -102,16 +102,16 @@ ANAFramework <- R6::R6Class(
           self$master_svg  <- svg_content
           self$adjusted_svg <- svg_content
           phrutils::phr_message(
-            phr_txt("ANAFramework: master SVG loaded from ana_framework.svg."),
+            private$..phr_txt("ANAFramework: master SVG loaded from ana_framework.svg."),
             origin = "ANAFramework$initialize"
           )
         } else {
           phrutils::phr_warning(
-            message = phr_txt(
+            message = private$..phr_txt(
               "ANAFramework: ana_framework.svg could not be found; master_svg is NULL."
             ),
             origin = "ANAFramework$initialize",
-            hint   = phr_txt(
+            hint   = private$..phr_txt(
               "Ensure ana_framework.svg is present in the package resources folder."
             )
           )

@@ -943,18 +943,15 @@ Tool <- R6::R6Class(
             duplicated(list_ch$name) & !is.na(list_ch$name)
           ]
           if (length(dup_names) > 0) {
-            msg <- paste0(
-              "Duplicate choice names in list '",
-              list_nm,
-              "': ",
-              paste(unique(dup_names), collapse = ", ")
+            msg <- private$..phr_txt(
+              "Duplicate choice names in list '{list_nm}': {paste(unique(dup_names), collapse = ', ')}"
             )
             private$.validation_errors <- c(
               private$.validation_errors,
               list(list(
                 row = NA_integer_,
                 column = "name",
-                message = phr_txt(msg, default = msg)
+                message = msg
               ))
             )
           }

@@ -32,7 +32,7 @@ HealthIndividualData <- R6::R6Class(
           log = TRUE,
           touch = FALSE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Started initialization for Data object {dataset_name}.")
+          message = private$..phr_txt("Started initialization for Data object {dataset_name}.")
         )
 
         health_map <- list(
@@ -52,8 +52,8 @@ HealthIndividualData <- R6::R6Class(
               hh_uuid = if(is.null(hh_uuid)) {health_map$hh_uuid} else {hh_uuid}
               )
           },
-        step = phrutils::phr_txt("Super initialize of IndividualHealthData"),
-        hint = phrutils::phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
+        step = private$..phr_txt("Super initialize of IndividualHealthData"),
+        hint = private$..phr_txt("Check initialization in parent Asset, Data, or IndividualData classes.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -64,8 +64,8 @@ HealthIndividualData <- R6::R6Class(
           {
             private$..map_schema_vars(stage = "raw")
           },
-        step = phrutils::phr_txt("Mapping variables and value maps for IndividualHealthData"),
-        hint = phrutils::phr_txt("Check variable schema, variable and value maps.")
+        step = private$..phr_txt("Mapping variables and value maps for IndividualHealthData"),
+        hint = private$..phr_txt("Check variable schema, variable and value maps.")
         )
         if (phrutils::phr_failed(result)) {
           return(result)
@@ -75,7 +75,7 @@ HealthIndividualData <- R6::R6Class(
           log = TRUE,
           touch = TRUE,
           name = private$..dataset_name,
-          message = phrutils::phr_txt("Initialization for {dataset_name} as a HealthInidividualData object completed succesfully with {nrow(data)} records.")
+          message = private$..phr_txt("Initialization for {dataset_name} as a HealthInidividualData object completed succesfully with {nrow(data)} records.")
         )
 
       }, on_error = "abort", origin = "HealthIndividualData$initialize")
