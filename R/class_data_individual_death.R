@@ -17,7 +17,6 @@
 #'
 #' @field required_columns Character vector of required column names for death data
 #' @field optional_columns Character vector of optional columns for death data
-#' @field recall_date Reference date for mortality recall period
 #'
 #' @seealso [IndividualData], [Data]
 #' @export
@@ -30,7 +29,6 @@ DeathIndividualData <- R6::R6Class(
     # ---- Additional fields
     required_columns = NULL,
     optional_columns = NULL,
-    recall_date = NULL,     # reference date if missing death timing
 
 
     #' @description
@@ -109,8 +107,8 @@ DeathIndividualData <- R6::R6Class(
               date_recall <- "2025-01-01"
             }
 
-            # Convert recall_date safely
-            recall_date <- phrutils::phr_convert_date(recall_date)
+            # Convert recall date safely
+            recall_date <- phrutils::phr_convert_date(date_recall)
             self$set(field = "..recall_date", value = recall_date)
 
           },
@@ -150,6 +148,25 @@ DeathIndividualData <- R6::R6Class(
   ),
 
   private = list(
+
+    # @field ..recall_date Reference date for mortality recall period
+    #   (used if death timing is missing).
+    # @keywords internal
+    ..recall_date = NULL,
+
+    # Additional Accessible Fields Hook
+    #
+    # @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(super$..additional_get_fields(), "..recall_date")
+    },
+
+    # Additional Settable Fields Hook
+    #
+    # @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(super$..additional_set_fields(), "..recall_date")
+    },
 
     # @field ..default_variable_schema_filename Default file name for variable schema xlsx file
     # Should be a two element character vector with the folder and filename.

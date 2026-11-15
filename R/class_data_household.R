@@ -185,7 +185,7 @@ HouseholdData <- R6::R6Class(
           result <- phrutils::phr_try_step(
             {
               self$set(
-                field = "optional_columns",
+                field = "..optional_columns",
                 value = c(
                   private$..variable_map$cluster_id,
                   private$..variable_map$stratum,
@@ -476,7 +476,7 @@ HouseholdData <- R6::R6Class(
     # @return Character vector of field names.
     ..additional_call_fields = function() {
       c(
-        super$..additional_get_fields(),
+        super$..additional_call_fields(),
         "generate_weights"
       )
     },
@@ -489,7 +489,7 @@ HouseholdData <- R6::R6Class(
     # @return Character vector of field names.
     ..additional_set_fields = function() {
       c(
-        super$..additional_get_fields(),
+        super$..additional_set_fields(),
         "..sampling_frame"
       )
     },
@@ -1237,10 +1237,10 @@ HouseholdData <- R6::R6Class(
         {
           # Look for total liters column - try variable_map first, then fallback to known names
           water_col <- linked_obj$get(
-            field = ".variable_map"
+            field = "..variable_map"
           )$container_capacity_liters %||%
             linked_obj$get(
-              field = ".variable_map"
+              field = "..variable_map"
             )$wash_container_total_liters %||%
             intersect(
               names(water_data),
@@ -1603,8 +1603,8 @@ HouseholdData <- R6::R6Class(
             ) {
               "calc_age_months"
             } else {
-              linked_obj$get(field = ".variable_map")$age_months %||%
-                linked_obj$get(field = ".variable_map")$nutr_age_months %||%
+              linked_obj$get(field = "..variable_map")$age_months %||%
+                linked_obj$get(field = "..variable_map")$nutr_age_months %||%
                 intersect(
                   names(nutrition_data),
                   c("age_months", "nutr_age_months")

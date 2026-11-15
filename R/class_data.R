@@ -63,9 +63,9 @@ Data <- R6::R6Class(
     #     mappings and labels.
     #
     # Access these through:
-    #   d$get(field = ".variable_map")
-    #   d$set(field = ".variable_map", value = list(...))
-    #   d$call(field = "cleaning_log", member = "add_row", ...)
+    #   d$get(field = "..variable_map")
+    #   d$set(field = "..variable_map", value = list(...))
+    #   d$call(field = "get_data", stage = "raw")
 
     #' @description
     #' Initialize a new Data object with survey data
@@ -1788,6 +1788,90 @@ Data <- R6::R6Class(
     #   to this data object.
     # @keywords internal
     ..linked_objects = list(), # For dependency linking (name -> list(obj, by_self, by_other))
+
+    # @field ..optional_columns Character vector of non-required but commonly
+    #   present columns set by subclasses.
+    # @keywords internal
+    ..optional_columns = NULL,
+
+    # Additional Accessible Fields Hook
+    #
+    # @description
+    # Returns Data-specific fields accessible via `get()`.
+    #
+    # @return Character vector of field names.
+    ..additional_get_fields = function() {
+      c(
+        super$..additional_get_fields(),
+        private$..data_field_names()
+      )
+    },
+
+    # Additional Callable Fields Hook
+    #
+    # @description
+    # Returns Data-specific methods callable via `call()`.
+    #
+    # @return Character vector of field names.
+    ..additional_call_fields = function() {
+      c(
+        super$..additional_call_fields(),
+        "summary",
+        "get_data",
+        "get_data_with_fallback",
+        "validate",
+        "standardize",
+        "generate_cleaning_log",
+        "clean",
+        "data_diagnose",
+        "export_data",
+        "add_linked_dataset",
+        "generate_data_analytics"
+      )
+    },
+
+    # Additional Settable Fields Hook
+    #
+    # @description
+    # Returns Data-specific fields that may be modified via `set()`.
+    #
+    # @return Character vector of field names.
+    ..additional_set_fields = function() {
+      c(
+        super$..additional_set_fields(),
+        private$..data_field_names()
+      )
+    },
+
+    # Names of the private fields exposed through `get()`/`set()` on Data.
+    ..data_field_names = function() {
+      c(
+        "..dataset_name",
+        "..validated",
+        "..standardized",
+        "..cleaned",
+        "..raw_data",
+        "..standardized_data",
+        "..clean_data",
+        "..uuid",
+        "..required_columns",
+        "..optional_columns",
+        "..other_columns",
+        "..variable_map",
+        "..value_map",
+        "..variable_label",
+        "..value_label",
+        "..variable_schema",
+        "..indicator_schema",
+        "..dependency_schema",
+        "..cleaning_log",
+        "..deletion_log",
+        "..data_quality_flags",
+        "..data_diagnostics",
+        "..cleaning_log_issues",
+        "..linked_objects"
+      )
+    },
 
     # @field ..data_registry List of data object types and associated types
     # that are allowable for add_linked_object
