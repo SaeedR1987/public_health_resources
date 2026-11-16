@@ -1789,11 +1789,6 @@ Data <- R6::R6Class(
     # @keywords internal
     ..linked_objects = list(), # For dependency linking (name -> list(obj, by_self, by_other))
 
-    # @field ..optional_columns Character vector of non-required but commonly
-    #   present columns set by subclasses.
-    # @keywords internal
-    ..optional_columns = NULL,
-
     # Additional Accessible Fields Hook
     #
     # @description
