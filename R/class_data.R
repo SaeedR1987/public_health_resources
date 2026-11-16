@@ -599,10 +599,6 @@ Data <- R6::R6Class(
           var_schema <- result$var_schema
           other_col_patterns <- result$other_col_patterns
 
-          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", class(data_copy)))
-          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", nrow(data_copy)))
-          phrutils::phr_message(paste0("FIRST rows ..standardized data: ", summary(data_copy)))
-
           # Step 5-7: For Loop - Schema type conversion and inferred other column registration
 
           result <- phrutils::phr_try_step(
