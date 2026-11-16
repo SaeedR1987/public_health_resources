@@ -31,8 +31,6 @@ rates and validating death timing information.
     \item{\code{required_columns}}{Character vector of required column names for death data}
 
     \item{\code{optional_columns}}{Character vector of optional columns for death data}
-
-    \item{\code{recall_date}}{Reference date for mortality recall period}
   }
   \if{html}{\out{</div>}}
 }
