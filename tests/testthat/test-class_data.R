@@ -3,6 +3,56 @@ library(tibble)
 library(withr)
 library(mockery)
 
+# Allowed field tests ####
+
+test_that("Data allow-lists cover every private field literal used with get/set", {
+  df <- tibble::tibble(id = 1:3)
+  d <- suppressMessages(
+    Data$new(data = df, dataset_name = "TestData", uuid = "id")
+  )
+
+  for (f in c("..raw_data", "..standardized_data", "..clean_data",
+              "..variable_map", "..value_map", "..variable_label",
+              "..value_label", "..optional_columns", "..linked_objects")) {
+    expect_no_error(d$get(field = f))
+  }
+  expect_no_error(d$set(field = "..optional_columns", value = "id"))
+  expect_equal(d$get(field = "..optional_columns"), "id")
+  expect_error(d$get(field = ".variable_map"))
+})
+
+test_that("Data set/get field literals in R/class_data*.R are allow-listed", {
+  skip_if_not(dir.exists(testthat::test_path("..", "..", "R")))
+  src <- paste(
+    unlist(lapply(
+      list.files(
+        testthat::test_path("..", "..", "R"),
+        pattern = "^class_data(_household|_individual.*)?\\.R$",
+        full.names = TRUE
+      ),
+      readLines
+    )),
+    collapse = "\n"
+  )
+  lits <- regmatches(
+    src,
+    gregexpr('(get|set)\\(\\s*field\\s*=\\s*"[^"]+"', src)
+  )[[1]]
+  lits <- unique(sub('.*"([^"]+)"', "\\1", lits))
+  allowed <- unique(c(
+    "..name", "..lang", "..translations", "..metadata", "..change_log",
+    "..dataset_name", "..validated", "..standardized", "..cleaned",
+    "..raw_data", "..standardized_data", "..clean_data", "..uuid",
+    "..required_columns", "..optional_columns", "..other_columns",
+    "..variable_map", "..value_map", "..variable_label", "..value_label",
+    "..variable_schema", "..indicator_schema", "..dependency_schema",
+    "..cleaning_log", "..deletion_log", "..data_quality_flags",
+    "..data_diagnostics", "..cleaning_log_issues", "..linked_objects",
+    "..sampling_frame", "..recall_date"
+  ))
+  expect_setequal(setdiff(lits, allowed), character(0))
+})
+
 # Initialization Tests ####
 
 test_that("Data initializes with minimal valid data", {

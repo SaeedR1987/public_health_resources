@@ -678,6 +678,7 @@ NutritionDataAnalytics <- R6::R6Class(
     # iycf-specific quality schema fields
     ..quality_schema_iycf      = NULL,
     ..data_analysis_plan_muac = NULL,
+    ..survey_design_muac = NULL,
 
     # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
     # Should be a two element character vector with the folder and filename.
@@ -728,6 +729,7 @@ NutritionDataAnalytics <- R6::R6Class(
         super$..additional_get_fields(),
         "..quality_schema_iycf",
         "..data_analysis_plan_muac",
+        "..survey_design_muac"
       )
     },
 
@@ -755,7 +757,8 @@ NutritionDataAnalytics <- R6::R6Class(
       c(
         super$..additional_set_fields(),
         "..quality_schema_iycf",
-        "..data_analysis_plan_muac"
+        "..data_analysis_plan_muac",
+        "..survey_design_muac"
       )
     },
 
