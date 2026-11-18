@@ -5302,7 +5302,9 @@ Data <- R6::R6Class(
     # Hook method called after generate_cleaning_log completes. Override in subclasses for custom post-processing.
     #
     # @return NULL (default implementation does nothing)
-    ..post_generate_cleaning_log = function() {}, # subclass hook
+    ..post_generate_cleaning_log = function(
+    stage = c("clean", "standardized", "raw")
+    ) {}, # subclass hook
 
     # Setup Cleaning Dataset
     #
