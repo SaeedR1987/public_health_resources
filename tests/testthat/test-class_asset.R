@@ -109,6 +109,18 @@ test_that("set() writes a member on a role-resolved list element", {
   expect_equal(inst$tools$tool_health_iphra_v2$name, "renamed_health")
 })
 
+test_that("role resolution is exact and does not match longer or embedding names", {
+  inst <- Asset$new()
+  resolve <- inst$.__enclos_env__$private$..resolve_list_key
+  container <- list(fsl_hhs_cat = 1, fsl_hhs_cat_ipc = 2, a_health_b = 3)
+
+  expect_equal(unname(resolve(container, "f", "fsl_hhs_cat_ipc")), 2L)
+  expect_equal(unname(resolve(container, "f", "fsl_hhs_cat")), 1L)
+  expect_equal(resolve(container, "f", "health", create_if_missing = TRUE), "health")
+  expect_error(resolve(container, "f", "health"))
+  expect_error(resolve(container, "f", "hhs_cat"))
+})
+
 test_that("set() can write to a private field", {
   inst <- TestAsset$new()
   inst$set(field = "secret", value = "updated_secret")

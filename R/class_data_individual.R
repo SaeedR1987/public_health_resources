@@ -109,7 +109,12 @@ IndividualData <- R6::R6Class(
             # (ensure we store *column names*, not roles)
             ind_required <- c(
               private$..variable_map$uuid,     # unique person identifier
-              if (is.null(hh_uuid)) {default_map$hh_uuid} else {hh_uuid},  # household linkage (duplicates allowed)
+              # household linkage (duplicates allowed): explicit arg > mapped column > default
+              if (!is.null(hh_uuid)) {
+                hh_uuid
+              } else {
+                private$..variable_map$hh_uuid %||% default_map$hh_uuid
+              },
               private$..variable_map$sex,
               private$..variable_map$age_years
             )

@@ -1201,3 +1201,81 @@ test_that("height_sticks check with NA handling works correctly", {
 
 
 
+
+
+test_that("generate_cleaning_log logs each comma-separated dependency variable", {
+  df <- tibble::tibble(
+    id = 1:3,
+    status = c("other", "active", "other"),
+    status_other = c(NA, NA, "custom")
+  )
+
+  d <- Data$new(df, dataset_name = "SplitVarsTest", uuid = "id")
+  d$set(field = "..variable_map", role = "uuid", value = "id")
+
+  d$set(
+    field = "..dependency_schema",
+    value = data.frame(
+      dep_name = "flag_other_status_check",
+      variables = "status,status_other",
+      condition_if = "status == 'other'",
+      then = "!is.na(status_other)",
+      action = "flag_review",
+      stringsAsFactors = FALSE
+    )
+  )
+  d$validate()
+  d$standardize()
+
+  msgs <- character(0)
+  withCallingHandlers(
+    d$generate_cleaning_log(),
+    message = function(m) {
+      msgs <<- c(msgs, conditionMessage(m))
+      invokeRestart("muffleMessage")
+    },
+    warning = function(w) invokeRestart("muffleWarning")
+  )
+
+  expect_false(any(grepl("not found in dataset", msgs)))
+  log_df <- d$get(field = "..cleaning_log")$get(field = "..log_df")
+  expect_true(all(c("status", "status_other") %in% log_df$question.name))
+})
+
+test_that("generate_cleaning_log applies flag_autoclean from flat dependency_schema without warnings", {
+  df <- tibble::tibble(
+    id = 1:3,
+    status = c("other", "active", "other"),
+    status_other = c(NA, NA, "custom")
+  )
+
+  d <- Data$new(df, dataset_name = "ActionLookupTest", uuid = "id")
+  d$set(field = "..variable_map", role = "uuid", value = "id")
+  d$set(
+    field = "..dependency_schema",
+    value = data.frame(
+      dep_name = "flag_other_status_check",
+      variables = "status,status_other",
+      condition_if = "status == 'other'",
+      then = "!is.na(status_other)",
+      action = "flag_autoclean",
+      stringsAsFactors = FALSE
+    )
+  )
+  d$validate()
+  d$standardize()
+
+  warns <- character(0)
+  withCallingHandlers(
+    suppressMessages(d$generate_cleaning_log()),
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_false(any(grepl("non-function", warns)))
+  log_df <- d$get(field = "..cleaning_log")$get(field = "..log_df")
+  expect_gt(nrow(log_df), 0)
+  expect_true(all(log_df$changed == "yes"))
+})

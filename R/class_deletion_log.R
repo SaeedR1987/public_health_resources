@@ -205,7 +205,8 @@ DeletionLog <- R6::R6Class(
         }
 
         df_log <- result$df_log
-        df <- result$data_df
+        data_df <- result$df
+        uuid_col <- data_obj$get(field = "..uuid")
 
 
 

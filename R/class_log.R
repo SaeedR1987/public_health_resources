@@ -298,8 +298,11 @@ Log <- R6::R6Class(
           issues <- result
 
           # 4. Post Validation Hook
+          # Hooks merge their own issues into the stored ..issues, so store the
+          # issues found so far first and let the hook return the merged list.
           result <- phrutils::phr_try_step({
 
+          self$set(field = "..issues", value = issues)
           private$..post_validate()
 
           },
@@ -312,8 +315,8 @@ Log <- R6::R6Class(
 
           post_issues <- result
 
-          if (!is.null(post_issues) && length(post_issues) > 0) {
-            issues <- c(issues, pre_issues)
+          if (is.list(post_issues)) {
+            issues <- post_issues
           }
 
           # 5. FINALIZE and Set Fields
@@ -330,7 +333,7 @@ Log <- R6::R6Class(
             return(result)
           }
 
-          issues <- result
+          # self$set() returns the object, so keep the issues computed above
 
           if (length(issues) > 0) {
 

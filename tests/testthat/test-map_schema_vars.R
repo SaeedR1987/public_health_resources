@@ -174,6 +174,39 @@ test_that("map_schema_vars only maps found allowed values", {
   expect_false("cat_e" %in% d$get(field = ".value_map")$category)
 })
 
+test_that("map_schema_vars refreshes value map when column values change", {
+  df <- tibble::tibble(
+    id = 1:3,
+    category = c("cat_a", "cat_a", "cat_a")
+  )
+
+  d <- suppressMessages(
+    Data$new(data = df, dataset_name = "TestData", uuid = "id")
+  )
+
+  d$set(
+    field = "..variable_schema",
+    value = tibble::tibble(
+      rule_type = "variable",
+      variable = c("category", "category"),
+      value = c("a", "b"),
+      type = "character",
+      question_type = "select_one",
+      allowed = c("cat_a,cat_a2", "cat_b"),
+      col_names = "category"
+    )
+  )
+  priv <- d$.__enclos_env__$private
+  suppressMessages(priv$..map_schema_vars(stage = "raw"))
+  expect_equal(d$get(field = "..value_map")$category, list(a = "cat_a"))
+
+  # Same column, new values (e.g. recalculated during standardization)
+  priv$..raw_data <- dplyr::mutate(df, category = "cat_b")
+  suppressMessages(priv$..map_schema_vars(stage = "raw"))
+
+  expect_equal(d$get(field = "..variable_map")$category, "category")
+  expect_equal(d$get(field = "..value_map")$category, list(b = "cat_b"))
+})
 
 # Test: repair_maps method
 
