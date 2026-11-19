@@ -981,7 +981,7 @@ Asset <- R6::R6Class(
 
     # @description Resolve a top-level or nested target object.
     # @param field Top-level field name.
-    # @param role Optional role-style key for fuzzy list lookup.
+    # @param role Optional role-style key for exact (normalized) list lookup.
     # @param role2 Optional role-style key for a 2nd level list lookup,
     #   nested within the `role`-resolved element.
     # @return Resolved object.
@@ -1119,13 +1119,6 @@ Asset <- R6::R6Class(
       )
       idx <- which(normalized_names == role_key)
 
-      if (length(idx) == 0L) {
-        idx <- grep(
-          paste0("^", role_key, "$|_", role_key, "_|_", role_key, "$"),
-          normalized_names
-        )
-      }
-
       if (length(idx) == 1L) {
         return(idx)
       }
@@ -1200,7 +1193,7 @@ Asset <- R6::R6Class(
       invisible(NULL)
     },
 
-    # @description Normalize role names for fuzzy list matching.
+    # @description Normalize role names for exact list matching.
     # @param x Character role/name input.
     # @return Normalized character key.
     # @keywords internal

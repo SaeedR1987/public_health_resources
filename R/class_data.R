@@ -1142,7 +1142,7 @@ Data <- R6::R6Class(
             private$..cleaning_log$validate()
 
             # post-validate: check cleaning log against dataset
-            private$..cleaning_log$post_validate(self, stage = "clean")
+            private$..cleaning_log$validate_cl_against_dataset(self, stage = "clean")
             }
 
           },
@@ -1162,13 +1162,13 @@ Data <- R6::R6Class(
             ) {
 
               # apply changes (authoritative mode option A)
-              if (nrow(private$..cleaning_log$log_df) > 0) {
+              if (nrow(private$..cleaning_log$get(field = "..log_df")) > 0) {
 
                 self$set(
                   field = "..clean_data",
                   value = private$..clean_apply_cleaning_changes(
                     df = private$..clean_data,
-                    log_df = private$..cleaning_log$log_df,
+                    log_df = private$..cleaning_log$get(field = "..log_df"),
                     uuid_col = private$..uuid
                   )
                 )
@@ -1190,7 +1190,7 @@ Data <- R6::R6Class(
               inherits(private$..deletion_log, "DeletionLog")
             ) {
               private$..deletion_log$validate()
-              private$..deletion_log$post_validate(self, stage = "clean")
+              private$..cleaning_log$validate_dl_against_dataset(self, stage = "clean")
             }
           },
           step = private$..phr_txt("Apply deletion log"),
@@ -1209,8 +1209,8 @@ Data <- R6::R6Class(
             ) {
 
               # apply deletions
-              if (nrow(private$..deletion_log$log_df) > 0) {
-                delete_ids <- as.character(private$..deletion_log$log_df$uuid)
+              if (nrow(private$..deletion_log$get(field = "..log_df")) > 0) {
+                delete_ids <- as.character(private$..deletion_log$get(field = "..log_df")$uuid)
 
                 self$set(
                   field = "..clean_data",
@@ -1223,8 +1223,8 @@ Data <- R6::R6Class(
 
             }
           },
-          step = private$..phr_txt("Apply cleaning log"),
-                    hint = private$..phr_txt("Check cleaning log has valid inputs.")
+          step = private$..phr_txt("Apply deletion log"),
+                    hint = private$..phr_txt("Check deletion log has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
             return(result)
@@ -4960,32 +4960,17 @@ Data <- R6::R6Class(
     ..gen_cl_get_flag_action_from_schema = function(flag_name) {
       phrutils::phr_try(
         {
-          # Check separate dependency_schema first (stored as a flat data
-          # frame; convert to the nested list view on demand).
-          dep_schema_list <- private$..as_dependency_schema_list()
-          if (length(dep_schema_list) > 0) {
-            # Check hard dependencies
-            if (flag_name %in% names(dep_schema_list$dependencies)) {
-              dep <- dep_schema_list$dependencies[[flag_name]]
-              action <- dep[["action"]] %||% ""
-              return(action)
-            }
-            # Check soft dependencies
-            if (flag_name %in% names(dep_schema_list$soft_dependencies)) {
-              dep <- dep_schema_list$soft_dependencies[[flag_name]]
-              action <- dep[["action"]] %||% ""
-              return(action)
-            }
-          }
-
-          # Fall back to variable_schema dependencies for backward compatibility
+          # dependency_schema is stored as a flat data frame
+          dep_schema <- private$..dependency_schema
           if (
-            !is.null(private$..variable_schema) &&
-            !is.null(private$..variable_schema$dependencies)
+            is.data.frame(dep_schema) &&
+            nrow(dep_schema) > 0 &&
+            all(c("dep_name", "action") %in% names(dep_schema))
           ) {
-            if (flag_name %in% names(private$..variable_schema$dependencies)) {
-              dep <- private$..variable_schema$dependencies[[flag_name]]
-              action <- dep[["action"]] %||% ""
+            idx <- which(as.character(dep_schema$dep_name) == flag_name)
+            if (length(idx) > 0) {
+              action <- trimws(as.character(dep_schema$action[idx[1]]))
+              if (is.na(action)) action <- ""
               return(action)
             }
           }
@@ -5013,10 +4998,14 @@ Data <- R6::R6Class(
               is.data.frame(dep_schema) &&
               nrow(dep_schema) > 0) {
 
-            dep_row <- dep_schema[dep_schema$dep_name == flag_name, ]
+            idx <- which(as.character(dep_schema$dep_name) == flag_name)
 
-            if (nrow(dep_row) > 0) {
-              variables <- dep_row$variables[[1]] %||% NULL
+            if (length(idx) > 0) {
+              raw <- as.character(dep_schema$variables[idx[1]])
+              if (is.na(raw)) return(NULL)
+              variables <- trimws(strsplit(raw, ",", fixed = TRUE)[[1]])
+              variables <- variables[variables != ""]
+              if (length(variables) == 0) return(NULL)
               return(variables)
             }
           }
@@ -5182,15 +5171,11 @@ Data <- R6::R6Class(
         "variable" %in% names(var_schema_for_unique)
       ) {
 
-        unique_vars <- var_schema_for_unique$var_name[
-          isTRUE(var_schema_for_unique$unique) |
-            (!is.na(var_schema_for_unique$unique) &
-               var_schema_for_unique$unique %in% c(TRUE, "TRUE", "true", 1))
-        ]
-
-        if (!is.null(unique_vars) && length(unique_vars) > 0) {
-
-        }
+        unique_vars <- unique(var_schema_for_unique$variable[
+          !is.na(var_schema_for_unique$unique) &
+            var_schema_for_unique$unique %in% c(TRUE, "TRUE", "true", 1)
+        ])
+        unique_vars <- unique_vars[!is.na(unique_vars)]
 
         for (var_canonical in unique_vars) {
 
@@ -6274,20 +6259,23 @@ Data <- R6::R6Class(
 
       }
 
-      if (!should_update) {
-        return(list(
-          vars_mapped = vars_mapped,
-          vals_mapped = vals_mapped
-        ))
+      if (should_update) {
+
+        self$set(
+          field = "..variable_map",
+          role = var_role,
+          value = matched_col
+        )
+
+        vars_mapped <- vars_mapped + 1
+
+      } else {
+
+        # Keep the existing column mapping, but still refresh the value map
+        # since values in the column may have changed (e.g. recalculated).
+        matched_col <- private$..variable_map[[var_role]]
+
       }
-
-      self$set(
-        field = "..variable_map",
-        role = var_role,
-        value = matched_col
-      )
-
-      vars_mapped <- vars_mapped + 1
 
       var_type <- types[[var_role]]
 

@@ -90,6 +90,8 @@ drc_mort$add_linked_dataset(
   by_other_role = "uuid"
 )
 
+vl_raw <- drc_mort$get(field = "..value_map")$fsl_hhs_cat
+vl_raw
 
 # write.csv(x = roster$export_variable_schema(), file = "roster_variable_schema.csv")
 # View(roster$export_indicator_schema())
@@ -108,6 +110,15 @@ drc_mort$add_linked_dataset(
 # Standardize and Transform Data
 
 drc_mort$standardize()
+
+vm_std <- drc_mort$get(field = "..variable_map")
+vm_std
+
+
+vl_std <- drc_mort$get(field = "..value_map")
+vl_std
+
+
 drc_mort$get("..standardized")
 head(drc_mort$get_data(stage = "standardized"))
 View(drc_mort$get(field = "..standardized_data"))
