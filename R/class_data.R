@@ -1190,10 +1190,10 @@ Data <- R6::R6Class(
               inherits(private$..deletion_log, "DeletionLog")
             ) {
               private$..deletion_log$validate()
-              private$..cleaning_log$validate_dl_against_dataset(self, stage = "clean")
+              private$..deletion_log$validate_dl_against_dataset(self, stage = "clean")
             }
           },
-          step = private$..phr_txt("Apply deletion log"),
+          step = private$..phr_txt("Validate deletion log"),
           hint = private$..phr_txt("Check deletion log has structure and if it has valid inputs.")
           )
           if (phrutils::phr_failed(result)) {
