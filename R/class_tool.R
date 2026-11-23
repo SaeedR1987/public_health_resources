@@ -128,54 +128,74 @@ Tool <- R6::R6Class(
       choices = NULL,
       settings = NULL
     ) {
+      origin <- "Tool$initialize"
       super$initialize()
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Started initialization of Tool.")
       private$.name <- name %||% "Untitled Tool"
       private$.tool_type <- "generic"
 
-      # Initialize data frames with required columns if not provided
-      self$survey <- if (!is.null(survey)) {
-        private$.validate_survey_structure(survey)
-        survey
-      } else {
-        data.frame(
-          type = character(0),
-          name = character(0),
-          label = character(0),
-          stringsAsFactors = FALSE
-        )
+      result <- phrutils::phr_try_step(
+        {
+          # Initialize data frames with required columns if not provided
+          self$survey <- if (!is.null(survey)) {
+            private$.validate_survey_structure(survey)
+            survey
+          } else {
+            data.frame(
+              type = character(0),
+              name = character(0),
+              label = character(0),
+              stringsAsFactors = FALSE
+            )
+          }
+
+          self$choices <- if (!is.null(choices)) {
+            private$.validate_choices_structure(choices)
+            choices
+          } else {
+            data.frame(
+              list_name = character(0),
+              name = character(0),
+              label = character(0),
+              stringsAsFactors = FALSE
+            )
+          }
+
+          self$settings <- if (!is.null(settings)) {
+            settings
+          } else {
+            data.frame(
+              form_title = character(0),
+              form_id = character(0),
+              version = character(0),
+              stringsAsFactors = FALSE
+            )
+          }
+
+          # Populate revised copies from the originals
+          self$revised_survey <- self$survey
+          self$revised_choices <- self$choices
+          self$revised_settings <- self$settings
+
+          private$.selected_indicators <- character(0)
+          private$.validation_errors <- list()
+        },
+        step = "Initializing tool sheets"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
-      self$choices <- if (!is.null(choices)) {
-        private$.validate_choices_structure(choices)
-        choices
-      } else {
-        data.frame(
-          list_name = character(0),
-          name = character(0),
-          label = character(0),
-          stringsAsFactors = FALSE
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0(
+          "Completed initialization of Tool (", nrow(self$survey), " survey row(s), ",
+          nrow(self$choices), " choice row(s))."
         )
-      }
-
-      self$settings <- if (!is.null(settings)) {
-        settings
-      } else {
-        data.frame(
-          form_title = character(0),
-          form_id = character(0),
-          version = character(0),
-          stringsAsFactors = FALSE
-        )
-      }
-
-      # Populate revised copies from the originals
-      self$revised_survey <- self$survey
-      self$revised_choices <- self$choices
-      self$revised_settings <- self$settings
-
-      private$.selected_indicators <- character(0)
-      private$.validation_errors <- list()
-
+      )
       invisible(self)
     },
 
@@ -201,13 +221,24 @@ Tool <- R6::R6Class(
     #' @param new_name Character string for the tool name.
     #' @return Invisibly returns self for method chaining.
     set_name = function(new_name) {
-      if (
-        !is.character(new_name) || length(new_name) != 1 || nchar(new_name) == 0
-      ) {
-        stop("Tool name must be a non-empty character string")
+      origin <- "Tool$set_name"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_name.")
+      result <- phrutils::phr_try_step(
+        {
+          if (
+            !is.character(new_name) || length(new_name) != 1 || nchar(new_name) == 0
+          ) {
+            stop("Tool name must be a non-empty character string")
+          }
+          private$.name <- new_name
+        },
+        step = "Setting tool name"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
-      private$.name <- new_name
-      self$touch()
+      private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Tool name set to '", new_name, "'."))
       invisible(self)
     },
 
@@ -228,44 +259,56 @@ Tool <- R6::R6Class(
     #' @param language Character string for the new default language.
     #' @return Invisibly returns self for method chaining.
     change_default_language = function(language) {
-      allowable <- c("english", "french", "arabic", "spanish")
-      allowable_title <- c("English", "French", "Arabic", "Spanish")
-      if (
-        !is.character(language) || length(language) != 1 || nchar(language) == 0
-      ) {
-        stop("language must be a non-empty character string")
-      }
-      if (!tolower(language) %in% allowable) {
-        stop(paste0(
-          "language must be one of: ",
-          paste(allowable_title, collapse = ", "),
-          ". Got: '",
-          language,
-          "'"
-        ))
-      }
-      # Store normalised to title-case
-      language_norm <- tolower(language)
-      language_title <- paste0(
-        toupper(substring(language_norm, 1, 1)),
-        substring(language_norm, 2)
+      origin <- "Tool$change_default_language"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting change_default_language.")
+      language_title <- NULL
+      result <- phrutils::phr_try_step(
+        {
+          allowable <- c("english", "french", "arabic", "spanish")
+          allowable_title <- c("English", "French", "Arabic", "Spanish")
+          if (
+            !is.character(language) || length(language) != 1 || nchar(language) == 0
+          ) {
+            stop("language must be a non-empty character string")
+          }
+          if (!tolower(language) %in% allowable) {
+            stop(paste0(
+              "language must be one of: ",
+              paste(allowable_title, collapse = ", "),
+              ". Got: '",
+              language,
+              "'"
+            ))
+          }
+          # Store normalised to title-case
+          language_norm <- tolower(language)
+          language_title <- paste0(
+            toupper(substring(language_norm, 1, 1)),
+            substring(language_norm, 2)
+          )
+          if (is.null(self$revised_settings) || nrow(self$revised_settings) == 0) {
+            # Create a single-row revised_settings frame when none exists
+            self$revised_settings <- data.frame(
+              form_title = NA_character_,
+              form_id = NA_character_,
+              version = NA_character_,
+              default_language = language_title,
+              stringsAsFactors = FALSE
+            )
+          } else {
+            if (!"default_language" %in% names(self$revised_settings)) {
+              self$revised_settings[["default_language"]] <- NA_character_
+            }
+            self$revised_settings[["default_language"]] <- language_title
+          }
+        },
+        step = "Changing default language"
       )
-      if (is.null(self$revised_settings) || nrow(self$revised_settings) == 0) {
-        # Create a single-row revised_settings frame when none exists
-        self$revised_settings <- data.frame(
-          form_title = NA_character_,
-          form_id = NA_character_,
-          version = NA_character_,
-          default_language = language_title,
-          stringsAsFactors = FALSE
-        )
-      } else {
-        if (!"default_language" %in% names(self$revised_settings)) {
-          self$revised_settings[["default_language"]] <- NA_character_
-        }
-        self$revised_settings[["default_language"]] <- language_title
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
-      self$touch()
+      private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Default language set to '", language_title, "'."))
       invisible(self)
     },
 
@@ -287,47 +330,63 @@ Tool <- R6::R6Class(
     #'   \code{indicator_code} values to retain.
     #' @return Invisibly returns \code{self} for method chaining.
     filter_survey_by_indicator = function(indicator_codes) {
-      if (is.null(indicator_codes) || length(indicator_codes) == 0) {
-        stop("indicator_codes must be a non-empty vector or list")
-      }
-      indicator_codes <- as.character(unlist(indicator_codes))
-      # Always include 10000
-      if (!"10000" %in% indicator_codes) {
-        indicator_codes <- c(indicator_codes, "10000")
-      }
+      origin <- "Tool$filter_survey_by_indicator"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting filter_survey_by_indicator.")
+      result <- phrutils::phr_try_step(
+        {
+          if (is.null(indicator_codes) || length(indicator_codes) == 0) {
+            stop("indicator_codes must be a non-empty vector or list")
+          }
+          indicator_codes <- as.character(unlist(indicator_codes))
+          # Always include 10000
+          if (!"10000" %in% indicator_codes) {
+            indicator_codes <- c(indicator_codes, "10000")
+          }
 
-      # Create a vector of unique indicator codes ending in 00 (special lines)
-      # These are based on the first three digits of passed indicator codes
-      # e.g., from "14631" -> "14600"
-      # Expected format: indicator codes are at least 3 characters long (e.g., "14631")
-      special_codes <- paste0(substr(indicator_codes, 1, 3), "00")
+          # Create a vector of unique indicator codes ending in 00 (special lines)
+          # These are based on the first three digits of passed indicator codes
+          # e.g., from "14631" -> "14600"
+          # Expected format: indicator codes are at least 3 characters long (e.g., "14631")
+          special_codes <- paste0(substr(indicator_codes, 1, 3), "00")
 
-      # Combine all codes: original and special codes ending in 00
-      # (10000 is already included via indicator_codes at this point)
-      all_filter_codes <- unique(c(indicator_codes, special_codes))
+          # Combine all codes: original and special codes ending in 00
+          # (10000 is already included via indicator_codes at this point)
+          all_filter_codes <- unique(c(indicator_codes, special_codes))
 
-      sv <- self$survey
+          sv <- self$survey
 
-      if (nrow(sv) == 0 || !"indicator_code" %in% names(sv)) {
-        self$revised_survey <- sv
-        self$revised_choices <- self$choices
-        self$touch()
-        return(invisible(self))
-      }
+          if (nrow(sv) == 0 || !"indicator_code" %in% names(sv)) {
+            self$revised_survey <- sv
+            self$revised_choices <- self$choices
+          } else {
+            # Build a regex pattern that matches any of the indicator codes as
+            # whole values in a possibly comma-separated cell.
+            pattern <- paste(all_filter_codes, collapse = "|")
 
-      # Build a regex pattern that matches any of the indicator codes as
-      # whole values in a possibly comma-separated cell.
-      pattern <- paste(all_filter_codes, collapse = "|")
+            col_vals <- as.character(sv[["indicator_code"]])
+            is_selected <- !is.na(col_vals) & grepl(pattern, col_vals)
 
-      col_vals <- as.character(sv[["indicator_code"]])
-      is_selected <- !is.na(col_vals) & grepl(pattern, col_vals)
-
-      self$revised_survey <- sv[is_selected, , drop = FALSE]
-      self$revised_choices <- private$.filter_choices_from_survey(
-        all_filter_codes
+            self$revised_survey <- sv[is_selected, , drop = FALSE]
+            self$revised_choices <- private$.filter_choices_from_survey(
+              all_filter_codes
+            )
+          }
+        },
+        step = "Filtering survey by indicator"
       )
-
-      self$touch()
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0(
+          "Filtered survey to ", nrow(self$revised_survey), " of ", nrow(self$survey),
+          " row(s) and choices to ", nrow(self$revised_choices), " of ", nrow(self$choices), " row(s)."
+        )
+      )
       invisible(self)
     },
 
@@ -342,49 +401,64 @@ Tool <- R6::R6Class(
     #'   added/overwritten with the value of \code{list_name}.
     #' @return Invisibly returns self for method chaining.
     update_choice_list = function(list_name, new_choices) {
-      if (
-        !is.character(list_name) ||
-          length(list_name) != 1 ||
-          nchar(list_name) == 0
-      ) {
-        stop("list_name must be a non-empty character string")
-      }
-      if (!is.data.frame(new_choices)) {
-        stop("new_choices must be a data.frame")
-      }
-      if (!"name" %in% names(new_choices)) {
-        stop("new_choices must have a 'name' column")
-      }
+      origin <- "Tool$update_choice_list"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting update_choice_list.")
+      result <- phrutils::phr_try_step(
+        {
+          if (
+            !is.character(list_name) ||
+              length(list_name) != 1 ||
+              nchar(list_name) == 0
+          ) {
+            stop("list_name must be a non-empty character string")
+          }
+          if (!is.data.frame(new_choices)) {
+            stop("new_choices must be a data.frame")
+          }
+          if (!"name" %in% names(new_choices)) {
+            stop("new_choices must have a 'name' column")
+          }
 
-      # Ensure list_name column is set correctly
-      new_choices[["list_name"]] <- list_name
+          # Ensure list_name column is set correctly
+          new_choices[["list_name"]] <- list_name
 
-      # Target: revised_choices (falls back to master choices if revised is empty)
-      target <- if (
-        !is.null(self$revised_choices) && nrow(self$revised_choices) > 0
-      ) {
-        self$revised_choices
-      } else {
-        self$choices
-      }
+          # Target: revised_choices (falls back to master choices if revised is empty)
+          target <- if (
+            !is.null(self$revised_choices) && nrow(self$revised_choices) > 0
+          ) {
+            self$revised_choices
+          } else {
+            self$choices
+          }
 
-      # Align columns: add any missing columns as NA
-      all_cols <- union(names(target), names(new_choices))
-      for (col in setdiff(all_cols, names(target))) {
-        target[[col]] <- NA
-      }
-      for (col in setdiff(all_cols, names(new_choices))) {
-        new_choices[[col]] <- NA
-      }
-      new_choices <- new_choices[, names(target), drop = FALSE]
+          # Align columns: add any missing columns as NA
+          all_cols <- union(names(target), names(new_choices))
+          for (col in setdiff(all_cols, names(target))) {
+            target[[col]] <- NA
+          }
+          for (col in setdiff(all_cols, names(new_choices))) {
+            new_choices[[col]] <- NA
+          }
+          new_choices <- new_choices[, names(target), drop = FALSE]
 
-      # Remove existing entries for this list and append new ones
-      self$revised_choices <- rbind(
-        target[target$list_name != list_name, , drop = FALSE],
-        new_choices
+          # Remove existing entries for this list and append new ones
+          self$revised_choices <- rbind(
+            target[target$list_name != list_name, , drop = FALSE],
+            new_choices
+          )
+        },
+        step = "Updating choice list"
       )
-
-      self$touch()
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Replaced choice list '", list_name, "' with ", nrow(new_choices), " entr(ies).")
+      )
       invisible(self)
     },
 
@@ -395,67 +469,83 @@ Tool <- R6::R6Class(
     #' @param n Positive integer number of entries.
     #' @return Invisibly returns \code{self}.
     add_numbered_list = function(list_name, prefix_val, prefix_lbl, n) {
-      if (
-        !is.character(list_name) ||
-          length(list_name) != 1L ||
-          !nzchar(list_name)
-      ) {
-        stop("list_name must be a non-empty character string")
-      }
-      if (!is.character(prefix_val) || length(prefix_val) != 1L) {
-        stop("prefix_val must be a single character string")
-      }
-      if (!is.character(prefix_lbl) || length(prefix_lbl) != 1L) {
-        stop("prefix_lbl must be a single character string")
-      }
-      if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1L) {
-        stop("n must be a single positive integer")
-      }
-      n <- as.integer(n)
+      origin <- "Tool$add_numbered_list"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting add_numbered_list.")
+      result <- phrutils::phr_try_step(
+        {
+          if (
+            !is.character(list_name) ||
+              length(list_name) != 1L ||
+              !nzchar(list_name)
+          ) {
+            stop("list_name must be a non-empty character string")
+          }
+          if (!is.character(prefix_val) || length(prefix_val) != 1L) {
+            stop("prefix_val must be a single character string")
+          }
+          if (!is.character(prefix_lbl) || length(prefix_lbl) != 1L) {
+            stop("prefix_lbl must be a single character string")
+          }
+          if (!is.numeric(n) || length(n) != 1L || is.na(n) || n < 1L) {
+            stop("n must be a single positive integer")
+          }
+          n <- as.integer(n)
 
-      choices <- if (
-        !is.null(self$revised_choices) && nrow(self$revised_choices) > 0
-      ) {
-        self$revised_choices
-      } else {
-        self$choices
-      }
-      if (is.null(choices)) {
-        choices <- data.frame(
-          list_name = character(0),
-          name = character(0),
-          label = character(0),
-          stringsAsFactors = FALSE
-        )
-      }
-      if ("list_name" %in% names(choices)) {
-        choices <- choices[choices$list_name != list_name, , drop = FALSE]
-      }
-      new_rows <- lapply(seq_len(n), function(i) {
-        row <- data.frame(
-          list_name = list_name,
-          name = paste0(prefix_val, i),
-          label = paste0(prefix_lbl, i),
-          stringsAsFactors = FALSE
-        )
-        for (col in setdiff(names(choices), names(row))) {
-          row[[col]] <- NA
-        }
-        row
-      })
-      new_df <- do.call(rbind, new_rows)
-      all_cols <- union(names(choices), names(new_df))
-      for (col in setdiff(all_cols, names(choices))) {
-        choices[[col]] <- NA
-      }
-      for (col in setdiff(all_cols, names(new_df))) {
-        new_df[[col]] <- NA
-      }
-      self$revised_choices <- rbind(
-        choices[, all_cols, drop = FALSE],
-        new_df[, all_cols, drop = FALSE]
+          choices <- if (
+            !is.null(self$revised_choices) && nrow(self$revised_choices) > 0
+          ) {
+            self$revised_choices
+          } else {
+            self$choices
+          }
+          if (is.null(choices)) {
+            choices <- data.frame(
+              list_name = character(0),
+              name = character(0),
+              label = character(0),
+              stringsAsFactors = FALSE
+            )
+          }
+          if ("list_name" %in% names(choices)) {
+            choices <- choices[choices$list_name != list_name, , drop = FALSE]
+          }
+          new_rows <- lapply(seq_len(n), function(i) {
+            row <- data.frame(
+              list_name = list_name,
+              name = paste0(prefix_val, i),
+              label = paste0(prefix_lbl, i),
+              stringsAsFactors = FALSE
+            )
+            for (col in setdiff(names(choices), names(row))) {
+              row[[col]] <- NA
+            }
+            row
+          })
+          new_df <- do.call(rbind, new_rows)
+          all_cols <- union(names(choices), names(new_df))
+          for (col in setdiff(all_cols, names(choices))) {
+            choices[[col]] <- NA
+          }
+          for (col in setdiff(all_cols, names(new_df))) {
+            new_df[[col]] <- NA
+          }
+          self$revised_choices <- rbind(
+            choices[, all_cols, drop = FALSE],
+            new_df[, all_cols, drop = FALSE]
+          )
+        },
+        step = "Adding numbered choice list"
       )
-      self$touch()
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Added choice list '", list_name, "' with ", n, " entr(ies).")
+      )
       invisible(self)
     },
 
@@ -489,23 +579,34 @@ Tool <- R6::R6Class(
     #' @param value The new value for the setting.
     #' @return Invisibly returns self for method chaining.
     update_settings = function(key, value) {
-      if (!is.character(key) || length(key) != 1 || nchar(key) == 0) {
-        stop("key must be a non-empty character string")
+      origin <- "Tool$update_settings"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting update_settings.")
+      result <- phrutils::phr_try_step(
+        {
+          if (!is.character(key) || length(key) != 1 || nchar(key) == 0) {
+            stop("key must be a non-empty character string")
+          }
+          if (nrow(self$settings) == 0) {
+            # Create a single-row settings frame when none exists
+            self$settings <- data.frame(
+              form_title = NA_character_,
+              form_id = NA_character_,
+              version = NA_character_,
+              stringsAsFactors = FALSE
+            )
+          }
+          if (!key %in% names(self$settings)) {
+            self$settings[[key]] <- NA
+          }
+          self$settings[[key]] <- value
+        },
+        step = "Updating settings"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
-      if (nrow(self$settings) == 0) {
-        # Create a single-row settings frame when none exists
-        self$settings <- data.frame(
-          form_title = NA_character_,
-          form_id = NA_character_,
-          version = NA_character_,
-          stringsAsFactors = FALSE
-        )
-      }
-      if (!key %in% names(self$settings)) {
-        self$settings[[key]] <- NA
-      }
-      self$settings[[key]] <- value
-      self$touch()
+      private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Updated setting '", key, "'."))
       invisible(self)
     },
 
@@ -572,11 +673,22 @@ Tool <- R6::R6Class(
     #' @param indicators Character vector of indicator names to select.
     #' @return Invisibly returns self for method chaining.
     set_selected_indicators = function(indicators) {
-      if (!is.character(indicators)) {
-        stop("Indicators must be a character vector")
+      origin <- "Tool$set_selected_indicators"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_selected_indicators.")
+      result <- phrutils::phr_try_step(
+        {
+          if (!is.character(indicators)) {
+            stop("Indicators must be a character vector")
+          }
+          private$.selected_indicators <- indicators
+        },
+        step = "Setting selected indicators"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
-      private$.selected_indicators <- indicators
-      self$touch()
+      private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Selected ", length(indicators), " indicator(s)."))
       invisible(self)
     },
 
@@ -670,21 +782,39 @@ Tool <- R6::R6Class(
     #' and coherence between revised survey and revised choices.
     #' @return Logical TRUE if valid, FALSE if there are validation errors.
     validate = function() {
+      origin <- "Tool$validate"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting validate.")
       private$.validation_errors <- list()
 
-      # Validate survey sheet structure and content
-      private$.validate_survey_content()
+      result <- phrutils::phr_try_step(
+        {
+          # Validate survey sheet structure and content
+          private$.validate_survey_content()
 
-      # Validate choices sheet structure and content
-      private$.validate_choices_content()
+          # Validate choices sheet structure and content
+          private$.validate_choices_content()
 
-      # Validate references between master survey and master choices
-      private$.validate_references()
+          # Validate references between master survey and master choices
+          private$.validate_references()
 
-      # Validate coherence between revised survey and revised choices
-      private$.validate_revised_coherence()
+          # Validate coherence between revised survey and revised choices
+          private$.validate_revised_coherence()
+        },
+        step = "Validating tool"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
 
-      length(private$.validation_errors) == 0
+      n_errors <- length(private$.validation_errors)
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0("Validation completed with ", n_errors, " error(s).")
+      )
+      n_errors == 0
     },
 
     #' @description
@@ -742,20 +872,21 @@ Tool <- R6::R6Class(
     # Reads the survey, choices, and settings sheets (if present) and stores
     # them as the master copies.  Called by subclass constructors.
     .load_default_tool = function(path) {
+      origin <- "Tool$.load_default_tool"
       if (!file.exists(path)) {
-        warning(paste("Default tool file not found:", path))
+        msg <- paste("Default tool file not found:", path)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = FALSE, message = msg)
+        warning(msg)
         return(invisible(NULL))
       }
 
+      sheets_loaded <- character(0)
       available_sheets <- tryCatch(
         readxl::excel_sheets(path),
         error = function(e) {
-          warning(paste(
-            "Could not read sheets from",
-            path,
-            ":",
-            conditionMessage(e)
-          ))
+          msg <- paste("Could not read sheets from", path, ":", conditionMessage(e))
+          private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[read_sheets]"), display = FALSE, message = msg)
+          warning(msg)
           return(character(0))
         }
       )
@@ -764,13 +895,16 @@ Tool <- R6::R6Class(
         sv <- tryCatch(
           as.data.frame(readxl::read_excel(path, sheet = "survey")),
           error = function(e) {
-            warning(paste("Could not read survey sheet:", conditionMessage(e)))
+            msg <- paste("Could not read survey sheet:", conditionMessage(e))
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[survey]"), display = FALSE, message = msg)
+            warning(msg)
             NULL
           }
         )
         if (!is.null(sv)) {
           self$survey <- sv
           self$revised_survey <- sv
+          sheets_loaded <- c(sheets_loaded, "survey")
         }
       }
 
@@ -778,13 +912,16 @@ Tool <- R6::R6Class(
         ch <- tryCatch(
           as.data.frame(readxl::read_excel(path, sheet = "choices")),
           error = function(e) {
-            warning(paste("Could not read choices sheet:", conditionMessage(e)))
+            msg <- paste("Could not read choices sheet:", conditionMessage(e))
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[choices]"), display = FALSE, message = msg)
+            warning(msg)
             NULL
           }
         )
         if (!is.null(ch)) {
           self$choices <- ch
           self$revised_choices <- ch
+          sheets_loaded <- c(sheets_loaded, "choices")
         }
       }
 
@@ -792,19 +929,29 @@ Tool <- R6::R6Class(
         st <- tryCatch(
           as.data.frame(readxl::read_excel(path, sheet = "settings")),
           error = function(e) {
-            warning(paste(
-              "Could not read settings sheet:",
-              conditionMessage(e)
-            ))
+            msg <- paste("Could not read settings sheet:", conditionMessage(e))
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[settings]"), display = FALSE, message = msg)
+            warning(msg)
             NULL
           }
         )
         if (!is.null(st)) {
           self$settings <- st
           self$revised_settings <- st
+          sheets_loaded <- c(sheets_loaded, "settings")
         }
       }
 
+      private$..touch(
+        log = TRUE,
+        touch = length(sheets_loaded) > 0L,
+        name = origin,
+        message = paste0(
+          "Loaded ", length(sheets_loaded), " sheet(s) from default tool",
+          if (length(sheets_loaded) > 0L) paste0(" (", paste(sheets_loaded, collapse = ", "), ")") else "",
+          "."
+        )
+      )
       invisible(NULL)
     },
 

@@ -40,10 +40,12 @@ ANAFramework <- R6::R6Class(
     #'
     #' @return A new ANAFramework object.
     initialize = function() {
+      origin <- "ANAFramework$initialize"
       super$initialize()
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Started initialization of ANAFramework.")
 
       # ---- Load master objectives schema from reference_objectives.xlsx ----
-      phrutils::phr_try({
+      result <- phrutils::phr_try_step({
         objectives <- load_objective_schema()
         if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
           self$master_objectives_schema <- objectives
@@ -51,23 +53,34 @@ ANAFramework <- R6::R6Class(
             private$..phr_txt(
               "ANAFramework: master objectives schema loaded ({nrow(objectives)} rows)."
             ),
-            origin = "ANAFramework$initialize"
+            origin = origin
+          )
+          private$..touch(
+            log = TRUE, touch = TRUE, name = paste0(origin, "[load_objectives]"),
+            message = paste0("Loaded master objectives schema (", nrow(objectives), " rows).")
           )
         } else {
           phrutils::phr_warning(
             message = private$..phr_txt(
               "ANAFramework: reference_objectives.xlsx could not be loaded; master_objectives_schema is NULL."
             ),
-            origin = "ANAFramework$initialize",
+            origin = origin,
             hint   = private$..phr_txt(
               "Ensure reference_objectives.xlsx is present in the package resources folder."
             )
           )
+          private$..touch(
+            log = TRUE, touch = FALSE, name = paste0(origin, "[load_objectives]"),
+            message = "reference_objectives.xlsx could not be loaded; master_objectives_schema is NULL."
+          )
         }
-      }, on_error = "warn", origin = "ANAFramework$initialize")
+      }, step = "Loading master objectives schema")
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_objectives]"), display = TRUE, message = result$error)
+      }
 
       # ---- Load indicator bank from reference_indicator_bank.xlsx ----
-      phrutils::phr_try({
+      result <- phrutils::phr_try_step({
         indicators <- load_indicator_bank()
         if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
           self$master_indicator_bank   <- indicators
@@ -76,23 +89,34 @@ ANAFramework <- R6::R6Class(
             private$..phr_txt(
               "ANAFramework: indicator bank loaded ({nrow(indicators)} rows)."
             ),
-            origin = "ANAFramework$initialize"
+            origin = origin
+          )
+          private$..touch(
+            log = TRUE, touch = TRUE, name = paste0(origin, "[load_indicators]"),
+            message = paste0("Loaded indicator bank (", nrow(indicators), " rows).")
           )
         } else {
           phrutils::phr_warning(
             message = private$..phr_txt(
               "ANAFramework: reference_indicator_bank.xlsx could not be loaded; master_indicator_bank is NULL."
             ),
-            origin = "ANAFramework$initialize",
+            origin = origin,
             hint   = private$..phr_txt(
               "Ensure reference_indicator_bank.xlsx is present in the package resources folder."
             )
           )
+          private$..touch(
+            log = TRUE, touch = FALSE, name = paste0(origin, "[load_indicators]"),
+            message = "reference_indicator_bank.xlsx could not be loaded; master_indicator_bank is NULL."
+          )
         }
-      }, on_error = "warn", origin = "ANAFramework$initialize")
+      }, step = "Loading indicator bank")
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_indicators]"), display = TRUE, message = result$error)
+      }
 
       # ---- Load master SVG from ana_framework.svg ----
-      phrutils::phr_try({
+      result <- phrutils::phr_try_step({
         svg_file <- system.file("resources", "ana_framework.svg", package = "phr")
         if (!nzchar(svg_file) || !file.exists(svg_file)) {
           svg_file <- file.path("resources", "ana_framework.svg")
@@ -103,21 +127,33 @@ ANAFramework <- R6::R6Class(
           self$adjusted_svg <- svg_content
           phrutils::phr_message(
             private$..phr_txt("ANAFramework: master SVG loaded from ana_framework.svg."),
-            origin = "ANAFramework$initialize"
+            origin = origin
+          )
+          private$..touch(
+            log = TRUE, touch = TRUE, name = paste0(origin, "[load_svg]"),
+            message = "Loaded master SVG from ana_framework.svg."
           )
         } else {
           phrutils::phr_warning(
             message = private$..phr_txt(
               "ANAFramework: ana_framework.svg could not be found; master_svg is NULL."
             ),
-            origin = "ANAFramework$initialize",
+            origin = origin,
             hint   = private$..phr_txt(
               "Ensure ana_framework.svg is present in the package resources folder."
             )
           )
+          private$..touch(
+            log = TRUE, touch = FALSE, name = paste0(origin, "[load_svg]"),
+            message = "ana_framework.svg could not be found; master_svg is NULL."
+          )
         }
-      }, on_error = "warn", origin = "ANAFramework$initialize")
+      }, step = "Loading master SVG")
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_svg]"), display = TRUE, message = result$error)
+      }
 
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Completed initialization of ANAFramework.")
       invisible(self)
     }
   ),

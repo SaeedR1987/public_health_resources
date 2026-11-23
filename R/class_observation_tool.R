@@ -49,6 +49,7 @@ public = list(
                         choices = NULL,
                         settings = NULL,
                         observation_type = "general") {
+    origin <- "ObservationTool$initialize"
     super$initialize(
       name = name %||% "Observation Tool",
       survey = survey,
@@ -60,15 +61,33 @@ public = list(
 
     # Load the bundled default observation tool template if no overrides given
     if (is.null(survey) && is.null(choices)) {
-      default_path <- system.file(
-        "resources", "iphra_observation_tool_dummy.xlsx",
-        package = "iphRa"
+      result <- phrutils::phr_try_step(
+        {
+          default_path <- system.file(
+            "resources", "iphra_observation_tool_dummy.xlsx",
+            package = "phr"
+          )
+          if (nchar(default_path) > 0) {
+            private$.load_default_tool(default_path)
+          }
+        },
+        step = "Loading default observation tool"
       )
-      if (nchar(default_path) > 0) {
-        private$.load_default_tool(default_path)
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
     }
 
+    private$..touch(
+      log = TRUE,
+      touch = FALSE,
+      name = origin,
+      message = paste0(
+        "Completed initialization of ObservationTool (", nrow(self$survey), " survey row(s), ",
+        nrow(self$choices), " choice row(s))."
+      )
+    )
     invisible(self)
   },
 
@@ -84,15 +103,19 @@ public = list(
   #' @param observation_type Character string for observation type.
   #' @return Invisibly returns self for method chaining.
   set_observation_type = function(observation_type) {
+    origin <- "ObservationTool$set_observation_type"
+    private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_observation_type.")
     valid_types <- c("general", "water_point", "latrine", "health_facility",
                      "nutrition_facility", "market", "community", "livelihoods",
                      "graves")
     if (!observation_type %in% valid_types) {
-      warning(paste("Observation type", observation_type, "is not a recognized type.",
-                    "Valid types:", paste(valid_types, collapse = ", ")))
+      msg <- paste("Observation type", observation_type, "is not a recognized type.",
+                   "Valid types:", paste(valid_types, collapse = ", "))
+      private$..touch(log = TRUE, touch = FALSE, name = origin, display = FALSE, message = msg)
+      warning(msg)
     }
     private$.observation_type <- observation_type
-    private$..touch()
+    private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Observation type set to '", observation_type, "'."))
     invisible(self)
   },
 

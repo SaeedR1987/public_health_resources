@@ -160,8 +160,10 @@ Framework <- R6::R6Class(
     #' Creates a new Framework object.
     #' @return A new Framework object.
     initialize = function() {
+      origin <- "Framework$initialize"
       super$initialize()
-      phrutils::phr_try(
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Started initialization of Framework.")
+      result <- phrutils::phr_try_step(
         {
           self$master_objectives_schema <- NULL
           self$master_indicator_bank <- NULL
@@ -177,12 +179,16 @@ Framework <- R6::R6Class(
           self$modified_secondary_indicator_codes <- NULL
           phrutils::phr_message(
             private$..phr_txt("Framework initialized."),
-            origin = "Framework$initialize"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$initialize"
+        step = "Initializing Framework fields"
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Completed initialization of Framework.")
       invisible(self)
     },
 
@@ -195,19 +201,29 @@ Framework <- R6::R6Class(
     #' @param objective_codes Numeric vector of primary objective codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_primary_objectives = function(objective_codes) {
-      phrutils::phr_try(
+      origin <- "Framework$set_primary_objectives"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_primary_objectives.")
+      result <- phrutils::phr_try_step(
         {
           self$primary_objectives <- as.numeric(unlist(objective_codes))
-          private$..touch()
           phrutils::phr_message(
             private$..phr_txt(
               "Primary objectives set ({length(self$primary_objectives)} code(s))."
             ),
-            origin = "Framework$set_primary_objectives"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_primary_objectives"
+        step = "Setting primary objectives"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Set ", length(self$primary_objectives), " primary objective code(s).")
       )
       invisible(self)
     },
@@ -221,19 +237,29 @@ Framework <- R6::R6Class(
     #' @param objective_codes Numeric vector of secondary objective codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_secondary_objectives = function(objective_codes) {
-      phrutils::phr_try(
+      origin <- "Framework$set_secondary_objectives"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_secondary_objectives.")
+      result <- phrutils::phr_try_step(
         {
           self$secondary_objectives <- as.numeric(unlist(objective_codes))
-          private$..touch()
           phrutils::phr_message(
             private$..phr_txt(
               "Secondary objectives set ({length(self$secondary_objectives)} code(s))."
             ),
-            origin = "Framework$set_secondary_objectives"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_secondary_objectives"
+        step = "Setting secondary objectives"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Set ", length(self$secondary_objectives), " secondary objective code(s).")
       )
       invisible(self)
     },
@@ -248,20 +274,30 @@ Framework <- R6::R6Class(
     #'   codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_primary_indicators = function(indicator_codes) {
-      phrutils::phr_try(
+      origin <- "Framework$set_primary_indicators"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_primary_indicators.")
+      result <- phrutils::phr_try_step(
         {
           self$primary_indicator_codes <- as.character(unlist(indicator_codes))
           private$.refresh_modified_indicator_codes()
-          private$..touch()
           phrutils::phr_message(
             private$..phr_txt(
               "Primary indicators set ({length(self$primary_indicator_codes)} code(s))."
             ),
-            origin = "Framework$set_primary_indicators"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_primary_indicators"
+        step = "Setting primary indicators"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Set ", length(self$primary_indicator_codes), " primary indicator code(s).")
       )
       invisible(self)
     },
@@ -276,22 +312,32 @@ Framework <- R6::R6Class(
     #'   codes.
     #' @return Invisibly returns \code{self} for method chaining.
     set_secondary_indicators = function(indicator_codes) {
-      phrutils::phr_try(
+      origin <- "Framework$set_secondary_indicators"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_secondary_indicators.")
+      result <- phrutils::phr_try_step(
         {
           self$secondary_indicator_codes <- as.character(unlist(
             indicator_codes
           ))
           private$.refresh_modified_indicator_codes()
-          private$..touch()
           phrutils::phr_message(
             private$..phr_txt(
               "Secondary indicators set ({length(self$secondary_indicator_codes)} code(s))."
             ),
-            origin = "Framework$set_secondary_indicators"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_secondary_indicators"
+        step = "Setting secondary indicators"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Set ", length(self$secondary_indicator_codes), " secondary indicator code(s).")
       )
       invisible(self)
     },
@@ -302,7 +348,9 @@ Framework <- R6::R6Class(
     #' @param purpose Character. The purpose of the secondary data source.
     #' @return Invisibly returns \code{self} for method chaining.
     add_secondary_data_source = function(objective, source, purpose) {
-      phrutils::phr_try(
+      origin <- "Framework$add_secondary_data_source"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting add_secondary_data_source.")
+      result <- phrutils::phr_try_step(
         {
           self$secondary_data_sources <- rbind(
             self$secondary_data_sources,
@@ -313,14 +361,22 @@ Framework <- R6::R6Class(
               stringsAsFactors = FALSE
             )
           )
-          private$..touch()
           phrutils::phr_message(
             private$..phr_txt("Secondary data source added."),
-            origin = "Framework$set_secondary_data_source"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_secondary_data_source"
+        step = "Adding secondary data source"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Added secondary data source; table now has ", nrow(self$secondary_data_sources), " row(s).")
       )
       invisible(self)
     },
@@ -333,29 +389,42 @@ Framework <- R6::R6Class(
     #' Removes a secondary data source from the \code{secondary_data_sources} data frame
     #' by matching both the objective code and source name. If the specified source is not found, a warning is issued.
     remove_secondary_data_source = function(objective, source) {
-      phrutils::phr_try(
+      origin <- "Framework$remove_secondary_data_source"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting remove_secondary_data_source.")
+      n_before <- nrow(self$secondary_data_sources %||% data.frame())
+      result <- phrutils::phr_try_step(
         {
           if (is.null(self$secondary_data_sources)) {
             phrutils::phr_warning(
               message = private$..phr_txt(
                 "No secondary data sources to remove."
               ),
-              origin = "Framework$remove_secondary_data_source"
+              origin = origin
             )
-            return(invisible(self))
+          } else {
+            sds <- self$secondary_data_sources
+            self$secondary_data_sources <- sds[
+              !(sds$objective == objective & sds$source == source), ,
+              drop = FALSE
+            ]
+            phrutils::phr_message(
+              private$..phr_txt("Secondary data source removed."),
+              origin = origin
+            )
           }
-          self$secondary_data_sources <- subset(
-            self$secondary_data_sources,
-            !(objective == objective & source == source)
-          )
-          private$..touch()
-          phrutils::phr_message(
-            private$..phr_txt("Secondary data source removed."),
-            origin = "Framework$remove_secondary_data_source"
-          )
         },
-        on_error = "abort",
-        origin = "Framework$remove_secondary_data_source"
+        step = "Removing secondary data source"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      n_removed <- n_before - nrow(self$secondary_data_sources %||% data.frame())
+      private$..touch(
+        log = TRUE,
+        touch = !is.null(self$secondary_data_sources),
+        name = origin,
+        message = paste0("Removed ", n_removed, " secondary data source row(s).")
       )
       invisible(self)
     },
@@ -371,7 +440,9 @@ Framework <- R6::R6Class(
     #' @param schema Data frame. The master reference schema.
     #' @return Invisibly returns \code{self} for method chaining.
     set_master_schema = function(schema) {
-      phrutils::phr_try(
+      origin <- "Framework$set_master_schema"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_master_schema.")
+      result <- phrutils::phr_try_step(
         {
           validate_objective_schema(schema, soft = FALSE)
           self$master_objectives_schema <- as.data.frame(
@@ -382,11 +453,20 @@ Framework <- R6::R6Class(
             private$..phr_txt(
               "Master objectives schema set ({nrow(self$master_objectives_schema)} rows)."
             ),
-            origin = "Framework$set_master_schema"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_master_schema"
+        step = "Setting master objectives schema"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Set master objectives schema (", nrow(self$master_objectives_schema), " rows).")
       )
       invisible(self)
     },
@@ -399,24 +479,30 @@ Framework <- R6::R6Class(
     #' @param svg_content Character. SVG content as a single string.
     #' @return Invisibly returns \code{self} for method chaining.
     set_master_svg = function(svg_content) {
-      phrutils::phr_try(
+      origin <- "Framework$set_master_svg"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_master_svg.")
+      result <- phrutils::phr_try_step(
         {
           phrutils::phr_assert(
             is.character(svg_content) && length(svg_content) >= 1,
             message = private$..phr_txt(
               "svg_content must be a non-empty character string."
             ),
-            origin = "Framework$set_master_svg"
+            origin = origin
           )
           self$master_svg <- svg_content
           phrutils::phr_message(
             private$..phr_txt("Master SVG set."),
-            origin = "Framework$set_master_svg"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$set_master_svg"
+        step = "Setting master SVG"
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(log = TRUE, touch = TRUE, name = origin, message = "Master SVG set.")
       invisible(self)
     },
 
@@ -457,38 +543,38 @@ Framework <- R6::R6Class(
       primary_objective_codes = NULL,
       secondary_objective_codes = NULL
     ) {
-      phrutils::phr_try(
+      origin <- "Framework$modify_adjusted_svg"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting modify_adjusted_svg.")
+
+      skip_reason <- if (is.null(self$master_svg)) {
+        "master_svg is not set; skipping modify_adjusted_svg()."
+      } else if (
+        is.null(self$master_objectives_schema) ||
+          !is.data.frame(self$master_objectives_schema) ||
+          nrow(self$master_objectives_schema) == 0
+      ) {
+        "master_objectives_schema is not set; skipping modify_adjusted_svg()."
+      } else {
+        NULL
+      }
+      if (!is.null(skip_reason)) {
+        phrutils::phr_warning(
+          message = private$..phr_txt(skip_reason),
+          origin = origin
+        )
+        private$..touch(log = TRUE, touch = FALSE, name = origin, message = skip_reason)
+        return(invisible(self))
+      }
+
+      n_coloured <- 0L
+      result <- phrutils::phr_try_step(
         {
-          if (is.null(self$master_svg)) {
-            phrutils::phr_warning(
-              message = private$..phr_txt(
-                "master_svg is not set; skipping modify_adjusted_svg()."
-              ),
-              origin = "Framework$modify_adjusted_svg"
-            )
-            return(invisible(self))
-          }
-
-          if (
-            is.null(self$master_objectives_schema) ||
-              !is.data.frame(self$master_objectives_schema) ||
-              nrow(self$master_objectives_schema) == 0
-          ) {
-            phrutils::phr_warning(
-              message = private$..phr_txt(
-                "master_objectives_schema is not set; skipping modify_adjusted_svg()."
-              ),
-              origin = "Framework$modify_adjusted_svg"
-            )
-            return(invisible(self))
-          }
-
           phrutils::phr_assert(
             "objective_code" %in% names(self$master_objectives_schema),
             message = private$..phr_txt(
               "master_objectives_schema must contain an 'objective_code' column for modify_adjusted_svg()."
             ),
-            origin = "Framework$modify_adjusted_svg"
+            origin = origin
           )
 
           primary <- as.numeric(
@@ -550,7 +636,7 @@ Framework <- R6::R6Class(
             if (!in_primary && !in_secondary) {
               next
             }
-
+            n_coloured <- n_coloured + 1L
             colour <- if (in_primary && in_secondary) {
               "#DDA0DD"
             } else if (in_primary) {
@@ -571,14 +657,22 @@ Framework <- R6::R6Class(
           }
 
           self$adjusted_svg <- svg
-          private$..touch()
           phrutils::phr_message(
             private$..phr_txt("Adjusted SVG updated via modify_adjusted_svg()."),
-            origin = "Framework$modify_adjusted_svg"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$modify_adjusted_svg"
+        step = "Modifying adjusted SVG"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Adjusted SVG updated; coloured ", n_coloured, " objective code block(s).")
       )
       invisible(self)
     },
@@ -602,14 +696,17 @@ Framework <- R6::R6Class(
     #'   \pkg{rsvg}/\pkg{grid} are unavailable the path to the written SVG
     #'   file is returned visibly instead.
     render_framework_svg = function(version = "adjusted") {
-      phrutils::phr_try(
+      origin <- "Framework$render_framework_svg"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting render_framework_svg.")
+      fallback_path <- NULL
+      result <- phrutils::phr_try_step(
         {
           phrutils::phr_assert(
             is.character(version) &&
               length(version) == 1 &&
               version %in% c("adjusted", "master"),
             message = private$..phr_txt("version must be 'adjusted' or 'master'."),
-            origin = "Framework$render_framework_svg"
+            origin = origin
           )
           svg_content <- if (version == "master") {
             self$master_svg
@@ -621,7 +718,7 @@ Framework <- R6::R6Class(
             message = private$..phr_txt(
               "No SVG content available. Call modify_adjusted_schema() or set_master_svg() first."
             ),
-            origin = "Framework$render_framework_svg"
+            origin = origin
           )
 
           tmp_svg <- tempfile(fileext = ".svg")
@@ -636,21 +733,37 @@ Framework <- R6::R6Class(
             grid::grid.raster(native_raster)
             phrutils::phr_message(
               private$..phr_txt("Framework SVG rendered to the active graphics device."),
-              origin = "Framework$render_framework_svg"
+              origin = origin
             )
           } else {
             phrutils::phr_warning(
               message = private$..phr_txt(
                 "Packages 'rsvg' and 'grid' are required to display the SVG in the plots window. SVG written to: {tmp_svg}"
               ),
-              origin = "Framework$render_framework_svg"
+              origin = origin
             )
-            return(tmp_svg)
+            fallback_path <- tmp_svg
           }
         },
-        on_error = "abort",
-        origin = "Framework$render_framework_svg"
+        step = "Rendering framework SVG"
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = if (is.null(fallback_path)) {
+          paste0("Rendered ", version, " framework SVG.")
+        } else {
+          paste0("Wrote ", version, " framework SVG to file (rsvg/grid unavailable).")
+        }
+      )
+      if (!is.null(fallback_path)) {
+        return(fallback_path)
+      }
       invisible(self)
     },
 
@@ -679,7 +792,9 @@ Framework <- R6::R6Class(
     #'   \code{secondary_objectives}, or all rows as a final fallback.
     #' @return Invisibly returns \code{self} for method chaining.
     modify_adjusted_schema = function(objective_codes = NULL) {
-      phrutils::phr_try(
+      origin <- "Framework$modify_adjusted_schema"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting modify_adjusted_schema.")
+      result <- phrutils::phr_try_step(
         {
           phrutils::phr_assert(
             !is.null(self$master_objectives_schema) &&
@@ -688,7 +803,7 @@ Framework <- R6::R6Class(
             message = private$..phr_txt(
               "master_objectives_schema must be set before calling modify_adjusted_schema()."
             ),
-            origin = "Framework$modify_adjusted_schema"
+            origin = origin
           )
 
           # Determine which column to filter on
@@ -723,17 +838,28 @@ Framework <- R6::R6Class(
 
           # Update modified indicator code caches from the modified_objectives_schema
           private$.refresh_modified_indicator_codes()
-          private$..touch()
 
           phrutils::phr_message(
             private$..phr_txt(
               "Modified objectives schema updated: {nrow(self$modified_objectives_schema)} of {nrow(self$master_objectives_schema)} rows selected."
             ),
-            origin = "Framework$modify_adjusted_schema"
+            origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Framework$modify_adjusted_schema"
+        step = "Modifying adjusted objectives schema"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0(
+          "Modified objectives schema updated: ", nrow(self$modified_objectives_schema),
+          " of ", nrow(self$master_objectives_schema), " rows selected."
+        )
       )
       invisible(self)
     },
@@ -755,58 +881,71 @@ Framework <- R6::R6Class(
     #'   \code{modified_indicator_bank} to the full master.
     #' @return Invisibly returns \code{self} for method chaining.
     modify_indicator_bank = function(objective_codes = NULL) {
-      phrutils::phr_try(
-        {
-          if (
-            is.null(self$master_indicator_bank) ||
-              !is.data.frame(self$master_indicator_bank)
-          ) {
-            phrutils::phr_warning(
-              message = private$..phr_txt(
-                "master_indicator_bank is not set; skipping modify_indicator_bank()."
-              ),
-              origin = "Framework$modify_indicator_bank"
-            )
-            return(invisible(self))
-          }
+      origin <- "Framework$modify_indicator_bank"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting modify_indicator_bank.")
 
+      skip_reason <- if (
+        is.null(self$master_indicator_bank) ||
+          !is.data.frame(self$master_indicator_bank)
+      ) {
+        "master_indicator_bank is not set; skipping modify_indicator_bank()."
+      } else if (
+        !is.null(objective_codes) &&
+          length(objective_codes) > 0 &&
+          !"objective_code" %in% names(self$master_indicator_bank)
+      ) {
+        "master_indicator_bank does not contain an 'objective_code' column; skipping modify_indicator_bank()."
+      } else {
+        NULL
+      }
+      if (!is.null(skip_reason)) {
+        phrutils::phr_warning(
+          message = private$..phr_txt(skip_reason),
+          origin = origin
+        )
+        private$..touch(log = TRUE, touch = FALSE, name = origin, message = skip_reason)
+        return(invisible(self))
+      }
+
+      result <- phrutils::phr_try_step(
+        {
           if (is.null(objective_codes) || length(objective_codes) == 0) {
             self$modified_indicator_bank <- self$master_indicator_bank
             phrutils::phr_message(
               private$..phr_txt(
                 "Modified indicator bank reset to full master ({nrow(self$master_indicator_bank)} rows)."
               ),
-              origin = "Framework$modify_indicator_bank"
+              origin = origin
             )
-            return(invisible(self))
-          }
-
-          if (!"objective_code" %in% names(self$master_indicator_bank)) {
-            phrutils::phr_warning(
-              message = private$..phr_txt(
-                "master_indicator_bank does not contain an 'objective_code' column; skipping modify_indicator_bank()."
+          } else {
+            codes <- unlist(objective_codes)
+            self$modified_indicator_bank <- self$master_indicator_bank[
+              self$master_indicator_bank[["objective_code"]] %in% codes,
+              ,
+              drop = FALSE
+            ]
+            phrutils::phr_message(
+              private$..phr_txt(
+                "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
               ),
-              origin = "Framework$modify_indicator_bank"
+              origin = origin
             )
-            return(invisible(self))
           }
-
-          codes <- unlist(objective_codes)
-          self$modified_indicator_bank <- self$master_indicator_bank[
-            self$master_indicator_bank[["objective_code"]] %in% codes,
-            ,
-            drop = FALSE
-          ]
-          private$..touch()
-          phrutils::phr_message(
-            private$..phr_txt(
-              "Modified indicator bank updated: {nrow(self$modified_indicator_bank)} of {nrow(self$master_indicator_bank)} rows selected."
-            ),
-            origin = "Framework$modify_indicator_bank"
-          )
         },
-        on_error = "abort",
-        origin = "Framework$modify_indicator_bank"
+        step = "Modifying indicator bank"
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0(
+          "Modified indicator bank updated: ", nrow(self$modified_indicator_bank),
+          " of ", nrow(self$master_indicator_bank), " rows selected."
+        )
       )
       invisible(self)
     }

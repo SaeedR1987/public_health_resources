@@ -59,6 +59,7 @@ SamplingFrame <- R6::R6Class(
       required_columns = NULL,
       schema = NULL
     ) {
+      origin <- "SamplingFrame$initialize"
       required_columns <- required_columns %||%
         c(
           "stratum",
@@ -87,6 +88,14 @@ SamplingFrame <- R6::R6Class(
         required_columns = required_columns,
         schema = schema
       )
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0("SamplingFrame '", log_name, "' initialized with ", nrow(private$..log_df %||% data.frame()), " row(s).")
+      )
+      invisible(self)
     },
 
     #' Get Additional Accessible Fields
@@ -107,6 +116,13 @@ SamplingFrame <- R6::R6Class(
     #' @param seed Integer random seed.
     #' @return Invisibly returns \code{self}.
     draw_sample = function(strata_table = NULL, seed = 43) {
+      origin <- "SamplingFrame$draw_sample"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting draw_sample.")
+      n_sampled <- 0L
+      n_skipped <- 0L
+
+      result <- phrutils::phr_try_step(
+        {
       frame <- private$..log_df
 
       phrutils::phr_validate_dataframe(
@@ -182,6 +198,7 @@ SamplingFrame <- R6::R6Class(
 
           st_eligible_rows <- which(eligible_frame$stratum == st_id)
           if (length(st_eligible_rows) == 0L) {
+            n_skipped <- n_skipped + 1L
             phrutils::phr_warning(
               message = private$..phr_txt(
                 "Stratum '{st_id}' not found in sampling frame — skipping."
@@ -208,6 +225,12 @@ SamplingFrame <- R6::R6Class(
               seed = seed
             ),
             error = function(e) {
+              private$..touch(
+                log = TRUE,
+                touch = FALSE,
+                name = paste0(origin, "[stratum_sampling]"),
+                message = paste0("Sampling for stratum '", st_id, "' failed: ", conditionMessage(e))
+              )
               phrutils::phr_warning(
                 message = private$..phr_txt(
                   "Sampling for stratum '{st_id}' failed and will be skipped: {conditionMessage(e)}"
@@ -218,8 +241,10 @@ SamplingFrame <- R6::R6Class(
             }
           )
           if (is.null(st_result)) {
+            n_skipped <- n_skipped + 1L
             next
           }
+          n_sampled <- n_sampled + 1L
 
           sel_mask <- !is.na(st_result$sampled_psu)
           if (any(sel_mask)) {
@@ -279,6 +304,12 @@ SamplingFrame <- R6::R6Class(
             seed = seed
           ),
           error = function(e) {
+            private$..touch(
+              log = TRUE,
+              touch = FALSE,
+              name = paste0(origin, "[sampling]"),
+              message = paste0("Sampling failed: ", conditionMessage(e))
+            )
             phrutils::phr_warning(
               message = private$..phr_txt("Sampling failed: {conditionMessage(e)}"),
               origin = "Sample$draw_sample"
@@ -289,12 +320,32 @@ SamplingFrame <- R6::R6Class(
         if (!is.null(result)) {
           frame$sampled_psu[eligible_rows] <- result$sampled_psu
           frame$allocated_sample[eligible_rows] <- result$allocated_sample
+          n_sampled <- n_sampled + 1L
+        } else {
+          n_skipped <- n_skipped + 1L
         }
       }
 
       self$drawn_sample_full <- frame
       self$drawn_sample <- frame[!is.na(frame$sampled_psu), , drop = FALSE]
-      private$..touch()
+        },
+        step = "Drawing sample from sampling frame",
+        hint = "Check the sampling frame and strata_table."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0(
+          "Drew sample: ", n_sampled, " stratum(s) sampled, ", n_skipped,
+          " skipped; ", nrow(self$drawn_sample), " PSU row(s) selected."
+        )
+      )
       invisible(self)
     },
 
@@ -302,16 +353,35 @@ SamplingFrame <- R6::R6Class(
     #' @param frame Data frame sampling frame.
     #' @return Cleared frame.
     clear_sample = function(frame) {
+      origin <- "SamplingFrame$clear_sample"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting clear_sample.")
+
       out <- frame
-      if (!is.null(out) && is.data.frame(out) && nrow(out) > 0) {
-        if ("sampled_psu" %in% names(out)) {
-          out$sampled_psu <- NA_character_
-        }
-        if ("allocated_sample" %in% names(out)) out$allocated_sample <- NA_real_
+      result <- phrutils::phr_try_step(
+        {
+          if (!is.null(out) && is.data.frame(out) && nrow(out) > 0) {
+            if ("sampled_psu" %in% names(out)) {
+              out$sampled_psu <- NA_character_
+            }
+            if ("allocated_sample" %in% names(out)) out$allocated_sample <- NA_real_
+          }
+          self$drawn_sample <- NULL
+          self$drawn_sample_full <- NULL
+        },
+        step = "Clearing sample",
+        hint = "Check that frame is a data frame."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
-      self$drawn_sample <- NULL
-      self$drawn_sample_full <- NULL
-      private$..touch()
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Cleared sampled columns for ", if (is.data.frame(out)) nrow(out) else 0L, " frame row(s).")
+      )
       out
     },
 
@@ -323,20 +393,42 @@ SamplingFrame <- R6::R6Class(
     #'
     #' @return Invisibly returns \code{self} for method chaining.
     sort_psu_by_population = function() {
-      df <- private$log_df
-      if (is.null(df) || nrow(df) == 0) {
-        return(invisible(self))
+      origin <- "SamplingFrame$sort_psu_by_population"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting sort_psu_by_population.")
+      n_sorted <- 0L
+
+      result <- phrutils::phr_try_step(
+        {
+          df <- private$..log_df
+          if (
+            !is.null(df) &&
+              nrow(df) > 0 &&
+              all(c("stratum", "population_size") %in% names(df))
+          ) {
+            pop <- as.numeric(df$population_size)
+            df <- df[
+              order(df$stratum, ifelse(is.na(pop), -Inf, pop) * -1L, na.last = TRUE),
+              ,
+              drop = FALSE
+            ]
+            private$..log_df <- df
+            n_sorted <- nrow(df)
+          }
+        },
+        step = "Sorting PSUs by population",
+        hint = "Check the 'stratum' and 'population_size' columns."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
-      if (!all(c("stratum", "population_size") %in% names(df))) {
-        return(invisible(self))
-      }
-      pop <- as.numeric(df$population_size)
-      df <- df[
-        order(df$stratum, ifelse(is.na(pop), -Inf, pop) * -1L, na.last = TRUE),
-        ,
-        drop = FALSE
-      ]
-      private$log_df <- df
+
+      private$..touch(
+        log = TRUE,
+        touch = n_sorted > 0L,
+        name = origin,
+        message = paste0("Sorted ", n_sorted, " PSU row(s) by population within strata.")
+      )
       invisible(self)
     }
   ),
