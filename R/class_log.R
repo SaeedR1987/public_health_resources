@@ -73,6 +73,12 @@ Log <- R6::R6Class(
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(log_name, "$initialize"),
+          message = private$..phr_txt("Starting initialize for {log_name}.")
+        )
+
         # Step 2: Set fields
 
         result <- phrutils::phr_try_step({
@@ -85,6 +91,11 @@ Log <- R6::R6Class(
                   hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(log_name, "$initialize$set_fields"),
+            message = result$error
+          )
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
 
@@ -118,16 +129,22 @@ Log <- R6::R6Class(
           self$set(field = "..log_df", value = tibble::as_tibble(log_df))
 
         },
-        step = private$..phr_txt("Log$initialize - set fields"),
+        step = private$..phr_txt("Log$initialize - set log_df"),
         hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(log_name, "$initialize$set_log_df"),
+            message = result$error
+          )
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
 
         private$..touch(log = TRUE,
-                        touch = TRUE,
-                        name = log_name,
+                        touch = FALSE,
+                        display = FALSE,
+                        name = paste0(log_name, "$initialize"),
                         message = private$..phr_txt("{log_name} initialized with {nrow(log_df)} entries."))
 
       },
@@ -158,8 +175,15 @@ Log <- R6::R6Class(
     validate = function(schema_override = NULL) {
       phrutils::phr_try(
         {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$validate"),
+            message = private$..phr_txt("Starting validate for {private$..log_name}.")
+          )
+
           schema_to_use <- schema_override %||% private$..schema
           issues <- list()
+          n_coerced <- 0
 
           # 1. BASIC STRUCTURAL VALIDATION
 
@@ -182,6 +206,11 @@ Log <- R6::R6Class(
           hint = private$..phr_txt("Check if log_df is a valid data.frame and contains all required columns.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = TRUE,
+              name = paste0(private$..log_name, "$validate$structural_checks"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -199,6 +228,11 @@ Log <- R6::R6Class(
           hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = TRUE,
+              name = paste0(private$..log_name, "$validate$pre_validate"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -246,6 +280,7 @@ Log <- R6::R6Class(
                     )
 
                     private$..log_df[[nm]] <- new_vec
+                    n_coerced <- n_coerced + 1
 
                     phrutils::phr_message(
                       private$..phr_txt(
@@ -288,14 +323,27 @@ Log <- R6::R6Class(
             }
             issues
           },
-          step = private$..phr_txt("Pre-validation hook - Log$validate"),
+          step = private$..phr_txt("Schema validation - Log$validate"),
           hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = TRUE,
+              name = paste0(private$..log_name, "$validate$schema_validation"),
+              message = result$error
+            )
             return(result)
           }
 
           issues <- result
+
+          private$..touch(
+            log = TRUE, touch = n_coerced > 0, display = FALSE,
+            name = paste0(private$..log_name, "$validate$schema_validation"),
+            message = private$..phr_txt(
+              "Schema validation complete: {n_coerced} column(s) coerced, {length(issues)} issue type(s) found so far."
+            )
+          )
 
           # 4. Post Validation Hook
           # Hooks merge their own issues into the stored ..issues, so store the
@@ -310,6 +358,11 @@ Log <- R6::R6Class(
           hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = TRUE,
+              name = paste0(private$..log_name, "$validate$post_validate"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -330,6 +383,11 @@ Log <- R6::R6Class(
           hint = private$..phr_txt("Check whether log_name, required columns or schema are valid inputs for {log_name}.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = TRUE,
+              name = paste0(private$..log_name, "$validate$finalize"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -348,8 +406,9 @@ Log <- R6::R6Class(
           }
 
           private$..touch(log = TRUE,
-                          touch = TRUE,
-                          name = private$..log_name,
+                          touch = FALSE,
+                          display = FALSE,
+                          name = paste0(private$..log_name, "$validate"),
                           message = msg)
 
           invisible(issues)
@@ -376,6 +435,12 @@ Log <- R6::R6Class(
 
       phrutils::phr_try({
 
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$append_entry"),
+        message = private$..phr_txt("Starting append_entry for {private$..log_name}.")
+      )
+
       if (!is.list(row_list)) {
         phrutils::phr_error(
           private$..log_name,
@@ -399,9 +464,10 @@ Log <- R6::R6Class(
       self$set(field = "..log_df", value = dplyr::bind_rows(private$..log_df, df_row))
 
       private$..touch(log = TRUE,
-                      touch = TRUE,
-                      name = private$..log_name,
-                      message = private$..phr_txt("Added new entry."))
+                      touch = FALSE,
+                      display = FALSE,
+                      name = paste0(private$..log_name, "$append_entry"),
+                      message = private$..phr_txt("Added 1 entry; {private$..log_name} now has {nrow(private$..log_df)} entries."))
 
       },
       on_error = "abort",
@@ -425,12 +491,20 @@ Log <- R6::R6Class(
 
       phrutils::phr_try({
 
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$clear"),
+        message = private$..phr_txt("Starting clear for {private$..log_name}.")
+      )
+
+      n_removed <- nrow(private$..log_df)
       self$set(field = "..log_df", value = private$..log_df[0, , drop = FALSE])
 
       private$..touch(log = TRUE,
-                      touch = TRUE,
-                      name = private$..log_name,
-                      message = private$..phr_txt("{private$..log_name} cleared."))
+                      touch = FALSE,
+                      display = FALSE,
+                      name = paste0(private$..log_name, "$clear"),
+                      message = private$..phr_txt("{private$..log_name} cleared; {n_removed} entries removed."))
 
       invisible(TRUE)
 
@@ -461,6 +535,12 @@ Log <- R6::R6Class(
 
       phrutils::phr_try(
         {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$export"),
+            message = private$..phr_txt("Starting export of {private$..log_name} as {format}.")
+          )
+
           if (format == "csv") {
             utils::write.csv(private$..log_df, path, row.names = FALSE)
           }
@@ -480,6 +560,11 @@ Log <- R6::R6Class(
           phrutils::phr_message(private$..phr_txt(
             "Exported {private$..log_name} to {path}."
           ))
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$export"),
+            message = private$..phr_txt("Exported {nrow(private$..log_df)} entries to {path} as {format}.")
+          )
           invisible(path)
         },
         on_error = "abort",

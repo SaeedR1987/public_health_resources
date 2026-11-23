@@ -103,6 +103,12 @@ DeletionLog <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(log_name, "$initialize"),
+          message = private$..phr_txt("DeletionLog {log_name} initialized with {length(required_columns)} required column(s).")
+        )
+
       },
       on_error = "abort",
       origin = paste0(log_name, " - DeletionLog$initialize")
@@ -132,6 +138,12 @@ DeletionLog <- R6::R6Class(
 
       phrutils::phr_try({
 
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$add_deletion"),
+        message = private$..phr_txt("Starting add_deletion for uuid(s): {paste(uuid, collapse = ', ')}.")
+      )
+
       entry <- list(
         uuid      = as.character(uuid),
         enum_id   = as.character(enum_id),
@@ -141,6 +153,12 @@ DeletionLog <- R6::R6Class(
       )
 
       self$append_entry(entry)
+
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$add_deletion"),
+        message = private$..phr_txt("Added deletion entry; {private$..log_name} now has {nrow(private$..log_df)} entries.")
+      )
 
       },
       on_error = "warn",
@@ -168,8 +186,19 @@ DeletionLog <- R6::R6Class(
 
       phrutils::phr_try({
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$validate_dl_against_dataset"),
+          message = private$..phr_txt("Starting validate_dl_against_dataset at stage '{stage}'.")
+        )
+
         # If log is empty, nothing to validate
         if (nrow(private$..log_df) == 0) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$validate_dl_against_dataset"),
+            message = private$..phr_txt("Skipped: deletion log is empty.")
+          )
           return(list())   # no issues
         }
 
@@ -201,6 +230,11 @@ DeletionLog <- R6::R6Class(
         hint =  private$..phr_txt("Check that data_obj is a valid Data object and that the specified stage exists in the dataset.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_dl_against_dataset$setup"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -231,10 +265,23 @@ DeletionLog <- R6::R6Class(
         hint =  "Check that data_obj is a valid Data object, mapped uuid exists in the dataset, and that the specified stage exists in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_dl_against_dataset$uuid_checks"),
+            message = result$error
+          )
           return(result)
         }
 
         issues <- result
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$validate_dl_against_dataset"),
+          message = private$..phr_txt(
+            "Validated {nrow(df_log)} deletion entries against stage '{stage}'; {length(issues$missing_uuid)} UUID(s) not found in dataset."
+          )
+        )
 
         invisible(issues)
 
@@ -330,6 +377,11 @@ DeletionLog <- R6::R6Class(
       hint = private$..phr_txt("check for missing/empty values in required fields (uuid, issue)")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$completeness"),
+          message = result$error
+        )
         return(result)
       }
       issues <- result
@@ -353,8 +405,19 @@ DeletionLog <- R6::R6Class(
       hint = "Failed to set ..issues / ..validated fields"
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$set_state"),
+          message = result$error
+        )
         return(result)
       }
+
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$..post_validate"),
+        message = private$..phr_txt("Deletion-log post-validation complete; {length(private$..issues)} issue type(s) recorded.")
+      )
 
       },
       on_error = "abort",

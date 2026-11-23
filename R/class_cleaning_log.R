@@ -123,6 +123,12 @@ CleaningLog <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(log_name, "$initialize"),
+          message = private$..phr_txt("CleaningLog {log_name} initialized with {length(required_columns)} required column(s).")
+        )
+
       },
       on_error = "abort",
       origin = paste0(log_name, " - CleaningLog$initialize")
@@ -152,8 +158,19 @@ CleaningLog <- R6::R6Class(
 
       phrutils::phr_try({
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$validate_cl_against_dataset"),
+          message = private$..phr_txt("Starting validate_cl_against_dataset at stage '{stage}'.")
+        )
+
         # If log is empty, nothing to validate
         if (nrow(private$..log_df) == 0) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$validate_cl_against_dataset"),
+            message = private$..phr_txt("Skipped: cleaning log is empty.")
+          )
           return(list()) # no issues
         }
 
@@ -186,6 +203,11 @@ CleaningLog <- R6::R6Class(
         hint =  "Check that data_obj is a valid Data object and that the specified stage exists in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_cl_against_dataset$setup"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -223,6 +245,11 @@ CleaningLog <- R6::R6Class(
         hint =  "Check that data_obj is a valid Data object, mapped uuid exists in the dataset, and that the specified stage exists in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_cl_against_dataset$uuid_checks"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -258,6 +285,11 @@ CleaningLog <- R6::R6Class(
         hint =  "Check that data_obj is a valid Data object, mapped enum_id exists in the dataset, and that the specified stage exists in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_cl_against_dataset$enum_id_checks"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -282,6 +314,11 @@ CleaningLog <- R6::R6Class(
         hint =  "Check that data_obj is a valid Data object, mapped question.name exists in the dataset, and that the specified stage exists in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_cl_against_dataset$question_name_checks"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -328,10 +365,23 @@ CleaningLog <- R6::R6Class(
         hint =  "Check whether old.value matches the current data."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_cl_against_dataset$old_value_checks"),
+            message = result$error
+          )
           return(result)
         }
 
         issues <- result
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$validate_cl_against_dataset"),
+          message = private$..phr_txt(
+            "Validated {nrow(df_log)} cleaning entries against stage '{stage}'; {length(issues)} issue type(s) found."
+          )
+        )
 
       },
       on_error = "abort",
@@ -375,8 +425,13 @@ CleaningLog <- R6::R6Class(
 
       phrutils::phr_try({
 
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$add_change"),
+        message = private$..phr_txt("Starting add_change for uuid(s): {paste(uuid, collapse = ', ')}.")
+      )
+
       entry <- list(
-        uuid = as.character(uuid),
         enum_id = as.character(enum_id),
         device_id = as.character(device_id),
         question.name = as.character(question.name),
@@ -388,6 +443,12 @@ CleaningLog <- R6::R6Class(
       )
 
       self$append_entry(entry)
+
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$add_change"),
+        message = private$..phr_txt("Added cleaning entry; {private$..log_name} now has {nrow(private$..log_df)} entries.")
+      )
 
     },
     on_error = "warn",
@@ -493,6 +554,11 @@ CleaningLog <- R6::R6Class(
       hint = "check for missing/empty values in required fields (uuid, question.name, changed, old.value)"
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$completeness"),
+          message = result$error
+        )
         return(result)
       }
       issues <- result
@@ -516,8 +582,19 @@ CleaningLog <- R6::R6Class(
       hint = "Additional validation against dataset failed; check for UUIDs, enum_id, question.name, and old.value mismatches"
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$set_state"),
+          message = result$error
+        )
         return(result)
       }
+
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$..post_validate"),
+        message = private$..phr_txt("Cleaning-log post-validation complete; {length(private$..issues)} issue type(s) recorded.")
+      )
 
       invisible(private$..issues)
 
