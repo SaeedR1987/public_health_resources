@@ -6717,7 +6717,7 @@ Data <- R6::R6Class(
           vals_mapped <- result$vals_mapped
 
           private$..touch(
-            log = TRUE, touch = FALSE, display = FALSE,
+            log = TRUE, touch = (vars_mapped > 0 || vals_mapped > 0), display = FALSE,
             name = paste0(private$..dataset_name, "$..map_schema_vars"),
             message = private$..phr_txt(
               "Mapped {vars_mapped} variable(s) and {vals_mapped} value set(s) at stage '{stage}'."
@@ -6834,7 +6834,8 @@ Data <- R6::R6Class(
         self$set(
           field = "..variable_map",
           role = var_role,
-          value = matched_col
+          value = matched_col,
+          update_modified = FALSE
         )
 
         vars_mapped <- vars_mapped + 1
@@ -6963,7 +6964,8 @@ Data <- R6::R6Class(
             self$set(
               field = "..value_map",
               role = var_role,
-              value = matched_canonical
+              value = matched_canonical,
+              update_modified = FALSE
             )
 
             vals_mapped <- vals_mapped + 1
@@ -6995,7 +6997,8 @@ Data <- R6::R6Class(
             self$set(
               field = "..value_map",
               role = var_role,
-              value = matched_canonical
+              value = matched_canonical,
+              update_modified = FALSE
             )
 
             vals_mapped <- vals_mapped + 1
@@ -7036,7 +7039,8 @@ Data <- R6::R6Class(
             self$set(
               field = "..value_map",
               role = var_role,
-              value = found_values
+              value = found_values,
+              update_modified = FALSE
             )
 
             vals_mapped <- vals_mapped + 1
@@ -7054,7 +7058,8 @@ Data <- R6::R6Class(
             self$set(
               field = "..value_map",
               role = var_role,
-              value = found_values
+              value = found_values,
+              update_modified = FALSE
             )
 
             vals_mapped <- vals_mapped + 1
@@ -7144,7 +7149,8 @@ Data <- R6::R6Class(
               self$set(
                 field = "..variable_label",
                 role = var_role,
-                value = schema_var_labels[[var_role]]
+                value = schema_var_labels[[var_role]],
+                update_modified = FALSE
               )
               vars_labelled <- vars_labelled + 1
             }
@@ -7157,7 +7163,8 @@ Data <- R6::R6Class(
               self$set(
                 field = "..value_label",
                 role = var_role,
-                value = val_label_entry
+                value = val_label_entry,
+                update_modified = FALSE
               )
               vals_labelled <- vals_labelled + 1
             }
@@ -7172,7 +7179,7 @@ Data <- R6::R6Class(
           }
 
           private$..touch(
-            log = TRUE, touch = FALSE, display = FALSE,
+            log = TRUE, touch = (vars_labelled > 0 || vals_labelled > 0), display = FALSE,
             name = paste0(private$..dataset_name, "$..map_schema_labels"),
             message = private$..phr_txt(
               "Labelled {vars_labelled} variable(s) and {vals_labelled} value set(s) ({language})."

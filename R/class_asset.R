@@ -486,7 +486,9 @@ Asset <- R6::R6Class(
               log = TRUE,
               touch = TRUE,
               name = private$..name,
-              message = private$..phr_txt("Started initialization for {private$..name} as Data object.")
+              message = private$..phr_txt(
+                "Set field '{field}'{if (!is.null(role)) paste0(' (role: ', role, ')') else ''}."
+              )
             )
           }
         },
