@@ -128,13 +128,19 @@ HouseholdData <- R6::R6Class(
           hint = private$..phr_txt("Check the parent Data class")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = paste0(dataset_name, "$initialize$super_initialize"),
+              message = result$error
+            )
             return(result)
           }
 
           private$..touch(
             log = TRUE,
             touch = FALSE,
-            name = dataset_name,
+            display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize"),
             message = private$..phr_txt("Started initialization for {dataset_name} as a HouseholdData object.")
           )
 
@@ -150,6 +156,11 @@ HouseholdData <- R6::R6Class(
           hint = private$..phr_txt("Check ..map_schema_vars")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -178,6 +189,11 @@ HouseholdData <- R6::R6Class(
           hint = private$..phr_txt("Check if required variables are present in dataset")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = paste0(private$..dataset_name, "$initialize$required_columns"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -201,13 +217,19 @@ HouseholdData <- R6::R6Class(
           hint = private$..phr_txt("Check if optional variables are present in dataset")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = paste0(private$..dataset_name, "$initialize$optional_columns"),
+              message = result$error
+            )
             return(result)
           }
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = dataset_name,
+            touch = FALSE,
+            display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize"),
             message = private$..phr_txt("Initialization for {dataset_name} completed successfully.")
           )
 
@@ -262,13 +284,25 @@ HouseholdData <- R6::R6Class(
       stage <- match.arg(stage)
       origin <- paste0(private$..dataset_name, "$generate_weights")
 
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting generate_weights for {private$..dataset_name} ({stage} data).")
+      )
+
       phrutils::phr_try(
         {
+          tryCatch({
           # 1. Resolve SamplingFrame
 
           sf <- sampling_frame %||% private$..sampling_frame
 
           if (is.null(sf)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = private$..phr_txt("Skipped: no SamplingFrame available.")
+            )
             phrutils::phr_message(private$..phr_txt(
               "No SamplingFrame available for {private$..dataset_name}. Skipping generate_weights."
             ))
@@ -276,6 +310,11 @@ HouseholdData <- R6::R6Class(
           }
 
           if (!inherits(sf, "SamplingFrame")) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = private$..phr_txt("Skipped: sampling_frame is not a SamplingFrame object.")
+            )
             phrutils::phr_warning(
               origin,
               private$..phr_txt(
@@ -287,6 +326,11 @@ HouseholdData <- R6::R6Class(
 
           sf_df <- sf$log_df
           if (is.null(sf_df) || nrow(sf_df) == 0) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = private$..phr_txt("Skipped: SamplingFrame is empty.")
+            )
             phrutils::phr_message(private$..phr_txt(
               "SamplingFrame is empty. Skipping generate_weights."
             ))
@@ -298,6 +342,11 @@ HouseholdData <- R6::R6Class(
           stratum_col <- private$..variable_map$stratum
 
           if (is.null(stratum_col) || stratum_col == "" || is.na(stratum_col)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = private$..phr_txt("Skipped: no stratum role found in variable_map.")
+            )
             phrutils::phr_message(private$..phr_txt(
               "No stratum role found in variable_map for {private$..dataset_name}. Skipping generate_weights."
             ))
@@ -309,6 +358,11 @@ HouseholdData <- R6::R6Class(
           df <- self$get_data(stage)
 
           if (is.null(df) || nrow(df) == 0) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = private$..phr_txt("Skipped: no {stage} data available.")
+            )
             phrutils::phr_warning(
               origin,
               private$..phr_txt(
@@ -319,6 +373,11 @@ HouseholdData <- R6::R6Class(
           }
 
           if (!stratum_col %in% names(df)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = private$..phr_txt("Skipped: stratum column '{stratum_col}' not found in {stage} data.")
+            )
             phrutils::phr_message(
               private$..phr_txt(
                 "Stratum column '{stratum_col}' not found in {stage} data for {private$..dataset_name}. Skipping generate_weights."
@@ -414,6 +473,16 @@ HouseholdData <- R6::R6Class(
             private$..raw_data <- df
           }
 
+          private$..touch(
+            log = TRUE,
+            touch = TRUE, # weights and variable_map are assigned directly, not via set()
+            display = FALSE,
+            name = origin,
+            message = private$..phr_txt(
+              "Generated survey weights for {n} record(s) across {nrow(weight_lookup)} stratum/strata in '{weight_col}' ({stage} data)."
+            )
+          )
+
           phrutils::phr_message(
             private$..phr_txt(
               "Survey weights generated and added to '{weight_col}' column in {stage} data for {private$..dataset_name}."
@@ -421,6 +490,15 @@ HouseholdData <- R6::R6Class(
           )
 
           invisible(self)
+          },
+          error = function(e) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = origin,
+              message = conditionMessage(e)
+            )
+            stop(e)
+          })
         },
         on_error = "warn",
         origin = origin
@@ -735,6 +813,14 @@ HouseholdData <- R6::R6Class(
             private$..raw_data <- hh_data_updated
           }
 
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$..pre_standardize"),
+            message = private$..phr_txt(
+              "Pre-standardize processing complete: merged and aggregated {length(private$..linked_objects)} linked dataset(s) at stage '{hh_data_stage}'."
+            )
+          )
+
           phrutils::phr_message(private$..phr_txt(
             "Pre-standardize processing complete for {private$..dataset_name}."
           ))
@@ -773,6 +859,8 @@ HouseholdData <- R6::R6Class(
             "Generating cleaning log for {length(private$..linked_objects)} linked dataset(s) in {private$..dataset_name}..."
           ))
 
+          n_linked_logged <- 0
+
           for (link_name in names(private$..linked_objects)) {
             link_info <- private$..linked_objects[[link_name]]
             linked_obj <- link_info$object
@@ -794,7 +882,16 @@ HouseholdData <- R6::R6Class(
               stage = stage,
               overwrite = overwrite
             )
+            n_linked_logged <- n_linked_logged + 1
           }
+
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$..pre_generate_cleaning_log"),
+            message = private$..phr_txt(
+              "Generated cleaning logs for {n_linked_logged} of {length(private$..linked_objects)} linked dataset(s)."
+            )
+          )
         },
         on_error = "warn",
         origin = paste0(private$..dataset_name, "$generate_cleaning_log")
@@ -821,6 +918,8 @@ HouseholdData <- R6::R6Class(
             "Cleaning {length(private$..linked_objects)} linked dataset(s) in {private$..dataset_name}..."
           ))
 
+          n_linked_cleaned <- 0
+
           for (link_name in names(private$..linked_objects)) {
             link_info <- private$..linked_objects[[link_name]]
             linked_obj <- link_info$object
@@ -839,7 +938,16 @@ HouseholdData <- R6::R6Class(
               "Cleaning linked dataset '{link_name}'..."
             ))
             linked_obj$clean()
+            n_linked_cleaned <- n_linked_cleaned + 1
           }
+
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$..pre_clean"),
+            message = private$..phr_txt(
+              "Cleaned {n_linked_cleaned} of {length(private$..linked_objects)} linked dataset(s)."
+            )
+          )
         },
         on_error = "warn",
         origin = paste0(private$..dataset_name, "$clean")
@@ -1014,8 +1122,20 @@ HouseholdData <- R6::R6Class(
 
             # Only update hh_data if aggregation succeeded (didn't return NULL)
             if (!is.null(agg_result)) {
+              private$..touch(
+                log = TRUE, touch = FALSE, display = FALSE,
+                name = paste0(private$..dataset_name, "$..aggregate_linked_data"),
+                message = private$..phr_txt(
+                  "Aggregated linked dataset '{link_name}' ({class(linked_obj)[1]}): {ncol(agg_result) - ncol(hh_data)} column(s) added to household data."
+                )
+              )
               hh_data <- agg_result
             } else {
+              private$..touch(
+                log = TRUE, touch = FALSE, display = FALSE,
+                name = paste0(private$..dataset_name, "$..aggregate_linked_data"),
+                message = private$..phr_txt("Aggregation of linked dataset '{link_name}' failed and was skipped.")
+              )
               phrutils::phr_warning(
                 private$..dataset_name,
                 private$..phr_txt(

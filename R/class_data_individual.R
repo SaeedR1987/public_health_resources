@@ -54,13 +54,6 @@ IndividualData <- R6::R6Class(
 
       phrutils::phr_try({
 
-        private$..touch(
-          log = TRUE,
-          touch = TRUE,
-          name = private$..dataset_name,
-          message = private$..phr_txt("Starting initialize for {dataset_name} as IndividualData object.")
-        )
-
         # Default mapping for individual-level data
         default_map <- list(
           uuid        = "person_id",        # unique individual ID
@@ -84,6 +77,12 @@ IndividualData <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
+          message = private$..phr_txt("Starting initialize for {dataset_name} as IndividualData object.")
+        )
+
         # Step 2: Map schema vars
         result <- phrutils::phr_try_step(
           {
@@ -97,6 +96,11 @@ IndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check variable schema, variable or value maps.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -127,6 +131,11 @@ IndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check for presence of required variables: {ind_required}.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$required_columns"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -146,13 +155,19 @@ IndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check for presence of optional variables")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$optional_columns"),
+            message = result$error
+          )
           return(result)
         }
 
         private$..touch(
           log = TRUE,
-          touch = TRUE,
-          name = private$..dataset_name,
+          touch = FALSE,
+          display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
           message = private$..phr_txt("Initialization for {dataset_name} as IndividualData object completed successfully.")
         )
       }, on_error = "abort", origin = "IndividualData$initialize")
@@ -242,6 +257,12 @@ IndividualData <- R6::R6Class(
         }
 
         phrutils::phr_message(private$..phr_txt("Post-validation for {nm} complete."))
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(nm, "$..post_validate"),
+          message = private$..phr_txt("Post-validation for {nm} complete; issues found: {had_issues}.")
+        )
 
       }, on_error = "warn", origin = paste0(private$..dataset_name, "$post_validate"))
 
