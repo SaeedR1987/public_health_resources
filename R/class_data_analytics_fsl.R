@@ -48,7 +48,7 @@ FSLDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("Starting initialization for {dataset_name}.")
       )
 
@@ -68,8 +68,8 @@ FSLDataAnalytics <- R6::R6Class(
 
       private$..touch(
         log = TRUE,
-        touch = TRUE,
-        name = dataset_name,
+        touch = FALSE,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("Initialization for {dataset_name} completed successfully.")
       )
 

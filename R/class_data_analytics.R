@@ -106,7 +106,7 @@ DataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = private$..dataset_name,
+        name = origin,
         message = private$..phr_txt("Starting initialization for {dataset_name}.")
       )
 
@@ -142,6 +142,7 @@ DataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[set_fields]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -154,6 +155,7 @@ DataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_schemas]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -169,6 +171,7 @@ DataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check content, location, and filepath names for schemas.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[survey_design]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -177,17 +180,18 @@ DataAnalytics <- R6::R6Class(
         {
           private$..initialize_populate_dap(dap)
         },
-        step = private$..phr_txt("Creating base and full survey design objects."),
-        hint = private$..phr_txt("Check content, location, and filepath names for schemas.")
+        step = private$..phr_txt("Populating data analysis plan."),
+        hint = private$..phr_txt("Check the dap argument and the analysis schema.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[populate_dap]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
       private$..touch(
         log = TRUE,
-        touch = TRUE,
-        name = private$..dataset_name,
+        touch = FALSE,
+        name = origin,
         message = paste0(origin, private$..phr_txt(" Initialization complete."))
       )
 
@@ -232,9 +236,9 @@ DataAnalytics <- R6::R6Class(
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
-            message = paste0(private$..dataset_name, private$..phr_txt(" Initialization complete."))
+            touch = FALSE,
+            name = paste0(private$..dataset_name, "$run_quality_checks"),
+            message = private$..phr_txt("Starting run_quality_checks for {private$..dataset_name}.")
           )
 
           # Step 1: Get sets from pre run quality checks
@@ -257,6 +261,7 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("Check set parameters in ..pre_run_quality_checks")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$run_quality_checks[get_sets]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -273,6 +278,7 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("Check the parameters for each set.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$run_quality_checks[process_sets]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -294,13 +300,14 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("Check the parameters for each set.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$run_quality_checks[store_results]"), display = TRUE, message = result$error)
             return(result)
           }
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
+            touch = FALSE,
+            name = paste0(private$..dataset_name, "$run_quality_checks"),
             message = private$..phr_txt("Run quality checks complete. Ran {length(combined_results)} quality checks for {private$..dataset_name}.")
           )
 
@@ -354,8 +361,8 @@ DataAnalytics <- R6::R6Class(
           private$..touch(
             log = TRUE,
             touch = FALSE,
-            name = private$..dataset_name,
-            message = private$..phr_txt("Starting run_outputs...")
+            name = paste0(private$..dataset_name, "$run_outputs"),
+            message = private$..phr_txt("Starting run_outputs for {private$..dataset_name}.")
           )
 
           # Step 1: Pre run outputs hook for specified sets
@@ -367,6 +374,7 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$run_outputs[pre_run_outputs]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -410,13 +418,14 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("check subclass specific sets for run_outputs defined in pre_run_outputs hook.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$run_outputs[process_sets]"), display = TRUE, message = result$error)
             return(result)
           }
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
+            touch = FALSE,
+            name = paste0(private$..dataset_name, "$run_outputs"),
             message = private$..phr_txt("run_outputs complete: {length(self$visualizations)} visualization(s), {length(self$tables)} table(s).")
           )
 
@@ -458,7 +467,7 @@ DataAnalytics <- R6::R6Class(
           private$..touch(
             log = TRUE,
             touch = FALSE,
-            name = private$..dataset_name,
+            name = paste0(private$..dataset_name, "$add_all_to_dap"),
             message = private$..phr_txt("Starting add_all_to_dap for {private$..dataset_name}")
           )
 
@@ -471,6 +480,7 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[pre_add_all_to_dap]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -502,13 +512,14 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[add_sets]"), display = TRUE, message = result$error)
             return(result)
           }
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
+            touch = FALSE,
+            name = origin,
             message = private$..phr_txt("Completing add_all_to_dap for {private$..dataset_name}")
           )
 
@@ -544,7 +555,7 @@ DataAnalytics <- R6::R6Class(
         private$..touch(
           log = TRUE,
           touch = FALSE,
-          name = private$..dataset_name,
+          name = origin,
           message = paste0(origin, private$..phr_txt(". Running analysis plan for {private$..dataset_name}"))
         )
 
@@ -557,6 +568,7 @@ DataAnalytics <- R6::R6Class(
           hint = private$..phr_txt("check subclass specific sets for run_analysis defined in pre_run_analysis hook.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[pre_run_analysis]"), display = TRUE, message = result$error)
           return(result)
         }
 
@@ -599,10 +611,11 @@ DataAnalytics <- R6::R6Class(
             all_results[[1]] %||% list(survey_design = NULL, base = NULL)
           }
         },
-        step = private$..phr_txt("process add_all_to_dap sets."),
-        hint = private$..phr_txt("check subclass specific sets for add_all_to_dap defined in pre_add_all_to_dap hook.")
+        step = private$..phr_txt("run analysis for each parameter set."),
+        hint = private$..phr_txt("check subclass specific sets for run_analysis defined in pre_run_analysis hook.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[run_sets]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -612,17 +625,18 @@ DataAnalytics <- R6::R6Class(
           # Call the post-analysis hook so subclasses can perform additional steps.
           private$..post_run_analysis()
         },
-        step =         private$..phr_txt("process add_all_to_dap sets."),
-                hint = private$..phr_txt("check subclass specific post run analysis hook.")
+        step = private$..phr_txt("run post run analysis hook."),
+        hint = private$..phr_txt("check subclass specific post run analysis hook.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[post_run_analysis]"), display = TRUE, message = result$error)
         return(result)
       }
 
       private$..touch(
         log = TRUE,
-        touch = TRUE,
-        name = private$..dataset_name,
+        touch = FALSE,
+        name = origin,
         message = paste0(origin, private$..phr_txt(". Analysis completed successfully for {private$..dataset_name}"))
       )
 
@@ -651,6 +665,13 @@ DataAnalytics <- R6::R6Class(
       phrutils::phr_try(
         {
 
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = origin,
+            message = private$..phr_txt("Starting quality_diagnose for {private$..dataset_name}.")
+          )
+
           # Step 1: Setup for quality diagnose
           result <- phrutils::phr_try_step(
             {
@@ -662,6 +683,7 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (!is.data.frame(result) && phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[setup]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -695,10 +717,11 @@ DataAnalytics <- R6::R6Class(
               rows
 
             },
-            step = private$..phr_txt("Setup for quality diagnose"),
+            step = private$..phr_txt("Rowwise checks against quality schema"),
             hint = private$..phr_txt("Check the quality schema for issues.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[verify_schema]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -730,7 +753,7 @@ DataAnalytics <- R6::R6Class(
           private$..touch(
             log = TRUE,
             touch = TRUE,
-            name = private$..dataset_name,
+            name = origin,
             message = private$..phr_txt("quality_diagnose complete: {nrow(result)} check(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
 
@@ -762,8 +785,8 @@ DataAnalytics <- R6::R6Class(
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
+            touch = FALSE,
+            name = origin,
             message = private$..phr_txt("Starting analysis_diagnose for {private$..dataset_name}.")
           )
 
@@ -774,10 +797,11 @@ DataAnalytics <- R6::R6Class(
                 origin = origin
               )
             },
-            step = private$..phr_txt("Setup for quality diagnose"),
-            hint = private$..phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Setup for analysis diagnose"),
+            hint = private$..phr_txt("Check the analysis schema for issues.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[setup]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -807,10 +831,11 @@ DataAnalytics <- R6::R6Class(
 
               rows
             },
-            step = private$..phr_txt("Setup for quality diagnose"),
-            hint = private$..phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Rowwise checks against analysis schema"),
+            hint = private$..phr_txt("Check the analysis schema for issues.")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[verify_schema]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -823,10 +848,11 @@ DataAnalytics <- R6::R6Class(
               self$set(field = "..analysis_plan_issues_log", value = result)
               result
             },
-            step = private$..phr_txt("Setup for quality diagnose"),
-            hint = private$..phr_txt("Check the quality schema for issues.")
+            step = private$..phr_txt("Store analysis diagnose results"),
+            hint = private$..phr_txt("Check the analysis schema for issues.")
           )
           if (!is.data.frame(result) && phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[store_results]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -834,8 +860,8 @@ DataAnalytics <- R6::R6Class(
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
+            touch = FALSE,
+            name = origin,
             message = private$..phr_txt("analysis_diagnose complete: {nrow(result)} indicator(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
           invisible(result)
@@ -865,8 +891,8 @@ DataAnalytics <- R6::R6Class(
           private$..touch(
             log = TRUE,
             touch = FALSE,
-            name = private$..dataset_name,
-            message = private$..phr_txt("Starting outputs diagnose...")
+            name = origin,
+            message = private$..phr_txt("Starting outputs_diagnose for {private$..dataset_name}.")
           )
 
           # Step 1: Setup steps for outputs diagnose
@@ -880,6 +906,7 @@ DataAnalytics <- R6::R6Class(
             )
           )
           if (phrutils::phr_failed(setup)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[setup]"), display = TRUE, message = setup$error)
             return(setup)
           }
 
@@ -919,6 +946,7 @@ DataAnalytics <- R6::R6Class(
             )
           )
           if (!is.data.frame(rows) && phrutils::phr_failed(rows)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[verify_schema]"), display = TRUE, message = rows$error)
             return(rows)
           }
 
@@ -938,6 +966,7 @@ DataAnalytics <- R6::R6Class(
             hint = private$..phr_txt("Check outputs schema content.")
           )
           if (!is.data.frame(result) && phrutils::phr_failed(result)) {
+            private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[store_results]"), display = TRUE, message = result$error)
             return(result)
           }
 
@@ -945,8 +974,8 @@ DataAnalytics <- R6::R6Class(
 
           private$..touch(
             log = TRUE,
-            touch = TRUE,
-            name = private$..dataset_name,
+            touch = FALSE,
+            name = origin,
             message = private$..phr_txt("outputs_diagnose complete: {nrow(result)} output(s) reviewed, {n_issues} issue(s) found for {private$..dataset_name}.")
           )
 
@@ -1153,8 +1182,6 @@ DataAnalytics <- R6::R6Class(
       phrutils::phr_try(
         {
 
-          phrutils::phr_message("I am here ..load schemas")
-
           df_schema <- tryCatch(
             readxl::read_xlsx(
               do.call(
@@ -1176,11 +1203,17 @@ DataAnalytics <- R6::R6Class(
                 message = private$..phr_txt("Failed to read {paste(filename, collapse = '/')}: {e$message}")
               )
 
+              private$..touch(
+                log = TRUE,
+                touch = FALSE,
+                name = paste0("DataAnalytics$load_default_schema[", schema_name, "]"),
+                display = TRUE,
+                message = private$..phr_txt("Failed to read {paste(filename, collapse = '/')}: {e$message}")
+              )
+
               return(NULL)
             }
           )
-
-          phrutils::phr_message("I am here ..load schemas 2")
 
           # Header-only templates are valid (just empty); validation aborts on
           # zero-row data frames, so check required columns directly for them.
@@ -1208,8 +1241,6 @@ DataAnalytics <- R6::R6Class(
               error = function(e) FALSE
             )
           }
-
-          phrutils::phr_message("I am here ..load schemas 3")
 
           if (schema_ok) {
 
@@ -1252,6 +1283,13 @@ DataAnalytics <- R6::R6Class(
               )
             }
 
+            private$..touch(
+              log = TRUE,
+              touch = FALSE,
+              name = paste0("DataAnalytics$load_default_schema[", schema_name, "]"),
+              message = msg
+            )
+
             phrutils::phr_warning(
               message = msg,
               origin = paste0(
@@ -1267,8 +1305,6 @@ DataAnalytics <- R6::R6Class(
               )
             )
           }
-
-          phrutils::phr_message("I am here ..load schemas 4")
 
         },
         on_error = "warn",
@@ -1354,8 +1390,6 @@ DataAnalytics <- R6::R6Class(
     # @return Invisibly returns TRUE.
     ..initialize_load_schemas = function() {
 
-      phrutils::phr_message("I am here ..initialize_load_schemas 1")
-
       # Loading quality schema
       private$..load_default_schema(
         filename = private$..default_quality_schema_filename,
@@ -1373,7 +1407,7 @@ DataAnalytics <- R6::R6Class(
         schema_name = "quality",
         dataset_name = private$..dataset_name
       )
-      phrutils::phr_message("I am here ..initialize_load_schemas 2")
+
       # Loading analysis schema
       private$..load_default_schema(
         filename = private$..default_analysis_schema_filename,
@@ -1390,7 +1424,6 @@ DataAnalytics <- R6::R6Class(
         schema_name = "analysis",
         dataset_name = private$..dataset_name
       )
-      phrutils::phr_message("I am here ..initialize_load_schemas 3")
 
       # Loading outputs schema
       private$..load_default_schema(
@@ -1416,7 +1449,14 @@ DataAnalytics <- R6::R6Class(
         dataset_name = private$..dataset_name
       )
 
-      phrutils::phr_message("I am here ..initialize_load_schemas 4")
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$initialize[load_schemas]"),
+        message = private$..phr_txt(
+          "Loaded default schemas for {private$..dataset_name}: {NROW(private$..quality_schema)} quality check(s), {NROW(private$..analysis_schema)} analysis indicator(s), {NROW(private$..outputs_schema)} output(s)."
+        )
+      )
 
       invisible(TRUE)
     },
@@ -1463,6 +1503,15 @@ DataAnalytics <- R6::R6Class(
 
         }
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$initialize[populate_dap]"),
+        message = private$..phr_txt(
+          "Populated data analysis plan for {private$..dataset_name} with {nrow(private$..data_analysis_plan$get(field = '..log_df') %||% data.frame())} indicator row(s)."
+        )
+      )
 
       invisible(private$..data_analysis_plan)
     },
@@ -1514,6 +1563,15 @@ DataAnalytics <- R6::R6Class(
         )
 
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$run_quality_checks[process_sets]"),
+        message = private$..phr_txt(
+          "Processed {length(sets)} quality check set(s); {length(combined_results)} result(s) generated."
+        )
+      )
 
       list(
         nested = nested,
@@ -2340,6 +2398,9 @@ DataAnalytics <- R6::R6Class(
         value
       }
 
+      n_stored <- 0L
+      n_failed <- 0L
+
       for (i in seq_len(nrow(outputs_schema))) {
         out_name <- cell("output_title", i) %||% paste0("output_", i)
         output_type <- cell("output_type", i)
@@ -2481,8 +2542,19 @@ DataAnalytics <- R6::R6Class(
                   ),
                   origin = private$..dataset_name
                 )
+                n_failed <<- n_failed + 1L
+                private$..touch(
+                  log = TRUE,
+                  touch = FALSE,
+                  name = paste0(private$..dataset_name, "$run_outputs[", out_name, "]"),
+                  message = private$..phr_txt(
+                    "Output '{out_name}' returned NULL (the output function failed). Nothing stored for '{key}'."
+                  )
+                )
                 return(invisible(NULL))
               }
+
+              n_stored <<- n_stored + 1L
 
               if (!is.null(output_type) && output_type == "table") {
                 if (nested) {
@@ -2665,6 +2737,16 @@ DataAnalytics <- R6::R6Class(
           )
         )
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$run_outputs[", set_role, "]"),
+        message = private$..phr_txt(
+          "Ran outputs for set '{set_role}': {n_stored} stored, {n_failed} failed, {nrow(outputs_schema)} defined."
+        )
+      )
+
       invisible(NULL)
     },
 
@@ -3473,6 +3555,15 @@ DataAnalytics <- R6::R6Class(
               private$..phr_txt("All schema indicators found and added to data_analysis_plan.")
             )
           }
+
+          private$..touch(
+            log = TRUE,
+            touch = nrow(issues) > 0,
+            name = origin,
+            message = private$..phr_txt(
+              "Generated data analysis plan from analysis schema: {nrow(dap_df)} indicator(s) added, {nrow(issues)} skipped due to missing variables."
+            )
+          )
         },
         on_error = "warn",
         origin = origin,
@@ -4177,6 +4268,15 @@ DataAnalytics <- R6::R6Class(
         }
       }
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$run_quality_checks[", set_role, "]"),
+        message = private$..phr_txt(
+          "Executed {length(results)} quality check(s) for set '{set_role}'."
+        )
+      )
+
       results
     },
 
@@ -4264,6 +4364,15 @@ DataAnalytics <- R6::R6Class(
           )
         }
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(origin, "[", set_role, "]"),
+        message = private$..phr_txt(
+          "Ran {nrow(dap_df)} analysis plan row(s) for set '{set_role}': {NROW(survey_design_results)} weighted and {NROW(base_results)} unweighted result row(s)."
+        )
+      )
 
       list(
         survey_design = survey_design_results,
@@ -4358,6 +4467,8 @@ DataAnalytics <- R6::R6Class(
         stratum_col <- NULL
       }
 
+      n_dap_before <- NROW(dap$get("..log_df"))
+
       add_with_stratum <- function(indicator_name, guess, col) {
         dap$add_indicator(
           indicator_name = indicator_name,
@@ -4420,6 +4531,15 @@ DataAnalytics <- R6::R6Class(
       }
 
       self[[set$variable_map]] <- vm
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = paste0(origin, "[", set_name, "]"),
+        message = private$..phr_txt(
+          "Added {NROW(dap$get('..log_df')) - n_dap_before} indicator row(s) to the data analysis plan for field set '{set_name}'."
+        )
+      )
 
       invisible(NULL)
     },

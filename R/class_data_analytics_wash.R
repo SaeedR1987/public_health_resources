@@ -69,7 +69,7 @@ WASHDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
@@ -96,6 +96,7 @@ WASHDataAnalytics <- R6::R6Class(
       hint = private$..phr_txt("Check the parent DataAnalytics class")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[super_initialize]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -116,6 +117,7 @@ WASHDataAnalytics <- R6::R6Class(
                   hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[set_fields]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -126,10 +128,11 @@ WASHDataAnalytics <- R6::R6Class(
             private$..initialize_load_schemas_wash()
           }
         },
-                    step = private$..phr_txt("Loading WASH specific fields in initialize"),
+                    step = private$..phr_txt("Loading WASH specific schemas in initialize"),
                     hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[load_schemas]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -162,8 +165,16 @@ WASHDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[build_dap]"), display = TRUE, message = result$error)
         return(result)
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(dataset_name, "$initialize[build_dap]"),
+        message = private$..phr_txt("Built water container data analysis plan.")
+      )
 
       # Step 5: Create WASH survey design objects
       result <- phrutils::phr_try_step(
@@ -186,6 +197,7 @@ WASHDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[survey_design]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -197,8 +209,8 @@ WASHDataAnalytics <- R6::R6Class(
 
       private$..touch(
         log = TRUE,
-        touch = TRUE,
-        name = dataset_name,
+        touch = FALSE,
+        name = paste0(dataset_name, "$initialize"),
         message = msg
       )
 

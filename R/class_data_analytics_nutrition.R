@@ -51,7 +51,7 @@ NutritionDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
@@ -93,6 +93,7 @@ NutritionDataAnalytics <- R6::R6Class(
       hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[load_schemas]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -110,6 +111,7 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[muac_survey_design]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -123,10 +125,11 @@ NutritionDataAnalytics <- R6::R6Class(
                    ))
 
         },
-        step = private$..phr_txt("Loading iycf quality schema"),
+        step = private$..phr_txt("Creating Muac age weighted survey design object (repeat)"),
         hint = private$..phr_txt("Ensure raw data exists before standardization")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[muac_survey_design]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -163,13 +166,21 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("check if nutrition analysis schema contains muac indicators.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[build_dap]"), display = TRUE, message = result$error)
         return(result)
       }
 
       private$..touch(
         log = TRUE,
-        touch = TRUE,
-        name = private$..dataset_name,
+        touch = FALSE,
+        name = paste0(dataset_name, "$initialize[build_dap]"),
+        message = private$..phr_txt("Built MUAC age-weighted data analysis plan.")
+      )
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("{dataset_name} initialized successfully.")
       )
     },
@@ -218,7 +229,7 @@ NutritionDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = private$..dataset_name,
+        name = paste0(private$..dataset_name, "$export_cdc_muac_file"),
         message = private$..phr_txt("Starting export for CDC MUAC excel file for {private$..dataset_name}.")
       )
 
@@ -238,6 +249,7 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check if CDC MUAC template file exists in resources.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_cdc_muac_file[load_template]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -258,6 +270,7 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check whether sex, age, and muac have been appropriately mapped in variable and value map.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_cdc_muac_file[get_variables]"), display = TRUE, message = result$error)
         return(result)
       } else {
         age_months_col <- result$age_months_col
@@ -287,6 +300,8 @@ NutritionDataAnalytics <- R6::R6Class(
       if (!phrutils::phr_failed(result)) {
         oedema_col <- result$oedema_col
         oedema_yes_val <- result$oedema_yes_val
+      } else {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_cdc_muac_file[get_oedema]"), display = TRUE, message = result$error)
       }
 
       # Step 4: Sum cell values
@@ -342,6 +357,7 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check for issues in sex, age_months, muac, or edema variables.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_cdc_muac_file[sum_cells]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -388,15 +404,23 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check if issues with CDC MUAC template")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_cdc_muac_file[write_workbook]"), display = TRUE, message = result$error)
         return(result)
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$export_cdc_muac_file[write_workbook]"),
+        message = private$..phr_txt("Wrote {length(values)} CDC MUAC cell values to {output_file}.")
+      )
 
       })
 
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = private$..dataset_name,
+        name = paste0(private$..dataset_name, "$export_cdc_muac_file"),
         message = private$..phr_txt("CDC MUAC excel file for {private$..dataset_name} exported successfully.")
       )
 
@@ -458,19 +482,12 @@ NutritionDataAnalytics <- R6::R6Class(
     format = "csv"
     ) {
 
-      private$..touch(
-        log = TRUE,
-        touch = FALSE,
-        name = private$..dataset_name,
-        message = private$..phr_txt("CDC MUAC excel file for {private$..dataset_name} exported successfully.")
-      )
-
       phrutils::phr_try({
 
         private$..touch(
           log = TRUE,
           touch = FALSE,
-          name = private$..dataset_name,
+          name = paste0(private$..dataset_name, "$export_ena_anthro_file"),
           message = private$..phr_txt("Starting ENA formatted anthropometry data export for {private$..dataset_name}.")
         )
 
@@ -527,6 +544,7 @@ NutritionDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_ena_anthro_file[get_variables]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -620,14 +638,22 @@ NutritionDataAnalytics <- R6::R6Class(
           output
         },
         on_error = "warn",
-        step = private$..phr_txt("Retrieve variable names from variable map"),
+        step = private$..phr_txt("Build ENA output dataframe"),
         hint = private$..phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_ena_anthro_file[build_output]"), display = TRUE, message = result$error)
         return(result)
       }
 
       output <- result
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$export_ena_anthro_file[build_output]"),
+        message = private$..phr_txt("Built ENA output with {nrow(output)} row(s) (children under 60 months) from {nrow(data)} input row(s).")
+      )
 
       # Step 3: Export the dataframe
       result <- phrutils::phr_try_step(
@@ -651,19 +677,27 @@ NutritionDataAnalytics <- R6::R6Class(
           }
         },
         on_error = "warn",
-        step = private$..phr_txt("Retrieve variable names from variable map"),
+        step = private$..phr_txt("Write ENA output file"),
         hint = private$..phr_txt("Check availability of variables needed for ENA anthro in the dataset.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(private$..dataset_name, "$export_ena_anthro_file[write_file]"), display = TRUE, message = result$error)
         return(result)
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(private$..dataset_name, "$export_ena_anthro_file[write_file]"),
+        message = private$..phr_txt("Wrote {nrow(output)} row(s) to {output_file} ({format}).")
+      )
 
       })
 
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = private$..dataset_name,
+        name = paste0(private$..dataset_name, "$export_ena_anthro_file"),
         message = private$..phr_txt("ENA formatted anthropometry data for {private$..dataset_name} exported successfully.")
       )
 

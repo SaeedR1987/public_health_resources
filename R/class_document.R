@@ -32,8 +32,23 @@ Document <- R6::R6Class(
       reference_ppt_filename = NULL
     ) {
       super$initialize()
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = "Document$initialize",
+        message = private$..phr_txt("Starting initialization of Document.")
+      )
+
       self$reference_doc_filename <- private$..default_template_filenames()
       self$reference_ppt_filename <- private$..default_ppt_template_filenames()
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = "Document$initialize",
+        message = private$..phr_txt("Document initialization completed.")
+      )
 
       invisible(self)
     },
@@ -55,28 +70,49 @@ Document <- R6::R6Class(
       params = list(),
       open = FALSE
     ) {
-      phrutils::phr_try(
+      origin <- "Document$generate_quarto_doc"
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting Quarto Word document generation to {output_file}.")
+      )
+
+      # Step 1: Resolve template path
+      result <- phrutils::phr_try_step(
         {
-          # Resolve template path
           if (is.null(template_file)) {
             template_file <- private$..default_word_template_path()
           }
 
           if (!file.exists(template_file)) {
-            phr_error(
+            phrutils::phr_error(
               private$..phr_txt("Quarto template file not found: {template_file}"),
-              origin = "Document$generate_quarto_doc"
+              origin = origin
             )
           }
 
-          # Default parameters
+          template_file
+        },
+        step = private$..phr_txt("Resolving Quarto Word template"),
+        hint = private$..phr_txt("Check that the template file exists.")
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[resolve_template]"), display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      template_file <- result
+
+      # Step 2: Build parameters
+      result <- phrutils::phr_try_step(
+        {
           default_params <- list(
             title = "Document Report",
             author = "Author",
             date = format(Sys.Date(), "%Y-%m-%d")
           )
 
-          # Merge with provided params
           all_params <- modifyList(default_params, self$get_quarto_params())
           all_params <- modifyList(all_params, params)
 
@@ -84,9 +120,27 @@ Document <- R6::R6Class(
           declared_params <- names(
             rmarkdown::yaml_front_matter(template_file)$params
           )
-          all_params <- all_params[names(all_params) %in% declared_params]
+          all_params[names(all_params) %in% declared_params]
+        },
+        step = private$..phr_txt("Building Quarto parameters"),
+        hint = private$..phr_txt("Check the params argument and the template YAML front matter.")
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[build_params]"), display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      all_params <- result
 
-          # Render with quarto
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(origin, "[build_params]"),
+        message = private$..phr_txt("Prepared {length(all_params)} Quarto parameter(s).")
+      )
+
+      # Step 3: Render and move output
+      result <- phrutils::phr_try_step(
+        {
           quarto::quarto_render(
             input = template_file,
             output_file = basename(output_file),
@@ -94,7 +148,6 @@ Document <- R6::R6Class(
             execute_params = all_params
           )
 
-          # Move to desired location if needed
           rendered_file <- file.path(
             dirname(template_file),
             basename(output_file)
@@ -105,17 +158,30 @@ Document <- R6::R6Class(
           ) {
             file.copy(rendered_file, output_file, overwrite = TRUE)
           }
-
-          phrutils::phr_message(
-            private$..phr_txt("Quarto document saved to: {output_file}"),
-            origin = "Document$generate_quarto_doc"
-          )
-
-          if (isTRUE(open)) utils::browseURL(output_file)
+          TRUE
         },
-        on_error = "abort",
-        origin = "Document$generate_quarto_doc"
+        step = private$..phr_txt("Rendering Quarto Word document"),
+        hint = private$..phr_txt("Check that Quarto is installed and the template renders.")
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[render]"), display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      phrutils::phr_message(
+        private$..phr_txt("Quarto document saved to: {output_file}"),
+        origin = origin
+      )
+
+      if (isTRUE(open)) utils::browseURL(output_file)
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Quarto Word document saved to {output_file}.")
+      )
+
       invisible(self)
     },
 
@@ -140,9 +206,18 @@ Document <- R6::R6Class(
       content = "",
       open = FALSE
     ) {
-      phrutils::phr_try(
+      origin <- "Document$generate_quarto_ppt"
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting Quarto PowerPoint generation to {output_file}.")
+      )
+
+      # Step 1: Resolve and read template
+      result <- phrutils::phr_try_step(
         {
-          # Resolve template path
           if (is.null(template_file)) {
             template_file <- system.file(
               "resources",
@@ -158,16 +233,29 @@ Document <- R6::R6Class(
             )
           }
           if (!file.exists(template_file)) {
-            phr_error(
+            phrutils::phr_error(
               private$..phr_txt("Quarto template file not found: {template_file}"),
-              origin = "Document$generate_quarto_ppt"
+              origin = origin
             )
           }
 
-          # Read template
-          template_text <- paste(readLines(template_file), collapse = "\n")
+          list(
+            template_file = template_file,
+            template_text = paste(readLines(template_file), collapse = "\n")
+          )
+        },
+        step = private$..phr_txt("Resolving Quarto PowerPoint template"),
+        hint = private$..phr_txt("Check that the template file exists.")
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[resolve_template]"), display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+      template_text <- result$template_text
 
-          # Default parameters
+      # Step 2: Substitute parameters and render
+      result <- phrutils::phr_try_step(
+        {
           default_params <- list(
             title = "Presentation Report",
             author = "Author",
@@ -176,11 +264,9 @@ Document <- R6::R6Class(
             content = ""
           )
 
-          # Merge with provided params
           all_params <- modifyList(default_params, params)
           all_params$content <- content
 
-          # Substitute parameters in template
           for (param_name in names(all_params)) {
             pattern <- paste0("\\{\\{", param_name, "\\}\\}")
             replacement <- as.character(all_params[[param_name]])
@@ -192,18 +278,15 @@ Document <- R6::R6Class(
             )
           }
 
-          # Write temporary qmd file
           temp_qmd <- tempfile(fileext = ".qmd")
           writeLines(template_text, temp_qmd)
 
-          # Render with quarto
           quarto::quarto_render(
             input = temp_qmd,
             output_file = basename(output_file),
             output_format = "pptx"
           )
 
-          # Move to desired location if needed
           rendered_file <- file.path(
             dirname(temp_qmd),
             basename(output_file)
@@ -214,17 +297,37 @@ Document <- R6::R6Class(
           ) {
             file.copy(rendered_file, output_file, overwrite = TRUE)
           }
-
-          phrutils::phr_message(
-            private$..phr_txt("Quarto presentation saved to: {output_file}"),
-            origin = "Document$generate_quarto_ppt"
-          )
-
-          if (isTRUE(open)) utils::browseURL(output_file)
+          length(all_params)
         },
-        on_error = "abort",
-        origin = "Document$generate_quarto_ppt"
+        step = private$..phr_txt("Rendering Quarto PowerPoint presentation"),
+        hint = private$..phr_txt("Check that Quarto is installed and the template renders.")
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[render]"), display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(origin, "[render]"),
+        message = private$..phr_txt("Substituted {result} template parameter(s) and rendered presentation.")
+      )
+
+      phrutils::phr_message(
+        private$..phr_txt("Quarto presentation saved to: {output_file}"),
+        origin = origin
+      )
+
+      if (isTRUE(open)) utils::browseURL(output_file)
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Quarto presentation saved to {output_file}.")
+      )
+
       invisible(self)
     },
     #' @description Get Quarto parameters for rendering.

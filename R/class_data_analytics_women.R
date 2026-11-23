@@ -70,7 +70,7 @@ WomanDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
@@ -91,7 +91,7 @@ WomanDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("{dataset_name} initialized successfully.")
       )
     }
