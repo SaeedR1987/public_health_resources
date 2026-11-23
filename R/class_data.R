@@ -1267,7 +1267,7 @@ Data <- R6::R6Class(
     #' @return Data frame with columns `required_variable`, `required_value`,
     #'   `required_type`, `mapped_variable`, `mapped_value`, `safely_coercible`,
     #'   `comment`, and `issues`. The same table is stored privately and can be
-    #'   retrieved with `get(field = "..data_diagnostics")`.
+    #'   retrieved with `get(field = "..data_diagnostics_<stage>")`.
     #'
     #' @details
     #' For each variable in the schema:
@@ -1434,7 +1434,7 @@ Data <- R6::R6Class(
           result <- phrutils::phr_try_step({
 
               # Store in data_diagnostics field
-              self$set(field = "..data_diagnostics", value = diagnostics)
+              self$set(field = paste0("..data_diagnostics_", stage), value = diagnostics)
 
             },
             step = private$..phr_txt("Store diagnostic table"),
@@ -1443,6 +1443,8 @@ Data <- R6::R6Class(
           if (phrutils::phr_failed(result)) {
             return(result)
           }
+
+          try(private$..build_indicator_status(stage = stage), silent = TRUE)
 
           private$..touch(
             log = TRUE,
@@ -1773,10 +1775,20 @@ Data <- R6::R6Class(
 
     # @field ..data_diagnostics Diagnostic data frame.
     # @keywords internal
-    ..data_diagnostics = NULL,
+    ..data_diagnostics_raw = NULL,
+    ..data_diagnostics_standardized = NULL,
+    ..data_diagnostics_clean = NULL,
+
+    # @field ..indicator_status_* Indicator mapping status table per stage,
+    #   rebuilt by `..build_indicator_status()` (called from `data_diagnose()`).
+    # @keywords internal
+    ..indicator_status_raw = NULL,
+    ..indicator_status_standardized = NULL,
+    ..indicator_status_clean = NULL,
 
     # @field ..cleaning_log_issues Data frame of cleaning-log rows that
-    #   could not be applied (e.g. coercion failures).
+
+    # @field ..cleaning_log_issues Data frame of cleaning-log rows that Data frame of cleaning-log rows that    #   could not be applied (e.g. coercion failures).
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
@@ -1858,7 +1870,12 @@ Data <- R6::R6Class(
         "..cleaning_log",
         "..deletion_log",
         "..data_quality_flags",
-        "..data_diagnostics",
+        "..data_diagnostics_raw",
+        "..data_diagnostics_standardized",
+        "..data_diagnostics_clean",
+        "..indicator_status_raw",
+        "..indicator_status_standardized",
+        "..indicator_status_clean",
         "..cleaning_log_issues",
         "..linked_objects"
       )
@@ -5366,6 +5383,70 @@ Data <- R6::R6Class(
     #
     # @return NULL (default implementation does nothing)
     ..post_clean = function() {}, # subclass hook
+
+    # Build Indicator Mapping Status Table
+    #
+    # @description
+    # For each row of the indicator schema, splits the comma separated
+    # `variables` entry and checks every canonical variable against the
+    # variable map and value map. The table is stored in `..indicator_status_<stage>`.
+    #
+    # @return Data frame with columns `indicator_name`, `variables_mapped`,
+    #   `variables_not_mapped` (comma separated), `in_value_map` ("TRUE"/"FALSE",
+    #   TRUE only when all variables are in the value map) and `status`
+    #   ("green", "yellow" or "red"). Invisibly returned.
+    ..build_indicator_status = function(stage = c("raw", "standardized", "clean")) {
+      stage <- match.arg(stage)
+
+      out <- data.frame(
+        indicator_name = character(0),
+        variables_mapped = character(0),
+        variables_not_mapped = character(0),
+        in_value_map = character(0),
+        status = character(0),
+        stringsAsFactors = FALSE
+      )
+
+      sch <- private$..indicator_schema
+      if (
+        is.data.frame(sch) &&
+        nrow(sch) > 0 &&
+        all(c("indicator_name", "variables") %in% names(sch))
+      ) {
+        vm_names <- names(private$..variable_map %||% list())
+        vl_names <- names(private$..value_map %||% list())
+        split_vars <- function(x) {
+          v <- trimws(strsplit(as.character(x), ",", fixed = TRUE)[[1]])
+          unique(v[!is.na(v) & v != ""])
+        }
+
+        rows <- lapply(seq_len(nrow(sch)), function(i) {
+          vars <- split_vars(sch$variables[[i]])
+          mapped <- vars[vars %in% vm_names]
+          unmapped <- vars[!vars %in% vm_names]
+          all_vals <- length(vars) > 0 && all(vars %in% vl_names)
+          status <- if (length(unmapped) > 0 || length(vars) == 0) {
+            "red"
+          } else if (all_vals) {
+            "green"
+          } else {
+            "yellow"
+          }
+          data.frame(
+            indicator_name = as.character(sch$indicator_name[[i]]),
+            variables_mapped = paste(mapped, collapse = ", "),
+            variables_not_mapped = paste(unmapped, collapse = ", "),
+            in_value_map = as.character(all_vals),
+            status = status,
+            stringsAsFactors = FALSE
+          )
+        })
+        out <- do.call(rbind, rows)
+      }
+
+      private[[paste0("..indicator_status_", stage)]] <- out
+      invisible(out)
+    },
 
     # Build Diagnostic Rows for a Variable
     #

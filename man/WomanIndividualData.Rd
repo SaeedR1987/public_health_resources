@@ -50,8 +50,8 @@ and MUAC indicators.
     \preformatted{WomanIndividualData$new(
   data,
   dataset_name = "WomanIndividualData",
-  metadata = NULL,
-  variable_map = NULL
+  uuid = NULL,
+  hh_uuid = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -60,13 +60,15 @@ and MUAC indicators.
     \describe{
       \item{\code{data}}{A data frame containing individual health records}
       \item{\code{dataset_name}}{A name for this dataset}
+      \item{\code{uuid}}{Character name of the person-level unique ID column (defaults to "person_id")}
+      \item{\code{hh_uuid}}{Character name of the household linkage column (defaults to "hh_uuid")}
       \item{\code{metadata}}{Optional list of metadata}
       \item{\code{variable_map}}{Optional named list mapping standard variable names to data columns}
     }
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    A new HealthIndividualData object
+    A new WomanIndividualData object
   }
 }
 
