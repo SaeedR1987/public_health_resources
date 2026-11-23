@@ -40,6 +40,8 @@ Private fields (accessible via get() and set() methods):
     \item \href{#method-Log-initialize}{\code{Log$new()}}
     \item \href{#method-Log-validate}{\code{Log$validate()}}
     \item \href{#method-Log-append_entry}{\code{Log$append_entry()}}
+    \item \href{#method-Log-add_entry}{\code{Log$add_entry()}}
+    \item \href{#method-Log-remove_entry}{\code{Log$remove_entry()}}
     \item \href{#method-Log-clear}{\code{Log$clear()}}
     \item \href{#method-Log-export}{\code{Log$export()}}
     \item \href{#method-Log-summary}{\code{Log$summary()}}
@@ -149,6 +151,61 @@ Append Log Entry
     Validates that all required columns are present in row_list.
 Converts list to data.frame row and appends via dplyr::bind_rows().
 Updates metadata timestamp.
+Add Log Entry
+  }
+  \subsection{Returns}{
+    Invisible TRUE
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-add_entry"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-add_entry}{}}}
+\subsection{\code{Log$add_entry()}}{
+  Inserts a new row into the log immediately after a specified row index.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Log$add_entry(row_index, row_list)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{row_index}}{Single whole number; the new entry is inserted after this
+row. Use 0 to insert at the top of the log.}
+      \item{\code{row_list}}{Named list with column_name = value pairs}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    Validates row_index (0 to number of rows) and that all required columns
+are present in row_list. Updates metadata timestamp.
+Remove Log Entry
+  }
+  \subsection{Returns}{
+    Invisible TRUE
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-Log-remove_entry"></a>}}
+\if{latex}{\out{\hypertarget{method-Log-remove_entry}{}}}
+\subsection{\code{Log$remove_entry()}}{
+  Removes the row at a specified row index from the log.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{Log$remove_entry(row_index)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{row_index}}{Single whole number between 1 and the number of rows.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Details}{
+    Validates row_index and updates metadata timestamp.
 Clear Log
   }
   \subsection{Returns}{

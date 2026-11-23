@@ -477,6 +477,151 @@ Log <- R6::R6Class(
       invisible(TRUE)
     },
 
+    #' Add Log Entry
+    #'
+    #' @description
+    #' Inserts a new row into the log immediately after a specified row index.
+    #'
+    #' @param row_index Single whole number; the new entry is inserted after this
+    #'   row. Use 0 to insert at the top of the log.
+    #' @param row_list Named list with column_name = value pairs
+    #'
+    #' @return Invisible TRUE
+    #'
+    #' @details
+    #' Validates row_index (0 to number of rows) and that all required columns
+    #' are present in row_list. Updates metadata timestamp.
+    add_entry = function(row_index, row_list) {
+
+      phrutils::phr_try({
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$add_entry"),
+          message = private$..phr_txt("Starting add_entry for {private$..log_name}.")
+        )
+
+        n_rows <- nrow(private$..log_df)
+
+        if (!is.numeric(row_index) || length(row_index) != 1 || is.na(row_index) ||
+            row_index != round(row_index) || row_index < 0 || row_index > n_rows) {
+          phrutils::phr_error(
+            private$..log_name,
+            private$..phr_txt("add_entry() requires row_index to be a single whole number between 0 and {n_rows}.")
+          )
+        }
+
+        if (!is.list(row_list)) {
+          phrutils::phr_error(
+            private$..log_name,
+            private$..phr_txt("add_entry() requires a named list.")
+          )
+        }
+
+        missing_cols <- setdiff(private$..required_columns, names(row_list))
+        if (length(missing_cols) > 0) {
+          phrutils::phr_error(
+            private$..log_name,
+            private$..phr_txt(
+              "Missing required fields in new log entry: {paste(missing_cols, collapse=', ')}"
+            )
+          )
+        }
+
+        result <- phrutils::phr_try_step({
+          df_row <- as.data.frame(row_list, stringsAsFactors = FALSE)
+          log_df <- private$..log_df
+          idx <- as.integer(row_index)
+          before <- log_df[seq_len(idx), , drop = FALSE]
+          after <- log_df[seq_len(n_rows - idx) + idx, , drop = FALSE]
+          self$set(field = "..log_df", value = dplyr::bind_rows(before, df_row, after))
+        },
+        step = private$..phr_txt("Log$add_entry - insert row"),
+        hint = private$..phr_txt("Check that row_list is compatible with the columns of {private$..log_name}.")
+        )
+        if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$add_entry"),
+            message = result$error
+          )
+          phrutils::phr_error(message = result$error, origin = private$..log_name, hint = result$hint)
+        }
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$add_entry"),
+          message = private$..phr_txt("Added 1 entry after row {row_index}; {private$..log_name} now has {nrow(private$..log_df)} entries.")
+        )
+
+      },
+      on_error = "abort",
+      origin = "Log$add_entry"
+      )
+
+      invisible(TRUE)
+    },
+
+    #' Remove Log Entry
+    #'
+    #' @description
+    #' Removes the row at a specified row index from the log.
+    #'
+    #' @param row_index Single whole number between 1 and the number of rows.
+    #'
+    #' @return Invisible TRUE
+    #'
+    #' @details
+    #' Validates row_index and updates metadata timestamp.
+    remove_entry = function(row_index) {
+
+      phrutils::phr_try({
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$remove_entry"),
+          message = private$..phr_txt("Starting remove_entry for {private$..log_name}.")
+        )
+
+        n_rows <- nrow(private$..log_df)
+
+        if (!is.numeric(row_index) || length(row_index) != 1 || is.na(row_index) ||
+            row_index != round(row_index) || row_index < 1 || row_index > n_rows) {
+          phrutils::phr_error(
+            private$..log_name,
+            private$..phr_txt("remove_entry() requires row_index to be a single whole number between 1 and {n_rows}.")
+          )
+        }
+
+        result <- phrutils::phr_try_step({
+          self$set(field = "..log_df", value = private$..log_df[-as.integer(row_index), , drop = FALSE])
+        },
+        step = private$..phr_txt("Log$remove_entry - remove row"),
+        hint = private$..phr_txt("Check that row_index is valid for {private$..log_name}.")
+        )
+        if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$remove_entry"),
+            message = result$error
+          )
+          phrutils::phr_error(message = result$error, origin = private$..log_name, hint = result$hint)
+        }
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$remove_entry"),
+          message = private$..phr_txt("Removed row {row_index}; {private$..log_name} now has {nrow(private$..log_df)} entries.")
+        )
+
+      },
+      on_error = "abort",
+      origin = "Log$remove_entry"
+      )
+
+      invisible(TRUE)
+    },
+
     #' Clear Log
     #'
     #' @description
@@ -634,6 +779,8 @@ Log <- R6::R6Class(
       c(
         "validate",
         "append_entry",
+        "add_entry",
+        "remove_entry",
         "clear",
         "export",
         "summary"
