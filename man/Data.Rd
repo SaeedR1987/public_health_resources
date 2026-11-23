@@ -337,7 +337,7 @@ Clean Data
     Data frame with columns `required_variable`, `required_value`,
   `required_type`, `mapped_variable`, `mapped_value`, `safely_coercible`,
   `comment`, and `issues`. The same table is stored privately and can be
-  retrieved with `get(field = "..data_diagnostics")`.
+  retrieved with `get(field = "..data_diagnostics_<stage>")`.
   }
 }
 

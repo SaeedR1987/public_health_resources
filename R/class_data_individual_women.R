@@ -18,11 +18,11 @@ WomanIndividualData <- R6::R6Class(
     #' @param dataset_name A name for this dataset
     #' @param metadata Optional list of metadata
     #' @param variable_map Optional named list mapping standard variable names to data columns
-    #' @return A new HealthIndividualData object
+    #' @return A new WomanIndividualData object
     initialize = function(data,
                           dataset_name = "WomanIndividualData",
-                          metadata = NULL,
-                          variable_map = NULL) {
+                          uuid = NULL,
+                          hh_uuid = NULL) {
 
       phrutils::phr_try({
 
