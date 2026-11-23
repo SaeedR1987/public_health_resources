@@ -1786,9 +1786,8 @@ Data <- R6::R6Class(
     ..indicator_status_standardized = NULL,
     ..indicator_status_clean = NULL,
 
-    # @field ..cleaning_log_issues Data frame of cleaning-log rows that
-
-    # @field ..cleaning_log_issues Data frame of cleaning-log rows that Data frame of cleaning-log rows that    #   could not be applied (e.g. coercion failures).
+    # @field ..cleaning_log_issues Data frame of cleaning-log rows that Data frame of cleaning-log rows that
+    #   could not be applied (e.g. coercion failures).
     # @keywords internal
     ..cleaning_log_issues = NULL,
 
