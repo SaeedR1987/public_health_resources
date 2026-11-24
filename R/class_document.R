@@ -80,7 +80,7 @@ Document <- R6::R6Class(
       )
 
       # Step 1: Resolve template path
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (is.null(template_file)) {
             template_file <- private$..default_word_template_path()
@@ -99,13 +99,13 @@ Document <- R6::R6Class(
         hint = private$..phr_txt("Check that the template file exists.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[resolve_template]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[resolve_template]"), display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       template_file <- result
 
       # Step 2: Build parameters
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           default_params <- list(
             title = "Document Report",
@@ -126,7 +126,7 @@ Document <- R6::R6Class(
         hint = private$..phr_txt("Check the params argument and the template YAML front matter.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[build_params]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[build_params]"), display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       all_params <- result
@@ -139,7 +139,7 @@ Document <- R6::R6Class(
       )
 
       # Step 3: Render and move output
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           quarto::quarto_render(
             input = template_file,
@@ -164,7 +164,7 @@ Document <- R6::R6Class(
         hint = private$..phr_txt("Check that Quarto is installed and the template renders.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[render]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[render]"), display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -216,7 +216,7 @@ Document <- R6::R6Class(
       )
 
       # Step 1: Resolve and read template
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (is.null(template_file)) {
             template_file <- system.file(
@@ -248,13 +248,13 @@ Document <- R6::R6Class(
         hint = private$..phr_txt("Check that the template file exists.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[resolve_template]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[resolve_template]"), display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       template_text <- result$template_text
 
       # Step 2: Substitute parameters and render
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           default_params <- list(
             title = "Presentation Report",
@@ -303,7 +303,7 @@ Document <- R6::R6Class(
         hint = private$..phr_txt("Check that Quarto is installed and the template renders.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[render]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[render]"), display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 

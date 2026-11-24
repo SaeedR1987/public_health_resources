@@ -126,7 +126,7 @@ Protocol <- R6::R6Class(
     ) {
       origin <- "Protocol$initialize"
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           super$initialize(
             reference_doc_filename = private$..default_template_filenames(),
@@ -253,7 +253,7 @@ Protocol <- R6::R6Class(
         hint = private$..phr_txt("Check framework_type and the default templates.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -288,7 +288,7 @@ Protocol <- R6::R6Class(
         message = private$..phr_txt("Starting add_tools for type '{tool_type}'.")
       )
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           valid_types <- self$valid_tool_types %||% character(0)
           phrutils::phr_assert(
@@ -343,7 +343,7 @@ Protocol <- R6::R6Class(
         hint = private$..phr_txt("Check tool_type and tool_name.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -375,7 +375,7 @@ Protocol <- R6::R6Class(
         message = private$..phr_txt("Starting remove_tools.")
       )
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           # Validate input
           phrutils::phr_assert(
@@ -419,7 +419,7 @@ Protocol <- R6::R6Class(
         hint = private$..phr_txt("Check tool_name.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -484,7 +484,7 @@ Protocol <- R6::R6Class(
       )
       valid <- TRUE
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (is.null(schema) || !is.data.frame(schema)) {
             phrutils::phr_error(
@@ -565,7 +565,7 @@ Protocol <- R6::R6Class(
         hint = private$..phr_txt("Use load_objective_schema() to obtain the default schema.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -759,7 +759,7 @@ Protocol <- R6::R6Class(
       )
 
       dap <- NULL
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           # Validate tool_name parameter
           phrutils::phr_assert(
@@ -777,7 +777,7 @@ Protocol <- R6::R6Class(
         hint = private$..phr_txt("Check tool_name and the framework configuration.")
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 

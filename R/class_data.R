@@ -84,7 +84,7 @@ Data <- R6::R6Class(
       uuid = NULL
     ) {
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           # Step 1: Super-initialize
@@ -125,7 +125,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(dataset_name, "$initialize$core_checks"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -155,7 +156,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(dataset_name, "$initialize$set_fields"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -174,7 +176,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(dataset_name, "$initialize$load_schemas"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -194,7 +197,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(dataset_name, "$initialize$map_schema_vars"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -221,7 +225,7 @@ Data <- R6::R6Class(
     #' @return List with summary information including dataset name, record/column counts,
     #'   validation status, schemas, and labels
     summary = function() {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
@@ -286,7 +290,7 @@ Data <- R6::R6Class(
     #' @return Data frame at the specified stage, or NULL if stage not yet available
     get_data = function(stage = c("raw", "standardized", "clean")) {
       stage <- match.arg(stage)
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (stage == "raw") {
             return(private$..raw_data)
@@ -323,7 +327,7 @@ Data <- R6::R6Class(
     ) {
       stage <- match.arg(stage)
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Define priority order based on requested stage
           if (stage == "clean") {
@@ -378,7 +382,7 @@ Data <- R6::R6Class(
       validated <- TRUE
       had_warnings <- FALSE
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..touch(
             log = TRUE,
@@ -415,7 +419,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(private$..dataset_name, "$validate$get_data"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -436,7 +441,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(private$..dataset_name, "$validate$pre_validate"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -461,7 +467,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(private$..dataset_name, "$validate$core_checks"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -497,7 +504,8 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(private$..dataset_name, "$validate$variable_map_checks"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -523,16 +531,14 @@ Data <- R6::R6Class(
               touch = FALSE,
               display = FALSE,
               name = paste0(private$..dataset_name, "$validate$value_map_checks"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
 
-
           had_warnings <- result
-          phrutils::phr_message(paste0("Step 5 ", had_warnings))
-          print(class(had_warnings))
-          print(summary(had_warnings))
+
           # Step 6: Post validation hook
 
           result <- phrutils::phr_try_step(
@@ -550,7 +556,8 @@ Data <- R6::R6Class(
                 touch = FALSE,
                 display = FALSE,
                 name = paste0(private$..dataset_name, "$validate$post_validate"),
-                message = result$error
+                message = result$error,
+                level = "error"
               )
               return(result)
             }
@@ -612,7 +619,7 @@ Data <- R6::R6Class(
         message = private$..phr_txt("Standardization process for {private$..dataset_name} started...")
       )
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Step 1: Ensure raw_data exists and validation
           result <- phrutils::phr_try_step(
@@ -626,7 +633,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$check_prerequisites"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -644,7 +652,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$pre_standardize"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -665,7 +674,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$map_schema_vars"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -705,7 +715,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$setup"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -772,7 +783,8 @@ Data <- R6::R6Class(
               private$..touch(
                 log = TRUE, touch = FALSE, display = FALSE,
                 name = paste0(private$..dataset_name, "$standardize$type_conversion"),
-                message = result$error
+                message = result$error,
+                level = "error"
               )
               return(result)
             }
@@ -799,7 +811,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$select_multiple"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -825,7 +838,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$schema_other_columns"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -867,7 +881,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$indicator_schema"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -892,7 +907,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$cluster_id_numeric"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -928,7 +944,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$set_standardized_data"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -958,7 +975,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$quality_checks"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -975,7 +993,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$post_standardize"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -993,7 +1012,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$standardize$final_map_schema_vars"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1029,7 +1049,7 @@ Data <- R6::R6Class(
       stage = "standardized",
       overwrite = FALSE
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -1058,7 +1078,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$get_data"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1079,7 +1100,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$pre_hook"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1129,7 +1151,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$setup"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1192,7 +1215,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$quality_flags"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1218,7 +1242,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$other_columns"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1242,7 +1267,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$unique_constraints"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1261,7 +1287,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_cleaning_log$post_hook"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1302,7 +1329,7 @@ Data <- R6::R6Class(
     #' 5. Applies deletion log removals (if present)
     #' 6. Updates metadata and sets cleaned flag
     clean = function() {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -1337,7 +1364,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$check_validation"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1353,7 +1381,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$setup"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1370,7 +1399,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$pre_clean"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1398,7 +1428,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$validate_cleaning_log"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1440,7 +1471,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$apply_cleaning_log"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1463,7 +1495,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$validate_deletion_log"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1506,7 +1539,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$apply_deletion_log"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1522,7 +1556,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$clean$post_clean"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1567,7 +1602,7 @@ Data <- R6::R6Class(
 
       stage <- match.arg(stage)
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -1601,7 +1636,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$data_diagnose$get_data"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1656,7 +1692,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$data_diagnose$setup"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1691,7 +1728,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$data_diagnose$build_rows"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1741,7 +1779,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$data_diagnose$convert_rows"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1762,7 +1801,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$data_diagnose$store_diagnostics"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -1805,7 +1845,7 @@ Data <- R6::R6Class(
     ) {
       stage <- match.arg(stage)
       format <- match.arg(format)
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
@@ -1846,7 +1886,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$export_data"),
-              message = conditionMessage(e)
+              message = conditionMessage(e),
+              level = "error"
             )
             stop(e)
           })
@@ -1953,7 +1994,7 @@ Data <- R6::R6Class(
     ) {
       stage <- match.arg(stage)
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
@@ -2001,7 +2042,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$generate_data_analytics"),
-              message = conditionMessage(e)
+              message = conditionMessage(e),
+              level = "error"
             )
             stop(e)
           })
@@ -2327,7 +2369,7 @@ Data <- R6::R6Class(
     dataset_name = NULL
     ) {
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           df_schema <- tryCatch(
@@ -2890,7 +2932,7 @@ Data <- R6::R6Class(
     # @return A `phr_try_step()` result object.
     ..standardize_check_prerequisites = function() {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         # Step 1: Ensure raw_data exists
         result <- phrutils::phr_try_step(
@@ -2910,7 +2952,8 @@ Data <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$..standardize_check_prerequisites$raw_data"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -2938,7 +2981,8 @@ Data <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$..standardize_check_prerequisites$validation"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -3195,7 +3239,7 @@ Data <- R6::R6Class(
     schema
     ) {
 
-      result <- phrutils::phr_try(
+      result <- private$..phr_try(
         {
           if (
             !is.null(schema) &&
@@ -3293,7 +3337,7 @@ Data <- R6::R6Class(
     #   related to "other" responses in select_multiple questions)
     ..st_process_select_multiple_columns = function(data, schema) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       result <- list(
         data = data,
@@ -3616,7 +3660,8 @@ Data <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$standardize$indicator$", ind_name),
-            message = conditionMessage(e)
+            message = conditionMessage(e),
+            level = "error"
           )
           stop(e)
         }
@@ -3649,7 +3694,7 @@ Data <- R6::R6Class(
           value = working_data
         )
 
-        phrutils::phr_try(
+        private$..phr_try(
           {
             private$..map_schema_vars(
               stage = "standardized"
@@ -4179,11 +4224,11 @@ Data <- R6::R6Class(
     # * Custom validation rules from dependency_schema
     # Results are stored in private$..data_quality_flags for later use.
     ..standardize_run_quality_checks = function(stage = "standardized") {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # SAFE LOAD OF DATA & SCHEMA
 
-          df <- phrutils::phr_try(
+          df <- private$..phr_try(
             self$get_data(stage),
             on_error = "abort",
             origin = paste0(private$..dataset_name, "_DQ_load")
@@ -4201,7 +4246,7 @@ Data <- R6::R6Class(
           # Load dependency_schema (primary) and variable_schema (for types only)
           # Both are stored as flat data frames and are iterated over directly
           # in that form here (one row per dependency rule / variable value).
-          dep_schema <- phrutils::phr_try(
+          dep_schema <- private$..phr_try(
             {
               sch <- private$..dependency_schema
               sch
@@ -4210,7 +4255,7 @@ Data <- R6::R6Class(
             origin = paste0(private$..dataset_name, "_DQ_dep_schema_load")
           )
 
-          var_schema <- phrutils::phr_try(
+          var_schema <- private$..phr_try(
             {
               sch <- private$..variable_schema
               sch
@@ -4307,7 +4352,7 @@ Data <- R6::R6Class(
           flags <- list()
 
           add_flag <- function(name, vec) {
-            phrutils::phr_try(
+            private$..phr_try(
               {
                 if (!is.null(vec) && length(vec) == nrow(df)) {
                   flags[[name]] <<- vec
@@ -4322,7 +4367,7 @@ Data <- R6::R6Class(
           # Iterate the variable schema rows to determine intended types
           # This check identifies specific rows that cannot be coerced
 
-          phrutils::phr_try(
+          private$..phr_try(
             {
               if (has_types) {
                 for (type_i in seq_len(nrow(type_rows))) {
@@ -4357,7 +4402,7 @@ Data <- R6::R6Class(
           # All other quality checks (allowed values, ranges, patterns, unique, mutex, etc.)
           # should now be defined as dependency rules in the dependency_schema
 
-          phrutils::phr_try(
+          private$..phr_try(
             {
               if (has_dep_schema) {
                 # Process all dependency rows (action field determines treatment)
@@ -4366,7 +4411,7 @@ Data <- R6::R6Class(
                   flag_name <- schema_value(dep_row, "dep_name")
 
                   # Wrap each dependency processing in phr_try to continue on errors
-                  phrutils::phr_try(
+                  private$..phr_try(
                     {
                       # CHANGE 1: Check if required variables are present in dataset
                       # Variables in dependency schema use canonical names from
@@ -4478,7 +4523,7 @@ Data <- R6::R6Class(
                           stage = stage
                         )
 
-                        cond_if <- phrutils::phr_try(
+                        cond_if <- private$..phr_try(
                           {
                             out <- with(
                               df,
@@ -4525,7 +4570,7 @@ Data <- R6::R6Class(
                             stage = stage
                           )
 
-                          cond_then <- phrutils::phr_try(
+                          cond_then <- private$..phr_try(
                             {
                               out <- with(
                                 df,
@@ -4621,7 +4666,7 @@ Data <- R6::R6Class(
 
           # Append to standardized data
 
-          phrutils::phr_try(
+          private$..phr_try(
             {
               std <- private$..standardized_data
               if (!is.null(std) && private$..uuid %in% names(std)) {
@@ -5427,7 +5472,7 @@ Data <- R6::R6Class(
     # @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
     # @return Character string with action ("flag_autoclean", "flag_warning", etc.) or empty string
     ..gen_cl_get_flag_action_from_schema = function(flag_name) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # dependency_schema is stored as a flat data frame
           dep_schema <- private$..dependency_schema
@@ -5458,7 +5503,7 @@ Data <- R6::R6Class(
     # @param flag_name Name of the flag column (e.g., "flag_other_check" or "dq_dep_1")
     # @return Character vector of canonical variable names involved in the dependency, or NULL
     ..gen_cl_get_flag_variables_from_schema = function(flag_name) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Check separate dependency_schema first (stored as a flat data
           # frame; convert to the nested list view on demand).
@@ -6468,7 +6513,7 @@ Data <- R6::R6Class(
     # * Checks for missing foreign key values
     # * Reports orphaned records
     ..validate_links = function(stage_self = "clean", stage_other = "clean") {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (length(private$..linked_objects) == 0) {
             phrutils::phr_message(private$..phr_txt(
@@ -6566,7 +6611,7 @@ Data <- R6::R6Class(
     # @param stage The data stage to search in ("raw", "standardized", or "clean")
     # @return Invisible self for method chaining
     ..map_schema_vars = function(stage = "raw") {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           sch <- private$..variable_schema
 
@@ -6604,7 +6649,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$..map_schema_vars$get_data"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -6660,7 +6706,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$..map_schema_vars$read_schema"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -6708,7 +6755,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$..map_schema_vars$iterate"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -7099,7 +7147,7 @@ Data <- R6::R6Class(
     # These columns are loaded from the xlsx variable schema template
     # (e.g. `inst/resources/variable_schema_data_household_template.xlsx`).
     ..map_schema_labels = function(language = "english") {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           tryCatch({
           sch <- private$..variable_schema
@@ -7192,7 +7240,8 @@ Data <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$..map_schema_labels"),
-              message = conditionMessage(e)
+              message = conditionMessage(e),
+              level = "error"
             )
             stop(e)
           })

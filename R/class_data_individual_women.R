@@ -24,7 +24,7 @@ WomanIndividualData <- R6::R6Class(
                           uuid = NULL,
                           hh_uuid = NULL) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         woman_map <- list(
           uuid      = "person_id",
@@ -69,7 +69,8 @@ WomanIndividualData <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$initialize$optional_columns"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -86,7 +87,8 @@ WomanIndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }

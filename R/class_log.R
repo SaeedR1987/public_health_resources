@@ -59,7 +59,7 @@ Log <- R6::R6Class(
       schema = NULL
     ) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         # Step 1: Super Initalize
 
@@ -94,7 +94,8 @@ Log <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(log_name, "$initialize$set_fields"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
@@ -136,7 +137,8 @@ Log <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(log_name, "$initialize$set_log_df"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           phrutils::phr_error(message = result$error, origin = log_name, hint = result$hint)
         }
@@ -173,7 +175,7 @@ Log <- R6::R6Class(
     #' Sets self$validated to TRUE if no issues found, updates self$issues.
     #' Attempts safe type coercion (e.g., "123" to 123) when possible.
     validate = function(schema_override = NULL) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
@@ -209,7 +211,8 @@ Log <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = TRUE,
               name = paste0(private$..log_name, "$validate$structural_checks"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -231,7 +234,8 @@ Log <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = TRUE,
               name = paste0(private$..log_name, "$validate$pre_validate"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -330,7 +334,8 @@ Log <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = TRUE,
               name = paste0(private$..log_name, "$validate$schema_validation"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -361,7 +366,8 @@ Log <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = TRUE,
               name = paste0(private$..log_name, "$validate$post_validate"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -386,7 +392,8 @@ Log <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = TRUE,
               name = paste0(private$..log_name, "$validate$finalize"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -433,7 +440,7 @@ Log <- R6::R6Class(
     #' Updates metadata timestamp.
     append_entry = function(row_list) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       private$..touch(
         log = TRUE, touch = FALSE, display = FALSE,
@@ -493,7 +500,7 @@ Log <- R6::R6Class(
     #' are present in row_list. Updates metadata timestamp.
     add_entry = function(row_index, row_list) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE, touch = FALSE, display = FALSE,
@@ -543,7 +550,8 @@ Log <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..log_name, "$add_entry"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           phrutils::phr_error(message = result$error, origin = private$..log_name, hint = result$hint)
         }
@@ -575,7 +583,7 @@ Log <- R6::R6Class(
     #' Validates row_index and updates metadata timestamp.
     remove_entry = function(row_index) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE, touch = FALSE, display = FALSE,
@@ -603,7 +611,8 @@ Log <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..log_name, "$remove_entry"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           phrutils::phr_error(message = result$error, origin = private$..log_name, hint = result$hint)
         }
@@ -634,7 +643,7 @@ Log <- R6::R6Class(
     #' Updates metadata timestamp.
     clear = function() {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       private$..touch(
         log = TRUE, touch = FALSE, display = FALSE,
@@ -678,7 +687,7 @@ Log <- R6::R6Class(
     export = function(path, format = c("csv", "rds", "xlsx")) {
       format <- match.arg(format)
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
@@ -833,7 +842,7 @@ Log <- R6::R6Class(
     # required column. Defaults to character type if no schema type specified.
     ..empty_log_template = function() {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         cols <- private$..required_columns %||% character(0)
 

@@ -49,7 +49,7 @@ CleaningLog <- R6::R6Class(
       schema = NULL
     ) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       # Step 1: Setting default inputs
 
@@ -156,7 +156,7 @@ CleaningLog <- R6::R6Class(
     #' All issues are returned as warnings, not errors, to allow inspection.
     validate_cl_against_dataset = function(data_obj, stage = "clean") {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE, touch = FALSE, display = FALSE,
@@ -206,7 +206,8 @@ CleaningLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_cl_against_dataset$setup"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -248,7 +249,8 @@ CleaningLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_cl_against_dataset$uuid_checks"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -288,7 +290,8 @@ CleaningLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_cl_against_dataset$enum_id_checks"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -317,7 +320,8 @@ CleaningLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_cl_against_dataset$question_name_checks"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -368,7 +372,8 @@ CleaningLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_cl_against_dataset$old_value_checks"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -423,7 +428,7 @@ CleaningLog <- R6::R6Class(
       new.value
     ) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       private$..touch(
         log = TRUE, touch = FALSE, display = FALSE,
@@ -557,7 +562,8 @@ CleaningLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$completeness"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }
@@ -585,7 +591,8 @@ CleaningLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$set_state"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }

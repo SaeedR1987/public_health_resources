@@ -105,7 +105,7 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
     #' All issues are returned as warnings, not errors, to allow inspection.
     validate_dap_against_dataset = function(data_obj, stage = "clean") {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE, touch = FALSE, display = FALSE,
@@ -155,7 +155,8 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_dap_against_dataset$setup"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -224,7 +225,8 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_dap_against_dataset$variable_map_checks"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -350,7 +352,8 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$indicator_name_unit"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }
@@ -382,7 +385,8 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$calculation"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }
@@ -416,7 +420,8 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$multiplier"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }
@@ -445,7 +450,8 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$set_state"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }

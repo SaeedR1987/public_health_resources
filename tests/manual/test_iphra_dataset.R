@@ -111,6 +111,8 @@ vl_raw
 
 drc_mort$standardize()
 
+View(drc_mort$get(field = "..change_log"))
+
 vm_std <- drc_mort$get(field = "..variable_map")
 vm_std
 

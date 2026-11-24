@@ -23,7 +23,7 @@ Sample <- R6::R6Class(
       super$initialize()
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting initialization of Sample.")
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$validated <- FALSE
           if (is.null(sample_table)) {
@@ -44,7 +44,7 @@ Sample <- R6::R6Class(
         hint = "Check that sample_table is a data frame."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -63,7 +63,7 @@ Sample <- R6::R6Class(
       origin <- "Sample$set_sample_table"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_sample_table.")
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_validate_dataframe(
             sample_table,
@@ -76,7 +76,7 @@ Sample <- R6::R6Class(
         hint = "Check that sample_table is a data frame."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -219,7 +219,7 @@ Sample <- R6::R6Class(
       )
       replaced <- FALSE
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
       if (!is.null(design_effect) && is.na(pop_design_effect)) {
         pop_design_effect <- design_effect
@@ -375,7 +375,7 @@ Sample <- R6::R6Class(
         hint = "Check sampling_method_site and the stratum parameters."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -398,7 +398,7 @@ Sample <- R6::R6Class(
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting remove_stratum.")
       n_before <- nrow(self$sample_table %||% data.frame())
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_assert(
             is.character(strata_name) &&
@@ -429,7 +429,7 @@ Sample <- R6::R6Class(
         hint = "Check strata_name and the sample table columns."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -450,7 +450,7 @@ Sample <- R6::R6Class(
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting validate_strata_table.")
 
       out <- NULL
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           out <- validate_strata_table(self$sample_table)
           self$validated <- out
@@ -459,7 +459,7 @@ Sample <- R6::R6Class(
         hint = "Check the sample table structure."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -477,7 +477,7 @@ Sample <- R6::R6Class(
       origin <- "Sample$calculate_sample_sizes"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting calculate_sample_sizes.")
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_assert(
             !is.null(self$sample_table) && nrow(self$sample_table) > 0,
@@ -490,7 +490,7 @@ Sample <- R6::R6Class(
         hint = "Call add_stratum() and supply the sampling parameters first."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 

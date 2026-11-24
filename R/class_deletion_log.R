@@ -44,7 +44,7 @@ DeletionLog <- R6::R6Class(
                           required_columns = NULL,
                           schema = NULL) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         # Step 1: Setting default inputs
 
@@ -136,7 +136,7 @@ DeletionLog <- R6::R6Class(
                             issue,
                             feedback  = NA_character_) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       private$..touch(
         log = TRUE, touch = FALSE, display = FALSE,
@@ -184,7 +184,7 @@ DeletionLog <- R6::R6Class(
     #' or never existed. Issues are returned as warnings for review.
     validate_dl_against_dataset = function(data_obj, stage = "clean") {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE, touch = FALSE, display = FALSE,
@@ -233,7 +233,8 @@ DeletionLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_dl_against_dataset$setup"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -268,7 +269,8 @@ DeletionLog <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = TRUE,
             name = paste0(private$..log_name, "$validate_dl_against_dataset$uuid_checks"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -345,7 +347,7 @@ DeletionLog <- R6::R6Class(
 
       issues <- list()
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       # 2. Validate deletion log rows
       result <- phrutils::phr_try_step({
@@ -380,7 +382,8 @@ DeletionLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$completeness"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }
@@ -408,7 +411,8 @@ DeletionLog <- R6::R6Class(
         private$..touch(
           log = TRUE, touch = FALSE, display = TRUE,
           name = paste0(private$..log_name, "$..post_validate$set_state"),
-          message = result$error
+          message = result$error,
+          level = "error"
         )
         return(result)
       }

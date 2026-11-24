@@ -47,7 +47,7 @@ DeathIndividualData <- R6::R6Class(
                           uuid = NULL,
                           hh_uuid = NULL) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         # --- Default mapping for death-related variables
         default_map <- list(
@@ -92,7 +92,8 @@ DeathIndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -123,7 +124,8 @@ DeathIndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$recall_date"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -145,7 +147,8 @@ DeathIndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$required_columns"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }

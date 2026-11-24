@@ -37,7 +37,7 @@ Report <- R6::R6Class(
         message = "Starting initialization of Report."
       )
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$protocol <- protocol
           self$data_analytics <- data_analytics
@@ -47,7 +47,7 @@ Report <- R6::R6Class(
         hint = "Check protocol, data_analytics and integrated_analysis."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 

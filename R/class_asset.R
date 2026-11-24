@@ -23,7 +23,7 @@ Asset <- R6::R6Class(
     #' @return A new Asset object.
     initialize = function(name = NULL) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
 
       timestamp <- Sys.time()
@@ -44,6 +44,8 @@ Asset <- R6::R6Class(
                       touch = TRUE,
                       name = name,
                       message = private$..phr_txt("Initialization for completed successfully."))
+
+      private$..wrap_public_methods()
 
       },
       on_error = "abort",
@@ -136,7 +138,7 @@ Asset <- R6::R6Class(
       update_sync = FALSE,
       update_modified = FALSE
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           allowed_fields <- private$..allowed_get_fields()
@@ -221,7 +223,7 @@ Asset <- R6::R6Class(
       update_modified = TRUE,
       ...
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           allowed_fields <- private$..allowed_call_fields()
@@ -321,7 +323,7 @@ Asset <- R6::R6Class(
       update_sync = FALSE,
       update_modified = TRUE
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           allowed_fields <- private$..allowed_set_fields()
@@ -655,7 +657,7 @@ Asset <- R6::R6Class(
     #   through to \code{..track()} when \code{log} is \code{TRUE}.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
-    ..touch = function(log = FALSE, touch = TRUE, name = NULL, display = FALSE, message = NULL) {
+    ..touch = function(log = FALSE, touch = TRUE, name = NULL, display = FALSE, message = NULL, level = "info") {
       if (is.null(private$..metadata) || !is.list(private$..metadata)) {
         private$..metadata <- list()
       }
@@ -667,7 +669,7 @@ Asset <- R6::R6Class(
       }
 
       if (isTRUE(log)) {
-        private$..track(name = name, message = message)
+        private$..track(name = name, message = message, level = level)
       }
 
       if (isTRUE(display)) {
@@ -685,12 +687,16 @@ Asset <- R6::R6Class(
     # @param message Character scalar describing the change in more detail.
     # @return Invisibly returns \code{NULL}.
     # @keywords internal
-    ..track = function(name = NULL, message = NULL) {
+    ..track = function(name = NULL, message = NULL, level = "info") {
+      if (!identical(level, "info")) {
+        private$..last_logged_condition <- paste(level, message, sep = "\u001f")
+      }
       entry <- tibble::tibble(
         id = private$..metadata$hash_id %||% NA_character_,
         version = private$..metadata$version %||% NA_integer_,
         name = name %||% NA_character_,
         datetime = Sys.time(),
+        level = level %||% "info",
         log_message = message %||% NA_character_
       )
 
@@ -702,6 +708,112 @@ Asset <- R6::R6Class(
 
       invisible(NULL)
     },
+
+    # @description Evaluate an expression while logging every warning and
+    #   error condition raised within it (from phr_error, phr_warning,
+    #   phr_validate_*, base stop()/warning(), etc.) to the change log.
+    #   Conditions are observed with calling handlers, so warnings are not
+    #   muffled and errors still propagate. Consecutive identical entries
+    #   (e.g. from nested wrapped methods) are logged only once.
+    # @param expr Expression to evaluate.
+    # @param name Character scalar identifying the source of the entry.
+    # @param errors Logical; when \code{FALSE} only warnings are logged.
+    # @return The value of \code{expr}.
+    # @keywords internal
+    ..with_logging = function(expr, name = NULL, errors = TRUE) {
+      log_condition <- function(cnd, level) {
+        msg <- tryCatch(conditionMessage(cnd), error = function(e) NA_character_)
+        key <- paste(level, msg, sep = "\u001f")
+        if (identical(private$..last_logged_condition, key)) {
+          return(invisible(NULL))
+        }
+        private$..last_logged_condition <- key
+        try(
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = name, message = msg, level = level
+          ),
+          silent = TRUE
+        )
+        invisible(NULL)
+      }
+      withCallingHandlers(
+        expr,
+        warning = function(w) log_condition(w, "warning"),
+        error = function(e) if (isTRUE(errors)) log_condition(e, "error")
+      )
+    },
+
+    # @description Wrap every public method of this object in
+    #   \code{..with_logging()}, so that any error or warning raised by a
+    #   public method (including bare \code{phr_error()}, \code{phr_assert()}
+    #   and base conditions raised outside \code{phr_try} blocks) is recorded
+    #   in the change log. Lifecycle methods (\code{initialize},
+    #   \code{clone}, \code{finalize}, \code{print}) and active bindings are
+    #   skipped, and methods are wrapped at most once.
+    # @return Invisibly returns \code{NULL}.
+    # @keywords internal
+    ..wrap_public_methods = function() {
+      if (isTRUE(private$..methods_wrapped)) {
+        return(invisible(NULL))
+      }
+      private$..methods_wrapped <- TRUE
+      skip <- c("initialize", "clone", "finalize", "print", "format")
+      nms <- setdiff(ls(self, all.names = FALSE), skip)
+      for (nm in nms) {
+        if (isTRUE(bindingIsActive(nm, self))) next
+        fn <- get(nm, envir = self, inherits = FALSE)
+        if (!is.function(fn)) next
+        local({
+          orig <- fn
+          method_name <- paste0(private$..name %||% class(self)[[1]], "$", nm)
+          wrapped <- function(...) {
+            private$..with_logging(orig(...), name = method_name)
+          }
+          locked <- bindingIsLocked(nm, self)
+          if (locked) unlockBinding(nm, self)
+          assign(nm, wrapped, envir = self)
+          if (locked) lockBinding(nm, self)
+        })
+      }
+      invisible(NULL)
+    },
+
+    # @field ..methods_wrapped Logical flag set once public methods have been
+    #   wrapped by \code{..wrap_public_methods()}.
+    # @keywords internal
+    ..methods_wrapped = FALSE,
+
+    # @description Calls phrutils::phr_try() with the expression wrapped in
+    #   \code{..with_logging()}, so errors and warnings raised inside are
+    #   recorded in the change log before phr_try handles them.
+    # @inheritParams phrutils::phr_try
+    # @keywords internal
+    ..phr_try = function(expr, on_error = c("warn", "return", "abort"),
+                         origin = NULL, hint = NULL, step = NULL) {
+      on_error <- match.arg(on_error)
+      phrutils::phr_try(
+        private$..with_logging(expr, name = origin),
+        on_error = on_error, origin = origin, hint = hint, step = step
+      )
+    },
+
+    # @description Calls phrutils::phr_try_step() with the expression wrapped
+    #   in \code{..with_logging(errors = FALSE)}, so warnings raised inside a
+    #   step are logged. Step failures are returned (not thrown) and remain the
+    #   caller's responsibility to log from \code{result$error}.
+    # @inheritParams phrutils::phr_try_step
+    # @keywords internal
+    ..phr_try_step = function(expr, step, hint = NULL) {
+      phrutils::phr_try_step(
+        private$..with_logging(expr, name = step, errors = FALSE),
+        step = step, hint = hint
+      )
+    },
+    # @field ..last_logged_condition Key of the last condition logged by
+    #   \code{..with_logging()}, used to avoid duplicate entries.
+    # @keywords internal
+    ..last_logged_condition = NULL,
 
     # @description Compute a content-based hash fingerprint of the object's
     #   current public state (excluding functions, environments, and
@@ -1228,7 +1340,7 @@ Asset <- R6::R6Class(
     required_cols,
     origin = "..validate_table_schema"
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           phrutils::phr_validate_dataframe(df, origin = origin, soft = FALSE)
 
