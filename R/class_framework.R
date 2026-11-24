@@ -163,7 +163,7 @@ Framework <- R6::R6Class(
       origin <- "Framework$initialize"
       super$initialize()
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Started initialization of Framework.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$master_objectives_schema <- NULL
           self$master_indicator_bank <- NULL
@@ -185,7 +185,7 @@ Framework <- R6::R6Class(
         step = "Initializing Framework fields"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Completed initialization of Framework.")
@@ -203,7 +203,7 @@ Framework <- R6::R6Class(
     set_primary_objectives = function(objective_codes) {
       origin <- "Framework$set_primary_objectives"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_primary_objectives.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$primary_objectives <- as.numeric(unlist(objective_codes))
           phrutils::phr_message(
@@ -216,7 +216,7 @@ Framework <- R6::R6Class(
         step = "Setting primary objectives"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -239,7 +239,7 @@ Framework <- R6::R6Class(
     set_secondary_objectives = function(objective_codes) {
       origin <- "Framework$set_secondary_objectives"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_secondary_objectives.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$secondary_objectives <- as.numeric(unlist(objective_codes))
           phrutils::phr_message(
@@ -252,7 +252,7 @@ Framework <- R6::R6Class(
         step = "Setting secondary objectives"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -276,7 +276,7 @@ Framework <- R6::R6Class(
     set_primary_indicators = function(indicator_codes) {
       origin <- "Framework$set_primary_indicators"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_primary_indicators.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$primary_indicator_codes <- as.character(unlist(indicator_codes))
           private$.refresh_modified_indicator_codes()
@@ -290,7 +290,7 @@ Framework <- R6::R6Class(
         step = "Setting primary indicators"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -314,7 +314,7 @@ Framework <- R6::R6Class(
     set_secondary_indicators = function(indicator_codes) {
       origin <- "Framework$set_secondary_indicators"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_secondary_indicators.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$secondary_indicator_codes <- as.character(unlist(
             indicator_codes
@@ -330,7 +330,7 @@ Framework <- R6::R6Class(
         step = "Setting secondary indicators"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -350,7 +350,7 @@ Framework <- R6::R6Class(
     add_secondary_data_source = function(objective, source, purpose) {
       origin <- "Framework$add_secondary_data_source"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting add_secondary_data_source.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$secondary_data_sources <- rbind(
             self$secondary_data_sources,
@@ -369,7 +369,7 @@ Framework <- R6::R6Class(
         step = "Adding secondary data source"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -392,7 +392,7 @@ Framework <- R6::R6Class(
       origin <- "Framework$remove_secondary_data_source"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting remove_secondary_data_source.")
       n_before <- nrow(self$secondary_data_sources %||% data.frame())
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (is.null(self$secondary_data_sources)) {
             phrutils::phr_warning(
@@ -416,7 +416,7 @@ Framework <- R6::R6Class(
         step = "Removing secondary data source"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       n_removed <- n_before - nrow(self$secondary_data_sources %||% data.frame())
@@ -442,7 +442,7 @@ Framework <- R6::R6Class(
     set_master_schema = function(schema) {
       origin <- "Framework$set_master_schema"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_master_schema.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           validate_objective_schema(schema, soft = FALSE)
           self$master_objectives_schema <- as.data.frame(
@@ -459,7 +459,7 @@ Framework <- R6::R6Class(
         step = "Setting master objectives schema"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -481,7 +481,7 @@ Framework <- R6::R6Class(
     set_master_svg = function(svg_content) {
       origin <- "Framework$set_master_svg"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_master_svg.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_assert(
             is.character(svg_content) && length(svg_content) >= 1,
@@ -499,7 +499,7 @@ Framework <- R6::R6Class(
         step = "Setting master SVG"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(log = TRUE, touch = TRUE, name = origin, message = "Master SVG set.")
@@ -567,7 +567,7 @@ Framework <- R6::R6Class(
       }
 
       n_coloured <- 0L
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_assert(
             "objective_code" %in% names(self$master_objectives_schema),
@@ -665,7 +665,7 @@ Framework <- R6::R6Class(
         step = "Modifying adjusted SVG"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -699,7 +699,7 @@ Framework <- R6::R6Class(
       origin <- "Framework$render_framework_svg"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting render_framework_svg.")
       fallback_path <- NULL
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_assert(
             is.character(version) &&
@@ -748,7 +748,7 @@ Framework <- R6::R6Class(
         step = "Rendering framework SVG"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -794,7 +794,7 @@ Framework <- R6::R6Class(
     modify_adjusted_schema = function(objective_codes = NULL) {
       origin <- "Framework$modify_adjusted_schema"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting modify_adjusted_schema.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           phrutils::phr_assert(
             !is.null(self$master_objectives_schema) &&
@@ -849,7 +849,7 @@ Framework <- R6::R6Class(
         step = "Modifying adjusted objectives schema"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -907,7 +907,7 @@ Framework <- R6::R6Class(
         return(invisible(self))
       }
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (is.null(objective_codes) || length(objective_codes) == 0) {
             self$modified_indicator_bank <- self$master_indicator_bank
@@ -935,7 +935,7 @@ Framework <- R6::R6Class(
         step = "Modifying indicator bank"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(

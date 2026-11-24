@@ -52,7 +52,7 @@ IndividualData <- R6::R6Class(
                           uuid = NULL,
                           hh_uuid = NULL) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         # Default mapping for individual-level data
         default_map <- list(
@@ -99,7 +99,8 @@ IndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -134,7 +135,8 @@ IndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$required_columns"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -158,7 +160,8 @@ IndividualData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$optional_columns"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -227,7 +230,7 @@ IndividualData <- R6::R6Class(
       # Track whether any issues occurred
       had_issues <- FALSE
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         if (is.null(df)) df <- self$get_data("raw")
 

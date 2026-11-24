@@ -233,7 +233,7 @@ NutritionDataAnalytics <- R6::R6Class(
         message = private$..phr_txt("Starting export for CDC MUAC excel file for {private$..dataset_name}.")
       )
 
-      phrutils::phr_try({
+      private$..phr_try({
 
       # Step 1: Load CDC MUAC template
       result <- phrutils::phr_try_step(
@@ -284,7 +284,7 @@ NutritionDataAnalytics <- R6::R6Class(
       oedema_yes_val <- NULL
 
       # Step 3: Get supplemental variable names for age, sex, muac
-      result <- phrutils::phr_try(
+      result <- private$..phr_try(
         {
           list(
             oedema_col = private$..variable_map[["nut_edema_confirm"]] %||%
@@ -305,7 +305,7 @@ NutritionDataAnalytics <- R6::R6Class(
       }
 
       # Step 4: Sum cell values
-      result <- phrutils::phr_try(
+      result <- private$..phr_try(
         {
           # Age groups
           age_6_23  <- data[[age_months_col]] >= 6  & data[[age_months_col]] <= 23
@@ -364,7 +364,7 @@ NutritionDataAnalytics <- R6::R6Class(
       values <- result
 
       # Step 5: Set cell values and export excel sheet
-      result <- phrutils::phr_try(
+      result <- private$..phr_try(
         {
 
           cell_map <- list(
@@ -482,7 +482,7 @@ NutritionDataAnalytics <- R6::R6Class(
     format = "csv"
     ) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE,
@@ -917,7 +917,7 @@ NutritionDataAnalytics <- R6::R6Class(
       weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
       fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
 
-      design <- phrutils::phr_try(
+      design <- private$..phr_try(
         srvyr::as_survey_design(
           .data   = data,
           ids     = !!ids_sym,

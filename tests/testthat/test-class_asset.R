@@ -319,9 +319,10 @@ test_that("..touch(log = TRUE) appends a row to change_log via ..track()", {
   expect_s3_class(log, "data.frame")
   expect_identical(
     names(log),
-    c("id", "version", "name", "datetime", "log_message")
+    c("id", "version", "name", "datetime", "level", "log_message")
   )
   expect_equal(nrow(log), 1L)
+  expect_identical(log$level[[1]], "info")
   expect_identical(log$id[[1]], priv$..metadata$hash_id)
   expect_identical(log$version[[1]], priv$..metadata$version)
   expect_identical(log$name[[1]], "field_updated")
@@ -339,6 +340,30 @@ test_that("..touch(log = TRUE) accumulates multiple change_log rows", {
   expect_equal(nrow(log), 2L)
   expect_identical(log$name, c("first_change", "second_change"))
   expect_identical(log$version, c(2L, 3L))
+})
+
+test_that("..with_logging() logs warnings and errors without altering them", {
+  inst <- TestAsset$new()
+  priv <- inst$.__enclos_env__$private
+
+  expect_warning(
+    priv$..with_logging(warning("careful"), name = "w_src"),
+    "careful"
+  )
+  expect_error(
+    priv$..with_logging(stop("boom"), name = "e_src"),
+    "boom"
+  )
+  expect_error(
+    priv$..with_logging(priv$..with_logging(stop("boom"), name = "inner"), name = "outer"),
+    "boom"
+  )
+
+  log <- priv$..change_log
+  expect_true(all(c("warning", "error") %in% log$level))
+  expect_equal(sum(log$log_message == "boom"), 1L)
+  expect_identical(log$name[log$log_message == "careful"], "w_src")
+  expect_identical(priv$..with_logging(1 + 1, name = "ok"), 2)
 })
 
 test_that("..track() can be called directly to append a change_log row", {

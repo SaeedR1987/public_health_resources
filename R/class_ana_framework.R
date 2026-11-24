@@ -45,7 +45,7 @@ ANAFramework <- R6::R6Class(
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Started initialization of ANAFramework.")
 
       # ---- Load master objectives schema from reference_objectives.xlsx ----
-      result <- phrutils::phr_try_step({
+      result <- private$..phr_try_step({
         objectives <- load_objective_schema()
         if (!is.null(objectives) && is.data.frame(objectives) && nrow(objectives) > 0) {
           self$master_objectives_schema <- objectives
@@ -76,11 +76,11 @@ ANAFramework <- R6::R6Class(
         }
       }, step = "Loading master objectives schema")
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_objectives]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_objectives]"), display = TRUE, message = result$error, level = "error")
       }
 
       # ---- Load indicator bank from reference_indicator_bank.xlsx ----
-      result <- phrutils::phr_try_step({
+      result <- private$..phr_try_step({
         indicators <- load_indicator_bank()
         if (!is.null(indicators) && is.data.frame(indicators) && nrow(indicators) > 0) {
           self$master_indicator_bank   <- indicators
@@ -112,11 +112,11 @@ ANAFramework <- R6::R6Class(
         }
       }, step = "Loading indicator bank")
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_indicators]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_indicators]"), display = TRUE, message = result$error, level = "error")
       }
 
       # ---- Load master SVG from ana_framework.svg ----
-      result <- phrutils::phr_try_step({
+      result <- private$..phr_try_step({
         svg_file <- system.file("resources", "ana_framework.svg", package = "phr")
         if (!nzchar(svg_file) || !file.exists(svg_file)) {
           svg_file <- file.path("resources", "ana_framework.svg")
@@ -150,7 +150,7 @@ ANAFramework <- R6::R6Class(
         }
       }, step = "Loading master SVG")
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_svg]"), display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_svg]"), display = TRUE, message = result$error, level = "error")
       }
 
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Completed initialization of ANAFramework.")

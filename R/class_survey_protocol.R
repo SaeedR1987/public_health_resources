@@ -155,7 +155,7 @@ SurveyProtocol <- R6::R6Class(
         message = "Starting initialization of SurveyProtocol."
       )
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           self$sample_object <- Sample$new()
           self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
@@ -165,7 +165,7 @@ SurveyProtocol <- R6::R6Class(
         hint = "Check that sampling_frame is a valid data frame."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -194,7 +194,7 @@ SurveyProtocol <- R6::R6Class(
       origin <- "SurveyProtocol$set_sampling_frame"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_sampling_frame.")
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           # 1. Confirm it is a data frame and not empty
           phrutils::phr_validate_dataframe(
@@ -262,7 +262,7 @@ SurveyProtocol <- R6::R6Class(
         hint = "Provide a non-empty data frame with 'stratum', 'psu' and 'population_size' columns."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -376,7 +376,7 @@ SurveyProtocol <- R6::R6Class(
       super$diagnose_coherence()
       n_before <- length(self$issues_coherence)
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
       # Check strata consistency between frame and sample table
       st <- self$get_sample_table()
@@ -411,7 +411,7 @@ SurveyProtocol <- R6::R6Class(
         hint = "Check the sample table and the sampling frame."
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 

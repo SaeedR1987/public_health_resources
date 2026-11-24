@@ -102,7 +102,7 @@ HouseholdData <- R6::R6Class(
       uuid = NULL
     ) {
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
 
@@ -131,7 +131,8 @@ HouseholdData <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(dataset_name, "$initialize$super_initialize"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -159,7 +160,8 @@ HouseholdData <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -192,7 +194,8 @@ HouseholdData <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$initialize$required_columns"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -220,7 +223,8 @@ HouseholdData <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = paste0(private$..dataset_name, "$initialize$optional_columns"),
-              message = result$error
+              message = result$error,
+              level = "error"
             )
             return(result)
           }
@@ -290,7 +294,7 @@ HouseholdData <- R6::R6Class(
         message = private$..phr_txt("Starting generate_weights for {private$..dataset_name} ({stage} data).")
       )
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           tryCatch({
           # 1. Resolve SamplingFrame
@@ -495,7 +499,8 @@ HouseholdData <- R6::R6Class(
             private$..touch(
               log = TRUE, touch = FALSE, display = FALSE,
               name = origin,
-              message = conditionMessage(e)
+              message = conditionMessage(e),
+              level = "error"
             )
             stop(e)
           })
@@ -704,7 +709,7 @@ HouseholdData <- R6::R6Class(
     ..pre_standardize = function(stage = c("clean", "standardized", "raw")) {
       stage <- match.arg(stage)
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Generate survey weights if a SamplingFrame and stratum mapping are available.
           # We write to raw_data here so the weight column is present when standardize()
@@ -849,7 +854,7 @@ HouseholdData <- R6::R6Class(
     stage = "standardized",
     overwrite = FALSE
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (length(private$..linked_objects) == 0) {
             return(invisible(NULL))
@@ -908,7 +913,7 @@ HouseholdData <- R6::R6Class(
     ..pre_clean = function() {
       # Run parent implementation for the household dataset itself
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (length(private$..linked_objects) == 0) {
             return(invisible(NULL))
@@ -979,7 +984,7 @@ HouseholdData <- R6::R6Class(
       # Store original hh_data to ensure we never return NULL
       original_hh_data <- hh_data
 
-      result <- phrutils::phr_try(
+      result <- private$..phr_try(
         {
           # Use linked_objects (inherited from Data class) instead of linked_datasets
           if (length(private$..linked_objects) == 0) {
@@ -1193,7 +1198,7 @@ HouseholdData <- R6::R6Class(
       link_name,
       linked_obj
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Use variable_map to identify canonical death and person_time columns
           # These are the standardized output column names from death data processing
@@ -1353,7 +1358,7 @@ HouseholdData <- R6::R6Class(
       link_name,
       linked_obj
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Look for total liters column - try variable_map first, then fallback to known names
           water_col <- linked_obj$get(
@@ -1477,7 +1482,7 @@ HouseholdData <- R6::R6Class(
       link_name,
       linked_obj
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Use canonical column names created by add_standardized_roster_demographics
           # These are the standardized output column names from roster data processing
@@ -1689,7 +1694,7 @@ HouseholdData <- R6::R6Class(
       link_name,
       linked_obj
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Use canonical column names created by add_standardized_nutrition_demographics
           # These are the standardized output column names from nutrition data processing
@@ -1841,7 +1846,7 @@ HouseholdData <- R6::R6Class(
       link_name,
       linked_obj
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # Aggregate by household - count number of people recorded
           agg_data <- health_data |>
@@ -1926,7 +1931,7 @@ HouseholdData <- R6::R6Class(
       link_name,
       linked_obj
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           # For women data, all rows represent women aged 15-49
           # Simply count the number of women per household
@@ -2031,7 +2036,7 @@ HouseholdData <- R6::R6Class(
       hh_stage <- match.arg(hh_stage)
       linked_stage <- match.arg(linked_stage)
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (!inherits(linked_obj, "Data")) {
             return(invisible(NULL))

@@ -39,7 +39,7 @@ WaterContainerData <- R6::R6Class(
                           uuid = NULL,
                           hh_uuid = NULL) {
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         # Default mapping for water container data
         default_map <- list(
@@ -85,7 +85,8 @@ WaterContainerData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }
@@ -109,7 +110,8 @@ WaterContainerData <- R6::R6Class(
           private$..touch(
             log = TRUE, touch = FALSE, display = FALSE,
             name = paste0(private$..dataset_name, "$initialize$optional_columns"),
-            message = result$error
+            message = result$error,
+            level = "error"
           )
           return(result)
         }

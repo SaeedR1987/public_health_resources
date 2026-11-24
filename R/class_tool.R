@@ -134,7 +134,7 @@ Tool <- R6::R6Class(
       private$.name <- name %||% "Untitled Tool"
       private$.tool_type <- "generic"
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           # Initialize data frames with required columns if not provided
           self$survey <- if (!is.null(survey)) {
@@ -183,7 +183,7 @@ Tool <- R6::R6Class(
         step = "Initializing tool sheets"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -223,7 +223,7 @@ Tool <- R6::R6Class(
     set_name = function(new_name) {
       origin <- "Tool$set_name"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_name.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (
             !is.character(new_name) || length(new_name) != 1 || nchar(new_name) == 0
@@ -235,7 +235,7 @@ Tool <- R6::R6Class(
         step = "Setting tool name"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Tool name set to '", new_name, "'."))
@@ -262,7 +262,7 @@ Tool <- R6::R6Class(
       origin <- "Tool$change_default_language"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting change_default_language.")
       language_title <- NULL
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           allowable <- c("english", "french", "arabic", "spanish")
           allowable_title <- c("English", "French", "Arabic", "Spanish")
@@ -305,7 +305,7 @@ Tool <- R6::R6Class(
         step = "Changing default language"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Default language set to '", language_title, "'."))
@@ -332,7 +332,7 @@ Tool <- R6::R6Class(
     filter_survey_by_indicator = function(indicator_codes) {
       origin <- "Tool$filter_survey_by_indicator"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting filter_survey_by_indicator.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (is.null(indicator_codes) || length(indicator_codes) == 0) {
             stop("indicator_codes must be a non-empty vector or list")
@@ -375,7 +375,7 @@ Tool <- R6::R6Class(
         step = "Filtering survey by indicator"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -403,7 +403,7 @@ Tool <- R6::R6Class(
     update_choice_list = function(list_name, new_choices) {
       origin <- "Tool$update_choice_list"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting update_choice_list.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (
             !is.character(list_name) ||
@@ -450,7 +450,7 @@ Tool <- R6::R6Class(
         step = "Updating choice list"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -471,7 +471,7 @@ Tool <- R6::R6Class(
     add_numbered_list = function(list_name, prefix_val, prefix_lbl, n) {
       origin <- "Tool$add_numbered_list"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting add_numbered_list.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (
             !is.character(list_name) ||
@@ -537,7 +537,7 @@ Tool <- R6::R6Class(
         step = "Adding numbered choice list"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(
@@ -581,7 +581,7 @@ Tool <- R6::R6Class(
     update_settings = function(key, value) {
       origin <- "Tool$update_settings"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting update_settings.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (!is.character(key) || length(key) != 1 || nchar(key) == 0) {
             stop("key must be a non-empty character string")
@@ -603,7 +603,7 @@ Tool <- R6::R6Class(
         step = "Updating settings"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Updated setting '", key, "'."))
@@ -675,7 +675,7 @@ Tool <- R6::R6Class(
     set_selected_indicators = function(indicators) {
       origin <- "Tool$set_selected_indicators"
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_selected_indicators.")
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           if (!is.character(indicators)) {
             stop("Indicators must be a character vector")
@@ -685,7 +685,7 @@ Tool <- R6::R6Class(
         step = "Setting selected indicators"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
       private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("Selected ", length(indicators), " indicator(s)."))
@@ -786,7 +786,7 @@ Tool <- R6::R6Class(
       private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting validate.")
       private$.validation_errors <- list()
 
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           # Validate survey sheet structure and content
           private$.validate_survey_content()
@@ -803,7 +803,7 @@ Tool <- R6::R6Class(
         step = "Validating tool"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 

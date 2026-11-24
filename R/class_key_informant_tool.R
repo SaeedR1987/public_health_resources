@@ -58,7 +58,7 @@ public = list(
 
     # Load the bundled default KII tool template if no overrides given
     if (is.null(survey) && is.null(choices)) {
-      result <- phrutils::phr_try_step(
+      result <- private$..phr_try_step(
         {
           default_path <- system.file(
             "resources", "iphra_kii_tool_dummy.xlsx",
@@ -71,7 +71,7 @@ public = list(
         step = "Loading default key informant tool"
       )
       if (phrutils::phr_failed(result)) {
-        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error, level = "error")
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
     }

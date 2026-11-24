@@ -231,7 +231,7 @@ DataAnalytics <- R6::R6Class(
     #' @return A list of check results (invisibly). Nested per role when
     #'   multiple input sets are defined.
     run_quality_checks = function() {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -355,7 +355,7 @@ DataAnalytics <- R6::R6Class(
     #'   language-specific field is absent.
     #' @return Invisibly returns a list with \code{visualizations} and \code{tables}
     run_outputs = function(language = "english") {
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -461,7 +461,7 @@ DataAnalytics <- R6::R6Class(
     add_all_to_dap = function() {
       origin <- paste0(private$..dataset_name, "$add_all_to_dap")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -550,7 +550,7 @@ DataAnalytics <- R6::R6Class(
     run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$run_analysis")
 
-      phrutils::phr_try({
+      private$..phr_try({
 
         private$..touch(
           log = TRUE,
@@ -662,7 +662,7 @@ DataAnalytics <- R6::R6Class(
     quality_diagnose = function() {
       origin <- paste0(private$..dataset_name, "$quality_diagnose")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -780,7 +780,7 @@ DataAnalytics <- R6::R6Class(
 
       origin <- paste0(private$..dataset_name, "$analysis_diagnose")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -885,7 +885,7 @@ DataAnalytics <- R6::R6Class(
     outputs_diagnose = function() {
       origin <- paste0(private$..dataset_name, "$outputs_diagnose")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           private$..touch(
@@ -1179,7 +1179,7 @@ DataAnalytics <- R6::R6Class(
     dataset_name = NULL
     ) {
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
 
           df_schema <- tryCatch(
@@ -2348,7 +2348,7 @@ DataAnalytics <- R6::R6Class(
 
       base_design <- inputs$base_survey_design
       if (is.null(base_design) && !is.null(inputs$data)) {
-        base_design <- phrutils::phr_try(
+        base_design <- private$..phr_try(
           srvyr::as_survey_design(.data = inputs$data, ids = 1),
           on_error = "warn",
           origin = paste0(private$..dataset_name, "$run_outputs"),
@@ -2406,7 +2406,7 @@ DataAnalytics <- R6::R6Class(
         output_type <- cell("output_type", i)
         test_params <- private$..outputs_parse_test_params(cell("test_params", i))
 
-        phrutils::phr_try(
+        private$..phr_try(
           {
             func_name <- cell("output_func_name", i)
             if (is.null(func_name)) {
@@ -2693,7 +2693,7 @@ DataAnalytics <- R6::R6Class(
                   per_group_args[[1]] <- filtered_first_arg
                   amended_label <- paste0(label, "-", var_label, ".", val)
 
-                  phrutils::phr_try(
+                  private$..phr_try(
                     {
                       output_result <- do.call(
                         output_function,
@@ -2989,7 +2989,7 @@ DataAnalytics <- R6::R6Class(
           next
         }
 
-        phrutils::phr_try(
+        private$..phr_try(
           {
             eval_env <- new.env()
             eval_env$test_statistic <- test_statistic
@@ -3049,7 +3049,7 @@ DataAnalytics <- R6::R6Class(
     data = NULL,
     variable_map = NULL
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           check_data <- data %||% private$..data
 
@@ -3293,7 +3293,7 @@ DataAnalytics <- R6::R6Class(
       weight_sym <- if (!is.null(weight_col)) rlang::sym(weight_col) else NULL
       fpc_sym <- if (!is.null(fpc_col)) rlang::sym(fpc_col) else NULL
 
-      design <- phrutils::phr_try(
+      design <- private$..phr_try(
         srvyr::as_survey_design(
           .data = private$..data,
           ids = !!ids_sym,
@@ -3319,7 +3319,7 @@ DataAnalytics <- R6::R6Class(
     #   Defaults to \code{private$..plausibility_results} when \code{NULL}.
     # @return A tibble with quality check results
     ..results_to_table = function(results = NULL) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           table_results <- results %||% private$..plausibility_results
 
@@ -3373,7 +3373,7 @@ DataAnalytics <- R6::R6Class(
     quality_schema = NULL,
     variable_map = NULL
     ) {
-      phrutils::phr_try(
+      private$..phr_try(
         {
           full_data <- data %||% private$..data
           schema <- quality_schema %||% private$..quality_schema
@@ -3398,7 +3398,7 @@ DataAnalytics <- R6::R6Class(
 
           for (gv in group_values) {
             subset_data <- full_data[full_data[[group_col]] == gv, ]
-            subset_design <- phrutils::phr_try(
+            subset_design <- private$..phr_try(
               srvyr::as_survey_design(.data = subset_data, ids = 1),
               on_error = "warn",
               origin = paste0(private$..dataset_name, "$compute_results_by_group"),
@@ -3443,7 +3443,7 @@ DataAnalytics <- R6::R6Class(
     ..generate_dap_from_schema = function() {
       origin <- paste0(private$..dataset_name, "$generate_dap_from_schema")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (!is.null(private$..survey_design)) {
             available_vars <- names(private$..survey_design$variables)
@@ -3773,7 +3773,7 @@ DataAnalytics <- R6::R6Class(
       )
 
       # --- Validation
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (is.null(design)) {
             phrutils::phr_error(origin, private$..phr_txt("Survey design object is NULL."))
@@ -3893,7 +3893,7 @@ DataAnalytics <- R6::R6Class(
           design_subset,
           group_value = NA_character_
         ) {
-          result_i <- phrutils::phr_try(
+          result_i <- private$..phr_try(
             {
               if (calc_type %in% c("prop", "proportion")) {
                 phr_calc_survey_prop_single(
@@ -4145,7 +4145,7 @@ DataAnalytics <- R6::R6Class(
 
       base_design <- inputs$base_survey_design
       if (is.null(base_design) && !is.null(check_data)) {
-        base_design <- phrutils::phr_try(
+        base_design <- private$..phr_try(
           srvyr::as_survey_design(.data = check_data, ids = 1),
           on_error = "warn",
           origin = paste0(private$..dataset_name, "$run_quality_checks"),
@@ -4331,7 +4331,7 @@ DataAnalytics <- R6::R6Class(
         return(NULL)
       }
 
-      survey_design_results <- phrutils::phr_try(
+      survey_design_results <- private$..phr_try(
         private$..phr_calc_survey_from_plan(
           design = inputs$survey_design,
           analysis_plan = dap_df,
@@ -4344,7 +4344,7 @@ DataAnalytics <- R6::R6Class(
 
       base_results <- NULL
       if (!is.null(inputs$data)) {
-        base_design <- phrutils::phr_try(
+        base_design <- private$..phr_try(
           srvyr::as_survey_design(.data = inputs$data, ids = 1),
           on_error = "warn",
           origin = origin,
@@ -4352,7 +4352,7 @@ DataAnalytics <- R6::R6Class(
         )
 
         if (!is.null(base_design)) {
-          base_results <- phrutils::phr_try(
+          base_results <- private$..phr_try(
             private$..phr_calc_survey_from_plan(
               design = base_design,
               analysis_plan = dap_df,
@@ -5078,7 +5078,7 @@ DataAnalytics <- R6::R6Class(
     ) {
       origin <- paste0(private$..dataset_name, "DataAnalytics$add_indicator_dap")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           private$..data_analysis_plan$add_indicator(
             indicator_name = indicator_name,
@@ -5106,7 +5106,7 @@ DataAnalytics <- R6::R6Class(
     ..remove_indicator_dap = function(indicator_name) {
       origin <- paste0(private$..dataset_name, "DataAnalytics$remove_indicator_dap")
 
-      phrutils::phr_try(
+      private$..phr_try(
         {
           if (
             is.null(private$..data_analysis_plan) ||
@@ -5182,7 +5182,7 @@ DataAnalytics <- R6::R6Class(
       weight_sym <- if (!is.null(weight_col))  rlang::sym(weight_col)  else NULL
       fpc_sym    <- if (!is.null(fpc_col))     rlang::sym(fpc_col)     else NULL
 
-      design <- phrutils::phr_try(
+      design <- private$..phr_try(
         srvyr::as_survey_design(
           .data   = data,
           ids     = !!ids_sym,

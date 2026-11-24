@@ -53,6 +53,22 @@ test_that("Data set/get field literals in R/class_data*.R are allow-listed", {
   expect_setequal(setdiff(lits, allowed), character(0))
 })
 
+# Change log error/warning coverage ####
+
+test_that("Data logs errors raised in public methods to the change log", {
+  df <- tibble::tibble(id = 1:3)
+  d <- suppressMessages(
+    Data$new(data = df, dataset_name = "TestData", uuid = "id")
+  )
+  suppressMessages(try(
+    suppressWarnings(d$export_data(stage = "clean", format = "csv", file_path = tempfile())),
+    silent = TRUE
+  ))
+  log <- d$get(field = "..change_log")
+  expect_true("level" %in% names(log))
+  expect_true(any(log$level %in% c("error", "warning")))
+})
+
 # Initialization Tests ####
 
 test_that("Data initializes with minimal valid data", {
