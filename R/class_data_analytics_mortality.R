@@ -123,7 +123,7 @@ MortalityDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = origin,
         message = private$..phr_txt("Started initialization for {dataset_name}.")
       )
 
@@ -168,10 +168,11 @@ MortalityDataAnalytics <- R6::R6Class(
           self$set(field = "..linked_ind_deaths_value_label", value = linked_ind_deaths_value_label)
 
         },
-                  step = private$..phr_txt("Set initial fields for DataAnalytics class"),
+                  step = private$..phr_txt("Set linked roster and deaths fields"),
                   hint = private$..phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[set_fields]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -180,10 +181,11 @@ MortalityDataAnalytics <- R6::R6Class(
         {
           private$..initialize_load_schemas_mortality()
         },
-                  step = private$..phr_txt("Set initial fields for DataAnalytics class"),
+                  step = private$..phr_txt("Load mortality schemas"),
                   hint = private$..phr_txt("Check initial arguments passed for DataAnalytics")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[load_schemas]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -231,8 +233,16 @@ MortalityDataAnalytics <- R6::R6Class(
                     hint = private$..phr_txt("Check analysis schemas for roster and deaths.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[build_dap]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(origin, "[build_dap]"),
+        message = private$..phr_txt("Built roster and deaths data analysis plans.")
+      )
 
       # Step 5: Create survey design objects for roster and deaths
       result <- phrutils::phr_try_step(
@@ -261,10 +271,11 @@ MortalityDataAnalytics <- R6::R6Class(
                      ))
             }
         },
-        step = private$..phr_txt("Create initial roster and death specific data analysis plans"),
+        step = private$..phr_txt("Create roster and death survey design objects"),
         hint = private$..phr_txt("Check analysis schemas for roster and deaths.")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(origin, "[survey_design]"), display = TRUE, message = result$error)
         phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
@@ -279,8 +290,8 @@ MortalityDataAnalytics <- R6::R6Class(
 
       private$..touch(
         log = TRUE,
-        touch = TRUE,
-        name = dataset_name,
+        touch = FALSE,
+        name = origin,
         message = paste0(origin, msg)
       )
 

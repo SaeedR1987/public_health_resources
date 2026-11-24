@@ -43,6 +43,7 @@ public = list(
                         survey = NULL,
                         choices = NULL,
                         settings = NULL) {
+    origin <- "HouseholdTool$initialize"
     super$initialize(
       name = name %||% "Household Survey Tool",
       survey = survey,
@@ -53,15 +54,33 @@ public = list(
 
     # Load the bundled default household tool template if no overrides given
     if (is.null(survey) && is.null(choices)) {
-      default_path <- system.file(
-        "resources", "iphra_tool_v2.xlsx",
-        package = "iphRa"
+      result <- phrutils::phr_try_step(
+        {
+          default_path <- system.file(
+            "resources", "iphra_tool_v2.xlsx",
+            package = "phr"
+          )
+          if (nchar(default_path) > 0) {
+            private$.load_default_tool(default_path)
+          }
+        },
+        step = "Loading default household tool"
       )
-      if (nchar(default_path) > 0) {
-        private$.load_default_tool(default_path)
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
     }
 
+    private$..touch(
+      log = TRUE,
+      touch = FALSE,
+      name = origin,
+      message = paste0(
+        "Completed initialization of HouseholdTool (", nrow(self$survey), " survey row(s), ",
+        nrow(self$choices), " choice row(s))."
+      )
+    )
     invisible(self)
   }
 )

@@ -19,34 +19,73 @@ Sample <- R6::R6Class(
     #' @description Create a new Sample object.
     #' @param sample_table Optional sample table data frame.
     initialize = function(sample_table = NULL) {
+      origin <- "Sample$initialize"
       super$initialize()
-      self$validated <- FALSE
-      if (is.null(sample_table)) {
-        self$sample_table <- NULL
-      } else {
-        phrutils::phr_validate_dataframe(
-          sample_table,
-          origin = "Sample$initialize",
-          soft = FALSE
-        )
-        self$sample_table <- as.data.frame(
-          sample_table,
-          stringsAsFactors = FALSE
-        )
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting initialization of Sample.")
+
+      result <- phrutils::phr_try_step(
+        {
+          self$validated <- FALSE
+          if (is.null(sample_table)) {
+            self$sample_table <- NULL
+          } else {
+            phrutils::phr_validate_dataframe(
+              sample_table,
+              origin = origin,
+              soft = FALSE
+            )
+            self$sample_table <- as.data.frame(
+              sample_table,
+              stringsAsFactors = FALSE
+            )
+          }
+        },
+        step = "Initializing sample table",
+        hint = "Check that sample_table is a data frame."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0("Sample initialized with ", nrow(self$sample_table %||% data.frame()), " stratum row(s).")
+      )
       invisible(self)
     },
 
     #' @description Replace the current sample table.
     #' @param sample_table Data frame.
     set_sample_table = function(sample_table) {
-      phrutils::phr_validate_dataframe(
-        sample_table,
-        origin = "Sample$set_sample_table",
-        soft = FALSE
+      origin <- "Sample$set_sample_table"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_sample_table.")
+
+      result <- phrutils::phr_try_step(
+        {
+          phrutils::phr_validate_dataframe(
+            sample_table,
+            origin = origin,
+            soft = FALSE
+          )
+          self$sample_table <- as.data.frame(sample_table, stringsAsFactors = FALSE)
+        },
+        step = "Setting sample table",
+        hint = "Check that sample_table is a data frame."
       )
-      self$sample_table <- as.data.frame(sample_table, stringsAsFactors = FALSE)
-      private$..touch()
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Sample table replaced with ", nrow(self$sample_table), " row(s).")
+      )
       invisible(self)
     },
 
@@ -58,8 +97,16 @@ Sample <- R6::R6Class(
 
     #' @description Clear sample table data.
     clear_sample_table = function() {
+      origin <- "Sample$clear_sample_table"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting clear_sample_table.")
+      n_removed <- nrow(self$sample_table %||% data.frame())
       self$sample_table <- NULL
-      private$..touch()
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Sample table cleared; ", n_removed, " row(s) removed.")
+      )
       invisible(self)
     },
 
@@ -163,6 +210,17 @@ Sample <- R6::R6Class(
       precision = NULL,
       confidence_level = NULL
     ) {
+      origin <- "Sample$add_stratum"
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0("Starting add_stratum for stratum '", stratum_id, "'.")
+      )
+      replaced <- FALSE
+
+      result <- phrutils::phr_try_step(
+        {
       if (!is.null(design_effect) && is.na(pop_design_effect)) {
         pop_design_effect <- design_effect
       }
@@ -308,65 +366,140 @@ Sample <- R6::R6Class(
             ,
             drop = FALSE
           ]
+          replaced <- TRUE
         }
         self$sample_table <- rbind(self$sample_table, new_row)
       }
+        },
+        step = "Adding stratum to sample table",
+        hint = "Check sampling_method_site and the stratum parameters."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
 
-      private$..touch()
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0(
+          "Stratum '", stratum_id, "' ", if (replaced) "replaced" else "added",
+          "; sample table now has ", nrow(self$sample_table), " row(s)."
+        )
+      )
       invisible(self)
     },
 
     #' @description Remove a stratum row by strata name.
     #' @param strata_name Character scalar naming the stratum to remove.
     remove_stratum = function(strata_name) {
-      phrutils::phr_assert(
-        is.character(strata_name) &&
-          length(strata_name) == 1L &&
-          nzchar(strata_name),
-        message = private$..phr_txt(
-          "strata_name must be a single non-empty character value."
-        ),
-        origin = "Sample$remove_stratum"
-      )
+      origin <- "Sample$remove_stratum"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting remove_stratum.")
+      n_before <- nrow(self$sample_table %||% data.frame())
 
-      st <- self$sample_table
-      if (is.null(st) || !is.data.frame(st) || nrow(st) == 0L) {
-        return(invisible(self))
+      result <- phrutils::phr_try_step(
+        {
+          phrutils::phr_assert(
+            is.character(strata_name) &&
+              length(strata_name) == 1L &&
+              nzchar(strata_name),
+            message = private$..phr_txt(
+              "strata_name must be a single non-empty character value."
+            ),
+            origin = origin
+          )
+
+          st <- self$sample_table
+          if (!is.null(st) && is.data.frame(st) && nrow(st) > 0L) {
+            stratum_col <- private$..resolve_stratum_name_col(st)
+            phrutils::phr_assert(
+              !is.null(stratum_col),
+              message = private$..phr_txt(
+                "sample_table does not contain a stratum name column."
+              ),
+              origin = origin
+            )
+
+            keep_rows <- as.character(st[[stratum_col]]) != strata_name
+            self$sample_table <- st[keep_rows, , drop = FALSE]
+          }
+        },
+        step = "Removing stratum",
+        hint = "Check strata_name and the sample table columns."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
 
-      stratum_col <- private$..resolve_stratum_name_col(st)
-      phrutils::phr_assert(
-        !is.null(stratum_col),
-        message = private$..phr_txt(
-          "sample_table does not contain a stratum name column."
-        ),
-        origin = "Sample$remove_stratum"
+      n_removed <- n_before - nrow(self$sample_table %||% data.frame())
+      private$..touch(
+        log = TRUE,
+        touch = n_removed > 0L,
+        name = origin,
+        message = paste0("Removed ", n_removed, " row(s) for stratum '", strata_name, "'.")
       )
-
-      keep_rows <- as.character(st[[stratum_col]]) != strata_name
-      self$sample_table <- st[keep_rows, , drop = FALSE]
-      private$..touch()
       invisible(self)
     },
 
     #' @description Validate strata table structure.
     #' @return Logical.
     validate_strata_table = function() {
-      out <- validate_strata_table(self$sample_table)
-      self$validated <- out
-      private$..touch()
+      origin <- "Sample$validate_strata_table"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting validate_strata_table.")
+
+      out <- NULL
+      result <- phrutils::phr_try_step(
+        {
+          out <- validate_strata_table(self$sample_table)
+          self$validated <- out
+        },
+        step = "Validating strata table",
+        hint = "Check the sample table structure."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0("Strata table validation completed (valid: ", isTRUE(out), ").")
+      )
       out
     },
 
     #' @description Calculate sample sizes for all strata rows.
     calculate_sample_sizes = function() {
-      phrutils::phr_assert(
-        !is.null(self$sample_table) && nrow(self$sample_table) > 0,
-        message = private$..phr_txt("sample_table is empty. Call add_stratum() first."),
-        origin = "Sample$calculate_sample_sizes"
+      origin <- "Sample$calculate_sample_sizes"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting calculate_sample_sizes.")
+
+      result <- phrutils::phr_try_step(
+        {
+          phrutils::phr_assert(
+            !is.null(self$sample_table) && nrow(self$sample_table) > 0,
+            message = private$..phr_txt("sample_table is empty. Call add_stratum() first."),
+            origin = origin
+          )
+          self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
+        },
+        step = "Calculating sample sizes",
+        hint = "Call add_stratum() and supply the sampling parameters first."
       )
-      self$sample_table <- calculate_sample_size_strata_table(self$sample_table)
-      private$..touch()
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = TRUE,
+        name = origin,
+        message = paste0("Calculated sample sizes for ", nrow(self$sample_table), " stratum row(s).")
+      )
       invisible(self)
     },
 
@@ -382,12 +515,10 @@ Sample <- R6::R6Class(
       )
       st <- self$sample_table
       if (is.null(st) || !(col_name %in% names(st))) {
-        private$..touch()
         return(character(0))
       }
       m <- as.character(st[[col_name]])
       out <- unique(m[!is.na(m) & nzchar(m)])
-      private$..touch()
       out
     },
 
@@ -396,17 +527,14 @@ Sample <- R6::R6Class(
     get_strata_names = function() {
       st <- self$sample_table
       if (is.null(st) || nrow(st) == 0) {
-        private$..touch()
         return(character(0))
       }
       col <- private$..resolve_stratum_name_col(st)
       if (is.null(col)) {
-        private$..touch()
         return(character(0))
       }
       n <- as.character(st[[col]])
       out <- n[!is.na(n) & nzchar(n)]
-      private$..touch()
       out
     }
   ),

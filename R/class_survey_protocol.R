@@ -139,6 +139,7 @@ SurveyProtocol <- R6::R6Class(
       reference_doc_filename = NULL,
       reference_ppt_filename = NULL
     ) {
+      origin <- "SurveyProtocol$initialize"
       super$initialize(
         assessment_title = assessment_title,
         country_name = country_name,
@@ -147,9 +148,33 @@ SurveyProtocol <- R6::R6Class(
         reference_doc_filename = reference_doc_filename,
         reference_ppt_filename = reference_ppt_filename
       )
-      self$sample_object <- Sample$new()
-      self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
-      private$..sync_state()
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = "Starting initialization of SurveyProtocol."
+      )
+
+      result <- phrutils::phr_try_step(
+        {
+          self$sample_object <- Sample$new()
+          self$sampling_frame <- SamplingFrame$new(log_df = sampling_frame)
+          private$..sync_state()
+        },
+        step = "Creating sample object and sampling frame",
+        hint = "Check that sampling_frame is a valid data frame."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = "SurveyProtocol initialized with a Sample object and a SamplingFrame."
+      )
       invisible(self)
     },
 
@@ -166,7 +191,10 @@ SurveyProtocol <- R6::R6Class(
     #'   A \code{stratum} column enables stratified sampling.
     #' @return Invisibly returns \code{self} for method chaining.
     set_sampling_frame = function(frame) {
-      phrutils::phr_try(
+      origin <- "SurveyProtocol$set_sampling_frame"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_sampling_frame.")
+
+      result <- phrutils::phr_try_step(
         {
           # 1. Confirm it is a data frame and not empty
           phrutils::phr_validate_dataframe(
@@ -218,15 +246,31 @@ SurveyProtocol <- R6::R6Class(
             value = tibble::as_tibble(frame)
           )
           private$..sync_state()
-          private$..touch()
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = paste0(origin, "[store_frame]"),
+            message = paste0("Stored sampling frame with ", nrow(frame), " PSU row(s).")
+          )
           self$diagnose_coherence()
           phrutils::phr_message(
             private$..phr_txt("Sampling frame set with {nrow(frame)} PSUs."),
             origin = "SurveyProtocol$set_sampling_frame"
           )
         },
-        on_error = "abort",
-        origin = "SurveyProtocol$set_sampling_frame"
+        step = "Setting sampling frame",
+        hint = "Provide a non-empty data frame with 'stratum', 'psu' and 'population_size' columns."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0("Completed set_sampling_frame with ", nrow(frame), " PSU row(s).")
       )
       invisible(self)
     },
@@ -327,8 +371,13 @@ SurveyProtocol <- R6::R6Class(
     #'
     #' @return Invisibly returns \code{self} for method chaining.
     diagnose_coherence = function() {
+      origin <- "SurveyProtocol$diagnose_coherence"
+      private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting coherence diagnosis.")
       super$diagnose_coherence()
+      n_before <- length(self$issues_coherence)
 
+      result <- phrutils::phr_try_step(
+        {
       # Check strata consistency between frame and sample table
       st <- self$get_sample_table()
       if (
@@ -357,7 +406,24 @@ SurveyProtocol <- R6::R6Class(
           }
         }
       }
+        },
+        step = "Checking strata consistency",
+        hint = "Check the sample table and the sampling frame."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0(
+          "Coherence diagnosis finished with ", length(self$issues_coherence),
+          " issue(s) (", length(self$issues_coherence) - n_before, " from strata consistency checks)."
+        )
+      )
       invisible(self)
     },
 

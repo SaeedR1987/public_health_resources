@@ -3298,3 +3298,32 @@ test_that(".apply_cleaning_changes works for character columns", {
   expect_true(is.character(d$clean_data$name))
   expect_equal(d$clean_data$name[3], "corrected")
 })
+
+
+# Change log (..touch) integration ####
+
+test_that("public methods log start and completion rows in the change log", {
+  d <- suppressMessages(
+    Data$new(data = tibble::tibble(id = 1:3), dataset_name = "LogTest", uuid = "id")
+  )
+  suppressMessages(suppressWarnings(d$validate()))
+
+  log <- d$get(field = "..change_log")
+  msgs <- paste(log$log_message, collapse = " | ")
+
+  expect_true(any(grepl("^LogTest\\$validate$", log$name)))
+  expect_gte(sum(grepl("^LogTest\\$validate$", log$name)), 2)
+  expect_true(any(grepl("^LogTest\\$initialize$", log$name)))
+  expect_true(nzchar(msgs))
+})
+
+test_that("failed private steps log the error message", {
+  d <- suppressMessages(
+    Data$new(data = tibble::tibble(id = 1:3), dataset_name = "LogFail", uuid = "id")
+  )
+  d$set(field = "..raw_data", value = NULL)
+  suppressMessages(suppressWarnings(try(d$standardize(), silent = TRUE)))
+
+  log <- d$get(field = "..change_log")
+  expect_true(any(grepl("^LogFail\\$standardize", log$name)))
+})

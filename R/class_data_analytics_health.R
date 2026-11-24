@@ -79,7 +79,7 @@ HealthDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = private$..phr_txt("Starting initialization for {dataset_name}.")
       )
 
@@ -116,6 +116,7 @@ HealthDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[set_fields]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -128,10 +129,11 @@ HealthDataAnalytics <- R6::R6Class(
         hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[load_schemas]"), display = TRUE, message = result$error)
         return(result)
       }
 
-      # Step 3: Load default schemas for health
+      # Step 3: Build health analysis plans
       result <- phrutils::phr_try_step(
         {
           # Generate per-dataset analysis plans for roster and deaths
@@ -170,12 +172,20 @@ HealthDataAnalytics <- R6::R6Class(
             private$..data_analysis_plan_health$set(field = "..log_df", value = result$dap_df)
           }
         },
-        step = private$..phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        step = private$..phr_txt("Building health specific data analysis plans"),
         hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[build_dap]"), display = TRUE, message = result$error)
         return(result)
       }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = paste0(dataset_name, "$initialize[build_dap]"),
+        message = private$..phr_txt("Built health data analysis plans for linked roster and health data.")
+      )
 
       # Step 4: Create health specific survey design objects
       result <- phrutils::phr_try_step(
@@ -207,10 +217,11 @@ HealthDataAnalytics <- R6::R6Class(
                      ))
           }
         },
-        step = private$..phr_txt("Loading health specific quality, analysis, and outputs schemas"),
+        step = private$..phr_txt("Creating health specific survey design objects"),
         hint = private$..phr_txt("Check water container data and inputs")
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = paste0(dataset_name, "$initialize[survey_design]"), display = TRUE, message = result$error)
         return(result)
       }
 
@@ -226,7 +237,7 @@ HealthDataAnalytics <- R6::R6Class(
       private$..touch(
         log = TRUE,
         touch = FALSE,
-        name = dataset_name,
+        name = paste0(dataset_name, "$initialize"),
         message = msg
       )
     }

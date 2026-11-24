@@ -124,11 +124,19 @@ Protocol <- R6::R6Class(
       reference_doc_filename = NULL,
       reference_ppt_filename = NULL
     ) {
-      phrutils::phr_try(
+      origin <- "Protocol$initialize"
+
+      result <- phrutils::phr_try_step(
         {
           super$initialize(
             reference_doc_filename = private$..default_template_filenames(),
             reference_ppt_filename = private$..default_ppt_template_filenames()
+          )
+          private$..touch(
+            log = TRUE,
+            touch = FALSE,
+            name = origin,
+            message = private$..phr_txt("Starting initialization of Protocol '{assessment_title}'.")
           )
           valid_fw_types <- c("none", "ana")
           phrutils::phr_assert(
@@ -241,8 +249,19 @@ Protocol <- R6::R6Class(
             origin = "Protocol$initialize"
           )
         },
-        on_error = "abort",
-        origin = "Protocol$initialize"
+        step = private$..phr_txt("Initializing Protocol"),
+        hint = private$..phr_txt("Check framework_type and the default templates.")
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Protocol initialization completed with a '{framework_type}' framework.")
       )
       invisible(self)
     },
@@ -260,7 +279,16 @@ Protocol <- R6::R6Class(
     #'   from \code{tool_type} and the current count (e.g. \code{"household_1"}).
     #' @return Invisibly returns self for method chaining.
     add_tools = function(tool_type = "household", tool_name = NULL) {
-      phrutils::phr_try(
+      origin <- "Protocol$add_tools"
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting add_tools for type '{tool_type}'.")
+      )
+
+      result <- phrutils::phr_try_step(
         {
           valid_types <- self$valid_tool_types %||% character(0)
           phrutils::phr_assert(
@@ -299,15 +327,31 @@ Protocol <- R6::R6Class(
 
           self$tools[[tool_name]] <- tool
           private$..sync_state()
-          private$..touch()
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = paste0(origin, "[register_tool]"),
+            message = private$..phr_txt("Added tool '{tool_name}' of type '{tool_type}'; {length(self$tools)} tool(s) registered.")
+          )
           self$diagnose_coherence()
           phrutils::phr_message(
             private$..phr_txt("Tool of type '{tool_type}' added as '{tool_name}'."),
             origin = "Protocol$add_tools"
           )
         },
-        on_error = "abort",
-        origin = "Protocol$add_tools"
+        step = private$..phr_txt("Adding tool to protocol"),
+        hint = private$..phr_txt("Check tool_type and tool_name.")
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Completed add_tools for type '{tool_type}'.")
       )
       invisible(self)
     },
@@ -322,10 +366,17 @@ Protocol <- R6::R6Class(
     #' @param tool_name Character. Name/key of the tool to remove.
     #' @return Invisibly returns self for method chaining.
     remove_tools = function(tool_name) {
-      phrutils::phr_try(
-        {
-          origin <- "Protocol$remove_tools"
+      origin <- "Protocol$remove_tools"
 
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting remove_tools.")
+      )
+
+      result <- phrutils::phr_try_step(
+        {
           # Validate input
           phrutils::phr_assert(
             is.character(tool_name) &&
@@ -349,7 +400,12 @@ Protocol <- R6::R6Class(
 
           # Sync protocol state and timestamps
           private$..sync_state()
-          private$..touch()
+          private$..touch(
+            log = TRUE,
+            touch = TRUE,
+            name = paste0(origin, "[unregister_tool]"),
+            message = private$..phr_txt("Removed tool '{tool_name}'; {length(self$tools)} tool(s) remaining.")
+          )
 
           # Re-run coherence diagnostics
           self$diagnose_coherence()
@@ -359,8 +415,19 @@ Protocol <- R6::R6Class(
             origin = origin
           )
         },
-        on_error = "abort",
-        origin = "Protocol$remove_tools"
+        step = private$..phr_txt("Removing tool from protocol"),
+        hint = private$..phr_txt("Check tool_name.")
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Completed remove_tools for '{tool_name}'.")
       )
 
       invisible(self)
@@ -408,10 +475,17 @@ Protocol <- R6::R6Class(
     #'   for recoverable problems.  Defaults to \code{FALSE}.
     #' @return Invisibly returns \code{TRUE} if valid.
     validate_objective_schema = function(schema, soft = FALSE) {
-      phrutils::phr_try(
-        {
-          origin <- "Protocol$validate_objective_schema"
+      origin <- "Protocol$validate_objective_schema"
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting objective schema validation.")
+      )
+      valid <- TRUE
 
+      result <- phrutils::phr_try_step(
+        {
           if (is.null(schema) || !is.data.frame(schema)) {
             phrutils::phr_error(
               origin = origin,
@@ -426,11 +500,12 @@ Protocol <- R6::R6Class(
             msg <- private$..phr_txt("Objective schema is empty (zero rows).")
             if (soft) {
               phrutils::phr_warning(origin = origin, message = msg)
-              return(invisible(FALSE))
+              valid <- FALSE
+            } else {
+              phrutils::phr_error(origin = origin, message = msg)
             }
-            phrutils::phr_error(origin = origin, message = msg)
           }
-
+          if (valid && nrow(schema) > 0) {
           missing_cols <- setdiff(
             .objective_schema_required_cols,
             names(schema)
@@ -484,12 +559,23 @@ Protocol <- R6::R6Class(
               phrutils::phr_error(origin = origin, message = msg)
             }
           }
-
-          invisible(TRUE)
+          }
         },
-        on_error = "abort",
-        origin = "Protocol$validate_objective_schema"
+        step = private$..phr_txt("Validating objective schema"),
+        hint = private$..phr_txt("Use load_objective_schema() to obtain the default schema.")
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Objective schema validation completed (valid: {valid}).")
+      )
+      invisible(valid)
     },
 
     #' @description Diagnose coherence between the \code{modified_objectives_schema}
@@ -511,6 +597,22 @@ Protocol <- R6::R6Class(
     #'
     #' @return Invisibly returns \code{self} for method chaining.
     diagnose_coherence = function() {
+      origin <- "Protocol$diagnose_coherence"
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting coherence diagnosis.")
+      )
+      on.exit(
+        private$..touch(
+          log = TRUE,
+          touch = FALSE,
+          name = origin,
+          message = private$..phr_txt("Coherence diagnosis finished with {length(self$issues_coherence)} issue(s).")
+        ),
+        add = TRUE
+      )
       self$issues_coherence <- list()
 
       if (is.null(self$framework) || !inherits(self$framework, "Framework")) {
@@ -648,7 +750,16 @@ Protocol <- R6::R6Class(
     #'   framework is not configured, no primary objectives are set, or the
     #'   specified tool is not found.
     get_dap_table = function(tool_name, lang = "en") {
-      phrutils::phr_try(
+      origin <- "Protocol$get_dap_table"
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("Starting DAP table build for tool '{tool_name}'.")
+      )
+
+      dap <- NULL
+      result <- phrutils::phr_try_step(
         {
           # Validate tool_name parameter
           phrutils::phr_assert(
@@ -656,15 +767,27 @@ Protocol <- R6::R6Class(
               length(tool_name) == 1 &&
               nzchar(tool_name),
             message = private$..phr_txt("tool_name must be a non-empty character  string"),
-            origin = "Protocol$get_dap_table"
+            origin = origin
           )
 
-          # Build and return the DAP table
-          private$..build_dap_table(tool_name, lang = lang)
+          # Build the DAP table
+          dap <- private$..build_dap_table(tool_name, lang = lang)
         },
-        on_error = "abort",
-        origin = "Protocol$get_dap_table"
+        step = private$..phr_txt("Building DAP table"),
+        hint = private$..phr_txt("Check tool_name and the framework configuration.")
       )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = private$..phr_txt("DAP table build completed with {if (is.data.frame(dap)) nrow(dap) else 0} row(s).")
+      )
+      dap
     },
     #' @description Get Quarto parameters for rendering.
     #' @return A named list of parameters to pass to Quarto rendering.

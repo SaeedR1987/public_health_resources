@@ -26,13 +26,6 @@ WomanIndividualData <- R6::R6Class(
 
       phrutils::phr_try({
 
-        private$..touch(
-          log = TRUE,
-          touch = FALSE,
-          name = dataset_name,
-          message = private$..phr_txt("Starting initialization for WomanIndividualData object {dataset_name}.")
-        )
-
         woman_map <- list(
           uuid      = "person_id",
           hh_uuid    = "hh_uuid"
@@ -56,6 +49,12 @@ WomanIndividualData <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
+          message = private$..phr_txt("Starting initialize for {dataset_name} as WomanIndividualData object.")
+        )
+
         # Step 2: Setting optional columns
         result <- phrutils::phr_try_step(
           {
@@ -67,6 +66,11 @@ WomanIndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check water container data and inputs")
           )
           if (phrutils::phr_failed(result)) {
+            private$..touch(
+              log = TRUE, touch = FALSE, display = FALSE,
+              name = paste0(private$..dataset_name, "$initialize$optional_columns"),
+              message = result$error
+            )
             return(result)
           }
 
@@ -79,13 +83,19 @@ WomanIndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check variable and value maps for woman variables")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
+            message = result$error
+          )
           return(result)
         }
 
         private$..touch(
           log = TRUE,
           touch = FALSE,
-          name = dataset_name,
+          display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
           message = private$..phr_txt("Initialization for {dataset_name} as WomanIndividualData object completed successfully with {nrow(data)} records.")
         )
 

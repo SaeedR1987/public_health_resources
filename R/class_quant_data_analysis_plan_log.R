@@ -77,6 +77,12 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         required_columns = required_columns,
         schema = schema
       )
+
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(log_name, "$initialize"),
+        message = private$..phr_txt("QuantDataAnalysisPlanLog {log_name} initialized with {length(required_columns)} required column(s).")
+      )
     },
 
     #' Validate Quant Data Analysis Plan Log against Dataset
@@ -101,8 +107,19 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
 
       phrutils::phr_try({
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$validate_dap_against_dataset"),
+          message = private$..phr_txt("Starting validate_dap_against_dataset at stage '{stage}'.")
+        )
+
         # If log is empty, nothing to validate
         if (nrow(private$..log_df) == 0) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..log_name, "$validate_dap_against_dataset"),
+            message = private$..phr_txt("Skipped: analysis plan log is empty.")
+          )
           return(list()) # no issues
         }
 
@@ -135,6 +152,11 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         hint =  "Check that data_obj is a valid Data object and that the specified stage exists in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_dap_against_dataset$setup"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -199,8 +221,21 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
         hint =  "Check that var_name, denom_var and disaggregation values are mapped in the variable map and that the mapped columns exist in the dataset."
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = TRUE,
+            name = paste0(private$..log_name, "$validate_dap_against_dataset$variable_map_checks"),
+            message = result$error
+          )
           return(result)
         }
+
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..log_name, "$validate_dap_against_dataset"),
+          message = private$..phr_txt(
+            "Validated {nrow(df_log)} analysis plan entries against stage '{stage}'; {length(result)} issue type(s) found."
+          )
+        )
 
         result
 
@@ -235,6 +270,12 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
                              multiplier = 100,
                              indicator_unit = "%") {
 
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$add_indicator"),
+        message = private$..phr_txt("Starting add_indicator for '{paste(indicator_name, collapse = ', ')}'.")
+      )
+
       entry <- list(
         indicator_name = as.character(indicator_name),
         calculation = as.character(calculation),
@@ -246,6 +287,12 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
       )
 
       self$append_entry(entry)
+
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$add_indicator"),
+        message = private$..phr_txt("Added indicator '{paste(indicator_name, collapse = ', ')}'; {private$..log_name} now has {nrow(private$..log_df)} entries.")
+      )
     }
   ),
 
@@ -300,6 +347,11 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
       hint = "Check that indicator_name and indicator_unit are non-missing character values."
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$indicator_name_unit"),
+          message = result$error
+        )
         return(result)
       }
 
@@ -327,6 +379,11 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
       hint = "Check that calculation is one of the allowed values."
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$calculation"),
+          message = result$error
+        )
         return(result)
       }
 
@@ -356,6 +413,11 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
       hint = "Check that multiplier is a positive number."
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$multiplier"),
+          message = result$error
+        )
         return(result)
       }
 
@@ -380,10 +442,19 @@ QuantDataAnalysisPlanLog <- R6::R6Class(
       hint = "Issue merging with issues from previous validation steps."
       )
       if (phrutils::phr_failed(result)) {
+        private$..touch(
+          log = TRUE, touch = FALSE, display = TRUE,
+          name = paste0(private$..log_name, "$..post_validate$set_state"),
+          message = result$error
+        )
         return(result)
       }
 
-
+      private$..touch(
+        log = TRUE, touch = FALSE, display = FALSE,
+        name = paste0(private$..log_name, "$..post_validate"),
+        message = private$..phr_txt("Analysis plan post-validation complete; {length(private$..issues)} issue type(s) recorded.")
+      )
 
       invisible(private$..issues)
 

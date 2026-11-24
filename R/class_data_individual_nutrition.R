@@ -32,13 +32,6 @@ NutritionIndividualData <- R6::R6Class(
 
       phrutils::phr_try({
 
-        private$..touch(
-          log = TRUE,
-          touch = FALSE,
-          name = private$..dataset_name,
-          message = private$..phr_txt("Starting initialization for NutritionIndividualData object {dataset_name}.")
-        )
-
         nutrition_map <- list(
           # Demographics (use generic names that map to data columns)
           uuid      = "person_id",
@@ -63,6 +56,12 @@ NutritionIndividualData <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
+          message = private$..phr_txt("Starting initialize for {dataset_name} as NutritionIndividualData object.")
+        )
+
         # Step 2: Map schema vars
         result <- phrutils::phr_try_step(
           {
@@ -72,13 +71,19 @@ NutritionIndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check variable schema, variable or value maps.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
+            message = result$error
+          )
           return(result)
         }
 
         private$..touch(
           log = TRUE,
-          touch = TRUE,
-          name = private$..dataset_name,
+          touch = FALSE,
+          display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
           message = private$..phr_txt("Initialization for {dataset_name} as NutritionIndividualData object completed successfully.")
         )
       }, on_error = "abort", origin = "NutritionIndividualData$initialize")

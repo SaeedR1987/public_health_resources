@@ -42,9 +42,11 @@ Required columns:
   <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="pre_sync_state"><a href='../../phr/html/Asset.html#method-Asset-pre_sync_state'><code>Asset$pre_sync_state()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="set"><a href='../../phr/html/Asset.html#method-Asset-set'><code>Asset$set()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Asset" data-id="sync_state"><a href='../../phr/html/Asset.html#method-Asset-sync_state'><code>Asset$sync_state()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="add_entry"><a href='../../phr/html/Log.html#method-Log-add_entry'><code>Log$add_entry()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="append_entry"><a href='../../phr/html/Log.html#method-Log-append_entry'><code>Log$append_entry()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="clear"><a href='../../phr/html/Log.html#method-Log-clear'><code>Log$clear()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="export"><a href='../../phr/html/Log.html#method-Log-export'><code>Log$export()</code></a></span></li>
+  <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="remove_entry"><a href='../../phr/html/Log.html#method-Log-remove_entry'><code>Log$remove_entry()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="summary"><a href='../../phr/html/Log.html#method-Log-summary'><code>Log$summary()</code></a></span></li>
   <li><span class="pkg-link" data-pkg="phr" data-topic="Log" data-id="validate"><a href='../../phr/html/Log.html#method-Log-validate'><code>Log$validate()</code></a></span></li>
 </ul>

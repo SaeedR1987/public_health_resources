@@ -41,13 +41,6 @@ WaterContainerData <- R6::R6Class(
 
       phrutils::phr_try({
 
-        private$..touch(
-          log = TRUE,
-          touch = FALSE,
-          name = private$..dataset_name,
-          message = private$..phr_txt("Starting initialization for WaterContainerData object {dataset_name}.")
-        )
-
         # Default mapping for water container data
         default_map <- list(
           # Identifiers
@@ -74,6 +67,12 @@ WaterContainerData <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
+          message = private$..phr_txt("Starting initialize for {dataset_name} as WaterContainerData object.")
+        )
+
         # Step 2: Map schema vars
         result <- phrutils::phr_try_step(
           {
@@ -83,6 +82,11 @@ WaterContainerData <- R6::R6Class(
           hint = private$..phr_txt("Check variable schema, variable or value maps.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -102,13 +106,19 @@ WaterContainerData <- R6::R6Class(
           hint = private$..phr_txt("Check for presence of optional variables")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$optional_columns"),
+            message = result$error
+          )
           return(result)
         }
 
         private$..touch(
           log = TRUE,
-          touch = TRUE,
-          name = private$..dataset_name,
+          touch = FALSE,
+          display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
           message = private$..phr_txt("Initialization for {dataset_name} as WaterContainerData object completed successfully with {nrow(data)} records.")
         )
 

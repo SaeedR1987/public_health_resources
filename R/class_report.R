@@ -28,10 +28,38 @@ Report <- R6::R6Class(
     initialize = function(protocol = NULL,
                           data_analytics = list(),
                           integrated_analysis = NULL) {
+      origin <- "Report$initialize"
       super$initialize()
-      self$protocol <- protocol
-      self$data_analytics <- data_analytics
-      self$integrated_analysis <- integrated_analysis
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = "Starting initialization of Report."
+      )
+
+      result <- phrutils::phr_try_step(
+        {
+          self$protocol <- protocol
+          self$data_analytics <- data_analytics
+          self$integrated_analysis <- integrated_analysis
+        },
+        step = "Assigning Report components",
+        hint = "Check protocol, data_analytics and integrated_analysis."
+      )
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
+      }
+
+      private$..touch(
+        log = TRUE,
+        touch = FALSE,
+        name = origin,
+        message = paste0(
+          "Report initialized with ", length(data_analytics),
+          " data analytics object(s)."
+        )
+      )
       invisible(self)
     }
   )

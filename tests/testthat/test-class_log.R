@@ -152,6 +152,40 @@ test_that("append_entry() updates metadata timestamp", {
   expect_true(log$get("metadata")$modified_datetime > old_time)
 })
 
+test_that("add_entry() inserts after the given row index", {
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
+  suppressMessages(log$append_entry(list(uuid = "1", issue = "a")))
+  suppressMessages(log$append_entry(list(uuid = "3", issue = "c")))
+
+  suppressMessages(log$add_entry(1, list(uuid = "2", issue = "b")))
+  expect_equal(log$get("log_df")$uuid, c("1", "2", "3"))
+
+  suppressMessages(log$add_entry(0, list(uuid = "0", issue = "z")))
+  expect_equal(log$get("log_df")$uuid, c("0", "1", "2", "3"))
+
+  suppressMessages(log$add_entry(4, list(uuid = "4", issue = "d")))
+  expect_equal(log$get("log_df")$uuid, c("0", "1", "2", "3", "4"))
+})
+
+test_that("add_entry() errors on invalid index or missing fields", {
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
+  suppressMessages(log$append_entry(list(uuid = "1", issue = "a")))
+
+  expect_error(suppressMessages(log$add_entry(5, list(uuid = "2", issue = "b"))), "row_index")
+  expect_error(suppressMessages(log$add_entry(1, list(uuid = "2"))), "Missing required fields")
+})
+
+test_that("remove_entry() removes the given row", {
+  suppressMessages(log <- Log$new(NULL, required_columns = c("uuid", "issue")))
+  suppressMessages(log$append_entry(list(uuid = "1", issue = "a")))
+  suppressMessages(log$append_entry(list(uuid = "2", issue = "b")))
+
+  suppressMessages(log$remove_entry(1))
+  expect_equal(log$get("log_df")$uuid, "2")
+  expect_error(suppressMessages(log$remove_entry(2)), "row_index")
+  expect_error(suppressMessages(log$remove_entry(0)), "row_index")
+})
+
 # ============================================================
 # 4. CLEAR TESTS
 # ============================================================

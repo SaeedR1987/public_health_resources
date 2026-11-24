@@ -46,6 +46,7 @@ public = list(
                         choices = NULL,
                         settings = NULL,
                         kii_type = "general") {
+    origin <- "KeyInformantTool$initialize"
     super$initialize(
       name = name %||% "Key Informant Interview Tool",
       survey = survey,
@@ -57,15 +58,33 @@ public = list(
 
     # Load the bundled default KII tool template if no overrides given
     if (is.null(survey) && is.null(choices)) {
-      default_path <- system.file(
-        "resources", "iphra_kii_tool_dummy.xlsx",
-        package = "iphRa"
+      result <- phrutils::phr_try_step(
+        {
+          default_path <- system.file(
+            "resources", "iphra_kii_tool_dummy.xlsx",
+            package = "phr"
+          )
+          if (nchar(default_path) > 0) {
+            private$.load_default_tool(default_path)
+          }
+        },
+        step = "Loading default key informant tool"
       )
-      if (nchar(default_path) > 0) {
-        private$.load_default_tool(default_path)
+      if (phrutils::phr_failed(result)) {
+        private$..touch(log = TRUE, touch = FALSE, name = origin, display = TRUE, message = result$error)
+        phrutils::phr_error(message = result$error, origin = origin, hint = result$hint)
       }
     }
 
+    private$..touch(
+      log = TRUE,
+      touch = FALSE,
+      name = origin,
+      message = paste0(
+        "Completed initialization of KeyInformantTool (", nrow(self$survey), " survey row(s), ",
+        nrow(self$choices), " choice row(s))."
+      )
+    )
     invisible(self)
   },
 
@@ -81,14 +100,18 @@ public = list(
   #' @param kii_type Character string for KII type.
   #' @return Invisibly returns self for method chaining.
   set_kii_type = function(kii_type) {
+    origin <- "KeyInformantTool$set_kii_type"
+    private$..touch(log = TRUE, touch = FALSE, name = origin, message = "Starting set_kii_type.")
     valid_types <- c("general", "community", "health", "fsl", "wash",
                      "nutrition", "market", "service_provider")
     if (!kii_type %in% valid_types) {
-      warning(paste("KII type", kii_type, "is not a recognized type.",
-                    "Valid types:", paste(valid_types, collapse = ", ")))
+      msg <- paste("KII type", kii_type, "is not a recognized type.",
+                   "Valid types:", paste(valid_types, collapse = ", "))
+      private$..touch(log = TRUE, touch = FALSE, name = origin, display = FALSE, message = msg)
+      warning(msg)
     }
     private$.kii_type <- kii_type
-    private$..touch()
+    private$..touch(log = TRUE, touch = TRUE, name = origin, message = paste0("KII type set to '", kii_type, "'."))
     invisible(self)
   }
 ),

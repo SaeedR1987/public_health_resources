@@ -49,15 +49,8 @@ DeathIndividualData <- R6::R6Class(
 
       phrutils::phr_try({
 
-        private$..touch(
-          log = TRUE,
-          touch = FALSE,
-          name = private$..dataset_name,
-          message = private$..phr_txt("Starting initialization for Data object {dataset_name}.")
-        )
-
         # --- Default mapping for death-related variables
-        default_death_map <- list(
+        default_map <- list(
           uuid      = "death_id",
           hh_uuid    = "hh_uuid"
         )
@@ -80,6 +73,12 @@ DeathIndividualData <- R6::R6Class(
           return(result)
         }
 
+        private$..touch(
+          log = TRUE, touch = FALSE, display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
+          message = private$..phr_txt("Starting initialize for {dataset_name} as DeathIndividualData object.")
+        )
+
         # Step 2: Map schema vars
         result <- phrutils::phr_try_step(
           {
@@ -90,6 +89,11 @@ DeathIndividualData <- R6::R6Class(
           hint = private$..phr_txt("Check the variable schema for individual death data")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$map_schema_vars"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -116,6 +120,11 @@ DeathIndividualData <- R6::R6Class(
         hint = private$..phr_txt("Check for column with recall date in the dataset.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$recall_date"),
+            message = result$error
+          )
           return(result)
         }
 
@@ -133,14 +142,20 @@ DeathIndividualData <- R6::R6Class(
         hint = private$..phr_txt("Check for subclass specific required columns in the dataset.")
         )
         if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$required_columns"),
+            message = result$error
+          )
           return(result)
         }
 
         private$..touch(
           log = TRUE,
-          touch = TRUE,
-          name = private$..dataset_name,
-          message = private$..phr_txt("Initializaiton of {dataset_name} as a DeathIndividualData object completed successfully with {nrow(data)} records.")
+          touch = FALSE,
+          display = FALSE,
+          name = paste0(private$..dataset_name, "$initialize"),
+          message = private$..phr_txt("Initialization of {dataset_name} as a DeathIndividualData object completed successfully with {nrow(data)} records.")
         )
 
       }, on_error = "abort", origin = "DeathIndividualData$initialize")
