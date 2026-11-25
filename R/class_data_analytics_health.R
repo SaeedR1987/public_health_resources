@@ -393,6 +393,22 @@ HealthDataAnalytics <- R6::R6Class(
       "analysis_schema_quant_data_analysis_health_template.xlsx"
     ),
 
+    # @field ..default_analysis_schema_roster_filename Named list of presentation-ready value labels
+    #  for categorical variables (populated by ..map_schema_labels()).
+    # @keywords internal
+    ..default_analysis_schema_roster_filename = c(
+      "resources",
+      "analysis_schema_quant_data_analysis_demographics_template.xlsx"
+    ),
+
+    # @field ..default_outputs_schema_roster_filename Default file name for dependency schema xlsx file
+    # Should be a two element character vector with the folder and filename.
+    # @keywords internal
+    ..default_outputs_schema_roster_filename = c(
+      "resources",
+      "outputs_schema_data_analytics_roster_template.xlsx"
+    ),
+
     # @description
     # Pre-hook providing the input sets used by the inherited \code{run_analysis()}.
     #
@@ -546,45 +562,6 @@ HealthDataAnalytics <- R6::R6Class(
           "output_title_arabic"
         ),
         schema_name = "outputs_roster",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_analysis_schema_health_filename,
-        target_field = "..analysis_schema_health",
-        required_cols = c(
-          "indicator_name",
-          "calculation",
-          "var_name",
-          "denom_var",
-          "disaggregation",
-          "multiplier",
-          "indicator_unit"
-        ),
-        schema_name = "analysis_health",
-        dataset_name = private$..dataset_name
-      )
-
-      private$..load_default_schema(
-        filename = private$..default_outputs_schema_health_filename,
-        target_field = "..outputs_schema_health",
-        required_cols = c(
-          "output_title",
-          "output_name",
-          "output_subtitle",
-          "variables",
-          "disaggregation",
-          "output_func_name",
-          "test_params",
-          "output_type",
-          "outputs_group",
-          "outputs_per_group",
-          "dataset_type",
-          "output_title_english",
-          "output_title_french",
-          "output_title_arabic"
-        ),
-        schema_name = "outputs_health",
         dataset_name = private$..dataset_name
       )
 

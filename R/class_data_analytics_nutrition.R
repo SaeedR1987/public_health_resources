@@ -719,7 +719,7 @@ NutritionDataAnalytics <- R6::R6Class(
     # @keywords internal
     ..default_quality_schema_filename = c(
       "resources",
-      "quality_schema_data_quality_nutrition_template.xlsx"
+      "quality_schema_data_quality_anthropometric_template.xlsx"
     ),
 
     # @field ..default_quality_schema_filename Default file name for variable schema xlsx file
@@ -873,7 +873,7 @@ NutritionDataAnalytics <- R6::R6Class(
     # Any variable (including weight_col) that is absent from modified_data
     # is silently omitted so that a simple random-sample design is always
     # producible as a minimum.  Returns NULL on failure.
-    ..build_muac_survey_design = function(data, weight_col) {
+    ..build_muac_survey_design = function(data) {
 
       origin <- paste0(private$..dataset_name, "$..post_run_analysis$..build_muac_survey_design")
 
