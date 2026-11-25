@@ -437,6 +437,7 @@ CleaningLog <- R6::R6Class(
       )
 
       entry <- list(
+        uuid = as.character(uuid),
         enum_id = as.character(enum_id),
         device_id = as.character(device_id),
         question.name = as.character(question.name),
