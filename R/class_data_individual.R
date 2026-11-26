@@ -275,10 +275,9 @@ IndividualData <- R6::R6Class(
 
     ..analytics_registry = function() {
 
-      registry <- super$..analytics_registry()
+      # registry <- super$..analytics_registry()
 
       c(
-        registry,
         list(
           demographics = function(data,
                          stage,
