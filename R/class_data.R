@@ -4525,10 +4525,7 @@ Data <- R6::R6Class(
 
                         cond_if <- private$..phr_try(
                           {
-                            out <- with(
-                              df,
-                              eval(parse(text = rule_if_translated))
-                            )
+                            out <- ..eval_rule_expression(rule_if_translated, df)
                             if (!is.logical(out)) {
                               rep(FALSE, nrow(df))
                             } else if (length(out) == 1) {
@@ -4572,10 +4569,7 @@ Data <- R6::R6Class(
 
                           cond_then <- private$..phr_try(
                             {
-                              out <- with(
-                                df,
-                                eval(parse(text = rule_then_translated))
-                              )
+                              out <- ..eval_rule_expression(rule_then_translated, df)
                               if (!is.logical(out)) {
                                 rep(FALSE, nrow(df))
                               } else if (length(out) == 1) {
@@ -7329,3 +7323,15 @@ Data <- R6::R6Class(
 
     )
   )
+
+
+# Evaluates a dependency rule expression against a data frame. Exported phrutils
+# helpers (e.g. is_greater_than_one_selection) are made visible because phrutils
+# is only imported by namespace, not attached, so bare calls would not resolve.
+..eval_rule_expression <- function(expr_text, df) {
+  enclos <- new.env(parent = topenv())
+  ns <- asNamespace("phrutils")
+  fns <- getNamespaceExports("phrutils")
+  list2env(mget(fns, envir = ns, inherits = FALSE), envir = enclos)
+  eval(parse(text = expr_text), envir = df, enclos = enclos)
+}
