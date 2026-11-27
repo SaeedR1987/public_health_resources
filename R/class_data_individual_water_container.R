@@ -56,8 +56,7 @@ WaterContainerData <- R6::R6Class(
             super$initialize(
               data         = data,
               dataset_name = dataset_name,
-              uuid = if (is.null(uuid)) {default_map$uuid} else {uuid},
-              hh_uuid = if (is.null(hh_uuid)) {default_map$hh_uuid} else {hh_uuid}
+              uuid = if (is.null(uuid)) {default_map$uuid} else {uuid}
             )
           },
           step = private$..phr_txt("Super initialize of WaterContainerData"),
@@ -91,7 +90,36 @@ WaterContainerData <- R6::R6Class(
           return(result)
         }
 
-        # Step 3: Set optional columns
+        # Step 3: Set required columns (household linkage)
+        result <- phrutils::phr_try_step(
+          {
+            hh_col <- if (!is.null(hh_uuid)) {
+              hh_uuid
+            } else {
+              private$..variable_map$hh_uuid %||% default_map$hh_uuid
+            }
+            wc_required <- unique(c(private$..variable_map$uuid, hh_col))
+            wc_required <- wc_required[!is.na(wc_required) & wc_required != ""]
+
+            self$set(
+              field = "..required_columns",
+              value = unique(c(private$..required_columns, wc_required))
+            )
+          },
+          step = private$..phr_txt("Set required columns for WaterContainerData"),
+          hint = private$..phr_txt("Check for presence of required variables: uuid and hh_uuid.")
+        )
+        if (phrutils::phr_failed(result)) {
+          private$..touch(
+            log = TRUE, touch = FALSE, display = FALSE,
+            name = paste0(private$..dataset_name, "$initialize$required_columns"),
+            message = result$error,
+            level = "error"
+          )
+          return(result)
+        }
+
+        # Step 4: Set optional columns
         result <- phrutils::phr_try_step(
           {
             # Optional (mapped) columns

@@ -429,7 +429,7 @@ HealthDataAnalytics <- R6::R6Class(
     ..pre_run_analysis = function() {
       origin <- paste0(private$..dataset_name, "$pre_run_analysis")
 
-      sets <- super$pre_run_analysis()
+      sets <- super$..pre_run_analysis()
 
       if (!is.null(private$..linked_ind_roster_data)) {
         if (is.null(private$..data_analysis_plan_roster$get(field = "..log_df"))) {
@@ -539,6 +539,22 @@ HealthDataAnalytics <- R6::R6Class(
           "indicator_unit"
         ),
         schema_name = "analysis_roster",
+        dataset_name = private$..dataset_name
+      )
+
+      private$..load_default_schema(
+        filename = private$..default_analysis_schema_filename,
+        target_field = "..analysis_schema_health",
+        required_cols = c(
+          "indicator_name",
+          "calculation",
+          "var_name",
+          "denom_var",
+          "disaggregation",
+          "multiplier",
+          "indicator_unit"
+        ),
+        schema_name = "analysis_health",
         dataset_name = private$..dataset_name
       )
 

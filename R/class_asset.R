@@ -669,6 +669,13 @@ Asset <- R6::R6Class(
       }
 
       if (isTRUE(log)) {
+        if (identical(level, "info") && is.character(message) && length(message) == 1 && !is.na(message)) {
+          if (grepl("^\\[PHR::(TryError|Error)\\]", message)) {
+            level <- "error"
+          } else if (grepl("^\\[PHR::(TryWarning|Warning)\\]", message)) {
+            level <- "warning"
+          }
+        }
         private$..track(name = name, message = message, level = level)
       }
 

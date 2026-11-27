@@ -141,27 +141,28 @@ NutritionIndividualData <- R6::R6Class(
               variable_label = parent$get(field = "..variable_label"),
               value_label = parent$get(field = "..value_label")
             )
-          },
-
-        iycf = function(data,
-                        stage,
-                        analysis_config,
-                        parent) {
-
-          IYCFDataAnalytics$new(
-            data               = data,
-            dap                = analysis_config,
-            parent_data_object = parent,
-            dataset_name       = paste0(private$..dataset_name, "_IYCFDataAnalytics"),
-            data_stage_name    = stage,
-            data_hash          = parent$get(field = "..metadata", role = "hash_id"),
-            variable_map       = parent$get(field = "..variable_map"),
-            value_map          = parent$get(field = "..value_map"),
-            variable_label     = parent$get(field = "..variable_label"),
-            value_label        = parent$get(field = "..value_label")
-          )
-
-        }
+          }
+        #   ,
+        #
+        # iycf = function(data,
+        #                 stage,
+        #                 analysis_config,
+        #                 parent) {
+        #
+        #   IYCFDataAnalytics$new(
+        #     data               = data,
+        #     dap                = analysis_config,
+        #     parent_data_object = parent,
+        #     dataset_name       = paste0(private$..dataset_name, "_IYCFDataAnalytics"),
+        #     data_stage_name    = stage,
+        #     data_hash          = parent$get(field = "..metadata", role = "hash_id"),
+        #     variable_map       = parent$get(field = "..variable_map"),
+        #     value_map          = parent$get(field = "..value_map"),
+        #     variable_label     = parent$get(field = "..variable_label"),
+        #     value_label        = parent$get(field = "..value_label")
+        #   )
+        #
+        # }
 
         )
       )

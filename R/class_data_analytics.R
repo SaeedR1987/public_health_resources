@@ -4999,6 +4999,22 @@ DataAnalytics <- R6::R6Class(
     ..build_dap_from_schema = function(analysis_schema, variable_map, available_vars,
                                        dataset_label = "dataset") {
 
+      if (is.null(analysis_schema)) {
+        phrutils::phr_warning(
+          paste0(private$..dataset_name, "$build_dap_from_schema"),
+          paste0("No analysis schema loaded for ", dataset_label, "; returning empty analysis plan.")
+        )
+        return(list(
+          dap_df = tibble::tibble(
+            indicator_name = character(), calculation = character(),
+            var_name = character(), denom_var = character(),
+            disaggregation = character(), multiplier = numeric(),
+            indicator_unit = character()
+          ),
+          issues = tibble::tibble(dataset = character(), indicator_name = character(), issue = character())
+        ))
+      }
+
       vm <- variable_map %||% list()
 
       translate_var <- function(canonical_name) {

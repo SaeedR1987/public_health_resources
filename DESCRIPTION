@@ -25,6 +25,7 @@ Imports:
     lme4,
     officer,
     openxlsx,
+    phrindicators,
     phrutils,
     pps,
     purrr,
